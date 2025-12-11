@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Budget de Lucas - Niveau Supérieur</title>
+    <title>Le Budget de Lucas - Niveau Supérieur (Version Améliorée)</title>
     <style>
         /* Les styles sont principalement conservés pour la cohérence */
         :root {
@@ -246,7 +246,7 @@
             border-radius: 15px;
             width: 100%;
             max-width: 800px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-left: 10px solid #2c3e50;
         }
 
@@ -463,10 +463,10 @@
         // --- INITIALISATION ---
         const bank = document.getElementById("item-bank");
         
-        // Calcul des totaux réels
-        const totalRecettesReelles = items.filter(i => i.globalCat === 'recette').reduce((a, b) => a + b.val, 0);
-        const totalDepensesReelles = items.filter(i => i.globalCat === 'depense').reduce((a, b) => a + b.val, 0);
-        const soldeReel = totalRecettesReelles - totalDepensesReelles;
+        // Calcul des totaux réels (pour la vérification)
+        const totalRecettesReelles = items.filter(i => i.globalCat === 'recette').reduce((a, b) => a + b.val, 0); // 2260
+        const totalDepensesReelles = items.filter(i => i.globalCat === 'depense').reduce((a, b) => a + b.val, 0); // 1620
+        const soldeReel = totalRecettesReelles - totalDepensesReelles; // 640
 
 
         // Mélanger les items pour l'exercice
@@ -563,87 +563,124 @@
         });
 
 
-        // --- VÉRIFICATION LOGIQUE (Adaptée pour les sous-catégories de recettes) ---
+        // --- VÉRIFICATION LOGIQUE (Améliorée pour le feedback) ---
         
-        // Fonction de vérification pour les dépenses et le total recettes
         function verifierColonneGlobale(globalCatName, inputId, msgId) {
             let dropZones = [];
             
-            // Pour les recettes, on regroupe toutes les sous-catégories
+            // 1. DÉFINITION DE LA CATÉGORIE ET CIBLAGE DES ZONES
             if (globalCatName === 'recette') {
                 dropZones = document.querySelectorAll(`.sub-zone[data-category^="recette-"]`);
             } else {
-                // Pour les dépenses, une seule drop-zone
                 dropZones = document.querySelectorAll(`.drop-zone[data-category="${globalCatName}"]`);
             }
             
             const input = document.getElementById(inputId);
             const msg = document.getElementById(msgId);
             
-            let sumItems = 0;
-            let errors = false;
+            let sumItemsPlaces = 0; // Somme des items DANS la zone
+            let erreurDePlacementGrave = false; // Item dans la mauvaise GRANDE catégorie (Recette vs Dépense)
+            let erreurDeSousClassification = false; // Item dans la mauvaise SOUS-catégorie (Prime Travail dans Social)
 
-            // 1. Vérification des positions et calcul du total
+            // Calcul de la somme réelle pour la catégorie, basée sur les données initiales
+            const itemsPourCategorie = items.filter(i => (globalCatName === 'recette' ? i.globalCat === 'recette' : i.cat === globalCatName) || (globalCatName !== 'recette' && i.globalCat === 'depense' && i.cat === globalCatName));
+            const totalReelAttendu = itemsPourCategorie.reduce((a, b) => a + b.val, 0);
+
+            // 2. VÉRIFICATION DU PLACEMENT DES ÉLÉMENTS
             for (let zone of dropZones) {
+                let expectedCat = zone.getAttribute("data-category");
                 for (let item of zone.children) {
                     let itemVal = parseInt(item.getAttribute("data-val"));
-                    let itemCat = item.getAttribute("data-cat"); // Catégorie exacte
-                    let itemGlobalCat = item.getAttribute("data-global-cat"); // Catégorie Recette/Dépense
-
-                    let expectedCat = zone.getAttribute("data-category");
+                    let itemCat = item.getAttribute("data-cat"); 
+                    let itemGlobalCat = item.getAttribute("data-global-cat"); 
                     
+                    // a) VÉRIFICATION DES RECETTES (Sous-catégorie stricte)
                     if (globalCatName === 'recette') {
-                        // Pour les recettes, on vérifie la sous-catégorie
-                        if (itemCat !== expectedCat) {
-                            errors = true;
-                            item.style.border = "3px solid #dc3545"; // Rouge
-                            setTimeout(() => item.style.border = "2px solid #555", 3000);
+                        if (itemGlobalCat !== 'recette') {
+                            erreurDePlacementGrave = true; // Problème majeur
+                            item.style.border = "3px solid #dc3545"; 
+                        } else if (itemCat !== expectedCat) {
+                            erreurDeSousClassification = true; // Problème mineur (Rouge)
+                            item.style.border = "3px solid #dc3545"; 
                         } else {
-                            sumItems += itemVal;
-                            item.style.border = "2px solid #28a745"; // Vert
+                            sumItemsPlaces += itemVal;
+                            item.style.border = "2px solid #28a745"; // Correct (Vert)
                         }
-                    } else {
-                        // Pour les dépenses (DF, DC, DO), on vérifie la catégorie globale
-                        if (itemCat !== globalCatName) {
-                            errors = true;
-                            item.style.border = "3px solid #dc3545"; // Rouge
-                            setTimeout(() => item.style.border = "2px solid #555", 3000);
+                    } 
+                    // b) VÉRIFICATION DES DÉPENSES (Catégorie stricte)
+                    else {
+                        if (itemGlobalCat === 'recette') {
+                            erreurDePlacementGrave = true; // Problème majeur
+                            item.style.border = "3px solid #dc3545";
+                        } else if (itemCat !== globalCatName) {
+                            erreurDeSousClassification = true; // Problème mineur (Rouge)
+                            item.style.border = "3px solid #dc3545";
                         } else {
-                            sumItems += itemVal;
-                            item.style.border = "2px solid #28a745"; // Vert
+                            sumItemsPlaces += itemVal;
+                            item.style.border = "2px solid #28a745"; // Correct (Vert)
                         }
                     }
                 }
             }
+            
+            // Réinitialiser les bordures des items non validés (qui n'ont pas été vérifiés dans la boucle ci-dessus)
+            document.querySelectorAll('.draggable-item').forEach(item => {
+                if (item.style.border !== "2px solid rgb(40, 167, 69)") {
+                    item.style.border = "2px solid #555";
+                }
+            });
 
-            if (errors) {
-                msg.innerHTML = "⚠️ Il y a une erreur de classement. Vérifie la nature de chaque poste.";
+
+            // 3. AFFICHAGE DES MESSAGES ET DÉTERMINATION DU BLOCAGE
+            if (erreurDePlacementGrave) {
+                msg.innerHTML = "❌ **ERREUR MAJEURE :** Un poste est dans la mauvaise GRANDE catégorie (Recette vs Dépense). Vérifiez la bordure rouge.";
+                msg.className = "feedback-msg incorrect";
+                return;
+            }
+            
+            const itemsRestants = document.querySelectorAll('#item-bank .draggable-item').length;
+
+            if (sumItemsPlaces !== totalReelAttendu || itemsRestants > 0) {
+                // Manque un item OU item en trop
+                let messageErreur = "";
+                if (itemsRestants > 0) messageErreur = `⚠️ **CLASSEMENT INCOMPLET :** Il reste ${itemsRestants} poste(s) dans la banque d'items.`;
+                else if (sumItemsPlaces > totalReelAttendu) messageErreur = `⚠️ **ITEM EN TROP :** Un poste de trop est dans cette colonne. Total attendu: **${totalReelAttendu} €**.`;
+                else if (sumItemsPlaces < totalReelAttendu) messageErreur = `⚠️ **ITEM MANQUANT :** Il manque un poste dans cette colonne. Total attendu: **${totalReelAttendu} €**.`;
+
+                msg.innerHTML = messageErreur;
                 msg.className = "feedback-msg incorrect";
                 return;
             }
 
-            // 2. Vérification du calcul du total
+            if (erreurDeSousClassification) {
+                // Sous-catégorie fausse (ex: Salaire dans Social) - Ne bloque pas le calcul mais alerte
+                msg.innerHTML = "🟡 **Attention :** Le classement est fonctionnel, mais une sous-catégorie est incorrecte (voir les étiquettes rouges).";
+                msg.className = "feedback-msg incorrect";
+            }
+
+
+            // 4. VÉRIFICATION DU CALCUL (Seulement si le classement est complet)
             let userVal = parseInt(input.value);
+            
             if (isNaN(userVal)) {
-                msg.innerHTML = "Écris le total dans la case.";
+                msg.innerHTML = "Écrivez le total dans la case pour vérifier l'addition.";
                 msg.className = "feedback-msg";
                 return;
             }
 
-            if (userVal === sumItems) {
-                msg.innerHTML = "✅ Bravo ! C'est juste.";
+            if (userVal === totalReelAttendu) {
+                msg.innerHTML = "✅ Bravo ! C'est juste." + (erreurDeSousClassification ? " (Veuillez corriger la sous-catégorie en rouge pour finaliser.)" : "");
                 msg.className = "feedback-msg correct";
                 input.style.borderColor = "#28a745";
                 input.style.backgroundColor = "#e8f5e9";
                 input.disabled = true; 
-                // Mise à jour de la synthèse finale si c'est les recettes/dépenses
+                
+                // Mise à jour de la synthèse finale
                 if (globalCatName === 'recette') {
                     document.getElementById('final-recettes').value = userVal;
-                } else {
-                    // On ne peut pas mettre à jour le total Dépenses, car il faut les 3 totaux
-                }
+                } 
             } else {
-                msg.innerHTML = "❌ Le calcul est faux. Réessaie. Le total devrait être : " + sumItems + " €";
+                msg.innerHTML = "❌ Le calcul est faux. Réessaie. Le total attendu est : **" + totalReelAttendu + " €**";
                 msg.className = "feedback-msg incorrect";
             }
         }
@@ -662,7 +699,7 @@
 
             let errors = [];
 
-            // 1. Vérifier si les totaux intermédiaires ont été validés (sinon on ne peut pas continuer)
+            // 1. Vérifier si les totaux intermédiaires ont été validés
             if (document.getElementById('input-recettes').disabled === false || 
                 document.getElementById('input-fixes').disabled === false ||
                 document.getElementById('input-courantes').disabled === false ||
@@ -675,8 +712,12 @@
 
             // 2. Vérification des totaux reportés
             if (r !== totalRecettesReelles) errors.push("Total Recettes reporté incorrect.");
-            if (dFinalInput !== totalDepensesCalcule) errors.push("Total Dépenses reporté incorrect. Il doit être la somme de DF, DC et DO.");
-            if (dFinalInput !== totalDepensesReelles) errors.push("Total Dépenses incorrect (Total : " + totalDepensesReelles + " €)");
+            
+            if (dFinalInput !== totalDepensesCalcule) {
+                errors.push(`Total Dépenses reporté incorrect. Il doit être la somme de ${totalDepensesCalcule} €.`);
+            } else if (dFinalInput !== totalDepensesReelles) {
+                errors.push(`Total Dépenses incorrect (Total attendu : ${totalDepensesReelles} €)`);
+            }
 
             if (errors.length > 0) {
                 msg.innerHTML = "❌ " + errors.join(" ");
@@ -692,7 +733,7 @@
                 document.getElementById('budget-status').style.pointerEvents = "auto";
                 document.getElementById('btn-conclusion').style.display = "inline-block";
             } else {
-                msg.innerHTML = "⚠️ Solde faux. Fais : Recettes - Dépenses. (Résultat : " + soldeReel + " €)";
+                msg.innerHTML = "⚠️ Solde faux. Fais : Recettes - Dépenses. (Résultat attendu : " + soldeReel + " €)";
                 msg.className = "feedback-msg incorrect";
             }
         }
