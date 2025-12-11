@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Budget de Nabila - Annuel Lissé</title>
+    <style>
+        /* Styles de base conservés */
+        :root {
+            --recettes-color: #d4edda;
+            --recettes-border: #28a745;
+            --fixe-color: #cce5ff;
+            --fixe-border: #007bff;
+            --courant-color: #fff3cd;
+            --courant-border: #ffc107;
+            --occas-color: #f8d7da;
+            --occas-border: #dc3545;
+            --epargne-color: #e6e0ff;
+            --epargne-border: #6f42c1;
+            
+            --recette-travail: #a2d9c2;
+            --recette-social: #7fc3af;
+            --recette-autre: #55aa99;
+
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+
+        .legend-bar {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            background: #fff;
+            padding: 8px 15px;
+            border-radius: 50px;
+            border: 1px solid #ddd;
+        }
+        
+        .context-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 20px;
+            line-height: 1.8;
+            font-size: 1.15rem;
+            position: relative;
+        }
+
+        .audio-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            transition: background 0.2s;
+        }
+
+        #item-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 80px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+            border: 2px dashed #ccc;
+        }
+
+        .draggable-item {
+            padding: 10px 20px;
+            background-color: white;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        /* Le Tableau - 5 colonnes */
+        .budget-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 10px; 
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .column {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+            border-top: 6px solid #ccc;
+        }
+
+        .column h3 {
+            text-align: center;
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1rem;
+        }
+        
+        /* Conteneur spécial pour les Recettes */
+        #col-recettes { 
+            border-top-color: var(--recettes-border); 
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+        }
+
+        .recette-sub-zones {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex-grow: 1;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .sub-zone {
+            flex-grow: 1;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            min-height: 80px;
+        }
+        .sub-zone h4 {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0 0 5px 0;
+            padding-bottom: 3px;
+            border-bottom: 1px dashed #fff;
+        }
+
+        .sub-zone[data-category="recette-travail"] { background-color: var(--recette-travail); }
+        .sub-zone[data-category="recette-social"] { background-color: var(--recette-social); }
+        .sub-zone[data-category="recette-autre"] { background-color: var(--recette-autre); }
+
+
+        .drop-zone {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(0,0,0,0.02);
+            transition: background 0.3s;
+            min-height: 80px;
+        }
+
+        /* Couleurs des Dépenses */
+        #col-fixes { border-top-color: var(--fixe-border); }
+        #col-fixes .drop-zone { background-color: var(--fixe-color); }
+
+        #col-courantes { border-top-color: var(--courant-border); }
+        #col-courantes .drop-zone { background-color: var(--courant-color); }
+
+        #col-occas { border-top-color: var(--occas-border); }
+        #col-occas .drop-zone { background-color: var(--occas-color); }
+
+        /* Nouvelle colonne Épargne */
+        #col-epargne { border-top-color: var(--epargne-border); }
+        #col-epargne .drop-zone { background-color: var(--epargne-color); }
+
+        /* Zones de calcul et Synthèse */
+        .calc-zone {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #eee;
+            text-align: center;
+        }
+        
+        input[type="number"] {
+            width: 90px;
+            padding: 8px;
+            font-size: 1.1rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            text-align: right;
+            margin-bottom: 5px;
+        }
+
+        .verify-btn {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        
+        .feedback-msg {
+            display: block;
+            font-size: 0.95rem;
+            margin-top: 8px;
+            font-weight: bold;
+            min-height: 1.2em;
+        }
+
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+
+        .final-synthesis {
+            margin-top: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            border-left: 10px solid #6f42c1;
+        }
+
+        .synthesis-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        /* Ajustements Responsive */
+        @media (max-width: 1200px) {
+            .budget-container { grid-template-columns: repeat(3, 1fr); } 
+            #col-recettes { grid-column: span 3; }
+        }
+        @media (max-width: 900px) {
+            .budget-container { grid-template-columns: 1fr 1fr; } 
+            #col-recettes { grid-column: span 2; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>💰 Le Budget de Nabila - Maîtrise Annuelle</h1>
+
+    <div class="legend-bar">
+        <span>Objectif : Lisser les dépenses annuelles et trimestrielles pour préparer un **budget mensuel stable**.</span>
+    </div>
+
+    <div class="context-box">
+        <button id="main-audio-btn" class="audio-btn" onclick="toggleAudio()">
+            <span>▶️ Lire l'histoire</span>
+        </button>
+        
+        <div id="text-content">
+            Nabila est salariée et reçoit son **salaire de 1 850 €**. Elle a récemment vendu des actions pour **300 €** afin de financer un voyage. Elle a aussi reçu **120 €** pour des gardes d'enfants occasionnelles.<br><br>
+            
+            Ses charges fixes mensuelles sont : Loyer (700 €), Assurance Santé (45 €), Crédit Voiture (200 €), et un forfait mobile (20 €).<br>
+            
+            Ses dépenses courantes sont : Courses alimentaires (320 €), Électricité / Chauffage (80 €), et les produits d'hygiène/entretien (40 €).<br><br>
+            
+            Nabila sait qu'elle a de grosses dépenses à venir qu'elle veut préparer chaque mois :
+            * Assurance auto annuelle : **960 €**. Elle met 960 € / 12 = **80 €** de côté chaque mois.
+            * Voyage prévu dans 6 mois : elle épargne **150 €** par mois sur un livret dédié.
+            * Elle a un cadeau d'anniversaire à acheter ce mois-ci : **50 €**.<br>
+            
+            Ce mois-ci, elle a fait une sortie culturelle (musée, concert) pour **35 €**.
+        </div>
+    </div>
+
+    <div style="width:100%; max-width:1200px; text-align:left; margin-bottom:5px; font-size:1.1rem;">
+        <strong>1. Classe les étiquettes. Les sommes mises de côté (même pour des charges futures) sont des Transferts/Épargne.</strong>
+    </div>
+    
+    <div id="item-bank" ondrop="drop(event)" ondragover="allowDrop(event)">
+    </div>
+
+    <div class="budget-container">
+        <div class="column" id="col-recettes">
+            <h3>Recettes</h3>
+            <div class="recette-sub-zones">
+                <div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-travail">
+                    <h4>Travail (Salaire, Honoraires)</h4>
+                </div>
+                <div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-social">
+                    <h4>Social/État (Aide, Remboursement)</h4>
+                </div>
+                <div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-autre">
+                    <h4>Patrimoine/Autre (Vente d'actions, occasionnel)</h4>
+                </div>
+            </div>
+            <div class="calc-zone">
+                <label>Total Recettes : </label>
+                <input type="number" id="input-recettes" placeholder="?"> €
+                <br>
+                <button class="verify-btn" onclick="verifierColonneGlobale('recette', 'input-recettes', 'msg-recettes')">Vérifier</button>
+                <span id="msg-recettes" class="feedback-msg"></span>
+            </div>
+        </div>
+
+        <div class="column" id="col-fixes">
+            <h3>Dépenses Fixes</h3>
+            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="fixe"></div>
+            <div class="calc-zone">
+                <label>Total : </label>
+                <input type="number" id="input-fixes" placeholder="?"> €
+                <br>
+                <button class="verify-btn" onclick="verifierColonneGlobale('fixe', 'input-fixes', 'msg-fixes')">Vérifier</button>
+                <span id="msg-fixes" class="feedback-msg"></span>
+            </div>
+        </div>
+
+        <div class="column" id="col-courantes">
+            <h3>Dépenses Courantes</h3>
+            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="courante"></div>
+            <div class="calc-zone">
+                <label>Total : </label>
+                <input type="number" id="input-courantes" placeholder="?"> €
+                <br>
+                <button class="verify-btn" onclick="verifierColonneGlobale('courante', 'input-courantes', 'msg-courantes')">Vérifier</button>
+                <span id="msg-courantes" class="feedback-msg"></span>
+            </div>
+        </div>
+
+        <div class="column" id="col-occas">
+            <h3>Dépenses Occas.</h3>
+            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="occas"></div>
+            <div class="calc-zone">
+                <label>Total : </label>
+                <input type="number" id="input-occas" placeholder="?"> €
+                <br>
+                <button class="verify-btn" onclick="verifierColonneGlobale('occas', 'input-occas', 'msg-occas')">Vérifier</button>
+                <span id="msg-occas" class="feedback-msg"></span>
+            </div>
+        </div>
+        
+        <div class="column" id="col-epargne">
+            <h3>Épargne/Transfert</h3>
+            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="epargne"></div>
+            <div class="calc-zone">
+                <label>Total : </label>
+                <input type="number" id="input-epargne" placeholder="?"> €
+                <br>
+                <button class="verify-btn" onclick="verifierColonneGlobale('epargne', 'input-epargne', 'msg-epargne')">Vérifier</button>
+                <span id="msg-epargne" class="feedback-msg"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="final-synthesis">
+        <h2>📊 Bilan Mensuel (Lissé)</h2>
+        <p>Calcule le solde en tenant compte des mises de côté pour une gestion stable.</p>
+        
+        <div class="synthesis-row">
+            <span>Total des Recettes :</span>
+            <input type="number" id="final-recettes" placeholder="..."> €
+        </div>
+        <div class="synthesis-row">
+            <span>Total des Dépenses (DF + DC + DO) :</span>
+            <input type="number" id="final-depenses" placeholder="..."> €
+        </div>
+        <div class="synthesis-row">
+            <span>Total des **Transferts/Épargne** (Y compris lissage) :</span>
+            <input type="number" id="final-epargne" placeholder="..."> €
+        </div>
+        <hr>
+        <div class="synthesis-row" style="font-weight: bold; font-size: 1.4rem; color: #6f42c1;">
+            <span>SOLDE RÉEL / CAPACITÉ D'ÉPARGNE (R - Dép. - Ép.) :</span>
+            <input type="number" id="final-solde" placeholder="..."> €
+        </div>
+        
+        <div style="text-align: center; margin-top:10px;">
+             <button class="verify-btn" onclick="verifierBilanNabila()" style="font-size:1.1rem; padding: 10px 20px;">Vérifier le Solde</button>
+             <div id="msg-bilan" class="feedback-msg" style="font-size:1.1rem; margin-top:10px;"></div>
+        </div>
+
+        <div class="result-options" id="budget-status" style="opacity: 0.3; pointer-events: none;">
+            <p style="width:100%; text-align:center; margin-bottom:10px;">Le budget lissé de Nabila est : </p>
+            <label>
+                <input type="radio" name="budget" value="excédentaire">
+                <span>Excédentaire (+)</span>
+            </label>
+            <label>
+                <input type="radio" name="budget" value="déficitaire">
+                <span>Déficitaire (-)</span>
+            </label>
+            <label>
+                <input type="radio" name="budget" value="équilibré">
+                <span>Équilibré (=)</span>
+            </label>
+        </div>
+        <div style="text-align: center; margin-top:20px;">
+            <button class="verify-btn" onclick="verifierConclusionNabila()" id="btn-conclusion" style="display:none; padding:10px 25px;">Vérifier la réponse</button>
+             <div id="msg-conclusion" class="feedback-msg"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DONNÉES DE NABILA ---
+        const items = [
+            // Recettes
+            { id: 1, name: "Salaire", val: 1850, cat: "recette-travail", globalCat: "recette" },
+            { id: 2, name: "Vente Actions", val: 300, cat: "recette-autre", globalCat: "recette" },
+            { id: 3, name: "Garde d'Enfants (occasionnel)", val: 120, cat: "recette-travail", globalCat: "recette" }, // Classé travail car c'est une activité rémunérée
+            
+            // Dépenses
+            { id: 4, name: "Loyer", val: 700, cat: "fixe", globalCat: "depense" },
+            { id: 5, name: "Assurance Santé", val: 45, cat: "fixe", globalCat: "depense" },
+            { id: 6, name: "Crédit Voiture", val: 200, cat: "fixe", globalCat: "depense" },
+            { id: 7, name: "Forfait Mobile", val: 20, cat: "fixe", globalCat: "depense" },
+            
+            { id: 8, name: "Courses Alim.", val: 320, cat: "courante", globalCat: "depense" },
+            { id: 9, name: "Électricité / Chauffage", val: 80, cat: "courante", globalCat: "depense" },
+            { id: 10, name: "Hygiène/Entretien", val: 40, cat: "courante", globalCat: "depense" },
+            
+            { id: 11, name: "Cadeau Anniversaire", val: 50, cat: "occas", globalCat: "depense" },
+            { id: 12, name: "Sortie Culturelle", val: 35, cat: "occas", globalCat: "depense" },
+            
+            // Épargne / Transfert
+            { id: 13, name: "Mise de côté Assurance Auto (lissage)", val: 80, cat: "epargne", globalCat: "epargne" }, // 960/12
+            { id: 14, name: "Épargne Voyage", val: 150, cat: "epargne", globalCat: "epargne" }
+        ];
+
+        // --- CALCULS RÉELS ---
+        const totalRecettesReelles = items.filter(i => i.globalCat === 'recette').reduce((a, b) => a + b.val, 0);
+        const totalDepensesReelles = items.filter(i => i.globalCat === 'depense').reduce((a, b) => a + b.val, 0);
+        const totalEpargneReelle = items.filter(i => i.globalCat === 'epargne').reduce((a, b) => a + b.val, 0);
+        const soldeReelFinal = totalRecettesReelles - totalDepensesReelles - totalEpargneReelle;
+
+        // --- LOGIQUE GÉNÉRALE (Recyclage des fonctions de Nolan) ---
+        const bank = document.getElementById("item-bank");
+        items.sort(() => Math.random() - 0.5); // Mélange
+
+        items.forEach(item => {
+            let el = document.createElement("div");
+            el.classList.add("draggable-item");
+            el.setAttribute("draggable", "true");
+            el.setAttribute("id", "item-" + item.id);
+            el.setAttribute("data-val", item.val);
+            el.setAttribute("data-cat", item.cat); 
+            el.setAttribute("data-global-cat", item.globalCat); 
+            el.innerText = `${item.name} (${item.val} €)`;
+            
+            el.addEventListener("dragstart", drag);
+            el.addEventListener("click", function() { selectItem(el); });
+            bank.appendChild(el);
+        });
+
+        let selectedItem = null;
+
+        function selectItem(el) {
+            if(selectedItem) {
+                selectedItem.style.backgroundColor = "white";
+                selectedItem.style.borderColor = "#555";
+            }
+            if (selectedItem === el) {
+                selectedItem = null;
+                return;
+            }
+            selectedItem = el;
+            el.style.backgroundColor = "#e2e6ea";
+            el.style.borderColor = "#007bff";
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add("drag-over");
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+            selectItem(ev.target);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(z => z.classList.remove('drag-over'));
+
+            let data = ev.dataTransfer ? ev.dataTransfer.getData("text") : null;
+            let draggedElement;
+
+            if (data) draggedElement = document.getElementById(data);
+            else if (selectedItem) draggedElement = selectedItem;
+            else return;
+
+            let target = ev.target;
+            while (!target.classList.contains("drop-zone") && !target.classList.contains("sub-zone") && target.id !== "item-bank" && target.tagName !== "BODY") {
+                target = target.parentElement;
+            }
+
+            if (target.classList.contains("drop-zone") || target.classList.contains("sub-zone") || target.id === "item-bank") {
+                target.appendChild(draggedElement);
+            }
+            
+            if(selectedItem) {
+                selectedItem.style.backgroundColor = "white";
+                selectedItem.style.borderColor = "#555";
+                selectedItem = null;
+            }
+        }
+
+        document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(zone => {
+            zone.addEventListener('click', function(e) {
+                if (selectedItem && e.target !== selectedItem && !e.target.closest('.draggable-item')) {
+                    zone.appendChild(selectedItem);
+                    selectedItem.style.backgroundColor = "white";
+                    selectedItem.style.borderColor = "#555";
+                    selectedItem = null;
+                }
+            });
+            zone.addEventListener('dragleave', function() { zone.classList.remove("drag-over"); });
+        });
+
+
+        // --- VÉRIFICATION LOGIQUE ---
+        
+        function verifierColonneGlobale(globalCatName, inputId, msgId) {
+            let dropZones = [];
+            
+            if (globalCatName === 'recette') {
+                dropZones = document.querySelectorAll(`.sub-zone[data-category^="recette-"]`);
+            } else {
+                dropZones = document.querySelectorAll(`.drop-zone[data-category="${globalCatName}"]`);
+            }
+            
+            const input = document.getElementById(inputId);
+            const msg = document.getElementById(msgId);
+            
+            let sumItems = 0;
+            let errors = false;
+
+            for (let zone of dropZones) {
+                for (let item of zone.children) {
+                    let itemVal = parseInt(item.getAttribute("data-val"));
+                    let itemCat = item.getAttribute("data-cat"); 
+                    let expectedCat = zone.getAttribute("data-category");
+                    
+                    if (globalCatName === 'recette' ? itemCat !== expectedCat : itemCat !== globalCatName) {
+                        errors = true;
+                        item.style.border = "3px solid #dc3545"; 
+                        setTimeout(() => item.style.border = "2px solid #555", 3000);
+                    } else {
+                        sumItems += itemVal;
+                        item.style.border = "2px solid #28a745"; 
+                    }
+                }
+            }
+
+            if (errors) {
+                msg.innerHTML = "⚠️ Il y a une erreur de classement. Revérifie la nature de chaque poste.";
+                msg.className = "feedback-msg incorrect";
+                return;
+            }
+
+            let userVal = parseInt(input.value);
+            if (isNaN(userVal)) {
+                msg.innerHTML = "Écris le total dans la case.";
+                msg.className = "feedback-msg";
+                return;
+            }
+
+            if (userVal === sumItems) {
+                msg.innerHTML = "✅ Bravo ! C'est juste.";
+                msg.className = "feedback-msg correct";
+                input.style.borderColor = "#28a745";
+                input.style.backgroundColor = "#e8f5e9";
+                input.disabled = true; 
+                
+                if (globalCatName === 'recette') {
+                    document.getElementById('final-recettes').value = userVal;
+                } else if (globalCatName === 'epargne') {
+                    document.getElementById('final-epargne').value = userVal;
+                }
+            } else {
+                msg.innerHTML = "❌ Le calcul est faux. Réessaie. Le total devrait être : " + sumItems + " €";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+
+        function verifierBilanNabila() {
+            const r = parseInt(document.getElementById('final-recettes').value) || 0;
+            const e = parseInt(document.getElementById('final-epargne').value) || 0;
+            
+            const dFixe = parseInt(document.getElementById('input-fixes').value) || 0;
+            const dCourante = parseInt(document.getElementById('input-courantes').value) || 0;
+            const dOccas = parseInt(document.getElementById('input-occas').value) || 0;
+            
+            const totalDepensesCalcule = dFixe + dCourante + dOccas;
+
+            const dFinalInput = parseInt(document.getElementById('final-depenses').value) || 0;
+            const s = parseInt(document.getElementById('final-solde').value);
+            const msg = document.getElementById('msg-bilan');
+
+            // 1. Vérifier si les 5 totaux intermédiaires ont été validés
+            if (document.getElementById('input-recettes').disabled === false || 
+                document.getElementById('input-fixes').disabled === false ||
+                document.getElementById('input-courantes').disabled === false ||
+                document.getElementById('input-occas').disabled === false ||
+                document.getElementById('input-epargne').disabled === false) {
+                
+                msg.innerHTML = "⚠️ Valide d'abord les 5 totaux de colonnes (Recettes, DF, DC, DO, Épargne).";
+                msg.className = "feedback-msg incorrect";
+                return;
+            }
+
+            let errors = [];
+
+            // 2. Vérification des totaux reportés
+            if (r !== totalRecettesReelles) errors.push("Total Recettes reporté incorrect. (" + totalRecettesReelles + " €)");
+            if (e !== totalEpargneReelle) errors.push("Total Épargne reporté incorrect. (" + totalEpargneReelle + " €)");
+            if (dFinalInput !== totalDepensesCalcule || dFinalInput !== totalDepensesReelles) errors.push("Total Dépenses (DF+DC+DO) reporté incorrect. (" + totalDepensesReelles + " €)");
+
+            if (errors.length > 0) {
+                msg.innerHTML = "❌ " + errors.join(" ");
+                msg.className = "feedback-msg incorrect";
+                return;
+            }
+
+            // 3. Vérification du solde final : R - D - E
+            const soldeAttendu = r - dFinalInput - e;
+            
+            if (s === soldeAttendu) {
+                msg.innerHTML = "✅ Excellent ! Le solde restant (capacité d'épargne) est de " + soldeReelFinal + " €.";
+                msg.className = "feedback-msg correct";
+                document.getElementById('budget-status').style.opacity = "1";
+                document.getElementById('budget-status').style.pointerEvents = "auto";
+                document.getElementById('btn-conclusion').style.display = "inline-block";
+            } else {
+                msg.innerHTML = "⚠️ Solde faux. Fais : Recettes - Dépenses - Épargne. (Résultat attendu : " + soldeReelFinal + " €)";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+
+        function verifierConclusionNabila() {
+            const radios = document.getElementsByName('budget');
+            let selected;
+            for(let radio of radios) { if(radio.checked) selected = radio.value; }
+            
+            const msg = document.getElementById('msg-conclusion');
+
+            let correctStatus = "";
+            if (soldeReelFinal > 0) correctStatus = "excédentaire";
+            else if (soldeReelFinal < 0) correctStatus = "déficitaire";
+            else correctStatus = "équilibré";
+
+            if (selected === correctStatus) {
+                msg.innerHTML = "🎉 BRAVO ! Nabila a une excellente gestion prévisionnelle de son budget !";
+                msg.className = "feedback-msg correct";
+                msg.style.fontSize = "1.3rem";
+                document.body.style.backgroundColor = "#e8f5e9";
+            } else {
+                msg.innerHTML = "Non. Le solde lissé est de " + soldeReelFinal + " €. Quel est le statut ?";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+
+        // --- AUDIO GESTION (Play/Stop & Clean Text) ---
+        let isSpeaking = false;
+        
+        function toggleAudio() {
+            const btn = document.getElementById('main-audio-btn');
+            
+            if (isSpeaking) {
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
+                btn.classList.remove('playing');
+                btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
+            } else {
+                let text = document.getElementById('text-content').innerText;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.9;
+                
+                utterance.onend = function() {
+                    isSpeaking = false;
+                    btn.classList.remove('playing');
+                    btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
+                };
+
+                window.speechSynthesis.speak(utterance);
+                isSpeaking = true;
+                btn.classList.add('playing');
+                btn.innerHTML = '<span>⏹️ Arrêter</span>';
+            }
+        }
+    </script>
+</body>
+</html>
