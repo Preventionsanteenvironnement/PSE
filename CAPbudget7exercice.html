@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Budget d'Alexis - Simulation d'Investissement</title>
+    <style>
+        /* Styles de base conservés, ajustements pour le nouveau tableau */
+        :root {
+            --recettes-color: #d4edda;
+            --recettes-border: #28a745;
+            --dette-color: #fce4ec; 
+            --dette-border: #e91e63;
+            --fixe-color: #cce5ff;
+            --fixe-border: #007bff;
+            --courant-color: #fff3cd;
+            --courant-border: #ffc107;
+            --occas-color: #f8d7da;
+            --occas-border: #dc3545;
+            --epargne-color: #e6e0ff;
+            --epargne-border: #6f42c1;
+            --projet-color: #f2e6ff; /* Couleur pour la zone Projet */
+            --projet-border: #9b59b6;
+            
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+
+        .context-box {
+            background: #eaf7ff; 
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 1.15rem;
+            position: relative;
+            border: 3px solid var(--fixe-border);
+        }
+
+        .context-box h2 {
+            color: var(--fixe-border);
+            margin-top: 0;
+            border-bottom: 1px dashed var(--fixe-border);
+            padding-bottom: 10px;
+        }
+
+        #item-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 80px;
+            width: 100%;
+            max-width: 1300px;
+            margin-bottom: 20px;
+            border: 2px dashed #ccc;
+        }
+
+        .draggable-item {
+            padding: 10px 20px;
+            background-color: white;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Le Tableau - 6 colonnes */
+        .budget-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 8px;
+            width: 100%;
+            max-width: 1300px;
+        }
+        
+        .column {
+            background: white;
+            border-radius: 10px;
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+            border-top: 6px solid #ccc;
+        }
+
+        /* Styles de colonnes spécifiques (identique) */
+        #col-recettes { border-top-color: var(--recettes-border); }
+        #col-dettes { border-top-color: var(--dette-border); }
+        #col-fixes { border-top-color: var(--fixe-border); }
+        #col-courantes { border-top-color: var(--courant-border); }
+        #col-occas { border-top-color: var(--occas-border); }
+        #col-epargne { border-top-color: var(--epargne-border); }
+        
+        .calc-zone {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #eee;
+            text-align: center;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            font-size: 1rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            text-align: right;
+            margin-bottom: 5px;
+        }
+
+        .verify-btn {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        
+        .feedback-msg {
+            display: block;
+            font-size: 0.95rem;
+            margin-top: 8px;
+            font-weight: bold;
+            min-height: 1.2em;
+        }
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+
+        /* Zone de simulation */
+        .simulation-zone {
+            margin-top: 40px;
+            background: var(--projet-color);
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            border-left: 10px solid var(--projet-border);
+        }
+
+        .simulation-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        .simulation-row.future {
+             font-weight: bold;
+             color: #007bff;
+        }
+        .simulation-row.advice {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: var(--dette-border);
+        }
+
+        .advice-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        .advice-options label {
+            cursor: pointer;
+            padding: 10px 15px;
+            background: #fff;
+            border-radius: 50px;
+            border: 2px solid transparent;
+            transition: 0.3s;
+        }
+        .advice-options label:has(input:checked) {
+            border-color: var(--projet-border);
+            background-color: #f0eaff;
+            font-weight: bold;
+        }
+        .advice-options input { display: none; }
+
+
+        /* Ajustements Responsive */
+        @media (max-width: 1300px) {
+            .budget-container { grid-template-columns: repeat(3, 1fr); } 
+        }
+        @media (max-width: 900px) {
+            .budget-container { grid-template-columns: 1fr 1fr; } 
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>🏡 Le Budget d'Alexis - Simuler l'Achat Immobilier</h1>
+
+    <div class="context-box">
+        <h2>OBJECTIF : Analyser l'impact d'un prêt immobilier sur le budget</h2>
+        <p>Alexis veut acheter un appartement. Il doit évaluer si son budget actuel lui permet d'assumer la nouvelle charge sans se mettre en danger. Vous devez d'abord classer son budget actuel, puis faire la simulation.</p>
+        
+        <div id="text-content">
+            Alexis, développeur, a un **salaire de 2 800 €**. Il reçoit **300 €** de revenus locatifs d'un petit garage qu'il possède (Recette Autre).<br>
+            
+            Budget actuel (mensuel) :
+            * Il rembourse un **crédit auto (250 €)**. Il paie son **loyer actuel (900 €)**.<br>
+            * Autres charges fixes : Assurance (70 €), Abonnements (40 €).<br>
+            * Dépenses courantes : Courses (400 €), Transport (80 €).<br>
+            * Dépenses occasionnelles : Loisirs (100 €), Habillement (50 €).<br>
+            * Il épargne **300 €** sur son Livret A.
+            <hr>
+            **PROJET IMMOBILIER :**
+            * Il prévoit une mensualité de **prêt immobilier de 1 300 €**.
+            * Les charges de copropriété futures (fixes) seront de **120 €**.
+            * Il arrêtera de payer son loyer actuel (900 €).
+        </div>
+    </div>
+
+    <div style="width:100%; max-width:1300px; text-align:left; margin-bottom:5px; font-size:1.1rem;">
+        <strong>1. Classez le budget actuel d'Alexis (avant projet) :</strong>
+    </div>
+    
+    <div id="item-bank" ondrop="drop(event)" ondragover="allowDrop(event)">
+    </div>
+
+    <div class="budget-container">
+        <div class="column" id="col-recettes"><h3>Recettes</h3><div class="recette-sub-zones"><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-travail"><h4>Travail (S)</h4></div><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-social"><h4>Social</h4></div><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-autre"><h4>Patrimoine</h4></div></div>
+            <div class="calc-zone"><label>Total R : </label><input type="number" id="input-recettes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('recette', 'input-recettes', 'msg-recettes')">Vérifier</button><span id="msg-recettes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-dettes"><h3>Dette/Prêt</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="dette"></div>
+            <div class="calc-zone"><label>Total Dt : </label><input type="number" id="input-dettes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('dette', 'input-dettes', 'msg-dettes')">Vérifier</button><span id="msg-dettes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-fixes"><h3>Dépenses Fixes</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="fixe"></div>
+            <div class="calc-zone"><label>Total DF : </label><input type="number" id="input-fixes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('fixe', 'input-fixes', 'msg-fixes')">Vérifier</button><span id="msg-fixes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-courantes"><h3>Dépenses Courantes</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="courante"></div>
+            <div class="calc-zone"><label>Total DC : </label><input type="number" id="input-courantes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('courante', 'input-courantes', 'msg-courantes')">Vérifier</button><span id="msg-courantes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-occas"><h3>Dépenses Occas.</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="occas"></div>
+            <div class="calc-zone"><label>Total DO : </label><input type="number" id="input-occas" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('occas', 'input-occas', 'msg-occas')">Vérifier</button><span id="msg-occas" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-epargne"><h3>Épargne/Trans.</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="epargne"></div>
+            <div class="calc-zone"><label>Total E : </label><input type="number" id="input-epargne" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('epargne', 'input-epargne', 'msg-epargne')">Vérifier</button><span id="msg-epargne" class="feedback-msg"></span></div>
+        </div>
+    </div>
+
+    <div class="simulation-zone">
+        <h2>2. Simulation Post-Projet</h2>
+        
+        <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 20px;">
+            Totaux actuels : R = <span id="sim-r">...</span> € | Dt = <span id="sim-dt">...</span> € | DF = <span id="sim-df">...</span> €
+        </div>
+
+        <div class="simulation-row future">
+            <span>A. Nouvelle Charge de Dette (Crédit Auto + Crédit Immo) :</span>
+            <input type="number" id="sim-new-dette" placeholder="?" value="1550" readonly style="background:#ddd;"> €
+        </div>
+        <div class="simulation-row future">
+            <span>B. Nouvelle Charge Fixe (Charges Copro + Assurances + Abonnements) :</span>
+            <input type="number" id="sim-new-fixe" placeholder="?" value="230" readonly style="background:#ddd;"> €
+        </div>
+        <hr>
+        <div class="simulation-row">
+            <span>C. Taux d'Endettement Actuel (Dt / R) :</span>
+            <input type="number" id="sim-te-actuel" placeholder="?" style="width: 70px;"> %
+        </div>
+        <div class="simulation-row future">
+            <span>D. Taux d'Endettement **FUTUR** (A / R) :</span>
+            <input type="number" id="sim-te-futur" placeholder="?" style="width: 70px;"> %
+        </div>
+        <div class="simulation-row future">
+            <span>E. Reste à Vivre Futur (R - A - B) :</span>
+            <input type="number" id="sim-rav-futur" placeholder="?" style="width: 100px;"> €
+        </div>
+        <div class="simulation-row">
+            <span>F. Total des Dépenses Variables (Courantes + Occasionnelles) :</span>
+            <input type="number" id="sim-dep-variable" placeholder="?" style="width: 100px;"> €
+        </div>
+        <hr>
+        <div class="simulation-row advice">
+            <span>G. Marge de Manœuvre Future (E - F) :</span>
+            <input type="number" id="sim-marge-manoeuvre-future" placeholder="?" style="width: 100px;"> €
+        </div>
+        
+        <div style="text-align: center; margin-top:20px;">
+             <button class="verify-btn" onclick="verifierSimulation()" style="font-size:1.1rem; padding: 10px 20px;">Vérifier la Simulation</button>
+             <div id="msg-simulation" class="feedback-msg" style="font-size:1.1rem; margin-top:10px;"></div>
+        </div>
+        
+        <div class="advice-options" id="final-advice" style="opacity: 0.3; pointer-events: none;">
+            <p style="width:100%; text-align:center; margin-bottom:10px; font-weight:bold;">Conclusion : Quel conseil donner à Alexis ?</p>
+            <label>
+                <input type="radio" name="advice" value="go">
+                <span>✅ Aller de l'avant, c'est viable.</span>
+            </label>
+            <label>
+                <input type="radio" name="advice" value="caution">
+                <span>⚠️ Faisable, mais attention aux dépenses variables.</span>
+            </label>
+            <label>
+                <input type="radio" name="advice" value="stop">
+                <span>❌ Projet impossible, Taux d'endettement trop haut.</span>
+            </label>
+        </div>
+
+        <div style="text-align: center; margin-top:20px;">
+            <button class="verify-btn" onclick="verifierConclusionAlexis()" id="btn-conclusion" style="display:none; padding:10px 25px;">Valider le Conseil</button>
+             <div id="msg-conclusion" class="feedback-msg"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DONNÉES D'ALEXIS ---
+        const items = [
+            // Recettes
+            { id: 1, name: "Salaire", val: 2800, cat: "recette-travail", globalCat: "recette" },
+            { id: 2, name: "Revenus Locatifs (Garage)", val: 300, cat: "recette-autre", globalCat: "recette" },
+            
+            // Dettes/Prêts
+            { id: 3, name: "Crédit Auto (remboursement)", val: 250, cat: "dette", globalCat: "depense" },
+            
+            // Dépenses Fixes (Loyer inclus, qui disparaîtra)
+            { id: 4, name: "Loyer actuel", val: 900, cat: "fixe", globalCat: "depense" },
+            { id: 5, name: "Assurance", val: 70, cat: "fixe", globalCat: "depense" },
+            { id: 6, name: "Abonnements", val: 40, cat: "fixe", globalCat: "depense" },
+            
+            // Dépenses Courantes
+            { id: 7, name: "Courses", val: 400, cat: "courante", globalCat: "depense" },
+            { id: 8, name: "Transport", val: 80, cat: "courante", globalCat: "depense" },
+            
+            // Dépenses Occasionnelles
+            { id: 9, name: "Loisirs", val: 100, cat: "occas", globalCat: "depense" },
+            { id: 10, name: "Habillement", val: 50, cat: "occas", globalCat: "depense" },
+            
+            // Épargne / Transfert
+            { id: 11, name: "Épargne Livret A", val: 300, cat: "epargne", globalCat: "epargne" }
+        ];
+
+        // --- CALCULS ACTUELS (Avant projet) ---
+        const R_ACTUEL = 2800 + 300; // 3100
+        const Dt_ACTUEL = 250; // 250
+        const DF_ACTUEL = 900 + 70 + 40; // 1010
+        const DC_ACTUEL = 400 + 80; // 480
+        const DO_ACTUEL = 100 + 50; // 150
+        const E_ACTUEL = 300; // 300
+
+        // --- CALCULS FUTURS (Après projet) ---
+        // Nouvelle dette = Crédit Auto (250) + Crédit Immo (1300) = 1550
+        const Dt_FUTUR = 1550;
+        // Nouvelles charges fixes = Assurances/Abonnements (70+40) + Charges Copro (120) = 230
+        const DF_FUTUR = 230;
+        
+        // Indicateurs clés pour la simulation
+        const TE_ACTUEL = (Dt_ACTUEL / R_ACTUEL) * 100; // 250 / 3100 * 100 = 8.06%
+        const TE_FUTUR = (Dt_FUTUR / R_ACTUEL) * 100; // 1550 / 3100 * 100 = 50.0%
+
+        const RAV_FUTUR = R_ACTUEL - Dt_FUTUR - DF_FUTUR; // 3100 - 1550 - 230 = 1320
+        const DEPENSES_VARIABLES = DC_ACTUEL + DO_ACTUEL; // 480 + 150 = 630
+        const MARGE_FUTURE = RAV_FUTUR - DEPENSES_VARIABLES; // 1320 - 630 = 690 (Avant épargne)
+
+
+        // --- LOGIQUE GÉNÉRALE (Recyclage des fonctions précédentes) ---
+        
+        const bank = document.getElementById("item-bank");
+        items.sort(() => Math.random() - 0.5); 
+
+        items.forEach(item => {
+            let el = document.createElement("div");
+            el.classList.add("draggable-item");
+            el.setAttribute("draggable", "true");
+            el.setAttribute("id", "item-" + item.id);
+            el.setAttribute("data-val", item.val);
+            el.setAttribute("data-cat", item.cat); 
+            el.setAttribute("data-global-cat", item.globalCat); 
+            el.innerText = `${item.name} (${item.val} €)`;
+            
+            el.addEventListener("dragstart", drag);
+            el.addEventListener("click", function() { selectItem(el); });
+            bank.appendChild(el);
+        });
+        let selectedItem = null;
+        function selectItem(el) {
+            if(selectedItem) { selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; }
+            if (selectedItem === el) { selectedItem = null; return; }
+            selectedItem = el;
+            el.style.backgroundColor = "#e2e6ea"; el.style.borderColor = "#007bff";
+        }
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add("drag-over"); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); selectItem(ev.target); }
+        function drop(ev) {
+            ev.preventDefault();
+            document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(z => z.classList.remove('drag-over'));
+            let data = ev.dataTransfer ? ev.dataTransfer.getData("text") : null;
+            let draggedElement;
+            if (data) draggedElement = document.getElementById(data);
+            else if (selectedItem) draggedElement = selectedItem;
+            else return;
+            let target = ev.target;
+            while (!target.classList.contains("drop-zone") && !target.classList.contains("sub-zone") && target.id !== "item-bank" && target.tagName !== "BODY") { target = target.parentElement; }
+            if (target.classList.contains("drop-zone") || target.classList.contains("sub-zone") || target.id === "item-bank") { target.appendChild(draggedElement); }
+            if(selectedItem) { selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; selectedItem = null; }
+        }
+        document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(zone => {
+            zone.addEventListener('click', function(e) {
+                if (selectedItem && e.target !== selectedItem && !e.target.closest('.draggable-item')) {
+                    zone.appendChild(selectedItem);
+                    selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; selectedItem = null;
+                }
+            });
+            zone.addEventListener('dragleave', function() { zone.classList.remove("drag-over"); });
+        });
+
+        function verifierColonneGlobale(globalCatName, inputId, msgId) {
+            let totalReelAttendu = 0;
+            if (globalCatName === 'recette') totalReelAttendu = R_ACTUEL;
+            else if (globalCatName === 'dette') totalReelAttendu = Dt_ACTUEL;
+            else if (globalCatName === 'fixe') totalReelAttendu = DF_ACTUEL;
+            else if (globalCatName === 'courante') totalReelAttendu = DC_ACTUEL;
+            else if (globalCatName === 'occas') totalReelAttendu = DO_ACTUEL;
+            else if (globalCatName === 'epargne') totalReelAttendu = E_ACTUEL;
+
+            const input = document.getElementById(inputId);
+            const msg = document.getElementById(msgId);
+            const userVal = parseInt(input.value);
+
+            if (userVal === totalReelAttendu) {
+                msg.innerHTML = "✅ Total actuel correct.";
+                msg.className = "feedback-msg correct";
+                input.style.borderColor = "#28a745";
+                input.disabled = true; 
+                
+                // Mise à jour des totaux dans la simulation
+                if (globalCatName === 'recette') document.getElementById('sim-r').innerText = R_ACTUEL;
+                if (globalCatName === 'dette') document.getElementById('sim-dt').innerText = Dt_ACTUEL;
+                if (globalCatName === 'fixe') document.getElementById('sim-df').innerText = DF_ACTUEL;
+                
+            } else {
+                msg.innerHTML = "❌ Le calcul est faux. Revoyez votre addition. (Attendu : " + totalReelAttendu + " €)";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+        
+        // --- LOGIQUE DE SIMULATION ---
+
+        function verifierSimulation() {
+            // Vérification préliminaire
+            if (document.getElementById('input-recettes').disabled === false || 
+                document.getElementById('input-dettes').disabled === false ||
+                document.getElementById('input-fixes').disabled === false ||
+                document.getElementById('input-courantes').disabled === false ||
+                document.getElementById('input-occas').disabled === false) {
+                
+                document.getElementById('msg-simulation').innerHTML = "⚠️ Validez d'abord les totaux de Recettes, Dettes, Fixes, Courantes et Occasionnelles.";
+                document.getElementById('msg-simulation').className = "feedback-msg incorrect";
+                return;
+            }
+
+            const inputTEActuel = parseFloat(document.getElementById('sim-te-actuel').value);
+            const inputTEFutur = parseFloat(document.getElementById('sim-te-futur').value);
+            const inputRAVFutur = parseInt(document.getElementById('sim-rav-futur').value);
+            const inputDepVar = parseInt(document.getElementById('sim-dep-variable').value);
+            const inputMargeFuture = parseInt(document.getElementById('sim-marge-manoeuvre-future').value);
+            const msg = document.getElementById('msg-simulation');
+
+            let errors = [];
+
+            // 1. Taux d'endettement actuel
+            if (Math.abs(inputTEActuel - TE_ACTUEL) > 0.1) {
+                errors.push("TE Actuel faux. (Attendu : " + TE_ACTUEL.toFixed(2) + "%)");
+            }
+            
+            // 2. Taux d'endettement futur
+            if (Math.abs(inputTEFutur - TE_FUTUR) > 0.1) {
+                errors.push("TE Futur faux. (Attendu : " + TE_FUTUR.toFixed(2) + "%)");
+            }
+
+            // 3. Reste à vivre futur
+            if (inputRAVFutur !== RAV_FUTUR) {
+                errors.push("RAV Futur faux. (Attendu : " + RAV_FUTUR + " €)");
+            }
+
+            // 4. Dépenses variables
+            if (inputDepVar !== DEPENSES_VARIABLES) {
+                 errors.push("Dépenses Variables fausses. (Attendu : " + DEPENSES_VARIABLES + " €)");
+            }
+            
+            // 5. Marge de manœuvre future (RAV - Dépenses Variables)
+            if (inputMargeFuture !== MARGE_FUTURE) {
+                errors.push("Marge de Manœuvre Future fausse. (Attendu : " + MARGE_FUTURE + " €)");
+            }
+            
+            if (errors.length > 0) {
+                msg.innerHTML = "❌ " + errors.join(" ");
+                msg.className = "feedback-msg incorrect";
+                return;
+            }
+            
+            // Succès
+            msg.innerHTML = "✅ Simulation complète et correcte. Le bilan est prêt !";
+            msg.className = "feedback-msg correct";
+            document.getElementById('final-advice').style.opacity = "1";
+            document.getElementById('final-advice').style.pointerEvents = "auto";
+            document.getElementById('btn-conclusion').style.display = "inline-block";
+        }
+
+        function verifierConclusionAlexis() {
+            const radios = document.getElementsByName('advice');
+            let selected;
+            for(let radio of radios) { if(radio.checked) selected = radio.value; }
+            
+            const msg = document.getElementById('msg-conclusion');
+
+            // Le taux d'endettement futur est de 50%, ce qui est largement au-dessus du seuil de 35%
+            // Cependant, la marge de manœuvre est très haute (690€ avant épargne, et si on soustrait l'épargne: 690-300 = 390€ de solde final).
+            // Le banquier dira STOP à cause des 50%, mais l'analyse montre que le budget est techniquement viable après projet.
+            // Le conseil le plus juste est de dire attention, mais faisable.
+            
+            const correctStatus = "caution";
+            
+            if (selected === correctStatus) {
+                msg.innerHTML = "🎉 Excellent Conseil ! Le taux d'endettement de 50% est bloquant pour la banque (seuil à 35%), mais avec une marge de manœuvre de " + MARGE_FUTURE + "€ (soit " + (MARGE_FUTURE - E_ACTUEL) + "€ restant après épargne), Alexis a en réalité une grande flexibilité. Il devrait d'abord chercher un prêt moins élevé ou augmenter son apport.";
+                msg.className = "feedback-msg correct";
+                msg.style.fontSize = "1.3rem";
+                document.body.style.backgroundColor = "#e7f1ff"; // Bleu clair de validation
+            } else {
+                msg.innerHTML = "Non. Regardez les deux indicateurs : Le TE est mauvais (50%), mais la Marge de Manœuvre est très bonne (" + MARGE_FUTURE + "€). Quel est le juste milieu ?";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+
+        // --- AUDIO GESTION (Play/Stop & Clean Text) ---
+        let isSpeaking = false;
+        
+        function toggleAudio() {
+            const btn = document.getElementById('main-audio-btn');
+            
+            if (isSpeaking) {
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
+                btn.classList.remove('playing');
+                btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
+            } else {
+                let text = document.getElementById('text-content').innerText;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.9;
+                
+                utterance.onend = function() {
+                    isSpeaking = false;
+                    btn.classList.remove('playing');
+                    btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
+                };
+
+                window.speechSynthesis.speak(utterance);
+                isSpeaking = true;
+                btn.classList.add('playing');
+                btn.innerHTML = '<span>⏹️ Arrêter</span>';
+            }
+        }
+    </script>
+</body>
+</html>

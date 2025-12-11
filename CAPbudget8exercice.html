@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Budget de Jalil - Plaisir et Priorité</title>
+    <style>
+        /* Styles de base conservés, ajout d'une couleur pour le Désir */
+        :root {
+            --recettes-color: #d4edda;
+            --recettes-border: #28a745;
+            --dette-color: #fce4ec; 
+            --dette-border: #e91e63;
+            --fixe-color: #cce5ff;
+            --fixe-border: #007bff;
+            --courant-color: #fff3cd;
+            --courant-border: #ffc107;
+            --plaisir-color: #e0f7fa; /* Bleu clair pour Plaisir/Désir */
+            --plaisir-border: #00bcd4;
+            --epargne-color: #e6e0ff;
+            --epargne-border: #6f42c1;
+            
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+
+        .context-box {
+            background: #f0fff0; /* Vert clair pour le contexte */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 1.15rem;
+            position: relative;
+            border: 3px solid var(--recettes-border);
+        }
+
+        .context-box h2 {
+            color: var(--recettes-border);
+            margin-top: 0;
+            border-bottom: 1px dashed var(--recettes-border);
+            padding-bottom: 10px;
+        }
+
+        #item-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 80px;
+            width: 100%;
+            max-width: 1300px;
+            margin-bottom: 20px;
+            border: 2px dashed #ccc;
+        }
+
+        .draggable-item {
+            padding: 10px 20px;
+            background-color: white;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Le Tableau - 6 colonnes */
+        .budget-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 8px;
+            width: 100%;
+            max-width: 1300px;
+        }
+
+        .column {
+            background: white;
+            border-radius: 10px;
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+            border-top: 6px solid #ccc;
+        }
+        
+        /* Colonnes spécifiques */
+        #col-dettes { border-top-color: var(--dette-border); }
+        #col-fixes { border-top-color: var(--fixe-border); }
+        #col-courantes { border-top-color: var(--courant-border); }
+        #col-plaisir { border-top-color: var(--plaisir-border); } /* Nouvelle colonne Plaisir */
+        #col-plaisir .drop-zone { background-color: var(--plaisir-color); }
+        #col-epargne { border-top-color: var(--epargne-border); }
+        
+        .calc-zone {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #eee;
+            text-align: center;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            font-size: 1rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            text-align: right;
+            margin-bottom: 5px;
+        }
+
+        .verify-btn {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        
+        .feedback-msg {
+            display: block;
+            font-size: 0.95rem;
+            margin-top: 8px;
+            font-weight: bold;
+            min-height: 1.2em;
+        }
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+
+        /* Zone de Bilan (Coût des Choix) */
+        .simulation-zone {
+            margin-top: 40px;
+            background: #fff8e1; /* Jaune pâle pour l'analyse des choix */
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            border-left: 10px solid var(--courant-border);
+        }
+
+        .simulation-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        .simulation-row.final-status {
+             font-weight: bold;
+             font-size: 1.4rem;
+             color: #dc3545; /* Rouge d'alerte */
+        }
+        
+        .advice-options {
+            margin-top: 25px;
+            text-align: center;
+        }
+        
+        /* Ajustements Responsive */
+        @media (max-width: 1300px) {
+            .budget-container { grid-template-columns: repeat(3, 1fr); } 
+        }
+        @media (max-width: 900px) {
+            .budget-container { grid-template-columns: 1fr 1fr; } 
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>👟 Le Budget de Jalil - Plaisir vs. Sécurité</h1>
+
+    <div class="context-box">
+        <h2>OBJECTIF : Analyser l'impact des "achats de plaisir" sur le fonds de sécurité.</h2>
+        <p>Jalil, en contrat d'alternance, doit équilibrer ses dépenses fixes et courantes avec ses envies, notamment ses marques préférées. Il doit estimer si ses achats compromettent son budget.</p>
+        
+        <div id="text-content">
+            Jalil touche un **salaire net de 1 250 €**. Il reçoit aussi une **aide au logement (APL) de 150 €**.<br>
+            
+            Ses charges régulières : Loyer (450 €), Forfait Téléphone/Internet (50 €), Remboursement d'un **micro-crédit pour une trottinette (50 €)**.<br>
+            
+            Ses dépenses courantes : Carte de transport (45 €), Courses alimentaires (220 €), Frais d'énergie (60 €).<br><br>
+            
+            Ce mois-ci, il a eu deux grosses envies (à classer dans **Plaisir/Désir Social**) :
+            * Une paire de **baskets 'Nike Air' (150 €)**.
+            * Un **polo 'Lacoste' (80 €)**.<br>
+            
+            Il a aussi dépensé pour des sorties (restaurant, cinéma) : **40 €**.<br>
+            
+            Il essaie d'économiser **100 €** chaque mois pour créer un "Fonds de Sécurité" en cas d'imprévu.
+        </div>
+    </div>
+
+    <div style="width:100%; max-width:1300px; text-align:left; margin-bottom:5px; font-size:1.1rem;">
+        <strong>1. Classez les postes. Attention : les dépenses de "Plaisir" (marques, sorties, etc.) sont distinctes.</strong>
+    </div>
+    
+    <div id="item-bank" ondrop="drop(event)" ondragover="allowDrop(event)">
+    </div>
+
+    <div class="budget-container">
+        <div class="column" id="col-recettes"><h3>Recettes</h3><div class="recette-sub-zones"><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-travail"><h4>Travail (S)</h4></div><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-social"><h4>Social (APL)</h4></div><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-autre"><h4>Autre</h4></div></div>
+            <div class="calc-zone"><label>Total R : </label><input type="number" id="input-recettes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('recette', 'input-recettes', 'msg-recettes')">Vérifier</button><span id="msg-recettes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-dettes"><h3>Dette/Prêt</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="dette"></div>
+            <div class="calc-zone"><label>Total Dt : </label><input type="number" id="input-dettes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('dette', 'input-dettes', 'msg-dettes')">Vérifier</button><span id="msg-dettes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-fixes"><h3>Dépenses Fixes</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="fixe"></div>
+            <div class="calc-zone"><label>Total DF : </label><input type="number" id="input-fixes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('fixe', 'input-fixes', 'msg-fixes')">Vérifier</button><span id="msg-fixes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-courantes"><h3>Dépenses Courantes</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="courante"></div>
+            <div class="calc-zone"><label>Total DC : </label><input type="number" id="input-courantes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('courante', 'input-courantes', 'msg-courantes')">Vérifier</button><span id="msg-courantes" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-plaisir"><h3>Plaisir/Désir Social</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="plaisir"></div>
+            <div class="calc-zone"><label>Total P : </label><input type="number" id="input-plaisir" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('plaisir', 'input-plaisir', 'msg-plaisir')">Vérifier</button><span id="msg-plaisir" class="feedback-msg"></span></div>
+        </div>
+        <div class="column" id="col-epargne"><h3>Objectif Épargne</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="epargne"></div>
+            <div class="calc-zone"><label>Total E : </label><input type="number" id="input-epargne" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('epargne', 'input-epargne', 'msg-epargne')">Vérifier</button><span id="msg-epargne" class="feedback-msg"></span></div>
+        </div>
+    </div>
+
+    <div class="simulation-zone">
+        <h2>2. Coût Réel des Choix</h2>
+        
+        <div class="simulation-row">
+            <span>A. Total Recettes :</span>
+            <input type="number" id="sim-r" placeholder="..."> €
+        </div>
+        <div class="simulation-row">
+            <span>B. Total Charges Obligatoires (Dt + DF + DC) :</span>
+            <input type="number" id="sim-charges-obl" placeholder="..."> €
+        </div>
+        <div class="simulation-row">
+            <span>C. Total Plaisir/Désir Social (P) :</span>
+            <input type="number" id="sim-plaisir" placeholder="..."> €
+        </div>
+        <hr>
+        <div class="simulation-row">
+            <span>D. Argent Restant pour l'Épargne (A - B - C) :</span>
+            <input type="number" id="sim-restant" placeholder="..."> €
+        </div>
+        <div class="simulation-row">
+            <span>E. Objectif Épargne Sécurité :</span>
+            <input type="number" id="sim-objectif-epargne" placeholder="100" value="100" readonly style="background:#ddd;"> €
+        </div>
+        <hr>
+        <div class="simulation-row final-status">
+            <span>F. Solde Final / Fonds de Sécurité Réel (D - E) :</span>
+            <input type="number" id="sim-solde-final" placeholder="..."> €
+        </div>
+        
+        <div style="text-align: center; margin-top:20px;">
+             <button class="verify-btn" onclick="verifierSimulationJalil()" style="font-size:1.1rem; padding: 10px 20px;">Vérifier l'Impact</button>
+             <div id="msg-simulation" class="feedback-msg" style="font-size:1.1rem; margin-top:10px;"></div>
+        </div>
+        
+        <div class="advice-options" id="final-advice" style="opacity: 0.3; pointer-events: none;">
+            <p style="font-weight:bold;">Conclusion : Quel est le coût des achats de Plaisir ce mois-ci ?</p>
+            <label>
+                <input type="radio" name="advice" value="negatif">
+                <span>❌ Jalil s'est mis en déficit (négatif).</span>
+            </label>
+            <label>
+                <input type="radio" name="advice" value="neutre">
+                <span>⚠️ Jalil a réussi à couvrir ses dépenses, mais n'a pas atteint son objectif d'épargne (négatif).</span>
+            </label>
+            <label>
+                <input type="radio" name="advice" value="positif">
+                <span>✅ Jalil a atteint son objectif d'épargne malgré les plaisirs.</span>
+            </label>
+        </div>
+
+        <div style="text-align: center; margin-top:20px;">
+            <button class="verify-btn" onclick="verifierConclusionJalil()" id="btn-conclusion" style="display:none; padding:10px 25px;">Valider l'Analyse</button>
+             <div id="msg-conclusion" class="feedback-msg"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DONNÉES DE JALIL ---
+        const items = [
+            // Recettes
+            { id: 1, name: "Salaire Net (Alternance)", val: 1250, cat: "recette-travail", globalCat: "recette" },
+            { id: 2, name: "Aide au Logement (APL)", val: 150, cat: "recette-social", globalCat: "recette" },
+            
+            // Dépenses
+            { id: 3, name: "Loyer", val: 450, cat: "fixe", globalCat: "depense" },
+            { id: 4, name: "Forfait Téléphone/Internet", val: 50, cat: "fixe", globalCat: "depense" },
+            { id: 5, name: "Remboursement Micro-crédit", val: 50, cat: "dette", globalCat: "depense" },
+            
+            { id: 6, name: "Carte de Transport (Bus/Métro)", val: 45, cat: "courante", globalCat: "depense" },
+            { id: 7, name: "Courses Alimentaires", val: 220, cat: "courante", globalCat: "depense" },
+            { id: 8, name: "Frais d'Énergie", val: 60, cat: "courante", globalCat: "depense" },
+            
+            // Plaisir/Désir Social (Anciennes Occas.)
+            { id: 9, name: "Baskets Nike Air", val: 150, cat: "plaisir", globalCat: "depense" },
+            { id: 10, name: "Polo Lacoste", val: 80, cat: "plaisir", globalCat: "depense" },
+            { id: 11, name: "Sorties/Cinéma/Resto", val: 40, cat: "plaisir", globalCat: "depense" },
+            
+            // Épargne
+            { id: 12, name: "Objectif Fonds de Sécurité", val: 100, cat: "epargne", globalCat: "epargne" }
+        ];
+
+        // --- CALCULS CLÉS ---
+        const R_TOTAL = 1250 + 150; // 1400
+        const Dt_TOTAL = 50; // Micro-crédit
+        const DF_TOTAL = 450 + 50; // Loyer + Forfait
+        const DC_TOTAL = 45 + 220 + 60; // Transport + Courses + Énergie = 325
+        const P_TOTAL = 150 + 80 + 40; // Marques + Sorties = 270
+        const E_OBJECTIF = 100;
+
+        // Charges Obligatoires (Dt + DF + DC)
+        const CHARGES_OBLIGATOIRES = Dt_TOTAL + DF_TOTAL + DC_TOTAL; // 50 + 500 + 325 = 875
+
+        // Argent restant après charges obligatoires ET plaisir
+        const ARGENT_RESTANT = R_TOTAL - CHARGES_OBLIGATOIRES - P_TOTAL; // 1400 - 875 - 270 = 255
+
+        // Solde Final (Fonds de Sécurité Réel)
+        const SOLDE_FINAL = ARGENT_RESTANT - E_OBJECTIF; // 255 - 100 = 155
+
+
+        // --- LOGIQUE GÉNÉRALE (Recyclage des fonctions précédentes) ---
+        
+        const bank = document.getElementById("item-bank");
+        items.sort(() => Math.random() - 0.5); 
+
+        items.forEach(item => {
+            let el = document.createElement("div");
+            el.classList.add("draggable-item");
+            el.setAttribute("draggable", "true");
+            el.setAttribute("id", "item-" + item.id);
+            el.setAttribute("data-val", item.val);
+            el.setAttribute("data-cat", item.cat); 
+            el.setAttribute("data-global-cat", item.globalCat); 
+            el.innerText = `${item.name} (${item.val} €)`;
+            
+            el.addEventListener("dragstart", drag);
+            el.addEventListener("click", function() { selectItem(el); });
+            bank.appendChild(el);
+        });
+
+        let selectedItem = null;
+        function selectItem(el) {
+            if(selectedItem) { selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; }
+            if (selectedItem === el) { selectedItem = null; return; }
+            selectedItem = el;
+            el.style.backgroundColor = "#e2e6ea"; el.style.borderColor = "#007bff";
+        }
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add("drag-over"); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); selectItem(ev.target); }
+        function drop(ev) {
+            ev.preventDefault();
+            document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(z => z.classList.remove('drag-over'));
+            let data = ev.dataTransfer ? ev.dataTransfer.getData("text") : null;
+            let draggedElement;
+            if (data) draggedElement = document.getElementById(data);
+            else if (selectedItem) draggedElement = selectedItem;
+            else return;
+            let target = ev.target;
+            while (!target.classList.contains("drop-zone") && !target.classList.contains("sub-zone") && target.id !== "item-bank" && target.tagName !== "BODY") { target = target.parentElement; }
+            if (target.classList.contains("drop-zone") || target.classList.contains("sub-zone") || target.id === "item-bank") { target.appendChild(draggedElement); }
+            if(selectedItem) { selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; selectedItem = null; }
+        }
+        document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(zone => {
+            zone.addEventListener('click', function(e) {
+                if (selectedItem && e.target !== selectedItem && !e.target.closest('.draggable-item')) {
+                    zone.appendChild(selectedItem);
+                    selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; selectedItem = null;
+                }
+            });
+            zone.addEventListener('dragleave', function() { zone.classList.remove("drag-over"); });
+        });
+
+        function verifierColonneGlobale(globalCatName, inputId, msgId) {
+            let totalReelAttendu = 0;
+            if (globalCatName === 'recette') totalReelAttendu = R_TOTAL;
+            else if (globalCatName === 'dette') totalReelAttendu = Dt_TOTAL;
+            else if (globalCatName === 'fixe') totalReelAttendu = DF_TOTAL;
+            else if (globalCatName === 'courante') totalReelAttendu = DC_TOTAL;
+            else if (globalCatName === 'plaisir') totalReelAttendu = P_TOTAL;
+            else if (globalCatName === 'epargne') totalReelAttendu = E_OBJECTIF;
+
+            const input = document.getElementById(inputId);
+            const msg = document.getElementById(msgId);
+            const userVal = parseInt(input.value);
+
+            if (userVal === totalReelAttendu) {
+                msg.innerHTML = "✅ Total correct.";
+                msg.className = "feedback-msg correct";
+                input.style.borderColor = "#28a745";
+                input.disabled = true; 
+                
+                // Remplissage des cases du bilan
+                if (globalCatName === 'recette') document.getElementById('sim-r').value = R_TOTAL;
+                if (globalCatName === 'plaisir') document.getElementById('sim-plaisir').value = P_TOTAL;
+
+            } else {
+                msg.innerHTML = "❌ Le calcul est faux. (Attendu : " + totalReelAttendu + " €)";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+        
+        // --- LOGIQUE D'IMPACT / SIMULATION ---
+
+        function verifierSimulationJalil() {
+            // Vérification préliminaire : S'assurer que les totaux obligatoires sont validés
+            if (document.getElementById('input-recettes').disabled === false || 
+                document.getElementById('input-dettes').disabled === false ||
+                document.getElementById('input-fixes').disabled === false ||
+                document.getElementById('input-courantes').disabled === false ||
+                document.getElementById('input-plaisir').disabled === false ||
+                document.getElementById('input-epargne').disabled === false) {
+                
+                document.getElementById('msg-simulation').innerHTML = "⚠️ Validez d'abord TOUS les totaux des 6 colonnes ci-dessus.";
+                document.getElementById('msg-simulation').className = "feedback-msg incorrect";
+                return;
+            }
+
+            const inputChargesObl = parseInt(document.getElementById('sim-charges-obl').value) || 0;
+            const inputRestant = parseInt(document.getElementById('sim-restant').value) || 0;
+            const inputSoldeFinal = parseInt(document.getElementById('sim-solde-final').value) || 0;
+            const msg = document.getElementById('msg-simulation');
+
+            let errors = [];
+
+            // 1. Total Charges Obligatoires (Dt + DF + DC)
+            if (inputChargesObl !== CHARGES_OBLIGATOIRES) {
+                errors.push("B. Total Charges Obligatoires faux. (Dt + DF + DC = " + CHARGES_OBLIGATOIRES + " €)");
+            }
+            
+            // 2. Argent Restant pour l'Épargne (R - B - C)
+            if (inputRestant !== ARGENT_RESTANT) {
+                errors.push("D. Argent Restant faux. (R - B - C = " + ARGENT_RESTANT + " €)");
+            }
+
+            // 3. Solde Final / Fonds de Sécurité Réel (D - E)
+            if (inputSoldeFinal !== SOLDE_FINAL) {
+                errors.push("F. Solde Final/Fonds de Sécurité Réel faux. (D - E = " + SOLDE_FINAL + " €)");
+            }
+            
+            if (errors.length > 0) {
+                msg.innerHTML = "❌ " + errors.join(" ");
+                msg.className = "feedback-msg incorrect";
+                return;
+            }
+            
+            // Succès
+            document.getElementById('sim-charges-obl').value = CHARGES_OBLIGATOIRES;
+            document.getElementById('sim-restant').value = ARGENT_RESTANT;
+            document.getElementById('sim-solde-final').value = SOLDE_FINAL;
+
+            msg.innerHTML = "✅ Analyse correcte. Quel est l'impact de ses achats de Plaisir sur son objectif ?";
+            msg.className = "feedback-msg correct";
+            document.getElementById('final-advice').style.opacity = "1";
+            document.getElementById('final-advice').style.pointerEvents = "auto";
+            document.getElementById('btn-conclusion').style.display = "inline-block";
+        }
+
+        function verifierConclusionJalil() {
+            const radios = document.getElementsByName('advice');
+            let selected;
+            for(let radio of radios) { if(radio.checked) selected = radio.value; }
+            
+            const msg = document.getElementById('msg-conclusion');
+
+            let correctStatus = "";
+            // Le solde final est de 155€ après avoir retiré l'Objectif Épargne (100€).
+            // Cela signifie qu'il a atteint son objectif, et qu'il lui reste même 155€ de marge.
+            if (SOLDE_FINAL < 0) correctStatus = "negatif";
+            else if (SOLDE_FINAL >= 0 && SOLDE_FINAL < E_OBJECTIF) correctStatus = "neutre"; 
+            else correctStatus = "positif"; // Le solde est supérieur à l'objectif (255 > 100), il est positif. (155 > 0)
+            
+            if (selected === correctStatus) {
+                msg.innerHTML = "🎉 BRAVO ! Contrairement aux apparences, les achats de Plaisir sont passés : Jalil a atteint son objectif d'épargne (100 €), et il lui reste même " + SOLDE_FINAL + " € de sécurité. Son budget est bien géré.";
+                msg.className = "feedback-msg correct";
+                msg.style.fontSize = "1.3rem";
+                document.body.style.backgroundColor = "#e6ffe6";
+            } else {
+                msg.innerHTML = "Non. Le Solde Final (F) est de " + SOLDE_FINAL + " €. Comparez ce montant à l'Objectif d'Épargne (E).";
+                msg.className = "feedback-msg incorrect";
+            }
+        }
+
+        // --- AUDIO GESTION (Play/Stop & Clean Text) ---
+        let isSpeaking = false;
+        
+        function toggleAudio() {
+            const btn = document.getElementById('main-audio-btn');
+            
+            if (isSpeaking) {
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
+                btn.classList.remove('playing');
+                btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
+            } else {
+                let text = document.getElementById('text-content').innerText;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.9;
+                
+                utterance.onend = function() {
+                    isSpeaking = false;
+                    btn.classList.remove('playing');
+                    btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
+                };
+
+                window.speechSynthesis.speak(utterance);
+                isSpeaking = true;
+                btn.classList.add('playing');
+                btn.innerHTML = '<span>⏹️ Arrêter</span>';
+            }
+        }
+    </script>
+</body>
+</html>
