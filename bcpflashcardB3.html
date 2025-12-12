@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSE Speed Run - Module B.3 Le Son</title>
+    <style>
+        /* Variables et Reset */
+        :root {
+            --dark-bg: #1e1e1e;
+            --card-bg: #333;
+            --text-color: #f0f0f0;
+            --primary-color: #00bcd4; /* Cyan/Turquoise pour le branding */
+            --success-color: #4caf50; /* Vert pour 'Je savais' */
+            --error-color: #f44336; /* Rouge pour 'Je ne savais pas' */
+            --font-stack: 'Arial', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* En-tête */
+        header {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        /* Statut du Jeu */
+        #game-stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #progress-bar {
+            height: 10px;
+            background-color: #555;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease-in-out;
+        }
+
+        #streak-display {
+            color: var(--success-color);
+            font-size: 1.2em;
+        }
+        
+        /* Conteneur de la Flashcard */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+
+        #flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background-color: var(--card-bg);
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .card-face.back {
+            transform: rotateY(180deg);
+            border-color: var(--success-color);
+        }
+
+        /* Boutons de Réponse */
+        #answer-buttons {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .btn-error {
+            background-color: var(--error-color);
+            color: var(--text-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: var(--text-color);
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* État Fini */
+        #end-screen {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid var(--primary-color);
+        }
+
+        #end-screen h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        #final-score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--success-color);
+            margin-bottom: 30px;
+        }
+        
+        .btn-restart {
+            background-color: var(--primary-color);
+            color: var(--dark-bg);
+        }
+        
+        .btn-error-review {
+            background-color: var(--error-color);
+            color: var(--text-color);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⚡️ PSE Speed Run - Son ⚡️</h1>
+        <p>Module B.3 - Révisions Bac Pro</p>
+    </header>
+
+    <div id="game-stats">
+        <span id="card-counter">0/0</span>
+        <span id="streak-display">Combo: 0</span>
+    </div>
+
+    <div id="progress-bar">
+        <div id="progress-fill"></div>
+    </div>
+
+    <div id="game-screen">
+        <div class="flashcard-container" onclick="flipCard()">
+            <div id="flashcard">
+                <div class="card-face front">
+                    <p id="front-content">Cliquez pour commencer!</p>
+                    <p style="margin-top: 20px; font-size: 0.7em; opacity: 0.7;">(Cliquez sur la carte pour la retourner)</p>
+                </div>
+                <div class="card-face back">
+                    <p id="back-content">...</p>
+                </div>
+            </div>
+        </div>
+    
+        <div id="answer-buttons">
+            <button class="btn btn-error" onclick="handleAnswer(false)">Je ne savais pas</button>
+            <button class="btn btn-success" onclick="handleAnswer(true)">Je savais</button>
+        </div>
+    </div>
+    
+    <div id="end-screen">
+        <h2>FIN DU SPEED RUN !</h2>
+        <p>Votre Score Final :</p>
+        <div id="final-score">0 / 0</div>
+        <p id="final-message"></p>
+        <button class="btn btn-restart" onclick="initGame(false)">Recommencer le Jeu</button>
+        <button id="review-errors-btn" class="btn btn-error-review" onclick="initGame(true)" style="display: none;">Revoir les erreurs (0)</button>
+    </div>
+
+
+    <script>
+        // Le Moteur du Jeu
+        const deck = [
+            { q: "Unité de l'intensité sonore ?", a: "Décibel (dB)", type: "Définition" },
+            { q: "Unité de la fréquence du son ?", a: "Hertz (Hz)", type: "Définition" },
+            { q: "Que détermine l'intensité ?", a: "Son fort ou faible", type: "Définition" },
+            { q: "Que détermine la fréquence ?", a: "Son aigu ou grave", type: "Définition" },
+            { q: "Seuil de nocivité du bruit ?", a: "80 dB(A)", type: "Chiffre Clé" },
+            { q: "Durée max à 80 dB(A) ?", a: "8 heures", type: "Chiffre Clé" },
+            { q: "Parties de l'oreille (3) ?", a: "Externe, moyenne, interne", type: "Règle" },
+            { q: "Le son est une onde qui ?", a: "Vibre l'air", type: "Définition" },
+            { q: "Onde transmise par l'oreille interne ?", a: "Onde nerveuse (influx)", type: "Définition" },
+            { q: "Le son frappe d'abord le…", a: "Tympan", type: "Règle" },
+            { q: "Nom des conséquences non-auditives ?", a: "Effets auditifs (ex: stress)", type: "Définition" },
+            { q: "Nom des conséquences sur l'audition ?", a: "Effets extra-auditifs", type: "Définition" },
+            { q: "La surdité de perception atteint l'...", a: "Oreille interne", type: "Règle" },
+            { q: "La surdité de transmission atteint l'...", a: "Oreille moyenne / externe", type: "Règle" },
+            { q: "Le bruit peut engendrer quel conflit social ?", a: "Conflits de voisinage", type: "Définition" },
+            { q: "Protection collective contre le bruit ?", a: "La réglementation (lois)", type: "Définition" },
+            { q: "Exemple de mesure de prévention individuelle ?", a: "Bouchons d'oreille", type: "Définition" },
+            { q: "C'est une nuisance sonore : Vrai/Faux", a: "Vrai (son gênant, désagréable)", type: "Vrai/Faux" },
+            { q: "Conséquence de bruit sur le sommeil ?", a: "Stress (extra-auditif)", type: "Définition" },
+            { q: "Adopter un comportement civique permet de…", a: "Limiter les nuisances sonores", type: "Règle" },
+            { q: "Que fait l'oreille moyenne ?", a: "Transmet l'onde au tympan", type: "Définition" },
+            { q: "Type d'onde dans l'oreille interne ?", a: "Onde mécanique convertie", type: "Définition" }
+        ];
+
+        let currentDeck = [];
+        let currentIndex = 0;
+        let missedCards = [];
+        let streak = 0;
+        let isFlipped = false;
+        let totalAnswered = 0;
+        let totalCorrect = 0;
+
+        // Références DOM
+        const flashcard = document.getElementById('flashcard');
+        const frontContent = document.getElementById('front-content');
+        const backContent = document.getElementById('back-content');
+        const cardCounter = document.getElementById('card-counter');
+        const progressFill = document.getElementById('progress-fill');
+        const streakDisplay = document.getElementById('streak-display');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const finalScore = document.getElementById('final-score');
+        const reviewErrorsBtn = document.getElementById('review-errors-btn');
+
+        /**
+         * Initialise ou réinitialise le jeu.
+         * @param {boolean} reviewMode - Vrai pour revoir uniquement les erreurs.
+         */
+        function initGame(reviewMode) {
+            // Configuration du deck
+            if (reviewMode && missedCards.length > 0) {
+                currentDeck = missedCards;
+                document.getElementById('final-message').textContent = "Concentrez-vous sur vos points faibles !";
+            } else {
+                // Mélange du deck original pour une nouvelle partie
+                currentDeck = [...deck].sort(() => Math.random() - 0.5);
+            }
+            
+            // Réinitialisation des statistiques
+            currentIndex = 0;
+            missedCards = [];
+            streak = 0;
+            totalAnswered = 0;
+            totalCorrect = 0;
+            isFlipped = false;
+
+            // Affichage
+            gameScreen.style.display = 'block';
+            endScreen.style.display = 'none';
+            flashcard.classList.remove('flipped');
+            loadCard();
+            updateStats();
+        }
+
+        /**
+         * Charge la carte actuelle dans le DOM.
+         */
+        function loadCard() {
+            if (currentIndex < currentDeck.length) {
+                const card = currentDeck[currentIndex];
+                frontContent.textContent = card.q;
+                backContent.textContent = card.a;
+                flashcard.classList.remove('flipped');
+                isFlipped = false;
+            } else {
+                endGame();
+            }
+        }
+
+        /**
+         * Retourne la flashcard.
+         */
+        function flipCard() {
+            if (!isFlipped) {
+                flashcard.classList.add('flipped');
+                isFlipped = true;
+            } else {
+                 // Optionnel: Empêcher le retournement si déjà retournée.
+            }
+        }
+
+        /**
+         * Gère la réponse de l'utilisateur.
+         * @param {boolean} knewIt - Vrai si l'utilisateur a répondu 'Je savais'.
+         */
+        function handleAnswer(knewIt) {
+            // Assurez-vous que la carte est retournée avant de répondre
+            if (!isFlipped) {
+                flipCard();
+                setTimeout(() => {
+                    // Laisser le temps à l'utilisateur de lire la réponse avant de passer
+                    processAnswer(knewIt);
+                }, 600); // 0.6s de transition CSS
+            } else {
+                processAnswer(knewIt);
+            }
+        }
+
+        function processAnswer(knewIt) {
+            totalAnswered++;
+
+            if (knewIt) {
+                totalCorrect++;
+                streak++;
+            } else {
+                missedCards.push(currentDeck[currentIndex]);
+                streak = 0;
+            }
+            
+            currentIndex++;
+            updateStats();
+            
+            // Passer à la carte suivante
+            if (currentIndex < currentDeck.length) {
+                loadCard();
+            } else {
+                endGame();
+            }
+        }
+
+
+        /**
+         * Met à jour les compteurs et la barre de progression.
+         */
+        function updateStats() {
+            const total = currentDeck.length;
+            const current = currentIndex;
+            
+            cardCounter.textContent = `${Math.min(current, total)}/${total}`;
+            streakDisplay.textContent = `Combo: ${streak}`;
+            
+            const progress = (current / total) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        /**
+         * Affiche l'écran de fin de partie.
+         */
+        function endGame() {
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'block';
+
+            finalScore.textContent = `${totalCorrect} / ${currentDeck.length}`;
+
+            if (missedCards.length > 0) {
+                reviewErrorsBtn.textContent = `Revoir les erreurs (${missedCards.length})`;
+                reviewErrorsBtn.style.display = 'inline-block';
+            } else {
+                reviewErrorsBtn.style.display = 'none';
+                document.getElementById('final-message').textContent = "Parfait ! Aucune erreur à revoir.";
+            }
+        }
+
+        // Démarrage Sécurisé : Lance le jeu une fois que le DOM est chargé
+        window.onload = function() {
+            initGame(false);
+        };
+
+    </script>
+</body>
+</html>
