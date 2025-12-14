@@ -399,7 +399,8 @@
             <span class="tag">6 points</span>
           </div>
 
-          <div class="drags">
+          <p class="hint">Ordinateur : glisse-dépose. Smartphone ou tablette : touche un mot pour le sélectionner, puis touche la case où le déposer.</p>
+<div class="drags">
             <div class="bank" id="bank">
               <h4>Banque</h4>
             </div>
@@ -742,6 +743,63 @@ const clamp = (n,a,b)=>Math.max(a, Math.min(b,n));
       });
     }
 
+function enableTouchPickPlace(){
+  // Mode mobile : toucher pour sélectionner, toucher une zone pour déposer
+  const bank = $("#bank");
+  let selected = null;
+
+  const toast = (msg)=>{
+    const t = $("#toast");
+    if(!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>t.classList.remove("show"), 1200);
+  };
+
+  const clearSel = ()=>{
+    if(selected){
+      selected.classList.remove("selected");
+      selected = null;
+    }
+  };
+
+  document.addEventListener("pointerdown", (e)=>{
+    if(!isTouch) return;
+
+    const tok = e.target.closest(".token");
+    const drop = e.target.closest(".zone, #bank");
+
+    if(tok){
+      e.preventDefault();
+      if(selected === tok){
+        bank.appendChild(tok);
+        clearSel();
+        toast("Mot remis dans la banque");
+      }else{
+        clearSel();
+        selected = tok;
+        tok.classList.add("selected");
+        toast("Mot sélectionné");
+      }
+      return;
+    }
+
+    if(drop && selected){
+      e.preventDefault();
+      drop.appendChild(selected);
+      clearSel();
+      toast("Déposé");
+      return;
+    }
+
+    // Tap ailleurs : on annule la sélection
+    if(selected) clearSel();
+  }, {passive:false});
+}
+
+
+
     function buildDrag(){
       const t = currentTheme();
       const bank = $("#bank");
@@ -1018,6 +1076,7 @@ const clamp = (n,a,b)=>Math.max(a, Math.min(b,n));
     fillThemes();
     buildAll();
     enableDnD();
+  if(isTouch) enableTouchPickPlace();
     restoreLocal();
     renderScore();
   
