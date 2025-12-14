@@ -230,8 +230,8 @@
       .feedback{display:block !important;border:1px solid #999 !important;background:white !important;color:black !important}
     }
   
-.token.selected{outline:2px solid var(--accent, #7ee7d7); box-shadow:0 0 0 4px rgba(126,231,215,.15);}
-.dndInfo{margin-top:10px; font-size:0.92rem; opacity:.85; line-height:1.25;}
+  .token.selected{outline:3px solid currentColor; box-shadow:0 0 0 3px rgba(0,0,0,.08);}
+  .token{user-select:none; -webkit-user-select:none;}
 </style>
 </head>
 <body>
@@ -395,10 +395,10 @@
             <span class="tag">6 points</span>
           </div>
 
-          <p class="hint">Ordinateur : glisse-dépose. Smartphone ou tablette : touche un mot pour le sélectionner, puis touche la case où le déposer.</p>
-<div class="drags">
+          <div class="drags">
             <div class="bank" id="bank">
               <h4>Banque</h4>
+      <div id="dragHint" class="muted" style="margin-top:8px"></div>
             </div>
 
             <div style="display:grid;gap:12px">
@@ -489,11 +489,12 @@
   </div>
 
   <script>
-
     const $ = (s, el=document) => el.querySelector(s);
     const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
     
-const isTouch = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+  function isTouchDevice(){
+    return (('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints>0));
+  }
 const clamp = (n,a,b)=>Math.max(a, Math.min(b,n));
 
     const themes = [
@@ -709,60 +710,29 @@ const clamp = (n,a,b)=>Math.max(a, Math.min(b,n));
       });
     }
 
-function enableTouchPickPlace(){
-  // Mode mobile : toucher pour sélectionner, toucher une zone pour déposer
-  const bank = $("#bank");
-  let selected = null;
 
-  const toast = (msg)=>{
-    const t = $("#toast");
-    if(!t) return;
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(()=>t.classList.remove("show"), 1200);
-  };
+  function enableTapDnD(){
+    // iOS/Android: HTML5 drag&drop is unreliable → tap-to-move fallback
+    const hint = document.getElementById('dragHint');
+    if(hint){ hint.innerHTML = 'Sur mobile : 1) touche un mot pour le sélectionner 2) touche une zone pour le déposer.'; }
+    $$('.token').forEach(tok => tok.setAttribute('draggable','false'));
+    let selected = null;
+    const clear = ()=>{ if(selected){ selected.classList.remove('selected'); } selected=null; };
+    const select = (tok)=>{ clear(); selected=tok; tok.classList.add('selected'); };
 
-  const clearSel = ()=>{
-    if(selected){
-      selected.classList.remove("selected");
-      selected = null;
-    }
-  };
-
-  document.addEventListener("pointerdown", (e)=>{
-    if(!isTouch) return;
-
-    const tok = e.target.closest(".token");
-    const drop = e.target.closest(".zone, #bank");
-
-    if(tok){
-      e.preventDefault();
-      if(selected === tok){
-        bank.appendChild(tok);
-        clearSel();
-        toast("Mot remis dans la banque");
-      }else{
-        clearSel();
-        selected = tok;
-        tok.classList.add("selected");
-        toast("Mot sélectionné");
+    document.addEventListener('click',(e)=>{
+      const tok = e.target.closest('.token');
+      if(tok){
+        if(selected===tok) clear(); else select(tok);
+        return;
       }
-      return;
-    }
-
-    if(drop && selected){
-      e.preventDefault();
-      drop.appendChild(selected);
-      clearSel();
-      toast("Déposé");
-      return;
-    }
-
-    // Tap ailleurs : on annule la sélection
-    if(selected) clearSel();
-  }, {passive:false});
-}
+      const target = e.target.closest('.zone, #bank');
+      if(target && selected){
+        target.appendChild(selected);
+        clear();
+      }
+    }, {passive:true});
+  }
 
 
 
@@ -773,7 +743,7 @@ function enableTouchPickPlace(){
       t.drag.forEach((item)=>{
         const d = document.createElement("div");
         d.className = "token";
-        d.draggable = !isTouch;
+        d.draggable = !isTouchDevice();
         d.dataset.type = item.type;
         d.textContent = item.t;
         bank.appendChild(d);
@@ -869,10 +839,8 @@ function enableTouchPickPlace(){
       if(k) parts.push("Conséquences/enjeux : " + k);
       if(d) parts.push("Diagnostic : " + d);
 
-      const built = parts.join("
-");
-      if(built.replaceAll("
-","").length < 10){
+      const built = parts.join("\n");
+      if(built.replaceAll("\n","").length < 10){
         toast("Remplir au moins un bloc");
         return;
       }
@@ -1041,10 +1009,9 @@ function enableTouchPickPlace(){
     fillThemes();
     buildAll();
     enableDnD();
-  if(isTouch) enableTouchPickPlace();
+  if(isTouchDevice()) enableTapDnD();
     restoreLocal();
     renderScore();
-  
-</script>
+  </script>
 </body>
 </html>
