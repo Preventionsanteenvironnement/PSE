@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossaire Interactif</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/opendyslexic@2/opendyslexic.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e67e22;
+            --bg-color: #fdfdfd;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #e0e0e0;
+            --font-std: 'Segoe UI', Verdana, sans-serif;
+            --font-dys: 'OpenDyslexic', sans-serif;
+            --line-height: 1.6;
+            --spacing: 0px;
+        }
+
+        body.dark-mode {
+            --bg-color: #2c3e50;
+            --card-bg: #34495e;
+            --text-color: #ecf0f1;
+            --border-color: #46637f;
+        }
+
+        body.dyslexia-mode {
+            font-family: var(--font-dys) !important;
+            --line-height: 2.0;
+            --spacing: 1.5px;
+        }
+
+        body {
+            font-family: var(--font-std);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: var(--line-height);
+            letter-spacing: var(--spacing);
+            transition: all 0.3s ease;
+            padding-bottom: 50px;
+        }
+
+        /* --- HEADER FIXE --- */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; text-align: center; }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-tool {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .btn-tool:hover, .btn-tool.active {
+            background: white;
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        /* --- RECHERCHE --- */
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 10px 20px;
+            padding-right: 40px;
+            border-radius: 30px;
+            border: none;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        /* --- NAVIGATION A-Z (DANS LE HEADER) --- */
+        .alphabet-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .letter-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--secondary);
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: transform 0.1s;
+        }
+
+        .letter-btn.wide { width: auto; padding: 0 10px; }
+
+        .letter-btn:hover, .letter-btn.active {
+            background: var(--accent); /* Couleur différente pour l'actif */
+            color: white;
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        /* --- CONTENU --- */
+        main {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--secondary);
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .card:hover { transform: translateX(5px); }
+
+        .card-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .term {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--secondary);
+        }
+        
+        body.dark-mode .term { color: #5dade2; }
+
+        .card-body {
+            display: none;
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.02);
+            text-align: left;
+        }
+
+        .definition {
+            margin-top: 15px;
+            font-size: 1.05rem;
+        }
+
+        .card.open .card-body { display: block; }
+        .card.open .chevron { transform: rotate(180deg); }
+        .chevron { transition: transform 0.3s; color: #999; }
+
+        /* Actions dans la définition */
+        .card-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-action {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .btn-action:hover { background: var(--border-color); }
+        
+        /* Style spécifique pour le bouton stop */
+        .btn-action.playing {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #c0392b;
+        }
+
+        /* --- GUIDE DE LECTURE --- */
+        #readingGuide {
+            position: fixed;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: rgba(255, 255, 0, 0.2);
+            border-top: 2px solid rgba(0,0,0,0.5);
+            border-bottom: 2px solid rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            transform: translateY(-50%);
+        }
+
+        /* --- BOUTON RETOUR HAUT --- */
+        #btnTop {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .toolbar { gap: 5px; }
+            .btn-tool { font-size: 0.8rem; padding: 5px 10px; }
+            .letter-btn { width: 28px; height: 28px; font-size: 0.8rem; }
+            header { padding: 10px 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="readingGuide"></div>
+
+<header>
+    <div class="header-content">
+        <h1><i class="fas fa-book-open"></i> Glossaire</h1>
+        
+        <div class="toolbar">
+            <button class="btn-tool" onclick="toggleDyslexia()" title="Police adaptée dyslexie">
+                <i class="fas fa-font"></i> Dyslexie
+            </button>
+            <button class="btn-tool" onclick="toggleDarkMode()" title="Mode sombre/confort">
+                <i class="fas fa-adjust"></i> Contraste
+            </button>
+            <button class="btn-tool" onclick="toggleReadingGuide()" title="Barre de suivi de lecture">
+                <i class="fas fa-ruler-horizontal"></i> Guide
+            </button>
+            <button class="btn-tool" onclick="changeSize(1)" title="Agrandir">A+</button>
+            <button class="btn-tool" onclick="changeSize(-1)" title="Réduire">A-</button>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Rechercher un mot..." onkeyup="filterSearch()">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+
+        <div class="alphabet-nav" id="alphabetNav">
+            </div>
+    </div>
+</header>
+
+<main id="glossaryContainer">
+    </main>
+
+<button id="btnTop" onclick="scrollToTop()"><i class="fas fa-arrow-up"></i></button>
+
+<script>
+    const data = [
+        {t:"Absorption intestinale", d:"Passage des nutriments de l’intestin grêle vers le sang et vers la lymphe."},
+        {t:"ACD", d:"Agent chimique dangereux."},
+        {t:"Accident du trajet", d:"Accident survenu pendant le trajet aller-retour entre le lieu de travail du salarié et sa résidence habituelle ou le lieu de restauration."},
+        {t:"Accident du travail (AT)", d:"Accident survenu par le fait ou à l’occasion du travail et quelle qu’en soit la cause. Il est dû à une action soudaine et violente provoquant une lésion."},
+        {t:"Acouphène", d:"Sensation auditive anormale (sifflements, bourdonnements) entendue sans aucun stimulus sonore extérieur."},
+        {t:"Actine", d:"Protéine qui joue un rôle fondamental dans la contraction musculaire."},
+        {t:"Activité de travail", d:"Description de la tâche exécutée par l’opérateur, de l’activité réelle, des matériels utilisés et de l’environnement."},
+        {t:"Activité dynamique", d:"Travail musculaire caractérisé par une alternance rythmique de contraction et de relâchement."},
+        {t:"Activité physique", d:"Tout mouvement produit par les muscles squelettiques striés qui augmente la dépense énergétique."},
+        {t:"Activité réelle", d:"Ensemble des actions physiques et mentales assurées par un opérateur pour réaliser une tâche."},
+        {t:"Activité statique", d:"Travail musculaire caractérisé par une contraction prolongée des muscles."},
+        {t:"Activités", d:"Actions physiques, mentales et sensorielles nécessaires à la réalisation de la tâche."},
+        {t:"Adaptation", d:"Ajustement de l’organisme face à un changement ou une contrainte (le stress est une réaction d'adaptation)."},
+        {t:"Addiction", d:"Dépendance d’une personne à une substance ou une activité génératrice de plaisir, dont elle ne peut plus se passer en dépit de sa propre volonté."},
+        {t:"Additifs", d:"Substances chimiques ajoutées aux aliments transformés ou ultra-transformés (conservateurs, colorants...)."},
+        {t:"Adrénaline", d:"Hormone sécrétée par les glandes surrénales en réponse à un état de stress."},
+        {t:"Agents biologiques", d:"Microorganismes tels que bactéries, virus ou champignons microscopiques."},
+        {t:"Agents contaminants", d:"Microorganismes ou substances nocives pour la santé."},
+        {t:"Agriculture biologique", d:"Mode de production respectant la biodiversité, préservant les ressources naturelles et excluant les produits chimiques de synthèse."},
+        {t:"Agriculture raisonnée", d:"Système agricole qui maîtrise l’utilisation des substances chimiques (pesticides, engrais) pour limiter leur impact."},
+        {t:"Aigu", d:"Qui apparaît brutalement et sur une courte durée (exemple : intoxication aiguë)."},
+        {t:"Aléa", d:"Événement potentiellement dangereux, naturel ou anthropique (phénomène imprévisible)."},
+        {t:"Alerte", d:"Signal avertissant d’un danger imminent."},
+        {t:"Aliment ultra-transformé", d:"Aliment ayant subi des procédés industriels de transformation et contenant de nombreux ingrédients, notamment des additifs."},
+        {t:"Allergène", d:"Substance qui déclenche ou favorise une allergie."},
+        {t:"Allergie", d:"Réaction inflammatoire exagérée du système immunitaire lors d'un contact avec un allergène."},
+        {t:"Anthropique", d:"Qui résulte de l’action de l’être humain."},
+        {t:"Antibiotique", d:"Médicament destiné à lutter contre les infections bactériennes."},
+        {t:"Anticorps", d:"Molécule de défense fabriquée par les lymphocytes B pour neutraliser un antigène précis."},
+        {t:"Antigène", d:"Élément étranger à l’organisme déclenchant une réaction spécifique du système immunitaire."},
+        {t:"Assurance maladie", d:"Branche de la Sécurité sociale prenant en charge les soins (maladie, AT, MP)."},
+        {t:"Asymptomatique", d:"Qui ne présente aucun symptôme visible d'une infection ou maladie."},
+        {t:"Audiogramme", d:"Représentation graphique de la capacité auditive."},
+        {t:"Barrière cutanéo-muqueuse", d:"Première ligne de défense non spécifique de l’organisme (peau et muqueuses)."},
+        {t:"Besoin nutritionnel moyen", d:"Quantité moyenne de nutriments nécessaire quotidiennement pour assurer le bon fonctionnement de l’organisme."},
+        {t:"Bore-out", d:"État d’épuisement physique, émotionnel et mental lié à l’ennui au travail."},
+        {t:"Bruit", d:"Ensemble de sons perçus comme gênants ou désagréables."},
+        {t:"Burn-out", d:"Syndrome d’épuisement professionnel, résultat d’un stress professionnel chronique."},
+        {t:"Cadre réglementaire", d:"Ensemble des règles légales encadrant une activité."},
+        {t:"Caisses d'assurance retraite et de la santé au travail (CARSAT)", d:"Organisme régional de la Sécurité sociale qui participe à la prévention des risques professionnels."},
+        {t:"Capital santé", d:"État de santé global d’un individu à un moment donné ; il peut s'améliorer ou se détériorer."},
+        {t:"Carence nutritionnelle", d:"Absence ou insuffisance de certains éléments nutritifs indispensables."},
+        {t:"CARSAT", d:"Caisses d'assurance retraite et de la santé au travail."},
+        {t:"Carte Vitale", d:"Carte à puce contenant les renseignements administratifs pour le remboursement des soins."},
+        {t:"CEGGID", d:"Centre gratuit d’information, de dépistage et de diagnostic."},
+        {t:"Chaîne du froid", d:"Maintien constant des aliments réfrigérés ou surgelés à une température réglementaire."},
+        {t:"Chronique", d:"Qui s’installe durablement dans le temps (inverse d'aigu)."},
+        {t:"Circuit court", d:"Circuit de distribution qui comporte au plus un intermédiaire entre le producteur et le consommateur."},
+        {t:"Circuit de la récompense", d:"Système nerveux favorisant les actions nécessaires à la survie en procurant du plaisir (dopamine)."},
+        {t:"Circuit urbain de l’eau", d:"Parcours de l’eau en milieu urbain, depuis son captage jusqu’à son épuration."},
+        {t:"CJC", d:"Consultations jeunes consommateurs."},
+        {t:"Climat social", d:"Niveau de satisfaction des salariés dans une organisation ou un pays."},
+        {t:"CMI", d:"Certificat médical initial."},
+        {t:"CMR", d:"Substances cancérigènes, mutagènes ou toxiques pour la reproduction."},
+        {t:"Comité social et économique (CSE)", d:"Instance représentative du personnel obligatoire dans les entreprises d'au moins 11 salariés."},
+        {t:"Commerce équitable", d:"Forme de commerce garantissant une rémunération juste des producteurs et respectant l'environnement."},
+        {t:"Compte professionnel de prévention", d:"Dispositif permettant aux travailleurs ayant un travail pénible de bénéficier de contreparties (formation, temps partiel, retraite)."},
+        {t:"Consignes de sécurité", d:"Instructions spécifiques destinées à prévenir les risques liés à une activité."},
+        {t:"Consommation directe (eau)", d:"Quantité d'eau prélevée et utilisée directement (robinet, boisson, hygiène)."},
+        {t:"Consommation indirecte (eau)", d:"Quantité d'eau utilisée pour produire les aliments ou les objets du quotidien."},
+        {t:"Contamination", d:"Entrée de micro-organismes dans l’organisme ou un milieu."},
+        {t:"Contraception", d:"Méthodes réversibles permettant d’éviter une grossesse non désirée."},
+        {t:"Contraception d’urgence", d:"Méthode utilisée après un rapport sexuel non ou mal protégé."},
+        {t:"Contraception préventive", d:"Méthode utilisée avant ou pendant le rapport sexuel."},
+        {t:"Contractilité", d:"Capacité d’un muscle à se raccourcir."},
+        {t:"Contrôle hormonal", d:"Mécanisme naturel de régulation des fonctions biologiques par les hormones."},
+        {t:"CPAM", d:"Caisse primaire d’assurance maladie."},
+        {t:"CPEF", d:"Centre de planification ou d’éducation familiale."},
+        {t:"CRRMP", d:"Comité régional de reconnaissance des maladies professionnelles."},
+        {t:"CSAPA", d:"Centre de soins d'accompagnement et de prévention en addictologie."},
+        {t:"CTN", d:"Comités techniques nationaux."},
+        {t:"Curatif", d:"Qualifie un traitement qui vise à guérir une maladie."},
+        {t:"Cycle menstruel", d:"Période d'environ 28 jours allant du premier jour des règles à la veille des suivantes."},
+        {t:"Cycle ovarien", d:"Ensemble des modifications biologiques se déroulant au niveau de l'ovaire."},
+        {t:"Cycle utérin", d:"Ensemble des modifications biologiques se déroulant au niveau de l'utérus."},
+        {t:"Danger", d:"Cause capable de provoquer une lésion ou une atteinte à la santé."},
+        {t:"DAT", d:"Déclaration d’accident du travail."},
+        {t:"Date limite de consommation (DLC)", d:"Date au-delà de laquelle un aliment présente un risque pour la santé (intoxication)."},
+        {t:"dB (A)", d:"Niveau sonore établi selon une norme correspondant à la perception d'une oreille moyenne."},
+        {t:"dB (C)", d:"Niveau sonore pour les bruits brefs et très élevés (crêtes de bruit)."},
+        {t:"DDM", d:"Date de durabilité minimale (l'aliment peut perdre en goût mais reste consommable)."},
+        {t:"Défenseur des droits", d:"Institution indépendante défendant les droits et l'égalité."},
+        {t:"Dépendance", d:"État de besoin compulsif d’une substance ou activité, avec perte de contrôle."},
+        {t:"Dépistage", d:"Recherche des signes d'une maladie ou d'une infection chez une personne."},
+        {t:"Dérogation", d:"Exception à l'application d'une règle (ex: travaux interdits aux mineurs sauf dérogation)."},
+        {t:"Désynchronisation des rythmes biologiques", d:"Perturbation des cycles biologiques par modification de l'environnement ou du mode de vie."},
+        {t:"Déterminant", d:"Élément caractéristique de l'opérateur ou de l'entreprise influençant l'activité."},
+        {t:"Développement durable", d:"Développement qui répond aux besoins du présent sans compromettre la capacité des générations futures à répondre aux leurs."},
+        {t:"DICRIM", d:"Document d’information communal sur les risques majeurs."},
+        {t:"Digestion", d:"Action de l'appareil digestif pour transformer les aliments en nutriments assimilables."},
+        {t:"Discrimination", d:"Fait de traiter une personne différemment et souvent plus mal, sans justification valable."},
+        {t:"Disque intervertébral", d:"Structure située entre deux vertèbres jouant le rôle d’amortisseur."},
+        {t:"DIU", d:"Dispositif intra-utérin (stérilet)."},
+        {t:"DLC", d:"Date limite de consommation."},
+        {t:"Document unique (DUERP)", d:"Document obligatoire évaluant les risques professionnels dans l'entreprise."},
+        {t:"Dommage", d:"Lésion et/ou atteinte à la santé."},
+        {t:"Dommage potentiel", d:"Lésion probable en cas d'exposition à un danger."},
+        {t:"Dopamine", d:"Neurotransmetteur du plaisir et de la récompense."},
+        {t:"Droit d'alerte", d:"Fait de signaler un danger grave et imminent à l'employeur."},
+        {t:"Droit de retrait", d:"Droit du salarié de quitter son poste en cas de danger grave et imminent."},
+        {t:"Eau potable", d:"Eau ne contenant aucun pathogène ni substance toxique, propre à la consommation humaine."},
+        {t:"Eau usée", d:"Eau chargée de polluants issus des activités humaines."},
+        {t:"Économie d’effort", d:"Action de réduire l’effort musculaire nécessaire pour une tâche."},
+        {t:"Écoresponsable", d:"Comportement ou produit respectueux de l’environnement."},
+        {t:"Effet de serre", d:"Phénomène naturel de réchauffement de l'atmosphère, accentué par les activités humaines."},
+        {t:"Égalité professionnelle", d:"Égalité de traitement entre les femmes et les hommes au travail (salaires, carrières)."},
+        {t:"Élasticité", d:"Propriété du muscle de reprendre sa longueur initiale après étirement."},
+        {t:"EMA", d:"Examen médical d'aptitude."},
+        {t:"Empreinte carbone", d:"Quantité totale de gaz à effet de serre émise par une activité ou un produit."},
+        {t:"Empreinte eau", d:"Volume total d’eau douce utilisé pour produire les biens et services consommés par un individu."},
+        {t:"Énergie non renouvelable", d:"Énergie dont les stocks sont limités et s'épuisent (pétrole, gaz, charbon)."},
+        {t:"Énergie renouvelable", d:"Énergie inépuisable à l'échelle humaine (solaire, éolien, hydraulique)."},
+        {t:"Enjeux", d:"Personnes, biens ou environnement pouvant être affectés par un aléa."},
+        {t:"Enjeux humains", d:"Conséquences d'une situation sur la santé ou la vie des personnes."},
+        {t:"Enjeux socio-économiques", d:"Conséquences financières et sociales d'une situation (coût, image de l'entreprise)."},
+        {t:"Épuration", d:"Action de traiter les eaux usées avant leur rejet dans la nature."},
+        {t:"Ergonomie", d:"Adaptation du travail à l’homme pour améliorer le confort et l'efficacité."},
+        {t:"Eutrophisation", d:"Prolifération d’algues due à l'excès de nutriments (phosphates/nitrates) dans l'eau."},
+        {t:"Événement déclencheur", d:"Événement susceptible de causer un dommage."},
+        {t:"Excitabilité", d:"Propriété du muscle ou du nerf à réagir à une stimulation."},
+        {t:"Exposition chronique", d:"Fait d'être en contact régulier et répété avec un danger (bruit, produits chimiques)."},
+        {t:"Facteur de stress", d:"Élément qui déclenche la réaction de stress."},
+        {t:"Famille de risques professionnels", d:"Ensemble de dangers de même nature (ex: risque électrique, risque de chute)."},
+        {t:"Fatigue musculaire", d:"Baisse de la capacité du muscle à se contracter (accumulation de déchets comme l'acide lactique)."},
+        {t:"Faute inexcusable", d:"Manquement de l’employeur à son obligation de sécurité alors qu’il avait conscience du danger."},
+        {t:"Fécondation", d:"Union d’un spermatozoïde et d’un ovule formant une cellule-œuf."},
+        {t:"Fiche de poste", d:"Document décrivant les tâches à réaliser et les consignes de sécurité d'un poste."},
+        {t:"Flore de décomposition", d:"Microorganismes responsables de la dégradation des aliments."},
+        {t:"Fréquence", d:"Nombre de fois qu'un phénomène se reproduit sur un temps donné."},
+        {t:"Fréquence cardiaque", d:"Nombre de battements du cœur par minute."},
+        {t:"Fréquence respiratoire", d:"Nombre de cycles respiratoires par minute."},
+        {t:"Gamète", d:"Cellule sexuelle (ovule chez la femme, spermatozoïde chez l'homme)."},
+        {t:"Gaspillage alimentaire", d:"Fait de jeter des aliments encore consommables."},
+        {t:"GES", d:"Gaz à effet de serre (ex: CO2, méthane)."},
+        {t:"Geste écocitoyen", d:"Action quotidienne visant à préserver l’environnement."},
+        {t:"Glaire cervicale", d:"Sécrétion du col de l'utérus facilitant ou bloquant le passage des spermatozoïdes."},
+        {t:"Gravité", d:"Importance des conséquences d'un dommage."},
+        {t:"Hernie discale", d:"Saillie du noyau du disque intervertébral hors de son enveloppe, comprimant souvent un nerf."},
+        {t:"Horloge biologique", d:"Zone du cerveau régulant les rythmes biologiques (veille/sommeil)."},
+        {t:"Hormone", d:"Substance chimique transportée par le sang agissant sur des organes cibles."},
+        {t:"HPV", d:"Papillomavirus humain (virus responsable de certains cancers)."},
+        {t:"Hyperacousie", d:"Hypersensibilité aux sons, perçus plus forts qu'ils ne le sont."},
+        {t:"Hypothalamus", d:"Région du cerveau contrôlant l'horloge biologique et de nombreuses fonctions vitales."},
+        {t:"IJ", d:"Indemnités journalières."},
+        {t:"Illicite", d:"Interdit par la loi."},
+        {t:"Immunité", d:"Ensemble des mécanismes de défense de l’organisme."},
+        {t:"Immunité non spécifique", d:"Défense immédiate, innée et identique quel que soit l'agresseur."},
+        {t:"Immunité spécifique", d:"Défense acquise, plus lente, ciblée contre un agresseur précis (mémoire)."},
+        {t:"Indemnités journalières", d:"Somme versée par la Sécu pour compenser la perte de salaire lors d'un arrêt."},
+        {t:"Index de l’égalité femme-homme", d:"Outil mesurant les écarts de rémunération dans les entreprises."},
+        {t:"Infection", d:"Multiplication de micro-organismes pathogènes dans le corps."},
+        {t:"Inspection du travail", d:"Service de contrôle veillant au respect du droit du travail dans les entreprises."},
+        {t:"Intégrité mentale", d:"Absence d'altération de la santé psychique."},
+        {t:"Intégrité physique", d:"Absence de blessure ou d'atteinte au corps."},
+        {t:"Intensité", d:"Force ou amplitude d'un phénomène (ex: volume sonore en décibels)."},
+        {t:"Interruption volontaire de grossesse (IVG)", d:"Avortement réalisé dans un cadre légal."},
+        {t:"Intoxication aiguë", d:"Effet nocif immédiat suite à une forte dose de produit."},
+        {t:"Intoxication chronique", d:"Effet nocif à long terme suite à des expositions répétées à faible dose."},
+        {t:"IST", d:"Infection sexuellement transmissible."},
+        {t:"ITAMaMi", d:"Outil d'analyse du travail : Individu, Tâche, Activité, Matériel, Milieu."},
+        {t:"IVG", d:"Interruption volontaire de grossesse."},
+        {t:"Kilojoule (kJ)", d:"Unité de mesure de l’énergie (alimentaire ou dépensée)."},
+        {t:"Label", d:"Signe officiel de qualité ou d'origine (ex: AB, Label Rouge)."},
+        {t:"Lésion", d:"Atteinte physique d’un tissu ou d'un organe (plaie, brûlure)."},
+        {t:"Licite", d:"Autorisé par la loi."},
+        {t:"Lymphocyte", d:"Globule blanc acteur de l'immunité spécifique."},
+        {t:"Lymphocyte B", d:"Produit les anticorps."},
+        {t:"Lymphocyte T", d:"Détruit les cellules infectées."},
+        {t:"Maladie professionnelle (MP)", d:"Maladie résultant de l’exposition habituelle à un risque professionnel."},
+        {t:"Matériel", d:"Outils, machines et équipements utilisés pour le travail."},
+        {t:"Matière organique", d:"Matière provenant d'êtres vivants (animaux, végétaux)."},
+        {t:"Mélatonine", d:"Hormone du sommeil."},
+        {t:"Mémoire immunitaire", d:"Capacité du système immunitaire à réagir plus vite lors d'un second contact avec un antigène."},
+        {t:"Ménopause", d:"Arrêt définitif des règles et de l'ovulation chez la femme."},
+        {t:"Message nerveux", d:"Signal électrique circulant dans les neurones."},
+        {t:"Mesure individuelle", d:"Action de prévention ou de protection concernant une seule personne."},
+        {t:"MILDECA", d:"Mission interministérielle de lutte contre les drogues et les conduites addictives."},
+        {t:"Milieu", d:"Environnement de travail (bruit, lumière, ambiance thermique, espace)."},
+        {t:"MP", d:"Maladie professionnelle."},
+        {t:"Muqueuse", d:"Tissu tapissant les cavités du corps (bouche, nez, organes génitaux)."},
+        {t:"Muscle strié squelettique", d:"Muscle rattaché au squelette permettant les mouvements volontaires."},
+        {t:"Myofibrille", d:"Fibre contractile à l'intérieur des cellules musculaires."},
+        {t:"Myosine", d:"Protéine essentielle à la contraction musculaire."},
+        {t:"Neurotransmetteur", d:"Molécule chimique assurant la transmission du message entre les neurones (synapse)."},
+        {t:"Nidation", d:"Implantation de l’embryon dans la paroi de l’utérus."},
+        {t:"Niveau de priorité", d:"Ordre dans lequel les risques doivent être traités."},
+        {t:"Noyau (disque)", d:"Partie centrale gélatineuse du disque intervertébral."},
+        {t:"Nutriment", d:"Molécule simple issue de la digestion, assimilable par le sang."},
+        {t:"Œstrogène", d:"Hormone sexuelle féminine intervenant dans le cycle menstruel."},
+        {t:"OMS", d:"Organisation mondiale de la santé."},
+        {t:"Onde sonore", d:"Vibration de l'air perceptible par l'oreille."},
+        {t:"Opérateur", d:"Travailleur qui réalise une tâche."},
+        {t:"Organisation syndicale", d:"Association défendant les intérêts professionnels des salariés."},
+        {t:"Parcours de soins coordonnés", d:"Dispositif incitant à consulter son médecin traitant en premier."},
+        {t:"Pathogène", d:"Qui peut provoquer une maladie."},
+        {t:"Pénibilité au travail", d:"Exposition à des facteurs de risques (physiques ou rythmes) laissant des traces durables sur la santé."},
+        {t:"Pénurie", d:"Manque ou insuffisance d'une ressource (eau, matière première)."},
+        {t:"PFMP", d:"Période de formation en milieu professionnel (stage)."},
+        {t:"PICB", d:"Protecteur individuel contre le bruit (casque, bouchons)."},
+        {t:"Plan d'évacuation", d:"Plan indiquant les issues de secours et le cheminement à suivre."},
+        {t:"Plan santé", d:"Programme d’actions gouvernemental pour améliorer la santé publique."},
+        {t:"Polyconsommateur", d:"Personne consommant plusieurs substances psychoactives."},
+        {t:"Porteur asymptomatique", d:"Personne porteuse d'un virus/bactérie sans être malade, mais contagieuse."},
+        {t:"Posture", d:"Position du corps lors du travail."},
+        {t:"PPMS", d:"Plan particulier de mise en sûreté (dans les écoles)."},
+        {t:"PRAP", d:"Prévention des risques liés à l'activité physique."},
+        {t:"Pratique alimentaire choisie", d:"Régime alimentaire adopté par conviction (végétarisme) ou choix personnel."},
+        {t:"Pratique alimentaire subie", d:"Régime alimentaire imposé par la santé (allergie, diabète) ou les revenus."},
+        {t:"Prestations en espèces", d:"Revenus de remplacement (IJ, rente) versés par la Sécu."},
+        {t:"Prestations en nature", d:"Remboursement des frais médicaux (soins, médicaments)."},
+        {t:"Prévention", d:"Ensemble des mesures visant à éviter les risques ou diminuer leur fréquence."},
+        {t:"Prévention collective", d:"Mesures protégeant l'ensemble des salariés (ex: aspiration des poussières)."},
+        {t:"Prévention individuelle", d:"Mesures protégeant une seule personne (ex: port d'un masque)."},
+        {t:"Principe de précaution", d:"Mesures prises face à un risque suspecté mais non prouvé scientifiquement."},
+        {t:"Principe de solidarité", d:"Fondement de la Sécu : chacun cotise selon ses moyens et reçoit selon ses besoins."},
+        {t:"Probabilité d'occurrence", d:"Chance qu'un événement ou un dommage se produise."},
+        {t:"Procédure", d:"Ensemble de règles à suivre pour réaliser une tâche en sécurité."},
+        {t:"Processus d'apparition du dommage", d:"Enchaînement des faits (danger, situation dangereuse, événement déclencheur) menant à l'accident."},
+        {t:"Progestérone", d:"Hormone sexuelle féminine préparant l'utérus à la grossesse."},
+        {t:"Protection collective", d:"Équipements protégeant tout le monde (garde-corps)."},
+        {t:"Protection individuelle", d:"Équipements portés par le salarié (EPI)."},
+        {t:"Puberté", d:"Période de transition de l'enfance à l'âge adulte (maturation sexuelle)."},
+        {t:"Qualité chimique", d:"Aliment ne contenant pas de substances chimiques dangereuses (pesticides, métaux lourds)."},
+        {t:"Qualité microbiologique", d:"Aliment ne contenant pas de germes pathogènes."},
+        {t:"Réaction inflammatoire", d:"Réponse locale de défense (rougeur, chaleur, douleur, gonflement)."},
+        {t:"Récepteur spécifique hormonal", d:"Structure sur la cellule qui capte une hormone précise."},
+        {t:"Réchauffement climatique", d:"Augmentation de la température terrestre due aux gaz à effet de serre."},
+        {t:"Réduction du risque", d:"Mesures visant à diminuer la gravité ou la probabilité du risque."},
+        {t:"Rente d’incapacité", d:"Indemnité versée à vie en cas de séquelles définitives d'un AT ou MP."},
+        {t:"Répression", d:"Sanction pénale en cas de non-respect de la loi."},
+        {t:"Responsabilité civile", d:"Obligation de réparer les dommages causés à autrui (dommages et intérêts)."},
+        {t:"Responsabilité pénale", d:"Obligation de répondre de ses actes devant la justice (amende, prison)."},
+        {t:"Risque", d:"Combinaison de la probabilité d'un événement et de sa gravité."},
+        {t:"Risque majeur", d:"Événement rare mais aux conséquences catastrophiques."},
+        {t:"Risque majeur naturel", d:"Risque majeur d'origine naturelle (séisme, inondation)."},
+        {t:"Risque majeur technologique", d:"Risque majeur d'origine humaine (nucléaire, industriel)."},
+        {t:"Risque microbiologique", d:"Risque lié à la présence de microbes (bactéries, virus)."},
+        {t:"Risques professionnels", d:"Familles de dangers présents au travail."},
+        {t:"Risques psychosociaux (RPS)", d:"Risques pour la santé mentale et physique liés aux conditions de travail (stress, violences)."},
+        {t:"Rythme biologique", d:"Variation périodique d'une fonction physiologique (ex: température, hormones)."},
+        {t:"Rythme circadien", d:"Rythme biologique d'environ 24 heures (veille/sommeil)."},
+        {t:"Rythme hebdomadaire", d:"Rythme social se répétant chaque semaine."},
+        {t:"Rythmes sociaux", d:"Rythmes imposés par la vie en société (travail, école, repas)."},
+        {t:"SAIP", d:"Système d’alerte et d’information aux populations (sirènes, SMS)."},
+        {t:"Salarié compétent (PPRP)", d:"Salarié désigné pour s'occuper de la prévention dans l'entreprise."},
+        {t:"Santé", d:"État complet de bien-être physique, mental et social."},
+        {t:"Sauveteur secouriste du travail (SST)", d:"Salarié formé pour porter secours et faire de la prévention."},
+        {t:"Schéma de compréhension", d:"Outil graphique pour analyser un accident ou une situation de travail."},
+        {t:"Sécurité sociale", d:"Système national de protection contre les aléas de la vie."},
+        {t:"Sédentarité", d:"Manque d'activité physique."},
+        {t:"Séropositivité", d:"Fait d'avoir des anticorps spécifiques à une maladie (ex: VIH) dans le sang."},
+        {t:"Services de prévention et de santé au travail (SPST)", d:"Organisme (médecine du travail) qui surveille la santé des salariés."},
+        {t:"SIDA", d:"Syndrome d'immunodéficience acquise (stade avancé de l'infection VIH)."},
+        {t:"Signalisation", d:"Panneaux et signaux visuels ou sonores de sécurité."},
+        {t:"Situation dangereuse", d:"Situation où une personne est exposée à un danger."},
+        {t:"SNA", d:"Signal national d'alerte."},
+        {t:"Solidarité", d:"Lien d'entraide réciproque entre les personnes."},
+        {t:"Sommeil lent", d:"Phase de récupération physique."},
+        {t:"Sommeil paradoxal", d:"Phase de récupération nerveuse et psychique (rêves)."},
+        {t:"Sommeil profond", d:"Partie du sommeil lent la plus réparatrice physiquement."},
+        {t:"Son", d:"Vibration mécanique de l'air."},
+        {t:"SPST", d:"Service de prévention et de santé au travail."},
+        {t:"Stress", d:"Réaction d'adaptation de l'organisme face à une agression ou contrainte."},
+        {t:"Stress aigu", d:"Stress ponctuel et passager (réaction d'alarme)."},
+        {t:"Stress chronique", d:"Stress qui dure et épuise l'organisme (pathogène)."},
+        {t:"Stress hydrique", d:"Manque d'eau disponible par rapport aux besoins."},
+        {t:"Substance illicite", d:"Drogue interdite par la loi."},
+        {t:"Substance licite", d:"Produit autorisé (tabac, alcool, médicaments)."},
+        {t:"Substance psychoactive", d:"Produit qui agit sur le cerveau et modifie le comportement."},
+        {t:"Suppression du risque", d:"Élimination totale du danger (meilleure prévention)."},
+        {t:"Surconsommation", d:"Consommation excessive de ressources."},
+        {t:"Surdité de perception", d:"Atteinte de l'oreille interne, irréversible."},
+        {t:"Surdité de transmission", d:"Atteinte de l'oreille externe ou moyenne."},
+        {t:"Symptôme", d:"Signe visible ou ressenti d'une maladie."},
+        {t:"Synapse", d:"Zone de connexion entre deux neurones."},
+        {t:"Synchronisation des rythmes", d:"Accord entre les rythmes internes et l'environnement."},
+        {t:"Système immunitaire", d:"Ensemble des organes et cellules de défense de l'organisme."},
+        {t:"Tâche", d:"Travail prescrit, ce qui est demandé à l'opérateur."},
+        {t:"Thermogenèse", d:"Production de chaleur par le corps."},
+        {t:"Thermolyse", d:"Perte de chaleur par le corps."},
+        {t:"Thermorégulation", d:"Maintien de la température corporelle constante (37°C)."},
+        {t:"TMS", d:"Troubles musculo-squelettiques."},
+        {t:"Tonicité", d:"Légère tension permanente des muscles (posture)."},
+        {t:"TPE", d:"Traitement post-exposition (VIH)."},
+        {t:"Traumatisme physique", d:"Blessure corporelle brutale."},
+        {t:"Travail posté", d:"Organisation en équipes successives (3x8, 2x8)."},
+        {t:"Travail prescrit", d:"Ce qui est demandé (la consigne, la fiche de poste)."},
+        {t:"Travail réel", d:"Ce qui est fait réellement par l'opérateur (avec les aléas)."},
+        {t:"Travaux réglementés", d:"Travaux dangereux interdits aux jeunes travailleurs (sauf dérogation)."},
+        {t:"Trouble circulatoire", d:"Problème de circulation sanguine (jambes lourdes, varices)."},
+        {t:"Trouble musculo-squelettique (TMS)", d:"Maladie touchant les articulations (muscles, tendons, nerfs)."},
+        {t:"Vaccin", d:"Préparation qui stimule le système immunitaire pour protéger d'une maladie."},
+        {t:"Vaccination", d:"Action d'administrer un vaccin."},
+        {t:"VAI", d:"Valeur d'exposition inférieure (bruit : 80 dB)."},
+        {t:"Valeur énergétique", d:"Énergie fournie par les aliments (en kJ ou kcal)."},
+        {t:"VAS", d:"Valeur d'exposition supérieure (bruit : 85 dB)."},
+        {t:"VHB", d:"Virus de l'hépatite B."},
+        {t:"VIH", d:"Virus de l'immunodéficience humaine."},
+        {t:"Violence externe", d:"Violence commise par des personnes extérieures à l'entreprise (clients)."},
+        {t:"Violence interne", d:"Violence entre salariés (harcèlement, conflits)."},
+        {t:"VIP", d:"Visite d’information et de prévention."},
+        {t:"VLE", d:"Valeur limite d'exposition (produits chimiques court terme)."},
+        {t:"VLEP", d:"Valeur limite d'exposition professionnelle."},
+        {t:"Vulnérabilité", d:"Fragilité d'une personne face à un risque (ex: au stress)."}
+    ];
+
+    // --- LOGIQUE JS ---
+
+    window.addEventListener('DOMContentLoaded', () => {
+        renderAlphabet();
+        renderGlossary(data);
+    });
+
+    // Générer l'alphabet uniquement pour les lettres existantes
+    function renderAlphabet() {
+        const nav = document.getElementById('alphabetNav');
+        
+        // Récupérer les premières lettres uniques et les trier
+        const availableLetters = [...new Set(data.map(item => item.t.charAt(0).toUpperCase()))].sort();
+
+        // Bouton TOUS
+        const btnAll = document.createElement('button');
+        btnAll.textContent = "TOUS";
+        btnAll.className = "letter-btn wide active";
+        btnAll.onclick = () => filterByLetter('ALL', btnAll);
+        nav.appendChild(btnAll);
+
+        // Lettres disponibles
+        availableLetters.forEach(letter => {
+            const btn = document.createElement('button');
+            btn.textContent = letter;
+            btn.className = "letter-btn";
+            btn.onclick = () => filterByLetter(letter, btn);
+            nav.appendChild(btn);
+        });
+    }
+
+    function filterByLetter(letter, btnElement) {
+        document.getElementById('searchInput').value = ""; 
+        document.querySelectorAll('.letter-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        if (letter === 'ALL') {
+            renderGlossary(data);
+        } else {
+            const filtered = data.filter(item => item.t.toUpperCase().startsWith(letter));
+            renderGlossary(filtered);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function filterSearch() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.letter-btn').forEach(b => b.classList.remove('active'));
+
+        const filtered = data.filter(item => 
+            item.t.toLowerCase().includes(query) || 
+            item.d.toLowerCase().includes(query)
+        );
+        renderGlossary(filtered);
+    }
+
+    function renderGlossary(items) {
+        const container = document.getElementById('glossaryContainer');
+        container.innerHTML = "";
+
+        if (items.length === 0) {
+            container.innerHTML = "<p style='text-align:center; color:#777;'>Aucun résultat trouvé.</p>";
+            return;
+        }
+
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = "card";
+            
+            // Création d'un ID unique pour le bouton de cette carte
+            const uniqueId = 'btn-' + Math.random().toString(36).substr(2, 9);
+
+            card.innerHTML = `
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="term">${item.t}</span>
+                    <i class="fas fa-chevron-down chevron"></i>
+                </div>
+                <div class="card-body">
+                    <p class="definition">${item.d}</p>
+                    <div class="card-actions">
+                        <button id="${uniqueId}" class="btn-action" onclick="toggleSpeech(this, '${item.t}. ${item.d.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-volume-up"></i> Écouter
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function toggleCard(header) {
+        header.parentElement.classList.toggle('open');
+    }
+
+    // --- ACCESSIBILITÉ & AUDIO ---
+
+    let currentUtterance = null;
+    let currentButton = null;
+
+    function toggleSpeech(btn, text) {
+        if (!('speechSynthesis' in window)) {
+            alert("Votre navigateur ne supporte pas la synthèse vocale.");
+            return;
+        }
+
+        // Si on clique sur le même bouton qui est en train de lire
+        if (currentButton === btn && window.speechSynthesis.speaking) {
+            stopSpeech();
+            return;
+        }
+
+        // Si une autre lecture est en cours, on l'arrête
+        if (window.speechSynthesis.speaking) {
+            stopSpeech();
+        }
+
+        // Démarrer la nouvelle lecture
+        startSpeech(btn, text);
+    }
+
+    function startSpeech(btn, text) {
+        currentUtterance = new SpeechSynthesisUtterance(text);
+        currentUtterance.lang = 'fr-FR';
+        currentUtterance.rate = 0.9;
+
+        currentUtterance.onend = () => {
+            resetButton(btn);
+            currentButton = null;
+        };
+
+        currentButton = btn;
+        window.speechSynthesis.speak(currentUtterance);
+        
+        // Changer l'aspect du bouton
+        btn.classList.add('playing');
+        btn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
+    }
+
+    function stopSpeech() {
+        window.speechSynthesis.cancel();
+        if (currentButton) {
+            resetButton(currentButton);
+            currentButton = null;
+        }
+    }
+
+    function resetButton(btn) {
+        btn.classList.remove('playing');
+        btn.innerHTML = '<i class="fas fa-volume-up"></i> Écouter';
+    }
+
+    function toggleDyslexia() {
+        document.body.classList.toggle('dyslexia-mode');
+        const btn = document.querySelector('button[onclick="toggleDyslexia()"]');
+        btn.classList.toggle('active');
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        const btn = document.querySelector('button[onclick="toggleDarkMode()"]');
+        btn.classList.toggle('active');
+    }
+
+    let guideActive = false;
+    function toggleReadingGuide() {
+        guideActive = !guideActive;
+        const guide = document.getElementById('readingGuide');
+        const btn = document.querySelector('button[onclick="toggleReadingGuide()"]');
+        
+        if (guideActive) {
+            guide.style.display = 'block';
+            document.addEventListener('mousemove', moveGuide);
+            btn.classList.add('active');
+        } else {
+            guide.style.display = 'none';
+            document.removeEventListener('mousemove', moveGuide);
+            btn.classList.remove('active');
+        }
+    }
+
+    function moveGuide(e) {
+        const guide = document.getElementById('readingGuide');
+        guide.style.top = e.clientY + 'px';
+    }
+
+    let currentSize = 16;
+    function changeSize(delta) {
+        currentSize += delta;
+        if (currentSize < 12) currentSize = 12;
+        if (currentSize > 24) currentSize = 24;
+        document.documentElement.style.fontSize = currentSize + 'px';
+    }
+
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.onscroll = function() {
+        const btn = document.getElementById('btnTop');
+        if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            btn.style.display = "flex";
+        } else {
+            btn.style.display = "none";
+        }
+    };
+
+</script>
+
+</body>
+</html>
