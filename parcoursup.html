@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Séance 7 : Mission Parcoursup - Bac Pro AGOrA</title>
+  <style>
+    /* --- DESIGN GÉNÉRAL --- */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #fff1f2; color: #1e293b; /* Fond rose très pâle */
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1000px; margin: 30px auto; background: #fff;
+      border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden; border: 1px solid #fecdd3;
+    }
+
+    /* --- HEADER ROUGE/ROSE (Identité Parcoursup) --- */
+    header {
+      background: linear-gradient(135deg, #be123c, #e11d48);
+      color: white; padding: 25px 30px;
+    }
+    header h1 { margin: 0; font-size: 1.6rem; }
+    header p { margin: 5px 0 0; opacity: 0.9; font-size: 0.95rem; }
+
+    /* --- BARRE DE PROGRESSION --- */
+    .progress-bar {
+      display: flex; justify-content: space-between; padding: 20px 30px;
+      background: #fff5f7; border-bottom: 1px solid #fda4af;
+    }
+    .step {
+      display: flex; align-items: center; gap: 8px; font-size: 0.85rem;
+      color: #fb7185; font-weight: 600;
+    }
+    .step-circle {
+      width: 28px; height: 28px; border-radius: 50%; background: #ffe4e6;
+      color: #e11d48; display: flex; align-items: center; justify-content: center;
+    }
+    .step.active { color: #be123c; }
+    .step.active .step-circle { background: #be123c; color: white; }
+    .step.completed .step-circle { background: #22c55e; color: white; }
+
+    /* --- CONTENU --- */
+    .page-content {
+      padding: 30px 40px; display: none; animation: fadeIn 0.4s ease;
+    }
+    .page-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    h2 { color: #9f1239; font-size: 1.4rem; border-bottom: 2px solid #fecdd3; padding-bottom: 10px; margin-top: 0; }
+    h3 { color: #be123c; font-size: 1.1rem; margin-top: 25px; margin-bottom: 15px; font-weight: 700; display:flex; align-items:center; gap:8px;}
+
+    /* --- ELEMENTS VISUELS --- */
+    .alert-box {
+      background: #fff1f2; border-left: 5px solid #e11d48; padding: 15px;
+      border-radius: 4px; color: #881337; margin-bottom: 20px;
+    }
+
+    /* Timeline */
+    .timeline {
+      display: flex; margin: 20px 0; gap: 10px;
+    }
+    .time-block {
+      flex: 1; padding: 15px; border-radius: 8px; text-align: center;
+      font-size: 0.9rem; border: 1px solid #ddd; opacity: 0.6;
+    }
+    .time-active {
+      border: 2px solid #e11d48; background: #fff1f2; opacity: 1; font-weight: bold; color: #be123c; transform: scale(1.05); box-shadow: 0 4px 10px rgba(225, 29, 72, 0.15);
+    }
+    .time-label { display: block; font-size: 1.2rem; margin-bottom: 5px; }
+
+    /* Dossier Simulation */
+    .dossier-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    .bulletin-card {
+      border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #f8fafc;
+    }
+    .bulletin-title { font-weight: bold; text-align: center; margin-bottom: 10px; color: #475569; }
+    .grade-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 2px;}
+
+    /* Inputs & Textareas */
+    textarea {
+      width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+      min-height: 80px; margin-top: 8px; font-family: inherit; font-size: 0.9rem;
+      background: #fff;
+    }
+    textarea:focus { outline: none; border-color: #be123c; background: #fff; }
+
+    /* Navigation */
+    .nav-buttons {
+      padding: 20px 40px; background: #fff1f2; border-top: 1px solid #fecdd3;
+      display: flex; justify-content: space-between;
+    }
+    .btn {
+      padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 0.95rem; transition: 0.2s;
+    }
+    .btn-prev { background: #e2e8f0; color: #475569; }
+    .btn-next { background: #e11d48; color: white; }
+    .btn-save { background: #16a34a; color: white; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .hidden { display: none; }
+    .visitor-counter {
+      margin-left: auto; display: flex; align-items: center; gap: 6px;
+      background: #ffe4e6; padding: 4px 8px; border-radius: 6px; border: 1px solid #fecdd3;
+      font-size: 0.8rem; color: #9f1239;
+    }
+    .visitor-counter img { height: 18px; }
+
+    @media print {
+      body { background: #fff; }
+      .actions-bar, .nav-buttons { display: none !important; }
+      .page-content { display: block !important; border-bottom: 1px dashed #ccc; padding-bottom: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Séance 7 : Mission Parcoursup 🎯</h1>
+    <p>Pourquoi ton année de Première (qui arrive) est plus importante que la Terminale.</p>
+    
+    <div style="margin-top: 15px; display:flex; gap:10px; align-items:center;">
+      <input type="text" id="prenom" placeholder="Ton Prénom" style="padding:5px; border-radius:4px; border:none; color:#333;">
+      <input type="text" id="nom" placeholder="Ton Nom" style="padding:5px; border-radius:4px; border:none; color:#333;">
+      
+      <div class="visitor-counter">
+        <span>Vues : </span>
+        <img src="https://img.shields.io/badge/Stat-Parcoursup-red?style=flat-square" alt="Compteur" />
+      </div>
+    </div>
+  </header>
+
+  <div class="progress-bar">
+    <div class="step active" id="step1"><div class="step-circle">1</div><span>C'est quoi ?</span></div>
+    <div class="step" id="step2"><div class="step-circle">2</div><span>Le Scoop</span></div>
+    <div class="step" id="step3"><div class="step-circle">3</div><span>Le Dossier</span></div>
+    <div class="step" id="step4"><div class="step-circle">4</div><span>Stratégie</span></div>
+  </div>
+
+  <div class="page-content active" id="page1">
+    <h2>Page 1 : Parcoursup pour les nuls 🤔</h2>
+    <div class="alert-box">
+      <strong>Définition simple :</strong> C'est le site web obligatoire pour s'inscrire en études supérieures (BTS, Fac, BUT...) après le Bac.
+    </div>
+    
+    <h3>Imagine que c'est Netflix...</h3>
+    <p>Sauf qu'au lieu de choisir des films, tu choisis des écoles. Et au lieu de cliquer sur "Play", tu dois <strong>attendre qu'ils t'acceptent</strong>.</p>
+    
+    <label>Qu'est-ce que tu as déjà entendu dire sur Parcoursup (rumeurs, stress, amis...) ?</label>
+    <textarea id="p1_rumeurs" placeholder="J'ai entendu que c'était compliqué, que c'était une loterie..."></textarea>
+  </div>
+
+  <div class="page-content" id="page2">
+    <h2>Page 2 : Le Scoop (Ça commence quand ?) 📅</h2>
+    <p>Beaucoup pensent que tout se joue en Terminale. <strong>C'EST FAUX.</strong></p>
+    <p>Regarde bien quels bulletins les écoles vont regarder dans ton dossier :</p>
+
+    <div class="timeline">
+      <div class="time-block">
+        <span class="time-label">Seconde</span>
+        Ignoré<br><small>(Ouf !)</small>
+      </div>
+      <div class="time-block time-active">
+        <span class="time-label">PREMIÈRE</span>
+        Trimestres 1, 2, 3<br><strong>100% VISIBLE</strong>
+      </div>
+      <div class="time-block time-active">
+        <span class="time-label">Terminale</span>
+        Trimestres 1, 2<br><strong>VISIBLE</strong>
+      </div>
+      <div class="time-block">
+        <span class="time-label">Terminale</span>
+        Trimestre 3<br><small>(Trop tard !)</small>
+      </div>
+    </div>
+
+    <div class="alert-box" style="border-color: #be123c; background: #fff0f5;">
+      🚨 <strong>Conclusion :</strong> Ton dossier Parcoursup commence officiellement en <strong>Septembre prochain</strong>. Tu as 5 trimestres pour convaincre. Si tu rates ta Première, tu gâches 60% de ton dossier.
+    </div>
+
+    <label>Est-ce que tu savais que les notes de l'année prochaine étaient définitives pour ton avenir ?</label>
+    <textarea id="p2_reaction" placeholder="Non je ne savais pas / Oui mais je n'avais pas réalisé l'importance..."></textarea>
+  </div>
+
+  <div class="page-content" id="page3">
+    <h2>Page 3 : Hacke ton Dossier 🕵️</h2>
+    <p>Un jury de BTS ne regarde pas que la moyenne générale. Voici ce qui peut sauver (ou couler) un dossier.</p>
+
+    <div class="dossier-grid">
+      <div class="bulletin-card">
+        <div class="bulletin-title">❌ Dossier "Risqué"</div>
+        <div class="grade-row"><span>Moyenne :</span> <strong>13/20</strong> (Pas mal)</div>
+        <div class="grade-row"><span>Absences :</span> <span style="color:red">15 1/2 journées</span></div>
+        <div class="grade-row"><span>Appréciation :</span> "Bavardages, peut mieux faire."</div>
+        <div style="margin-top:10px; font-size:0.85rem; color:#be123c;">
+          <strong>Verdict :</strong> Refusé en BTS sélectif. Pourquoi ? Parce qu'ils ont peur que tu sèches les cours.
+        </div>
+      </div>
+
+      <div class="bulletin-card">
+        <div class="bulletin-title">✅ Dossier "Pépite"</div>
+        <div class="grade-row"><span>Moyenne :</span> <strong>11/20</strong> (Moyen)</div>
+        <div class="grade-row"><span>Absences :</span> 0</div>
+        <div class="grade-row"><span>Appréciation :</span> "Élève sérieux, en progression, volontaire."</div>
+        <div style="margin-top:10px; font-size:0.85rem; color:#15803d;">
+          <strong>Verdict :</strong> Accepté ! Les profs préfèrent un élève moyen mais motivé qu'un élève "touriste".
+        </div>
+      </div>
+    </div>
+
+    <h3>Le "Mot Magique" des appréciations</h3>
+    <label>Selon toi, quel est le mot que les profs doivent écrire sur ton bulletin de Première pour plaire à Parcoursup ?</label>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button class="btn btn-prev" onclick="alert('Bof, c\'est bien mais ça ne suffit pas.')">Intelligent</button>
+      <button class="btn btn-prev" onclick="alert('Non, ça fait peur aux recruteurs.')">Drôle</button>
+      <button class="btn btn-next" onclick="alert('EXACTEMENT ! C\'est le mot clé.')">SÉRIEUX / INVESTI</button>
+    </div>
+  </div>
+
+  <div class="page-content" id="page4">
+    <h2>Page 4 : Ma Stratégie pour la Première 🚀</h2>
+    <p>Tu vas entrer en Première. C'est l'année où tu construis ton "passeport" pour l'après-bac.</p>
+
+    <h3>1. Mes Matières "Cibles"</h3>
+    <p>Tu ne peux pas être excellent partout. Choisis 2 matières professionnelles ou générales où tu vas viser une très bonne note pour remonter ton dossier.</p>
+    <textarea id="p4_matieres" placeholder="Je vais essayer de cartonner en Gestion / Anglais / Relation Client..."></textarea>
+
+    <h3>2. Mon "Joker" Appréciation</h3>
+    <p>Quel comportement vas-tu adopter pour avoir l'appréciation "Élève sérieux" dès le 1er trimestre de Première ?</p>
+    <textarea id="p4_comportement" placeholder="Ex: Je vais arrêter d'arriver en retard / Je vais participer une fois par cours..."></textarea>
+
+    <div style="margin-top: 30px; padding: 20px; background: #fff1f2; border: 1px solid #fda4af; border-radius: 8px;">
+      <h4 style="margin:0; color:#9f1239;">🎯 Le Défi est lancé</h4>
+      <p style="margin:5px 0 0; font-size:0.9rem;">Tu as maintenant un avantage sur les autres : tu sais que ça commence maintenant. Ne lâche rien l'année prochaine !</p>
+    </div>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="btn btn-prev" id="prevBtn" onclick="changePage(-1)" disabled>Précédent</button>
+    <div style="flex-grow:1;"></div>
+    <button class="btn btn-next" id="nextBtn" onclick="changePage(1)">Suivant</button>
+    <button class="btn btn-save hidden" id="saveBtn" onclick="saveWork()">💾 Enregistrer mon Plan Parcoursup</button>
+  </div>
+
+</div>
+
+<script>
+  let currentPage = 1;
+  const totalPages = 4;
+
+  function changePage(direction) {
+    document.getElementById(`page${currentPage}`).classList.remove('active');
+    document.getElementById(`step${currentPage}`).classList.remove('active');
+    if(direction > 0) document.getElementById(`step${currentPage}`).classList.add('completed');
+
+    currentPage += direction;
+
+    document.getElementById(`page${currentPage}`).classList.add('active');
+    document.getElementById(`step${currentPage}`).classList.add('active');
+
+    document.getElementById('prevBtn').disabled = (currentPage === 1);
+    
+    if (currentPage === totalPages) {
+      document.getElementById('nextBtn').classList.add('hidden');
+      document.getElementById('saveBtn').classList.remove('hidden');
+    } else {
+      document.getElementById('nextBtn').classList.remove('hidden');
+      document.getElementById('nextBtn').innerText = "Suivant";
+      document.getElementById('saveBtn').classList.add('hidden');
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function saveWork() {
+    const prenom = document.getElementById('prenom').value || "Eleve";
+    document.querySelectorAll('input, textarea').forEach(el => {
+      if(el.tagName === 'INPUT') el.setAttribute('value', el.value);
+      if(el.tagName === 'TEXTAREA') el.textContent = el.value;
+    });
+
+    const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], {type: "text/html"});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "Seance7_Parcoursup_" + prenom + ".html";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+</script>
+
+</body>
+</html>
