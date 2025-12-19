@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Module A2 • Escape game • Le sommeil</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#101a2f;
+      --text:#f2f5ff;
+      --muted:#c7d2fe;
+      --line:rgba(255,255,255,.14);
+      --ok:#22c55e;
+      --no:#ef4444;
+      --accent:#60a5fa;
+      --focus:#fbbf24;
+
+      --scale:1;
+      --spacing:0;
+      --lineh:1.45;
+      --font: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      --imgzoom:1;
+      --pixel:0;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:linear-gradient(180deg,#081026 0%, #0b1220 55%, #081026 100%);
+      color:var(--text);
+      line-height:var(--lineh);
+      font-size:calc(18px * var(--scale));
+      letter-spacing:calc(0px + var(--spacing));
+    }
+    a{color:inherit}
+    .skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .skip:focus{
+      left:12px;top:12px;width:auto;height:auto;z-index:1000;
+      background:var(--focus);color:#111827;padding:10px 12px;border-radius:12px;
+      border:0;outline:4px solid rgba(251,191,36,.35)
+    }
+
+    header{max-width:1150px;margin:0 auto;padding:18px 16px 10px}
+    .topRow{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .title{
+      display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(96,165,250,.14);
+      border:1px solid rgba(96,165,250,.35);
+      padding:8px 12px;border-radius:999px;
+      font-weight:900
+    }
+    h1{margin:10px 0 0;font-size:calc(34px * var(--scale));letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);max-width:900px}
+
+    main{max-width:1150px;margin:0 auto;padding:10px 16px 28px}
+    .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{
+      background:rgba(16,26,47,.92);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,.28);
+    }
+    .sectionTitle{margin:0 0 10px;font-size:calc(22px * var(--scale));font-weight:900}
+    .small{color:var(--muted);font-size:calc(14px * var(--scale))}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+
+    .nameRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input[type="text"]{
+      width:min(420px,100%);
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:12px 12px;
+      font-size:calc(18px * var(--scale));
+      outline:none;
+    }
+    input[type="text"]:focus{outline:4px solid rgba(96,165,250,.25);border-color:rgba(96,165,250,.6)}
+    button,.btn{
+      border:1px solid rgba(96,165,250,.45);
+      background:rgba(96,165,250,.18);
+      color:var(--text);
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:900;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      font-size:calc(16px * var(--scale));
+      user-select:none;
+    }
+    button:focus,.btn:focus{outline:4px solid rgba(251,191,36,.35);outline-offset:2px}
+    .secondary{
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+    }
+    .danger{
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .btn[aria-disabled="true"], button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      filter:saturate(.6);
+    }
+
+    .progressWrap{
+      display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 12px;
+    }
+    .bar{
+      flex:1;
+      min-width:220px;
+      height:14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(34,197,94,.95), rgba(96,165,250,.95));
+    }
+    .kpi{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+      font-weight:900;
+    }
+    .kpi span{color:var(--muted);font-weight:800}
+    .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      padding:8px 10px;border-radius:999px;
+      font-weight:900;
+    }
+    .badge.ok{
+      border-color:rgba(34,197,94,.55);
+      background:rgba(34,197,94,.12);
+    }
+
+    .rooms{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:780px){.rooms{grid-template-columns:1fr}}
+    .room{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      border-radius:16px;
+      padding:12px;
+    }
+    .roomTop{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+    .roomNum{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(96,165,250,.18);
+      border:1px solid rgba(96,165,250,.35);
+      font-weight:1000;
+      flex:0 0 auto;
+    }
+    .room h3{margin:0;font-size:calc(18px * var(--scale))}
+    .room p{margin:6px 0 0;color:var(--muted)}
+    .roomActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .status{
+      margin-top:10px;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.12);
+      color:var(--muted);
+      font-weight:800;
+    }
+    .status.ok{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.10);color:#dcfce7}
+    .status.no{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.08);color:#fee2e2}
+
+    .a11yControls{display:grid;gap:10px}
+    .toggle{display:flex;gap:10px;align-items:center;font-weight:900}
+    .toggle input{width:20px;height:20px}
+    .sliderBox{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      border-radius:14px;
+      padding:10px 10px;
+    }
+    .sliderLine{display:flex;gap:10px;align-items:center}
+    input[type="range"]{width:100%}
+    .val{
+      min-width:56px;
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+      color:var(--muted);
+      font-weight:900;
+    }
+    .hint{color:var(--muted);margin:8px 0 0}
+    .enc{margin:10px 0 0;font-weight:900}
+    .enc.ok{color:#dcfce7}
+    .enc.mid{color:#fde68a}
+    .enc.low{color:#fecaca}
+
+    .pixelated img, img.pixelated{
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip" href="#contenu">Aller au contenu</a>
+
+  <header>
+    <div class="topRow">
+      <div class="title">
+        <div class="pill" aria-label="Module">Module A2</div>
+        <div class="pill" aria-label="Thème">Le sommeil</div>
+        <div class="pill" aria-label="Mode">Escape game</div>
+      </div>
+
+      <div class="pill" aria-label="Compétences">C1 + C2</div>
+    </div>
+
+    <h1 id="titre">Mission Sommeil</h1>
+    <p class="sub">
+      Tu avances salle par salle. Quand une salle est terminée, la suivante se débloque.
+    </p>
+  </header>
+
+  <main id="contenu">
+    <div class="grid">
+      <section class="card" aria-label="Escape game">
+        <h2 class="sectionTitle">Ta mission</h2>
+
+        <div class="nameRow" style="margin-bottom:10px">
+          <label for="prenom" class="small" style="font-weight:900">Prénom</label>
+          <input id="prenom" type="text" inputmode="text" autocomplete="given-name" placeholder="Écris ton prénom" aria-label="Écris ton prénom">
+          <button id="btnSaveName" type="button">Valider</button>
+          <button id="btnResetAll" class="secondary danger" type="button">Tout recommencer</button>
+        </div>
+
+        <div class="progressWrap" aria-label="Progression">
+          <div class="kpi">
+            <div>Score <span id="scoreTxt">0/27</span></div>
+            <div>•</div>
+            <div>Salles <span id="roomsTxt">0/4</span></div>
+          </div>
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Barre de progression">
+            <div id="barFill"></div>
+          </div>
+          <a class="btn secondary" id="btnResume" href="partie1.html">Reprendre</a>
+        </div>
+
+        <div class="badges" aria-label="Compétences validées">
+          <div class="badge" id="bC1">C1 Traiter une information</div>
+          <div class="badge" id="bC2">C2 Analyser une situation</div>
+        </div>
+
+        <p class="hint" id="hello"></p>
+        <p class="enc" id="enc"></p>
+
+        <div class="hr"></div>
+
+        <h2 class="sectionTitle">Les salles</h2>
+
+        <div class="rooms" aria-label="Liste des salles">
+          <article class="room" id="room1">
+            <div class="roomTop">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <div class="roomNum" aria-hidden="true">1</div>
+                <div>
+                  <h3>Salle 1 • Situation</h3>
+                  <p>Comprendre le problème avec les écrans le soir</p>
+                </div>
+              </div>
+            </div>
+            <div class="roomActions">
+              <a class="btn" href="partie1.html">Ouvrir</a>
+              <button class="secondary" type="button" id="done1">Je valide la salle 1</button>
+            </div>
+            <div class="status" id="s1">Objectif: entrer dans la mission</div>
+          </article>
+
+          <article class="room" id="room2">
+            <div class="roomTop">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <div class="roomNum" aria-hidden="true">2</div>
+                <div>
+                  <h3>Salle 2 • Rythmes et cycles</h3>
+                  <p>Rythme circadien, mélatonine, cycle du sommeil</p>
+                </div>
+              </div>
+            </div>
+            <div class="roomActions">
+              <a class="btn" id="open2" href="partie2.html" aria-disabled="true">Ouvrir</a>
+              <button class="secondary" type="button" id="check2" disabled>Vérifier et débloquer</button>
+            </div>
+            <div class="status" id="s2">Verrouillée</div>
+          </article>
+
+          <article class="room" id="room3">
+            <div class="roomTop">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <div class="roomNum" aria-hidden="true">3</div>
+                <div>
+                  <h3>Salle 3 • Manque de sommeil</h3>
+                  <p>Repérer effets et conséquences (sociales et pro)</p>
+                </div>
+              </div>
+            </div>
+            <div class="roomActions">
+              <a class="btn" id="open3" href="partie%203.html" aria-disabled="true">Ouvrir</a>
+              <button class="secondary" type="button" id="check3" disabled>Vérifier et débloquer</button>
+            </div>
+            <div class="status" id="s3">Verrouillée</div>
+          </article>
+
+          <article class="room" id="room4">
+            <div class="roomTop">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <div class="roomNum" aria-hidden="true">4</div>
+                <div>
+                  <h3>Salle 4 • Sommeil récupérateur</h3>
+                  <p>Classer ce qui est conseillé et ce qui est à éviter</p>
+                </div>
+              </div>
+            </div>
+            <div class="roomActions">
+              <a class="btn" id="open4" href="partie4.html" aria-disabled="true">Ouvrir</a>
+              <button class="secondary" type="button" id="check4" disabled>Vérifier et finir</button>
+            </div>
+            <div class="status" id="s4">Verrouillée</div>
+          </article>
+        </div>
+
+        <div class="hr"></div>
+
+        <section class="card" style="background:rgba(255,255,255,.05)" aria-label="Aide">
+          <h2 class="sectionTitle">Aide</h2>
+          <p class="small" style="margin:0">
+            Si une salle ne se débloque pas, retourne dans la salle et termine les questions jusqu’au score maximum,
+            puis reviens ici et clique sur Vérifier et débloquer.
+          </p>
+        </section>
+      </section>
+
+      <aside class="card" aria-label="Options accessibilité">
+        <h2 class="sectionTitle">Options pour mieux lire</h2>
+
+        <div class="a11yControls">
+          <label class="toggle">
+            <input id="toggleDys" type="checkbox">
+            <span>Mode dys</span>
+          </label>
+
+          <div class="sliderBox">
+            <label for="fontScale" style="font-weight:900">Taille du texte</label>
+            <div class="sliderLine">
+              <input id="fontScale" type="range" min="100" max="180" value="100" step="5">
+              <div class="val" id="fontScaleVal">100%</div>
+            </div>
+            <div class="small">Augmente si tu vois mal ou si tu fatigues</div>
+          </div>
+
+          <div class="sliderBox">
+            <label for="pixel" style="font-weight:900">Texte en gros pixels</label>
+            <div class="sliderLine">
+              <input id="pixel" type="range" min="0" max="4" value="0" step="1">
+              <div class="val" id="pixelVal">0</div>
+            </div>
+            <div class="small">Grossit le rendu pour aider la lecture</div>
+          </div>
+
+          <div class="sliderBox">
+            <label for="imgZoom" style="font-weight:900">Zoom images</label>
+            <div class="sliderLine">
+              <input id="imgZoom" type="range" min="100" max="220" value="100" step="10">
+              <div class="val" id="imgZoomVal">100%</div>
+            </div>
+            <div class="small">Agrandit les images</div>
+          </div>
+
+          <button class="secondary" id="btnResetA11y" type="button">Réinitialiser</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    // Clés déjà utilisées dans les autres pages
+    const KEY_DYS = "a2_sleep_dys";
+    const KEY_SCALE = "a2_sleep_scale";
+    const KEY_IMGZOOM = "a2_sleep_imgzoom";
+
+    // Scores des parties
+    const SCORE_P2 = "a2_sleep_score_total";   // /10
+    const SCORE_P3 = "a2_act3_score_v1";       // /7
+    const SCORE_P4 = "a2_act4_score_v1";       // /10
+
+    // Clés escape game
+    const KEY_NAME = "a2_student_name";
+    const KEY_UNLOCK = "a2_escape_unlock_v1"; // 1..5
+
+    const MAX_P2 = 10, MAX_P3 = 7, MAX_P4 = 10;
+    const MAX_TOTAL = MAX_P2 + MAX_P3 + MAX_P4; // 27
+
+    const $ = (id) => document.getElementById(id);
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+    function getInt(key){ return parseInt(localStorage.getItem(key) || "0", 10) || 0; }
+
+    function getUnlock(){
+      const u = parseInt(localStorage.getItem(KEY_UNLOCK) || "1", 10) || 1;
+      return clamp(u, 1, 5);
+    }
+    function setUnlock(u){
+      localStorage.setItem(KEY_UNLOCK, String(clamp(u,1,5)));
+    }
+
+    function applyA11y(){
+      const dys = localStorage.getItem(KEY_DYS) === "1";
+      const scalePct = parseInt(localStorage.getItem(KEY_SCALE) || "100", 10) || 100;
+      const imgPct = parseInt(localStorage.getItem(KEY_IMGZOOM) || "100", 10) || 100;
+
+      const px = parseInt(localStorage.getItem("a2_escape_pixel") || "0", 10) || 0;
+
+      $("toggleDys").checked = dys;
+      $("fontScale").value = String(clamp(scalePct,100,180));
+      $("fontScaleVal").textContent = $("fontScale").value + "%";
+
+      $("imgZoom").value = String(clamp(imgPct,100,220));
+      $("imgZoomVal").textContent = $("imgZoom").value + "%";
+
+      $("pixel").value = String(clamp(px,0,4));
+      $("pixelVal").textContent = String(px);
+
+      // Mode dys = police sans-serif + plus d'espacement + interligne
+      if(dys){
+        document.documentElement.style.setProperty("--font", "system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif");
+        document.documentElement.style.setProperty("--spacing", "0.6px");
+        document.documentElement.style.setProperty("--lineh", "1.6");
+      }else{
+        document.documentElement.style.setProperty("--spacing", "0px");
+        document.documentElement.style.setProperty("--lineh", "1.45");
+      }
+
+      document.documentElement.style.setProperty("--scale", (scalePct/100).toFixed(2));
+      document.documentElement.style.setProperty("--imgzoom", (imgPct/100).toFixed(2));
+
+      // Effet gros pixels (sans casser la page)
+      document.documentElement.style.setProperty("--pixel", String(px));
+      if(px > 0){
+        document.body.style.transform = "scale(" + (1 + px*0.06).toFixed(2) + ")";
+        document.body.style.transformOrigin = "top center";
+        document.body.classList.add("pixelated");
+      }else{
+        document.body.style.transform = "";
+        document.body.classList.remove("pixelated");
+      }
+    }
+
+    function updateUI(){
+      const name = (localStorage.getItem(KEY_NAME) || "").trim();
+      $("prenom").value = name;
+
+      const score2 = clamp(getInt(SCORE_P2), 0, MAX_P2);
+      const score3 = clamp(getInt(SCORE_P3), 0, MAX_P3);
+      const score4 = clamp(getInt(SCORE_P4), 0, MAX_P4);
+
+      const total = score2 + score3 + score4;
+
+      // Complétion
+      const done1 = getUnlock() >= 2; // salle 1 validée manuellement
+      const done2 = score2 >= MAX_P2;
+      const done3 = score3 >= MAX_P3;
+      const done4 = score4 >= MAX_P4;
+
+      // Déverrouillage automatique
+      let u = getUnlock();
+      if(u < 2 && done1) u = 2;
+      if(u < 3 && done2) u = 3;
+      if(u < 4 && done3) u = 4;
+      if(u < 5 && done4) u = 5;
+      setUnlock(u);
+
+      // Résumé / reprendre
+      let resume = "partie1.html";
+      if(u >= 2) resume = "partie2.html";
+      if(u >= 3) resume = "partie%203.html";
+      if(u >= 4) resume = "partie4.html";
+      if(u >= 5) resume = "partie4.html";
+      $("btnResume").href = resume;
+
+      // Score + barre
+      $("scoreTxt").textContent = total + "/" + MAX_TOTAL;
+      const roomsDone = (done1?1:0) + (done2?1:0) + (done3?1:0) + (done4?1:0);
+      $("roomsTxt").textContent = roomsDone + "/4";
+      const pct = Math.round((total / MAX_TOTAL) * 100);
+      $("barFill").style.width = pct + "%";
+      const bar = document.querySelector(".bar[role='progressbar']");
+      if(bar) bar.setAttribute("aria-valuenow", String(pct));
+
+      // Message prénom
+      if(name){
+        $("hello").textContent = "Salut " + name + " ! Tu peux continuer ta mission.";
+      }else{
+        $("hello").textContent = "Écris ton prénom pour personnaliser ta mission.";
+      }
+
+      // Encouragement
+      const enc = $("enc");
+      enc.className = "enc";
+      if(u >= 5){
+        enc.classList.add("ok");
+        enc.textContent = "Mission réussie ! Tu as terminé toutes les salles.";
+      }else if(pct >= 70){
+        enc.classList.add("ok");
+        enc.textContent = "Bravo ! Tu es sur la bonne voie. Continue.";
+      }else if(pct >= 35){
+        enc.classList.add("mid");
+        enc.textContent = "Bien ! Reviens sur les questions qui te bloquent et réessaie.";
+      }else{
+        enc.classList.add("low");
+        enc.textContent = "Pas grave. Avance étape par étape. Tu vas y arriver.";
+      }
+
+      // Badges compétences
+      const bC1 = $("bC1");
+      const bC2 = $("bC2");
+      bC1.classList.toggle("ok", done1 && done2);
+      bC2.classList.toggle("ok", done3 && done4);
+
+      // Statuts salles
+      $("s1").className = "status " + (done1 ? "ok" : "");
+      $("s1").textContent = done1 ? "Validée" : "Objectif: entrer dans la mission";
+
+      // Salle 2
+      const open2 = $("open2");
+      const can2 = getUnlock() >= 2;
+      open2.setAttribute("aria-disabled", String(!can2));
+      if(!can2){ open2.classList.add("secondary"); open2.onclick = (e)=>e.preventDefault(); }
+      else{ open2.classList.remove("secondary"); open2.onclick = null; }
+
+      $("check2").disabled = !can2;
+      $("s2").className = "status " + (done2 ? "ok" : (can2 ? "" : "no"));
+      $("s2").textContent = done2 ? ("Validée • Score " + score2 + "/" + MAX_P2) :
+        (can2 ? ("À faire • Score " + score2 + "/" + MAX_P2) : "Verrouillée");
+
+      // Salle 3
+      const open3 = $("open3");
+      const can3 = getUnlock() >= 3;
+      open3.setAttribute("aria-disabled", String(!can3));
+      if(!can3){ open3.classList.add("secondary"); open3.onclick = (e)=>e.preventDefault(); }
+      else{ open3.classList.remove("secondary"); open3.onclick = null; }
+
+      $("check3").disabled = !can3;
+      $("s3").className = "status " + (done3 ? "ok" : (can3 ? "" : "no"));
+      $("s3").textContent = done3 ? ("Validée • Score " + score3 + "/" + MAX_P3) :
+        (can3 ? ("À faire • Score " + score3 + "/" + MAX_P3) : "Verrouillée");
+
+      // Salle 4
+      const open4 = $("open4");
+      const can4 = getUnlock() >= 4;
+      open4.setAttribute("aria-disabled", String(!can4));
+      if(!can4){ open4.classList.add("secondary"); open4.onclick = (e)=>e.preventDefault(); }
+      else{ open4.classList.remove("secondary"); open4.onclick = null; }
+
+      $("check4").disabled = !can4;
+      $("s4").className = "status " + (done4 ? "ok" : (can4 ? "" : "no"));
+      $("s4").textContent = done4 ? ("Validée • Score " + score4 + "/" + MAX_P4) :
+        (can4 ? ("À faire • Score " + score4 + "/" + MAX_P4) : "Verrouillée");
+    }
+
+    // Actions
+    $("btnSaveName").addEventListener("click", ()=>{
+      const v = ($("prenom").value || "").trim().slice(0,30);
+      if(v) localStorage.setItem(KEY_NAME, v);
+      updateUI();
+    });
+
+    $("prenom").addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); $("btnSaveName").click(); }
+    });
+
+    $("done1").addEventListener("click", ()=>{
+      setUnlock(Math.max(getUnlock(), 2));
+      updateUI();
+    });
+
+    function needMax(label, current, max){
+      const name = (localStorage.getItem(KEY_NAME)||"").trim();
+      const who = name ? (name + " • ") : "";
+      return who + label + " : il faut le score maximum " + max + "/" + max + ". Actuel : " + current + "/" + max + ".";
+    }
+
+    $("check2").addEventListener("click", ()=>{
+      const sc = clamp(getInt(SCORE_P2), 0, MAX_P2);
+      if(sc >= MAX_P2){
+        setUnlock(Math.max(getUnlock(), 3));
+      }else{
+        alert(needMax("Salle 2", sc, MAX_P2));
+      }
+      updateUI();
+    });
+
+    $("check3").addEventListener("click", ()=>{
+      const sc = clamp(getInt(SCORE_P3), 0, MAX_P3);
+      if(sc >= MAX_P3){
+        setUnlock(Math.max(getUnlock(), 4));
+      }else{
+        alert(needMax("Salle 3", sc, MAX_P3));
+      }
+      updateUI();
+    });
+
+    $("check4").addEventListener("click", ()=>{
+      const sc = clamp(getInt(SCORE_P4), 0, MAX_P4);
+      if(sc >= MAX_P4){
+        setUnlock(5);
+      }else{
+        alert(needMax("Salle 4", sc, MAX_P4));
+      }
+      updateUI();
+    });
+
+    // A11y events
+    $("toggleDys").addEventListener("change", ()=>{
+      localStorage.setItem(KEY_DYS, $("toggleDys").checked ? "1" : "0");
+      applyA11y();
+    });
+
+    $("fontScale").addEventListener("input", ()=>{
+      localStorage.setItem(KEY_SCALE, String($("fontScale").value));
+      applyA11y();
+    });
+
+    $("imgZoom").addEventListener("input", ()=>{
+      localStorage.setItem(KEY_IMGZOOM, String($("imgZoom").value));
+      applyA11y();
+    });
+
+    $("pixel").addEventListener("input", ()=>{
+      localStorage.setItem("a2_escape_pixel", String($("pixel").value));
+      applyA11y();
+    });
+
+    $("btnResetA11y").addEventListener("click", ()=>{
+      localStorage.removeItem(KEY_DYS);
+      localStorage.removeItem(KEY_SCALE);
+      localStorage.removeItem(KEY_IMGZOOM);
+      localStorage.removeItem("a2_escape_pixel");
+      applyA11y();
+    });
+
+    $("btnResetAll").addEventListener("click", ()=>{
+      // progress escape game
+      localStorage.removeItem(KEY_UNLOCK);
+
+      // scores des pages
+      localStorage.removeItem(SCORE_P2);
+      localStorage.removeItem("a2_sleep_score_scored");
+
+      localStorage.removeItem(SCORE_P3);
+      localStorage.removeItem("a2_act3_scored_v1");
+
+      localStorage.removeItem(SCORE_P4);
+      localStorage.removeItem("a2_act4_scored_v1");
+
+      // ne supprime pas le prénom automatiquement
+      setUnlock(1);
+      updateUI();
+    });
+
+    // Init
+    if(!localStorage.getItem(KEY_UNLOCK)) setUnlock(1);
+    applyA11y();
+    updateUI();
+
+    // Rafraîchit quand on revient d’un onglet
+    window.addEventListener("focus", updateUI);
+    document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) updateUI(); });
+  </script>
+</body>
+</html>
