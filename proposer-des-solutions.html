@@ -445,8 +445,14 @@
     function $all(sel, root=document){ return [...root.querySelectorAll(sel)]; }
 
     function save(){
-      localStorage.setItem(STORE_KEY, JSON.stringify(state));
-      $("#saveState").textContent = "Sauvegarde : active";
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+        const indicator = $("#saveState");
+        if(indicator) indicator.textContent = "Sauvegarde : active";
+      } catch(e) {
+        const indicator = $("#saveState");
+        if(indicator) indicator.textContent = "Sauvegarde : désactivée";
+      }
       computeProgress();
     }
 
@@ -506,15 +512,16 @@
       return Math.abs(x - y) < 0.02;
     }
 
+    // Valeurs calculees a partir du Document B
     const EXPECT = {
       recettes: 1375.00,
-      fixes: 593.27,
-      courantes: 508.50,
-      equip: 172.50,
-      depenses: 1274.27,
-      epargne: 100.73,
-      epargne5: 503.65,
-      manque: 185.35
+      fixes: 593.27,    // Somme des charges fixes
+      courantes: 508.50, // Somme des depenses courantes
+      equip: 172.50,     // Somme equipement
+      depenses: 1274.27, // Total depenses
+      epargne: 100.73,   // Recettes - Depenses
+      epargne5: 503.65,  // 100.73 * 5
+      manque: 185.35     // Exercice suppose un but a 689e (contexte)
     };
 
     function correctQ11(){
@@ -622,6 +629,7 @@
       const compte = $("#compte").value || "";
       const args = ($("#args").value || "").toLowerCase();
 
+      // LEP choisi car revenus < 22k et taux 3.5% (voir Doc D)
       const okChoice = (compte === "lep");
 
       const hasRevenus = /(revenu|revenus|seuil|ne depasse)/i.test(args);
