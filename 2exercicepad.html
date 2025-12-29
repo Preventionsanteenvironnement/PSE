@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>PAD - Risque Bruit (Romain)</title>
+<style>
+  :root{
+    --bg:#0f172a; --text:#f1f5f9; --muted:#94a3b8; 
+    --line:rgba(255,255,255,.12);
+    --c1:#8b5cf6; --c2:#3b82f6; --c3:#06b6d4; --c4:#10b981; --c5:#f59e0b; --err:#ef4444;
+    --font-ui: system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--font-ui); color:var(--text);
+    background:var(--bg); padding:16px; padding-bottom:140px;
+    background-image: radial-gradient(at 0% 0%, rgba(16,185,129,0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+  
+  .wrap{max-width:800px; margin:0 auto; display:grid; gap:20px}
+  
+  /* --- Header --- */
+  .hero{ background:rgba(30,41,59,0.8); padding:20px; border-radius:16px; border:1px solid var(--line); position: relative; }
+  .pedago-box { 
+    background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-top:10px; font-size:0.9rem;
+    border-left: 4px solid var(--c3);
+  }
+  .pedago-title { color:var(--c3); font-weight:bold; text-transform:uppercase; font-size:0.8rem; margin-bottom:5px; display:block; }
+  .copyright { font-size: 0.65rem; color: var(--muted); opacity: 0.6; margin-top: 5px; display: block; text-align: right; }
+
+  /* --- Login --- */
+  #loginOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login-card { background:#1e293b; padding:30px; border-radius:24px; text-align:center; width:100%; max-width:400px; border:1px solid var(--line); }
+  .login-avatar { width:100px; height:100px; border-radius:50%; margin-bottom:10px; border:3px solid var(--c3); object-fit:cover; box-shadow: 0 0 20px rgba(6,182,212,0.3); }
+  .prof-intro { font-size: 1.1rem; font-weight: 800; color: white; margin-bottom: 5px; }
+  .prof-sub { color: var(--c3); font-size: 0.9rem; margin-bottom: 20px; font-style: italic; }
+  input { background:rgba(0,0,0,0.3); border:1px solid var(--line); color:white; padding:12px; border-radius:8px; width:100%; margin:10px 0; font-size:1rem; }
+  
+  /* --- Game --- */
+  .card { background:rgba(30,41,59,0.9); padding:20px; border-radius:20px; border:1px solid var(--line); margin-top:20px; }
+  .hud-strip { display:flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--line); padding: 10px 20px; border-radius: 99px; font-weight: 700; font-size: 0.9rem; backdrop-filter: blur(5px); }
+  .progress-track{ width:100px; height:8px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; margin:0 10px; }
+  .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--c1), var(--c3)); transition:width 0.5s ease; }
+
+  .definition-zone { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
+  .def-label { font-weight:900; text-transform:uppercase; display:block; margin-bottom:5px; font-size:0.8rem; opacity:0.8; }
+
+  .img-container { width:100%; height:200px; background:#000; border-radius:12px; overflow:hidden; border:1px solid var(--line); margin-bottom:20px; display:flex; align-items:center; justify-content:center; }
+  .sit-img { width:100%; height:100%; object-fit:contain; }
+
+  .prompt { font-weight:bold; margin-bottom:10px; display:block; color:white; }
+  
+  .drop-slot { background:rgba(255,255,255,0.05); border:2px dashed var(--muted); border-radius:12px; padding:15px; min-height:70px; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:600; color:var(--muted); transition:0.3s; }
+  .drop-slot.filled { border-style:solid; border-color:var(--c3); background:rgba(6,182,212,0.15); color:white; }
+  .drop-slot.active-target { border-color:var(--c4); background:rgba(16,185,129,0.1); animation:pulse 1s infinite; }
+  
+  .items-list { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding-top:20px; margin-top:20px; border-top:1px solid var(--line); }
+  .item-label { background:var(--c2); padding:10px 16px; border-radius:12px; font-weight:600; cursor:pointer; border:2px solid transparent; transition:0.2s; user-select:none; font-size:0.9rem; }
+  .item-label.selected { background:var(--c1); border-color:white; transform:scale(1.05); }
+  .item-label.placed { opacity:0.2; pointer-events:none; }
+
+  /* Coach */
+  #floatCoach { position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; align-items:flex-end; z-index:100; transition:0.3s; }
+  #floatCoach.left { right:auto; left:20px; align-items:flex-start; }
+  #floatBubble { background:#334155; padding:15px; border-radius:15px 15px 0 15px; margin-bottom:10px; max-width:250px; box-shadow:0 5px 15px rgba(0,0,0,0.3); border:1px solid var(--line); }
+  #floatAvatar { width:70px; height:70px; border-radius:50%; border:3px solid white; cursor:pointer; background:#0f172a; object-fit:cover; }
+
+  .btn { background:var(--c3); color:#0f172a; padding:12px 30px; border-radius:12px; font-weight:bold; border:none; cursor:pointer; font-size:1rem; width:100%; margin-top:15px; }
+  .btn:disabled { opacity:0.5; filter:grayscale(1); }
+  
+  .panel { margin-top:15px; padding:15px; border-radius:12px; display:none; text-align:center; font-weight:bold; }
+  .panel.ok { background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid var(--c4); }
+  .panel.bad { background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid var(--err); }
+
+  .schema-row { display:grid; grid-template-columns: 1fr 2fr; align-items:center; gap:10px; text-align:right; font-size:0.8rem; font-weight:bold; color:var(--c3); }
+
+  @keyframes pulse { 0%{opacity:1} 50%{opacity:0.6} 100%{opacity:1} }
+  #confetti{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+  #finalScreen { text-align:center; padding:40px 20px; display:none; }
+  .big-score { font-size:3rem; font-weight:900; margin:10px 0; background:linear-gradient(to right, var(--c4), var(--c3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+</style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <img src="avatar-neutral.png" class="login-avatar" alt="Prof">
+    <div class="prof-intro">Bonjour, je suis ton Prof PSE</div>
+    <div class="prof-sub">Je serai ton guide pour cet exercice.</div>
+    <h2>Analyse d'une Situation (PAD)</h2>
+    <div style="text-align:left; font-size:0.9rem; color:#cbd5e1; margin:15px 0; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
+      <strong>OBJECTIF :</strong> Identifier un danger, la situation dangereuse, l'événement déclencheur et le dommage.<br><br>
+      <strong>CONTEXTE :</strong> Nous allons analyser la situation de travail de Romain.
+    </div>
+    <div style="font-size:0.7rem; color:#64748b; margin-bottom:15px;">(Source : Éditions Foucher)</div>
+    <input type="text" id="prenom" placeholder="Ton prénom">
+    <button class="btn" onclick="startGame()">C'est parti !</button>
+  </div>
+</div>
+
+<div id="floatCoach" style="display:none">
+  <div id="floatBubble">...</div>
+  <img id="floatAvatar" src="avatar-neutral.png" onclick="this.parentElement.classList.toggle('left')">
+</div>
+
+<div class="wrap" id="gameWrap" style="display:none">
+  <div class="hero">
+    <h3 style="margin:0">Situation : Le risque lié au bruit</h3>
+    <div class="pedago-box">
+      <span class="pedago-title">Contexte</span>
+      Romain travaille depuis 10 ans dans un atelier où le niveau sonore est très élevé (90 dB). Il commence à avoir des problèmes d'audition.
+    </div>
+    <span class="copyright">(Éditions Foucher)</span>
+  </div>
+
+  <div class="hud-strip">
+    <span>Étape <span id="txtProg" style="color:var(--c3)">1 / 5</span></span>
+    <div class="progress-track"><div id="bar" class="progress-fill"></div></div>
+    <span>Score <span id="txtScore" style="color:#fff">0</span></span>
+  </div>
+
+  <div class="card" id="gameCard">
+    <div id="gameContent">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+        <span style="font-weight:bold; color:var(--c3)" id="stepTitle">ÉTAPE 1</span>
+      </div>
+
+      <div class="definition-zone">
+        <span class="def-label">Définition :</span>
+        <span id="defText">...</span>
+      </div>
+
+      <div class="img-container">
+        <img id="qImg" class="sit-img" src="" alt="Illustration manquante">
+      </div>
+
+      <span class="prompt" id="promptText">...</span>
+      
+      <div id="dragZone"></div>
+      <div id="itemsZone" class="items-list"></div>
+
+      <button class="btn" id="btnVal" onclick="validate()">Valider</button>
+      <div id="feedback" class="panel"></div>
+    </div>
+
+    <div id="finalScreen">
+      <h2>Analyse Terminée !</h2>
+      <div class="big-score" id="finalScoreVal">0/5</div>
+      <p style="font-size:1.2rem; margin-bottom:30px">Tu as complété le schéma du processus d'apparition du dommage.</p>
+      <button class="btn" onclick="location.reload()">Recommencer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* --- DONNÉES (CORRIGÉES POUR VOS FICHIERS IMAGES) --- */
+const AVATARS = { neutral: "avatar-neutral.png", happy: "avatar-bravo.png", think: "avatar-reflechir.png", warn: "avatar-attention.png" };
+
+const DATA = [
+  {
+    title: "LE DANGER",
+    def: "C'est la cause capable de provoquer une lésion.",
+    img: "bruit-danger.jpg", // Correspond à votre fichier
+    prompt: "Quel est l'élément dangereux dans l'atelier ?",
+    items: [
+      {id:"ok", txt:"Le niveau de bruit de 90 dB(A)"},
+      {id:"no1", txt:"Les outils de travail"},
+      {id:"no2", txt:"La poussière"}
+    ],
+    sol: "ok",
+    coach: "Regarde le sonomètre. Quelle est la valeur qui dépasse le seuil de danger ?"
+  },
+  {
+    title: "LA SITUATION DANGEREUSE",
+    def: "Situation où l'opérateur est exposé au danger.",
+    img: "bruit-situation.jpg", // Correspond à votre fichier
+    prompt: "Reconstitue la situation de travail dangereuse.",
+    items: [
+      {id:"ok", txt:"Romain travaille dans un atelier où le niveau de bruit est de 90 dB(A)"},
+      {id:"no1", txt:"Romain discute avec son collègue"},
+      {id:"no2", txt:"Romain porte un casque antibruit"}
+    ],
+    sol: "ok",
+    coach: "C'est la rencontre : Romain + Son environnement bruyant."
+  },
+  {
+    title: "L'ÉVÉNEMENT DÉCLENCHEUR",
+    def: "L'événement (soudain ou prolongé) qui cause le dommage.",
+    img: "bruit-evenement.jpg", // Correspond à votre fichier
+    prompt: "Qu'est-ce qui a provoqué le problème sur le long terme ?",
+    items: [
+      {id:"ok", txt:"Durée d'exposition prolongée au bruit (10 ans)"},
+      {id:"no1", txt:"Un bruit d'explosion soudain"},
+      {id:"no2", txt:"Une chute d'objet"}
+    ],
+    sol: "ok",
+    coach: "Regarde les horloges. Cela ne s'est pas fait en un jour."
+  },
+  {
+    title: "LE DOMMAGE",
+    def: "La lésion ou l'atteinte à la santé.",
+    img: "bruit-dommage.jpg", // Correspond à votre fichier
+    prompt: "De quoi souffre Romain ?",
+    items: [
+      {id:"ok", txt:"Perte auditive"},
+      {id:"no1", txt:"Mal de tête (Céphalée)"},
+      {id:"no2", txt:"Fatigue visuelle"}
+    ],
+    sol: "ok",
+    coach: "Il fait répéter son collègue : 'Qu'est-ce que tu dis ?'."
+  },
+  {
+    title: "SYNTHÈSE DU PAD",
+    def: "Reconstruisons le schéma complet de la situation.",
+    img: "bruit-situation.jpg", 
+    prompt: "Place tous les éléments au bon endroit.",
+    isFinal: true,
+    slots: [
+      {id:"f1", label:"DANGER"},
+      {id:"f2", label:"SITUATION DANGEREUSE"},
+      {id:"f3", label:"ÉVÉNEMENT DÉCLENCHEUR"},
+      {id:"f4", label:"DOMMAGE"}
+    ],
+    items: [
+      {id:"i1", txt:"Niveau de bruit de 90 dB(A)"},
+      {id:"i2", txt:"Romain travaille dans l'atelier bruyant"},
+      {id:"i3", txt:"Exposition prolongée (10 ans)"},
+      {id:"i4", txt:"Perte auditive"}
+    ],
+    sol: {"f1":"i1", "f2":"i2", "f3":"i3", "f4":"i4"},
+    coach: "Danger -> Situation -> Événement -> Dommage. Tu l'as !"
+  }
+];
+
+/* --- LOGIQUE --- */
+let idx = 0;
+let score = 0;
+let selectedItem = null;
+let placedItems = {};
+
+const $=(id)=>document.getElementById(id);
+const setCoach=(t,m="neutral")=>{ $("floatBubble").textContent=t; if(AVATARS[m]) $("floatAvatar").src=AVATARS[m]; }
+
+function startGame(){
+  const prenom = $("prenom").value;
+  if(!prenom){ alert("Merci de mettre ton prénom !"); return; }
+  $("loginOverlay").style.display = "none";
+  $("floatCoach").style.display = "flex";
+  $("gameWrap").style.display = "block";
+  setCoach(`Bonjour ${prenom} ! Analysons la situation de Romain.`);
+  loadStep();
+}
+
+function loadStep(){
+  const d = DATA[idx];
+  selectedItem = null;
+  placedItems = {};
+  
+  $("stepTitle").textContent = d.title;
+  $("defText").textContent = d.def;
+  $("promptText").textContent = d.prompt;
+  $("qImg").src = d.img;
+  
+  $("btnVal").disabled = false;
+  $("feedback").style.display = "none";
+  setCoach(d.coach);
+
+  const dragZone = $("dragZone");
+  dragZone.innerHTML = "";
+  
+  if(d.isFinal){
+    d.slots.forEach(s => {
+      let row = document.createElement("div");
+      row.className = "schema-row";
+      row.innerHTML = `<span>${s.label} :</span>`;
+      let slot = document.createElement("div");
+      slot.className = "drop-slot";
+      slot.id = s.id;
+      slot.textContent = "Glisser ici...";
+      slot.onclick = () => handleSlotClick(slot, s.id);
+      row.appendChild(slot);
+      dragZone.appendChild(row);
+    });
+  } else {
+    let slot = document.createElement("div");
+    slot.className = "drop-slot";
+    slot.id = "singleSlot";
+    slot.textContent = "Touche une étiquette puis touche ici";
+    slot.onclick = () => handleSlotClick(slot, "singleSlot");
+    dragZone.appendChild(slot);
+  }
+
+  const itemZone = $("itemsZone");
+  itemZone.innerHTML = "";
+  
+  let itemsMixed = [...d.items].sort(() => Math.random() - 0.5);
+  
+  itemsMixed.forEach(i => {
+    let btn = document.createElement("div");
+    btn.className = "item-label";
+    btn.textContent = i.txt;
+    btn.id = "item_" + i.id;
+    btn.onclick = () => handleItemClick(i, btn);
+    itemZone.appendChild(btn);
+  });
+  updateHud();
+}
+
+function handleItemClick(itemData, domElement){
+  if(domElement.classList.contains("placed")) return;
+  document.querySelectorAll(".item-label").forEach(el => el.classList.remove("selected"));
+  domElement.classList.add("selected");
+  selectedItem = { data: itemData, dom: domElement };
+  document.querySelectorAll(".drop-slot:not(.filled)").forEach(s => s.classList.add("active-target"));
+}
+
+function handleSlotClick(slotDom, slotId){
+  if(!selectedItem) return;
+  slotDom.textContent = selectedItem.data.txt;
+  slotDom.classList.add("filled");
+  slotDom.classList.remove("active-target");
+  selectedItem.dom.classList.add("placed");
+  selectedItem.dom.classList.remove("selected");
+  placedItems[slotId] = selectedItem.data.id;
+  selectedItem = null;
+}
+
+function validate(){
+  const d = DATA[idx];
+  let isCorrect = false;
+  
+  if(d.isFinal){
+    if(Object.keys(placedItems).length < 4){
+      setCoach("Il manque des éléments !", "warn");
+      return;
+    }
+    isCorrect = true;
+    for(let key in d.sol){
+      if(placedItems[key] !== d.sol[key]) isCorrect = false;
+    }
+  } else {
+    if(!placedItems["singleSlot"]){
+      setCoach("Tu n'as rien mis dans la case !", "warn");
+      return;
+    }
+    if(placedItems["singleSlot"] === d.sol) isCorrect = true;
+  }
+
+  const fb = $("feedback");
+  fb.style.display = "block";
+  $("btnVal").disabled = true;
+
+  if(isCorrect){
+    score++;
+    fb.textContent = "Bravo ! C'est exact.";
+    fb.className = "panel ok";
+    setCoach("Super !", "happy");
+    updateHud();
+    
+    // CONFETTIS SEULEMENT À LA FIN
+    if(idx === DATA.length - 1){
+       setTimeout(() => {
+         $("gameContent").style.display = "none";
+         $("finalScreen").style.display = "block";
+         $("finalScoreVal").textContent = score + "/5";
+         launchConfetti(); 
+       }, 2000);
+    } else {
+       setTimeout(() => { idx++; loadStep(); }, 2000);
+    }
+  } else {
+    fb.textContent = "Erreur. Regarde bien la définition.";
+    fb.className = "panel bad";
+    setCoach("Aïe... Essaye de retenir la correction.", "think");
+    if(idx < DATA.length - 1){
+       setTimeout(() => { idx++; loadStep(); }, 4000);
+    }
+  }
+}
+
+const updateHud=()=>{
+  $("txtProg").textContent=`${Math.min(idx+1, 5)} / 5`;
+  $("bar").style.width=`${(idx/5)*100}%`;
+  $("txtScore").textContent=score;
+}
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const pieces = [];
+  for(let i=0; i<100; i++){ pieces.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height - canvas.height, color: `hsl(${Math.random()*360}, 100%, 50%)`, size: Math.random()*8+4, speed: Math.random()*3+2 }); }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); p.y += p.speed; if(p.y > canvas.height) p.y = -10; });
+    requestAnimationFrame(draw);
+  }
+  draw(); setTimeout(()=>cancelAnimationFrame(draw), 5000);
+}
+</script>
+</body>
+</html>
