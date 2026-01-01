@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuage de Mots - Classe en Direct</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        
+        /* Zone de saisie (Élève) */
+        .input-zone { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto 30px auto; }
+        input[type="text"] { width: 70%; padding: 10px; font-size: 18px; border: 2px solid #ddd; border-radius: 8px; }
+        button.send { padding: 10px 20px; font-size: 18px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        button.send:hover { background-color: #0056b3; }
+
+        /* Le Nuage (Affichage) */
+        #cloud-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 1000px; margin: 0 auto; }
+        .word-tag { background-color: white; padding: 10px 20px; border-radius: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 20px; animation: popIn 0.5s ease; color: #333; }
+        
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Zone Prof (Cachée en bas) */
+        #admin-section { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ccc; color: #888; font-size: 0.9em; }
+        .hidden { display: none; }
+        #reset-btn { background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px;}
+        #reset-btn:hover { background-color: #a71d2a; }
+    </style>
+</head>
+<body>
+
+    <h1>☁️ Le Nuage de la Classe</h1>
+
+    <div class="input-zone">
+        <input type="text" id="wordInput" placeholder="Entrez un mot..." autocomplete="off">
+        <button class="send" onclick="envoyerMot()">Envoyer</button>
+    </div>
+
+    <div id="cloud-container">
+        </div>
+
+    <div id="admin-section">
+        <span id="login-link" style="cursor:pointer; text-decoration:underline;">Accès Prof</span>
+        
+        <div id="login-form" class="hidden">
+            <br>
+            <input type="email" id="email" placeholder="Email prof" style="font-size:14px;">
+            <input type="password" id="password" placeholder="Mot de passe" style="font-size:14px;">
+            <button onclick="connexionProf()">Se connecter</button>
+        </div>
+
+        <div id="admin-controls" class="hidden">
+            <p>✅ Mode Professeur activé</p>
+            <button id="reset-btn" onclick="toutEffacer()">⚠️ VIDER LE TABLEAU</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importation des outils Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // CONFIGURATION FIREBASE (Vos clés sont déjà insérées ici)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        // Démarrage de Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const collectionName = "reponses_live"; 
+
+        // --- 1. AFFICHAGE EN TEMPS RÉEL (Pour tout le monde) ---
+        onSnapshot(collection(db, collectionName), (snapshot) => {
+            const container = document.getElementById("cloud-container");
+            container.innerHTML = ""; // On vide l'écran pour rafraîchir
+            
+            snapshot.forEach((doc) => {
+                const mot = doc.data().texte;
+                // Création de la petite étiquette visuelle
+                const tag = document.createElement("div");
+                tag.className = "word-tag";
+                // Petites couleurs aléatoires
+                const colors = ['#FFDDC1', '#C7CEEA', '#B5EAD7', '#E2F0CB', '#FFDAC1', '#FF9AA2'];
+                tag.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                tag.textContent = mot;
+                container.appendChild(tag);
+            });
+        });
+
+        // --- 2. ENVOI DES MOTS (Élèves) ---
+        window.envoyerMot = async function() {
+            const input = document.getElementById("wordInput");
+            const texte = input.value.trim();
+            if (texte.length > 0) {
+                try {
+                    await addDoc(collection(db, collectionName), {
+                        texte: texte,
+                        timestamp: Date.now()
+                    });
+                    input.value = ""; // Vider le champ
+                } catch (e) {
+                    console.error("Erreur:", e);
+                    alert("Erreur d'envoi. Vérifiez votre connexion.");
+                }
+            }
+        }
+
+        // --- 3. GESTION PROF (Connexion & Reset) ---
+        
+        // Afficher le petit formulaire quand on clique sur "Accès Prof"
+        document.getElementById("login-link").addEventListener("click", () => {
+            document.getElementById("login-form").classList.toggle("hidden");
+        });
+
+        // Fonction de connexion
+        window.connexionProf = function() {
+            const email = document.getElementById("email").value;
+            const pass = document.getElementById("password").value;
+            signInWithEmailAndPassword(auth, email, pass)
+                .catch((error) => alert("Erreur de connexion : " + error.message));
+        }
+
+        // Surveiller si le prof est connecté
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById("login-form").classList.add("hidden");
+                document.getElementById("login-link").classList.add("hidden");
+                document.getElementById("admin-controls").classList.remove("hidden");
+            }
+        });
+
+        // Fonction RESET (Le bouton rouge)
+        window.toutEffacer = async function() {
+            if (confirm("Voulez-vous vraiment effacer tous les mots ?")) {
+                const q = query(collection(db, collectionName));
+                const querySnapshot = await getDocs(q);
+                // On supprime chaque document un par un
+                querySnapshot.forEach((docSnap) => {
+                    deleteDoc(docSnap.ref);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
