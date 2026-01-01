@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5"/>
+<title>Module 3 : Analyse des Risques</title>
+<style>
+  :root{
+    --bg:#0f172a; --text:#f1f5f9; 
+    --card-bg: white;
+    --font-ui: system-ui, -apple-system, sans-serif;
+    
+    /* Couleurs du schéma PAD */
+    --c-danger: #fef08a; --c-sit: #fbcfe8; --c-evt: #fdba74; --c-dom: #bbf7d0;
+    
+    /* Couleurs Matrice */
+    --mat-green: #10b981; 
+    --mat-red: #ea580c; /* Orange foncé pour la zone prioritaire */
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--font-ui); color:var(--text);
+    background:var(--bg); padding:10px; padding-bottom:100px;
+    background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 80%);
+    background-attachment: fixed;
+    user-select: none; overflow-x: hidden;
+  }
+  .wrap{max-width:900px; margin:0 auto; min-height: 90vh; display: flex; flex-direction: column;}
+
+  /* HEADER */
+  .header-zone { display:flex; align-items:center; gap:15px; background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+  .avatar-circle { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #38bdf8; background: #0f172a; object-fit: cover; }
+  .coach-bubble { font-size: 0.9rem; color: #e2e8f0; line-height: 1.4; }
+
+  /* PAGES */
+  .page-section { display: none; animation: fadeIn 0.5s; }
+  .page-section.active { display: block; }
+
+  /* LOGIN & INTRO */
+  .login-box, .intro-box { text-align: center; padding: 30px 20px; background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+  .name-input { background: #334155; border: 2px solid #475569; color: white; padding: 15px; border-radius: 10px; font-size: 1.1rem; width: 80%; text-align: center; margin: 20px auto; display: block; }
+  .btn-start { padding: 15px 30px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 20px; box-shadow: 0 4px 0 #0284c7; width: 100%; transition: 0.2s;}
+  .btn-start:active { transform: translateY(2px); box-shadow: 0 2px 0 #0284c7; }
+
+  /* --- STYLE PAGE 2 (PAD) --- */
+  .pad-container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; position: relative; }
+  .pad-connector { width: 4px; background: #94a3b8; margin: 0 auto; height: 20px; border-radius: 2px; }
+  .pad-box { background: white; border-radius: 12px; padding: 10px; border-left: 6px solid #ccc; color: #334155; position: relative; transition: 0.3s; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; }
+  .box-danger { border-color: #eab308; background: #fefce8; }
+  .box-sit { border-color: #db2777; background: #fdf2f8; }
+  .box-evt { border-color: #ea580c; background: #fff7ed; }
+  .box-dom { border-color: #16a34a; background: #f0fdf4; }
+  .pad-title { font-weight: 800; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 5px; color: #475569; }
+  .pad-def { font-size: 0.75rem; color: #64748b; font-style: italic; margin-bottom: 10px; line-height: 1.2; }
+  .pad-slot { background: rgba(255,255,255,0.6); border: 2px dashed #cbd5e1; border-radius: 8px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; overflow: hidden; }
+  .pad-slot img { width: 100%; height: 100%; object-fit: contain; }
+  .pad-slot.filled { border-style: solid; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+  /* --- STYLE PAGE 3 (ESTIMER) --- */
+  .scale-container { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; color:#1e293b; }
+  .scale-title { font-weight: bold; margin-bottom: 10px; color: #0f172a; text-transform: uppercase; font-size: 0.9rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+  .scale-options { display: flex; gap: 5px; justify-content: space-between; }
+  .scale-btn { flex: 1; padding: 15px 5px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; color: #64748b; transition: 0.2s; text-align: center; }
+  .scale-btn:hover { background: #e2e8f0; }
+  .scale-btn.selected { background: #0ea5e9; color: white; border-color: #0284c7; box-shadow: 0 2px 5px rgba(14, 165, 233, 0.4); transform: scale(1.05); }
+
+  /* --- STYLE PAGE 4 (MATRICE) --- */
+  .matrix-grid { 
+      display: grid; grid-template-columns: 30px repeat(4, 1fr); grid-template-rows: repeat(4, 1fr) 30px; 
+      gap: 2px; background: #e2e8f0; padding: 5px; border-radius: 8px; margin: 20px auto; max-width: 400px; position: relative;
+  }
+  .mat-cell { background: #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; color: rgba(255,255,255,0.8); position: relative; height: 50px; }
+  .mat-green { background-color: var(--mat-green); }
+  .mat-red { background-color: var(--mat-red); }
+  .mat-label-x { grid-row: 5; text-align: center; font-size: 0.8rem; color: #64748b; align-self: center; font-weight: bold;}
+  .mat-label-y { grid-column: 1; text-align: right; font-size: 0.8rem; color: #64748b; padding-right: 5px; align-self: center; font-weight: bold;}
+  
+  .mat-dot { 
+      width: 20px; height: 20px; background: white; border: 4px solid #0f172a; border-radius: 50%; 
+      position: absolute; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 0; transform: scale(0);
+  }
+
+  /* --- STYLE PAGE 5 (PREVENTION) --- */
+  .prev-list { display: flex; flex-direction: column; gap: 15px; }
+  .prev-zone { 
+      background: white; border-radius: 10px; padding: 15px; border-left: 6px solid #ccc; 
+      min-height: 100px; display: flex; align-items: center; justify-content: center; 
+      position: relative; transition: 0.2s; border: 2px dashed #cbd5e1;
+  }
+  .prev-zone.filled { border-style: solid; background: #fff; justify-content: flex-start; padding: 10px;}
+  .prev-zone::before { content: attr(data-title); position: absolute; top: -10px; left: 10px; background: #334155; color: white; font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
+  
+  .prev-img-content { width: 100%; height: 80px; object-fit: contain; border-radius: 6px; }
+
+  /* DOCK IMAGES */
+  .dock-container { 
+      display: flex; gap: 10px; overflow-x: auto; padding: 15px; 
+      background: rgba(15, 23, 42, 0.95); border-top: 1px solid rgba(255,255,255,0.1);
+      position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; justify-content: center;
+  }
+  .dock-item { width: 80px; height: 80px; background: white; border-radius: 8px; padding: 5px; cursor: pointer; border: 3px solid transparent; transition: 0.2s; flex-shrink: 0; display:flex; align-items:center; justify-content:center;}
+  .dock-item:hover, .dock-item.selected { transform: scale(1.1); border-color: #38bdf8; }
+  .dock-item img { width: 100%; height: 100%; object-fit: contain; }
+  .dock-item.used { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
+
+  @media (min-width: 600px) {
+      .pad-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .pad-box { min-height: 180px; }
+      .connector-vertical { display: none; }
+      .box-danger { grid-column: 1; grid-row: 1; }
+      .box-sit { grid-column: 1; grid-row: 2; }
+      .box-evt { grid-column: 2; grid-row: 1; }
+      .box-dom { grid-column: 2; grid-row: 2; }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .confetti { position: fixed; width: 10px; height: 10px; background-color: #f00; animation: fall linear forwards; z-index: 9999; top: -10px; }
+  @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+    <div class="header-zone">
+        <img src="avatar-neutral.png" class="avatar-circle" id="coachImg" onerror="this.src='https://placehold.co/60?text=Prof'">
+        <div class="coach-bubble" id="coachText">Bonjour ! Prêt pour le Module 3 : L'Analyse des Risques ?</div>
+    </div>
+
+    <div id="page0" class="page-section active">
+        <div class="login-box">
+            <h1 style="color:white; margin-bottom:10px;">ANALYSE DES RISQUES</h1>
+            <div style="font-size:3rem; margin:20px 0;">🔍⚡🤕</div>
+            <p style="color:#cbd5e1">Entre ton prénom :</p>
+            <input type="text" id="studentNameInput" class="name-input" placeholder="Ton prénom...">
+            <button class="btn-start" onclick="startModule()">C'est parti !</button>
+        </div>
+        <div class="footer">Edition FOUCHER</div>
+    </div>
+
+    <div id="page1" class="page-section">
+        <div class="intro-box">
+            <h2 style="color:#38bdf8; margin-top:0;">OBJECTIF</h2>
+            <p style="color:#e2e8f0; font-size:1.1rem;">Comprendre comment arrive un accident pour mieux l'éviter.</p>
+            <div style="background:rgba(56, 189, 248, 0.1); padding:15px; border-radius:10px; margin:20px 0; border-left:4px solid #38bdf8; text-align:left;">
+                <div style="text-align:center; margin-bottom:10px;">
+                    <img src="operateurmecanicien.jpg" style="height:100px; border-radius:50%; border:2px solid #38bdf8;">
+                </div>
+                <strong>L'histoire de Jules :</strong><br>
+                Jules est mécanicien. Une flaque d'huile est au sol. Il marche dedans, glisse et se tord la cheville (Entorse).
+            </div>
+            <button class="btn-start" onclick="goToPage(2)">Étape 1 : Identifier (PAD) ➡</button>
+        </div>
+    </div>
+
+    <div id="page2" class="page-section" style="padding-bottom:120px;">
+        <h3 style="color:white; text-align:center; margin:0;">1. LE MÉCANISME (P.A.D)</h3>
+        <p style="text-align:center; color:#94a3b8; font-size:0.9rem;">Place les images dans les bonnes cases.</p>
+
+        <div class="pad-container">
+            <div class="pad-box box-danger">
+                <div><div class="pad-title">DANGER (CAUSE)</div><div class="pad-def">La source du problème.</div></div>
+                <div class="pad-slot" id="slot-danger" onclick="placeImage('slot-danger', 'bidon')" data-expect="bidon">+</div>
+            </div>
+            <div class="pad-connector connector-vertical"></div>
+            <div class="pad-box box-sit">
+                <div><div class="pad-title">SITUATION DANGEREUSE</div><div class="pad-def">L'opérateur est exposé.</div></div>
+                <div class="pad-slot" id="slot-sit" onclick="placeImage('slot-sit', 'sit')" data-expect="sit">+</div>
+            </div>
+            <div class="pad-connector connector-vertical"></div>
+            <div class="pad-box box-evt">
+                <div><div class="pad-title">ÉVÉNEMENT DÉCLENCHEUR</div><div class="pad-def">Le fait soudain (l'accident).</div></div>
+                <div class="pad-slot" id="slot-evt" onclick="placeImage('slot-evt', 'chute')" data-expect="chute">+</div>
+            </div>
+            <div class="pad-connector connector-vertical"></div>
+            <div class="pad-box box-dom">
+                <div><div class="pad-title">DOMMAGE</div><div class="pad-def">La blessure.</div></div>
+                <div class="pad-slot" id="slot-dom" onclick="placeImage('slot-dom', 'blessure')" data-expect="blessure">+</div>
+            </div>
+        </div>
+        
+        <div style="text-align:center; margin-top:20px;">
+             <button id="btnNextStep2" class="btn-start" style="display:none; background:#22c55e; color:white;" onclick="goToPage(3)">Valider et passer à l'étape 2 ➡</button>
+        </div>
+    </div>
+
+    <div id="page3" class="page-section">
+        <h3 style="color:white; text-align:center;">2. ESTIMER LES RISQUES</h3>
+        <p style="color:#cbd5e1; text-align:center; font-size:0.9rem;">Pour l'accident de Jules (Entorse avec arrêt), évalue le niveau.</p>
+
+        <div class="scale-container">
+            <div class="scale-title">Gravité du Dommage</div>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:0;">1: Faible | 2: Moyenne (Arrêt) | 3: Grave (Handicap) | 4: Mortel</p>
+            <div class="scale-options" id="opt-grav">
+                <div class="scale-btn" onclick="selectScale('grav', 1)">1</div>
+                <div class="scale-btn" onclick="selectScale('grav', 2)">2</div>
+                <div class="scale-btn" onclick="selectScale('grav', 3)">3</div>
+                <div class="scale-btn" onclick="selectScale('grav', 4)">4</div>
+            </div>
+        </div>
+
+        <div class="scale-container">
+            <div class="scale-title">Probabilité d'apparition</div>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:0;">1: Très improbable | 2: Improbable | 3: Probable | 4: Très probable</p>
+            <div class="scale-options" id="opt-prob">
+                <div class="scale-btn" onclick="selectScale('prob', 1)">1</div>
+                <div class="scale-btn" onclick="selectScale('prob', 2)">2</div>
+                <div class="scale-btn" onclick="selectScale('prob', 3)">3</div>
+                <div class="scale-btn" onclick="selectScale('prob', 4)">4</div>
+            </div>
+        </div>
+
+        <button id="btnNextStep3" class="btn-start" style="display:none;" onclick="goToPage(4)">Voir le résultat sur la Matrice ➡</button>
+    </div>
+
+    <div id="page4" class="page-section">
+        <h3 style="color:white; text-align:center;">3. ÉVALUER (LA MATRICE)</h3>
+        <p style="color:#cbd5e1; text-align:center; font-size:0.9rem;">Le risque est-il Prioritaire ?</p>
+
+        <div class="matrix-grid">
+            <div class="mat-label-y">4</div>
+            <div class="mat-label-y">3</div>
+            <div class="mat-label-y">2</div>
+            <div class="mat-label-y">1</div>
+
+            <div class="mat-cell mat-red" id="c-1-4"></div> <div class="mat-cell mat-red" id="c-2-4"></div> <div class="mat-cell mat-red" id="c-3-4"></div> <div class="mat-cell mat-red" id="c-4-4"></div>
+            <div class="mat-cell mat-green" id="c-1-3"></div> <div class="mat-cell mat-red" id="c-2-3"></div> <div class="mat-cell mat-red" id="c-3-3"></div> <div class="mat-cell mat-red" id="c-4-3"></div>
+            <div class="mat-cell mat-green" id="c-1-2"></div> <div class="mat-cell mat-green" id="c-2-2"></div> <div class="mat-cell mat-red" id="c-3-2"></div> <div class="mat-cell mat-red" id="c-4-2"></div>
+            <div class="mat-cell mat-green" id="c-1-1"></div> <div class="mat-cell mat-green" id="c-2-1"></div> <div class="mat-cell mat-green" id="c-3-1"></div> <div class="mat-cell mat-green" id="c-4-1"></div>
+
+            <div></div> <div class="mat-label-x">1</div> <div class="mat-label-x">2</div> <div class="mat-label-x">3</div> <div class="mat-label-x">4</div>
+            
+            <div id="resultDot" class="mat-dot"></div>
+        </div>
+
+        <div id="evalResult" style="text-align:center; color:white; font-weight:bold; font-size:1.2rem; min-height:30px; margin-top:20px;"></div>
+        
+        <div id="evalActions" style="display:none; text-align:center; margin-top:15px;">
+            <button class="btn-start" onclick="goToPage(5)">Proposer des solutions ➡</button>
+        </div>
+    </div>
+
+    <div id="page5" class="page-section" style="padding-bottom:120px;">
+        <h3 style="color:white; text-align:center;">4. PROPOSER DES MESURES</h3>
+        <p style="color:#cbd5e1; text-align:center; font-size:0.9rem;">Classe les solutions par niveau d'efficacité.</p>
+
+        <div class="prev-list">
+            <div class="prev-zone" style="border-color:#22c55e; background:#f0fdf4;" data-title="1. Suppression (Le top)" id="zone-suppr" onclick="dropPrev('zone-suppr', 'suppr')"></div>
+            <div class="prev-zone" style="border-color:#eab308; background:#fefce8;" data-title="2. Protection Collective" id="zone-coll" onclick="dropPrev('zone-coll', 'coll')"></div>
+            <div class="prev-zone" style="border-color:#f97316; background:#fff7ed;" data-title="3. Protection Individuelle" id="zone-indiv" onclick="dropPrev('zone-indiv', 'indiv')"></div>
+            <div class="prev-zone" style="border-color:#ef4444; background:#fef2f2;" data-title="4. Formation / Info" id="zone-form" onclick="dropPrev('zone-form', 'form')"></div>
+        </div>
+
+        <div id="finalMsg" style="display:none; text-align:center; margin-top:30px;">
+            <h2 style="color:#22c55e;">MODULE TERMINÉ ! 🎉</h2>
+            <button class="btn-start" onclick="location.reload()">Recommencer</button>
+        </div>
+    </div>
+
+    <div class="dock-container" id="dock-pad" style="display:none;">
+        <div class="dock-item" onclick="selectItem(this, 'bidon')"><img src="bidonhuile.jpg"></div>
+        <div class="dock-item" onclick="selectItem(this, 'sit')"><img src="situationdangereusehuile.jpg"></div>
+        <div class="dock-item" onclick="selectItem(this, 'chute')"><img src="declencheeurhuile.jpg"></div>
+        <div class="dock-item" onclick="selectItem(this, 'blessure')"><img src="operateurdommageentorse.jpg"></div>
+    </div>
+
+    <div class="dock-container" id="dock-prev" style="display:none;">
+        <div class="dock-item" onclick="selectPrev(this, 'suppr')"><img src="Supprimerutilisationdeshuiles.jpg"></div>
+        <div class="dock-item" onclick="selectPrev(this, 'coll')"><img src="solantiderapant.jpg"></div>
+        <div class="dock-item" onclick="selectPrev(this, 'indiv')"><img src="Porterdeschaussuresdesecurite.jpg"></div>
+        <div class="dock-item" onclick="selectPrev(this, 'form')"><img src="signalersolgissant.jpg"></div>
+    </div>
+
+</div>
+
+<script>
+    let studentName = "";
+    // PAD VARS
+    let selectedImageId = null;
+    let selectedElement = null;
+    let itemsPlaced = 0;
+    // ESTIMATE VARS
+    let gravity = 0;
+    let probability = 0;
+    // PREV VARS
+    let selectedPrevId = null;
+    let selectedPrevEl = null;
+    let prevPlaced = 0;
+
+    function startModule() {
+        studentName = document.getElementById('studentNameInput').value || "Élève";
+        goToPage(1);
+        setCoach("Bonjour " + studentName + ". Analysons l'accident de Jules.", "neutral");
+    }
+
+    function goToPage(pageNum) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.getElementById('page' + pageNum).classList.add('active');
+        window.scrollTo(0,0);
+
+        document.getElementById('dock-pad').style.display = 'none';
+        document.getElementById('dock-prev').style.display = 'none';
+
+        if(pageNum === 2) { // PAD
+            document.getElementById('dock-pad').style.display = 'flex';
+            setCoach("1. Identifier : Trouve d'abord la CAUSE (le Danger).", "neutral");
+        }
+        if(pageNum === 3) { // ESTIMER
+            setCoach("2. Estimer : Une entorse avec arrêt, c'est Moyen (2). La flaque est fréquente (3).", "neutral");
+        }
+        if(pageNum === 4) { // MATRICE
+            setTimeout(plotMatrix, 500);
+            setCoach("3. Évaluer : Regarde où tombe le point. C'est Rouge ou Vert ?", "neutral");
+        }
+        if(pageNum === 5) { // PREVENTION
+            document.getElementById('dock-prev').style.display = 'flex';
+            setCoach("4. Proposer : Classe les solutions de la plus efficace à la moins efficace.", "neutral");
+        }
+    }
+
+    /* --- LOGIC PAD --- */
+    function selectItem(el, id) {
+        if(el.classList.contains('used')) return;
+        document.querySelectorAll('#dock-pad .dock-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedImageId = id; selectedElement = el;
+    }
+    function placeImage(slotId, expectedId) {
+        if(!selectedImageId) { setCoach("Choisis une image en bas.", "warn"); return; }
+        let slot = document.getElementById(slotId);
+        if(slot.classList.contains('filled')) return;
+        if(selectedImageId === slot.dataset.expect) {
+            slot.innerHTML = `<img src="${selectedElement.querySelector('img').src}">`;
+            slot.classList.add('filled'); slot.style.border = "2px solid #22c55e";
+            selectedElement.classList.add('used'); selectedElement.classList.remove('selected');
+            selectedImageId = null; itemsPlaced++;
+            if(itemsPlaced === 4) document.getElementById('btnNextStep2').style.display = 'inline-block';
+            setCoach("Bien joué !", "happy");
+        } else {
+            setCoach("Non, mauvaise case.", "warn");
+            slot.style.borderColor = "red"; setTimeout(()=>slot.style.borderColor="#cbd5e1", 500);
+        }
+    }
+
+    /* --- LOGIC ESTIMER --- */
+    function selectScale(type, val) {
+        if(type==='grav') gravity = val;
+        if(type==='prob') probability = val;
+        
+        document.querySelectorAll(`#opt-${type} .scale-btn`).forEach((b, i) => {
+            if(i+1 === val) b.classList.add('selected'); else b.classList.remove('selected');
+        });
+
+        if(gravity > 0 && probability > 0) {
+            document.getElementById('btnNextStep3').style.display = 'block';
+            if(gravity===2 && probability>=3) setCoach("Bonne estimation ! Allons voir la matrice.", "happy");
+        }
+    }
+
+    /* --- LOGIC MATRICE --- */
+    function plotMatrix() {
+        let dot = document.getElementById('resultDot');
+        
+        // Cible la cellule correspondante (Attention: Gravité en Y inversé 1->4)
+        let targetCellId = `c-${probability}-${gravity}`;
+        let cell = document.getElementById(targetCellId);
+        
+        if(cell) {
+            let rect = cell.getBoundingClientRect();
+            let parent = document.querySelector('.matrix-grid').getBoundingClientRect();
+            
+            let top = rect.top - parent.top + (rect.height/2) - 10;
+            let left = rect.left - parent.left + (rect.width/2) - 10;
+            
+            dot.style.top = top + 'px';
+            dot.style.left = left + 'px';
+            dot.style.opacity = '1';
+            dot.style.transform = 'scale(1)';
+            
+            let isRed = cell.classList.contains('mat-red');
+            setTimeout(() => {
+                if(isRed) {
+                    document.getElementById('evalResult').innerText = "RISQUE PRIORITAIRE !";
+                    document.getElementById('evalResult').style.color = "#ea580c";
+                    document.getElementById('evalActions').style.display = "block";
+                    setCoach("C'est en zone ROUGE ! Il faut agir vite.", "warn");
+                } else {
+                    document.getElementById('evalResult').innerText = "Non Prioritaire";
+                    document.getElementById('evalResult').style.color = "#10b981";
+                    document.getElementById('evalActions').style.display = "block";
+                    setCoach("C'est Vert. Mais on peut quand même améliorer.", "neutral");
+                }
+            }, 1000);
+        }
+    }
+
+    /* --- LOGIC PREVENTION --- */
+    function selectPrev(el, id) {
+        if(el.classList.contains('used')) return;
+        document.querySelectorAll('#dock-prev .dock-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedPrevId = id; selectedPrevEl = el;
+    }
+    function dropPrev(zoneId, expectedId) {
+        if(!selectedPrevId) { setCoach("Choisis une image en bas.", "warn"); return; }
+        let zone = document.getElementById(zoneId);
+        
+        if(zone.classList.contains('filled')) return;
+
+        if(selectedPrevId === expectedId) {
+            zone.innerHTML = `<img src="${selectedPrevEl.querySelector('img').src}" class="prev-img-content">`;
+            zone.classList.add('filled');
+            
+            selectedPrevEl.classList.add('used'); selectedPrevEl.classList.remove('selected');
+            selectedPrevId = null; prevPlaced++;
+            
+            setCoach("Excellent choix !", "happy");
+            if(prevPlaced === 4) {
+                document.getElementById('finalMsg').style.display = 'block';
+                triggerConfetti();
+                setCoach("Bravo ! Tu as maîtrisé l'analyse des risques.", "happy");
+            }
+        } else {
+            setCoach("Non, ce n'est pas le bon niveau d'efficacité.", "warn");
+            zone.style.borderColor = "red";
+            setTimeout(()=> zone.style.borderColor="#cbd5e1", 500);
+        }
+    }
+
+    function setCoach(msg, mood) {
+        document.getElementById('coachText').innerText = msg;
+    }
+    function triggerConfetti() {
+        for(let i=0; i<50; i++) {
+            let conf = document.createElement('div'); conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + 'vw';
+            conf.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            conf.style.animationDuration = Math.random() * 3 + 2 + 's';
+            document.body.appendChild(conf);
+        }
+    }
+</script>
+
+</body>
+</html>
