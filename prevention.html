@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5"/>
+<title>Les Mesures de Prévention</title>
+<style>
+  :root{
+    --bg:#0f172a; --text:#f1f5f9; 
+    --card-bg: white;
+    --font-ui: system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--font-ui); color:var(--text);
+    background:var(--bg); padding:10px; padding-bottom:80px;
+    background-image: radial-gradient(circle at 50% 0%, #064e3b 0%, #020617 80%);
+    background-attachment: fixed;
+    user-select: none; overflow-x: hidden;
+  }
+  .wrap{max-width:900px; margin:0 auto; min-height: 90vh; display: flex; flex-direction: column;}
+
+  /* HEADER */
+  .header-zone { display:flex; align-items:center; gap:15px; background: rgba(30, 41, 59, 0.95); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+  .avatar-circle { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #10b981; background: #0f172a; object-fit: cover; }
+  .coach-bubble { font-size: 0.9rem; color: #e2e8f0; line-height: 1.4; }
+
+  /* PAGES */
+  .page-section { display: none; animation: fadeIn 0.5s; }
+  .page-section.active { display: block; }
+
+  /* INTRO & LOGIN */
+  .login-box, .intro-box { text-align: center; padding: 30px 20px; background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+  .name-input { background: #334155; border: 2px solid #475569; color: white; padding: 15px; border-radius: 10px; font-size: 1.1rem; width: 80%; text-align: center; margin: 20px auto; display: block; }
+  .btn-start { padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 20px; box-shadow: 0 4px 0 #047857; width: 100%; }
+  .btn-start:active { transform: translateY(2px); box-shadow: 0 2px 0 #047857; }
+
+  /* PAGE 2 : FICHE SEQUENTIELLE */
+  .main-layout { display: flex; gap: 15px; min-height: 520px; }
+
+  /* BARRE LATERALE */
+  .sidebar-arrow {
+      width: 50px; border-radius: 25px; 
+      background: linear-gradient(to bottom, #15803d 0%, #22c55e 20%, #eab308 40%, #f97316 60%, #ef4444 80%, #991b1b 100%);
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+      padding: 15px 0; color: white; font-weight: 900; font-size: 0.65rem; text-align: center;
+      box-shadow: 2px 4px 10px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.2);
+      position: relative;
+  }
+  .vertical-txt { writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+  
+  .arrow-cursor {
+      position: absolute; left: -10px; width: 0; height: 0;
+      border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+      border-left: 15px solid white; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
+      transition: top 0.5s ease-in-out; top: 8%; 
+  }
+
+  /* CONTENU DROITE */
+  .content-zone { flex: 1; position: relative; }
+  
+  .step-card {
+      background: white; border-radius: 12px; padding: 20px; color: #334155;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: none; animation: slideIn 0.4s;
+      height: 100%; flex-direction: column;
+  }
+  .step-card.active { display: flex; }
+
+  .group-header { font-size: 0.75rem; text-transform: uppercase; font-weight: bold; color: #64748b; margin-bottom: 5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+  .lvl-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .lvl-badge { padding: 5px 10px; border-radius: 6px; color: white; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; }
+  .lvl-title { margin: 0; font-size: 1.2rem; font-weight: 800; color: #1e293b; }
+  .lvl-desc { font-style: italic; color: #475569; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.4; border-left: 3px solid #cbd5e1; padding-left: 10px; }
+
+  .detail-list { list-style: none; padding: 0; margin: 0; }
+  .detail-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
+  .detail-icon { font-size: 1.5rem; min-width: 40px; text-align: center; }
+  .detail-text strong { display: block; color: #334155; font-size: 0.9rem; margin-bottom: 3px; }
+  .detail-text p { margin: 0; font-size: 0.8rem; color: #64748b; }
+
+  .nav-bar { display: flex; justify-content: space-between; margin-top: 15px; }
+  .btn-step { padding: 12px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 1rem; transition: 0.2s; }
+  .btn-prev { background: #64748b; visibility: hidden; }
+  .btn-next-step { background: #10b981; box-shadow: 0 4px 0 #047857; }
+  .btn-next-step:active { transform: translateY(2px); box-shadow: 0 2px 0 #047857; }
+
+  /* THEMES COULEURS */
+  .c-1 { color: #15803d; border-color: #22c55e; } .bg-1 { background: #16a34a; }
+  .c-2 { color: #3f6212; border-color: #84cc16; } .bg-2 { background: #65a30d; }
+  .c-3 { color: #854d0e; border-color: #eab308; } .bg-3 { background: #ca8a04; }
+  .c-4 { color: #9a3412; border-color: #f97316; } .bg-4 { background: #ea580c; }
+  .c-5 { color: #991b1b; border-color: #ef4444; } .bg-5 { background: #dc2626; }
+  .c-6 { color: #7f1d1d; border-color: #b91c1c; } .bg-6 { background: #991b1b; }
+
+  /* EXERCICES (Page 3 et 5) */
+  .prev-table { display: grid; gap: 8px; }
+  .prev-row { background: white; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; border-left: 5px solid #cbd5e1; }
+  .prev-label { font-weight: 800; font-size: 0.9rem; text-transform: uppercase; color: #1e293b; }
+  .prev-drop-zone { background: #f1f5f9; border: 2px dashed #94a3b8; border-radius: 6px; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; font-size: 0.9rem; text-align: center; color: #64748b; transition: 0.2s; gap: 5px; }
+  .prev-drop-zone.filled { background: #dcfce7; border-color: #16a34a; color: #166534; border-style: solid; font-weight: bold; }
+  .dock { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; margin-bottom: 15px; min-height: 60px; }
+  .prev-option { background: #3b82f6; color: white; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin: 5px; cursor: pointer; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .prev-option.selected { transform: scale(1.05); background: #2563eb; ring: 2px solid white; }
+  
+  /* ELEMENT FIXE DANS DROP ZONE (CONTRASTE AUGMENTÉ) */
+  .fixed-item { font-size: 0.8rem; color: #475569; font-weight: 600; font-style: italic; margin-bottom: 6px; pointer-events: none; border-bottom: 1px solid #cbd5e1; width: 100%; text-align: center; padding-bottom: 4px; background: rgba(0,0,0,0.03); border-radius: 4px;}
+
+  .doc-container { background: white; color: #334155; padding: 20px; border-radius: 12px; line-height: 1.6; font-size: 0.95rem; text-align: justify; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom: 20px; border-left: 5px solid #10b981; }
+  .btn-nav { padding: 12px 20px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+  .btn-reset { background: #f59e0b; color: #fff; }
+  .btn-next { background: var(--success); flex-grow: 1; display: none; }
+  .action-bar { display: flex; gap: 10px; margin-top: 20px; justify-content: space-between; }
+  .footer { text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 20px; font-style: italic; }
+
+  /* QUIZ FINAL */
+  .final-quiz-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; }
+  .final-q-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; color: #1e293b; }
+  .final-opt-btn { display: block; width: 100%; padding: 12px; margin-bottom: 10px; background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 8px; color: #334155; text-align: left; cursor: pointer; transition:0.2s;}
+  .final-opt-btn.correct { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+  .final-opt-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .confetti { position: fixed; width: 10px; height: 10px; background-color: #f00; animation: fall linear forwards; z-index: 9999; top: -10px; }
+  @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+    <div class="header-zone">
+        <img src="avatar-neutral.png" class="avatar-circle" id="coachImg" onerror="this.src='https://placehold.co/60?text=Prof'">
+        <div class="coach-bubble" id="coachText">Bonjour ! Prêt pour découvrir la prévention ?</div>
+    </div>
+
+    <div id="page0" class="page-section active">
+        <div class="login-box">
+            <h1 style="color:white; margin-bottom:10px;">LES MESURES DE PRÉVENTION</h1>
+            <div style="font-size:3rem; margin:20px 0;">🛡️⚠️✅</div>
+            <p style="color:#cbd5e1">Entre ton prénom :</p>
+            <input type="text" id="studentNameInput" class="name-input" placeholder="Ton prénom...">
+            <button class="btn-start" onclick="startModule()">C'est parti !</button>
+        </div>
+        <div class="footer">Edition FOUCHER</div>
+    </div>
+
+    <div id="page1" class="page-section">
+        <div class="intro-box">
+            <h2 style="color:#34d399; margin-top:0;">OBJECTIF DU COURS</h2>
+            <hr style="border:1px solid #10b981; width:50%; margin:15px auto;">
+            <p style="font-size:1.1rem; color:#e2e8f0; font-weight:500;">
+                Identifier et classer les différentes mesures de prévention.
+            </p>
+            <div style="background:rgba(16, 185, 129, 0.2); padding:15px; border-radius:10px; margin-top:20px; text-align:left; border-left:4px solid #34d399;">
+                <strong style="color:#34d399;">❓ Principe clé :</strong>
+                <p style="margin:5px 0; color:#d1fae5;">Les mesures sont classées de la plus efficace (qui supprime le risque) à la moins efficace (qui dépend de l'humain).</p>
+            </div>
+            <button class="btn-start" onclick="goToPage(2)">Découvrir la hiérarchie ➡</button>
+        </div>
+        <div class="footer">Edition FOUCHER</div>
+    </div>
+
+    <div id="page2" class="page-section">
+        <div class="main-layout">
+            <div class="sidebar-arrow">
+                <span class="vertical-txt">TRÈS EFFICACE</span>
+                <div id="arrowCursor" class="arrow-cursor"></div>
+                <span style="font-size:1.5rem; text-shadow:0 2px 2px rgba(0,0,0,0.3);">⬇</span>
+                <span class="vertical-txt">PEU EFFICACE</span>
+            </div>
+            <div class="content-zone">
+                <div id="step1" class="step-card active" style="border-top: 5px solid #22c55e;">
+                    <div class="group-header">FAMILLE : SUPPRESSION OU RÉDUCTION</div>
+                    <div class="lvl-header"><span class="lvl-badge bg-1">Niveau 1</span></div>
+                    <h2 class="lvl-title c-1">SUPPRESSION DU RISQUE</h2>
+                    <p class="lvl-desc">On change le processus ou le mode opératoire pour que le risque disparaisse totalement.</p>
+                    <ul class="detail-list">
+                        <li class="detail-item"><div class="detail-icon">🤖</div><div class="detail-text"><strong>Automatiser</strong><p>Utiliser un robot à la place de l'homme.</p></div></li>
+                        <li class="detail-item"><div class="detail-icon">🚫</div><div class="detail-text"><strong>Enlever</strong><p>Supprimer totalement un produit dangereux.</p></div></li>
+                    </ul>
+                    <img src="suppressionduproduitdangereux.jpg" style="width:100%; height:120px; object-fit:contain; border-radius:6px; margin-top:10px;" onerror="this.style.display='none'">
+                </div>
+                <div id="step2" class="step-card" style="border-top: 5px solid #84cc16;">
+                    <div class="group-header">FAMILLE : SUPPRESSION OU RÉDUCTION</div>
+                    <div class="lvl-header"><span class="lvl-badge bg-2">Niveau 2</span></div>
+                    <h2 class="lvl-title c-2">RÉDUCTION DU RISQUE</h2>
+                    <p class="lvl-desc">On ne peut pas supprimer, alors on limite le risque d'atteinte à la santé.</p>
+                    <ul class="detail-list">
+                        <li class="detail-item"><div class="detail-icon">🔄</div><div class="detail-text"><strong>Substitution</strong><p>Remplacer un produit par un autre moins dangereux.</p></div></li>
+                        <li class="detail-item"><div class="detail-icon">📉</div><div class="detail-text"><strong>Intensité</strong><p>Utiliser une machine moins bruyante (92dB ➡ 61dB).</p></div></li>
+                    </ul>
+                    <img src="Remplacementdunemachinebruyanteparunemachinemoibruyante.jpg" style="width:100%; height:120px; object-fit:contain; border-radius:6px; margin-top:10px;" onerror="this.style.display='none'">
+                </div>
+                <div id="step3" class="step-card" style="border-top: 5px solid #eab308;">
+                    <div class="group-header">FAMILLE : PROTECTION</div>
+                    <div class="lvl-header"><span class="lvl-badge bg-3">Niveau 3</span></div>
+                    <h2 class="lvl-title c-3">PROTECTION COLLECTIVE (EPC)</h2>
+                    <p class="lvl-desc">On protège <strong>plusieurs salariés</strong> à la fois en les isolant du danger.</p>
+                    <ul class="detail-list">
+                        <li class="detail-item"><div class="detail-icon">🚧</div><div class="detail-text"><strong>Écrans / Barrières</strong><p>Rambardes, Encoffrement de machine, Hottes.</p></div></li>
+                        <li class="detail-item"><div class="detail-icon">🛑</div><div class="detail-text"><strong>Sécurité</strong><p>Arrêt d'urgence, sol antidérapant.</p></div></li>
+                    </ul>
+                    <img src="rambardedesecurite.jpg" style="width:100%; height:120px; object-fit:cover; border-radius:6px; margin-top:10px;" onerror="this.style.display='none'">
+                </div>
+                <div id="step4" class="step-card" style="border-top: 5px solid #f97316;">
+                    <div class="group-header">FAMILLE : PROTECTION</div>
+                    <div class="lvl-header"><span class="lvl-badge bg-4">Niveau 4</span></div>
+                    <h2 class="lvl-title c-4">PROTECTION INDIVIDUELLE (EPI)</h2>
+                    <p class="lvl-desc">On protège <strong>un seul salarié</strong>. Uniquement si la protection collective est impossible.</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:15px;"><span class="lvl-badge bg-4">Casque</span><span class="lvl-badge bg-4">Gants</span><span class="lvl-badge bg-4">Lunettes</span><span class="lvl-badge bg-4">Bouchons</span><span class="lvl-badge bg-4">Chaussures</span></div>
+                    <img src="casque.jpg" style="width:100%; height:120px; object-fit:contain; border-radius:6px;" onerror="this.style.display='none'">
+                </div>
+                <div id="step5" class="step-card" style="border-top: 5px solid #ef4444;">
+                    <div class="group-header">FAMILLE : INFO / FORMATION</div>
+                    <div class="lvl-header"><span class="lvl-badge bg-5">Niveau 5</span></div>
+                    <h2 class="lvl-title c-5">INFORMATIONS</h2>
+                    <p class="lvl-desc">Avertir et donner des consignes au personnel.</p>
+                    <ul class="detail-list">
+                        <li class="detail-item"><div class="detail-icon">👁️</div><div class="detail-text"><strong>Visuel</strong><p>Panneaux, pictogrammes, affiches.</p></div></li>
+                        <li class="detail-item"><div class="detail-icon">🔊</div><div class="detail-text"><strong>Sonore / Écrit</strong><p>Signaux d'alarme, Fiche de poste.</p></div></li>
+                    </ul>
+                    <img src="panneaudinformation.jpg" style="width:100%; height:120px; object-fit:contain; border-radius:6px; margin-top:10px;" onerror="this.style.display='none'">
+                </div>
+                <div id="step6" class="step-card" style="border-top: 5px solid #b91c1c;">
+                    <div class="group-header">FAMILLE : INFO / FORMATION</div>
+                    <div class="lvl-header"><span class="lvl-badge bg-6">Niveau 6</span></div>
+                    <h2 class="lvl-title c-6">FORMATION</h2>
+                    <p class="lvl-desc">Faire acquérir des compétences en santé sécurité au travail.</p>
+                    <ul class="detail-list">
+                        <li class="detail-item"><div class="detail-icon">🚑</div><div class="detail-text"><strong>SST</strong><p>Sauveteur Secouriste du Travail.</p></div></li>
+                        <li class="detail-item"><div class="detail-icon">🏋️</div><div class="detail-text"><strong>PRAP</strong><p>Gestes et postures.</p></div></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="nav-bar">
+            <button id="btnPrev" class="btn-step btn-prev" onclick="changeStep(-1)">⬅ Précédent</button>
+            <button id="btnNext" class="btn-step btn-next-step" onclick="changeStep(1)">Suivant (Niveau inférieur) ➡</button>
+        </div>
+        <div class="footer">Edition FOUCHER</div>
+    </div>
+
+    <div id="page3" class="page-section">
+        <h3 style="color:white; margin:0 0 10px 0;">Cas n°1 : Clément (Poinçonneur)</h3>
+        <div class="doc-container" style="background:#ecfccb; color:#365314; border-color:#84cc16; font-size:0.85rem; padding:10px;">
+            <strong>Situation :</strong> Clément a des <strong>douleurs aux épaules</strong>. Propose des solutions en respectant la hiérarchie.
+        </div>
+        <div class="dock" id="prevDock"></div>
+        <div class="prev-table">
+            <div class="prev-row" style="border-color:#22c55e">
+                <div class="prev-label" style="color:#16a34a;">1. Supprimer / Réduire (Le mieux)</div>
+                <div class="prev-drop-zone" id="drop-suppr" onclick="handlePrevClick(this)" data-ans="auto">...</div>
+                <div class="prev-drop-zone" id="drop-red" onclick="handlePrevClick(this)" data-ans="orga">...</div>
+            </div>
+            <div class="prev-row" style="border-color:#eab308">
+                <div class="prev-label" style="color:#ca8a04;">2. Protection Collective</div>
+                <div class="prev-drop-zone" id="drop-coll" onclick="handlePrevClick(this)" data-ans="ventouse">...</div>
+            </div>
+            <div class="prev-row" style="border-color:#f97316">
+                <div class="prev-label" style="color:#ea580c;">3. Protection Individuelle</div>
+                <div class="prev-drop-zone" id="drop-indiv" onclick="handlePrevClick(this)" data-ans="gants">...</div>
+            </div>
+            <div class="prev-row" style="border-color:#ef4444">
+                <div class="prev-label" style="color:#dc2626;">4. Info / Formation</div>
+                <div class="prev-drop-zone" id="drop-form" onclick="handlePrevClick(this)" data-ans="prap">...</div>
+            </div>
+        </div>
+        <div class="action-bar">
+            <button class="btn-nav" onclick="goToPage(2)">⬅ Revoir la fiche</button>
+            <button class="btn-nav btn-reset" onclick="initPage3()">🔄 Recommencer</button>
+            <button class="btn-nav btn-next" id="btnPage3" onclick="goToPage(4)">Suite : Cas n°2 ➡</button>
+        </div>
+    </div>
+
+    <div id="page4" class="page-section">
+        <h3 style="color:white; border-bottom:2px solid #10b981; padding-bottom:10px;">Cas n°2 : La Situation de Yassine</h3>
+        <div class="doc-container" style="max-height:60vh; overflow-y:auto;">
+            <p><strong>Yassine, 24 ans</strong>, 1,90 m et 90 kg, titulaire d’un CAP opérateur logistique, est embauché en CDI depuis 18 mois comme cariste et préparateur de commandes sur une plateforme logistique.</p>
+            <p>Il travaille dans un entrepôt de 75 000 m² non chauffé, avec des horaires alternés une semaine sur deux (5 h–13 h puis 13 h–21 h).</p>
+            <p>La cadence est élevée : environ <strong>80 colis par heure</strong>. Il manipule souvent des colis de 5 kg portés à la main puis déposés sur un chariot, ce qui représente presque <strong>3 tonnes par jour</strong>.</p>
+            <p>Yassine a eu plusieurs arrêts de travail pour des troubles musculo-squelettiques (TMS), notamment des <strong>lombalgies</strong> (mal au dos). Malgré cela, il se dit satisfait de son travail et apprécie la bonne ambiance. L’entreprise est reconnue pour la satisfaction client.</p>
+        </div>
+        <div class="action-bar">
+            <button class="btn-nav" onclick="goToPage(3)">⬅ Retour Cas 1</button>
+            <button class="btn-nav btn-next" style="display:block" onclick="goToPage(5)">Je propose des solutions ➡</button>
+        </div>
+    </div>
+
+    <div id="page5" class="page-section">
+        <h3 style="color:white; margin:0 0 10px 0;">Exercice : Les solutions pour Yassine</h3>
+        
+        <div class="main-layout">
+            <div class="sidebar-arrow">
+                <span class="vertical-txt">TRÈS EFFICACE</span>
+                <span style="font-size:1.5rem; text-shadow:0 2px 2px rgba(0,0,0,0.3);">⬇</span>
+                <span class="vertical-txt">PEU EFFICACE</span>
+            </div>
+
+            <div class="content-zone">
+                <div class="doc-container" style="background:#dbeafe; color:#1e3a8a; border-color:#2563eb; font-size:0.85rem; padding:10px; margin-bottom:10px;">
+                    <strong>Mission :</strong> Classe les solutions pour le mal de dos de Yassine.
+                </div>
+                <div class="dock" id="yassineDock"></div>
+                <div class="prev-table">
+                    <div class="prev-row" style="border-left:5px solid #22c55e;">
+                        <div class="prev-label" style="color:#16a34a;">1. Suppression ou réduction</div>
+                        <div class="prev-drop-zone" id="drop-y-1" onclick="handleYassineClick(this)" data-ans="multi">
+                            <div class="fixed-item">Créer des postes « cadre vert »</div>
+                            ...
+                        </div>
+                    </div>
+                    <div class="prev-row" style="border-left:5px solid #eab308;">
+                        <div class="prev-label" style="color:#ca8a04;">2. Protection coll. / indiv.</div>
+                        <div class="prev-drop-zone" id="drop-y-2" onclick="handleYassineClick(this)" data-ans="multi">
+                            <div class="fixed-item">Réduire les distances</div>
+                            ...
+                        </div>
+                    </div>
+                    <div class="prev-row" style="border-left:5px solid #ef4444;">
+                        <div class="prev-label" style="color:#dc2626;">3. Instructions / Formation</div>
+                        <div class="prev-drop-zone" id="drop-y-3" onclick="handleYassineClick(this)" data-ans="multi">
+                            <div class="fixed-item">Affiches INRS</div>
+                            ...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-nav" onclick="goToPage(4)">⬅ Relire le cas</button>
+            <button class="btn-nav btn-reset" onclick="initPage5()">🔄 Recommencer</button>
+            <button class="btn-nav btn-next" id="btnPage5" onclick="goToPage(7)">Vers le Bilan ➡</button>
+        </div>
+    </div>
+
+    <div id="page7" class="page-section">
+        <h3 style="color:white; text-align:center;">BILAN & AUTO-ÉVALUATION</h3>
+        <div class="doc-container" style="border-left-color:var(--success); font-size:0.85rem;">
+            <h4 style="color:var(--success); margin-top:0;">📝 Ce qu'il faut retenir</h4>
+            <p><strong>L’ergonomie</strong> est centrée sur l’activité de travail de l’opérateur.</p>
+            <p><strong>Prévention :</strong> L’ensemble des acteurs ergonomiques proposent des pistes selon les principes généraux de prévention (supprimer/réduire le risque ; protection collective/individuelle ; formation).</p>
+            <p><strong>Principe clé :</strong> Il faut toujours privilégier la <strong>Suppression</strong> ou la <strong>Réduction</strong> (Prévention intrinsèque) car c'est la seule méthode qui élimine le danger à la source.</p>
+        </div>
+        <div id="finalQuizContainer">
+            <h4 style="color:white; text-align:center; margin:20px 0 10px;">🧠 Auto-Évaluation (5 Questions)</h4>
+        </div>
+        <div id="finalScoreBoard" style="display:none; text-align:center; margin-top:20px;">
+            <div style="font-size:3rem;">🎉</div>
+            <h3 style="color:white;">Module Terminé !</h3>
+            <p style="color:#cbd5e1;">Tu maîtrises les mesures de prévention.</p>
+            <button class="btn-nav btn-reset" onclick="location.reload()">Recommencer tout le module</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let studentName = "";
+    let currentStep = 1;
+    const totalSteps = 6;
+    let prevFound = 0; let yassineFound = 0;
+    let selectionPrev = null;
+    let finalQuizIndex = 0;
+
+    /* DATA EXERCICE CLEMENT */
+    const PREV_OPTS = [
+        {id:"auto", txt:"Automatisation du port de plaques"},
+        {id:"orga", txt:"Réorganisation / Rotation des postes"},
+        {id:"ventouse", txt:"Aide à la manutention (Ventouse)"},
+        {id:"gants", txt:"Gants adaptés"},
+        {id:"prap", txt:"Formation PRAP"}
+    ];
+
+    /* DATA EXERCICE YASSINE */
+    const YASSINE_DATA = [
+        {id: "exo", txt: "Utiliser les exosquelettes", cat: "drop-y-1"},
+        {id: "alterne", txt: "Alterner les postes de travail", cat: "drop-y-1"},
+        {id: "auto_man", txt: "Automatiser la manutention manuelle", cat: "drop-y-1"},
+        {id: "time", txt: "Réduire les contraintes de temps", cat: "drop-y-1"},
+        {id: "epi", txt: "EPI : chaussures, gants, tenue", cat: "drop-y-2"},
+        {id: "prap_y", txt: "Formation gestes et postures (PRAP)", cat: "drop-y-3"}
+    ];
+
+    /* DATA QUIZ FINAL */
+    const FINAL_QUIZ = [
+        { q: "Quelle est la mesure la plus efficace ?", opts: [{ txt: "Mettre un casque", correct: false, feed: "Non, c'est le niveau 4." }, { txt: "Supprimer le danger", correct: true, feed: "Exact, niveau 1 !" }] },
+        { q: "Une barrière automatique est une...", opts: [{ txt: "Protection Collective", correct: true, feed: "Oui, elle protège tout le monde." }, { txt: "Protection Individuelle", correct: false, feed: "Non." }] },
+        { q: "Les EPI (Casques, Gants) sont...", opts: [{ txt: "La priorité absolue", correct: false, feed: "Non, c'est si on ne peut pas faire autrement." }, { txt: "Le dernier recours", correct: true, feed: "Exact." }] },
+        { q: "La formation PRAP(Prévention des Risques liés à l'Activité Physique) sert à...", opts: [{ txt: "Réparer les machines", correct: false, feed: "Non." }, { txt: "Apprendre les bons gestes", correct: true, feed: "Oui, Prévention des Risques liés à l'Activité Physique." }] },
+        { q: "Remplacer un produit toxique, c'est...", opts: [{ txt: "Réduire le risque", correct: true, feed: "Oui, ou le supprimer." }, { txt: "De la formation", correct: false, feed: "Non." }] }
+    ];
+
+    function startModule() {
+        studentName = document.getElementById('studentNameInput').value || "Élève";
+        goToPage(1);
+        setCoach("Bonjour " + studentName + " ! Bienvenue dans le module Prévention.", "neutral");
+    }
+
+    function goToPage(pageNum) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.getElementById('page' + pageNum).classList.add('active');
+        window.scrollTo(0,0);
+        
+        if(pageNum === 2) setCoach("Regarde bien la hiérarchie " + studentName + ".", "neutral");
+        if(pageNum === 3) initPage3();
+        if(pageNum === 5) initPage5();
+        if(pageNum === 7) initPage7();
+    }
+
+    /* NAVIGATION SEQUENTIELLE (PAGE 2) */
+    function changeStep(direction) {
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        currentStep += direction;
+        document.getElementById(`step${currentStep}`).classList.add('active');
+        const positions = { 1: '8%', 2: '25%', 3: '42%', 4: '58%', 5: '75%', 6: '92%' };
+        document.getElementById('arrowCursor').style.top = positions[currentStep];
+        updateButtons(); updateCoach();
+    }
+
+    function updateButtons() {
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        if (currentStep === 1) btnPrev.style.visibility = 'hidden'; else btnPrev.style.visibility = 'visible';
+        if (currentStep === totalSteps) {
+            btnNext.innerText = "J'ai tout compris, je passe à l'exercice ➡";
+            btnNext.onclick = () => goToPage(3);
+        } else {
+            btnNext.innerText = "Suivant (Niveau inférieur) ➡";
+            btnNext.onclick = () => changeStep(1);
+        }
+    }
+
+    function updateCoach() {
+        const texts = {
+            1: "Le top : suppression totale du danger.",
+            2: "Si impossible de supprimer, on réduit.",
+            3: "Protection pour le groupe (EPC).",
+            4: "Protection individuelle (EPI).",
+            5: "On informe (Panneaux).",
+            6: "On forme aux compétences (SST, PRAP)."
+        };
+        setCoach(texts[currentStep], "neutral");
+    }
+
+    function setCoach(msg, mood) {
+        document.getElementById('coachText').innerText = msg;
+        document.getElementById('coachImg').src = "avatar-neutral.png";
+    }
+
+    /* EXERCICE 1 (CLEMENT) */
+    function initPage3(){
+        prevFound=0; selectionPrev=null; document.getElementById('btnPage3').style.display='none';
+        const d=document.getElementById('prevDock'); d.innerHTML="";
+        document.querySelectorAll('#page3 .prev-drop-zone').forEach(z=>{z.innerText="..."; z.classList.remove('filled'); z.style.borderColor = "#94a3b8";});
+        PREV_OPTS.sort(()=>Math.random()-0.5).forEach(o=>{let b=document.createElement('div');b.className='prev-option';b.innerText=o.txt;b.dataset.id=o.id;b.onclick=()=>selectPrevOption(b);d.appendChild(b);});
+        setCoach("Aide Clément : sélectionne une mesure en haut.", "neutral");
+    }
+
+    function selectPrevOption(b){
+        if(selectionPrev) selectionPrev.classList.remove('selected');
+        selectionPrev=b; b.classList.add('selected');
+    }
+
+    function handlePrevClick(z){
+        if(!selectionPrev || z.classList.contains('filled')) return;
+        let isCorrect = false;
+        if(z.id === 'drop-suppr' && selectionPrev.dataset.id === 'auto') isCorrect = true;
+        if(z.id === 'drop-red' && selectionPrev.dataset.id === 'orga') isCorrect = true;
+        if(z.id === 'drop-coll' && selectionPrev.dataset.id === 'ventouse') isCorrect = true;
+        if(z.id === 'drop-indiv' && selectionPrev.dataset.id === 'gants') isCorrect = true;
+        if(z.id === 'drop-form' && selectionPrev.dataset.id === 'prap') isCorrect = true;
+
+        if(isCorrect){
+            z.innerText=selectionPrev.innerText; z.classList.add('filled');
+            selectionPrev.style.display='none'; selectionPrev=null; prevFound++;
+            setCoach("Correct !", "happy");
+            if(prevFound===PREV_OPTS.length){ setCoach("Excellent ! Clément est protégé.", "happy"); document.getElementById('btnPage3').style.display='block'; }
+        } else {
+            setCoach("Non, regarde bien la définition du niveau.", "warn");
+            z.style.borderColor="red"; setTimeout(()=>z.style.borderColor="#94a3b8", 500);
+        }
+    }
+
+    /* EXERCICE 2 (YASSINE) */
+    function initPage5() {
+        yassineFound = 0; selectionPrev = null; document.getElementById('btnPage5').style.display='none';
+        const d = document.getElementById('yassineDock'); d.innerHTML = "";
+        
+        // Reset Zones (keep fixed items)
+        document.getElementById('drop-y-1').innerHTML = '<div class="fixed-item">Créer des postes « cadre vert »</div>';
+        document.getElementById('drop-y-2').innerHTML = '<div class="fixed-item">Réduire les distances de déplacement</div>';
+        document.getElementById('drop-y-3').innerHTML = '<div class="fixed-item">Affiches INRS</div>';
+        document.querySelectorAll('#page5 .prev-drop-zone').forEach(z => {z.classList.remove('filled'); z.style.borderColor = "#94a3b8";});
+
+        YASSINE_DATA.sort(()=>Math.random()-0.5).forEach(o => {
+            let b = document.createElement('div'); b.className = 'prev-option'; b.innerText = o.txt; b.dataset.id = o.id; b.dataset.cat = o.cat;
+            b.onclick = () => selectPrevOption(b); d.appendChild(b);
+        });
+        setCoach("Aide Yassine : classe les solutions.", "neutral");
+    }
+
+    function handleYassineClick(z) {
+        if(!selectionPrev) return;
+        
+        // Multi-item zone logic: check if correct category
+        if(selectionPrev.dataset.cat === z.id) {
+            let p = document.createElement('div');
+            p.style.fontSize="0.8rem"; p.style.margin="2px 0"; p.innerText = selectionPrev.innerText;
+            z.appendChild(p);
+            
+            selectionPrev.style.display='none'; selectionPrev=null; yassineFound++;
+            setCoach("Bien joué !", "happy");
+
+            if(yassineFound === YASSINE_DATA.length) {
+                setCoach("Parfait ! Yassine va mieux.", "happy");
+                document.getElementById('btnPage5').style.display='block';
+            }
+        } else {
+            setCoach("Non, essaie une autre catégorie.", "warn");
+            z.style.borderColor="red"; setTimeout(()=>z.style.borderColor="#94a3b8", 500);
+        }
+    }
+
+    /* QUIZ FINAL */
+    function initPage7(){
+        finalQuizIndex=0; document.getElementById('finalQuizContainer').innerHTML=""; document.getElementById('finalScoreBoard').style.display="none";
+        setCoach("C'est l'heure du bilan !", "neutral"); showFinalQuestion();
+    }
+    function showFinalQuestion(){
+        const c=document.getElementById('finalQuizContainer');
+        if(finalQuizIndex>=FINAL_QUIZ.length){
+            c.innerHTML=""; document.getElementById('finalScoreBoard').style.display="block";
+            setCoach("Bravo !","happy"); triggerConfetti(); return;
+        }
+        let q=FINAL_QUIZ[finalQuizIndex];
+        c.innerHTML=`<div class="final-quiz-card"><div class="final-q-text">${finalQuizIndex+1}. ${q.q}</div><div id="finalOpts"></div></div>`;
+        q.opts.forEach(o=>{let b=document.createElement('div');b.className='final-opt-btn';b.innerText=o.txt;b.onclick=()=>checkFinalAnswer(b,o);document.getElementById('finalOpts').appendChild(b)});
+    }
+    function checkFinalAnswer(b,o){
+        document.querySelectorAll('.final-opt-btn').forEach(btn=>btn.onclick=null);
+        if(o.correct){b.classList.add('correct');setCoach(o.feed,"happy");setTimeout(()=>{finalQuizIndex++;showFinalQuestion()},2000)}
+        else{b.classList.add('wrong');setCoach(o.feed,"warn");setTimeout(()=>{finalQuizIndex++;showFinalQuestion()},2500)}
+    }
+
+    function triggerConfetti() {
+        for(let i=0; i<50; i++) {
+            let conf = document.createElement('div'); conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + 'vw';
+            conf.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            conf.style.animationDuration = Math.random() * 3 + 2 + 's';
+            document.body.appendChild(conf);
+        }
+    }
+</script>
+
+</body>
+</html>
