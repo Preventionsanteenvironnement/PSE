@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Météo CPS</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; text-align: center; padding: 20px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto 20px auto; }
+        h3 { margin-top: 0; color: #555; }
+        
+        /* SLIDER BATTERIE */
+        input[type=range] { width: 100%; height: 10px; border-radius: 5px; background: #d3d3d3; outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 25px; height: 25px; border-radius: 50%; background: #2ecc71; cursor: pointer; }
+        #energie-val { font-weight: bold; font-size: 1.2em; color: #2ecc71; }
+
+        /* GRILLE EMOJIS */
+        .emoji-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .emoji-btn { font-size: 30px; background: #f9f9f9; border: 2px solid #eee; border-radius: 10px; padding: 10px; cursor: pointer; transition: 0.2s; }
+        .emoji-btn.selected { border-color: #3498db; background: #eaf6ff; transform: scale(1.1); }
+
+        /* BOUTONS SOCIAUX */
+        .social-btn { display: block; width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 8px; background: #eee; color: #555; font-weight: bold; cursor: pointer; text-align: left; transition: 0.2s; }
+        .social-btn.selected { color: white; }
+        #btn-solo.selected { background: #3498db; }
+        #btn-help.selected { background: #e67e22; }
+        #btn-talk.selected { background: #2ecc71; }
+        .subtext { font-size: 0.8em; font-weight: normal; display: block; opacity: 0.8; }
+
+        #send-btn { background: #111; color: white; padding: 15px 30px; border: none; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="form-screen">
+        <div class="card">
+            <h3>👤 C'est qui ?</h3>
+            <input type="text" id="pseudo" placeholder="Ton Prénom" style="padding:10px; width:80%; font-size:16px;">
+        </div>
+
+        <div class="card">
+            <h3>🔋 Ton Énergie ?</h3>
+            <input type="range" id="range-energie" min="0" max="100" value="70" oninput="updateEnergie(this.value)">
+            <div style="margin-top:10px;">Niveau : <span id="energie-val">70%</span></div>
+        </div>
+
+        <div class="card">
+            <h3>⛅ Ta Météo ?</h3>
+            <div class="emoji-grid" id="emoji-container">
+                <div class="emoji-btn" onclick="selectEmoji(this, '🤩')">🤩</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '🙂')">🙂</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '😐')">😐</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '😴')">😴</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '🤯')">🤯</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '😠')">😠</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '😰')">😰</div>
+                <div class="emoji-btn" onclick="selectEmoji(this, '🤔')">🤔</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🤝 Ta Posture ?</h3>
+            <p style="font-size:0.8em; color:#666; margin-top:-10px;">De quoi as-tu besoin pour réussir le cours ?</p>
+            
+            <button class="social-btn" id="btn-solo" onclick="selectSocial('solo')">
+                🎧 Focus Solo
+                <span class="subtext">Je travaille seul, j'ai besoin de calme.</span>
+            </button>
+            <button class="social-btn" id="btn-help" onclick="selectSocial('help')">
+                🤝 Entraide
+                <span class="subtext">Je peux aider ou j'ai besoin d'aide.</span>
+            </button>
+            <button class="social-btn" id="btn-talk" onclick="selectSocial('talk')">
+                🗣️ Participation
+                <span class="subtext">Je veux participer à l'oral.</span>
+            </button>
+        </div>
+
+        <button id="send-btn" onclick="envoyer()">Envoyer ma météo 🚀</button>
+    </div>
+
+    <div id="success-screen" class="hidden" style="margin-top:50px;">
+        <h1>C'est noté ! ✔️</h1>
+        <p>Regarde le tableau...</p>
+        <div style="font-size:50px;">🔋</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let selectedEmo = "";
+        let selectedSoc = "";
+
+        // Fonctions UI
+        window.updateEnergie = (val) => {
+            document.getElementById("energie-val").innerText = val + "%";
+            // Changement couleur texte
+            const span = document.getElementById("energie-val");
+            if(val < 30) span.style.color = "red";
+            else if(val < 60) span.style.color = "orange";
+            else span.style.color = "#2ecc71";
+        }
+
+        window.selectEmoji = (el, emoji) => {
+            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedEmo = emoji;
+        }
+
+        window.selectSocial = (type) => {
+            document.querySelectorAll('.social-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('btn-'+type).classList.add('selected');
+            selectedSoc = type;
+        }
+
+        // Envoi Firebase
+        window.envoyer = async function() {
+            const pseudo = document.getElementById("pseudo").value;
+            const energie = document.getElementById("range-energie").value;
+
+            if(!pseudo || !selectedEmo || !selectedSoc) {
+                alert("Remplis tout s'il te plaît ! (Prénom, Émotion, Posture)");
+                return;
+            }
+
+            await addDoc(collection(db, "meteo_classe"), {
+                pseudo: pseudo,
+                energie: energie,
+                emotion: selectedEmo,
+                social: selectedSoc,
+                timestamp: Date.now()
+            });
+
+            document.getElementById("form-screen").classList.add("hidden");
+            document.getElementById("success-screen").classList.remove("hidden");
+        }
+    </script>
+</body>
+</html>
