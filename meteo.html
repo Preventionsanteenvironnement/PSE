@@ -238,7 +238,7 @@
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // CONFIG (Copiée de ton fichier Nuage)
+        // CONFIG CORRIGÉE (Celle de Nuage qui marche)
         const firebaseConfig = {
             apiKey: "AIzaSyAwdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
             authDomain: "devoirs-pse.firebaseapp.com",
@@ -252,7 +252,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const colName = "meteo_live"; // Nouvelle collection spécifique météo
+        const colName = "meteo_live"; 
 
         // --- VARIABLES GLOBALES ---
         let userMood = null;
@@ -299,14 +299,13 @@
                     </div>
                 `;
             } catch (e) {
+                console.error("Erreur envoi:", e);
                 alert("Erreur: " + e.message);
                 btn.disabled = false;
             }
         };
 
         // --- GESTION PROF (AUTH & UI) ---
-        
-        // Formulaire Login
         window.toggleLogin = () => {
             const form = document.getElementById('loginForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -315,12 +314,11 @@
         window.connexionProf = () => {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            signInWithEmailAndPassword(auth, e, p).catch(err => alert("Erreur: " + err.message));
+            signInWithEmailAndPassword(auth, e, p).catch(err => alert("Erreur Auth: " + err.message));
         };
 
         window.deconnexion = () => signOut(auth);
 
-        // Surveiller l'état de connexion
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 // EST PROF
@@ -328,15 +326,14 @@
                 document.getElementById('teacher-view').style.display = 'flex';
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('logoutBtn').style.display = 'block';
-                
-                startSonometer(); // Lancer le micro
-                listenToData();   // Lancer l'écoute Firebase
+                startSonometer(); 
+                listenToData();   
             } else {
                 // EST ÉLÈVE
                 document.getElementById('student-view').style.display = 'block';
                 document.getElementById('teacher-view').style.display = 'none';
                 document.getElementById('logoutBtn').style.display = 'none';
-                isMonitoring = false; // Arrêter le micro
+                isMonitoring = false; 
             }
         });
 
@@ -344,25 +341,20 @@
         function listenToData() {
             onSnapshot(collection(db, colName), (snapshot) => {
                 const zone = document.getElementById('cloudZone');
-                // On garde le titre et le centre, on vire les bulles existantes pour rafraîchir (ou on ajoute juste les nouvelles, ici reset simple)
+                // Nettoyage bulles
                 document.querySelectorAll('.floating-bubble').forEach(e => e.remove());
                 
                 const counts = {};
                 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Ajouter bulle visuelle
                     spawnBubble(data.emoji, data.mood);
-                    // Compter pour dominante
                     counts[data.mood] = (counts[data.mood] || 0) + 1;
                 });
 
-                // Calcul Dominante
                 let max = 0; 
                 let dom = "Attente...";
                 let domEmo = "🤔";
-                
-                // Map emoji rapide
                 const emoMap = {'Joie':'🤩', 'Calme':'😎', 'Colère':'😡', 'Fatigue':'😴'};
 
                 for(const [m, c] of Object.entries(counts)) {
@@ -380,7 +372,6 @@
             const zone = document.getElementById('cloudZone');
             const b = document.createElement('div');
             b.className = 'floating-bubble';
-            // Position random
             b.style.top = (Math.random() * 80 + 10) + "%";
             b.style.left = (Math.random() * 90 + 5) + "%";
             b.innerHTML = `<div class="bubble-emoji">${emoji}</div><div class="bubble-text">${text}</div>`;
@@ -410,9 +401,8 @@
                     let sum = 0;
                     for(let i=0; i<array.length; i++) sum += array[i];
                     
-                    // Simulation dB basique
                     let db = Math.round((sum / array.length / 130) * 100);
-                    if(db < 30) db = 30; // bruit de fond
+                    if(db < 30) db = 30; 
 
                     updateMeter(db);
                 };
@@ -428,7 +418,7 @@
 
             fill.style.width = db + "%";
             
-            if(db > maxDb) maxDb = db; // Mémoire max
+            if(db > maxDb) maxDb = db;
 
             if(db > 80) {
                 val.innerText = db + " dB !";
@@ -443,7 +433,7 @@
 
         // --- BILAN & RESET ---
         window.showBilan = () => {
-            isMonitoring = false; // Pause micro
+            isMonitoring = false;
             document.getElementById('modalBilan').style.display = 'flex';
             
             const txt = document.getElementById('bilanMaxDb');
@@ -457,7 +447,7 @@
 
         window.closeBilan = () => {
             document.getElementById('modalBilan').style.display = 'none';
-            isMonitoring = true; // Reprise micro
+            isMonitoring = true; 
         };
 
         window.resetSession = async () => {
@@ -465,7 +455,7 @@
                 const q = query(collection(db, colName));
                 const snap = await getDocs(q);
                 snap.forEach(d => deleteDoc(d.ref));
-                maxDb = 0; // Reset sonomètre local
+                maxDb = 0; 
                 document.getElementById('domText').innerText = "En attente...";
             }
         };
