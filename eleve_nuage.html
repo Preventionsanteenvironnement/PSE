@@ -7,22 +7,26 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; text-align: center; padding: 20px; color: #333; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; min-height: 90vh; }
         
-        /* LA QUESTION DU PROF */
+        /* QUESTION */
         #question-box {
             background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 30px; border-left: 5px solid #3498db; text-align: left;
+            margin-bottom: 20px; border-left: 5px solid #3498db; text-align: left;
         }
         #prof-question { font-size: 1.4rem; font-weight: bold; color: #2c3e50; margin: 0; }
         #waiting-msg { color: #7f8c8d; font-style: italic; font-size: 0.9rem; }
 
-        /* CONSIGNE RESPONSABILITÉ */
+        /* CONSIGNE */
         .warning-box {
             background: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; border: 1px solid #ffeeba;
             font-size: 0.85rem; margin-bottom: 20px; text-align: left; line-height: 1.4;
         }
 
         /* INPUT ZONE */
-        .input-group { margin-top: auto; margin-bottom: auto; }
+        .input-group { margin-top: auto; margin-bottom: auto; transition: 0.3s; }
+        
+        /* Quand c'est verrouillé */
+        .locked-mode { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+        
         input[type="text"] {
             width: 100%; padding: 15px; border: 2px solid #dfe6e9; border-radius: 12px;
             font-size: 1.2rem; box-sizing: border-box; transition: 0.3s; text-align: center;
@@ -36,6 +40,13 @@
         }
         #send-btn:active { transform: translateY(4px); box-shadow: none; }
 
+        /* Message de verrouillage */
+        #lock-msg { 
+            display: none; background: #e74c3c; color: white; padding: 15px; border-radius: 10px; 
+            font-weight: bold; margin-top: 20px; animation: popIn 0.3s;
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         /* NOTIFICATION */
         #status-msg { margin-top: 15px; height: 20px; color: #27ae60; font-weight: bold; opacity: 0; transition: opacity 0.5s; }
         .error-msg { color: #e74c3c !important; }
@@ -47,19 +58,20 @@
     <div id="question-box">
         <div style="text-transform: uppercase; font-size: 0.75rem; color: #aaa; margin-bottom: 5px;">Question du prof :</div>
         <p id="prof-question">...</p>
-        <span id="waiting-msg">En attente du lancement...</span>
+        <span id="waiting-msg">En attente...</span>
     </div>
 
     <div class="warning-box">
-        ⚠️ <strong>Attention :</strong> Ta réponse s'affichera en GRAND au tableau.
-        <br>Sois pertinent et respectueux. Tout abus est identifié.
+        ⚠️ <strong>Attention :</strong> Ta réponse s'affiche en GRAND au tableau.
     </div>
 
-    <div class="input-group">
+    <div id="input-zone" class="input-group">
         <input type="text" id="word-input" placeholder="Ton mot ici..." autocomplete="off">
         <button id="send-btn" onclick="envoyerMot()">Envoyer 🚀</button>
         <div id="status-msg">Envoyé !</div>
     </div>
+
+    <div id="lock-msg">🛑 Les votes sont clos pour l'instant.</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -78,14 +90,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 1. ÉCOUTER LA QUESTION DU PROF ---
-        // On écoute le document 'config' dans la collection 'nuage_etat'
+        // --- 1. ÉCOUTER L'ÉTAT DU COURS (Question + Verrouillage) ---
         onSnapshot(doc(db, "nuage_etat", "config"), (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
+                
+                // Mise à jour de la question
                 const qDiv = document.getElementById("prof-question");
                 const wDiv = document.getElementById("waiting-msg");
-                
                 if(data.question && data.question.length > 0) {
                     qDiv.innerText = data.question;
                     qDiv.style.display = "block";
@@ -93,12 +105,28 @@
                 } else {
                     qDiv.style.display = "none";
                     wDiv.style.display = "block";
-                    wDiv.innerText = "Le prof va poser une question...";
+                }
+
+                // GESTION DU VERROUILLAGE (Cadenas)
+                const inputZone = document.getElementById("input-zone");
+                const lockMsg = document.getElementById("lock-msg");
+                const inputField = document.getElementById("word-input");
+
+                if (data.isOpen === false) {
+                    // C'est fermé
+                    inputZone.classList.add("locked-mode");
+                    inputField.disabled = true;
+                    lockMsg.style.display = "block";
+                } else {
+                    // C'est ouvert
+                    inputZone.classList.remove("locked-mode");
+                    inputField.disabled = false;
+                    lockMsg.style.display = "none";
                 }
             }
         });
 
-        // --- 2. FILTRE ANTI-INSULTES (Basic Client Side) ---
+        // --- 2. FILTRE & ENVOI ---
         const badWords = ["merde", "connard", "salaud", "putain", "pd", "salope", "tg", "con", "foutre", "bite", "cul"];
 
         window.envoyerMot = async () => {
@@ -108,33 +136,29 @@
 
             if(!mot) return;
 
-            // Vérification filtre
             if(badWords.some(bw => mot.toLowerCase().includes(bw))) {
                 status.innerText = "🚫 Mot interdit !";
                 status.className = "error-msg";
                 status.style.opacity = 1;
-                navigator.vibrate(200); // Vibre si sur mobile
+                navigator.vibrate(200);
                 setTimeout(() => { status.style.opacity = 0; }, 2000);
                 return;
             }
 
             try {
-                // Envoi à Firebase
                 await addDoc(collection(db, "nuage_mots"), {
                     text: mot,
                     timestamp: Date.now()
                 });
-
-                // Reset Interface
                 input.value = "";
-                status.innerText = "Envoyé ! Envoie un autre ?";
+                status.innerText = "Envoyé !";
                 status.className = "";
                 status.style.opacity = 1;
                 setTimeout(() => { status.style.opacity = 0; }, 2000);
-                input.focus(); // Remet le curseur pour enchaîner
-
+                input.focus(); 
             } catch (e) {
-                alert("Erreur : " + e.message);
+                // Si l'envoi échoue (ex: verrouillé entre temps)
+                alert("Impossible d'envoyer (Votes clos ?)");
             }
         }
     </script>
