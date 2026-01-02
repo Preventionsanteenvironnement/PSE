@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Météo & Sonomètre de Classe</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --primary: #4299e1;
+            --success: #48bb78;
+            --warning: #ecc94b;
+            --danger: #f56565;
+            --text: #2d3748;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 95vh;
+        }
+
+        /* --- VUE ÉLÈVE --- */
+        #student-view {
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .section-title { text-align: center; margin-bottom: 20px; color: #4a5568; }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: #edf2f7;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:hover { background: #e2e8f0; }
+        .option-btn.selected {
+            background: #ebf8ff;
+            border-color: var(--primary);
+            transform: scale(1.02);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+        .emoji-lg { font-size: 2.5rem; display: block; margin-bottom: 5px; }
+
+        .defi-list { display: flex; flex-direction: column; gap: 10px; }
+        .defi-item {
+            background: #edf2f7;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            display: flex; align-items: center;
+        }
+        .defi-item.selected { background: #f0fff4; border-color: var(--success); }
+        .defi-icon { font-size: 1.5rem; margin-right: 10px; }
+
+        .send-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 50px;
+        }
+        .send-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+
+        /* --- VUE PROF (TABLEAU DE BORD) --- */
+        #teacher-view {
+            display: none; /* Caché par défaut */
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        /* Sonomètre */
+        .sono-box {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px 30px;
+            margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .meter-track { flex-grow: 1; height: 30px; background: #e2e8f0; border-radius: 15px; margin: 0 30px; overflow: hidden; }
+        .meter-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--success) 0%, var(--warning) 60%, var(--danger) 85%); transition: width 0.1s linear; }
+        .db-val { font-size: 2rem; font-weight: bold; min-width: 100px; text-align: right; }
+        .alert-mode { background: #fff5f5; animation: pulse 1s infinite; }
+        .alert-text { color: var(--danger); }
+
+        /* Météo Nuage */
+        .cloud-area {
+            flex-grow: 1;
+            background: var(--card-bg);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .center-stat {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; z-index: 10;
+        }
+        .floating-bubble { position: absolute; text-align: center; opacity: 0; animation: popIn 0.5s forwards; }
+        .bubble-emoji { font-size: 2.5rem; }
+        .bubble-text { font-size: 0.8rem; color: #718096; background: rgba(255,255,255,0.8); padding: 2px 5px; border-radius: 4px;}
+
+        /* --- LOGIN & MODALS --- */
+        .admin-footer { margin-top: auto; text-align: center; font-size: 0.8rem; color: #a0aec0; padding-top: 20px; }
+        .login-form { margin-top: 10px; display: none; }
+        input { padding: 8px; border: 1px solid #cbd5e0; border-radius: 5px; }
+        
+        .modal-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); z-index: 100;
+            justify-content: center; align-items: center;
+        }
+        .modal-box { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 600px; width: 90%; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 0.8; } }
+    </style>
+</head>
+<body>
+
+    <div id="student-view">
+        <h2 class="section-title">Ma Météo & Mon Défi</h2>
+        
+        <div class="card">
+            <h3>1. Comment ça va ?</h3>
+            <div class="mood-grid">
+                <div class="option-btn" onclick="selectMood(this, 'Joie', '🤩')"><span class="emoji-lg">🤩</span>Joie</div>
+                <div class="option-btn" onclick="selectMood(this, 'Calme', '😎')"><span class="emoji-lg">😎</span>Calme</div>
+                <div class="option-btn" onclick="selectMood(this, 'Colère', '😡')"><span class="emoji-lg">😡</span>Colère</div>
+                <div class="option-btn" onclick="selectMood(this, 'Fatigue', '😴')"><span class="emoji-lg">😴</span>Fatigue</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>2. Mon défi du cours</h3>
+            <div class="defi-list">
+                <div class="defi-item" onclick="selectDefi(this, 'Aide')"><span class="defi-icon">✋</span>Je lève la main pour demander de l'aide</div>
+                <div class="defi-item" onclick="selectDefi(this, 'Vite')"><span class="defi-icon">🚀</span>Je me mets au travail sans attendre</div>
+                <div class="defi-item" onclick="selectDefi(this, 'Ecoute')"><span class="defi-icon">👂</span>J'écoute la consigne jusqu'au bout</div>
+                <div class="defi-item" onclick="selectDefi(this, 'Focus')"><span class="defi-icon">🎯</span>Je reste concentré(e) sur mon exercice</div>
+                <div class="defi-item" onclick="selectDefi(this, 'Attitude')"><span class="defi-icon">⚡</span>Je corrige mon attitude (1ère remarque)</div>
+                <div class="defi-item" onclick="selectDefi(this, 'Zen')"><span class="defi-icon">🧘</span>Je reste zen et positif(ve)</div>
+            </div>
+        </div>
+
+        <button class="send-btn" id="btn-send" onclick="envoyerReponse()">Valider ma Météo</button>
+    </div>
+
+    <div id="teacher-view">
+        <div class="sono-box" id="sonoContainer">
+            <div>🔊 Volume</div>
+            <div class="meter-track"><div class="meter-fill" id="meterFill"></div></div>
+            <div class="db-val" id="dbValue">-- dB</div>
+        </div>
+
+        <div class="cloud-area" id="cloudZone">
+            <div style="position:absolute; top:10px; left:20px; color:#a0aec0;">Météo de la classe</div>
+            <div class="center-stat">
+                <span style="font-size:4rem; display:block;" id="domEmoji">🤔</span>
+                <span style="font-size:1.5rem; font-weight:bold;" id="domText">En attente...</span>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; opacity:0.7;">
+            <span style="background:white; padding:5px 10px; border-radius:15px;">✋ Aide</span>
+            <span style="background:white; padding:5px 10px; border-radius:15px;">🚀 Travail</span>
+            <span style="background:white; padding:5px 10px; border-radius:15px;">👂 Écoute</span>
+            <span style="background:white; padding:5px 10px; border-radius:15px;">🎯 Focus</span>
+            <span style="background:white; padding:5px 10px; border-radius:15px;">🧘 Zen</span>
+        </div>
+
+        <button onclick="showBilan()" style="margin: 20px auto; padding: 10px 30px; border-radius: 30px; border:none; background:#2d3748; color:white; cursor:pointer; font-size:1.2rem;">🏁 Bilan du Cours</button>
+    </div>
+
+    <div class="admin-footer">
+        <span onclick="toggleLogin()" style="cursor:pointer; text-decoration:underline;">Accès Prof</span>
+        <div class="login-form" id="loginForm">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Mot de passe">
+            <button onclick="connexionProf()">Go</button>
+        </div>
+        <div id="logoutBtn" style="display:none; margin-top:10px;">
+            <button onclick="deconnexion()">Se déconnecter</button>
+            <button onclick="resetSession()" style="background:#f56565; color:white; border:none; padding:5px 10px; border-radius:5px; margin-left:10px;">⚠️ Nouvelle Séance (Reset)</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalBilan">
+        <div class="modal-box">
+            <h2>Bilan de la Séance</h2>
+            <div style="margin:30px 0; background:#f7fafc; padding:20px; border-radius:15px;">
+                <div style="color:#718096;">Pic sonore maximum</div>
+                <div style="font-size:3rem; font-weight:bold; color:var(--primary);" id="bilanMaxDb">0 dB</div>
+                <div id="bilanComment" style="font-weight:bold;"></div>
+            </div>
+            <div style="font-style:italic; color:#718096; margin-bottom:20px;">
+                "Levez la main si vous avez réussi votre défi !"
+            </div>
+            <button onclick="closeBilan()" style="padding:10px 20px; border:none; background:var(--primary); color:white; border-radius:8px; cursor:pointer;">Fermer</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // CONFIG (Copiée de ton fichier Nuage)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const colName = "meteo_live"; // Nouvelle collection spécifique météo
+
+        // --- VARIABLES GLOBALES ---
+        let userMood = null;
+        let userMoodEmoji = null;
+        let userDefi = null;
+        let maxDb = 0;
+        let isMonitoring = false;
+
+        // --- FONCTIONS ÉLÈVE (UI) ---
+        window.selectMood = (el, mood, emoji) => {
+            document.querySelectorAll('.mood-grid .option-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            userMood = mood;
+            userMoodEmoji = emoji;
+        };
+
+        window.selectDefi = (el, defiCode) => {
+            document.querySelectorAll('.defi-list .defi-item').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            userDefi = defiCode;
+        };
+
+        window.envoyerReponse = async () => {
+            if(!userMood || !userDefi) { alert("Choisis une humeur ET un défi !"); return; }
+            
+            const btn = document.getElementById('btn-send');
+            btn.disabled = true;
+            btn.innerText = "Envoi...";
+
+            try {
+                await addDoc(collection(db, colName), {
+                    mood: userMood,
+                    emoji: userMoodEmoji,
+                    defi: userDefi,
+                    timestamp: Date.now()
+                });
+                // Feedback simple
+                document.getElementById('student-view').innerHTML = `
+                    <div style="text-align:center; margin-top:50px;">
+                        <span style="font-size:4rem;">✅</span>
+                        <h2>C'est noté !</h2>
+                        <p>Bon cours et n'oublie pas ton défi :</p>
+                        <div style="background:white; padding:15px; border-radius:10px; font-weight:bold;">${userDefi}</div>
+                    </div>
+                `;
+            } catch (e) {
+                alert("Erreur: " + e.message);
+                btn.disabled = false;
+            }
+        };
+
+        // --- GESTION PROF (AUTH & UI) ---
+        
+        // Formulaire Login
+        window.toggleLogin = () => {
+            const form = document.getElementById('loginForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        };
+
+        window.connexionProf = () => {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, e, p).catch(err => alert("Erreur: " + err.message));
+        };
+
+        window.deconnexion = () => signOut(auth);
+
+        // Surveiller l'état de connexion
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // EST PROF
+                document.getElementById('student-view').style.display = 'none';
+                document.getElementById('teacher-view').style.display = 'flex';
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'block';
+                
+                startSonometer(); // Lancer le micro
+                listenToData();   // Lancer l'écoute Firebase
+            } else {
+                // EST ÉLÈVE
+                document.getElementById('student-view').style.display = 'block';
+                document.getElementById('teacher-view').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'none';
+                isMonitoring = false; // Arrêter le micro
+            }
+        });
+
+        // --- LOGIQUE METEO LIVE (PROF) ---
+        function listenToData() {
+            onSnapshot(collection(db, colName), (snapshot) => {
+                const zone = document.getElementById('cloudZone');
+                // On garde le titre et le centre, on vire les bulles existantes pour rafraîchir (ou on ajoute juste les nouvelles, ici reset simple)
+                document.querySelectorAll('.floating-bubble').forEach(e => e.remove());
+                
+                const counts = {};
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Ajouter bulle visuelle
+                    spawnBubble(data.emoji, data.mood);
+                    // Compter pour dominante
+                    counts[data.mood] = (counts[data.mood] || 0) + 1;
+                });
+
+                // Calcul Dominante
+                let max = 0; 
+                let dom = "Attente...";
+                let domEmo = "🤔";
+                
+                // Map emoji rapide
+                const emoMap = {'Joie':'🤩', 'Calme':'😎', 'Colère':'😡', 'Fatigue':'😴'};
+
+                for(const [m, c] of Object.entries(counts)) {
+                    if(c > max) { max = c; dom = m; domEmo = emoMap[m]; }
+                }
+
+                if(max > 0) {
+                    document.getElementById('domText').innerText = dom;
+                    document.getElementById('domEmoji').innerText = domEmo;
+                }
+            });
+        }
+
+        function spawnBubble(emoji, text) {
+            const zone = document.getElementById('cloudZone');
+            const b = document.createElement('div');
+            b.className = 'floating-bubble';
+            // Position random
+            b.style.top = (Math.random() * 80 + 10) + "%";
+            b.style.left = (Math.random() * 90 + 5) + "%";
+            b.innerHTML = `<div class="bubble-emoji">${emoji}</div><div class="bubble-text">${text}</div>`;
+            zone.appendChild(b);
+        }
+
+        // --- LOGIQUE SONOMÈTRE (PROF) ---
+        async function startSonometer() {
+            isMonitoring = true;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(2048, 1, 1);
+                
+                analyser.smoothingTimeConstant = 0.8;
+                analyser.fftSize = 1024;
+                source.connect(analyser);
+                analyser.connect(processor);
+                processor.connect(audioContext.destination);
+
+                processor.onaudioprocess = () => {
+                    if(!isMonitoring) return;
+                    const array = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(array);
+                    let sum = 0;
+                    for(let i=0; i<array.length; i++) sum += array[i];
+                    
+                    // Simulation dB basique
+                    let db = Math.round((sum / array.length / 130) * 100);
+                    if(db < 30) db = 30; // bruit de fond
+
+                    updateMeter(db);
+                };
+            } catch(e) {
+                console.log("Micro erreur ou refusé");
+            }
+        }
+
+        function updateMeter(db) {
+            const fill = document.getElementById('meterFill');
+            const val = document.getElementById('dbValue');
+            const box = document.getElementById('sonoContainer');
+
+            fill.style.width = db + "%";
+            
+            if(db > maxDb) maxDb = db; // Mémoire max
+
+            if(db > 80) {
+                val.innerText = db + " dB !";
+                val.classList.add('alert-text');
+                box.classList.add('alert-mode');
+            } else {
+                val.innerText = db > 60 ? db + " dB" : "";
+                val.classList.remove('alert-text');
+                box.classList.remove('alert-mode');
+            }
+        }
+
+        // --- BILAN & RESET ---
+        window.showBilan = () => {
+            isMonitoring = false; // Pause micro
+            document.getElementById('modalBilan').style.display = 'flex';
+            
+            const txt = document.getElementById('bilanMaxDb');
+            const com = document.getElementById('bilanComment');
+            txt.innerText = maxDb + " dB";
+            
+            if(maxDb > 85) { txt.style.color = "#f56565"; com.innerText = "⚠️ Trop bruyant aujourd'hui !"; }
+            else if(maxDb > 75) { txt.style.color = "#ecc94b"; com.innerText = "Vigilance sur le bruit."; }
+            else { txt.style.color = "#48bb78"; com.innerText = "✅ Bravo, ambiance calme."; }
+        };
+
+        window.closeBilan = () => {
+            document.getElementById('modalBilan').style.display = 'none';
+            isMonitoring = true; // Reprise micro
+        };
+
+        window.resetSession = async () => {
+            if(confirm("Effacer tout pour la prochaine classe ?")) {
+                const q = query(collection(db, colName));
+                const snap = await getDocs(q);
+                snap.forEach(d => deleteDoc(d.ref));
+                maxDb = 0; // Reset sonomètre local
+                document.getElementById('domText').innerText = "En attente...";
+            }
+        };
+
+    </script>
+</body>
+</html>
