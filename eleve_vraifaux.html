@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrai / Faux - PSE</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; text-align: center; padding: 20px; display: flex; flex-direction: column; height: 90vh; user-select: none; }
+        
+        /* QUESTION BOX */
+        #question-box {
+            background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px; border-left: 6px solid #3498db; text-align: left; min-height: 80px; display: flex; align-items: center;
+        }
+        #prof-question { font-size: 1.3rem; font-weight: bold; color: #2c3e50; margin: 0; width: 100%; }
+        #waiting-msg { color: #7f8c8d; font-style: italic; width: 100%; text-align: center;}
+
+        /* BOUTONS VRAI / FAUX */
+        .btn-container { display: flex; flex-direction: column; gap: 20px; flex-grow: 1; justify-content: center; }
+        
+        .btn-vote {
+            border: none; border-radius: 15px; padding: 30px; font-size: 2.5rem; font-weight: 800; color: white;
+            cursor: pointer; transition: transform 0.1s, opacity 0.3s; box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        .btn-vote:active { transform: translateY(6px); box-shadow: none; }
+        
+        #btn-vrai { background: #27ae60; }
+        #btn-faux { background: #c0392b; }
+
+        /* ETATS (Sélectionné / Verrouillé) */
+        .selected { border: 5px solid #fff; box-shadow: 0 0 0 5px #333 !important; transform: scale(0.98); }
+        .locked { filter: grayscale(1); opacity: 0.5; pointer-events: none; }
+        
+        #lock-msg { display: none; margin-top: 20px; font-weight: bold; color: #e74c3c; font-size: 1.2rem; }
+
+        /* NOTIFICATION */
+        #status-msg { margin-top: 10px; height: 20px; color: #34495e; font-weight: 500; }
+
+    </style>
+</head>
+<body>
+
+    <div id="question-box">
+        <p id="prof-question" style="display:none;"></p>
+        <div id="waiting-msg">En attente de la question...</div>
+    </div>
+
+    <div id="buttons-area" class="btn-container locked">
+        <button id="btn-vrai" class="btn-vote" onclick="voter('VRAI')">VRAI</button>
+        <button id="btn-faux" class="btn-vote" onclick="voter('FAUX')">FAUX</button>
+    </div>
+
+    <div id="lock-msg">🛑 Votes terminés</div>
+    <div id="status-msg"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIG FIREBASE (IDENTIQUE)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Identifiant unique (simple) pour cet élève pour cette session
+        let studentId = localStorage.getItem("pse_student_id");
+        if(!studentId) {
+            studentId = "eleve_" + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem("pse_student_id", studentId);
+        }
+
+        // --- 1. ECOUTE DE LA CONFIG PROF ---
+        onSnapshot(doc(db, "vraifaux_etat", "config"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                
+                // Question
+                const qDiv = document.getElementById("prof-question");
+                const wDiv = document.getElementById("waiting-msg");
+                
+                if(data.question && data.question.length > 0) {
+                    qDiv.innerText = data.question;
+                    qDiv.style.display = "block";
+                    wDiv.style.display = "none";
+                } else {
+                    qDiv.style.display = "none";
+                    wDiv.style.display = "block";
+                    resetSelection(); // Reset visuel si nouvelle question vide
+                }
+
+                // Verrouillage
+                const area = document.getElementById("buttons-area");
+                const msg = document.getElementById("lock-msg");
+                
+                if(data.isOpen) {
+                    area.classList.remove("locked");
+                    msg.style.display = "none";
+                } else {
+                    area.classList.add("locked");
+                    msg.style.display = "block";
+                }
+            }
+        });
+
+        // --- 2. FONCTION DE VOTE ---
+        window.voter = async (choix) => {
+            // Visuel
+            document.querySelectorAll('.btn-vote').forEach(b => b.classList.remove('selected'));
+            const btn = document.getElementById(choix === 'VRAI' ? 'btn-vrai' : 'btn-faux');
+            btn.classList.add('selected');
+            
+            document.getElementById('status-msg').innerText = "Réponse envoyée : " + choix;
+
+            // Envoi Firebase (On écrase son ancien vote s'il change d'avis)
+            try {
+                await setDoc(doc(db, "vraifaux_reponses", studentId), {
+                    vote: choix,
+                    timestamp: Date.now()
+                });
+            } catch(e) {
+                console.error("Erreur vote", e);
+            }
+        };
+
+        function resetSelection() {
+            document.querySelectorAll('.btn-vote').forEach(b => b.classList.remove('selected'));
+            document.getElementById('status-msg').innerText = "";
+        }
+
+    </script>
+</body>
+</html>
