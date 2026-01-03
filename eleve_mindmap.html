@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Participation Live</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* LOGIN */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* HEADER */
+        .context-header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 20px; padding: 15px; background: #1e293b; border-radius: 12px; border: 1px solid #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2); }
+        .context-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .context-value { font-size: 1.2rem; font-weight: bold; color: #fff; margin-top: 5px; display: block; }
+        
+        /* PAUSE */
+        #lock-screen { display: none; width: 100%; max-width: 400px; text-align: center; padding: 30px; background: #334155; border-radius: 16px; border: 2px solid #facc15; color: #facc15; font-weight: bold; margin-bottom: 20px; }
+
+        /* INPUT */
+        .input-card { background: #1e293b; padding: 20px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #334155; margin-bottom: 20px; }
+        input[type="text"] { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #475569; background: #0f172a; color: white; font-size: 1.1rem; box-sizing: border-box; outline: none; margin-bottom: 15px; }
+        button { width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+        
+        /* HISTORIQUE */
+        .history { width: 100%; max-width: 400px; }
+        .idea-item { background: #1e293b; padding: 10px 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #94a3b8; font-size: 0.9rem; transition: all 0.5s; }
+        
+        /* STATUTS */
+        .status-valid { border-left-color: #22c55e; background: #064e3b; }
+        .status-reject { border-left-color: #ef4444; opacity: 0.5; text-decoration: line-through; }
+        
+        /* EFFET WAOUH (LIKE) */
+        .status-liked { border: 2px solid #facc15 !important; background: linear-gradient(90deg, #1e293b 0%, #3e3012 100%); animation: pulseGold 1s infinite alternate; }
+        .badge-bravo { background: #facc15; color: #422006; font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+        @keyframes pulseGold { from { box-shadow: 0 0 5px #facc15; } to { box-shadow: 0 0 15px #facc15; } }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h2 style="margin-bottom: 30px;">👋 Bienvenue !</h2>
+        <input type="text" id="usernameInput" placeholder="Ton Prénom" style="width: 80%; max-width: 300px; text-align: center; padding: 15px; border-radius: 12px;">
+        <button onclick="login()" style="width: 80%; max-width: 300px; margin-top: 15px;">Entrer</button>
+    </div>
+
+    <div class="context-header">
+        <span class="context-label">Sujet en cours :</span>
+        <span class="context-value" id="current-focus">...</span>
+    </div>
+
+    <div id="lock-screen">⏸️ Pause demandée par le prof.</div>
+
+    <div class="input-card" id="input-area">
+        <input type="text" id="ideaInput" placeholder="Ton idée..." autocomplete="off">
+        <button onclick="sendIdea()">Envoyer 🚀</button>
+    </div>
+
+    <div class="history">
+        <h3 style="font-size:0.9rem; color:#64748b;">Tes envois :</h3>
+        <div id="list"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+
+        let username = localStorage.getItem('mindmap_username');
+        if(username) document.getElementById('login-screen').style.display = 'none';
+
+        window.login = () => {
+            const val = document.getElementById('usernameInput').value.trim();
+            if(val) { username = val; localStorage.setItem('mindmap_username', username); document.getElementById('login-screen').style.display = 'none'; loadHistory(); }
+        };
+
+        // ECOUTE ETAT GLOBAL (LOCK + SUJET)
+        onSnapshot(doc(db, "mindmap_config", "global_state"), (doc) => {
+            if(doc.exists()) {
+                const d = doc.data();
+                document.getElementById('current-focus').innerText = d.currentFocus || "Général";
+                document.getElementById('lock-screen').style.display = d.isLocked ? 'block' : 'none';
+                document.getElementById('input-area').style.display = d.isLocked ? 'none' : 'block';
+            }
+        });
+
+        window.sendIdea = async () => {
+            const input = document.getElementById('ideaInput'), text = input.value.trim();
+            if(!text) return;
+            addVisualItem(text, 'wait'); input.value = ""; input.focus();
+            try { await addDoc(collection(db, "mindmap_ideas"), { text: text, student: username||"Anonyme", status: 'waiting', timestamp: Date.now() }); } catch(e){}
+        };
+
+        function addVisualItem(text, status, isLiked) {
+            const div = document.createElement('div'); div.className = `idea-item status-${status}`;
+            if(isLiked) div.classList.add('status-liked');
+            const icon = status==='valid'?'✅':(status==='reject'?'❌':'⏳');
+            const bravo = isLiked ? `<span class="badge-bravo">SUPER !</span>` : '';
+            div.innerHTML = `<div><span>${escapeHtml(text)}</span> ${bravo}</div> <span class="icon">${icon}</span>`;
+            document.getElementById('list').prepend(div);
+        }
+
+        function loadHistory() {
+            if(!username) return;
+            const q = query(collection(db, "mindmap_ideas"), where("student", "==", username), orderBy("timestamp", "asc"));
+            onSnapshot(q, (snap) => {
+                document.getElementById('list').innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    let st = 'wait'; if(data.status==='accepted') st='valid'; if(data.status==='rejected') st='reject';
+                    addVisualItem(data.text, st, data.feedback);
+                });
+            });
+        }
+        
+        function escapeHtml(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+        if(username) loadHistory();
+
+        document.getElementById('ideaInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') window.sendIdea(); });
+    </script>
+</body>
+</html>
