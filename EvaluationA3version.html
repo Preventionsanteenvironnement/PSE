@@ -22,6 +22,9 @@ th{width:30%;background:#eee}
 .doc-source{font-size:.7em;color:#555}
 .actions{position:fixed;bottom:15px;right:15px;display:flex;gap:8px}
 button{padding:10px;border:1px solid #000;background:#fff;font-weight:bold;cursor:pointer}
+.status{margin-top:10px;font-weight:bold}
+.status.ok{color:green}
+.status.err{color:red}
 @media print{.actions{display:none}}
 </style>
 </head>
@@ -94,12 +97,14 @@ Date : <input type="date">
 <textarea id="Q7"></textarea>
 </div>
 
+<div class="status" id="status"></div>
+
 </div>
 
 <div class="actions">
 <button onclick="window.print()">Imprimer PDF</button>
-<button onclick="exportJSON()">Enregistrer JSON</button>
-<button onclick="envoyerFirebase()">Envoyer</button>
+<button onclick="downloadJSON()">Télécharger JSON</button>
+<button onclick="sendToFirebase()">Envoyer</button>
 </div>
 
 <script type="module">
@@ -107,26 +112,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "TA_CLE_API",
-  authDomain: "TON_PROJET.firebaseapp.com",
-  projectId: "TON_PROJET"
+  apiKey: "AIzaSyAWdCMvOiAJJn3eT9LIAQD3RWJUD0lQcLI",
+  authDomain: "devoirs-pse.firebaseapp.com",
+  projectId: "devoirs-pse",
+  storageBucket: "devoirs-pse.firebasestorage.app",
+  messagingSenderId: "614730413904",
+  appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const statusEl = document.getElementById("status");
 
-window.envoyerFirebase = async function(){
-  const prenom = document.getElementById("prenom").value.trim();
-  if(!prenom){ alert("Prénom obligatoire"); return; }
-
-  const data = {
-    prenom,
-    evaluation:"A3_activite_physique",
-    module:"A3",
-    timestamp:new Date().toISOString(),
+function buildPayload(){
+  return {
+    type: "evaluation_A3_activite_physique",
+    prenom: prenom.value.trim(),
+    timestamp: new Date().toISOString(),
     reponses:{
-      Q1:{competence:"C2",reponse:{
-        qui:Q1_qui.value,quoi:Q1_quoi.value,ou:Q1_ou.value,pourquoi:Q1_pourquoi.value}},
+      Q1:{competence:"C2",reponse:{qui:Q1_qui.value,quoi:Q1_quoi.value,ou:Q1_ou.value,pourquoi:Q1_pourquoi.value}},
       Q2:{competence:"C3",reponse:Q2.value},
       Q3_1:{competence:"C2",reponse:Q3_1.value},
       Q3_2:{competence:"C2",reponse:Q3_2.value},
@@ -139,18 +143,32 @@ window.envoyerFirebase = async function(){
       Q7:{competence:"C4",reponse:Q7.value}
     }
   };
+}
 
-  await addDoc(collection(db,"evaluations_CAP_PSE"),data);
-  alert("Devoir envoyé");
-};
+async function sendToFirebase(){
+  if(!prenom.value.trim()){
+    statusEl.textContent="Prénom obligatoire";
+    statusEl.className="status err";
+    return;
+  }
+  try{
+    await addDoc(collection(db,"bacpro"), buildPayload());
+    statusEl.textContent="Devoir envoyé avec succès";
+    statusEl.className="status ok";
+  }catch(e){
+    statusEl.textContent="Erreur d’envoi : " + e.message;
+    statusEl.className="status err";
+  }
+}
 
-window.exportJSON = function(){
-  const blob = new Blob([JSON.stringify(envoyerFirebase.toString(),null,2)],{type:"application/json"});
+function downloadJSON(){
+  const blob = new Blob([JSON.stringify(buildPayload(),null,2)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
   a.download="A3_activite_physique.json";
   a.click();
-};
+  URL.revokeObjectURL(a.href);
+}
 </script>
 
 </body>
