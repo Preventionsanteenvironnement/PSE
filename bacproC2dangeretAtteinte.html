@@ -233,6 +233,54 @@
             .touch-hint { display: block; }
             .draggable-item { cursor: pointer; }
         }
+
+        /* --- Bloc envoi prof (ajout) --- */
+        #pse-envoi-prof{
+          margin: 40px auto 20px;
+          max-width: 600px;
+          padding: 20px;
+          background: #f0f9ff;
+          border: 2px solid #0ea5e9;
+          border-radius: 15px;
+          font-family: sans-serif;
+          text-align: center;
+          box-shadow: 0 4px 15px rgba(0,0,0,.1);
+        }
+        #pse-envoi-prof .row{
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+          justify-content:center;
+        }
+        #pse-eleve-nom{
+          padding:10px;
+          border:1px solid #ccc;
+          border-radius:8px;
+          flex:1;
+          min-width:150px;
+        }
+        #pse-eleve-classe{
+          padding:10px;
+          border:1px solid #ccc;
+          border-radius:8px;
+        }
+        #pse-btn-envoyer{
+          margin-top:15px;
+          padding:12px 25px;
+          background:#0284c7;
+          color:#fff;
+          border:none;
+          border-radius:50px;
+          font-weight:700;
+          cursor:pointer;
+          font-size:1em;
+          transition:.3s;
+        }
+        #pse-msg{
+          margin-top:15px;
+          font-weight:700;
+          min-height:20px;
+        }
     </style>
 </head>
 <body>
@@ -710,6 +758,128 @@
         clearSelection();
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
+</script>
+
+<!-- Bloc envoi prof (ajout) -->
+<div id="pse-envoi-prof">
+  <h3 style="margin-top:0;color:#0369a1">🚀 Enregistrer mon résultat pour le Prof</h3>
+
+  <div class="row">
+    <input type="text" id="pse-eleve-nom" placeholder="Ton Prénom et NOM">
+    <select id="pse-eleve-classe">
+      <option value="">-- Ta classe --</option>
+      <option value="2nde Bac Pro">2nde Bac Pro</option>
+      <option value="1ère Bac Pro">1ère Bac Pro</option>
+      <option value="Tle Bac Pro">Tle Bac Pro</option>
+      <option value="CAP 1">CAP 1</option>
+      <option value="CAP 2">CAP 2</option>
+      <option value="Autre">Autre</option>
+    </select>
+  </div>
+
+  <button id="pse-btn-envoyer">Envoyer au Professeur 📤</button>
+
+  <div id="pse-msg"></div>
+</div>
+
+<script type="module">
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.firebasestorage.app",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const box = document.getElementById("pse-envoi-prof");
+  const nomEl = document.getElementById("pse-eleve-nom");
+  const classeEl = document.getElementById("pse-eleve-classe");
+  const btn = document.getElementById("pse-btn-envoyer");
+  const msg = document.getElementById("pse-msg");
+
+  const LS_NOM = "pse_nom_eleve";
+  const LS_CLASSE = "pse_classe_eleve";
+  const LS_SENT_PREFIX = "pse_sent_";
+
+  function safeInit(){
+    const n = localStorage.getItem(LS_NOM);
+    const c = localStorage.getItem(LS_CLASSE);
+    if(n) nomEl.value = n;
+    if(c) classeEl.value = c;
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", safeInit);
+  else safeInit();
+
+  function getScoreFinal(){
+    const elScore2 = document.getElementById("final-score");
+    if(elScore2) return (elScore2.textContent || "").trim();
+    return "Terminé";
+  }
+
+  function pageKey(){
+    const k = (location.pathname + "|" + document.title).toLowerCase();
+    return LS_SENT_PREFIX + btoa(unescape(encodeURIComponent(k))).slice(0, 32);
+  }
+
+  function setStateSending(sending){
+    btn.disabled = sending;
+    btn.style.backgroundColor = sending ? "#94a3b8" : "#0284c7";
+    btn.style.cursor = sending ? "not-allowed" : "pointer";
+  }
+
+  btn.addEventListener("click", async () => {
+    const nom = (nomEl.value || "").trim();
+    const classe = (classeEl.value || "").trim();
+
+    if(!nom || !classe){
+      msg.style.color = "#dc2626";
+      msg.textContent = "⚠️ Écris ton nom et choisis ta classe";
+      return;
+    }
+
+    const sentKey = pageKey();
+    if(localStorage.getItem(sentKey) === "1"){
+      msg.style.color = "#0f766e";
+      msg.textContent = "✅ Déjà envoyé pour cette activité";
+      return;
+    }
+
+    localStorage.setItem(LS_NOM, nom);
+    localStorage.setItem(LS_CLASSE, classe);
+
+    setStateSending(true);
+    msg.style.color = "#0284c7";
+    msg.textContent = "Envoi en cours...";
+
+    try{
+      await addDoc(collection(db, "resultats_eleves"), {
+        createdAt: new Date().toISOString(),
+        nom,
+        classe,
+        exercice: document.title,
+        url: location.href,
+        score: getScoreFinal()
+      });
+
+      localStorage.setItem(sentKey, "1");
+      msg.style.color = "#16a34a";
+      msg.textContent = "✅ Envoyé";
+      setTimeout(() => { if(box) box.style.display = "none"; }, 900);
+
+    }catch(e){
+      console.error(e);
+      msg.style.color = "#dc2626";
+      msg.textContent = "Erreur. Vérifie ta connexion et réessaie.";
+      setStateSending(false);
+    }
+  });
 </script>
 
 </body>
