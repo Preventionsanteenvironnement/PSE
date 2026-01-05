@@ -6,16 +6,15 @@
     <title>Participation Live</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* === STYLE MOBILE APP === */
+        /* STYLE MOBILE */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #f0f4f8; color: #333; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* ECRAN LOGIN */
+        /* LOGIN */
         #login-screen { position: fixed; inset: 0; background: #f0f4f8; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         
-        /* ECRAN APP */
+        /* APP */
         #app-screen { display: none; flex-direction: column; height: 100%; }
-
         .header { flex-shrink: 0; text-align: center; margin-bottom: 20px; }
         .label { text-transform: uppercase; font-size: 0.7rem; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; }
         .question-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 80px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #0f172a; text-align: center; }
@@ -31,19 +30,13 @@
         .status { font-weight: bold; font-size: 0.9rem; opacity: 0; transition: 0.3s; margin-top: 10px; text-align: center; }
         .success { color: #10b981; } .error { color: #ef4444; }
 
-        /* OVERLAY LOCK & ALERT */
+        /* OVERLAYS */
         #lock-overlay { position: absolute; inset: 0; background: rgba(240, 244, 248, 0.95); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .lock-icon { font-size: 4rem; margin-bottom: 10px; animation: bounce 1s infinite; }
-        
         #alert-overlay { position: absolute; inset: 0; background: #ef4444; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; animation: flash 0.5s infinite; }
-
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-
     <div id="login-screen">
         <h1 style="color:#0f172a; margin-bottom:30px;">👋 Bonjour !</h1>
         <input type="text" id="username" placeholder="Ton Prénom ?" autocomplete="off">
@@ -55,24 +48,15 @@
             <div class="label">Question en cours</div>
             <div id="display-question" class="question-card">...</div>
         </div>
-
         <div class="input-wrapper">
             <input type="text" id="word-input" placeholder="Ta réponse..." autocomplete="off">
             <button id="btn-send" onclick="sendWord()">ENVOYER 🚀</button>
             <div id="status-msg" class="status">Message envoyé !</div>
         </div>
-
         <div class="footer">Connecté en tant que <b id="display-name">...</b></div>
         
-        <div id="lock-overlay">
-            <div class="lock-icon">🔒</div>
-            <div style="font-size:1.5rem; font-weight:900; color:#ef4444;">VOTES CLOS</div>
-        </div>
-        
-        <div id="alert-overlay">
-            <div style="font-size:4rem;">📢</div>
-            <div style="font-size:2rem; font-weight:900; text-align:center;">LE PROF T'APPELLE !</div>
-        </div>
+        <div id="lock-overlay"><div style="font-size:4rem;">🔒</div><div style="font-size:1.5rem; font-weight:900; color:#ef4444;">VOTES CLOS</div></div>
+        <div id="alert-overlay"><div style="font-size:4rem;">📢</div><div style="font-size:2rem; font-weight:900;">LE PROF T'APPELLE !</div></div>
     </div>
 
     <script type="module">
@@ -85,70 +69,44 @@
         
         let myName = "";
 
-        // --- LOGIN ---
+        // LOGIN
         window.joinSession = async () => {
-            const input = document.getElementById('username');
-            const name = input.value.trim();
-            if(!name) return;
-            
-            myName = name;
+            const val = document.getElementById('username').value.trim();
+            if(!val) return;
+            myName = val;
             document.getElementById('display-name').innerText = myName;
-            
-            // On signale la présence
             await addDoc(collection(db, "nuage_presence"), { name: myName, timestamp: Date.now() });
-
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'flex';
         };
 
-        // --- APP LOGIC ---
+        // LISTENERS
         onSnapshot(doc(db, "nuage_etat", "config"), (snap) => {
             if(snap.exists()){
                 const d = snap.data();
-                
-                // Question
                 document.getElementById('display-question').innerText = d.question || "En attente...";
-                
-                // Lock
                 const lock = document.getElementById('lock-overlay');
                 const inp = document.getElementById('word-input');
-                if(d.isOpen === false) {
-                    lock.style.display = "flex"; inp.blur();
-                } else {
-                    lock.style.display = "none";
-                }
-
-                // ALERTE INDIVIDUELLE (Mégaphone)
-                const alertScreen = document.getElementById('alert-overlay');
+                if(d.isOpen === false) { lock.style.display = "flex"; inp.blur(); } else { lock.style.display = "none"; }
+                
+                const alrt = document.getElementById('alert-overlay');
                 if(d.solicitedStudent && d.solicitedStudent.toLowerCase() === myName.toLowerCase()) {
-                    alertScreen.style.display = "flex";
-                    if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
-                } else {
-                    alertScreen.style.display = "none";
-                }
+                    alrt.style.display = "flex"; if(navigator.vibrate) navigator.vibrate([500,200,500]);
+                } else { alrt.style.display = "none"; }
             }
         });
 
-        // --- SEND ---
-        const badWords = ["merde", "connard", "putain", "salope", "pd", "enculé", "bite", "cul", "tg", "con"];
+        // SEND (VERS SALLE D'ATTENTE)
         window.sendWord = async () => {
             const inp = document.getElementById('word-input');
             const txt = inp.value.trim();
             if(!txt) return;
-
-            if(badWords.some(w => txt.toLowerCase().includes(w))) {
-                showStatus("🚫 Mot interdit !", "error");
-                if(navigator.vibrate) navigator.vibrate(200);
-                return;
-            }
-
+            // Envoi dans 'nuage_attente' (Salle d'attente)
             try {
-                await addDoc(collection(db, "nuage_mots"), { text: txt, timestamp: Date.now() });
+                await addDoc(collection(db, "nuage_attente"), { text: txt, student: myName, timestamp: Date.now() });
                 inp.value = "";
-                showStatus("Envoyé ! 🎉", "success");
-            } catch(e) {
-                showStatus("Erreur : Votes fermés ?", "error");
-            }
+                showStatus("Envoyé au prof ! (Attente validation)", "success");
+            } catch(e) { showStatus("Erreur (fermé ?)", "error"); }
         };
 
         function showStatus(msg, type) {
@@ -157,14 +115,8 @@
             setTimeout(() => el.style.opacity = 0, 2000);
         }
 
-        // Touche Entrée
-        document.getElementById('word-input').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') { e.preventDefault(); sendWord(); }
-        });
-        document.getElementById('username').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') { e.preventDefault(); joinSession(); }
-        });
-
+        document.getElementById('word-input').addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendWord(); });
+        document.getElementById('username').addEventListener('keypress', (e)=>{ if(e.key==='Enter') joinSession(); });
     </script>
 </body>
 </html>
