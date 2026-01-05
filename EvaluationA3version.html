@@ -184,47 +184,73 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  function validerIdentite(data){
-    if(!data.nom || !data.prenom || !data.classe){
+  function getIdentite() {
+    return {
+      nom: document.getElementById("nom").value.trim(),
+      prenom: document.getElementById("prenom").value.trim(),
+      classe: document.getElementById("classe").value.trim()
+    };
+  }
+
+  function validerIdentite(infos) {
+    if(!infos.nom || !infos.prenom || !infos.classe){
       alert("Merci de compléter Nom, Prénom et Classe avant d'envoyer.");
       return false;
     }
     return true;
   }
 
-  // MODIFICATION : Nouvelle fonction getDataPayload
-  // Format harmonisé avec le Devoir 1 (reponses objet + meta data)
-  function getDataPayload(){
-    const nom = document.getElementById("nom").value.trim();
-    const prenom = document.getElementById("prenom").value.trim();
-    const classe = document.getElementById("classe").value.trim();
-
-    const reponsesObj = {};
-    Array.from(document.querySelectorAll("textarea")).forEach((t, i) => {
-      // Les clés seront "1", "2", "3"... correspondant à l'ordre des textareas
-      reponsesObj[String(i + 1)] = (t.value || "").trim();
-    });
+  // CONSTRUCTION DU PAYLOAD (MIMÉTISME DEVOIR 1)
+  function buildFirebasePayload() {
+    const infos = getIdentite();
+    
+    // 1. Création de l'objet réponses (et non un tableau)
+    // On utilise des clés explicites pour faciliter la lecture dans votre PageProf
+    const reponsesMap = {
+      "Q1_QUI": document.getElementById("q1_qui").value,
+      "Q1_QUOI": document.getElementById("q1_quoi").value,
+      "Q1_OU": document.getElementById("q1_ou").value,
+      "Q1_POURQUOI": document.getElementById("q1_pourquoi").value,
+      "Q2": document.getElementById("q2").value,
+      "Q3_1": document.getElementById("q3_1").value,
+      "Q3_2": document.getElementById("q3_2").value,
+      "Q4": document.getElementById("q4").value,
+      "Q5_1": document.getElementById("q5_1").value,
+      "Q5_2": document.getElementById("q5_2").value,
+      "Q5_3": document.getElementById("q5_3").value,
+      "Q6_1": document.getElementById("q6_1").value,
+      "Q6_2": document.getElementById("q6_2").value,
+      "Q7": document.getElementById("q7").value
+    };
 
     return {
-      type: "copie_eleve_pse", // Type harmonisé
-      nom,
-      prenom,
-      classe,
-      reponses: reponsesObj,
+      // 2. Le type magique qui passe le filtre
+      type: "copie_eleve_pse", 
+      
+      // Champs standard
+      nom: infos.nom,
+      prenom: infos.prenom,
+      classe: infos.classe,
+      
+      // 3. Format Objet pour les réponses
+      reponses: reponsesMap,
+      
+      // 4. Bloc Meta complet pour satisfaire le parsing de la PageProf
       meta: {
         createdAt: new Date().toISOString(),
-        competences: ["C2","C3","C4","C5"],
-        score: null,
-        maxScore: null,
-        bareme: "",
-        details: {}
+        competences: ["C2", "C3", "C4", "C5"],
+        score: 0,           // Valeur par défaut requise
+        maxScore: 20,       // Valeur requise
+        bareme: "/20",      // Valeur requise
+        details: {},        // Objet vide pour éviter les erreurs "undefined"
+        sujet: "Eval A3"    // Petit bonus pour identifier le sujet
       }
     };
   }
 
   async function envoyerCopie(){
-    const data = getDataPayload();
-    if(!validerIdentite(data)) return;
+    const infos = getIdentite();
+    if(!validerIdentite(infos)) return;
 
     const btn = document.getElementById("sendBtn");
     const texteOriginal = btn.textContent;
@@ -232,9 +258,10 @@
     btn.disabled = true;
 
     try {
-      await addDoc(collection(db, "bacpro"), data);
+      const payload = buildFirebasePayload();
+      await addDoc(collection(db, "bacpro"), payload);
       alert("Confirmation : Votre devoir a bien été envoyé.");
-      btn.textContent = "Envoyé";
+      btn.textContent = "Envoyé !";
     } catch (e) {
       console.error(e);
       alert("Erreur technique lors de l'envoi.");
@@ -243,25 +270,35 @@
     }
   }
 
-  // MODIFICATION : telechargerJSON sauvegarde maintenant tout le payload
-  function telechargerJSON(){
-    const data = getDataPayload();
-    if(!validerIdentite(data)) return;
+  // Fonction JSON locale (Format liste conservé pour votre usage perso)
+  function saveJSON(){
+    const infos = getIdentite();
+    
+    // On recrée le tableau d'objets pour le JSON local si c'est votre préférence
+    const allTextareas = document.querySelectorAll('textarea');
+    const reponsesArray = Array.from(allTextareas).map((t, i) => ({
+      question: i + 1,
+      valeur: t.value
+    }));
 
-    // Sauvegarde complète pour cohérence maximale
-    const structureGrille = data;
+    const data = {
+      nom: infos.nom,
+      prenom: infos.prenom,
+      classe: infos.classe,
+      reponses: reponsesArray
+    };
 
-    const blob = new Blob([JSON.stringify(structureGrille, null, 2)], {type: "application/json"});
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     const safeName = (str) => str ? str.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'copie';
-    a.download = `eval_A3_${safeName(data.classe)}_${safeName(data.nom)}.json`;
+    a.download = `eval_A3_${safeName(infos.classe)}_${safeName(infos.nom)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
 
   document.getElementById("sendBtn").addEventListener("click", envoyerCopie);
-  document.getElementById("downloadJsonBtn").addEventListener("click", telechargerJSON);
+  document.getElementById("downloadJsonBtn").addEventListener("click", saveJSON);
 
 </script>
 
