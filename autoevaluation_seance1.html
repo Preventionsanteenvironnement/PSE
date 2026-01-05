@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Auto-éval A3 : Mouvement & Muscle</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e67e22;
+            --success: #27ae60;
+            --light: #ecf0f1;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            line-height: 1.5;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* HEADER */
+        header {
+            text-align: center;
+            border-bottom: 4px solid var(--accent);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            background: #fdfefe;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        h1 { color: var(--primary); margin: 0; text-transform: uppercase; font-size: 1.5em; line-height: 1.2; }
+        h2 { color: var(--accent); font-size: 1.1em; margin-top: 10px; font-weight: 600; }
+        
+        .objectives { 
+            background: var(--light); 
+            padding: 15px; 
+            border-radius: 8px; 
+            text-align: left; 
+            font-size: 0.9em; 
+            margin-top: 15px; 
+            border-left: 5px solid var(--primary);
+        }
+
+        /* NIVEAUX */
+        .level-section { display: none; margin-top: 30px; }
+        .level-section.active { display: block; animation: slideUp 0.5s ease-out; }
+        
+        .level-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        /* QUESTIONS */
+        .question-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .question-card:hover { border-left: 5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        .comp-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #95a5a6;
+            color: white;
+            font-size: 0.75em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        strong { display: block; margin-bottom: 10px; padding-right: 30px; }
+
+        /* IMAGES RESPONSIVE */
+        .q-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px auto;
+            display: block;
+            border: 1px solid #ccc;
+        }
+
+        /* INPUTS & RADIOS */
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 1em;
+            -webkit-appearance: none;
+        }
+        
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            transition: background 0.2s;
+        }
+        .radio-group label:active { background: #e0e0e0; }
+        .radio-group input { margin-right: 10px; width: 20px; height: 20px; }
+
+        /* BOUTONS */
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: block;
+            margin: 40px auto;
+            width: 100%;
+            max-width: 300px;
+            box-shadow: 0 4px 10px rgba(44, 62, 80, 0.3);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:hover { background: var(--accent); }
+        
+        .btn-next {
+            background-color: var(--success);
+            display: none; /* Caché au début */
+        }
+
+        /* RESULTATS */
+        .result-box {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            border: 2px dashed #ccc;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* FEEDBACK */
+        .feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+            font-size: 0.95em;
+        }
+        .correct { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .incorrect { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            h1 { font-size: 1.3em; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Module A.3 : L’activité physique</h1>
+        <h2>SÉANCE 1 : Mouvement volontaire & Muscle</h2>
+        
+        <div class="objectives">
+            <strong>🎯 Objectif :</strong> Identifier le mécanisme nerveux du mouvement volontaire et la structure du muscle strié.<br>
+            <strong>📚 Compétences :</strong> C1 (Traiter l'info) • C2 (Analyser) • C3 (Expliquer) • C6 (Rédiger).
+        </div>
+    </header>
+
+    <div id="intro" style="text-align: center; padding: 20px;">
+        <h3>💪 Prêt à tester tes connaissances ?</h3>
+        <p>30 questions réparties en 2 niveaux.<br>Valide le Niveau 1 pour débloquer l'Expert !</p>
+        <button class="btn" onclick="startLevel(1)">GO - Niveau 1</button>
+    </div>
+
+    <div id="level1" class="level-section">
+        <div class="level-header">⭐ NIVEAU 1 : Les Bases (15 pts)</div>
+
+        <div class="question-card" id="l1_q1">
+            <span class="comp-badge">C1</span>
+            <strong>1. Nomme l'organe "commande" qui décide du mouvement.</strong>
+            <input type="text" placeholder="Le ..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q2">
+            <span class="comp-badge">C1</span>
+            <strong>2. Nomme l'organe "moteur" qui effectue le mouvement.</strong>
+            <input type="text" placeholder="Le ..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q3">
+            <span class="comp-badge">C1</span>
+            <strong>3. Qui transmet le message du cerveau au muscle ?</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l1q3" value="A"> Les vaisseaux sanguins</label>
+                <label><input type="radio" name="l1q3" value="B"> Le nerf moteur</label>
+                <label><input type="radio" name="l1q3" value="C"> Le tendon</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q4">
+            <span class="comp-badge">C2</span>
+            <strong>4. Classe l'ordre du message nerveux (écris 1, 2, 3).</strong>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div><input type="number" style="width:60px; display:inline-block;" id="ord_nerf"> Nerf moteur</div>
+                <div><input type="number" style="width:60px; display:inline-block;" id="ord_cerveau"> Cerveau</div>
+                <div><input type="number" style="width:60px; display:inline-block;" id="ord_muscle"> Muscle</div>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q5">
+            <span class="comp-badge">C1</span>
+            <strong>5. Comment s'appelle la partie qui attache le muscle à l'os ?</strong>
+            <input type="text" class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q6">
+            <span class="comp-badge">C1</span>
+            <strong>6. Définition de la CONTRACTILITÉ :</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l1q6" value="A"> Recevoir un signal.</label>
+                <label><input type="radio" name="l1q6" value="B"> Se raccourcir et s'épaissir.</label>
+                <label><input type="radio" name="l1q6" value="C"> Reprendre sa forme.</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q7">
+            <span class="comp-badge">C1</span>
+            <strong>7. Définition de l'EXCITABILITÉ :</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l1q7" value="A"> Recevoir un stimulus et y répondre.</label>
+                <label><input type="radio" name="l1q7" value="B"> Rester contracté au repos.</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q8">
+            <span class="comp-badge">C1</span>
+            <strong>8. Définition de l'ÉLASTICITÉ :</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l1q8" value="A"> Se contracter fort.</label>
+                <label><input type="radio" name="l1q8" value="B"> S'étirer et reprendre sa longueur initiale.</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q9">
+            <span class="comp-badge">C1</span>
+            <strong>9. Définition de la TONICITÉ :</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l1q9" value="A"> Légère tension (tonus) au repos.</label>
+                <label><input type="radio" name="l1q9" value="B"> Trembler de froid.</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q10">
+            <span class="comp-badge">C1</span>
+            <strong>10. Le "faisceau" musculaire est composé de plusieurs...</strong>
+            <input type="text" placeholder="F..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q11">
+            <span class="comp-badge">C2</span>
+            <strong>11. "Je retire ma main d'une plaque chaude". C'est un mouvement :</strong>
+            <select class="answer-select">
+                <option value="">-- Choisir --</option>
+                <option value="volontaire">Volontaire</option>
+                <option value="reflexe">Réflexe</option>
+            </select>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q12">
+            <span class="comp-badge">C2</span>
+            <strong>12. "Je décide de tirer un penalty". C'est un mouvement :</strong>
+            <select class="answer-select">
+                <option value="">-- Choisir --</option>
+                <option value="volontaire">Volontaire</option>
+                <option value="reflexe">Réflexe</option>
+            </select>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q13">
+            <span class="comp-badge">C1</span>
+            <strong>13. Le muscle squelettique est un muscle "strié".</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l1q13" value="V"> Vrai</label>
+                <label><input type="radio" name="l1q13" value="F"> Faux</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q14">
+            <span class="comp-badge">C1</span>
+            <strong>14. Qu'est-ce qui apporte les nutriments (énergie) au muscle ?</strong>
+            <input type="text" placeholder="Le s... / Les vais..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l1_q15">
+            <span class="comp-badge">C2</span>
+            <strong>15. Regarde l'image : quelle propriété est représentée par l'élastique ?</strong>
+            <img src="schema_proprietes.jpg" class="q-image" alt="Propriétés">
+            <input type="text" class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <button class="btn" onclick="validateLevel(1)" id="btn-valid-1">Valider le Niveau 1</button>
+        
+        <div id="result1" class="result-box"></div>
+        <button class="btn btn-next" onclick="goToLevel2()" id="btn-go-2">🚀 Passer au Niveau Expert</button>
+    </div>
+
+    <div id="level2" class="level-section">
+        <div class="level-header" style="background: var(--accent);">🏆 NIVEAU 2 : Expert (15 pts)</div>
+        <p style="text-align:center;">Réponses à rédiger. Attention à l'orthographe !</p>
+
+        <div class="question-card" id="l2_q1">
+            <span class="comp-badge">C2</span>
+            <strong>1. Classe l'organisation du muscle du plus GRAND au plus PETIT.</strong>
+            <p style="font-size:0.9em; color:#666;"><em>Liste : Fibre, Muscle, Myofibrille, Faisceau.</em></p>
+            <input type="text" placeholder="Ex: ..., ..., ..., ..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q2">
+            <span class="comp-badge">C3</span>
+            <strong>2. Explique le rôle de la "moelle épinière" dans un mouvement volontaire.</strong>
+            <textarea rows="2" placeholder="Elle sert à..." class="answer-input"></textarea>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q3">
+            <span class="comp-badge">C2</span>
+            <strong>3. Analyse le schéma : Quel élément manque au bout de la flèche ?</strong>
+            <img src="schema_muscle.jpg" class="q-image" alt="Coupe muscle">
+            <p style="font-size:0.9em;"><em>Indice : C'est la cellule musculaire allongée.</em></p>
+            <input type="text" class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q4">
+            <span class="comp-badge">C3</span>
+            <strong>4. Pourquoi dit-on que le muscle est "strié" ?</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l2q4" value="A"> Car il est lisse.</label>
+                <label><input type="radio" name="l2q4" value="B"> Car il a des bandes claires et sombres (rayures).</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q5">
+            <span class="comp-badge">C5</span>
+            <strong>5. Pourquoi l'échauffement est-il indispensable pour l'élasticité musculaire ?</strong>
+            <textarea rows="2" placeholder="Pour éviter..." class="answer-input"></textarea>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q6">
+            <span class="comp-badge">C3</span>
+            <strong>6. Si le nerf moteur est coupé, que se passe-t-il pour le muscle ?</strong>
+            <input type="text" placeholder="La par..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q7">
+            <span class="comp-badge">C6</span>
+            <strong>7. Définis la "Sédentarité".</strong>
+            <textarea rows="2" class="answer-input"></textarea>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q8">
+            <span class="comp-badge">C5</span>
+            <strong>8. Quelle propriété permet de tenir debout sans y penser (posture) ?</strong>
+            <input type="text" class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q9">
+            <span class="comp-badge">C2</span>
+            <strong>9. Si le cerveau est endommagé (AVC), le mouvement volontaire est-il possible ?</strong>
+            <img src="schema_mouvement.jpg" class="q-image" alt="Trajet nerveux">
+            <div class="radio-group">
+                <label><input type="radio" name="l2q9" value="N"> Non, car l'ordre ne part pas.</label>
+                <label><input type="radio" name="l2q9" value="O"> Oui, grâce aux réflexes.</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q10">
+            <span class="comp-badge">C3</span>
+            <strong>10. Comment le muscle se raccourcit-il à l'intérieur ?</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l2q10" value="A"> Les cellules grossissent.</label>
+                <label><input type="radio" name="l2q10" value="B"> Les filaments glissent les uns contre les autres.</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q11">
+            <span class="comp-badge">C1</span>
+            <strong>11. Qu'est-ce qui circule dans le nerf (le signal) ?</strong>
+            <input type="text" placeholder="Le message n..." class="answer-input">
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q12">
+            <span class="comp-badge">C4</span>
+            <strong>12. Propose une solution pour éviter la fatigue musculaire excessive.</strong>
+            <textarea rows="1" placeholder="Ex: Repos, ..." class="answer-input"></textarea>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q13">
+            <span class="comp-badge">C6</span>
+            <strong>13. Fais une phrase avec les mots "Cerveau" et "Muscle".</strong>
+            <textarea rows="1" class="answer-input"></textarea>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q14">
+            <span class="comp-badge">C1</span>
+            <strong>14. Le muscle strié squelettique est :</strong>
+            <div class="radio-group">
+                <label><input type="radio" name="l2q14" value="A"> Involontaire</label>
+                <label><input type="radio" name="l2q14" value="B"> Volontaire</label>
+            </div>
+            <div class="feedback"></div>
+        </div>
+
+        <div class="question-card" id="l2_q15">
+            <span class="comp-badge">C2</span>
+            <strong>15. Différence principale entre Volontaire et Réflexe ?</strong>
+            <textarea rows="2" placeholder="Le volontaire est... alors que le réflexe..." class="answer-input"></textarea>
+            <div class="feedback"></div>
+        </div>
+
+        <button class="btn" onclick="validateLevel(2)">Valider Expert</button>
+        <div id="result2" class="result-box"></div>
+    </div>
+
+</div>
+
+<script>
+    function clean(str) {
+        return (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+
+    function showFeedback(id, isCorrect, correctText) {
+        const el = document.querySelector(`#${id} .feedback`);
+        el.style.display = 'block';
+        if (isCorrect) {
+            el.className = 'feedback correct';
+            el.innerHTML = "✅ Bravo ! " + correctText;
+        } else {
+            el.className = 'feedback incorrect';
+            el.innerHTML = "❌ Faux. Réponse : " + correctText;
+        }
+    }
+
+    function startLevel(n) {
+        document.getElementById('intro').style.display = 'none';
+        document.getElementById('level1').classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    function goToLevel2() {
+        document.getElementById('level2').classList.add('active');
+        document.getElementById('level2').scrollIntoView({behavior: 'smooth'});
+    }
+
+    // --- CORRECTION NIVEAU 1 ---
+    function validateLevel(level) {
+        let score = 0;
+
+        if (level === 1) {
+            // Q1
+            let a1 = clean(document.querySelector('#l1_q1 input').value);
+            let ok1 = a1.includes('cerveau');
+            if(ok1) score++; showFeedback('l1_q1', ok1, "Le Cerveau.");
+
+            // Q2
+            let a2 = clean(document.querySelector('#l1_q2 input').value);
+            let ok2 = a2.includes('muscle');
+            if(ok2) score++; showFeedback('l1_q2', ok2, "Le Muscle.");
+
+            // Q3
+            let a3 = document.querySelector('input[name="l1q3"]:checked')?.value;
+            let ok3 = (a3 === 'B');
+            if(ok3) score++; showFeedback('l1_q3', ok3, "Le Nerf moteur.");
+
+            // Q4
+            let o1 = document.getElementById('ord_nerf').value;
+            let o2 = document.getElementById('ord_cerveau').value;
+            let o3 = document.getElementById('ord_muscle').value;
+            let ok4 = (o2 == '1' && o1 == '2' && o3 == '3');
+            if(ok4) score++; showFeedback('l1_q4', ok4, "1.Cerveau -> 2.Nerf -> 3.Muscle.");
+
+            // Q5
+            let a5 = clean(document.querySelector('#l1_q5 input').value);
+            let ok5 = a5.includes('tendon');
+            if(ok5) score++; showFeedback('l1_q5', ok5, "Le Tendon.");
+
+            // Q6
+            let a6 = document.querySelector('input[name="l1q6"]:checked')?.value;
+            let ok6 = (a6 === 'B');
+            if(ok6) score++; showFeedback('l1_q6', ok6, "Se raccourcir (Contractilité).");
+
+            // Q7
+            let a7 = document.querySelector('input[name="l1q7"]:checked')?.value;
+            let ok7 = (a7 === 'A');
+            if(ok7) score++; showFeedback('l1_q7', ok7, "Recevoir un stimulus (Excitabilité).");
+
+            // Q8
+            let a8 = document.querySelector('input[name="l1q8"]:checked')?.value;
+            let ok8 = (a8 === 'B');
+            if(ok8) score++; showFeedback('l1_q8', ok8, "Reprendre sa forme (Élasticité).");
+
+            // Q9
+            let a9 = document.querySelector('input[name="l1q9"]:checked')?.value;
+            let ok9 = (a9 === 'A');
+            if(ok9) score++; showFeedback('l1_q9', ok9, "Tension au repos (Tonicité).");
+
+            // Q10
+            let a10 = clean(document.querySelector('#l1_q10 input').value);
+            let ok10 = a10.includes('fibre');
+            if(ok10) score++; showFeedback('l1_q10', ok10, "De fibres musculaires.");
+
+            // Q11
+            let a11 = document.querySelector('#l1_q11 select').value;
+            let ok11 = (a11 === 'reflexe');
+            if(ok11) score++; showFeedback('l1_q11', ok11, "Réflexe.");
+
+            // Q12
+            let a12 = document.querySelector('#l1_q12 select').value;
+            let ok12 = (a12 === 'volontaire');
+            if(ok12) score++; showFeedback('l1_q12', ok12, "Volontaire.");
+
+            // Q13
+            let a13 = document.querySelector('input[name="l1q13"]:checked')?.value;
+            let ok13 = (a13 === 'V');
+            if(ok13) score++; showFeedback('l1_q13', ok13, "Vrai.");
+
+            // Q14
+            let a14 = clean(document.querySelector('#l1_q14 input').value);
+            let ok14 = a14.includes('sanguin') || a14.includes('sang');
+            if(ok14) score++; showFeedback('l1_q14', ok14, "Le sang (vaisseaux sanguins).");
+
+            // Q15
+            let a15 = clean(document.querySelector('#l1_q15 input').value);
+            let ok15 = a15.includes('elast');
+            if(ok15) score++; showFeedback('l1_q15', ok15, "L'élasticité.");
+
+            // AFFICHAGE RESULTAT N1 (Sans Alert)
+            document.getElementById('btn-valid-1').style.display = 'none'; // Cache le bouton valider
+            const resultBox = document.getElementById('result1');
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = `Score Niveau 1 : ${score} / 15.<br>`;
+            
+            if (score >= 10) {
+                resultBox.innerHTML += "<span style='color:green'>Bravo ! Prends le temps de relire tes erreurs puis passe à la suite.</span>";
+            } else {
+                resultBox.innerHTML += "<span style='color:orange'>Relis bien la correction ci-dessus pour comprendre tes erreurs.</span>";
+            }
+
+            // Affiche le bouton "Suite"
+            document.getElementById('btn-go-2').style.display = 'block';
+        }
+
+        if (level === 2) {
+            // CORRECTION NIVEAU 2
+            let a1 = clean(document.querySelector('#l2_q1 input').value);
+            let ok1 = a1.indexOf('muscle') < a1.indexOf('faisceau');
+            if(ok1) score++; showFeedback('l2_q1', ok1, "Muscle > Faisceau > Fibre > Myofibrille.");
+
+            let a2 = clean(document.querySelector('#l2_q2 textarea').value);
+            let ok2 = a2.includes('transmet') || a2.includes('passage');
+            if(ok2) score++; showFeedback('l2_q2', ok2, "Elle transmet le message nerveux.");
+
+            let a3 = clean(document.querySelector('#l2_q3 input').value);
+            let ok3 = a3.includes('fibre');
+            if(ok3) score++; showFeedback('l2_q3', ok3, "La fibre musculaire.");
+
+            let a4 = document.querySelector('input[name="l2q4"]:checked')?.value;
+            let ok4 = (a4 === 'B');
+            if(ok4) score++; showFeedback('l2_q4', ok4, "Bandes claires et sombres.");
+
+            let a5 = clean(document.querySelector('#l2_q5 textarea').value);
+            let ok5 = a5.includes('bless') || a5.includes('déchir');
+            if(ok5) score++; showFeedback('l2_q5', ok5, "Pour éviter les blessures.");
+
+            let a6 = clean(document.querySelector('#l2_q6 input').value);
+            let ok6 = a6.includes('paraly');
+            if(ok6) score++; showFeedback('l2_q6', ok6, "La paralysie.");
+
+            let a7 = clean(document.querySelector('#l2_q7 textarea').value);
+            let ok7 = a7.includes('activite') && (a7.includes('manque') || a7.includes('peu'));
+            if(ok7) score++; showFeedback('l2_q7', ok7, "Manque d'activité physique.");
+
+            let a8 = clean(document.querySelector('#l2_q8 input').value);
+            let ok8 = a8.includes('tonic') || a8.includes('tonus');
+            if(ok8) score++; showFeedback('l2_q8', ok8, "La Tonicité.");
+
+            let a9 = document.querySelector('input[name="l2q9"]:checked')?.value;
+            let ok9 = (a9 === 'N');
+            if(ok9) score++; showFeedback('l2_q9', ok9, "Non, car le cerveau commande.");
+
+            let a10 = document.querySelector('input[name="l2q10"]:checked')?.value;
+            let ok10 = (a10 === 'B');
+            if(ok10) score++; showFeedback('l2_q10', ok10, "Glissement des filaments.");
+
+            let a11 = clean(document.querySelector('#l2_q11 input').value);
+            let ok11 = a11.includes('message') || a11.includes('influx');
+            if(ok11) score++; showFeedback('l2_q11', ok11, "Le message nerveux.");
+
+            let a12 = clean(document.querySelector('#l2_q12 textarea').value);
+            let ok12 = a12.includes('repos') || a12.includes('manger') || a12.includes('eau');
+            if(ok12) score++; showFeedback('l2_q12', ok12, "Repos, Alimentation, Sommeil.");
+
+            let a13 = clean(document.querySelector('#l2_q13 textarea').value);
+            let ok13 = a13.includes('commande') || a13.includes('ordre');
+            if(ok13) score++; showFeedback('l2_q13', ok13, "Le cerveau commande le muscle.");
+
+            let a14 = document.querySelector('input[name="l2q14"]:checked')?.value;
+            let ok14 = (a14 === 'B');
+            if(ok14) score++; showFeedback('l2_q14', ok14, "Volontaire.");
+
+            let a15 = clean(document.querySelector('#l2_q15 textarea').value);
+            let ok15 = a15.includes('decid') || a15.includes('consci');
+            if(ok15) score++; showFeedback('l2_q15', ok15, "Volontaire = Décidé / Réflexe = Automatique.");
+
+            const resultBox2 = document.getElementById('result2');
+            resultBox2.style.display = 'block';
+            resultBox2.innerHTML = `Score Expert : ${score} / 15.<br>`;
+            
+            if(score >= 12) resultBox2.innerHTML += "🏆 EXCELLENT ! Tu maîtrises le module.";
+            else resultBox2.innerHTML += "💪 Bien joué ! Continue tes efforts.";
+        }
+    }
+</script>
+
+</body>
+</html>
