@@ -275,6 +275,24 @@ html[data-theme="light"] .toast{
     </div>
   </div>
 
+  <!-- Bloc identification anonyme pour l'envoi Firebase -->
+  <div class="card section">
+    <div class="card-inner">
+      <h2>Identification anonyme</h2>
+      <p class="small">Renseigne ta <strong>classe</strong> et ton <strong>code élève</strong> (ex : C2-07). Ces informations servent uniquement à envoyer ta copie à ton professeur.</p>
+      <div class="grid cols2" style="margin-top:10px">
+        <div>
+          <div class="small">Classe</div>
+          <input type="text" id="meta_classe" placeholder="ex : 1CAP PSR" autocomplete="off"/>
+        </div>
+        <div>
+          <div class="small">Code élève</div>
+          <input type="text" id="meta_code" placeholder="ex : C2-07" autocomplete="off"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-inner">
       <h2>Rappels rapides : analyser un risque au travail</h2>
@@ -503,6 +521,7 @@ html[data-theme="light"] .toast{
       <div class="btnrow">
         <button class="secondary" id="openAllCorr" type="button">Afficher toutes les corrections</button>
         <button id="scrollTop" type="button">Revenir en haut</button>
+        <button id="sendFirebase" type="button">Envoyer ma copie</button>
       </div>
       <div id="finalBox" class="feedback" style="display:none;margin-top:12px"></div>
     </div>
@@ -516,8 +535,24 @@ html[data-theme="light"] .toast{
   </div>
 </div>
 
-<script>
-const STORAGE_KEY = "pse_risque_v1";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+  authDomain: "devoirs-pse.firebaseapp.com",
+  projectId: "devoirs-pse",
+  storageBucket: "devoirs-pse.firebasestorage.app",
+  messagingSenderId: "614730413904",
+  appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const copiesCol = collection(db, "bacpro");
+
+const STORAGE_KEY = "pse_risque_v2";
 
 const state = {
   totalMax: 0,
@@ -632,12 +667,6 @@ function selectChip(chip){
   saveState();
 }
 
-function bankForChip(chip){
-  const ex = chip.closest("[data-exo]");
-  if (!ex) return null;
-  return ex.querySelector(".bank .chips");
-}
-
 function moveChipToContainer(chip, container){
   if (!chip || !container) return;
   container.appendChild(chip);
@@ -676,7 +705,6 @@ function enableDnD(root=document) {
     });
   });
 
-  // tap-to-place (souris + tactile)
   $all(".chip", root).forEach(chip => {
     chip.setAttribute("role","button");
     chip.setAttribute("tabindex","0");
@@ -1011,6 +1039,96 @@ function initTheme(){
   });
 }
 
+function buildPayloadForFirebase(classe, code){
+  const radios = {};
+  $all("input[type='radio']").forEach(r=>{
+    if (r.checked) radios[r.name] = r.value;
+  });
+
+  const texts = {};
+  $all("input[type='text'], textarea").forEach(t=>{
+    if (t.id) texts[t.id] = t.value;
+  });
+
+  const chips = snapshotChipsByExo();
+
+  const exo1Answers = {
+    q1: radios.q1 || null,
+    q2: radios.q2 || null,
+    q3: radios.q3 || null,
+    q4: radios.q4 || null
+  };
+
+  const exo3Answers = {
+    danger: texts["t_danger"] || "",
+    situation: texts["t_situation"] || "",
+    event: texts["t_event"] || "",
+    dommage: texts["t_dommage"] || ""
+  };
+
+  const exo2Chips = (chips && chips.exo2) ? chips.exo2 : {};
+  const exo4Chips = (chips && chips.exo4) ? chips.exo4 : {};
+
+  const LABELS_EXO2 = {
+    c1: "Sol glissant (huile / eau)",
+    c2: "Glissade",
+    c3: "Entorse",
+    c4: "Se déplacer sur une zone encombrée",
+    c5: "Électricité",
+    c6: "Contact avec un conducteur nu",
+    c7: "Électrocution",
+    c8: "Travailler au voisinage d’un conducteur sous tension"
+  };
+
+  const LABELS_EXO4 = {
+    s1: "Dommage (lésion)",
+    s2: "Danger",
+    s3: "Situation dangereuse",
+    s4: "Événement dangereux"
+  };
+
+  function mapZone(zones, labels){
+    const out = {};
+    Object.entries(zones).forEach(([zoneName, ids])=>{
+      out[zoneName] = (ids||[]).map(id => ({ id, label: labels[id] || id }));
+    });
+    return out;
+  }
+
+  const exo2Answers = mapZone(exo2Chips, LABELS_EXO2);
+  const exo4Answers = mapZone(exo4Chips, LABELS_EXO4);
+
+  const max = state.totalMax;
+  const total = state.totalScore;
+  const percent = max ? Math.round((total/max)*100) : 0;
+
+  return {
+    meta: {
+      exoId: "fiche_risque_travail_v1",
+      classe: classe || "",
+      eleveCode: code,
+      createdAt: serverTimestamp()
+    },
+    score: { total, max, percent },
+    perExo: state.perExo,
+    answers: {
+      exo1: exo1Answers,
+      exo2: exo2Answers,
+      exo3: exo3Answers,
+      exo4: exo4Answers
+    },
+    raw: {
+      radios,
+      texts,
+      chips
+    },
+    client: {
+      ua: navigator.userAgent || "",
+      ts: Date.now()
+    }
+  };
+}
+
 document.addEventListener("DOMContentLoaded", ()=>{
   state.totalMax = 0;
   $all("[data-exo]").forEach(ex=>{
@@ -1064,10 +1182,29 @@ document.addEventListener("DOMContentLoaded", ()=>{
     saveState();
   });
 
-  // sauvegarde auto sur changements radio (exo1)
   $all("input[type='radio']").forEach(r=>{
     r.addEventListener("change", saveState);
   });
+
+  const sendBtn = $("#sendFirebase");
+  if (sendBtn) {
+    sendBtn.addEventListener("click", async ()=>{
+      const classe = ($("#meta_classe")?.value || "").trim();
+      const code = ($("#meta_code")?.value || "").trim();
+      if (!code){
+        toast("Merci d’indiquer ton <strong>code élève</strong>.");
+        return;
+      }
+      try{
+        const payload = buildPayloadForFirebase(classe, code);
+        await addDoc(copiesCol, payload);
+        toast("<strong>Copie envoyée</strong> · Ton professeur la recevra dans son cockpit.");
+      } catch(e){
+        console.error(e);
+        toast("Erreur d’envoi. Vérifie la connexion puis réessaie.");
+      }
+    });
+  }
 });
 </script>
 </body>
