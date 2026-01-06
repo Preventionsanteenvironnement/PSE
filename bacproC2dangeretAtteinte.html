@@ -646,56 +646,22 @@
         window.scrollTo({ top: document.querySelector(".score-zone").offsetTop - 10, behavior: "smooth" });
     }
 
-    let draggedItem = null;
-
-    function enableDesktopDnD() {
-        document.querySelectorAll(".draggable-item").forEach(item => {
-            item.addEventListener("dragstart", (e) => {
-                draggedItem = e.target;
-                e.dataTransfer.setData("text/plain", e.target.id);
-                setTimeout(() => e.target.style.opacity = "0.5", 0);
-            });
-
-            item.addEventListener("dragend", (e) => {
-                e.target.style.opacity = "1";
-                draggedItem = null;
-            });
-        });
-
-        document.querySelectorAll(".drop-zone").forEach(zone => {
-            zone.addEventListener("dragover", (e) => {
-                e.preventDefault();
-                zone.style.backgroundColor = "#e0f7fa";
-            });
-
-            zone.addEventListener("dragleave", () => {
-                zone.style.backgroundColor = "white";
-            });
-
-            zone.addEventListener("drop", (e) => {
-                e.preventDefault();
-                zone.style.backgroundColor = "white";
-                if (draggedItem) {
-                    if (draggedItem.parentNode && draggedItem.parentNode.classList.contains("drop-zone")) {
-                        draggedItem.parentNode.removeChild(draggedItem);
-                    }
-                    zone.appendChild(draggedItem);
-                    draggedItem.classList.remove("danger-item", "health-item");
-                }
-            });
-        });
-    }
-
     let selectedItem = null;
 
     function clearSelection() {
-        document.querySelectorAll(".draggable-item").forEach(i => i.classList.remove("selected"));
+        document
+          .querySelectorAll("#exo1 .draggable-item")
+          .forEach(i => i.classList.remove("selected"));
         selectedItem = null;
     }
 
-    function enableTouchFallback() {
-        document.querySelectorAll(".draggable-item").forEach(item => {
+    function setupClickMove() {
+        const items = document.querySelectorAll("#exo1 .draggable-item");
+        const zones = document.querySelectorAll("#exo1 .drop-zone");
+
+        items.forEach(item => {
             item.setAttribute("draggable", "false");
+
             item.addEventListener("click", (e) => {
                 const target = e.currentTarget;
                 if (selectedItem === target) {
@@ -708,7 +674,7 @@
             });
         });
 
-        document.querySelectorAll(".drop-zone").forEach(zone => {
+        zones.forEach(zone => {
             zone.addEventListener("click", () => {
                 if (!selectedItem) return;
                 zone.appendChild(selectedItem);
@@ -718,13 +684,7 @@
         });
     }
 
-    const isTouch = window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
-    if (isTouch) {
-        enableTouchFallback();
-    } else {
-        enableDesktopDnD();
-    }
+    document.addEventListener("DOMContentLoaded", setupClickMove);
 
     function resetAll() {
         document.getElementById("text5-1").value = "";
@@ -859,13 +819,24 @@
     msg.textContent = "Envoi en cours...";
 
     try{
-      await addDoc(collection(db, "resultats_eleves"), {
-        createdAt: new Date().toISOString(),
-        nom,
-        classe,
-        exercice: document.title,
-        url: location.href,
-        score: getScoreFinal()
+      const parts = nom.split(/\s+/);
+      const prenom = parts.shift() || "";
+      const nomFamille = parts.join(" ") || prenom;
+
+      await addDoc(collection(db, "bacpro"), {
+        meta: {
+          createdAt: new Date().toISOString(),
+          nom: nomFamille,
+          prenom: prenom,
+          classe: classe,
+          type: "exercice",
+          support: "Danger_atteinte"
+        },
+        resultat: {
+          score: getScoreFinal(),
+          url: location.href,
+          titre: document.title
+        }
       });
 
       localStorage.setItem(sentKey, "1");
