@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Module C9 : Flashcards RPS</title>
+  <style>
+    :root {
+      --primary: #6366f1; /* Indigo moderne */
+      --primary-dark: #4338ca;
+      --secondary: #eef2ff;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --text: #1f2937;
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* --- ÉCRANS (Gérés par JS) --- */
+    .screen {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- HEADER & IDENTIFICATION --- */
+    .header-card {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 { color: var(--primary); margin: 0 0 10px 0; font-size: 1.5rem; }
+    p { color: #6b7280; margin-bottom: 20px; }
+
+    .input-group { text-align: left; margin-bottom: 15px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; color: #374151; font-size: 0.9rem; }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+    /* --- ZONE FLASHCARD --- */
+    .flashcard-container {
+      perspective: 1000px;
+      height: 350px;
+      position: relative;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    .flashcard {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      border-radius: var(--radius);
+      text-align: center;
+      background: white;
+      border: 2px solid var(--secondary);
+    }
+
+    .card-front {
+      background: #ffffff;
+    }
+    .card-front h2 { color: var(--primary); font-size: 1.4rem; }
+    .card-front .hint { font-size: 0.8rem; color: #9ca3af; margin-top: 15px; font-style: italic; }
+
+    .card-back {
+      background: #fdfeff;
+      transform: rotateY(180deg);
+      border-color: var(--primary);
+    }
+    .card-back p { color: #1f2937; font-size: 1.1rem; line-height: 1.6; }
+    .card-back strong { color: var(--primary); }
+
+    /* --- ACTIONS (Boutons) --- */
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      margin-top: 10px;
+    }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    
+    .evaluation-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .evaluation-buttons.visible { opacity: 1; pointer-events: auto; }
+
+    .btn-fail { background: #fee2e2; color: #991b1b; }
+    .btn-success { background: #dcfce7; color: #166534; }
+    .btn-fail:active, .btn-success:active { transform: scale(0.95); }
+
+    /* --- PROGRESS BAR --- */
+    .progress-wrapper {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #6b7280;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+    .progress-bar-bg {
+      flex-grow: 1;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* --- BILAN --- */
+    .result-card {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .score-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--secondary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 0 auto 20px auto;
+      border: 4px solid var(--primary);
+    }
+    
+    .error-msg { color: var(--danger); font-size: 0.9rem; margin-top: 10px; display: none; }
+    .status-msg { margin-top: 15px; font-weight: bold; min-height: 20px; font-size: 0.9rem;}
+
+    /* Audio */
+    .btn-audio {
+      background: none; border: 2px solid #e5e7eb;
+      border-radius: 50%; width: 32px; height: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--primary); margin-left: 8px;
+    }
+    .btn-audio:hover { background: #e5e7eb; }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ÉCRAN 1 : ACCUEIL & IDENTIFICATION -->
+  <div id="screen-welcome" class="screen active">
+    <div class="header-card">
+      <h1>🗂️ Flashcards : RPS</h1>
+      <p>Module C9 : Les Risques Psychosociaux</p>
+      
+      <div style="background:#e0e7ff; padding:15px; border-radius:12px; margin-bottom:20px; text-align:left;">
+        <strong>Objectif :</strong> Mémoriser les définitions (Burn-out, TMS...) et les facteurs de risques.
+        <br><br>
+        👉 Lis la question, retourne la carte, et dis honnêtement si tu connaissais la réponse !
+      </div>
+
+      <div class="input-group">
+        <label>Identifiant élève :</label>
+        <input type="text" id="student-id" placeholder="Ex: P12, NOM P...">
+      </div>
+
+      <div class="input-group">
+        <label>Classe :</label>
+        <select id="student-class">
+          <option value="">-- Choisis ta classe --</option>
+          <option value="2BACPRO_GATL1">2BACPRO_GATL1</option><option value="2BACPRO_GATL2">2BACPRO_GATL2</option>
+          <option value="1BACPRO_AGO1">1BACPRO_AGO1</option><option value="1BACPRO_AGO2">1BACPRO_AGO2</option>
+          <option value="TBACPRO_AGO1">TBACPRO_AGO1</option><option value="TBACPRO_AGO2">TBACPRO_AGO2</option>
+          <option value="2_MELEC">2_MELEC</option><option value="1_MELEC">1_MELEC</option><option value="T_MELEC">T_MELEC</option>
+          <option value="CAP_PSR1">CAP_PSR1</option><option value="CAP_PSR2">CAP_PSR2</option>
+          <option value="CAP_VAN1">CAP_VAN1</option><option value="CAP_VAN2">CAP_VAN2</option>
+          <option value="CAP_CAN1">CAP_CAN1</option><option value="CAP_CAN2">CAP_CAN2</option>
+          <option value="CAP_HORT1">CAP_HORT1</option><option value="CAP_HORT2">CAP_HORT2</option>
+          <option value="CAP_JP1">CAP_JP1</option><option value="CAP_JP2">CAP_JP2</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+
+      <div id="start-error" class="error-msg"></div>
+      <button class="btn btn-primary" onclick="startModule()">Commencer l'entraînement</button>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 2 : JEU FLASHCARDS -->
+  <div id="screen-game" class="screen">
+    <div class="progress-wrapper">
+      <span id="current-index">1 / 10</span>
+      <div class="progress-bar-bg"><div id="progress-fill" class="progress-bar-fill"></div></div>
+    </div>
+
+    <div class="flashcard-container" onclick="flipCard()">
+      <div class="flashcard" id="active-card">
+        <!-- Contenu injecté par JS -->
+        <div class="card-face card-front">
+          <h2>Question...</h2>
+          <span class="hint">(Clique pour retourner)</span>
+        </div>
+        <div class="card-face card-back">
+          <p>Réponse...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="evaluation-buttons" id="eval-btns">
+      <button class="btn btn-fail" onclick="rateCard(0)">❌ Pas su</button>
+      <button class="btn btn-success" onclick="rateCard(1)">✅ Je savais</button>
+    </div>
+    
+    <p style="text-align:center; font-size:0.85rem; color:#9ca3af; margin-top:20px;">
+      Clique sur la carte pour voir la réponse.
+    </p>
+  </div>
+
+  <!-- ÉCRAN 3 : BILAN & ENVOI -->
+  <div id="screen-result" class="screen">
+    <div class="result-card">
+      <h2>Bilan de mémorisation</h2>
+      <p>Voici ton résultat d'auto-évaluation.</p>
+      
+      <div class="score-circle" id="final-score-display">--</div>
+      
+      <div id="feedback-text" style="margin-bottom:25px; color:#4b5563;"></div>
+
+      <!-- BOUTON UNIQUE -->
+      <button id="btn-submit" class="btn btn-primary" onclick="sendResult()">VOIR MON RÉSULTAT ET ENVOYER 📤</button>
+      
+      <div id="firebase-status" class="status-msg"></div>
+      <div id="validation-error" class="error-msg"></div>
+    </div>
+    
+    <button class="btn" style="background:transparent; color:#6b7280; margin-top:20px; font-size:0.9rem;" onclick="location.reload()">Recommencer l'entraînement</button>
+  </div>
+
+</div>
+
+<!-- SCRIPT -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // --- CONFIGURATION FIREBASE ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.firebasestorage.app",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- DONNÉES PÉDAGOGIQUES (Cartes) ---
+  const cardsData = [
+    {
+      q: "C'est quoi un RPS ?",
+      a: "<strong>Risque Psycho-Social.</strong><br>C'est un risque pour la santé mentale et physique, causé par les conditions de travail."
+    },
+    {
+      q: "Qu'est-ce que le Burn-out ?",
+      a: "C'est l'<strong>épuisement professionnel</strong>.<br>Il est causé par une surcharge de travail et un stress chronique."
+    },
+    {
+      q: "Qu'est-ce que le Bore-out ?",
+      a: "C'est l'épuisement par l'<strong>ennui</strong>.<br>Le salarié n'a rien à faire et se sent inutile."
+    },
+    {
+      q: "Citer 2 causes liées à l'organisation du travail.",
+      a: "1. Surcharge de travail / Cadences élevées.<br>2. Manque d'autonomie / Objectifs flous."
+    },
+    {
+      q: "C'est quoi la 'Violence Interne' ?",
+      a: "C'est la violence <strong>entre collègues</strong> ou avec la hiérarchie.<br>Ex: Harcèlement, conflit, mise au placard."
+    },
+    {
+      q: "C'est quoi la 'Violence Externe' ?",
+      a: "C'est la violence exercée par <strong>des personnes extérieures</strong> à l'entreprise.<br>Ex: Insultes d'un client, agression, braquage."
+    },
+    {
+      q: "Qu'est-ce qu'un TMS ?",
+      a: "<strong>Trouble Musculo-Squelettique.</strong><br>Douleurs aux articulations (dos, poignet) causées par le stress et les gestes répétitifs."
+    },
+    {
+      q: "Citer une conséquence pour l'entreprise.",
+      a: "1. Absentéisme (arrêts maladie).<br>2. Baisse de la productivité / Qualité.<br>3. Mauvaise image."
+    },
+    {
+      q: "Qui peut aider un salarié en souffrance ?",
+      a: "Le médecin du travail, le CSE (représentants du personnel), l'inspecteur du travail ou un psychologue."
+    },
+    {
+      q: "Citer une mesure de prévention.",
+      a: "1. Adapter la charge de travail.<br>2. Former les managers.<br>3. Favoriser le dialogue."
+    }
+  ];
+
+  // --- ÉTAT DU JEU ---
+  let currentCardIndex = 0;
+  let score = 0;
+  let studentData = { id: "", classe: "" };
+  let isFlipped = false;
+
+  // --- AUDIO (Optionnel) ---
+  window.speak = function(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'fr-FR';
+      window.speechSynthesis.speak(msg);
+    }
+  };
+
+  // --- NAVIGATION ---
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // Etape 1 : Démarrage
+  window.startModule = function() {
+    const idInput = document.getElementById('student-id').value.trim();
+    const classInput = document.getElementById('student-class').value;
+    const errorBox = document.getElementById('start-error');
+
+    if (!idInput || !classInput) {
+      errorBox.textContent = "⚠️ Merci de remplir ton identifiant et ta classe.";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    studentData.id = idInput;
+    studentData.classe = classInput;
+    errorBox.style.display = "none";
+    
+    // Mélanger les cartes (optionnel, ici on garde l'ordre pour la logique pédagogique, ou on active le shuffle)
+    // cardsData.sort(() => Math.random() - 0.5); 
+
+    currentCardIndex = 0;
+    score = 0;
+    loadCard(0);
+    showScreen('screen-game');
+  };
+
+  // Etape 2 : Chargement Carte
+  function loadCard(index) {
+    const cardEl = document.getElementById('active-card');
+    const frontEl = cardEl.querySelector('.card-front');
+    const backEl = cardEl.querySelector('.card-back');
+    const btns = document.getElementById('eval-btns');
+    
+    // Reset position
+    cardEl.classList.remove('flipped');
+    isFlipped = false;
+    btns.classList.remove('visible');
+
+    // Mise à jour contenu avec délai pour cacher la transition
+    setTimeout(() => {
+      frontEl.innerHTML = `<h2>${cardsData[index].q}</h2>
+        <button class="btn-audio" onclick="event.stopPropagation(); speak('${cardsData[index].q.replace(/'/g, "\\'")}')">🔈</button>
+        <div class="hint">(Tape pour retourner)</div>`;
+      
+      backEl.innerHTML = `<p>${cardsData[index].a}</p>`;
+      
+      // Mise à jour barre progression
+      document.getElementById('current-index').textContent = `${index + 1} / ${cardsData.length}`;
+      document.getElementById('progress-fill').style.width = `${((index) / cardsData.length) * 100}%`;
+    }, 200);
+  }
+
+  // Etape 3 : Retourner la carte
+  window.flipCard = function() {
+    if (isFlipped) return; // Déjà retournée
+    
+    const cardEl = document.getElementById('active-card');
+    cardEl.classList.add('flipped');
+    isFlipped = true;
+
+    // Afficher les boutons de vote après une courte pause
+    setTimeout(() => {
+      document.getElementById('eval-btns').classList.add('visible');
+    }, 400);
+  };
+
+  // Etape 4 : Voter et passer à la suivante
+  window.rateCard = function(points) {
+    score += points;
+    currentCardIndex++;
+
+    if (currentCardIndex < cardsData.length) {
+      loadCard(currentCardIndex);
+    } else {
+      // Fin du jeu
+      document.getElementById('progress-fill').style.width = '100%';
+      showEndScreen();
+    }
+  };
+
+  // Etape 5 : Préparer l'écran de fin
+  function showEndScreen() {
+    showScreen('screen-result');
+    document.getElementById('final-score-display').textContent = `${score}/${cardsData.length}`;
+    
+    const fbText = document.getElementById('feedback-text');
+    if (score === cardsData.length) fbText.innerHTML = "Incroyable ! Tu maîtrises tout ! 🏆";
+    else if (score >= cardsData.length * 0.7) fbText.innerHTML = "Bravo, c'est du solide ! 💪";
+    else if (score >= cardsData.length * 0.5) fbText.innerHTML = "Pas mal, encore un petit effort. 🙂";
+    else fbText.innerHTML = "Continue de t'entraîner, ça va venir ! 🚀";
+  }
+
+  // Etape 6 : Envoi Firebase (Action unique finale)
+  window.sendResult = async function() {
+    const btn = document.getElementById('btn-submit');
+    const status = document.getElementById('firebase-status');
+    const errorMsg = document.getElementById('validation-error');
+
+    // Sécurité re-vérification
+    if (!studentData.id || !studentData.classe) {
+        errorMsg.textContent = "Erreur : Identifiant perdu. Recommence.";
+        errorMsg.style.display = "block";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Envoi en cours...";
+    status.textContent = "";
+
+    try {
+      await addDoc(collection(db, "bacpro"), {
+        meta: {
+          createdAt: new Date().toISOString(),
+          nom: studentData.id,
+          prenom: studentData.id,
+          classe: studentData.classe,
+          type: "exercice",
+          support: "C9_RPS_Flashcards"
+        },
+        resultat: {
+          score: `${score} / ${cardsData.length}`,
+          url: location.href,
+          titre: document.title
+        }
+      });
+
+      status.style.color = "#22c55e"; // Success green
+      status.textContent = "✅ Résultat bien reçu par le professeur !";
+      btn.textContent = "Mettre à jour (Renvoyer)";
+      btn.disabled = false; // On laisse la possibilité de renvoyer si l'élève refait
+
+    } catch (e) {
+      console.error("Erreur Firebase", e);
+      status.style.color = "#ef4444";
+      status.textContent = "Erreur de connexion. Le score est affiché mais pas envoyé.";
+      btn.textContent = "Réessayer l'envoi";
+      btn.disabled = false;
+    }
+  };
+
+</script>
+
+</body>
+</html>
