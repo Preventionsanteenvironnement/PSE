@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu : Je peux acheter ?</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e0f2f1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: #00695c; }
+
+        /* SCÈNE PRINCIPALE */
+        .game-scene {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 800px;
+            flex-wrap: wrap;
+        }
+
+        /* LE PORTE MONNAIE */
+        .wallet-card {
+            background: white;
+            border: 5px solid #00897b;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            width: 250px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.1);
+        }
+
+        /* L'OBJET A ACHETER */
+        .item-card {
+            background: white;
+            border: 5px solid #ff9800;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            width: 250px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.1);
+        }
+
+        .big-icon { font-size: 5rem; display: block; margin-bottom: 10px; }
+        .big-price { font-size: 3rem; font-weight: bold; color: #333; }
+        .label { font-size: 1.2rem; text-transform: uppercase; color: #777; margin-bottom: 10px; display:block;}
+
+        /* BOUTONS REPONSE */
+        .buttons-area {
+            margin-top: 50px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .btn-choice {
+            padding: 20px 40px;
+            font-size: 2rem;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 200px;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .btn-yes { background-color: #4caf50; }
+        .btn-no { background-color: #f44336; }
+        
+        .btn-choice:active { transform: translateY(8px); box-shadow: none; }
+        .btn-choice span { font-size: 1.2rem; margin-top: 5px; }
+
+        /* FEEDBACK */
+        #feedback {
+            margin-top: 30px;
+            font-size: 2rem;
+            font-weight: bold;
+            height: 50px;
+            text-align: center;
+        }
+
+        /* NEXT BUTTON */
+        #next-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            display: none; /* Caché au début */
+        }
+
+        .audio-btn {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <button class="audio-btn" onclick="lireQuestion()">🔊 Écouter la question</button>
+
+    <h1>Est-ce que je peux acheter ?</h1>
+
+    <div class="game-scene">
+        
+        <div class="wallet-card">
+            <span class="label">J'ai</span>
+            <span class="big-icon">💶</span>
+            <span class="big-price" id="wallet-amount">...</span>
+        </div>
+
+        <div class="item-card">
+            <span class="label">Ça coûte</span>
+            <span class="big-icon" id="item-icon">...</span>
+            <span class="big-price" id="item-price">...</span>
+        </div>
+
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="buttons-area" id="buttons-container">
+        <button class="btn-choice btn-no" onclick="repondre(false)">
+            👎
+            <span>NON</span>
+        </button>
+
+        <button class="btn-choice btn-yes" onclick="repondre(true)">
+            👍
+            <span>OUI</span>
+        </button>
+    </div>
+
+    <button id="next-btn" onclick="prochainTour()">Suivant ➡</button>
+
+<script>
+    // LISTE DES QUESTIONS (Niveaux très progressifs)
+    const questions = [
+        // Niveau 1 : Très facile (Grande différence)
+        { wallet: 20, price: 5, icon: '🍔', name: 'Burger', canBuy: true },
+        { wallet: 10, price: 50, icon: '✈️', name: 'Avion', canBuy: false },
+        
+        // Niveau 2 : Chiffres moyens
+        { wallet: 30, price: 25, icon: '👟', name: 'Baskets', canBuy: true },
+        { wallet: 50, price: 80, icon: '🚲', name: 'Vélo', canBuy: false },
+        
+        // Niveau 3 : Plus proche (Attention !)
+        { wallet: 40, price: 38, icon: '🧢', name: 'Casquette', canBuy: true },
+        { wallet: 60, price: 65, icon: '🎮', name: 'Jeu Vidéo', canBuy: false }
+    ];
+
+    let currentQuestionIndex = 0;
+    let currentQ = null;
+
+    function initGame() {
+        showQuestion(currentQuestionIndex);
+    }
+
+    function showQuestion(index) {
+        if(index >= questions.length) {
+            finDuJeu();
+            return;
+        }
+
+        currentQ = questions[index];
+        
+        // Mise à jour visuelle
+        document.getElementById('wallet-amount').innerText = currentQ.wallet + ' €';
+        document.getElementById('item-price').innerText = currentQ.price + ' €';
+        document.getElementById('item-icon').innerText = currentQ.icon;
+        
+        // Reset interface
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('next-btn').style.display = "none";
+        document.getElementById('buttons-container').style.display = "flex"; // Réafficher les boutons
+        
+        // Lecture automatique (Optionnel, on peut le désactiver)
+        // setTimeout(lireQuestion, 500); 
+    }
+
+    function lireQuestion() {
+        if(!currentQ) return;
+        speak(`J'ai ${currentQ.wallet} euros. L'objet coûte ${currentQ.price} euros. Est-ce que je peux acheter ?`);
+    }
+
+    function repondre(reponseEleve) {
+        const feedback = document.getElementById('feedback');
+        
+        if (reponseEleve === currentQ.canBuy) {
+            // BONNE REPONSE
+            feedback.style.color = "green";
+            feedback.innerText = "🎉 BRAVO ! C'est juste !";
+            speak("Bravo ! C'est juste.");
+            
+            // Masquer les boutons et montrer "Suivant"
+            document.getElementById('buttons-container').style.display = "none";
+            document.getElementById('next-btn').style.display = "block";
+            
+        } else {
+            // MAUVAISE REPONSE
+            feedback.style.color = "red";
+            if(currentQ.canBuy) {
+                feedback.innerText = "❌ Faux. Tu as ASSEZ d'argent (Ton argent est plus grand).";
+                speak("Faux. Regarde, tu as assez d'argent.");
+            } else {
+                feedback.innerText = "❌ Faux. C'est TROP CHER (Ton argent est plus petit).";
+                speak("Faux. C'est trop cher, tu n'as pas assez.");
+            }
+        }
+    }
+
+    function prochainTour() {
+        currentQuestionIndex++;
+        showQuestion(currentQuestionIndex);
+    }
+
+    function finDuJeu() {
+        document.body.innerHTML = `
+            <div style="text-align:center; margin-top:100px;">
+                <h1 style="color:green; font-size:3rem;">🌟 BRAVO KEVIN ! 🌟</h1>
+                <p style="font-size:2rem;">Tu as fini l'exercice !</p>
+                <button onclick="location.reload()" style="padding:20px; font-size:1.5rem; background:#2196f3; color:white; border:none; border-radius:10px; cursor:pointer;">Recommencer</button>
+            </div>
+        `;
+        speak("Bravo Kevin ! Tu as fini l'exercice. Tu es un champion.");
+    }
+
+    function speak(txt) {
+        const msg = new SpeechSynthesisUtterance(txt);
+        msg.lang = 'fr-FR';
+        window.speechSynthesis.speak(msg);
+    }
+
+    // Lancement
+    initGame();
+
+</script>
+
+</body>
+</html>

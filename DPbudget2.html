@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Vacances - Sarah</title>
+  <style>
+    :root {
+      /* Couleurs douces (Pastel) pour éviter la surcharge visuelle */
+      --col-argent: #d4edda; --bor-argent: #28a745; /* Vert = Argent */
+      --col-transp: #cce5ff; --bor-transp: #007bff; /* Bleu = Transport */
+      --col-vie:    #fff3cd; --bor-vie:    #ffc107; /* Jaune = Vie quotidienne */
+      --col-fun:    #e2e6ea; --bor-fun:    #6c757d; /* Gris = Loisirs */
+      
+      --text-color: #333;
+    }
+
+    body {
+      font-family: 'Verdana', sans-serif; /* Police très lisible */
+      background-color: #f9f9f9;
+      color: var(--text-color);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 { color: #2c3e50; margin-bottom: 10px; }
+
+    /* --- BARRE D'AIDE VISUELLE (Légende) --- */
+    .visual-guide {
+      display: flex;
+      gap: 15px;
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      border: 2px solid #ddd;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .guide-tag {
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      border: 3px solid;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+    }
+
+    /* Codes couleurs de la légende */
+    .g-r { border-color: var(--bor-argent); background: var(--col-argent); }
+    .g-t { border-color: var(--bor-transp); background: var(--col-transp); }
+    .g-v { border-color: var(--bor-vie);    background: var(--col-vie); }
+    .g-l { border-color: var(--bor-fun);    background: var(--col-fun); }
+
+    /* --- BANQUE D'ETIQUETTES A TRIER --- */
+    #bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      background: #fff;
+      padding: 20px;
+      border: 3px dashed #888;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 1000px;
+      min-height: 120px;
+      margin-bottom: 30px;
+    }
+
+    .item {
+      background: white;
+      border: 2px solid #555;
+      border-radius: 10px;
+      padding: 10px;
+      cursor: grab; /* Curseur main */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 130px;
+      box-shadow: 0 4px 5px rgba(0,0,0,0.1);
+      transition: transform 0.1s;
+      user-select: none;
+    }
+    .item:active { cursor: grabbing; transform: scale(1.05); }
+    .item strong { font-size: 1.2rem; margin-top: 5px; color: #000; }
+
+    /* Le petit badge code (R, T, V, L) sur l'étiquette */
+    .code-badge {
+      font-weight: bold;
+      font-size: 1.1rem;
+      padding: 2px 10px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      width: 100%;
+      display: block;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* --- GRILLE DES COLONNES --- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .col {
+      background: white;
+      border-radius: 10px;
+      border-top: 10px solid #555; /* Bordure épaisse colorée en haut */
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 450px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .col h3 { 
+      text-align: center; 
+      margin-top: 0; 
+      padding-bottom: 10px; 
+      border-bottom: 2px solid rgba(0,0,0,0.05); 
+    }
+
+    /* Couleurs spécifiques des colonnes */
+    #c-argent { border-color: var(--bor-argent); background: #f4fff4; }
+    #c-transp { border-color: var(--bor-transp); background: #f0f8ff; }
+    #c-vie    { border-color: var(--bor-vie);    background: #fffdf0; }
+    #c-fun    { border-color: var(--bor-fun);    background: #f8f9fa; }
+
+    /* Zone où on dépose les items */
+    .drop-zone {
+      flex-grow: 1;
+      border: 2px dashed rgba(0,0,0,0.1);
+      border-radius: 8px;
+      margin-bottom: 15px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* --- ZONE DE CALCUL --- */
+    .total-box {
+      background: rgba(255,255,255,0.8);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+    
+    input[type="number"] {
+      width: 90px;
+      padding: 8px;
+      font-size: 1.2rem;
+      text-align: right;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    button {
+      background: #e9ecef;
+      border: 1px solid #ced4da;
+      padding: 8px 16px;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #dee2e6; }
+
+    /* Messages de feedback */
+    .msg { font-size: 1rem; font-weight: bold; display: block; margin-top: 8px; min-height: 1.4em; }
+    .ok { color: #28a745; } /* Vert */
+    .ko { color: #dc3545; } /* Rouge */
+
+    /* --- RESUME FINAL --- */
+    .summary {
+      margin-top: 40px;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      width: 100%;
+      max-width: 700px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border-left: 10px solid #2c3e50;
+    }
+    .sum-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 15px; font-size: 1.3rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr; } /* 2 colonnes sur tablette */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏖️ Le Budget Vacances de Sarah</h1>
+
+  <div class="visual-guide">
+    <div class="guide-tag g-r">💰 (R) = Mes Sous</div>
+    <div class="guide-tag g-t">🚆 (T) = Transport</div>
+    <div class="guide-tag g-v">🏠 (V) = Vie (Dodo/Miam)</div>
+    <div class="guide-tag g-l">🎉 (L) = Loisirs</div>
+  </div>
+
+  <p style="text-align:center; margin-bottom:20px; font-size:1.1rem;">
+    <strong>Consigne :</strong>
+    1. Regarde la lettre <strong>(R, T, V, L)</strong> sur l'étiquette.<br>
+    2. Range l'étiquette dans la colonne de la même couleur.<br>
+    3. Fais les calculs.
+  </p>
+
+  <div id="bank"></div>
+
+  <div class="grid">
+    
+    <div class="col" id="c-argent">
+      <h3>💰 Mes Sous (R)</h3>
+      <div class="drop-zone" data-type="R"></div>
+      <div class="total-box">
+        Total : <input type="number" id="inp-R" placeholder="0"> €
+        <br><button onclick="check('R')">Vérifier</button>
+        <span id="msg-R" class="msg"></span>
+      </div>
+    </div>
+
+    <div class="col" id="c-transp">
+      <h3>🚆 Transport (T)</h3>
+      <div class="drop-zone" data-type="T"></div>
+      <div class="total-box">
+        Total : <input type="number" id="inp-T" placeholder="0"> €
+        <br><button onclick="check('T')">Vérifier</button>
+        <span id="msg-T" class="msg"></span>
+      </div>
+    </div>
+
+    <div class="col" id="c-vie">
+      <h3>🏠 Vie sur place (V)</h3>
+      <div class="drop-zone" data-type="V"></div>
+      <div class="total-box">
+        Total : <input type="number" id="inp-V" placeholder="0"> €
+        <br><button onclick="check('V')">Vérifier</button>
+        <span id="msg-V" class="msg"></span>
+      </div>
+    </div>
+
+    <div class="col" id="c-fun">
+      <h3>🎉 Loisirs (L)</h3>
+      <div class="drop-zone" data-type="L"></div>
+      <div class="total-box">
+        Total : <input type="number" id="inp-L" placeholder="0"> €
+        <br><button onclick="check('L')">Vérifier</button>
+        <span id="msg-L" class="msg"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <h2 style="text-align:center;">📊 Bilan Final</h2>
+    <div class="sum-row" style="color:#28a745;">
+      <span>Mes Sous (Recettes) :</span>
+      <span id="res-recette">...</span>
+    </div>
+    <div class="sum-row" style="color:#dc3545;">
+      <span>Total des Dépenses :</span>
+      <span id="res-depense">...</span>
+    </div>
+    <hr>
+    <div class="sum-row" style="font-weight:bold;">
+      <span>Reste-t-il de l'argent ?</span>
+      <input type="number" id="inp-solde" placeholder="?"> €
+    </div>
+    <div style="text-align:center;">
+      <button onclick="checkFinal()" style="padding:12px 24px; font-size:1.1rem; background:#333; color:white; border:none;">Vérifier le Solde</button>
+      <span id="msg-final" class="msg" style="font-size:1.2rem; margin-top:15px;"></span>
+    </div>
+  </div>
+
+  <script>
+    /* --- DONNEES --- */
+    /* Chaque item a : un nom, une valeur, un type (pour la correction) et une couleur */
+    const data = [
+      { id:1,  name:"Économies",      val:200, type:"R", color:"g-r" },
+      { id:2,  name:"Cadeau Anniv",   val:100, type:"R", color:"g-r" },
+      { id:3,  name:"Baby-sitting",   val:50,  type:"R", color:"g-r" },
+
+      { id:4,  name:"Billet Train",   val:80,  type:"T", color:"g-t" },
+      { id:5,  name:"Bus de ville",   val:20,  type:"T", color:"g-t" },
+
+      { id:6,  name:"Camping",        val:120, type:"V", color:"g-v" },
+      { id:7,  name:"Supermarché",    val:60,  type:"V", color:"g-v" },
+      { id:8,  name:"Sandwichs",      val:20,  type:"V", color:"g-v" },
+
+      { id:9,  name:"Parc Aquatique", val:40,  type:"L", color:"g-l" },
+      { id:10, name:"Souvenirs",      val:25,  type:"L", color:"g-l" },
+      { id:11, name:"Glaces",         val:15,  type:"L", color:"g-l" },
+      { id:12, name:"Ciné Plage",     val:10,  type:"L", color:"g-l" }
+    ];
+
+    // Mélanger les étiquettes aléatoirement
+    data.sort(() => Math.random() - 0.5);
+
+    const bank = document.getElementById("bank");
+    let selected = null; // Variable pour stocker l'élément sélectionné
+
+    /* --- CREATION DES ETIQUETTES (ITEMS) --- */
+    data.forEach(d => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.draggable = true; // Rend l'élément déplaçable
+      el.id = "item-" + d.id;
+      el.dataset.val = d.val;
+      el.dataset.type = d.type;
+      
+      // Contenu HTML de l'étiquette
+      el.innerHTML = `
+        <span class="code-badge ${d.color}">${d.type}</span>
+        <span>${d.name}</span>
+        <strong>${d.val} €</strong>
+      `;
+
+      // Evénement : Quand on commence à glisser
+      el.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text", el.id);
+        selected = el;
+      });
+
+      // Evénement : Clic simple (pour tablette ou si la souris bug)
+      el.addEventListener("click", () => {
+        if(selected) selected.style.borderColor = "#555"; // Désélectionne l'ancien
+        selected = el;
+        el.style.borderColor = "black";
+        el.style.transform = "scale(1.05)";
+      });
+
+      bank.appendChild(el);
+    });
+
+    /* --- GESTION DU DROP (Depot) --- */
+    const zones = document.querySelectorAll(".drop-zone, #bank");
+    
+    zones.forEach(zone => {
+      // Autoriser le survol
+      zone.addEventListener("dragover", e => { 
+        e.preventDefault(); 
+        zone.style.background = "rgba(0,0,0,0.05)"; 
+      });
+
+      // Quand on quitte la zone
+      zone.addEventListener("dragleave", e => { 
+        zone.style.background = ""; 
+      });
+
+      // Quand on lâche l'élément
+      zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.style.background = "";
+        const id = e.dataTransfer.getData("text");
+        const el = document.getElementById(id);
+        if(el) zone.appendChild(el);
+        selected = null; // Réinitialise la sélection
+      });
+      
+      // Clic dans la zone (si un item a été cliqué avant)
+      zone.addEventListener("click", () => {
+        if(selected) {
+          zone.appendChild(selected);
+          selected.style.transform = "none";
+          selected.style.borderColor = "#555";
+          selected = null;
+        }
+      });
+    });
+
+    /* --- LOGIQUE DE VERIFICATION --- */
+    function check(type) {
+      const zone = document.querySelector(`.drop-zone[data-type="${type}"]`);
+      const input = document.getElementById(`inp-${type}`);
+      const msg = document.getElementById(`msg-${type}`);
+      
+      let sum = 0;
+      let error = false;
+
+      // On regarde chaque item présent dans la zone
+      if (zone.children.length === 0) {
+        msg.textContent = "La case est vide.";
+        msg.className = "msg";
+        return;
+      }
+
+      [...zone.children].forEach(child => {
+        sum += parseInt(child.dataset.val);
+        // Si le type de l'item (ex: 'R') n'est pas le type de la colonne
+        if(child.dataset.type !== type) error = true;
+      });
+
+      const userVal = parseInt(input.value);
+
+      if(error) {
+        msg.innerHTML = "⚠️ Une étiquette est mal rangée.<br>Regarde bien les lettres (R, T, V, L).";
+        msg.className = "msg ko";
+      } else if(isNaN(userVal)) {
+         msg.textContent = "Écris le total dans la case.";
+         msg.className = "msg";
+      } else if(userVal === sum) {
+        msg.textContent = "✅ Bravo ! C'est correct.";
+        msg.className = "msg ok";
+        // On verrouille la case pour montrer que c'est fini
+        input.disabled = true;
+        input.style.backgroundColor = "#e8f5e9";
+        input.style.borderColor = "#28a745";
+        
+        updateSummary(); // Mise à jour du bilan final
+      } else {
+        msg.textContent = "❌ Erreur de calcul. Réessaie.";
+        msg.className = "msg ko";
+      }
+    }
+
+    /* --- MISE A JOUR AUTOMATIQUE DU BILAN --- */
+    function updateSummary() {
+      // On vérifie si les 4 cases sont validées (désactivées)
+      const inputs = ["inp-R", "inp-T", "inp-V", "inp-L"];
+      const allDone = inputs.every(id => document.getElementById(id).disabled === true);
+
+      if(allDone) {
+        const r = parseInt(document.getElementById("inp-R").value);
+        const t = parseInt(document.getElementById("inp-T").value);
+        const v = parseInt(document.getElementById("inp-V").value);
+        const l = parseInt(document.getElementById("inp-L").value);
+
+        const totalDep = t + v + l;
+        
+        document.getElementById("res-recette").textContent = r + " €";
+        document.getElementById("res-depense").textContent = totalDep + " €";
+      }
+    }
+
+    /* --- VERIFICATION FINALE DU SOLDE --- */
+    function checkFinal() {
+      const r = parseInt(document.getElementById("inp-R").value);
+      const t = parseInt(document.getElementById("inp-T").value);
+      const v = parseInt(document.getElementById("inp-V").value);
+      const l = parseInt(document.getElementById("inp-L").value);
+      
+      // Si un des champs n'est pas rempli ou n'est pas un nombre
+      if(isNaN(r) || isNaN(t) || isNaN(v) || isNaN(l)) {
+        document.getElementById("msg-final").textContent = "Valide d'abord les 4 colonnes ci-dessus.";
+        document.getElementById("msg-final").className = "msg ko";
+        return;
+      }
+
+      const totalDep = t + v + l;
+      const userSolde = parseInt(document.getElementById("inp-solde").value);
+      const realSolde = r - totalDep;
+
+      if(userSolde === realSolde) {
+        document.getElementById("msg-final").textContent = "🎉 BRAVO ! Exercice terminé avec succès !";
+        document.getElementById("msg-final").className = "msg ok";
+        document.body.style.backgroundColor = "#d4edda"; // Tout l'écran devient vert pâle
+      } else {
+        document.getElementById("msg-final").textContent = "❌ Ce n'est pas ça. Rappel : Recettes - Dépenses.";
+        document.getElementById("msg-final").className = "msg ko";
+      }
+    }
+  </script>
+</body>
+</html>

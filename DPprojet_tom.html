@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Les Courses de Enzo - Limite 60€</title>
+    <style>
+        :root {
+            --bg: #e0f7fa;
+            --wallet: #00897b;
+            --basket: #ff7043;
+            --item-bg: white;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* EN-TÊTE : PORTE-MONNAIE */
+        .wallet-panel {
+            background: var(--wallet);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .wallet-icon { font-size: 3rem; }
+        .wallet-info { font-size: 1.5rem; font-weight: bold; }
+        .limit-display { font-size: 2.5rem; background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 10px;}
+
+        /* BOUTONS */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        .audio-btn { background: #e91e63; }
+        .reset-btn { background: #607d8b; }
+
+        /* ZONE CENTRALE : RAYON vs CADDIE */
+        .game-area {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+            flex-wrap: wrap;
+        }
+
+        /* RAYON (Banque) */
+        .shelf {
+            background: white;
+            border: 5px solid #ccc;
+            border-radius: 15px;
+            padding: 15px;
+            width: 45%;
+            min-height: 400px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .shelf-title { width: 100%; text-align: center; font-weight: bold; font-size: 1.5rem; margin-bottom: 10px; color: #555; }
+
+        /* CADDIE (Zone de dépôt) */
+        .basket {
+            background: white;
+            border: 5px solid var(--basket);
+            border-radius: 15px;
+            padding: 15px;
+            width: 45%;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* ZONE DE CALCUL DU CADDIE */
+        .basket-calc {
+            margin-top: auto; /* Pousse en bas */
+            width: 90%;
+            background: #eee;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .calc-input {
+            width: 100px;
+            padding: 10px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 3px solid #ccc;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .feedback-msg {
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            min-height: 1.5em;
+        }
+
+        /* ITEMS */
+        .item {
+            background: #fff;
+            border: 2px solid #999;
+            border-radius: 10px;
+            padding: 10px;
+            width: 120px;
+            height: 120px;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        .item:active { cursor: grabbing; transform: scale(1.1); }
+        .item-icon { font-size: 3rem; }
+        .item-name { font-weight: bold; margin: 5px 0; }
+        .item-price { background: #333; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;}
+
+    </style>
+</head>
+<body>
+
+    <h1>🛒 Les Courses de Enzo</h1>
+
+    <div class="wallet-panel">
+        <div class="wallet-icon">💶</div>
+        <div class="wallet-info">
+            Enzo a en tout :<br>
+            <span class="limit-display">60 €</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
+        <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+    </div>
+
+    <div class="game-area">
+        
+        <div class="shelf" id="rayon" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="shelf-title">🏪 LE RAYON</div>
+            </div>
+
+        <div class="basket" id="caddie" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="shelf-title">🛒 MON CADDIE</div>
+            
+            <div id="caddie-items" style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:5px; flex-grow:1;"></div>
+
+            <div class="basket-calc">
+                <label style="font-size:1.2rem;">Combien ça coûte ?</label><br><br>
+                <input type="number" id="total-input" class="calc-input" placeholder="?"> €
+                <button onclick="verifierTotal()" style="margin:10px auto; background:var(--basket);">✅ Vérifier</button>
+                <div id="feedback" class="feedback-msg"></div>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    // DONNÉES PRODUITS
+    const produits = [
+        { id: 'p1', name: 'Pizza', icon: '🍕', price: 10 },
+        { id: 'p2', name: 'Poulet', icon: '🍗', price: 15 },
+        { id: 'p3', name: 'Lait', icon: '🥛', price: 5 },
+        { id: 'p4', name: 'Bonbons', icon: '🍬', price: 5 },
+        { id: 'p5', name: 'Jeu Vidéo', icon: '🎮', price: 40 }, // Cher !
+        { id: 'p6', name: 'Baskets', icon: '👟', price: 30 },
+        { id: 'p7', name: 'Pomme', icon: '🍎', price: 2 },
+        { id: 'p8', name: 'Coca', icon: '🥤', price: 3 }
+    ];
+
+    const LIMITE = 60;
+
+    function init() {
+        const rayon = document.getElementById('rayon');
+        produits.forEach(prod => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.draggable = true;
+            div.id = prod.id;
+            div.dataset.price = prod.price;
+            div.onclick = () => speak(prod.name + ", " + prod.price + " euros");
+            div.ondragstart = drag;
+            div.innerHTML = `
+                <span class="item-icon">${prod.icon}</span>
+                <span class="item-name">${prod.name}</span>
+                <span class="item-price">${prod.price} €</span>
+            `;
+            rayon.appendChild(div);
+        });
+    }
+
+    // --- DRAG & DROP ---
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+    
+    function drop(ev) {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("text");
+        let target = ev.target;
+        
+        // Trouver la bonne zone de drop (Rayon ou Caddie)
+        // On remonte les parents jusqu'à trouver l'ID rayon ou caddie
+        let dropZone = target.closest('#rayon') || target.closest('#caddie');
+        
+        if (dropZone) {
+            // Si c'est le caddie, on met dans le conteneur interne
+            if(dropZone.id === 'caddie') {
+                document.getElementById('caddie-items').appendChild(document.getElementById(data));
+            } else {
+                dropZone.appendChild(document.getElementById(data));
+            }
+            
+            // On efface le message et le champ pour forcer à recalculer
+            document.getElementById('total-input').value = "";
+            document.getElementById('total-input').style.border = "3px solid #ccc";
+            document.getElementById('feedback').innerText = "";
+            
+            // Petit son ou feedback vocal optionnel
+            if(dropZone.id === 'caddie') speak("Ajouté au caddie.");
+        }
+    }
+
+    // --- AUDIO ---
+    function speak(txt) {
+        const msg = new SpeechSynthesisUtterance(txt);
+        msg.lang = 'fr-FR';
+        window.speechSynthesis.speak(msg);
+    }
+
+    function lireConsigne() {
+        speak("Enzo a 60 euros. Choisis des objets dans le rayon et mets-les dans le caddie. Ensuite, utilise ta calculatrice pour faire le total. Attention, tu ne dois pas dépasser 60 euros !");
+    }
+
+    // --- VERIFICATION ---
+    function verifierTotal() {
+        // 1. Calculer le VRAI total des items dans le caddie
+        const itemsDansCaddie = document.getElementById('caddie-items').getElementsByClassName('item');
+        let vraiTotal = 0;
+        for(let item of itemsDansCaddie) {
+            vraiTotal += parseInt(item.dataset.price);
+        }
+
+        // 2. Récupérer ce que l'élève a écrit
+        const inputEleve = parseInt(document.getElementById('total-input').value);
+        const feedback = document.getElementById('feedback');
+        const inputField = document.getElementById('total-input');
+
+        // Cas 1 : L'élève s'est trompé de calcul
+        if (inputEleve !== vraiTotal) {
+            feedback.style.color = "red";
+            feedback.innerText = "⚠️ Erreur de calcul. Réessaie avec la calculatrice.";
+            inputField.style.border = "3px solid red";
+            speak("Erreur de calcul. Recompte bien.");
+            return;
+        }
+
+        // Cas 2 : Le calcul est juste, MAIS ça dépasse le budget
+        if (vraiTotal > LIMITE) {
+            feedback.style.color = "red";
+            feedback.innerText = `⛔ STOP ! ${vraiTotal}€, c'est trop cher ! Tu as seulement 60€. Enlève un article.`;
+            inputField.style.border = "3px solid orange";
+            speak(`Stop ! ${vraiTotal} euros, c'est trop cher. Tu n'as que 60 euros. Enlève un article.`);
+            return;
+        }
+
+        // Cas 3 : Tout est bon (Calcul Juste + Budget OK)
+        feedback.style.color = "green";
+        feedback.innerText = `✅ Bravo ! ${vraiTotal}€, tu peux payer !`;
+        inputField.style.border = "3px solid green";
+        speak(`Bravo ! Le total est de ${vraiTotal} euros. Tu as assez d'argent.`);
+    }
+
+    init();
+</script>
+
+</body>
+</html>

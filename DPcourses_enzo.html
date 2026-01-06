@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Le Projet de Tom - Épargne</title>
+    <style>
+        :root {
+            --bg: #e3f2fd;
+            --card-bg: white;
+            --primary: #1565c0;
+            --accent: #ffca28;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 20px; color: #333; }
+
+        /* BOUTONS */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        .audio-btn { background: #e91e63; }
+        .reset-btn { background: #607d8b; }
+
+        /* ZONE DE CHOIX (Les Rêves) */
+        .dreams-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .dream-card {
+            background: white;
+            border: 4px solid #ccc;
+            border-radius: 15px;
+            padding: 15px;
+            width: 160px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .dream-card:hover { transform: scale(1.05); }
+        .dream-card.selected { border-color: var(--primary); background-color: #e3f2fd; }
+
+        .dream-icon { font-size: 4rem; display: block; margin-bottom: 10px; }
+        .dream-price { font-size: 1.5rem; font-weight: bold; color: #333; background: #eee; padding: 5px; border-radius: 5px;}
+
+        /* ZONE DE CALCUL */
+        .calc-zone {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            display: none; /* Caché au début */
+        }
+
+        .scenario-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .info-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+        }
+
+        .math-symbol { font-size: 2rem; color: #aaa; }
+
+        /* INPUT REPONSE */
+        .answer-section {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        input[type="number"] {
+            font-size: 2rem;
+            width: 100px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+        }
+
+        /* BARRE DE PROGRESSION VISUELLE */
+        .progress-container {
+            margin-top: 30px;
+            width: 100%;
+            height: 40px;
+            background-color: #ddd;
+            border-radius: 25px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 40px;
+            color: white;
+            font-weight: bold;
+            transition: width 1s ease-in-out;
+        }
+
+        /* MESSAGE FEEDBACK */
+        #feedback {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            min-height: 1.5em;
+        }
+
+        .btn-check {
+            background: #ffca28; 
+            color: #333; 
+            font-weight: bold; 
+            font-size: 1.3rem;
+            margin: 20px auto;
+            border: 2px solid #ffb300;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>📅 Le Projet de Tom</h1>
+
+    <div class="controls">
+        <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
+        <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+    </div>
+
+    <h2 id="step1-title">1. Qu'est-ce que Tom veut acheter ?</h2>
+    <div class="dreams-container">
+        <div class="dream-card" onclick="selectDream(200, '📱', 'La Tablette', 50)">
+            <span class="dream-icon">📱</span>
+            <div class="dream-price">200 €</div>
+        </div>
+        <div class="dream-card" onclick="selectDream(120, '🚲', 'Le Vélo', 20)">
+            <span class="dream-icon">🚲</span>
+            <div class="dream-price">120 €</div>
+        </div>
+        <div class="dream-card" onclick="selectDream(400, '🎮', 'La Console', 100)">
+            <span class="dream-icon">🎮</span>
+            <div class="dream-price">400 €</div>
+        </div>
+    </div>
+
+    <div id="calc-zone" class="calc-zone">
+        <h2>2. Calcule le temps nécessaire</h2>
+        
+        <div class="scenario-row">
+            <div class="info-box">
+                <div>Prix à payer</div>
+                <div style="font-size:2rem; font-weight:bold; color:#d32f2f;" id="display-price">...</div>
+            </div>
+
+            <div class="info-box">
+                <div>Tom économise</div>
+                <div style="font-size:2rem; font-weight:bold; color:#388e3c;" id="display-saving">...</div>
+                <div>chaque mois</div>
+            </div>
+        </div>
+
+        <p style="font-size:1.2rem;">Utilise ta calculatrice :<br>Ajoute l'économie (exemple : 20 + 20 + 20...) jusqu'à arriver au prix.</p>
+
+        <div class="answer-section">
+            <label>Combien de mois faut-il attendre ?</label><br><br>
+            <input type="number" id="input-months" placeholder="?"> MOIS
+            <button class="btn-check" onclick="verifier()">✅ Vérifier</button>
+        </div>
+
+        <div class="progress-container" id="prog-cont">
+            <div class="progress-bar" id="prog-bar">0%</div>
+        </div>
+
+        <div id="feedback"></div>
+    </div>
+
+<script>
+    let currentPrice = 0;
+    let currentSaving = 0;
+    let currentName = "";
+
+    function lireConsigne() {
+        speak("Choisis d'abord un objet que Tom veut acheter. Ensuite, regarde combien il économise par mois. Calcule combien de mois il doit attendre pour avoir assez d'argent.");
+    }
+
+    function speak(txt) {
+        const msg = new SpeechSynthesisUtterance(txt);
+        msg.lang = 'fr-FR';
+        window.speechSynthesis.speak(msg);
+    }
+
+    function selectDream(price, icon, name, saving) {
+        // Mise à jour des variables
+        currentPrice = price;
+        currentSaving = saving;
+        currentName = name;
+
+        // Visuel sélection
+        const cards = document.querySelectorAll('.dream-card');
+        cards.forEach(c => c.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+
+        // Affichage Zone Calcul
+        document.getElementById('calc-zone').style.display = 'block';
+        document.getElementById('display-price').innerText = price + " €";
+        document.getElementById('display-saving').innerText = "+ " + saving + " €";
+        
+        // Reset inputs
+        document.getElementById('input-months').value = '';
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('prog-cont').style.display = 'none';
+        document.getElementById('prog-bar').style.width = '0%';
+
+        // Audio
+        speak(`Tom veut ${name}. Il coûte ${price} euros. Tom met ${saving} euros de côté par mois.`);
+        
+        // Scroll doux vers la zone de calcul
+        document.getElementById('calc-zone').scrollIntoView({behavior: "smooth"});
+    }
+
+    function verifier() {
+        const userMonths = parseInt(document.getElementById('input-months').value);
+        const feedback = document.getElementById('feedback');
+        
+        if (!userMonths) return;
+
+        // Calcul mathématique
+        const totalSaved = userMonths * currentSaving;
+        const correctMonths = currentPrice / currentSaving;
+
+        if (userMonths === correctMonths) {
+            // BONNE REPONSE
+            feedback.style.color = "green";
+            feedback.innerHTML = `🎉 BRAVO ! En ${userMonths} mois, Tom aura ${totalSaved} € !`;
+            speak(`Bravo ! En ${userMonths} mois, Tom aura économisé ${totalSaved} euros. Il peut l'acheter !`);
+            
+            // Animation Barre de chargement
+            document.getElementById('prog-cont').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('prog-bar').style.width = '100%';
+                document.getElementById('prog-bar').innerText = "OBJECTIF ATTEINT !";
+            }, 100);
+
+        } else if (totalSaved < currentPrice) {
+            // PAS ASSEZ
+            feedback.style.color = "orange";
+            feedback.innerHTML = `⚠️ Pas assez. ${userMonths} mois x ${currentSaving}€ = ${totalSaved}€. Il faut ${currentPrice}€.`;
+            speak(`Ce n'est pas assez. Avec ${userMonths} mois, il a seulement ${totalSaved} euros. Continue d'ajouter.`);
+            document.getElementById('prog-cont').style.display = 'block';
+            
+            // Calcul pourcentage pour la barre
+            let percent = (totalSaved / currentPrice) * 100;
+            document.getElementById('prog-bar').style.width = percent + '%';
+            document.getElementById('prog-bar').innerText = totalSaved + '€';
+            document.getElementById('prog-bar').style.backgroundColor = "orange";
+
+        } else {
+            // TROP (C'est techniquement bon car il peut acheter, mais mathématiquement on cherche le nombre exact)
+            feedback.style.color = "blue";
+            feedback.innerHTML = `C'est beaucoup ! ${userMonths} mois, c'est ${totalSaved}€. Il pouvait l'acheter un peu plus tôt.`;
+            speak(`Tu as dépassé le prix ! Essaie de trouver le nombre de mois exact.`);
+             document.getElementById('prog-cont').style.display = 'block';
+            document.getElementById('prog-bar').style.width = '100%';
+            document.getElementById('prog-bar').innerText = totalSaved + '€';
+            document.getElementById('prog-bar').style.backgroundColor = "blue";
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Lucas - Version Guidée (TSA)</title>
+  <style>
+    :root {
+      /* Couleurs douces et pastels pour éviter la surcharge sensorielle */
+      --recette-bg: #d4edda; --recette-border: #28a745;
+      --fixe-bg: #cce5ff;    --fixe-border: #007bff;
+      --courant-bg: #fff3cd; --courant-border: #ffc107;
+      --occas-bg: #f8d7da;   --occas-border: #dc3545;
+      
+      --text-main: #2c3e50;
+    }
+
+    body {
+      font-family: 'Verdana', sans-serif; /* Police très lisible */
+      background-color: #f4f6f8;
+      color: var(--text-main);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 { text-align: center; color: #333; }
+
+    /* LEGENDE CLAIRE */
+    .legend-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      border: 2px solid #ccc;
+      margin-bottom: 20px;
+      justify-content: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+    .leg-r { background: var(--recette-bg); border: 2px solid var(--recette-border); }
+    .leg-df { background: var(--fixe-bg); border: 2px solid var(--fixe-border); }
+    .leg-dc { background: var(--courant-bg); border: 2px solid var(--courant-border); }
+    .leg-do { background: var(--occas-bg); border: 2px solid var(--occas-border); }
+
+    /* BANQUE D'ETIQUETTES */
+    #item-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      min-height: 100px;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 30px;
+      border: 3px dashed #888;
+    }
+
+    .draggable-item {
+      padding: 10px 15px;
+      background: white;
+      border: 2px solid #555;
+      border-radius: 8px;
+      cursor: grab;
+      font-weight: bold;
+      font-size: 1rem;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.1s;
+    }
+    .draggable-item:active { transform: scale(1.05); cursor: grabbing; }
+    
+    /* Indicateur visuel sur l'étiquette (Pastille) */
+    .tag-indicator {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      border: 2px solid;
+    }
+
+    /* COLONNES DU BUDGET */
+    .budget-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .column {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      border-top: 8px solid #ccc;
+      min-height: 450px;
+    }
+
+    /* Couleurs spécifiques des colonnes */
+    #col-recettes { border-color: var(--recette-border); background: #f0fff4; }
+    #col-fixes    { border-color: var(--fixe-border); background: #f0f7ff; }
+    #col-courantes{ border-color: var(--courant-border); background: #fffbf0; }
+    #col-occas    { border-color: var(--occas-border); background: #fff5f5; }
+
+    .column h3 {
+      text-align: center;
+      margin: 0 0 10px 0;
+      padding: 10px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 5px;
+    }
+
+    .drop-zone {
+      flex-grow: 1;
+      padding: 10px;
+      border: 2px dashed rgba(0,0,0,0.1);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.5);
+      margin-bottom: 10px;
+    }
+    
+    /* Sous-zones Recettes simplifiées visuellement */
+    .sub-zone-container { display: flex; flex-direction: column; gap: 5px; flex-grow: 1; }
+    .sub-zone { 
+      min-height: 60px; 
+      border: 1px dashed #28a745; 
+      margin-bottom: 5px; 
+      border-radius: 5px;
+      padding: 5px;
+    }
+    .sub-label { font-size: 0.8rem; text-transform: uppercase; color: #28a745; text-align: center; }
+
+    /* ZONES DE CALCUL */
+    .calc-zone {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+
+    input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      font-size: 1.2rem;
+      text-align: right;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+    }
+    
+    button {
+      margin-top: 8px;
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #eee;
+      border: 1px solid #999;
+      border-radius: 5px;
+    }
+    button:hover { background: #ddd; }
+    
+    .feedback { font-weight: bold; margin-top: 5px; display: block; min-height: 1.2em; }
+    .correct { color: #28a745; }
+    .incorrect { color: #dc3545; }
+
+    /* BILAN FINAL */
+    .final-section {
+      margin-top: 40px;
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      border-left: 10px solid #2c3e50;
+    }
+
+    .row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 15px; font-size: 1.2rem;
+    }
+
+    @media (max-width: 900px) {
+      .budget-grid { grid-template-columns: 1fr 1fr; }
+      #col-recettes { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>💰 Le Budget de Lucas</h1>
+
+  <div class="legend-box">
+    <span>Aide mémoire :</span>
+    <div class="legend-item leg-r">R = Recette (Argent qui rentre)</div>
+    <div class="legend-item leg-df">DF = Dépense Fixe (Obligatoire)</div>
+    <div class="legend-item leg-dc">DC = Dépense Courante (Variable)</div>
+    <div class="legend-item leg-do">DO = Dépense Occasionnelle (Rare)</div>
+  </div>
+
+  <p style="text-align:center; font-size:1.1rem; max-width:800px;">
+    <strong>Consigne :</strong> Prends les étiquettes et range-les dans la bonne colonne en t'aidant du code (R, DF, DC, DO).<br>
+    Ensuite, fais les calculs.
+  </p>
+
+  <div id="item-bank"></div>
+
+  <div class="budget-grid">
+    
+    <div class="column" id="col-recettes">
+      <h3>🟢 Recettes (R)</h3>
+      <div class="sub-zone-container">
+        <div class="sub-label">Travail</div>
+        <div class="sub-zone drop-zone" data-cat="recette-travail"></div>
+        <div class="sub-label">Aides (CAF)</div>
+        <div class="sub-zone drop-zone" data-cat="recette-social"></div>
+        <div class="sub-label">Autres</div>
+        <div class="sub-zone drop-zone" data-cat="recette-autre"></div>
+      </div>
+      <div class="calc-zone">
+        Total Recettes :<br>
+        <input type="number" id="input-recettes"> €
+        <button onclick="checkRecettes()">Vérifier</button>
+        <span id="msg-recettes" class="feedback"></span>
+      </div>
+    </div>
+
+    <div class="column" id="col-fixes">
+      <h3>🔵 Fixes (DF)</h3>
+      <div class="drop-zone" data-cat="fixe"></div>
+      <div class="calc-zone">
+        Total Fixes :<br>
+        <input type="number" id="input-fixes"> €
+        <button onclick="checkDepense('fixe', 'input-fixes', 'msg-fixes')">Vérifier</button>
+        <span id="msg-fixes" class="feedback"></span>
+      </div>
+    </div>
+
+    <div class="column" id="col-courantes">
+      <h3>🟡 Courantes (DC)</h3>
+      <div class="drop-zone" data-cat="courante"></div>
+      <div class="calc-zone">
+        Total Courantes :<br>
+        <input type="number" id="input-courantes"> €
+        <button onclick="checkDepense('courante', 'input-courantes', 'msg-courantes')">Vérifier</button>
+        <span id="msg-courantes" class="feedback"></span>
+      </div>
+    </div>
+
+    <div class="column" id="col-occas">
+      <h3>🔴 Occasionnelles (DO)</h3>
+      <div class="drop-zone" data-cat="occas"></div>
+      <div class="calc-zone">
+        Total Occas. :<br>
+        <input type="number" id="input-occas"> €
+        <button onclick="checkDepense('occas', 'input-occas', 'msg-occas')">Vérifier</button>
+        <span id="msg-occas" class="feedback"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="final-section">
+    <h2>📊 Le Bilan</h2>
+    <div class="row">
+      <span>Total Recettes (+) :</span>
+      <input type="number" id="final-recettes" readonly style="background:#eee"> €
+    </div>
+    <div class="row">
+      <span>Total Dépenses (-) :</span>
+      <input type="number" id="final-depenses" placeholder="?"> €
+    </div>
+    <hr>
+    <div class="row">
+      <strong>SOLDE RESTANT :</strong>
+      <input type="number" id="final-solde" placeholder="?"> €
+    </div>
+    <button onclick="checkBilan()" style="font-size:1.2rem; background:#2c3e50; color:white;">Vérifier le Solde</button>
+    <span id="msg-bilan" class="feedback" style="font-size:1.2rem; margin-top:10px;"></span>
+  </div>
+
+  <script>
+    // DONNEES : Ajout de la propriété "code" et "colorClass" pour l'aide visuelle
+    const items = [
+      { id: 1, name: "Salaire", val: 1600, cat: "recette-travail", global: "recette", code: "R", colorClass: "leg-r" },
+      { id: 2, name: "Prime", val: 150, cat: "recette-travail", global: "recette", code: "R", colorClass: "leg-r" },
+      { id: 3, name: "APL (Logement)", val: 280, cat: "recette-social", global: "recette", code: "R", colorClass: "leg-r" },
+      { id: 4, name: "Alloc. Familiales", val: 130, cat: "recette-social", global: "recette", code: "R", colorClass: "leg-r" },
+      { id: 5, name: "Vente Jeu Vidéo", val: 100, cat: "recette-autre", global: "recette", code: "R", colorClass: "leg-r" },
+
+      { id: 6, name: "Loyer", val: 650, cat: "fixe", global: "depense", code: "DF", colorClass: "leg-df" },
+      { id: 7, name: "Prêt Étudiant", val: 85, cat: "fixe", global: "depense", code: "DF", colorClass: "leg-df" },
+      { id: 8, name: "Assurance Auto", val: 40, cat: "fixe", global: "depense", code: "DF", colorClass: "leg-df" },
+      { id: 9, name: "Abonnement TV", val: 35, cat: "fixe", global: "depense", code: "DF", colorClass: "leg-df" },
+
+      { id: 10, name: "Courses (Manger)", val: 300, cat: "courante", global: "depense", code: "DC", colorClass: "leg-dc" },
+      { id: 11, name: "Essence", val: 120, cat: "courante", global: "depense", code: "DC", colorClass: "leg-dc" },
+      { id: 12, name: "Électricité", val: 100, cat: "courante", global: "depense", code: "DC", colorClass: "leg-dc" },
+      { id: 13, name: "Téléphone", val: 15, cat: "courante", global: "depense", code: "DC", colorClass: "leg-dc" },
+
+      { id: 14, name: "Siège Bébé", val: 150, cat: "occas", global: "depense", code: "DO", colorClass: "leg-do" },
+      { id: 15, name: "Restaurant", val: 80, cat: "occas", global: "depense", code: "DO", colorClass: "leg-do" },
+      { id: 16, name: "Dentiste", val: 45, cat: "occas", global: "depense", code: "DO", colorClass: "leg-do" }
+    ];
+
+    // MELANGE DES ETIQUETTES
+    const bank = document.getElementById("item-bank");
+    items.sort(() => Math.random() - 0.5);
+
+    let selectedItem = null;
+
+    items.forEach(item => {
+      const el = document.createElement("div");
+      el.className = "draggable-item";
+      el.draggable = true;
+      el.id = "item-" + item.id;
+      // Données stockées dans l'élément HTML
+      el.dataset.val = item.val;
+      el.dataset.cat = item.cat;
+      el.dataset.global = item.global;
+      el.dataset.code = item.code;
+
+      // Création visuelle : Pastille + Texte
+      el.innerHTML = `
+        <span class="tag-indicator ${item.colorClass}">${item.code}</span>
+        <span>${item.name} <br> <strong>${item.val} €</strong></span>
+      `;
+
+      // Events Drag & Drop + Click (Accessibilité)
+      el.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text", el.id);
+        selectedItem = el;
+      });
+      el.addEventListener("click", () => {
+        if(selectedItem) selectedItem.style.borderColor = "#555";
+        selectedItem = el;
+        el.style.borderColor = "black";
+        el.style.transform = "scale(1.05)";
+      });
+
+      bank.appendChild(el);
+    });
+
+    // GESTION DROP ZONES
+    document.querySelectorAll(".drop-zone, #item-bank").forEach(zone => {
+      zone.addEventListener("dragover", e => { e.preventDefault(); zone.style.background = "rgba(0,0,0,0.05)"; });
+      zone.addEventListener("dragleave", e => { zone.style.background = ""; });
+      zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.style.background = "";
+        const id = e.dataTransfer.getData("text");
+        const el = document.getElementById(id);
+        if(el) zone.appendChild(el);
+      });
+      // Click to drop (si sélectionné)
+      zone.addEventListener("click", () => {
+        if(selectedItem) {
+          zone.appendChild(selectedItem);
+          selectedItem.style.transform = "none";
+          selectedItem.style.borderColor = "#555";
+          selectedItem = null;
+        }
+      });
+    });
+
+    // VERIFICATION
+    function setMsg(id, text, isOk) {
+      const el = document.getElementById(id);
+      el.innerText = text;
+      el.className = "feedback " + (isOk ? "correct" : "incorrect");
+    }
+
+    function checkRecettes() {
+      const zones = document.querySelectorAll('#col-recettes .sub-zone');
+      let total = 0;
+      let allCorrect = true;
+
+      zones.forEach(z => {
+        const expectedCat = z.dataset.cat;
+        [...z.children].forEach(child => {
+          total += parseInt(child.dataset.val);
+          if (child.dataset.cat !== expectedCat) allCorrect = false;
+        });
+      });
+
+      const userInput = parseInt(document.getElementById("input-recettes").value);
+      
+      if (!allCorrect) {
+        setMsg("msg-recettes", "⚠️ Certaines étiquettes sont mal placées (regarde les couleurs).", false);
+      } else if (userInput === total) {
+        setMsg("msg-recettes", "✅ Bravo ! C'est juste.", true);
+        document.getElementById("final-recettes").value = total;
+      } else {
+        setMsg("msg-recettes", "❌ Le placement est bon, mais recompte le total.", false);
+      }
+    }
+
+    function checkDepense(catName, inputId, msgId) {
+      const zone = document.querySelector(`.drop-zone[data-cat="${catName}"]`);
+      let total = 0;
+      let allCorrect = true;
+
+      [...zone.children].forEach(child => {
+        total += parseInt(child.dataset.val);
+        // On vérifie juste si c'est la bonne catégorie principale
+        // On accepte si le code correspond (DF dans colonne DF)
+        const codeMap = { "fixe": "DF", "courante": "DC", "occas": "DO" };
+        if (child.dataset.code !== codeMap[catName]) allCorrect = false;
+      });
+
+      const userInput = parseInt(document.getElementById(inputId).value);
+
+      if (!allCorrect) {
+        setMsg(msgId, "⚠️ Une étiquette n'a pas le bon code (R, DF, DC ou DO).", false);
+      } else if (userInput === total && total > 0) {
+        setMsg(msgId, "✅ Excellent !", true);
+        checkAllDepensesFilled();
+      } else if (total === 0) {
+        setMsg(msgId, "La colonne est vide.", false);
+      } else {
+        setMsg(msgId, "❌ Erreur de calcul.", false);
+      }
+    }
+
+    function checkAllDepensesFilled() {
+      const f = document.getElementById("input-fixes").value;
+      const c = document.getElementById("input-courantes").value;
+      const o = document.getElementById("input-occas").value;
+      if(f && c && o) {
+        document.getElementById("final-depenses").value = parseInt(f)+parseInt(c)+parseInt(o);
+      }
+    }
+
+    function checkBilan() {
+      const r = parseInt(document.getElementById("final-recettes").value) || 0;
+      const d = parseInt(document.getElementById("final-depenses").value) || 0;
+      const s = parseInt(document.getElementById("final-solde").value);
+
+      if (s === (r - d)) {
+        setMsg("msg-bilan", "🎉 BRAVO ! Exercice terminé.", true);
+      } else {
+        setMsg("msg-bilan", "❌ Vérifie : Recettes - Dépenses.", false);
+      }
+    }
+
+  </script>
+</body>
+</html>
