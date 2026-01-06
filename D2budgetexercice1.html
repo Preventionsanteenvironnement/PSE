@@ -220,7 +220,7 @@
   <div id="pse-envoi-prof">
     <h3>🚀 Envoyer mon résultat</h3>
     <div class="input-row">
-      <input type="text" id="pse-eleve-code" class="input-field" placeholder="Entrer votre Identifiant" autocomplete="off">
+      <input type="text" id="pse-eleve-code" class="input-field" placeholder="Identifiant (ex: P12)" autocomplete="off">
       
       <select id="pse-eleve-classe" class="input-field">
         <option value="">-- Ma classe --</option>
@@ -248,14 +248,11 @@
   /* --- GESTION AUDIO (Synthèse vocale) --- */
   function speakText(text) {
     if ('speechSynthesis' in window) {
-      // On arrête si ça parle déjà
       window.speechSynthesis.cancel();
-      
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR'; // Langue française
-      utterance.rate = 0.9;     // Vitesse un peu plus lente pour la compréhension
+      utterance.lang = 'fr-FR'; 
+      utterance.rate = 0.9;     
       utterance.pitch = 1;
-      
       window.speechSynthesis.speak(utterance);
     } else {
       alert("Désolé, votre navigateur ne supporte pas la lecture audio.");
@@ -368,7 +365,6 @@
     questions.forEach((q, index) => {
       // Texte à lire : Titre + Contexte
       const textToRead = `${q.title}. ${q.context}`;
-      // On échappe les guillemets pour éviter les bugs JS dans le HTML
       const safeText = textToRead.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
       // Structure HTML de la question
@@ -396,7 +392,6 @@
       `;
       container.appendChild(div);
       
-      // Stockage de l'état local
       q.attempts = 0;
       q.solved = false;
     });
@@ -417,7 +412,6 @@
       fb.className = 'feedback fb-success';
       fb.innerHTML = `<b>Bravo !</b> ${q.expli}`;
       
-      // Désactiver les autres boutons
       Array.from(group.children).forEach(b => {
         if(b !== btn) b.classList.add('inactive');
       });
@@ -456,13 +450,11 @@
     
     q.solved = true;
     
-    // Visuel
     fb.style.display = 'block';
     fb.className = 'feedback fb-sol';
     fb.innerHTML = `<b>Solution :</b> La bonne réponse était <b>${q.correct}</b>.<br/>${q.expli}`;
     sos.style.display = 'none';
     
-    // Griser les boutons
     Array.from(group.children).forEach(b => {
       if(b.innerText === q.correct) b.classList.add('correct');
       else b.classList.add('inactive');
@@ -546,15 +538,12 @@
     msg.textContent = "Envoi en cours...";
 
     try {
-      /* NOTE DE SECURITE RGPD :
-         On envoie le "code" dans le champ "nom".
-         Cela permet à la Page Prof (qui attend un "nom") d'afficher le code sans modification.
-      */
-      await addDoc(collection(db, "exercice"), {
+      /* ENVOI CORRECT VERS LA COLLECTION BACPRO */
+      await addDoc(collection(db, "bacpro"), {
         meta: {
           createdAt: new Date().toISOString(),
-          nom: code,          // <-- ASTUCE : On met le code dans la case Nom
-          prenom: "",         // <-- On laisse le prénom vide
+          nom: code,          // Code mis dans 'nom' pour que le prof le voie
+          prenom: "",         
           classe: classe,
           type: "exercice",
           support: "Gestion_Budget_CAP"
@@ -569,7 +558,6 @@
       msg.style.color = "#16a34a";
       msg.textContent = "✅ Résultat envoyé ! (Tu peux renvoyer si tu améliores ton score)";
       
-      // On réactive le bouton après 2 secondes
       setTimeout(() => {
         btn.disabled = false;
         btn.style.opacity = "1";
