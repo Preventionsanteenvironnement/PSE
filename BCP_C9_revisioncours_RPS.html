@@ -523,20 +523,27 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
     authDomain: "devoirs-pse.firebaseapp.com",
     projectId: "devoirs-pse",
-    storageBucket: "devoirs-pse.firebasestorage.app",
+    storageBucket: "devoirs-pse.appspot.com",
     messagingSenderId: "614730413904",
     appId: "1:614730413904:web:a5dd478af5de30f6bede55"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+
+  function niveauFromScore(score){
+    if(score < 8) return "NM";
+    if(score < 12) return "IM";
+    if(score < 16) return "M";
+    return "BM";
+  }
 
   window.calculateAndSend = async function () {
     const idEleve = document.getElementById("student-id").value.trim();
@@ -557,7 +564,6 @@
 
     let totalScore = 0;
 
-    // EX 1
     const ans1 = {
       "q1-1": "externe",
       "q1-2": "stress",
@@ -567,7 +573,6 @@
     };
     totalScore += checkSelects(ans1, 1);
 
-    // EX 2
     const ans2 = {
       "q2-1": "sante",
       "q2-2": "entreprise",
@@ -577,7 +582,6 @@
     };
     totalScore += checkRadios(ans2, 1);
 
-    // EX 3
     const ans3 = {
       "q3-1": "information",
       "q3-2": "formation",
@@ -587,7 +591,6 @@
     };
     totalScore += checkSelects(ans3, 1);
 
-    // EX 4
     let pts4 = 0;
     pts4 += checkRadioSingle("q4-1", "burnout", 1.5);
     pts4 += checkRadioSingle("q4-2", "boreout", 1.5);
@@ -607,10 +610,9 @@
     document.getElementById("score-comment").textContent = comment;
 
     scoreDisplay.style.display = "block";
+    document.querySelectorAll(".correction-detail").forEach(el => { el.style.display = "block"; });
 
-    document.querySelectorAll(".correction-detail").forEach(el => {
-      el.style.display = "block";
-    });
+    const niveauGlobal = niveauFromScore(totalScore);
 
     try {
       await addDoc(collection(db, "exercices"), {
@@ -624,12 +626,20 @@
         },
         resultat: {
           score: `${totalScore} / 20`,
+          niveauGlobal: niveauGlobal,
+          competences: {
+            C2: niveauGlobal
+          },
+          tentatives: 1,
+          tempsPasse: 0,
           url: location.href,
           titre: document.title
         }
       });
+      alert("Copie envoyée à PageProf");
     } catch (e) {
       console.error("Erreur envoi", e);
+      alert("Erreur lors de l’envoi vers PageProf");
     }
 
     btn.style.display = "none";
