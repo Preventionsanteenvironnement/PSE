@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test QCM - PSE</title>
+    <script src="annuaire.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; line-height: 1.6; background: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        input, button { padding: 10px; margin: 10px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
+        .question { margin-bottom: 20px; font-weight: bold; }
+        .feedback { font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="auth-section" class="card">
+    <h2>Évaluation PSE</h2>
+    <p>Entre ton code identifiant pour commencer :</p>
+    <input type="text" id="student-code" placeholder="Ex: KA47" style="text-transform: uppercase;">
+    <p id="auth-msg"></p>
+    <button onclick="verifierCode()">Commencer l'exercice</button>
+</div>
+
+<div id="quiz-section" class="card hidden">
+    <p id="welcome-user"></p>
+    <hr>
+    <div id="question-container">
+        <div class="question" id="q-text"></div>
+        <div id="options"></div>
+    </div>
+    <p>Temps : <span id="timer">0</span>s</p>
+</div>
+
+<div id="result-section" class="card hidden">
+    <h2>Exercice terminé !</h2>
+    <p id="final-score"></p>
+    <p>Tes résultats ont été envoyés au Cockpit de l'enseignant.</p>
+</div>
+
+<script>
+    let codeEleve = "";
+    let classeEleve = "";
+    let scoreTotal = 0;
+    let indexQuestion = 0;
+    let timerInterval;
+    let secondes = 0;
+    
+    // Structure des scores par compétence (initialement à 0)
+    let competences = { "C1": 0, "C2": 0, "C3": 0 };
+
+    const questions = [
+        { q: "Quel sigle désigne l'organisme de prévention des accidents du travail ?", options: ["INRS", "SNCF", "CAF"], ans: 0, comp: "C1" },
+        { q: "Face à un saignement abondant, quelle est l'action prioritaire ?", options: ["Alerter", "Comprimer", "Protéger"], ans: 1, comp: "C2" },
+        { q: "L'analyse d'une situation de travail par le schéma PADS permet de ?", options: ["Chercher un coupable", "Identifier les dangers", "Calculer le salaire"], ans: 1, comp: "C3" }
+    ];
+
+    function verifierCode() {
+        let input = document.getElementById('student-code').value.toUpperCase();
+        if (ANNUAIRE[input]) {
+            codeEleve = input;
+            classeEleve = ANNUAIRE[input];
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.remove('hidden');
+            document.getElementById('welcome-user').innerText = "Élève : " + codeEleve + " | Classe : " + classeEleve;
+            startQuiz();
+        } else {
+            document.getElementById('auth-msg').innerText = "❌ Code inconnu. Vérifie ton code.";
+            document.getElementById('auth-msg').style.color = "red";
+        }
+    }
+
+    function startQuiz() {
+        timerInterval = setInterval(() => { secondes++; document.getElementById('timer').innerText = secondes; }, 1000);
+        showQuestion();
+    }
+
+    function showQuestion() {
+        let q = questions[indexQuestion];
+        document.getElementById('q-text').innerText = q.q;
+        let optHtml = "";
+        q.options.forEach((opt, i) => {
+            optHtml += `<button onclick="checkAnswer(${i})">${opt}</button>`;
+        });
+        document.getElementById('options').innerHTML = optHtml;
+    }
+
+    function checkAnswer(choice) {
+        let q = questions[indexQuestion];
+        if (choice === q.ans) {
+            scoreTotal++;
+            competences[q.comp] = 3; // On simule le niveau "Bien maîtrisé" (3) pour le test
+        } else {
+            competences[q.comp] = 0; // "Non maîtrisé"
+        }
+
+        indexQuestion++;
+        if (indexQuestion < questions.length) {
+            showQuestion();
+        } else {
+            finExercice();
+        }
+    }
+
+    function finExercice() {
+        clearInterval(timerInterval);
+        document.getElementById('quiz-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        document.getElementById('final-score').innerText = "Score : " + scoreTotal + "/" + questions.length;
+
+        // ENVOI AU COCKPIT (Le fameux mouchard)
+        const data = {
+            id: codeEleve,
+            classe: classeEleve,
+            note: ((scoreTotal / questions.length) * 20).toFixed(1),
+            temps: secondes + "s",
+            c1: competences["C1"],
+            c2: competences["C2"],
+            c3: competences["C3"],
+            support: "QCM Test"
+        };
+
+        // URL de ton script Google (la même que dans ton cockpit)
+        const URL_SCRIPT = "TON_URL_SCRIPT_GOOGLE_ICI"; 
+
+        fetch(URL_SCRIPT, {
+            method: 'POST',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    }
+</script>
+
+</body>
+</html>
