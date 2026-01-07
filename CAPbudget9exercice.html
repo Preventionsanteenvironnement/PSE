@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module D2 : Le Budget de Michel</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: #333;
+            padding: 15px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { max-width: 1100px; width: 100%; }
+        header { background: #2563eb; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+        .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; }
+        .context-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; line-height: 1.6; }
+
+        #item-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
+            margin-bottom: 20px;
+            min-height: 80px;
+            width: 100%;
+        }
+        .draggable-item {
+            padding: 12px 15px;
+            background: white;
+            border: 2px solid #64748b;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            user-select: none;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .draggable-item.selected { border-color: #2563eb; background: #eff6ff; transform: scale(1.05); }
+
+        .budget-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+        .column {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+            border-top: 8px solid #ccc;
+            width: 100%;
+            min-width: 0;
+        }
+        #col-recettes { border-top-color: #28a745; }
+        #col-fixes { border-top-color: #007bff; }
+        #col-courantes { border-top-color: #ffc107; }
+        #col-occas { border-top-color: #dc3545; }
+
+        .drop-zone {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f8fafc;
+            min-height: 150px;
+            cursor: pointer;
+            width: 100%;
+            min-width: 0;
+        }
+        .sub-zone {
+            background: #e2f3e5;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 80px;
+        }
+        .calc-zone {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        input[type="number"] {
+            width: 110px;
+            max-width: 100%;
+            padding: 8px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .btn-valider {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 30px;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        #result-zone {
+            display: none;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            border: 4px solid #2563eb;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .synthesis-card {
+            background: #eff6ff;
+            border: 2px solid #2563eb;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+            width: 100%;
+        }
+        .syn-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
+        .syn-row .val { overflow-wrap: anywhere; }
+
+        .status-options {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .status-options label { white-space: nowrap; }
+
+        @media (max-width: 520px) {
+            body { padding: 10px; }
+            header { padding: 16px; border-radius: 12px; }
+            .context-box { padding: 14px; border-radius: 12px; }
+            #item-bank { padding: 12px; }
+            .draggable-item { padding: 12px 12px; width: 100%; }
+            .budget-container { grid-template-columns: 1fr; }
+            .column { min-height: 320px; padding: 12px; }
+            .btn-valider { padding: 18px; font-size: 1.1rem; }
+            input[type="number"] { width: 100%; max-width: 180px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 style="margin:0;">Module D2 : Le Budget de Michel</h1>
+        <div class="obj-box">Objectif : Identifier un budget déficitaire après calcul du solde.</div>
+    </header>
+
+    <div class="context-box">
+        <strong>Situation :</strong> Michel est artisan peintre. Ce mois-ci, son activité lui rapporte <b>1 650,00 €</b>. Il perçoit aussi une <b>prime d'activité de 112,45 €</b>. <br><br>
+        Ses opérations : Loyer et charges atelier (725,50 €), Assurance professionnelle (94,20 €), Abonnement téléphone (35,00 €), Courses alimentaires (430,45 €), Carburant utilitaire (215,00 €), Hygiène (36,00 €), Réparation outillage (180,00 €) et un nouveau blouson de travail (200,00 €).
+    </div>
+
+    <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis sur sa catégorie :</p>
+    <div id="item-bank"></div>
+
+    <div class="budget-container">
+        <div class="column" id="col-recettes">
+            <h3>Recettes</h3>
+            <div class="drop-zone sub-zone" data-category="recette-travail"><h4>Travail</h4></div>
+            <div class="drop-zone sub-zone" data-category="recette-social"><h4>Social</h4></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-recettes"> €</div>
+        </div>
+        <div class="column" id="col-fixes">
+            <h3>Fixes (Incompressibles)</h3>
+            <div class="drop-zone" data-category="fixe"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-fixes"> €</div>
+        </div>
+        <div class="column" id="col-courantes">
+            <h3>Courantes</h3>
+            <div class="drop-zone" data-category="courante"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-courantes"> €</div>
+        </div>
+        <div class="column" id="col-occas">
+            <h3>Occas. (Exceptionnelles)</h3>
+            <div class="drop-zone" data-category="occas"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-occas"> €</div>
+        </div>
+    </div>
+
+    <div class="context-box" style="margin-top: 20px;">
+        <span style="font-weight: bold;">2. Calcul du Solde et État du budget :</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
+            <span>Quel est le solde final de Michel ?</span>
+            <input type="number" step="0.01" id="in-solde" style="width: 120px; padding: 10px; border: 2px solid var(--primary); border-radius: 8px; max-width: 100%;">
+        </div>
+        <div class="status-options">
+            <label><input type="radio" name="status" value="excedentaire"> Excédentaire</label>
+            <label><input type="radio" name="status" value="equilibre"> Équilibré</label>
+            <label><input type="radio" name="status" value="deficitaire"> Déficitaire</label>
+        </div>
+    </div>
+
+    <button class="btn-valider" onclick="analyser()">VÉRIFIER MES RÉPONSES</button>
+
+    <div id="result-zone">
+        <h2 id="final-score">Score : -- / 20</h2>
+        <div class="synthesis-card">
+            <div class="syn-row" id="syn-rec"><span>Total Recettes :</span> <span class="val">--</span></div>
+            <div class="syn-row" id="syn-dep"><span>Total Dépenses :</span> <span class="val">--</span></div>
+            <hr><div class="syn-row" id="syn-sol" style="color:#dc2626"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
+            <div class="syn-row" id="syn-status"><span>ÉTAT DU BUDGET :</span> <span class="val">--</span></div>
+        </div>
+        <button class="btn-valider" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
+    </div>
+</div>
+
+<script>
+    const items = [
+        { id: 1, name: "Revenu artisan", val: 1650.00, cat: "recette-travail" },
+        { id: 2, name: "Prime d'activité", val: 112.45, cat: "recette-social" },
+        { id: 3, name: "Loyer atelier", val: 725.50, cat: "fixe" },
+        { id: 4, name: "Assurance pro", val: 94.20, cat: "fixe" },
+        { id: 5, name: "Abo téléphone", val: 35.00, cat: "fixe" },
+        { id: 6, name: "Courses", val: 430.45, cat: "courante" },
+        { id: 7, name: "Carburant", val: 215.00, cat: "courante" },
+        { id: 8, name: "Hygiène", val: 36.00, cat: "courante" },
+        { id: 9, name: "Réparation outils", val: 180.00, cat: "occas" },
+        { id: 10, name: "Blouson travail", val: 200.00, cat: "occas" }
+    ];
+
+    let selectedItem = null;
+    const bank = document.getElementById("item-bank");
+
+    items.sort(() => Math.random() - 0.5).forEach(item => {
+        let el = document.createElement("div");
+        el.className = "draggable-item";
+        el.id = "i-" + item.id;
+        el.innerHTML = `${item.name} (${item.val.toFixed(2)}€)`;
+        el.onclick = (e) => {
+            e.stopPropagation();
+            if (selectedItem) selectedItem.classList.remove('selected');
+            selectedItem = el;
+            el.classList.add('selected');
+        };
+        bank.appendChild(el);
+    });
+
+    document.querySelectorAll('.drop-zone, #item-bank').forEach(zone => {
+        zone.onclick = () => {
+            if (selectedItem) {
+                zone.appendChild(selectedItem);
+                selectedItem.classList.remove('selected');
+                selectedItem = null;
+            }
+        };
+    });
+
+    function analyser() {
+        let score = 0;
+
+        items.forEach(item => {
+            let el = document.getElementById("i-" + item.id);
+            if (!el) return;
+            let parentCat = el.parentElement?.dataset?.category || "";
+            if (parentCat === item.cat) {
+                score += 1;
+                el.style.borderColor = "#28a745";
+            } else {
+                el.style.borderColor = "#dc3545";
+            }
+        });
+
+        const inR = parseFloat(document.getElementById("in-recettes").value) || 0;
+        const inF = parseFloat(document.getElementById("in-fixes").value) || 0;
+        const inC = parseFloat(document.getElementById("in-courantes").value) || 0;
+        const inO = parseFloat(document.getElementById("in-occas").value) || 0;
+        const inSolde = parseFloat(document.getElementById("in-solde").value) || 0;
+        const inStatus = document.querySelector('input[name="status"]:checked')?.value;
+
+        const totalD = Number((inF + inC + inO).toFixed(2));
+
+        if (Math.abs(inR - 1762.45) < 0.01) score += 2;
+        if (Math.abs(inF - 854.70) < 0.01) score += 2;
+        if (Math.abs(inC - 681.45) < 0.01) score += 2;
+        if (Math.abs(inO - 380.00) < 0.01) score += 2;
+        if (Math.abs(inSolde - (-153.70)) < 0.01) score += 1;
+        if (inStatus === "deficitaire") score += 1;
+
+        document.getElementById("result-zone").style.display = "block";
+        document.getElementById("final-score").innerText = `Score : ${Math.round(score)} / 20`;
+
+        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 1762.45) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 1916.15) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - (-153.70)) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-status .val").innerHTML = `${inStatus === "deficitaire" ? "Déficitaire ✅" : "Erreur ❌"}`;
+
+        window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>
