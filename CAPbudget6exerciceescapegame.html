@@ -3,520 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Budget d'Amira - Escape Game</title>
+    <title>Module D2 : Le Budget d'Amira</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Styles de base conservés */
-        :root {
-            --recettes-color: #d4edda;
-            --recettes-border: #28a745;
-            --dette-color: #fce4ec; 
-            --dette-border: #e91e63;
-            --fixe-color: #cce5ff;
-            --fixe-border: #007bff;
-            --courant-color: #fff3cd;
-            --courant-border: #ffc107;
-            --occas-color: #f8d7da;
-            --occas-border: #dc3545;
-            --epargne-color: #e6e0ff;
-            --epargne-border: #6f42c1;
-            
-            --bg-color: #f9f9f9;
-            --text-color: #333;
-        }
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1100px; width: 100%; }
+        header { background: #2563eb; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+        .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; }
+        .context-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; line-height: 1.6; }
+        #item-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #fff; padding: 15px; border-radius: 12px; border: 2px dashed #cbd5e1; margin-bottom: 20px; min-height: 80px; }
+        .draggable-item { padding: 12px 15px; background: white; border: 2px solid #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; user-select: none; }
+        .draggable-item.selected { border-color: #2563eb; background: #eff6ff; transform: scale(1.05); }
+        .correct-info { display: none; font-size: 0.85rem; color: #dc3545; margin-top: 5px; font-weight: bold; }
+        .budget-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; width: 100%; }
+        .column { background: white; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; min-height: 400px; border-top: 8px solid #ccc; }
+        #col-recettes { border-top-color: #28a745; }
+        #col-fixes { border-top-color: #007bff; }
+        #col-courantes { border-top-color: #ffc107; }
+        #col-occas { border-top-color: #dc3545; }
+        .drop-zone { flex-grow: 1; padding: 10px; border-radius: 8px; background: #f8fafc; min-height: 150px; cursor: pointer; }
+        .sub-zone { background: #e2f3e5; margin-bottom: 10px; border-radius: 8px; padding: 10px; min-height: 80px; }
+        .sub-zone h4 { margin: 0 0 8px 0; font-size: 0.85rem; text-transform: uppercase; color: #166534; }
+        .calc-zone { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; }
+        input[type="number"] { width: 100px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; text-align: center; }
+        .btn-valider { background: #1e293b; color: white; border: none; padding: 20px; border-radius: 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer; margin-top: 30px; width: 100%; }
+        #result-zone { display: none; width: 100%; background: white; padding: 25px; border-radius: 20px; border: 4px solid #2563eb; margin-top: 30px; text-align: center; }
+        .synthesis-card { background: #eff6ff; border: 2px solid #2563eb; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: left; }
+        .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+        .chart-box { height: 350px; margin: 20px 0; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        /* ✅ AJUSTEMENTS TECHNIQUES (SANS TOUCHER AU CONTENU PÉDAGOGIQUE) */
+        * { box-sizing: border-box; }
+        .context-box, .container, #result-zone { overflow-wrap: anywhere; }
+        .chart-box canvas { max-width: 100% !important; height: 100% !important; }
+        .drop-zone, .sub-zone { overflow: auto; }
+        .draggable-item { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
-        h1 { color: #2c3e50; margin-bottom: 10px; }
+        /* Calcul final responsive sans modifier le texte */
+        .final-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 12px; flex-wrap: wrap; }
+        .final-row > span { flex: 1 1 260px; min-width: 200px; }
+        .final-row > input { flex: 0 0 auto; }
 
-        .context-box {
-            background: #ffe0e0; /* Couleur d'alerte pour le contexte */
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 900px;
-            width: 100%;
-            margin-bottom: 20px;
-            line-height: 1.6;
-            font-size: 1.15rem;
-            position: relative;
-            border: 3px solid var(--dette-border);
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            header { padding: 16px; }
+            .context-box { padding: 16px; }
+            .btn-valider { padding: 16px; font-size: 1.05rem; }
+            input[type="number"] { width: 110px; }
+            .syn-row { flex-wrap: wrap; gap: 8px; }
+            .chart-box { height: 280px; }
         }
-
-        .context-box h2 {
-            color: var(--dette-border);
-            margin-top: 0;
-            border-bottom: 1px dashed var(--dette-border);
-            padding-bottom: 10px;
-        }
-
-        #item-bank {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            min-height: 80px;
-            width: 100%;
-            max-width: 1300px;
-            margin-bottom: 20px;
-            border: 2px dashed #ccc;
-        }
-
-        .draggable-item {
-            padding: 10px 20px;
-            background-color: white;
-            border: 2px solid #555;
-            border-radius: 8px;
-            cursor: grab;
-            user-select: none;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Le Tableau - 6 colonnes */
-        .budget-container {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr); 
-            gap: 8px;
-            width: 100%;
-            max-width: 1300px;
-        }
-
-        .column {
-            background: white;
-            border-radius: 10px;
-            padding: 10px 5px;
-            display: flex;
-            flex-direction: column;
-            min-height: 300px; /* Réduire pour concentrer */
-            border-top: 6px solid #ccc;
-        }
-        
-        /* Styles de colonnes spécifiques (identique) */
-        #col-recettes { border-top-color: var(--recettes-border); }
-        #col-dettes { border-top-color: var(--dette-border); }
-        #col-fixes { border-top-color: var(--fixe-border); }
-        #col-courantes { border-top-color: var(--courant-border); }
-        #col-occas { border-top-color: var(--occas-border); }
-        #col-epargne { border-top-color: var(--epargne-border); }
-        
-        .calc-zone {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #eee;
-            text-align: center;
-        }
-
-        /* Zones d'énigme */
-        .puzzle-zone {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-top: 30px;
-            width: 100%;
-            max-width: 900px;
-        }
-        .puzzle-title {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .puzzle-input {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .puzzle-input input {
-            width: 100px;
-            padding: 8px;
-            font-size: 1.1rem;
-            border: 2px solid #dc3545;
-            border-radius: 5px;
-            text-align: right;
-        }
-        .unlocked { border-color: #28a745 !important; background-color: #e8f5e9; color: #28a745; }
-        .locked { border-color: #6c757d !important; background-color: #f1f1f1; }
-        .locked-btn { background-color: #6c757d; }
-        .unlocked-btn { background-color: #28a745; }
-        
-        /* Zone du Code Final */
-        #final-escape-zone {
-            margin-top: 40px;
-            background: #2c3e50;
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-            opacity: 0.3;
-            pointer-events: none;
-            transition: opacity 0.5s;
-        }
-        #final-escape-zone.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #final-escape-zone input {
-            width: 150px;
-            font-size: 1.5rem;
-            text-align: center;
-            letter-spacing: 5px;
-            border: 3px solid white;
-            color: #2c3e50;
-        }
-        #final-escape-zone button {
-            background-color: #f39c12;
-            padding: 10px 30px;
-            font-size: 1.2rem;
-            margin-top: 15px;
-        }
-        
-        /* Ajustements Responsive */
-        @media (max-width: 1300px) {
-            .budget-container { grid-template-columns: repeat(3, 1fr); } 
-            #col-recettes { grid-column: span 1; }
-        }
-        @media (max-width: 900px) {
-            .budget-container { grid-template-columns: 1fr 1fr; } 
-        }
-
     </style>
 </head>
 <body>
-
-    <h1>🔐 Le Budget d'Amira - Escape Game Financier</h1>
-
+<div class="container">
+    <header>
+        <h1 style="margin:0;">Module D2 : Le Budget</h1>
+        <div class="obj-box"><strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget.</div>
+    </header>
     <div class="context-box">
-        <h2>MISSION : Sortir Amira de l'alerte !</h2>
-        <p>Amira est dans une situation financière critique. Vous devez **classer ses postes budgétaires** puis **résoudre les trois énigmes** ci-dessous pour trouver le **code de sortie** à 7 chiffres.</p>
-        
-        <div id="text-content">
-            Amira touche un **salaire net de 2 100 €**. Elle reçoit des **tickets restaurant** de **120 €**. Elle a reçu le **remboursement médical de 30 €** (encaissé).<br>
-            
-            Elle rembourse : **crédit immobilier (750 €)** et **crédit à la consommation (150 €)**.<br>
-            
-            Ses autres charges fixes : Assurance maladie (50 €), Taxe d'habitation (40 €).<br>
-            
-            Ses dépenses courantes : Courses (380 €), Transport (100 €), Coiffeur (30 €).<br><br>
-            
-            Ce mois-ci, elle a :
-            * Mis **200 €** dans son épargne (Livret A).
-            * Acheté un nouvel ordinateur portable pour **600 €** (payé cash).
-            * Elle a fait un don à une association de **50 €** (DO).
-        </div>
+        <strong>Situation :</strong> Amira perçoit un <b>salaire de 2 257,14 €</b>. Elle reçoit également une <b>allocation de soutien familial de 113,22 €</b>. <br><br>
+        Ses opérations : Loyer (1 027,13 €), Taxe d'habitation (60,00 €), Mutuelle (57,13 €), Facture d'électricité (113,33 €), Courses alimentaires (297,23 €), Transport (100,00 €), Abonnement transport (30,00 €), Hygiène (27,00 €), Coiffeur (35,00 €), Achat d'un ordinateur (650,00 €) et Habillement (83,00 €).
     </div>
-
-    <div style="width:100%; max-width:1300px; text-align:left; margin-bottom:5px; font-size:1.1rem;">
-        <strong>1. Classez tous les postes :</strong>
-    </div>
-    
-    <div id="item-bank" ondrop="drop(event)" ondragover="allowDrop(event)">
-    </div>
-
+    <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis sur sa catégorie :</p>
+    <div id="item-bank"></div>
     <div class="budget-container">
-        <div class="column" id="col-recettes"><h3>Recettes</h3><div class="recette-sub-zones"><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-travail"><h4>Travail (S, TR)</h4></div><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-social"><h4>Social/État</h4></div><div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-autre"><h4>Autre</h4></div></div>
-            <div class="calc-zone"><label>Total R : </label><input type="number" id="input-recettes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('recette', 'input-recettes', 'msg-recettes')">Vérifier</button><span id="msg-recettes" class="feedback-msg"></span></div>
+        <div class="column" id="col-recettes">
+            <h3>Recettes</h3>
+            <div class="drop-zone sub-zone" data-category="recette-travail"><h4>Travail</h4></div>
+            <div class="drop-zone sub-zone" data-category="recette-social"><h4>Social</h4></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-recettes"> €</div>
         </div>
-        <div class="column" id="col-dettes"><h3>Dette/Prêt</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="dette"></div>
-            <div class="calc-zone"><label>Total Dt : </label><input type="number" id="input-dettes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('dette', 'input-dettes', 'msg-dettes')">Vérifier</button><span id="msg-dettes" class="feedback-msg"></span></div>
+        <div class="column" id="col-fixes">
+            <h3>Fixes (Incompressibles)</h3>
+            <div class="drop-zone" data-category="fixe"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-fixes"> €</div>
         </div>
-        <div class="column" id="col-fixes"><h3>Dépenses Fixes</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="fixe"></div>
-            <div class="calc-zone"><label>Total DF : </label><input type="number" id="input-fixes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('fixe', 'input-fixes', 'msg-fixes')">Vérifier</button><span id="msg-fixes" class="feedback-msg"></span></div>
+        <div class="column" id="col-courantes">
+            <h3>Courantes</h3>
+            <div class="drop-zone" data-category="courante"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-courantes"> €</div>
         </div>
-        <div class="column" id="col-courantes"><h3>Dépenses Courantes</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="courante"></div>
-            <div class="calc-zone"><label>Total DC : </label><input type="number" id="input-courantes" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('courante', 'input-courantes', 'msg-courantes')">Vérifier</button><span id="msg-courantes" class="feedback-msg"></span></div>
-        </div>
-        <div class="column" id="col-occas"><h3>Dépenses Occas.</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="occas"></div>
-            <div class="calc-zone"><label>Total DO : </label><input type="number" id="input-occas" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('occas', 'input-occas', 'msg-occas')">Vérifier</button><span id="msg-occas" class="feedback-msg"></span></div>
-        </div>
-        <div class="column" id="col-epargne"><h3>Épargne/Trans.</h3><div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="epargne"></div>
-            <div class="calc-zone"><label>Total E : </label><input type="number" id="input-epargne" placeholder="?"> €<br><button class="verify-btn" onclick="verifierColonneGlobale('epargne', 'input-epargne', 'msg-epargne')">Vérifier</button><span id="msg-epargne" class="feedback-msg"></span></div>
-        </div>
-    </div>
-
-    <div class="puzzle-zone">
-        <h2>2. Résolution des Énigmes (Codes à 3 chiffres)</h2>
-
-        <div id="puzzle-1-container" style="margin-bottom: 20px;">
-            <div class="puzzle-title locked" id="puzzle-1-title">
-                🚨 Énigme 1 : Taux d'Endettement (TE) - **L'Alerte Banquier**
-            </div>
-            <p style="font-size:0.95rem; margin-top:-10px;">Calcul : **Total Dettes / Total Recettes**. Prenez les 3 premiers chiffres du taux (avec la décimale si elle existe). Ex: 34.5% donne 345.</p>
-            <div class="puzzle-input">
-                <input type="number" id="code-1" placeholder="Code (3 chif.)" maxlength="3">
-                <button class="verify-btn locked-btn" onclick="unlockPuzzle(1, 400)">Déverrouiller</button>
-                <span id="msg-puzzle-1" class="feedback-msg"></span>
-            </div>
-        </div>
-        
-        <div id="puzzle-2-container" style="margin-bottom: 20px;">
-            <div class="puzzle-title locked" id="puzzle-2-title">
-                🏡 Énigme 2 : Reste à Vivre (RAV) - **Le Seuil de Survie**
-            </div>
-            <p style="font-size:0.95rem; margin-top:-10px;">Calcul : **Total Recettes - Total Dettes - Total Dépenses Fixes HORS Dette**. Prenez les 3 derniers chiffres du résultat. Ex: 1260 donne 260.</p>
-            <div class="puzzle-input">
-                <input type="number" id="code-2" placeholder="Code (3 chif.)" maxlength="3">
-                <button class="verify-btn locked-btn" onclick="unlockPuzzle(2, 260)">Déverrouiller</button>
-                <span id="msg-puzzle-2" class="feedback-msg"></span>
-            </div>
-        </div>
-        
-        <div id="puzzle-3-container">
-            <div class="puzzle-title locked" id="puzzle-3-title">
-                🏦 Énigme 3 : Marge de Manœuvre (MM) - **La Liberté Budgétaire**
-            </div>
-            <p style="font-size:0.95rem; margin-top:-10px;">Calcul : **Reste à Vivre - (Total Dépenses Courantes + Total Dépenses Occasionnelles)**. Prenez la valeur exacte (2 ou 3 chiffres). Ex: 150 donne 150.</p>
-            <div class="puzzle-input">
-                <input type="number" id="code-3" placeholder="Code (2/3 chif.)">
-                <button class="verify-btn locked-btn" onclick="unlockPuzzle(3, 150)">Déverrouiller</button>
-                <span id="msg-puzzle-3" class="feedback-msg"></span>
-            </div>
+        <div class="column" id="col-occas">
+            <h3>Occas. (Exceptionnelles)</h3>
+            <div class="drop-zone" data-category="occas"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-occas"> €</div>
         </div>
     </div>
-
-    <div id="final-escape-zone">
-        <h2>3. Code de Sortie !</h2>
-        <p>Entrez le code à **7 chiffres** en combinant les énigmes 1, 2 et 3 :</p>
-        <p style="font-size: 0.9rem;">(Les 3 chiffres du TE + Les 3 derniers chiffres du RAV + Le dernier chiffre de la MM)</p>
-        
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="final-code" placeholder="***-***-*" maxlength="7">
+    <div class="context-box" style="margin-top: 20px;">
+        <span style="font-weight: bold;">Calcul final :</span>
+        <div class="final-row">
+            <span>Quel est le solde d'Amira ? (Recettes - Dépenses)</span>
+            <input type="number" step="0.01" id="in-solde" style="width: 120px; padding: 12px; border: 2px solid var(--primary); border-radius: 8px;">
         </div>
-        <button class="verify-btn" onclick="verifierCodeFinal()">ENTRER LE CODE</button>
-        <div id="msg-final-code" class="feedback-msg" style="color:white;"></div>
     </div>
-
-    <script>
-        // --- DONNÉES D'AMIRA (Identiques à l'exercice précédent) ---
-        const items = [
-            { id: 1, name: "Salaire Net", val: 2100, cat: "recette-travail", globalCat: "recette" },
-            { id: 2, name: "Tickets Restaurant", val: 120, cat: "recette-travail", globalCat: "recette" },
-            { id: 3, name: "Remboursement Médical", val: 30, cat: "recette-social", globalCat: "recette" },
-            { id: 4, name: "Crédit Immobilier (mensualité)", val: 750, cat: "dette", globalCat: "depense" },
-            { id: 5, name: "Crédit Consommation (mensualité)", val: 150, cat: "dette", globalCat: "depense" },
-            { id: 6, name: "Assurance Maladie", val: 50, cat: "fixe", globalCat: "depense" },
-            { id: 7, name: "Taxe Habitation (mensualisée)", val: 40, cat: "fixe", globalCat: "depense" },
-            { id: 8, name: "Courses Alimentaires", val: 380, cat: "courante", globalCat: "depense" },
-            { id: 9, name: "Transport", val: 100, cat: "courante", globalCat: "depense" },
-            { id: 10, name: "Coiffeur", val: 30, cat: "courante", globalCat: "depense" },
-            { id: 11, name: "Achat Ordinateur Portable", val: 600, cat: "occas", globalCat: "depense" },
-            { id: 12, name: "Épargne Livret A", val: 200, cat: "epargne", globalCat: "epargne" },
-            { id: 13, name: "Don Association", val: 50, cat: "occas", globalCat: "depense" } // Ajout d'un poste
-        ];
-
-        // --- CALCULS RÉELS ET CODES SECRETS ---
-        
-        const totalRecettes = 2100 + 120 + 30; // 2250
-        const totalDettes = 750 + 150; // 900
-        const totalFixes = 50 + 40; // 90
-        const totalCourantes = 380 + 100 + 30; // 510
-        const totalOccasionnelles = 600 + 50; // 650
-        const totalEpargne = 200; // 200
-        
-        // ÉNIGMES
-        const tauxEndettement = (totalDettes / totalRecettes) * 100; // 40.0%
-        const code1_secret = 400; // 40.0 * 10 
-        
-        const resteAVivre = totalRecettes - totalDettes - totalFixes; // 2250 - 900 - 90 = 1260
-        const code2_secret = 260; // Les 3 derniers chiffres de 1260
-        
-        const margeDeManoeuvre = resteAVivre - (totalCourantes + totalOccasionnelles); // 1260 - (510 + 650) = 100
-        const code3_secret = 100; 
-
-        // CODE FINAL : 400 + 260 + 0 (Dernier chiffre de 100) -> 4002600
-        const finalCodeSecret = '4002600'; 
-        
-        // État des énigmes
-        let puzzleSolved = { 1: false, 2: false, 3: false };
-
-        // --- FONCTIONS DE BASE (Drag & Drop) ---
-        // (Les fonctions de base : selectItem, allowDrop, drag, drop sont les mêmes que dans l'exercice précédent)
-        const bank = document.getElementById("item-bank");
-        items.sort(() => Math.random() - 0.5); 
-
-        items.forEach(item => {
-            let el = document.createElement("div");
-            el.classList.add("draggable-item");
-            el.setAttribute("draggable", "true");
-            el.setAttribute("id", "item-" + item.id);
-            el.setAttribute("data-val", item.val);
-            el.setAttribute("data-cat", item.cat); 
-            el.setAttribute("data-global-cat", item.globalCat); 
-            el.innerText = `${item.name} (${item.val} €)`;
-            
-            el.addEventListener("dragstart", drag);
-            el.addEventListener("click", function() { selectItem(el); });
-            bank.appendChild(el);
-        });
-        let selectedItem = null;
-        function selectItem(el) { /* ... logique de sélection ... */
-            if(selectedItem) { selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; }
-            if (selectedItem === el) { selectedItem = null; return; }
+    <button class="btn-valider" id="btn-analyser" onclick="analyser()">VOIR MES RÉSULTATS</button>
+    <div id="result-zone">
+        <h2 id="final-score">Score : -- / 20</h2>
+        <div class="synthesis-card">
+            <div class="syn-row" id="syn-rec"><span>Total Recettes :</span> <span class="val">--</span></div>
+            <div class="syn-row" id="syn-dep"><span>Total Dépenses :</span> <span class="val">--</span></div>
+            <hr><div class="syn-row" id="syn-sol" style="color:#2563eb"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
+        </div>
+        <div class="chart-box"><canvas id="barChart"></canvas></div>
+        <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; text-align:left;"></div>
+        <button class="btn-valider" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
+    </div>
+</div>
+<script>
+    const items = [
+        { id: 1, name: "Salaire", val: 2257.14, cat: "recette-travail", label: "Recettes (Travail)" },
+        { id: 2, name: "Allocation soutien familial", val: 113.22, cat: "recette-social", label: "Recettes (Social)" },
+        { id: 3, name: "Loyer", val: 1027.13, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 4, name: "Taxe habitation", val: 60.00, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 5, name: "Mutuelle", val: 57.13, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 6, name: "Facture électricité", val: 113.33, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 7, name: "Courses alimentaires", val: 297.23, cat: "courante", label: "Dépenses Courantes" },
+        { id: 8, name: "Transport", val: 100.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 9, name: "Abonnement transport", val: 30.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 10, name: "Hygiène", val: 27.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 11, name: "Coiffeur", val: 35.00, cat: "occas", label: "Dépenses Occasionnelles" },
+        { id: 12, name: "Ordinateur", val: 650.00, cat: "occas", label: "Dépenses Occasionnelles" },
+        { id: 13, name: "Habillement", val: 83.00, cat: "occas", label: "Dépenses Occasionnelles" }
+    ];
+    let selectedItem = null;
+    const bank = document.getElementById("item-bank");
+    items.sort(() => Math.random() - 0.5).forEach(item => {
+        let el = document.createElement("div");
+        el.className = "draggable-item";
+        el.id = "i-" + item.id;
+        el.innerHTML = `${item.name} (${item.val.toFixed(2)}€) <div class="correct-info" id="info-${item.id}">Doit être dans : ${item.label}</div>`;
+        el.onclick = (e) => {
+            e.stopPropagation();
+            if(selectedItem) selectedItem.classList.remove('selected');
             selectedItem = el;
-            el.style.backgroundColor = "#e2e6ea"; el.style.borderColor = "#007bff";
-        }
-        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add("drag-over"); }
-        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); selectItem(ev.target); }
-        function drop(ev) {
-            ev.preventDefault();
-            document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(z => z.classList.remove('drag-over'));
-            let data = ev.dataTransfer ? ev.dataTransfer.getData("text") : null;
-            let draggedElement;
-            if (data) draggedElement = document.getElementById(data);
-            else if (selectedItem) draggedElement = selectedItem;
-            else return;
-            let target = ev.target;
-            while (!target.classList.contains("drop-zone") && !target.classList.contains("sub-zone") && target.id !== "item-bank" && target.tagName !== "BODY") { target = target.parentElement; }
-            if (target.classList.contains("drop-zone") || target.classList.contains("sub-zone") || target.id === "item-bank") { target.appendChild(draggedElement); }
-            if(selectedItem) { selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; selectedItem = null; }
-        }
-        document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(zone => {
-            zone.addEventListener('click', function(e) {
-                if (selectedItem && e.target !== selectedItem && !e.target.closest('.draggable-item')) {
-                    zone.appendChild(selectedItem);
-                    selectedItem.style.backgroundColor = "white"; selectedItem.style.borderColor = "#555"; selectedItem = null;
-                }
-            });
-            zone.addEventListener('dragleave', function() { zone.classList.remove("drag-over"); });
+            el.classList.add('selected');
+        };
+        bank.appendChild(el);
+    });
+    document.querySelectorAll('.drop-zone, #item-bank').forEach(zone => {
+        zone.onclick = () => {
+            if(selectedItem) {
+                zone.appendChild(selectedItem);
+                selectedItem.classList.remove('selected');
+                selectedItem = null;
+            }
+        };
+    });
+
+    // ✅ Anti-crash Chart.js + anti multi-clic
+    let chartInstance = null;
+
+    function analyser() {
+        const btn = document.getElementById("btn-analyser");
+        if (btn && btn.disabled) return;
+        if (btn) { btn.disabled = true; btn.style.opacity = "0.7"; btn.style.cursor = "not-allowed"; }
+
+        let score = 0;
+        let placementRecettes = 0;
+        let placementDepenses = 0;
+        items.forEach(item => {
+            let el = document.getElementById("i-" + item.id);
+            let info = document.getElementById("info-" + item.id);
+            let parentCat = (el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
+            if (parentCat === item.cat) {
+                score += 1; el.style.borderColor = "#28a745"; info.style.display = "none";
+                if(item.cat.includes("recette")) placementRecettes++; else placementDepenses++;
+            } else {
+                el.style.borderColor = "#dc2626"; info.style.display = "block";
+            }
         });
+        const inR = parseFloat(document.getElementById("in-recettes").value) || 0;
+        const inF = parseFloat(document.getElementById("in-fixes").value) || 0;
+        const inC = parseFloat(document.getElementById("in-courantes").value) || 0;
+        const inO = parseFloat(document.getElementById("in-occas").value) || 0;
+        const inSolde = parseFloat(document.getElementById("in-solde").value) || 0;
+        const totalD = Number((inF + inC + inO).toFixed(2));
+        const soldeCorrect = Number((2370.36 - 2533.15).toFixed(2)); // Solde attendu : -162.79€
+        if (Math.abs(inR - 2370.36) < 0.01) score += 2;
+        if (Math.abs(inF - 1257.59) < 0.01) score += 1.5;
+        if (Math.abs(inC - 454.23) < 0.01) score += 1.5;
+        if (Math.abs(inO - 768.00) < 0.01) score += 1.5;
+        if (Math.abs(inSolde - (-162.79)) < 0.01) score += 0.5;
+        document.getElementById("result-zone").style.display = "block";
+        document.getElementById("final-score").innerText = `Score : ${Math.round(Math.min(20, score))} / 20`;
+        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 2370.36) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 2533.15) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - (-162.79)) < 0.01 ? '✅' : '❌'}`;
 
-        function verifierColonneGlobale(globalCatName, inputId, msgId) {
-            // Logique de vérification de colonne (simplifiée pour l'escape game)
-            let totalReelAttendu = 0;
-            if (globalCatName === 'recette') totalReelAttendu = totalRecettes;
-            else if (globalCatName === 'dette') totalReelAttendu = totalDettes;
-            else if (globalCatName === 'fixe') totalReelAttendu = totalFixes;
-            else if (globalCatName === 'courante') totalReelAttendu = totalCourantes;
-            else if (globalCatName === 'occas') totalReelAttendu = totalOccasionnelles;
-            else if (globalCatName === 'epargne') totalReelAttendu = totalEpargne;
+        const pcRec = (placementRecettes/2)*100;
+        const pcDep = (placementDepenses/11)*100;
+        const pcSolde = (Math.abs(inSolde - (-162.79)) < 0.01 ? 100 : 0);
 
-            const input = document.getElementById(inputId);
-            const msg = document.getElementById(msgId);
-            const userVal = parseInt(input.value);
+        const fallback = document.getElementById("chart-fallback");
+        if (fallback) fallback.style.display = "none";
 
-            // Vérification simple du calcul (on ignore la vérification de placement des items pour l'énigme)
-            if (userVal === totalReelAttendu) {
-                msg.innerHTML = "✅ Total correct !";
-                msg.className = "feedback-msg correct";
-                input.style.borderColor = "#28a745";
-                input.disabled = true; 
-            } else {
-                msg.innerHTML = "❌ Le calcul est faux. Revoyez votre addition. (Attendu : " + totalReelAttendu + " €)";
-                msg.className = "feedback-msg incorrect";
-            }
-        }
-        
-        // --- LOGIQUE DES ÉNIGMES ---
+        const canvas = document.getElementById('barChart');
+        const canDraw = (typeof Chart !== "undefined") && canvas && canvas.getContext;
 
-        function unlockPuzzle(id, expectedCode) {
-            // Vérification que tous les totaux sont validés avant de commencer les énigmes
-            if (document.getElementById('input-recettes').disabled === false || 
-                document.getElementById('input-dettes').disabled === false ||
-                document.getElementById('input-fixes').disabled === false ||
-                document.getElementById('input-courantes').disabled === false ||
-                document.getElementById('input-occas').disabled === false ||
-                document.getElementById('input-epargne').disabled === false) {
-                
-                document.getElementById(`msg-puzzle-${id}`).innerHTML = "⚠️ Terminez d'abord la classification et validez tous les totaux ci-dessus.";
-                document.getElementById(`msg-puzzle-${id}`).className = "feedback-msg incorrect";
-                return;
-            }
-
-            const inputElement = document.getElementById(`code-${id}`);
-            const userCode = parseInt(inputElement.value);
-            const msgElement = document.getElementById(`msg-puzzle-${id}`);
-            const titleElement = document.getElementById(`puzzle-${id}-title`);
-            const buttonElement = inputElement.nextElementSibling;
-
-            if (userCode === expectedCode) {
-                msgElement.innerHTML = `✅ Énigme ${id} déverrouillée ! Code: ${expectedCode}`;
-                msgElement.className = "feedback-msg correct";
-                titleElement.classList.add('unlocked');
-                titleElement.classList.remove('locked');
-                buttonElement.classList.add('unlocked-btn');
-                buttonElement.classList.remove('locked-btn');
-                inputElement.disabled = true;
-                buttonElement.disabled = true;
-                puzzleSolved[id] = true;
-                
-                // Vérifier si toutes les énigmes sont résolues
-                if (puzzleSolved[1] && puzzleSolved[2] && puzzleSolved[3]) {
-                    document.getElementById('final-escape-zone').classList.add('active');
-                    document.getElementById('msg-final-code').innerHTML = "Assemblez les codes pour le déverrouillage final !";
+        if (canDraw) {
+            try {
+                if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+                chartInstance = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Recettes', 'Dépenses', 'Solde'],
+                        datasets: [{
+                            label: '% de réussite',
+                            data: [ pcRec, pcDep, pcSolde ],
+                            backgroundColor: ['#28a745', '#ffc107', '#2563eb'],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 100 } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } catch (e) {
+                if (fallback) {
+                    fallback.style.display = "block";
+                    fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
+                    Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Solde : ${pcSolde.toFixed(0)}%`;
                 }
-            } else {
-                msgElement.innerHTML = "❌ Code incorrect. Revoyez votre calcul.";
-                msgElement.className = "feedback-msg incorrect";
+            }
+        } else {
+            if (fallback) {
+                fallback.style.display = "block";
+                fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
+                Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Solde : ${pcSolde.toFixed(0)}%`;
             }
         }
-        
-        // --- VÉRIFICATION DU CODE FINAL ---
-        
-        function verifierCodeFinal() {
-            const finalCodeInput = document.getElementById('final-code').value.trim();
-            const msgElement = document.getElementById('msg-final-code');
-            
-            if (finalCodeInput === finalCodeSecret) {
-                msgElement.innerHTML = "🎉 **CODE CORRECT !** Amira est sauvée ! Son taux d'endettement est trop élevé (40%), mais sa marge de manœuvre positive de 100€ lui permet de réagir.";
-                msgElement.className = "feedback-msg correct";
-                document.getElementById('final-escape-zone').style.backgroundColor = '#28a745';
-                document.body.style.backgroundColor = "#e8f5e9";
-                
-            } else {
-                msgElement.innerHTML = "❌ **CODE FAUX !** Vérifiez l'ordre des 7 chiffres (E1-3 chif. + E2-3 chif. + E3-1 chif.).";
-                msgElement.className = "feedback-msg incorrect";
-                document.getElementById('final-code').style.borderColor = '#dc3545';
-                setTimeout(() => document.getElementById('final-code').style.borderColor = 'white', 2000);
-            }
-        }
-        
-        // --- AUDIO GESTION (Play/Stop & Clean Text) ---
-        let isSpeaking = false;
-        
-        function toggleAudio() {
-            const btn = document.getElementById('main-audio-btn');
-            
-            if (isSpeaking) {
-                window.speechSynthesis.cancel();
-                isSpeaking = false;
-                btn.classList.remove('playing');
-                btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
-            } else {
-                let text = document.getElementById('text-content').innerText;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'fr-FR';
-                utterance.rate = 0.9;
-                
-                utterance.onend = function() {
-                    isSpeaking = false;
-                    btn.classList.remove('playing');
-                    btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
-                };
 
-                window.speechSynthesis.speak(utterance);
-                isSpeaking = true;
-                btn.classList.add('playing');
-                btn.innerHTML = '<span>⏹️ Arrêter</span>';
-            }
-        }
-    </script>
+        window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
+    }
+</script>
 </body>
 </html>
