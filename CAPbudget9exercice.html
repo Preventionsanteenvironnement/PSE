@@ -3,176 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Module D2 : Le Budget de Michel</title>
+    <title>Module D2 : Le Budget d'Amanda</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
-        * { box-sizing: border-box; }
-        html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: #333;
-            padding: 15px;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+
+        /* ✅ Robustesse mobile + anti-débordement (sans toucher au contenu pédagogique) */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { max-width: 100%; overflow-x: hidden; }
+        img, svg, canvas { max-width: 100%; height: auto; }
+        .container { overflow-x: hidden; }
+        .draggable-item { max-width: 100%; word-break: break-word; overflow-wrap: anywhere; touch-action: manipulation; }
+        input, button { max-width: 100%; }
+        input[type="number"] { font-variant-numeric: tabular-nums; }
+        .drop-zone { min-width: 0; }
+        .syn-row { gap: 10px; }
+        .syn-row .val { text-align: right; }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 1100px; width: 100%; }
         header { background: #2563eb; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
         .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; }
         .context-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; line-height: 1.6; }
-
-        #item-bank {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            background: #fff;
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px dashed #cbd5e1;
-            margin-bottom: 20px;
-            min-height: 80px;
-            width: 100%;
-        }
-        .draggable-item {
-            padding: 12px 15px;
-            background: white;
-            border: 2px solid #64748b;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-            user-select: none;
-            max-width: 100%;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
+        #item-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #fff; padding: 15px; border-radius: 12px; border: 2px dashed #cbd5e1; margin-bottom: 20px; min-height: 80px; }
+        .draggable-item { padding: 12px 15px; background: white; border: 2px solid #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; user-select: none; }
         .draggable-item.selected { border-color: #2563eb; background: #eff6ff; transform: scale(1.05); }
-
-        .budget-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            width: 100%;
-        }
-        .column {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            min-height: 400px;
-            border-top: 8px solid #ccc;
-            width: 100%;
-            min-width: 0;
-        }
+        .budget-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; width: 100%; }
+        .column { background: white; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; min-height: 400px; border-top: 8px solid #ccc; }
         #col-recettes { border-top-color: #28a745; }
         #col-fixes { border-top-color: #007bff; }
         #col-courantes { border-top-color: #ffc107; }
         #col-occas { border-top-color: #dc3545; }
+        .drop-zone { flex-grow: 1; padding: 10px; border-radius: 8px; background: #f8fafc; min-height: 150px; cursor: pointer; }
+        .sub-zone { background: #e2f3e5; margin-bottom: 10px; border-radius: 8px; padding: 10px; min-height: 80px; }
+        .calc-zone { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; }
+        input[type="number"] { width: 100px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; text-align: center; }
+        .btn-valider { background: #1e293b; color: white; border: none; padding: 20px; border-radius: 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer; margin-top: 30px; width: 100%; }
+        #result-zone { display: none; width: 100%; background: white; padding: 25px; border-radius: 20px; border: 4px solid #2563eb; margin-top: 30px; text-align: center; }
+        .synthesis-card { background: #eff6ff; border: 2px solid #2563eb; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: left; }
+        .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+        .status-options { display: flex; justify-content: space-around; margin-top: 15px; padding: 10px; background: #fff; border-radius: 8px; border: 1px solid #cbd5e1; }
 
-        .drop-zone {
-            flex-grow: 1;
-            padding: 10px;
-            border-radius: 8px;
-            background: #f8fafc;
-            min-height: 150px;
-            cursor: pointer;
-            width: 100%;
-            min-width: 0;
-        }
-        .sub-zone {
-            background: #e2f3e5;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            padding: 10px;
-            min-height: 80px;
-        }
-        .calc-zone {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-            text-align: center;
-        }
-        input[type="number"] {
-            width: 110px;
-            max-width: 100%;
-            padding: 8px;
-            border: 2px solid #cbd5e1;
-            border-radius: 6px;
-            text-align: center;
-        }
-        .btn-valider {
-            background: #1e293b;
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 12px;
-            font-size: 1.2rem;
-            font-weight: 800;
-            cursor: pointer;
-            margin-top: 30px;
-            width: 100%;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-        #result-zone {
-            display: none;
-            width: 100%;
-            background: white;
-            padding: 25px;
-            border-radius: 20px;
-            border: 4px solid #2563eb;
-            margin-top: 30px;
-            text-align: center;
-        }
-        .synthesis-card {
-            background: #eff6ff;
-            border: 2px solid #2563eb;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: left;
-            width: 100%;
-        }
-        .syn-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 8px;
-            font-weight: bold;
-            flex-wrap: wrap;
-        }
-        .syn-row .val { overflow-wrap: anywhere; }
-
-        .status-options {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 15px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .status-options label { white-space: nowrap; }
-
+        /* ✅ Mobile */
         @media (max-width: 520px) {
             body { padding: 10px; }
-            header { padding: 16px; border-radius: 12px; }
-            .context-box { padding: 14px; border-radius: 12px; }
+            header { padding: 16px; }
+            .context-box { padding: 16px; }
             #item-bank { padding: 12px; }
-            .draggable-item { padding: 12px 12px; width: 100%; }
+            .draggable-item { width: 100%; text-align: left; }
             .budget-container { grid-template-columns: 1fr; }
-            .column { min-height: 320px; padding: 12px; }
-            .btn-valider { padding: 18px; font-size: 1.1rem; }
-            input[type="number"] { width: 100%; max-width: 180px; }
+            .column { min-height: 320px; }
+            input[type="number"] { width: 110px; }
+            .status-options { flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+            .btn-valider { padding: 16px; font-size: 1.05rem; }
+        }
+
+        /* ✅ Très petits écrans */
+        @media (max-width: 360px) {
+            .syn-row { flex-direction: column; align-items: flex-start; }
+            .syn-row .val { width: 100%; text-align: left; }
+            input[type="number"] { width: 100%; }
         }
     </style>
 </head>
@@ -180,16 +70,16 @@
 
 <div class="container">
     <header>
-        <h1 style="margin:0;">Module D2 : Le Budget de Michel</h1>
-        <div class="obj-box">Objectif : Identifier un budget déficitaire après calcul du solde.</div>
+        <h1 style="margin:0;">Module D2 : Le Budget d'Amanda</h1>
+        <div class="obj-box">Objectif : Identifier l'état d'un budget après calcul du solde.</div>
     </header>
 
     <div class="context-box">
-        <strong>Situation :</strong> Michel est artisan peintre. Ce mois-ci, son activité lui rapporte <b>1 650,00 €</b>. Il perçoit aussi une <b>prime d'activité de 112,45 €</b>. <br><br>
-        Ses opérations : Loyer et charges atelier (725,50 €), Assurance professionnelle (94,20 €), Abonnement téléphone (35,00 €), Courses alimentaires (430,45 €), Carburant utilitaire (215,00 €), Hygiène (36,00 €), Réparation outillage (180,00 €) et un nouveau blouson de travail (200,00 €).
+        <strong>Situation :</strong> Amanda est infirmière. Elle perçoit un <b>salaire de 2 450,00 €</b> et une <b>prime d'activité de 113,14 €</b>. <br><br>
+        Ses opérations : Loyer (753,33 €), Assurance (82,40 €), Internet/Mobile (45,00 €), Crédit auto (210,00 €), Courses alimentaires (520,27 €), Essence (165,00 €), Hygiène (44,00 €), Sortie restaurant (120,00 €), Habillement (350,00 €) et Coiffeur (270,00 €).
     </div>
 
-    <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis sur sa catégorie :</p>
+    <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis cliquez sur sa catégorie :</p>
     <div id="item-bank"></div>
 
     <div class="budget-container">
@@ -219,8 +109,8 @@
     <div class="context-box" style="margin-top: 20px;">
         <span style="font-weight: bold;">2. Calcul du Solde et État du budget :</span>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
-            <span>Quel est le solde final de Michel ?</span>
-            <input type="number" step="0.01" id="in-solde" style="width: 120px; padding: 10px; border: 2px solid var(--primary); border-radius: 8px; max-width: 100%;">
+            <span>Quel est le solde final d'Amanda ?</span>
+            <input type="number" step="0.01" id="in-solde" style="width: 120px; padding: 10px; border: 2px solid var(--primary); border-radius: 8px;">
         </div>
         <div class="status-options">
             <label><input type="radio" name="status" value="excedentaire"> Excédentaire</label>
@@ -236,7 +126,7 @@
         <div class="synthesis-card">
             <div class="syn-row" id="syn-rec"><span>Total Recettes :</span> <span class="val">--</span></div>
             <div class="syn-row" id="syn-dep"><span>Total Dépenses :</span> <span class="val">--</span></div>
-            <hr><div class="syn-row" id="syn-sol" style="color:#dc2626"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
+            <hr><div class="syn-row" id="syn-sol" style="color:#2563eb"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
             <div class="syn-row" id="syn-status"><span>ÉTAT DU BUDGET :</span> <span class="val">--</span></div>
         </div>
         <button class="btn-valider" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
@@ -245,16 +135,18 @@
 
 <script>
     const items = [
-        { id: 1, name: "Revenu artisan", val: 1650.00, cat: "recette-travail" },
-        { id: 2, name: "Prime d'activité", val: 112.45, cat: "recette-social" },
-        { id: 3, name: "Loyer atelier", val: 725.50, cat: "fixe" },
-        { id: 4, name: "Assurance pro", val: 94.20, cat: "fixe" },
-        { id: 5, name: "Abo téléphone", val: 35.00, cat: "fixe" },
-        { id: 6, name: "Courses", val: 430.45, cat: "courante" },
-        { id: 7, name: "Carburant", val: 215.00, cat: "courante" },
-        { id: 8, name: "Hygiène", val: 36.00, cat: "courante" },
-        { id: 9, name: "Réparation outils", val: 180.00, cat: "occas" },
-        { id: 10, name: "Blouson travail", val: 200.00, cat: "occas" }
+        { id: 1, name: "Salaire", val: 2450.00, cat: "recette-travail" },
+        { id: 2, name: "Prime d'activité", val: 113.14, cat: "recette-social" },
+        { id: 3, name: "Loyer", val: 753.33, cat: "fixe" },
+        { id: 4, name: "Assurance", val: 82.40, cat: "fixe" },
+        { id: 5, name: "Internet/Mobile", val: 45.00, cat: "fixe" },
+        { id: 6, name: "Crédit auto", val: 210.00, cat: "fixe" },
+        { id: 7, name: "Courses alimentaires", val: 520.27, cat: "courante" },
+        { id: 8, name: "Essence", val: 165.00, cat: "courante" },
+        { id: 9, name: "Hygiène", val: 44.00, cat: "courante" },
+        { id: 10, name: "Restaurant", val: 120.00, cat: "occas" },
+        { id: 11, name: "Habillement", val: 350.00, cat: "occas" },
+        { id: 12, name: "Coiffeur", val: 270.00, cat: "occas" }
     ];
 
     let selectedItem = null;
@@ -262,21 +154,19 @@
 
     items.sort(() => Math.random() - 0.5).forEach(item => {
         let el = document.createElement("div");
-        el.className = "draggable-item";
-        el.id = "i-" + item.id;
+        el.className = "draggable-item"; el.id = "i-" + item.id;
         el.innerHTML = `${item.name} (${item.val.toFixed(2)}€)`;
         el.onclick = (e) => {
             e.stopPropagation();
-            if (selectedItem) selectedItem.classList.remove('selected');
-            selectedItem = el;
-            el.classList.add('selected');
+            if(selectedItem) selectedItem.classList.remove('selected');
+            selectedItem = el; el.classList.add('selected');
         };
         bank.appendChild(el);
     });
 
     document.querySelectorAll('.drop-zone, #item-bank').forEach(zone => {
         zone.onclick = () => {
-            if (selectedItem) {
+            if(selectedItem) {
                 zone.appendChild(selectedItem);
                 selectedItem.classList.remove('selected');
                 selectedItem = null;
@@ -289,14 +179,11 @@
 
         items.forEach(item => {
             let el = document.getElementById("i-" + item.id);
-            if (!el) return;
-            let parentCat = el.parentElement?.dataset?.category || "";
-            if (parentCat === item.cat) {
-                score += 1;
-                el.style.borderColor = "#28a745";
-            } else {
-                el.style.borderColor = "#dc3545";
-            }
+            // ✅ Anti-crash : si l'élément est resté dans la banque (ou déplacé ailleurs), dataset peut être absent
+            let parentCat = el && el.parentElement && el.parentElement.dataset ? el.parentElement.dataset.category : undefined;
+
+            if (parentCat === item.cat) { score += 1; el.style.borderColor = "#28a745"; }
+            else { if(el) el.style.borderColor = "#dc3545"; }
         });
 
         const inR = parseFloat(document.getElementById("in-recettes").value) || 0;
@@ -308,20 +195,20 @@
 
         const totalD = Number((inF + inC + inO).toFixed(2));
 
-        if (Math.abs(inR - 1762.45) < 0.01) score += 2;
-        if (Math.abs(inF - 854.70) < 0.01) score += 2;
-        if (Math.abs(inC - 681.45) < 0.01) score += 2;
-        if (Math.abs(inO - 380.00) < 0.01) score += 2;
-        if (Math.abs(inSolde - (-153.70)) < 0.01) score += 1;
-        if (inStatus === "deficitaire") score += 1;
+        if (Math.abs(inR - 2563.14) < 0.01) score += 2;
+        if (Math.abs(inF - 1090.73) < 0.01) score += 1.5;
+        if (Math.abs(inC - 729.27) < 0.01) score += 1.5;
+        if (Math.abs(inO - 740.00) < 0.01) score += 1.5;
+        if (Math.abs(inSolde - 3.14) < 0.01) score += 1;
+        if (inStatus === "equilibre") score += 0.5;
 
         document.getElementById("result-zone").style.display = "block";
         document.getElementById("final-score").innerText = `Score : ${Math.round(score)} / 20`;
 
-        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 1762.45) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 1916.15) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - (-153.70)) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-status .val").innerHTML = `${inStatus === "deficitaire" ? "Déficitaire ✅" : "Erreur ❌"}`;
+        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 2563.14) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 2560.00) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - 3.14) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-status .val").innerHTML = `${inStatus === "equilibre" ? "Équilibré ✅" : "Erreur ❌"}`;
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
     }
