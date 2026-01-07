@@ -1,8 +1,20 @@
-/* 📁 ANNUAIRE CENTRAL - Dépôt PSE
+/* 📁 ANNUAIRE CENTRAL & CONFIGURATION - Dépôt PSE
    Généré le 07/01/2026
-   Ce fichier gère l'authentification et l'attribution automatique des classes.
+   Ce fichier contient la clé Firebase (le téléporteur), 
+   le mouchard (stats) et la liste des codes élèves.
 */
 
+// 1. LA CLÉ DE LA MAISON (Ta configuration Firebase officielle)
+const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.appspot.com",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+};
+
+// 2. L'ANNUAIRE OFFICIEL (Ta liste de codes et classes)
 const ANNUAIRE = {
     // B1AGO1
     "KA47": "B1AGO1", "LU83": "B1AGO1", "MO12": "B1AGO1", "QF59": "B1AGO1", "RA26": "B1AGO1", "TI74": "B1AGO1", "NE08": "B1AGO1", "SA91": "B1AGO1",
@@ -44,5 +56,22 @@ const ANNUAIRE = {
     "ZP60": "C2VAN", "QF14": "C2VAN", "MX88": "C2VAN", "LS23": "C2VAN", "VA71": "C2VAN", "CN05": "C2VAN"
 };
 
+// 3. FONCTION MOUCHARD (Statistiques automatiques)
+async function enregistrerVisite(nomPage) {
+    try {
+        const app = firebase.getApp();
+        const db = firebase.firestore(app);
+        await db.collection("statistiques_usage").add({
+            date: new Date(),
+            page: nomPage,
+            action: "Consultation",
+            device: navigator.userAgent
+        });
+        console.log("📍 Visite enregistrée pour : " + nomPage);
+    } catch (e) {
+        console.error("Erreur mouchard : ", e);
+    }
+}
+
 // Vérification de chargement
-console.log("✅ Annuaire chargé. Nombre de codes : " + Object.keys(ANNUAIRE).length);
+console.log("✅ Annuaire et Config Firebase chargés. " + Object.keys(ANNUAIRE).length + " élèves reconnus.");
