@@ -3,750 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Budget d'Amira - Ratios et Endettement</title>
+    <title>Module D2 : Le Budget d'Amira</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Styles de base conservés, ajout d'une colonne */
-        :root {
-            --recettes-color: #d4edda;
-            --recettes-border: #28a745;
-            --dette-color: #fce4ec; /* Nouveau: Rose clair pour la dette */
-            --dette-border: #e91e63;
-            --fixe-color: #cce5ff;
-            --fixe-border: #007bff;
-            --courant-color: #fff3cd;
-            --courant-border: #ffc107;
-            --occas-color: #f8d7da;
-            --occas-border: #dc3545;
-            --epargne-color: #e6e0ff;
-            --epargne-border: #6f42c1;
-            
-            --recette-travail: #a2d9c2;
-            --recette-social: #7fc3af;
-            --recette-autre: #55aa99;
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1100px; width: 100%; }
+        header { background: #2563eb; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+        .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; }
+        .context-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; line-height: 1.6; }
+        #item-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #fff; padding: 15px; border-radius: 12px; border: 2px dashed #cbd5e1; margin-bottom: 20px; min-height: 80px; }
+        .draggable-item { padding: 12px 15px; background: white; border: 2px solid #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; user-select: none; }
+        .draggable-item.selected { border-color: #2563eb; background: #eff6ff; transform: scale(1.05); }
+        .correct-info { display: none; font-size: 0.85rem; color: #dc3545; margin-top: 5px; font-weight: bold; }
+        .budget-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; width: 100%; }
+        .column { background: white; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; min-height: 400px; border-top: 8px solid #ccc; }
+        #col-recettes { border-top-color: #28a745; }
+        #col-fixes { border-top-color: #007bff; }
+        #col-courantes { border-top-color: #ffc107; }
+        #col-occas { border-top-color: #dc3545; }
+        .drop-zone { flex-grow: 1; padding: 10px; border-radius: 8px; background: #f8fafc; min-height: 150px; cursor: pointer; }
+        .sub-zone { background: #e2f3e5; margin-bottom: 10px; border-radius: 8px; padding: 10px; min-height: 80px; }
+        .sub-zone h4 { margin: 0 0 8px 0; font-size: 0.85rem; text-transform: uppercase; color: #166534; }
+        .calc-zone { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; }
+        input[type="number"] { width: 100px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; text-align: center; }
+        .btn-valider { background: #1e293b; color: white; border: none; padding: 20px; border-radius: 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer; margin-top: 30px; width: 100%; }
+        #result-zone { display: none; width: 100%; background: white; padding: 25px; border-radius: 20px; border: 4px solid #2563eb; margin-top: 30px; text-align: center; }
+        .synthesis-card { background: #eff6ff; border: 2px solid #2563eb; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: left; }
+        .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+        .chart-box { height: 350px; margin: 20px 0; }
 
-            --bg-color: #f9f9f9;
-            --text-color: #333;
-        }
+        /* ✅ Ajustements techniques (sans modifier le contenu pédagogique) */
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body { padding: 15px; }
+        .container { width: 100%; max-width: 1100px; }
+        .context-box, header, #result-zone { max-width: 1100px; }
+        .draggable-item { max-width: 100%; }
+        .draggable-item, .btn-valider, input[type="number"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .budget-container { overflow: hidden; }
+        .chart-box { position: relative; width: 100%; }
+        canvas { max-width: 100% !important; height: 100% !important; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        /* Empêche débordement horizontal sur mobile */
+        body { overflow-x: hidden; }
+        .container { overflow-x: hidden; }
 
-        h1 { color: #2c3e50; margin-bottom: 10px; }
+        /* Solde: éviter la ligne trop large sur mobile */
+        .context-box input#in-solde { max-width: 140px; }
 
-        .legend-bar {
-            display: flex;
-            gap: 15px;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            background: #fff;
-            padding: 8px 15px;
-            border-radius: 50px;
-            border: 1px solid #ddd;
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            header { padding: 16px; border-radius: 12px; }
+            .context-box { padding: 14px; border-radius: 12px; }
+            #item-bank { padding: 12px; }
+            .draggable-item { padding: 10px 12px; }
+            .column { min-height: 320px; padding: 12px; }
+            input[type="number"] { width: 120px; }
+            .btn-valider { padding: 16px; font-size: 1.1rem; border-radius: 12px; }
+            .chart-box { height: 280px; }
+            /* Ligne solde en colonne sur mobile */
+            .context-box .solde-row { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+            .context-box .solde-row input#in-solde { width: 100%; max-width: 220px; }
         }
-        
-        .context-box {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 900px;
-            width: 100%;
-            margin-bottom: 20px;
-            line-height: 1.8;
-            font-size: 1.15rem;
-            position: relative;
-        }
-
-        .audio-btn {
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 15px;
-            transition: background 0.2s;
-        }
-
-        #item-bank {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            min-height: 80px;
-            width: 100%;
-            max-width: 1300px; /* Plus large pour 6 colonnes */
-            margin-bottom: 20px;
-            border: 2px dashed #ccc;
-        }
-
-        .draggable-item {
-            padding: 10px 20px;
-            background-color: white;
-            border: 2px solid #555;
-            border-radius: 8px;
-            cursor: grab;
-            user-select: none;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.2s, background-color 0.2s;
-        }
-
-        /* Le Tableau - 6 colonnes */
-        .budget-container {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr); 
-            gap: 8px; /* Réduire le gap */
-            width: 100%;
-            max-width: 1300px;
-        }
-
-        .column {
-            background: white;
-            border-radius: 10px;
-            padding: 10px 5px; /* Réduire le padding */
-            display: flex;
-            flex-direction: column;
-            min-height: 400px;
-            border-top: 6px solid #ccc;
-        }
-
-        .column h3 {
-            text-align: center;
-            margin-top: 0;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            font-size: 1rem; /* Réduire la taille du titre */
-        }
-        
-        /* Recettes (identique) */
-        #col-recettes { 
-            border-top-color: var(--recettes-border); 
-            grid-column: span 1;
-        }
-
-        /* Colonne Dette/Prêt (nouveau) */
-        #col-dettes { border-top-color: var(--dette-border); }
-        #col-dettes .drop-zone { background-color: var(--dette-color); }
-        
-        /* Dépenses Fixes (mis à jour) */
-        #col-fixes { border-top-color: var(--fixe-border); }
-        #col-fixes .drop-zone { background-color: var(--fixe-color); }
-        
-        /* Dépenses Courantes (identique) */
-        #col-courantes { border-top-color: var(--courant-border); }
-        #col-courantes .drop-zone { background-color: var(--courant-color); }
-
-        /* Dépenses Occasionnelles (identique) */
-        #col-occas { border-top-color: var(--occas-border); }
-        #col-occas .drop-zone { background-color: var(--occas-color); }
-
-        /* Colonne Épargne (identique) */
-        #col-epargne { border-top-color: var(--epargne-border); }
-        #col-epargne .drop-zone { background-color: var(--epargne-color); }
-        
-        /* Zones de calcul et Synthèse */
-        .calc-zone {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #eee;
-            text-align: center;
-        }
-        
-        input[type="number"] {
-            width: 80px; /* Réduire la largeur */
-            padding: 8px;
-            font-size: 1rem;
-            border: 2px solid #ccc;
-            border-radius: 5px;
-            text-align: right;
-            margin-bottom: 5px;
-        }
-
-        .verify-btn {
-            background-color: #17a2b8;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin-top: 5px;
-        }
-        
-        .feedback-msg {
-            display: block;
-            font-size: 0.95rem;
-            margin-top: 8px;
-            font-weight: bold;
-            min-height: 1.2em;
-        }
-
-        .final-synthesis {
-            margin-top: 40px;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 900px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            border-left: 10px solid #e91e63;
-        }
-
-        .synthesis-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-
-        .ratio-row {
-            font-size: 1.1rem;
-            padding: 10px;
-            background: #ffebee;
-            border-left: 5px solid #e91e63;
-            margin-top: 15px;
-            border-radius: 5px;
-        }
-        
-        /* Ajustements Responsive */
-        @media (max-width: 1300px) {
-            .budget-container { grid-template-columns: repeat(3, 1fr); } 
-            #col-recettes { grid-column: span 1; }
-            #col-dettes { grid-column: span 1; }
-        }
-        @media (max-width: 900px) {
-            .budget-container { grid-template-columns: 1fr 1fr; } 
-            #col-recettes, #col-dettes, #col-fixes, #col-courantes, #col-occas, #col-epargne { grid-column: span 1; }
-        }
-
     </style>
 </head>
 <body>
-
-    <h1>💰 Le Budget d'Amira - Maîtrise et Ratios</h1>
-
-    <div class="legend-bar">
-        <span>Objectif : Calculer le **Taux d'Endettement** et évaluer la **Marge de Manœuvre**.</span>
-    </div>
-
+<div class="container">
+    <header>
+        <h1 style="margin:0;">Module D2 : Le Budget</h1>
+        <div class="obj-box"><strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget.</div>
+    </header>
     <div class="context-box">
-        <button id="main-audio-btn" class="audio-btn" onclick="toggleAudio()">
-            <span>▶️ Lire l'histoire</span>
-        </button>
-        
-        <div id="text-content">
-            Amira est salariée en CDI. Elle touche un **salaire net de 2 100 €**. Elle reçoit aussi des **tickets restaurant** utilisables immédiatement pour **120 €**.<br>
-            
-            Elle rembourse actuellement un **crédit immobilier de 750 €** et un **crédit à la consommation de 150 €**. Ces postes doivent être classés dans la catégorie **Dette/Prêt**.<br>
-            
-            Ses autres charges fixes : Assurance maladie (50 €), Taxe d'habitation (mensualisée) de **40 €**.<br>
-            
-            Ses dépenses courantes sont : Courses alimentaires (380 €), Transport (100 €), Coiffeur (30 €).<br><br>
-            
-            Ce mois-ci, elle a :
-            * Mis **200 €** dans son épargne (Livret A). Elle a déjà **4 500 €** sur ce livret.
-            * Acheté un nouvel ordinateur portable pour **600 €** (dépense imprévue mais payée cash).
-            * Reçu le remboursement d'une consultation médicale de **30 €** (encaissé).
-        </div>
+        <strong>Situation :</strong> Amira perçoit un <b>salaire de 2 257,14 €</b>. Elle reçoit également une <b>allocation de soutien familial de 113,22 €</b>. <br><br>
+        Ses opérations : Loyer (1 027,13 €), Taxe d'habitation (60,00 €), Mutuelle (57,13 €), Facture d'électricité (113,33 €), Courses alimentaires (297,23 €), Transport (100,00 €), Abonnement transport (30,00 €), Hygiène (27,00 €), Coiffeur (35,00 €), Achat d'un ordinateur (650,00 €) et Habillement (83,00 €).
     </div>
-
-    <div style="width:100%; max-width:1300px; text-align:left; margin-bottom:5px; font-size:1.1rem;">
-        <strong>1. Classe les étiquettes. Les remboursements de prêts doivent être classés comme "Dette/Prêt".</strong>
-    </div>
-    
-    <div id="item-bank" ondrop="drop(event)" ondragover="allowDrop(event)">
-    </div>
-
+    <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis sur sa catégorie :</p>
+    <div id="item-bank"></div>
     <div class="budget-container">
         <div class="column" id="col-recettes">
             <h3>Recettes</h3>
-            <div class="recette-sub-zones">
-                <div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-travail">
-                    <h4>Travail (Salaire, TR)</h4>
-                </div>
-                <div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-social">
-                    <h4>Social/État (Remboursement)</h4>
-                </div>
-                <div class="sub-zone drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="recette-autre">
-                    <h4>Autre</h4>
-                </div>
-            </div>
-            <div class="calc-zone">
-                <label>Total R : </label>
-                <input type="number" id="input-recettes" placeholder="?"> €
-                <br>
-                <button class="verify-btn" onclick="verifierColonneGlobale('recette', 'input-recettes', 'msg-recettes')">Vérifier</button>
-                <span id="msg-recettes" class="feedback-msg"></span>
-            </div>
+            <div class="drop-zone sub-zone" data-category="recette-travail"><h4>Travail</h4></div>
+            <div class="drop-zone sub-zone" data-category="recette-social"><h4>Social</h4></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-recettes"> €</div>
         </div>
-
-        <div class="column" id="col-dettes">
-            <h3>Dette/Prêt</h3>
-            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="dette"></div>
-            <div class="calc-zone">
-                <label>Total Dt : </label>
-                <input type="number" id="input-dettes" placeholder="?"> €
-                <br>
-                <button class="verify-btn" onclick="verifierColonneGlobale('dette', 'input-dettes', 'msg-dettes')">Vérifier</button>
-                <span id="msg-dettes" class="feedback-msg"></span>
-            </div>
-        </div>
-        
         <div class="column" id="col-fixes">
-            <h3>Dépenses Fixes</h3>
-            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="fixe"></div>
-            <div class="calc-zone">
-                <label>Total DF : </label>
-                <input type="number" id="input-fixes" placeholder="?"> €
-                <br>
-                <button class="verify-btn" onclick="verifierColonneGlobale('fixe', 'input-fixes', 'msg-fixes')">Vérifier</button>
-                <span id="msg-fixes" class="feedback-msg"></span>
-            </div>
+            <h3>Fixes (Incompressibles)</h3>
+            <div class="drop-zone" data-category="fixe"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-fixes"> €</div>
         </div>
-
         <div class="column" id="col-courantes">
-            <h3>Dépenses Courantes</h3>
-            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="courante"></div>
-            <div class="calc-zone">
-                <label>Total DC : </label>
-                <input type="number" id="input-courantes" placeholder="?"> €
-                <br>
-                <button class="verify-btn" onclick="verifierColonneGlobale('courante', 'input-courantes', 'msg-courantes')">Vérifier</button>
-                <span id="msg-courantes" class="feedback-msg"></span>
-            </div>
+            <h3>Courantes</h3>
+            <div class="drop-zone" data-category="courante"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-courantes"> €</div>
         </div>
-
         <div class="column" id="col-occas">
-            <h3>Dépenses Occas.</h3>
-            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="occas"></div>
-            <div class="calc-zone">
-                <label>Total DO : </label>
-                <input type="number" id="input-occas" placeholder="?"> €
-                <br>
-                <button class="verify-btn" onclick="verifierColonneGlobale('occas', 'input-occas', 'msg-occas')">Vérifier</button>
-                <span id="msg-occas" class="feedback-msg"></span>
-            </div>
-        </div>
-        
-        <div class="column" id="col-epargne">
-            <h3>Épargne/Trans.</h3>
-            <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-category="epargne"></div>
-            <div class="calc-zone">
-                <label>Total E : </label>
-                <input type="number" id="input-epargne" placeholder="?"> €
-                <br>
-                <button class="verify-btn" onclick="verifierColonneGlobale('epargne', 'input-epargne', 'msg-epargne')">Vérifier</button>
-                <span id="msg-epargne" class="feedback-msg"></span>
-            </div>
+            <h3>Occas. (Exceptionnelles)</h3>
+            <div class="drop-zone" data-category="occas"></div>
+            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-occas"> €</div>
         </div>
     </div>
-
-    <div class="final-synthesis">
-        <h2>📊 Le Diagnostic Financier d'Amira</h2>
-        <p>Utilise tes totaux pour calculer la santé financière d'Amira.</p>
-        
-        <div class="synthesis-row">
-            <span>A. Total des **Recettes (R)** :</span>
-            <input type="number" id="final-recettes" placeholder="..."> €
-        </div>
-        <div class="synthesis-row">
-            <span>B. Total des **Dettes/Prêts (Dt)** :</span>
-            <input type="number" id="final-dettes" placeholder="..."> €
-        </div>
-        <div class="synthesis-row">
-            <span>C. Total des **Dépenses Fixes HORS Dette (DF)** :</span>
-            <input type="number" id="final-fixes" placeholder="..."> €
-        </div>
-        <hr>
-        <div class="ratio-row">
-            **Taux d'Endettement (TE)** = (B / A) x 100
-            <br>
-            $ \left( \frac{\text{Total Dettes}}{\text{Total Recettes}} \times 100 \right) $
-            <input type="number" id="final-taux-endettement" placeholder="..." style="width: 60px;"> %
-        </div>
-        <hr>
-        <div class="synthesis-row" style="font-weight: bold; font-size: 1.3rem; color: #007bff;">
-            <span>D. Reste à Vivre (R - Dt - DF) :</span>
-            <input type="number" id="final-rav" placeholder="..."> €
-        </div>
-        <div class="synthesis-row">
-            <span>E. Total Dépenses Courantes et Occasionnelles (DC + DO) :</span>
-            <input type="number" id="final-courant-occas" placeholder="..."> €
-        </div>
-        <div class="synthesis-row" style="font-weight: bold; font-size: 1.3rem; color: #6f42c1;">
-            <span>F. Marge de Manœuvre (RAV - (DC + DO)) :</span>
-            <input type="number" id="final-marge-manoeuvre" placeholder="..."> €
-        </div>
-        
-        <div style="text-align: center; margin-top:10px;">
-             <button class="verify-btn" onclick="verifierBilanAmira()" style="font-size:1.1rem; padding: 10px 20px;">Vérifier le Diagnostic</button>
-             <div id="msg-bilan" class="feedback-msg" style="font-size:1.1rem; margin-top:10px;"></div>
-        </div>
-
-        <div class="result-options" id="budget-status" style="opacity: 0.3; pointer-events: none;">
-            <p style="width:100%; text-align:center; margin-bottom:10px;">Amira est : </p>
-            <label>
-                <input type="radio" name="budget" value="secure">
-                <span>En sécurité (TE < 33%)</span>
-            </label>
-            <label>
-                <input type="radio" name="budget" value="alerte">
-                <span>En alerte (TE > 33%)</span>
-            </label>
-            <label>
-                <input type="radio" name="budget" value="critique">
-                <span>En situation critique</span>
-            </label>
-        </div>
-        <div style="text-align: center; margin-top:20px;">
-            <button class="verify-btn" onclick="verifierConclusionAmira()" id="btn-conclusion" style="display:none; padding:10px 25px;">Vérifier l'évaluation</button>
-             <div id="msg-conclusion" class="feedback-msg"></div>
+    <div class="context-box" style="margin-top: 20px;">
+        <span style="font-weight: bold;">Calcul final :</span>
+        <div class="solde-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <span>Quel est le solde d'Amira ? (Recettes - Dépenses)</span>
+            <input type="number" step="0.01" id="in-solde" style="width: 120px; padding: 12px; border: 2px solid var(--primary); border-radius: 8px;">
         </div>
     </div>
-
-    <script>
-        // --- DONNÉES D'AMIRA ---
-        const items = [
-            // Recettes
-            { id: 1, name: "Salaire Net", val: 2100, cat: "recette-travail", globalCat: "recette", tresorerie: 2100 },
-            { id: 2, name: "Tickets Restaurant", val: 120, cat: "recette-travail", globalCat: "recette", tresorerie: 120 },
-            { id: 3, name: "Remboursement Médical (encaissé)", val: 30, cat: "recette-social", globalCat: "recette", tresorerie: 30 },
-            
-            // Dettes/Prêts
-            { id: 4, name: "Crédit Immobilier (mensualité)", val: 750, cat: "dette", globalCat: "depense", tresorerie: -750 },
-            { id: 5, name: "Crédit Consommation (mensualité)", val: 150, cat: "dette", globalCat: "depense", tresorerie: -150 },
-            
-            // Dépenses Fixes (Hors dette)
-            { id: 6, name: "Assurance Maladie", val: 50, cat: "fixe", globalCat: "depense", tresorerie: -50 },
-            { id: 7, name: "Taxe Habitation (mensualisée)", val: 40, cat: "fixe", globalCat: "depense", tresorerie: -40 },
-            
-            // Dépenses Courantes
-            { id: 8, name: "Courses Alimentaires", val: 380, cat: "courante", globalCat: "depense", tresorerie: -380 },
-            { id: 9, name: "Transport", val: 100, cat: "courante", globalCat: "depense", tresorerie: -100 },
-            { id: 10, name: "Coiffeur", val: 30, cat: "courante", globalCat: "depense", tresorerie: -30 },
-            
-            // Dépenses Occasionnelles
-            { id: 11, name: "Achat Ordinateur Portable", val: 600, cat: "occas", globalCat: "depense", tresorerie: -600 },
-            
-            // Épargne / Transfert
-            { id: 12, name: "Épargne Livret A", val: 200, cat: "epargne", globalCat: "epargne", tresorerie: -200 }
-        ];
-        
-        // --- CALCULS RÉELS ---
-        
-        const totalRecettes = items.filter(i => i.globalCat === 'recette').reduce((a, b) => a + b.val, 0); // 2100+120+30 = 2250
-        const totalDettes = items.filter(i => i.cat === 'dette').reduce((a, b) => a + b.val, 0); // 750 + 150 = 900
-        const totalFixes = items.filter(i => i.cat === 'fixe').reduce((a, b) => a + b.val, 0); // 50 + 40 = 90
-        const totalCourantes = items.filter(i => i.cat === 'courante').reduce((a, b) => a + b.val, 0); // 380 + 100 + 30 = 510
-        const totalOccasionnelles = items.filter(i => i.cat === 'occas').reduce((a, b) => a + b.val, 0); // 600
-        const totalEpargne = items.filter(i => i.globalCat === 'epargne').reduce((a, b) => a + b.val, 0); // 200
-        
-        // Indicateurs clés
-        const resteAVivre = totalRecettes - totalDettes - totalFixes; // 2250 - 900 - 90 = 1260
-        const depensesCourantesEtOccasionnelles = totalCourantes + totalOccasionnelles; // 510 + 600 = 1110
-        const margeDeManoeuvre = resteAVivre - depensesCourantesEtOccasionnelles; // 1260 - 1110 = 150 (Avant épargne)
-
-        const tauxEndettement = (totalDettes / totalRecettes) * 100; // (900 / 2250) * 100 = 40.0%
-
-        // --- LOGIQUE GÉNÉRALE (Recyclage des fonctions précédentes) ---
-        const bank = document.getElementById("item-bank");
-        items.sort(() => Math.random() - 0.5); 
-
-        items.forEach(item => {
-            let el = document.createElement("div");
-            el.classList.add("draggable-item");
-            el.setAttribute("draggable", "true");
-            el.setAttribute("id", "item-" + item.id);
-            el.setAttribute("data-val", item.val);
-            el.setAttribute("data-cat", item.cat); 
-            el.setAttribute("data-global-cat", item.globalCat); 
-            el.innerText = `${item.name} (${item.val} €)`;
-            
-            el.addEventListener("dragstart", drag);
-            el.addEventListener("click", function() { selectItem(el); });
-            bank.appendChild(el);
-        });
-
-        let selectedItem = null;
-
-        function selectItem(el) {
-            if(selectedItem) {
-                selectedItem.style.backgroundColor = "white";
-                selectedItem.style.borderColor = "#555";
-            }
-            if (selectedItem === el) {
-                selectedItem = null;
-                return;
-            }
+    <button class="btn-valider" onclick="analyser()" id="btn-analyser">VOIR MES RÉSULTATS</button>
+    <div id="result-zone">
+        <h2 id="final-score">Score : -- / 20</h2>
+        <div class="synthesis-card">
+            <div class="syn-row" id="syn-rec"><span>Total Recettes :</span> <span class="val">--</span></div>
+            <div class="syn-row" id="syn-dep"><span>Total Dépenses :</span> <span class="val">--</span></div>
+            <hr><div class="syn-row" id="syn-sol" style="color:#2563eb"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
+        </div>
+        <div class="chart-box"><canvas id="barChart"></canvas></div>
+        <button class="btn-valider" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
+    </div>
+</div>
+<script>
+    const items = [
+        { id: 1, name: "Salaire", val: 2257.14, cat: "recette-travail", label: "Recettes (Travail)" },
+        { id: 2, name: "Allocation soutien familial", val: 113.22, cat: "recette-social", label: "Recettes (Social)" },
+        { id: 3, name: "Loyer", val: 1027.13, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 4, name: "Taxe habitation", val: 60.00, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 5, name: "Mutuelle", val: 57.13, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 6, name: "Facture électricité", val: 113.33, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 7, name: "Courses alimentaires", val: 297.23, cat: "courante", label: "Dépenses Courantes" },
+        { id: 8, name: "Transport", val: 100.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 9, name: "Abonnement transport", val: 30.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 10, name: "Hygiène", val: 27.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 11, name: "Coiffeur", val: 35.00, cat: "occas", label: "Dépenses Occasionnelles" },
+        { id: 12, name: "Ordinateur", val: 650.00, cat: "occas", label: "Dépenses Occasionnelles" },
+        { id: 13, name: "Habillement", val: 83.00, cat: "occas", label: "Dépenses Occasionnelles" }
+    ];
+    let selectedItem = null;
+    const bank = document.getElementById("item-bank");
+    items.sort(() => Math.random() - 0.5).forEach(item => {
+        let el = document.createElement("div");
+        el.className = "draggable-item";
+        el.id = "i-" + item.id;
+        el.innerHTML = `${item.name} (${item.val.toFixed(2)}€) <div class="correct-info" id="info-${item.id}">Doit être dans : ${item.label}</div>`;
+        el.onclick = (e) => {
+            e.stopPropagation();
+            if(selectedItem) selectedItem.classList.remove('selected');
             selectedItem = el;
-            el.style.backgroundColor = "#e2e6ea";
-            el.style.borderColor = "#007bff";
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault();
-            ev.currentTarget.classList.add("drag-over");
-        }
-
-        function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.id);
-            selectItem(ev.target);
-        }
-
-        function drop(ev) {
-            ev.preventDefault();
-            document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(z => z.classList.remove('drag-over'));
-
-            let data = ev.dataTransfer ? ev.dataTransfer.getData("text") : null;
-            let draggedElement;
-
-            if (data) draggedElement = document.getElementById(data);
-            else if (selectedItem) draggedElement = selectedItem;
-            else return;
-
-            let target = ev.target;
-            while (!target.classList.contains("drop-zone") && !target.classList.contains("sub-zone") && target.id !== "item-bank" && target.tagName !== "BODY") {
-                target = target.parentElement;
-            }
-
-            if (target.classList.contains("drop-zone") || target.classList.contains("sub-zone") || target.id === "item-bank") {
-                target.appendChild(draggedElement);
-            }
-            
+            el.classList.add('selected');
+        };
+        bank.appendChild(el);
+    });
+    document.querySelectorAll('.drop-zone, #item-bank').forEach(zone => {
+        zone.onclick = () => {
             if(selectedItem) {
-                selectedItem.style.backgroundColor = "white";
-                selectedItem.style.borderColor = "#555";
+                zone.appendChild(selectedItem);
+                selectedItem.classList.remove('selected');
                 selectedItem = null;
             }
-        }
+        };
+    });
 
-        document.querySelectorAll('.drop-zone, .sub-zone, #item-bank').forEach(zone => {
-            zone.addEventListener('click', function(e) {
-                if (selectedItem && e.target !== selectedItem && !e.target.closest('.draggable-item')) {
-                    zone.appendChild(selectedItem);
-                    selectedItem.style.backgroundColor = "white";
-                    selectedItem.style.borderColor = "#555";
-                    selectedItem = null;
-                }
-            });
-            zone.addEventListener('dragleave', function() { zone.classList.remove("drag-over"); });
+    let _barChartInstance = null;
+
+    function analyser() {
+        const btn = document.getElementById('btn-analyser');
+        if (btn && btn.disabled) return;
+        if (btn) { btn.disabled = true; btn.style.opacity = "0.85"; btn.style.cursor = "not-allowed"; }
+
+        let score = 0;
+        let placementRecettes = 0;
+        let placementDepenses = 0;
+        items.forEach(item => {
+            let el = document.getElementById("i-" + item.id);
+            let info = document.getElementById("info-" + item.id);
+            let parentCat = el.parentElement && el.parentElement.dataset ? el.parentElement.dataset.category : undefined;
+            if (parentCat === item.cat) {
+                score += 1; el.style.borderColor = "#28a745"; info.style.display = "none";
+                if(item.cat.includes("recette")) placementRecettes++; else placementDepenses++;
+            } else {
+                el.style.borderColor = "#dc3545"; info.style.display = "block";
+            }
         });
 
+        const inR = parseFloat(document.getElementById("in-recettes").value) || 0;
+        const inF = parseFloat(document.getElementById("in-fixes").value) || 0;
+        const inC = parseFloat(document.getElementById("in-courantes").value) || 0;
+        const inO = parseFloat(document.getElementById("in-occas").value) || 0;
+        const inSolde = parseFloat(document.getElementById("in-solde").value) || 0;
+        const totalD = Number((inF + inC + inO).toFixed(2));
+        const soldeCorrect = Number((2370.36 - 2533.15).toFixed(2)); // Solde attendu : -162.79€
 
-        // --- VÉRIFICATION LOGIQUE ---
-        
-        function verifierColonneGlobale(globalCatName, inputId, msgId) {
-            let dropZones = [];
-            
-            if (globalCatName === 'recette') {
-                dropZones = document.querySelectorAll(`.sub-zone[data-category^="recette-"]`);
-            } else {
-                dropZones = document.querySelectorAll(`.drop-zone[data-category="${globalCatName}"]`);
-            }
-            
-            const input = document.getElementById(inputId);
-            const msg = document.getElementById(msgId);
-            
-            let sumItems = 0;
-            let errors = false;
+        if (Math.abs(inR - 2370.36) < 0.01) score += 2;
+        if (Math.abs(inF - 1257.59) < 0.01) score += 1.5;
+        if (Math.abs(inC - 454.23) < 0.01) score += 1.5;
+        if (Math.abs(inO - 768.00) < 0.01) score += 1.5;
+        if (Math.abs(inSolde - (-162.79)) < 0.01) score += 0.5;
 
-            for (let zone of dropZones) {
-                for (let item of zone.children) {
-                    let itemVal = parseInt(item.getAttribute("data-val"));
-                    let itemCat = item.getAttribute("data-cat"); 
-                    let expectedCat = zone.getAttribute("data-category");
-                    
-                    if (globalCatName === 'recette' ? itemCat !== expectedCat : itemCat !== globalCatName) {
-                        errors = true;
-                        item.style.border = "3px solid #dc3545"; 
-                        setTimeout(() => item.style.border = "2px solid #555", 3000);
-                    } else {
-                        sumItems += itemVal;
-                        item.style.border = "2px solid #28a745"; 
-                    }
-                }
-            }
+        document.getElementById("result-zone").style.display = "block";
+        document.getElementById("final-score").innerText = `Score : ${Math.round(Math.min(20, score))} / 20`;
+        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 2370.36) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 2533.15) < 0.01 ? '✅' : '❌'}`;
+        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - (-162.79)) < 0.01 ? '✅' : '❌'}`;
 
-            if (errors) {
-                msg.innerHTML = "⚠️ Il y a une erreur de classification. (Dette, Fixe HORS Dette, Courante ?).";
-                msg.className = "feedback-msg incorrect";
-                return;
-            }
-
-            let userVal = parseInt(input.value);
-            let totalReelAttendu = items.filter(i => (globalCatName === 'recette' ? i.globalCat === 'recette' : i.cat === globalCatName)).reduce((a, b) => a + b.val, 0);
-
-            if (isNaN(userVal)) {
-                msg.innerHTML = "Écris le total dans la case.";
-                msg.className = "feedback-msg";
-                return;
-            }
-
-            if (userVal === totalReelAttendu) {
-                msg.innerHTML = "✅ Classification et Total Théorique corrects.";
-                msg.className = "feedback-msg correct";
-                input.style.borderColor = "#28a745";
-                input.style.backgroundColor = "#e8f5e9";
-                input.disabled = true; 
-                
-                // Remplissage des cases du bilan pour accélérer
-                if (globalCatName === 'recette') document.getElementById('final-recettes').value = userVal;
-                if (globalCatName === 'dette') document.getElementById('final-dettes').value = userVal;
-                if (globalCatName === 'fixe') document.getElementById('final-fixes').value = userVal;
-                if (globalCatName === 'courante' || globalCatName === 'occas') {
-                    // On ne fait rien ici, ce sera géré par la fonction bilan
-                }
-
-            } else {
-                msg.innerHTML = "❌ Le calcul est faux. (Attendu : " + totalReelAttendu + " €)";
-                msg.className = "feedback-msg incorrect";
-            }
+        // Anti-crash / anti-duplication Chart si l'élève clique plusieurs fois
+        try {
+            const ctx = document.getElementById('barChart');
+            if (_barChartInstance) { _barChartInstance.destroy(); _barChartInstance = null; }
+            _barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Recettes', 'Dépenses', 'Solde'],
+                    datasets: [{
+                        label: '% de réussite',
+                        data: [ (placementRecettes/2)*100, (placementDepenses/11)*100, (Math.abs(inSolde - (-162.79)) < 0.01 ? 100 : 0) ],
+                        backgroundColor: ['#28a745', '#ffc107', '#2563eb'],
+                        borderRadius: 8
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+            });
+        } catch(e) {
+            // Si Chart.js ne charge pas (réseau), on ne bloque pas l'exercice
         }
 
-        // --- VÉRIFICATION BILAN ET RATIOS ---
-        function verifierBilanAmira() {
-            // Totaux intermédiaires
-            const R = parseInt(document.getElementById('final-recettes').value) || 0;
-            const Dt = parseInt(document.getElementById('final-dettes').value) || 0;
-            const DF = parseInt(document.getElementById('final-fixes').value) || 0;
-            const inputDC = parseInt(document.getElementById('input-courantes').value) || 0;
-            const inputDO = parseInt(document.getElementById('input-occas').value) || 0;
-            const inputE = parseInt(document.getElementById('input-epargne').value) || 0;
-            
-            // Cases de sortie
-            const TE_input = parseFloat(document.getElementById('final-taux-endettement').value.replace(',', '.'));
-            const RAV_input = parseInt(document.getElementById('final-rav').value) || 0;
-            const DCOO_input = parseInt(document.getElementById('final-courant-occas').value) || 0;
-            const MM_input = parseInt(document.getElementById('final-marge-manoeuvre').value) || 0;
-            const msg = document.getElementById('msg-bilan');
-
-            // 1. Vérifier si les 6 totaux de classification sont validés
-            if (document.getElementById('input-recettes').disabled === false || 
-                document.getElementById('input-dettes').disabled === false ||
-                document.getElementById('input-fixes').disabled === false ||
-                document.getElementById('input-courantes').disabled === false ||
-                document.getElementById('input-occas').disabled === false ||
-                document.getElementById('input-epargne').disabled === false) {
-                
-                msg.innerHTML = "⚠️ Valide d'abord les 6 totaux de colonnes (R, Dt, DF, DC, DO, E).";
-                msg.className = "feedback-msg incorrect";
-                return;
-            }
-
-            let errors = [];
-
-            // 2. Calculs et vérifications
-            
-            // Taux d'endettement
-            const teAttendu = (Dt / R) * 100;
-            if (Math.abs(TE_input - teAttendu) > 0.1) {
-                errors.push("Taux d'Endettement (TE) faux. (Attendu : " + teAttendu.toFixed(1) + "%)");
-            }
-            
-            // Reste à vivre (RAV)
-            const ravAttendu = R - Dt - DF;
-            if (RAV_input !== ravAttendu) {
-                errors.push("Reste à Vivre (RAV) faux. (Attendu : " + ravAttendu + " €)");
-            }
-
-            // Dépenses courantes + occasionnelles (DCOO)
-            const dcooAttendu = inputDC + inputDO;
-            if (DCOO_input !== dcooAttendu) {
-                 errors.push("Total Dépenses Courantes et Occasionnelles (DCOO) faux. (Attendu : " + dcooAttendu + " €)");
-            }
-            
-            // Marge de manœuvre (MM)
-            const mmAttendu = ravAttendu - dcooAttendu;
-            if (MM_input !== mmAttendu) {
-                errors.push("Marge de Manœuvre (MM) fausse. (Attendu : " + mmAttendu + " €)");
-            }
-            
-            if (errors.length > 0) {
-                msg.innerHTML = "❌ " + errors.join(" ");
-                msg.className = "feedback-msg incorrect";
-                return;
-            }
-            
-            // Succès
-            document.getElementById('final-taux-endettement').value = teAttendu.toFixed(1);
-            document.getElementById('final-marge-manoeuvre').value = mmAttendu;
-            
-            msg.innerHTML = "✅ Diagnostic correct ! Taux d'endettement : " + teAttendu.toFixed(1) + "%. Marge de Manœuvre : " + mmAttendu + " €.";
-            msg.className = "feedback-msg correct";
-            document.getElementById('budget-status').style.opacity = "1";
-            document.getElementById('budget-status').style.pointerEvents = "auto";
-            document.getElementById('btn-conclusion').style.display = "inline-block";
-        }
-
-        function verifierConclusionAmira() {
-            const radios = document.getElementsByName('budget');
-            let selected;
-            for(let radio of radios) { if(radio.checked) selected = radio.value; }
-            
-            const msg = document.getElementById('msg-conclusion');
-
-            let correctStatus = "";
-            if (tauxEndettement <= 33) correctStatus = "secure";
-            else if (tauxEndettement > 33) correctStatus = "alerte";
-            // Pas de cas critique pour Amira
-            
-            if (selected === correctStatus) {
-                msg.innerHTML = "🎉 AMIRA est en **alerte** ! Son taux d'endettement de " + tauxEndettement.toFixed(1) + "% est supérieur au seuil de 33%. Elle aura du mal à emprunter à nouveau.";
-                msg.className = "feedback-msg correct";
-                msg.style.fontSize = "1.3rem";
-                document.body.style.backgroundColor = "#fff9e6"; // Jaune/crème d'alerte pour finir
-            } else {
-                msg.innerHTML = "Non. Le TE est de " + tauxEndettement.toFixed(1) + "%. Quel est le statut ?";
-                msg.className = "feedback-msg incorrect";
-            }
-        }
-
-        // --- AUDIO GESTION (Play/Stop & Clean Text) ---
-        let isSpeaking = false;
-        
-        function toggleAudio() {
-            const btn = document.getElementById('main-audio-btn');
-            
-            if (isSpeaking) {
-                window.speechSynthesis.cancel();
-                isSpeaking = false;
-                btn.classList.remove('playing');
-                btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
-            } else {
-                let text = document.getElementById('text-content').innerText;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'fr-FR';
-                utterance.rate = 0.9;
-                
-                utterance.onend = function() {
-                    isSpeaking = false;
-                    btn.classList.remove('playing');
-                    btn.innerHTML = '<span>▶️ Lire l\'histoire</span>';
-                };
-
-                window.speechSynthesis.speak(utterance);
-                isSpeaking = true;
-                btn.classList.add('playing');
-                btn.innerHTML = '<span>⏹️ Arrêter</span>';
-            }
-        }
-    </script>
+        window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
+    }
+</script>
 </body>
 </html>
