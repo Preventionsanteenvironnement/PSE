@@ -131,7 +131,6 @@
 
 <div class="container">
 
-  <!-- 1. ACCUEIL -->
   <div id="screen-welcome" class="screen active">
     <div class="header-card">
       <h1>🗂️ Flashcards : RPS</h1>
@@ -142,8 +141,8 @@
       </div>
 
       <div class="input-group">
-        <label>Identifiant élève :</label>
-        <input type="text" id="student-id" placeholder="Ex: P12...">
+        <label>Identifiant élève (ex: B43) :</label>
+        <input type="text" id="student-id" placeholder="Ton code élève...">
       </div>
 
       <div class="input-group">
@@ -168,7 +167,6 @@
     </div>
   </div>
 
-  <!-- 2. JEU -->
   <div id="screen-game" class="screen">
     <div class="progress-wrapper">
       <span id="current-index">1 / 20</span>
@@ -193,16 +191,13 @@
     </div>
   </div>
 
-  <!-- 3. BILAN -->
   <div id="screen-result" class="screen">
     <div class="result-card">
       <h2>Bilan de mémorisation</h2>
       <p>Voici ton résultat d'auto-évaluation.</p>
       
-      <!-- Bouton qui révèle le score et envoie discrètement -->
       <button id="btn-reveal" class="btn btn-primary" onclick="revealAndSend()">VOIR MON RÉSULTAT</button>
 
-      <!-- Zone masquée initialement -->
       <div id="score-zone" style="display:none; margin-top:20px; animation: fadeIn 0.5s;">
         <div class="score-circle" id="final-score-display">--</div>
         <div id="feedback-text" style="margin-bottom:25px; color:#4b5563;"></div>
@@ -216,49 +211,58 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
   // Config Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
     authDomain: "devoirs-pse.firebaseapp.com",
     projectId: "devoirs-pse",
-    storageBucket: "devoirs-pse.firebasestorage.app",
+    storageBucket: "devoirs-pse.appspot.com",
     messagingSenderId: "614730413904",
     appId: "1:614730413904:web:a5dd478af5de30f6bede55"
   };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 20 Cartes RPS
+  // 20 Cartes RPS avec COMPÉTENCES (C1, C2, C3, C4...)
   const cardsData = [
-    { q: "C'est quoi un RPS ?", a: "Risque Psycho-Social : danger pour la santé mentale et physique lié au travail." },
-    { q: "Qu'est-ce que le Burn-out ?", a: "Épuisement professionnel par surcharge de travail." },
-    { q: "Qu'est-ce que le Bore-out ?", a: "Épuisement par l'ennui (manque de travail)." },
-    { q: "Qu'est-ce que le Brown-out ?", a: "Perte de sens au travail (tâches absurdes)." },
-    { q: "Définition du Stress", a: "Déséquilibre entre ce qu'on demande au salarié et ses ressources pour y arriver." },
-    { q: "Violence Interne", a: "Violence entre collègues ou hiérarchie (conflits, harcèlement)." },
-    { q: "Violence Externe", a: "Agression par des personnes extérieures (clients, patients, élèves)." },
-    { q: "Harcèlement Moral", a: "Actes répétés qui dégradent les conditions de travail." },
-    { q: "Harcèlement Sexuel", a: "Propos ou comportements à connotation sexuelle imposés." },
-    { q: "Charge mentale", a: "Devoir penser à tout, tout le temps (préoccupations simultanées)." },
-    { q: "Lien TMS et RPS", a: "Le stress contracte les muscles et favorise les Troubles Musculo-Squelettiques." },
-    { q: "Conflit de valeurs", a: "Devoir faire quelque chose qu'on désapprouve ou bâcler son travail." },
-    { q: "Insécurité de l'emploi", a: "Peur de perdre son poste ou son contrat." },
-    { q: "Exigence émotionnelle", a: "Devoir cacher ses émotions (sourire forcé face à un client agressif)." },
-    { q: "Manque d'autonomie", a: "Ne pas pouvoir décider de la façon de faire son travail." },
-    { q: "Rapports sociaux dégradés", a: "Mauvaise ambiance, manque de soutien du chef ou des collègues." },
-    { q: "Rôle du Médecin du Travail", a: "Surveille la santé des salariés et conseille l'employeur." },
-    { q: "Rôle du CSE / CSSCT", a: "Représentants du personnel qui alertent sur les risques." },
-    { q: "Le DUERP", a: "Document Unique : obligatoire, il liste tous les risques (y compris RPS)." },
-    { q: "Exemple de Prévention", a: "Adapter la charge de travail, former les managers, cellule d'écoute." }
+    { q: "C'est quoi un RPS ?", a: "Risque Psycho-Social : danger santé mentale/physique.", comp: "C1_Traiter_Info" },
+    { q: "Qu'est-ce que le Burn-out ?", a: "Épuisement professionnel par surcharge.", comp: "C1_Traiter_Info" },
+    { q: "Qu'est-ce que le Bore-out ?", a: "Épuisement par l'ennui.", comp: "C1_Traiter_Info" },
+    { q: "Qu'est-ce que le Brown-out ?", a: "Perte de sens au travail.", comp: "C1_Traiter_Info" },
+    { q: "Définition du Stress", a: "Déséquilibre contraintes / ressources.", comp: "C2_Analyse" },
+    { q: "Violence Interne", a: "Violence entre collègues (harcèlement).", comp: "C2_Analyse" },
+    { q: "Violence Externe", a: "Agression par public (clients, élèves).", comp: "C2_Analyse" },
+    { q: "Harcèlement Moral", a: "Actes répétés dégradant conditions.", comp: "C3_Expliquer" },
+    { q: "Harcèlement Sexuel", a: "Propos/comportements sexuels imposés.", comp: "C3_Expliquer" },
+    { q: "Charge mentale", a: "Devoir penser à tout, tout le temps.", comp: "C2_Analyse" },
+    { q: "Lien TMS et RPS", a: "Stress contracte muscles = TMS.", comp: "C3_Expliquer" },
+    { q: "Conflit de valeurs", a: "Faire chose qu'on désapprouve.", comp: "C2_Analyse" },
+    { q: "Insécurité de l'emploi", a: "Peur de perdre son poste.", comp: "C1_Traiter_Info" },
+    { q: "Exigence émotionnelle", a: "Cacher ses émotions (sourire forcé).", comp: "C2_Analyse" },
+    { q: "Manque d'autonomie", a: "Pas de décision sur son travail.", comp: "C2_Analyse" },
+    { q: "Rapports sociaux dégradés", a: "Mauvaise ambiance, pas de soutien.", comp: "C2_Analyse" },
+    { q: "Rôle du Médecin du Travail", a: "Surveille santé, conseille employeur.", comp: "C1_Traiter_Info" },
+    { q: "Rôle du CSE", a: "Représentants personnel, alerte.", comp: "C1_Traiter_Info" },
+    { q: "Le DUERP", a: "Document Unique : liste tous risques.", comp: "C3_Expliquer" },
+    { q: "Exemple de Prévention", a: "Adapter charge, former managers.", comp: "C4_Solution" }
   ];
 
   let currentCardIndex = 0;
   let score = 0;
   let studentData = { id: "", classe: "" };
   let isFlipped = false;
+  
+  // Variables Moteur (Temps + Compétences)
+  let startTime = null;
+  let competencesScores = {
+      "C1_Traiter_Info": { total: 0, reussi: 0 },
+      "C2_Analyse": { total: 0, reussi: 0 },
+      "C3_Expliquer": { total: 0, reussi: 0 },
+      "C4_Solution": { total: 0, reussi: 0 }
+  };
 
   // Audio simple
   window.speak = (text) => {
@@ -270,13 +274,12 @@
     }
   };
 
-  // Navigation
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
 
-  // 1. Démarrage
+  // 1. Démarrage (CHRONO DÉMARRE ICI)
   window.startModule = () => {
     const idInput = document.getElementById('student-id').value.trim();
     const classInput = document.getElementById('student-class').value;
@@ -286,9 +289,13 @@
       return;
     }
     studentData = { id: idInput, classe: classInput };
+    
+    // START CHRONO
+    startTime = new Date();
+
     currentCardIndex = 0;
     score = 0;
-    // Shuffle (optionnel, activé ici pour varier)
+    // Shuffle
     cardsData.sort(() => Math.random() - 0.5);
     loadCard(0);
     showScreen('screen-game');
@@ -323,9 +330,17 @@
     setTimeout(() => document.getElementById('eval-btns').classList.add('visible'), 300);
   };
 
-  // 4. Voter
+  // 4. Voter (CALCUL COMPÉTENCES)
   window.rateCard = (pt) => {
     score += pt;
+    
+    // Moteur Compétences
+    const currentComp = cardsData[currentCardIndex].comp;
+    if(competencesScores[currentComp]) {
+        competencesScores[currentComp].total++;
+        if(pt === 1) competencesScores[currentComp].reussi++;
+    }
+
     currentCardIndex++;
     if (currentCardIndex < cardsData.length) loadCard(currentCardIndex);
     else {
@@ -334,16 +349,15 @@
     }
   };
 
-  // 5. VOIR RÉSULTAT (ET ENVOI DISCRET)
+  // 5. ENVOI RICHE (Temps + Détail)
   window.revealAndSend = async () => {
-    // A. Affichage immédiat du résultat pour l'élève
     const btn = document.getElementById('btn-reveal');
     const scoreZone = document.getElementById('score-zone');
     const scoreDisplay = document.getElementById('final-score-display');
     const fbText = document.getElementById('feedback-text');
 
-    btn.style.display = 'none'; // On cache le bouton
-    scoreZone.style.display = 'block'; // On affiche le score
+    btn.style.display = 'none';
+    scoreZone.style.display = 'block';
     scoreDisplay.textContent = `${score}/${cardsData.length}`;
 
     if (score === cardsData.length) fbText.innerHTML = "Perfect ! 🏆";
@@ -351,27 +365,42 @@
     else if (score >= 10) fbText.innerHTML = "Bien, continue tes efforts. 🙂";
     else fbText.innerHTML = "À retravailler pour mémoriser les définitions. 🚀";
 
-    // B. Envoi SILENCIEUX vers Firebase (sans rien dire à l'élève)
-    try {
-      await addDoc(collection(db, "bacpro"), {
-        meta: {
-          createdAt: new Date().toISOString(),
-          nom: studentData.id,
-          prenom: studentData.id,
-          classe: studentData.classe,
-          type: "exercice",
-          support: "C9_RPS_Flashcards_20Q"
-        },
-        resultat: {
-          score: `${score} / ${cardsData.length}`,
-          url: location.href,
-          titre: document.title
+    // STOP CHRONO
+    const endTime = new Date();
+    const durationMs = endTime - startTime;
+    const durationSeconds = Math.floor(durationMs / 1000);
+
+    // Calcul Note sur 20
+    const note20 = Math.round((score / cardsData.length) * 20);
+
+    // Calcul Niveaux Compétences (0 à 3)
+    let finalCompetences = {};
+    for (const [key, val] of Object.entries(competencesScores)) {
+        if(val.total === 0) {
+            finalCompetences[key] = null;
+        } else {
+            const ratio = val.reussi / val.total;
+            if(ratio < 0.25) finalCompetences[key] = 0;      // Rouge
+            else if(ratio < 0.5) finalCompetences[key] = 1;  // Orange
+            else if(ratio < 0.8) finalCompetences[key] = 2;  // Vert
+            else finalCompetences[key] = 3;                  // Bleu (Expert)
         }
+    }
+
+    try {
+      await addDoc(collection(db, "evaluations_competences"), {
+        date: new Date(), // Date serveur
+        identifiant: studentData.id,
+        classe: studentData.classe,
+        exercice_titre: "Flashcards RPS (20 cartes)",
+        note_finale: note20,
+        temps_secondes: durationSeconds, // Le temps passé !
+        competences: finalCompetences,   // Le détail C1, C2...
+        details_bruts: competencesScores // Pour debug si besoin
       });
-      console.log("Envoi discret réussi.");
+      console.log("Envoi complet (Temps + Compétences) réussi.");
     } catch (e) {
-      console.error("Erreur envoi discret:", e);
-      // On ne montre PAS d'erreur à l'élève pour ne pas briser la fluidité
+      console.error("Erreur envoi:", e);
     }
   };
 </script>
