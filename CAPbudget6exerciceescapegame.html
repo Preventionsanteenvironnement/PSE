@@ -3,137 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Module D2 : Le Budget d'Amira</title>
+    <title>Escape Game Finance : Le Coffre de Sophie</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #0f172a; --gold: #fbbf24; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #e2e8f0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 1100px; width: 100%; }
-        header { background: #2563eb; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
-        .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; }
-        .context-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; line-height: 1.6; }
-        #item-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #fff; padding: 15px; border-radius: 12px; border: 2px dashed #cbd5e1; margin-bottom: 20px; min-height: 80px; }
-        .draggable-item { padding: 12px 15px; background: white; border: 2px solid #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; user-select: none; }
-        .draggable-item.selected { border-color: #2563eb; background: #eff6ff; transform: scale(1.05); }
-        .correct-info { display: none; font-size: 0.85rem; color: #dc3545; margin-top: 5px; font-weight: bold; }
-        .budget-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; width: 100%; }
-        .column { background: white; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; min-height: 400px; border-top: 8px solid #ccc; }
+        header { background: linear-gradient(135deg, #1e293b, #334155); color: var(--gold); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; border: 2px solid var(--gold); box-shadow: 0 0 20px rgba(251, 191, 36, 0.2); }
+
+        .mission-box { background: #1e293b; padding: 20px; border-radius: 15px; border-left: 5px solid var(--gold); margin-bottom: 25px; line-height: 1.6; }
+        #item-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #334155; padding: 20px; border-radius: 12px; border: 2px dashed var(--gold); margin-bottom: 25px; min-height: 80px; }
+        .draggable-item { padding: 12px 15px; background: #f8fafc; border: 2px solid #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; color: #1e293b; transition: 0.2s; }
+        .draggable-item.selected { border-color: var(--gold); background: #fef3c7; transform: scale(1.05); }
+        .correct-info { display: none; font-size: 0.85rem; color: #f87171; margin-top: 5px; font-weight: bold; }
+
+        .budget-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; width: 100%; }
+        .column { background: #1e293b; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; min-height: 350px; border-top: 6px solid #64748b; }
         #col-recettes { border-top-color: #28a745; }
         #col-fixes { border-top-color: #007bff; }
         #col-courantes { border-top-color: #ffc107; }
         #col-occas { border-top-color: #dc3545; }
-        .drop-zone { flex-grow: 1; padding: 10px; border-radius: 8px; background: #f8fafc; min-height: 150px; cursor: pointer; }
-        .sub-zone { background: #e2f3e5; margin-bottom: 10px; border-radius: 8px; padding: 10px; min-height: 80px; }
-        .sub-zone h4 { margin: 0 0 8px 0; font-size: 0.85rem; text-transform: uppercase; color: #166534; }
-        .calc-zone { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; }
-        input[type="number"] { width: 100px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; text-align: center; }
-        .btn-valider { background: #1e293b; color: white; border: none; padding: 20px; border-radius: 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer; margin-top: 30px; width: 100%; }
-        #result-zone { display: none; width: 100%; background: white; padding: 25px; border-radius: 20px; border: 4px solid #2563eb; margin-top: 30px; text-align: center; }
-        .synthesis-card { background: #eff6ff; border: 2px solid #2563eb; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: left; }
-        .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
-        .chart-box { height: 350px; margin: 20px 0; }
+
+        .drop-zone { flex-grow: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); min-height: 120px; cursor: pointer; margin-bottom: 10px; }
+        .sub-zone { background: rgba(40, 167, 69, 0.1); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+        h3 { text-align: center; margin: 0 0 15px 0; font-size: 0.9rem; color: var(--gold); }
+        h4 { margin: 0 0 8px 0; font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; }
+
+        .calc-zone { text-align: center; border-top: 1px solid #334155; padding-top: 10px; }
+        input[type="number"] { width: 90px; padding: 8px; border: 2px solid #334155; border-radius: 6px; text-align: center; background: #0f172a; color: white; }
+
+        /* Animation Coffre */
+        .safe-zone { margin-top: 40px; background: #1e293b; padding: 30px; border-radius: 20px; border: 4px solid var(--gold); text-align: center; width: 100%; max-width: 600px; position: relative; overflow: hidden;}
+        .lock-icon { font-size: 4rem; transition: transform 0.5s; display: block; margin-bottom: 10px; }
+        .safe-display { font-family: 'Courier New', monospace; background: #000; color: #0f0; padding: 20px; font-size: 2rem; border-radius: 10px; margin: 20px 0; border: 2px solid #334155; width: 80%; }
+        .btn-unlock { background: var(--gold); color: #0f172a; border: none; padding: 20px 40px; border-radius: 12px; font-size: 1.3rem; font-weight: 900; cursor: pointer; }
+
+        .victory-badge { display: none; background: linear-gradient(45deg, #fbbf24, #f59e0b); color: #1e293b; padding: 20px; border-radius: 15px; font-weight: 900; margin-top: 20px; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+        #result-zone { display: none; margin-top: 30px; text-align: center; width: 100%; }
+        .chart-box { height: 300px; margin: 20px 0; background: white; border-radius: 15px; padding: 15px; }
 
         /* ✅ AJUSTEMENTS TECHNIQUES (SANS TOUCHER AU CONTENU PÉDAGOGIQUE) */
         * { box-sizing: border-box; }
-        .context-box, .container, #result-zone { overflow-wrap: anywhere; }
-        .chart-box canvas { max-width: 100% !important; height: 100% !important; }
+        body { margin: 0; }
+        .container, header, .mission-box, #item-bank, .safe-zone, #result-zone { max-width: 100%; }
+        .mission-box { overflow-wrap: anywhere; }
         .drop-zone, .sub-zone { overflow: auto; }
-        .draggable-item { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-
-        /* Calcul final responsive sans modifier le texte */
-        .final-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 12px; flex-wrap: wrap; }
-        .final-row > span { flex: 1 1 260px; min-width: 200px; }
-        .final-row > input { flex: 0 0 auto; }
+        .draggable-item { user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .safe-display { max-width: 100%; }
+        .chart-box canvas { max-width: 100% !important; height: 100% !important; display: block; }
 
         @media (max-width: 600px) {
-            body { padding: 10px; }
-            header { padding: 16px; }
-            .context-box { padding: 16px; }
-            .btn-valider { padding: 16px; font-size: 1.05rem; }
-            input[type="number"] { width: 110px; }
-            .syn-row { flex-wrap: wrap; gap: 8px; }
-            .chart-box { height: 280px; }
+            body { padding: 12px; }
+            header { padding: 18px; }
+            .btn-unlock { width: 100%; padding: 16px; font-size: 1.1rem; }
+            .safe-display { width: 100%; font-size: 1.6rem; }
+            .chart-box { height: 260px; padding: 12px; }
         }
     </style>
 </head>
 <body>
+
 <div class="container">
     <header>
-        <h1 style="margin:0;">Module D2 : Le Budget</h1>
-        <div class="obj-box"><strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget.</div>
+        <h1>🔐 ESCAPE GAME : LE COFFRE DE SOPHIE</h1>
+        <div class="obj-box">Mission : Classez les flux et trouvez le code pour débloquer la récompense !</div>
     </header>
-    <div class="context-box">
-        <strong>Situation :</strong> Amira perçoit un <b>salaire de 2 257,14 €</b>. Elle reçoit également une <b>allocation de soutien familial de 113,22 €</b>. <br><br>
-        Ses opérations : Loyer (1 027,13 €), Taxe d'habitation (60,00 €), Mutuelle (57,13 €), Facture d'électricité (113,33 €), Courses alimentaires (297,23 €), Transport (100,00 €), Abonnement transport (30,00 €), Hygiène (27,00 €), Coiffeur (35,00 €), Achat d'un ordinateur (650,00 €) et Habillement (83,00 €).
+
+    <div class="mission-box">
+        <strong>LE DOSSIER :</strong> Le code du coffre est le <strong>Solde Mensuel exact</strong> de Sophie.<br><br>
+        <strong>Les données :</strong> Salaire net (1 753,12 €), Aide au logement (154,50 €). <br>
+        Dépenses : Loyer (652,30 €), Internet (31,99 €), Assurance (45,12 €), Courses (342,65 €), Transport (85,00 €), Coiffeur (45,00 €) et Vélo (420,50 €).
     </div>
-    <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis sur sa catégorie :</p>
+
     <div id="item-bank"></div>
+
     <div class="budget-container">
         <div class="column" id="col-recettes">
-            <h3>Recettes</h3>
-            <div class="drop-zone sub-zone" data-category="recette-travail"><h4>Travail</h4></div>
-            <div class="drop-zone sub-zone" data-category="recette-social"><h4>Social</h4></div>
+            <h3>RECETTES</h3>
+            <div class="drop-zone sub-zone" data-category="recette-travail"><h4>TRAVAIL</h4></div>
+            <div class="drop-zone sub-zone" data-category="recette-social"><h4>SOCIAL</h4></div>
             <div class="calc-zone">Total : <input type="number" step="0.01" id="in-recettes"> €</div>
         </div>
         <div class="column" id="col-fixes">
-            <h3>Fixes (Incompressibles)</h3>
+            <h3>FIXES</h3>
             <div class="drop-zone" data-category="fixe"></div>
             <div class="calc-zone">Total : <input type="number" step="0.01" id="in-fixes"> €</div>
         </div>
         <div class="column" id="col-courantes">
-            <h3>Courantes</h3>
+            <h3>COURANTES</h3>
             <div class="drop-zone" data-category="courante"></div>
             <div class="calc-zone">Total : <input type="number" step="0.01" id="in-courantes"> €</div>
         </div>
         <div class="column" id="col-occas">
-            <h3>Occas. (Exceptionnelles)</h3>
+            <h3>OCCASIONNELLES</h3>
             <div class="drop-zone" data-category="occas"></div>
             <div class="calc-zone">Total : <input type="number" step="0.01" id="in-occas"> €</div>
         </div>
     </div>
-    <div class="context-box" style="margin-top: 20px;">
-        <span style="font-weight: bold;">Calcul final :</span>
-        <div class="final-row">
-            <span>Quel est le solde d'Amira ? (Recettes - Dépenses)</span>
-            <input type="number" step="0.01" id="in-solde" style="width: 120px; padding: 12px; border: 2px solid var(--primary); border-radius: 8px;">
-        </div>
+
+    <div class="safe-zone" id="safe-container">
+        <span class="lock-icon" id="lock-status">🔒</span>
+        <h2>CODE DE DÉVERROUILLAGE</h2>
+        <input type="number" step="0.01" id="final-code-input" class="safe-display" placeholder="000.00">
+        <br>
+        <button class="btn-unlock" id="btn-open" onclick="ouvrirCoffre()">TENTER L'OUVERTURE</button>
+        <div class="victory-badge" id="badge">🏆 MAÎTRE DES FINANCES 🏆</div>
     </div>
-    <button class="btn-valider" id="btn-analyser" onclick="analyser()">VOIR MES RÉSULTATS</button>
+
     <div id="result-zone">
-        <h2 id="final-score">Score : -- / 20</h2>
-        <div class="synthesis-card">
-            <div class="syn-row" id="syn-rec"><span>Total Recettes :</span> <span class="val">--</span></div>
-            <div class="syn-row" id="syn-dep"><span>Total Dépenses :</span> <span class="val">--</span></div>
-            <hr><div class="syn-row" id="syn-sol" style="color:#2563eb"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
-        </div>
         <div class="chart-box"><canvas id="barChart"></canvas></div>
-        <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; text-align:left;"></div>
-        <button class="btn-valider" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
+        <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(148,163,184,0.35); text-align:left;"></div>
+        <button class="btn-unlock" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
     </div>
 </div>
+
 <script>
     const items = [
-        { id: 1, name: "Salaire", val: 2257.14, cat: "recette-travail", label: "Recettes (Travail)" },
-        { id: 2, name: "Allocation soutien familial", val: 113.22, cat: "recette-social", label: "Recettes (Social)" },
-        { id: 3, name: "Loyer", val: 1027.13, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 4, name: "Taxe habitation", val: 60.00, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 5, name: "Mutuelle", val: 57.13, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 6, name: "Facture électricité", val: 113.33, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 7, name: "Courses alimentaires", val: 297.23, cat: "courante", label: "Dépenses Courantes" },
-        { id: 8, name: "Transport", val: 100.00, cat: "courante", label: "Dépenses Courantes" },
-        { id: 9, name: "Abonnement transport", val: 30.00, cat: "courante", label: "Dépenses Courantes" },
-        { id: 10, name: "Hygiène", val: 27.00, cat: "courante", label: "Dépenses Courantes" },
-        { id: 11, name: "Coiffeur", val: 35.00, cat: "occas", label: "Dépenses Occasionnelles" },
-        { id: 12, name: "Ordinateur", val: 650.00, cat: "occas", label: "Dépenses Occasionnelles" },
-        { id: 13, name: "Habillement", val: 83.00, cat: "occas", label: "Dépenses Occasionnelles" }
+        { id: 1, name: "Salaire", val: 1753.12, cat: "recette-travail", label: "Travail" },
+        { id: 2, name: "Aide Logement", val: 154.50, cat: "recette-social", label: "Social" },
+        { id: 3, name: "Loyer", val: 652.30, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 4, name: "Internet", val: 31.99, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 5, name: "Assurance", val: 45.12, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 6, name: "Courses", val: 342.65, cat: "courante", label: "Dépenses Courantes" },
+        { id: 7, name: "Transport", val: 85.00, cat: "courante", label: "Dépenses Courantes" },
+        { id: 8, name: "Coiffeur", val: 45.00, cat: "occas", label: "Occasionnelle" },
+        { id: 9, name: "VÉLO", val: 420.50, cat: "occas", label: "Occasionnelle" }
     ];
+
     let selectedItem = null;
     const bank = document.getElementById("item-bank");
+
     items.sort(() => Math.random() - 0.5).forEach(item => {
         let el = document.createElement("div");
         el.className = "draggable-item";
         el.id = "i-" + item.id;
-        el.innerHTML = `${item.name} (${item.val.toFixed(2)}€) <div class="correct-info" id="info-${item.id}">Doit être dans : ${item.label}</div>`;
+        el.innerHTML = `${item.name}<br>${item.val.toFixed(2)}€ <div class="correct-info" id="info-${item.id}">Doit être en : ${item.label}</div>`;
         el.onclick = (e) => {
             e.stopPropagation();
             if(selectedItem) selectedItem.classList.remove('selected');
@@ -142,6 +149,7 @@
         };
         bank.appendChild(el);
     });
+
     document.querySelectorAll('.drop-zone, #item-bank').forEach(zone => {
         zone.onclick = () => {
             if(selectedItem) {
@@ -152,49 +160,48 @@
         };
     });
 
-    // ✅ Anti-crash Chart.js + anti multi-clic
+    // ✅ Anti double-graphe + fallback Chart.js + confetti safe
     let chartInstance = null;
 
-    function analyser() {
-        const btn = document.getElementById("btn-analyser");
+    function ouvrirCoffre() {
+        const btn = document.getElementById("btn-open");
         if (btn && btn.disabled) return;
-        if (btn) { btn.disabled = true; btn.style.opacity = "0.7"; btn.style.cursor = "not-allowed"; }
+        if (btn) { btn.disabled = true; btn.style.opacity = "0.75"; btn.style.cursor = "not-allowed"; }
 
-        let score = 0;
-        let placementRecettes = 0;
-        let placementDepenses = 0;
+        const userCode = parseFloat(document.getElementById('final-code-input').value) || 0;
+        const correctSolde = 285.06;
+        let scoreClassification = 0;
+        let stats = { "Recettes": 0, "Dépenses": 0 };
+
         items.forEach(item => {
             let el = document.getElementById("i-" + item.id);
             let info = document.getElementById("info-" + item.id);
             let parentCat = (el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
             if (parentCat === item.cat) {
-                score += 1; el.style.borderColor = "#28a745"; info.style.display = "none";
-                if(item.cat.includes("recette")) placementRecettes++; else placementDepenses++;
+                scoreClassification++;
+                if(item.cat.includes("recette")) stats["Recettes"]++; else stats["Dépenses"]++;
             } else {
-                el.style.borderColor = "#dc2626"; info.style.display = "block";
+                el.style.borderColor = "#dc2626";
+                info.style.display = "block";
             }
         });
-        const inR = parseFloat(document.getElementById("in-recettes").value) || 0;
-        const inF = parseFloat(document.getElementById("in-fixes").value) || 0;
-        const inC = parseFloat(document.getElementById("in-courantes").value) || 0;
-        const inO = parseFloat(document.getElementById("in-occas").value) || 0;
-        const inSolde = parseFloat(document.getElementById("in-solde").value) || 0;
-        const totalD = Number((inF + inC + inO).toFixed(2));
-        const soldeCorrect = Number((2370.36 - 2533.15).toFixed(2)); // Solde attendu : -162.79€
-        if (Math.abs(inR - 2370.36) < 0.01) score += 2;
-        if (Math.abs(inF - 1257.59) < 0.01) score += 1.5;
-        if (Math.abs(inC - 454.23) < 0.01) score += 1.5;
-        if (Math.abs(inO - 768.00) < 0.01) score += 1.5;
-        if (Math.abs(inSolde - (-162.79)) < 0.01) score += 0.5;
-        document.getElementById("result-zone").style.display = "block";
-        document.getElementById("final-score").innerText = `Score : ${Math.round(Math.min(20, score))} / 20`;
-        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 2370.36) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 2533.15) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - (-162.79)) < 0.01 ? '✅' : '❌'}`;
 
-        const pcRec = (placementRecettes/2)*100;
-        const pcDep = (placementDepenses/11)*100;
-        const pcSolde = (Math.abs(inSolde - (-162.79)) < 0.01 ? 100 : 0);
+        if (Math.abs(userCode - correctSolde) < 0.01 && scoreClassification === items.length) {
+            document.getElementById('lock-status').innerText = "🔓";
+            document.getElementById('lock-status').style.transform = "scale(1.5)";
+            document.getElementById('safe-container').style.borderColor = "#16a34a";
+            document.getElementById('badge').style.display = "block";
+            try { if (typeof confetti !== "undefined") confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); } catch(e) {}
+        } else {
+            document.getElementById('lock-status').innerText = "❌";
+            setTimeout(() => document.getElementById('lock-status').innerText = "🔒", 2000);
+        }
+
+        document.getElementById('result-zone').style.display = "block";
+
+        const pcRec = (stats["Recettes"]/2)*100;
+        const pcDep = (stats["Dépenses"]/7)*100;
+        const pcOpen = (Math.abs(userCode - correctSolde) < 0.01 ? 100 : 0);
 
         const fallback = document.getElementById("chart-fallback");
         if (fallback) fallback.style.display = "none";
@@ -208,12 +215,11 @@
                 chartInstance = new Chart(canvas, {
                     type: 'bar',
                     data: {
-                        labels: ['Recettes', 'Dépenses', 'Solde'],
+                        labels: ['Recettes', 'Dépenses', 'Ouverture Coffre'],
                         datasets: [{
                             label: '% de réussite',
-                            data: [ pcRec, pcDep, pcSolde ],
-                            backgroundColor: ['#28a745', '#ffc107', '#2563eb'],
-                            borderRadius: 8
+                            data: [pcRec, pcDep, pcOpen],
+                            backgroundColor: ['#28a745', '#ffc107', '#2563eb']
                         }]
                     },
                     options: {
@@ -227,18 +233,22 @@
                 if (fallback) {
                     fallback.style.display = "block";
                     fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
-                    Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Solde : ${pcSolde.toFixed(0)}%`;
+                    Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Ouverture : ${pcOpen.toFixed(0)}%`;
                 }
             }
         } else {
             if (fallback) {
                 fallback.style.display = "block";
                 fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
-                Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Solde : ${pcSolde.toFixed(0)}%`;
+                Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Ouverture : ${pcOpen.toFixed(0)}%`;
             }
         }
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
+
+        setTimeout(() => {
+            if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer"; }
+        }, 600);
     }
 </script>
 </body>
