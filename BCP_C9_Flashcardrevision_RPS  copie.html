@@ -137,18 +137,20 @@
       <p>20 cartes pour maîtriser les risques psychosociaux.</p>
       
       <div style="background:#e0e7ff; padding:15px; border-radius:12px; margin-bottom:20px; text-align:left; font-size:0.95rem;">
-        <strong>Consigne :</strong> Lis la question, retourne la carte, et indique honnêtement si tu connaissais la réponse.
+        <strong>Mode Hybride :</strong><br>
+        🔹 Entre ton code pour <strong>sauvegarder</strong> ta progression.<br>
+        🔹 Laisse vide pour un <strong>entraînement libre</strong>.
       </div>
 
       <div class="input-group">
-        <label>Identifiant élève (ex: B43) :</label>
-        <input type="text" id="student-id" placeholder="Ton code élève...">
+        <label>Identifiant élève (Facultatif) :</label>
+        <input type="text" id="student-id" placeholder="Ex: B43 (ou laisse vide)">
       </div>
 
       <div class="input-group">
         <label>Classe :</label>
         <select id="student-class">
-          <option value="">-- Choisis ta classe --</option>
+          <option value="">-- Choisis ta classe (Optionnel) --</option>
           <option value="2BACPRO_GATL1">2BACPRO_GATL1</option><option value="2BACPRO_GATL2">2BACPRO_GATL2</option>
           <option value="1BACPRO_AGO1">1BACPRO_AGO1</option><option value="1BACPRO_AGO2">1BACPRO_AGO2</option>
           <option value="TBACPRO_AGO1">TBACPRO_AGO1</option><option value="TBACPRO_AGO2">TBACPRO_AGO2</option>
@@ -201,6 +203,7 @@
       <div id="score-zone" style="display:none; margin-top:20px; animation: fadeIn 0.5s;">
         <div class="score-circle" id="final-score-display">--</div>
         <div id="feedback-text" style="margin-bottom:25px; color:#4b5563;"></div>
+        <div id="save-status" style="font-size:0.9rem; font-weight:bold; margin-bottom:15px; color:#6366f1;"></div>
         <button class="btn" style="background:transparent; color:#6b7280; font-size:0.9rem;" onclick="location.reload()">Recommencer l'entraînement</button>
       </div>
       
@@ -214,7 +217,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-  // Config Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
     authDomain: "devoirs-pse.firebaseapp.com",
@@ -226,7 +228,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // --- MOUCHARD STATS (Le nouveau capteur de visite) ---
+  // --- MOUCHARD STATS (Fonctionne TOUJOURS) ---
   function trackVisit() {
       try {
           addDoc(collection(db, "statistiques_usage"), {
@@ -238,11 +240,9 @@
           console.log("Visite trackée.");
       } catch(e) { console.log("Erreur tracker", e); }
   }
-  // On lance le tracking tout de suite
   trackVisit();
 
-
-  // 20 Cartes RPS avec COMPÉTENCES (C1, C2, C3, C4...)
+  // 20 Cartes RPS
   const cardsData = [
     { q: "C'est quoi un RPS ?", a: "Risque Psycho-Social : danger santé mentale/physique.", comp: "C1_Traiter_Info" },
     { q: "Qu'est-ce que le Burn-out ?", a: "Épuisement professionnel par surcharge.", comp: "C1_Traiter_Info" },
@@ -270,8 +270,8 @@
   let score = 0;
   let studentData = { id: "", classe: "" };
   let isFlipped = false;
+  let isAnonymous = false; // Mode par défaut
   
-  // Variables Moteur (Temps + Compétences)
   let startTime = null;
   let competencesScores = {
       "C1_Traiter_Info": { total: 0, reussi: 0 },
@@ -280,7 +280,6 @@
       "C4_Solution": { total: 0, reussi: 0 }
   };
 
-  // Audio simple
   window.speak = (text) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -295,29 +294,28 @@
     document.getElementById(id).classList.add('active');
   }
 
-  // 1. Démarrage (CHRONO DÉMARRE ICI)
+  // 1. Démarrage (MODE HYBRIDE)
   window.startModule = () => {
     const idInput = document.getElementById('student-id').value.trim();
     const classInput = document.getElementById('student-class').value;
-    if (!idInput || !classInput) {
-      document.getElementById('start-error').style.display = 'block';
-      document.getElementById('start-error').innerText = "⚠️ Identifiant et Classe obligatoires.";
-      return;
-    }
-    studentData = { id: idInput, classe: classInput };
     
-    // START CHRONO
+    // Si pas d'ID, on passe en mode Anonyme
+    if (!idInput) {
+        isAnonymous = true;
+        studentData = { id: "Anonyme", classe: "" };
+    } else {
+        isAnonymous = false;
+        studentData = { id: idInput, classe: classInput };
+    }
+    
     startTime = new Date();
-
     currentCardIndex = 0;
     score = 0;
-    // Shuffle
     cardsData.sort(() => Math.random() - 0.5);
     loadCard(0);
     showScreen('screen-game');
   };
 
-  // 2. Afficher Carte
   function loadCard(index) {
     const cardEl = document.getElementById('active-card');
     const frontEl = cardEl.querySelector('.card-front');
@@ -338,7 +336,6 @@
     }, 200);
   }
 
-  // 3. Retourner
   window.flipCard = () => {
     if (isFlipped) return;
     document.getElementById('active-card').classList.add('flipped');
@@ -346,17 +343,13 @@
     setTimeout(() => document.getElementById('eval-btns').classList.add('visible'), 300);
   };
 
-  // 4. Voter (CALCUL COMPÉTENCES)
   window.rateCard = (pt) => {
     score += pt;
-    
-    // Moteur Compétences
     const currentComp = cardsData[currentCardIndex].comp;
     if(competencesScores[currentComp]) {
         competencesScores[currentComp].total++;
         if(pt === 1) competencesScores[currentComp].reussi++;
     }
-
     currentCardIndex++;
     if (currentCardIndex < cardsData.length) loadCard(currentCardIndex);
     else {
@@ -365,12 +358,13 @@
     }
   };
 
-  // 5. ENVOI RICHE (Temps + Détail)
+  // 5. ENVOI CONDITIONNEL
   window.revealAndSend = async () => {
     const btn = document.getElementById('btn-reveal');
     const scoreZone = document.getElementById('score-zone');
     const scoreDisplay = document.getElementById('final-score-display');
     const fbText = document.getElementById('feedback-text');
+    const statusText = document.getElementById('save-status');
 
     btn.style.display = 'none';
     scoreZone.style.display = 'block';
@@ -381,42 +375,51 @@
     else if (score >= 10) fbText.innerHTML = "Bien, continue tes efforts. 🙂";
     else fbText.innerHTML = "À retravailler pour mémoriser les définitions. 🚀";
 
-    // STOP CHRONO
+    // STOP SI ANONYME
+    if (isAnonymous) {
+        statusText.innerHTML = "Mode libre : Résultat non enregistré.";
+        statusText.style.color = "#9ca3af";
+        return; // On arrête là, on n'envoie rien à Firebase Note
+    }
+
+    // SINON (SI IDENTIFIÉ) : ON ENVOIE TOUT
+    statusText.innerHTML = "Sauvegarde de ta progression en cours...";
+    
     const endTime = new Date();
     const durationMs = endTime - startTime;
     const durationSeconds = Math.floor(durationMs / 1000);
-
-    // Calcul Note sur 20
     const note20 = Math.round((score / cardsData.length) * 20);
 
-    // Calcul Niveaux Compétences (0 à 3)
     let finalCompetences = {};
     for (const [key, val] of Object.entries(competencesScores)) {
         if(val.total === 0) {
             finalCompetences[key] = null;
         } else {
             const ratio = val.reussi / val.total;
-            if(ratio < 0.25) finalCompetences[key] = 0;      // Rouge
-            else if(ratio < 0.5) finalCompetences[key] = 1;  // Orange
-            else if(ratio < 0.8) finalCompetences[key] = 2;  // Vert
-            else finalCompetences[key] = 3;                  // Bleu (Expert)
+            if(ratio < 0.25) finalCompetences[key] = 0;
+            else if(ratio < 0.5) finalCompetences[key] = 1;
+            else if(ratio < 0.8) finalCompetences[key] = 2;
+            else finalCompetences[key] = 3;
         }
     }
 
     try {
       await addDoc(collection(db, "evaluations_competences"), {
-        date: new Date(), // Date serveur
+        date: new Date(),
         identifiant: studentData.id,
         classe: studentData.classe,
         exercice_titre: "Flashcards RPS (20 cartes)",
         note_finale: note20,
-        temps_secondes: durationSeconds, // Le temps passé !
-        competences: finalCompetences,   // Le détail C1, C2...
-        details_bruts: competencesScores // Pour debug si besoin
+        temps_secondes: durationSeconds,
+        competences: finalCompetences,
+        details_bruts: competencesScores
       });
-      console.log("Envoi complet (Temps + Compétences) réussi.");
+      statusText.innerHTML = "✅ Résultat enregistré avec succès !";
+      statusText.style.color = "#16a34a";
     } catch (e) {
       console.error("Erreur envoi:", e);
+      statusText.innerHTML = "⚠️ Erreur de connexion, note non envoyée.";
+      statusText.style.color = "#dc2626";
     }
   };
 </script>
