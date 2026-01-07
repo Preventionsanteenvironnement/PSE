@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test rapide PSE – Compétences</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:Arial,sans-serif;background:#f3f4f6;padding:20px}
+.card{background:#fff;border-radius:10px;padding:20px;max-width:600px;margin:auto}
+h1{color:#2563eb}
+.question{margin:10px 0}
+button{margin-top:15px;padding:12px 20px;border:none;border-radius:25px;background:#22c55e;color:#fff;font-weight:bold;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h1>Mini-test PSE (5 questions)</h1>
+
+<label>Identifiant élève</label>
+<input id="nom" style="width:100%;padding:8px">
+
+<label>Classe</label>
+<input id="classe" style="width:100%;padding:8px">
+
+<div class="question">1. Le stress chronique est un risque psychosocial ?
+<select id="q1"><option value="">—</option><option value="1">Oui</option><option value="0">Non</option></select></div>
+
+<div class="question">2. Le burn-out est lié au travail ?
+<select id="q2"><option value="">—</option><option value="1">Oui</option><option value="0">Non</option></select></div>
+
+<div class="question">3. Le harcèlement est une violence interne ?
+<select id="q3"><option value="">—</option><option value="1">Oui</option><option value="0">Non</option></select></div>
+
+<div class="question">4. Informer les salariés est une prévention ?
+<select id="q4"><option value="">—</option><option value="1">Oui</option><option value="0">Non</option></select></div>
+
+<div class="question">5. Le stress améliore toujours la santé ?
+<select id="q5"><option value="">—</option><option value="0">Oui</option><option value="1">Non</option></select></div>
+
+<button onclick="envoyer()">Envoyer</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+  authDomain: "devoirs-pse.firebaseapp.com",
+  projectId: "devoirs-pse",
+  storageBucket: "devoirs-pse.appspot.com",
+  messagingSenderId: "614730413904",
+  appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.envoyer = async function(){
+  const nom = nomEl.value = document.getElementById("nom").value.trim();
+  const classe = document.getElementById("classe").value.trim();
+  if(!nom || !classe){alert("Infos manquantes");return;}
+
+  const bonnes = {q1:1,q2:1,q3:1,q4:1,q5:1};
+  let score=0;
+  Object.keys(bonnes).forEach(q=>{
+    if(document.getElementById(q).value==bonnes[q]) score+=4;
+  });
+
+  const niveau = score<8?"NM":score<12?"IM":score<16?"M":"BM";
+
+  await addDoc(collection(db,"exercices"),{
+    meta:{
+      createdAt:new Date().toISOString(),
+      nom,
+      prenom:nom,
+      classe,
+      type:"exercice",
+      support:"TEST_PSE_COMPETENCES"
+    },
+    resultat:{
+      score:score+" / 20",
+      niveauGlobal:niveau,
+      competences:{
+        C1:"IM",
+        C2:"M",
+        C3:"M",
+        C4:"IM",
+        C5:"",
+        C6:""
+      },
+      tentatives:1,
+      tempsPasse:120,
+      url:location.href,
+      titre:document.title
+    }
+  });
+
+  alert("Envoyé");
+};
+</script>
+
+</body>
+</html>
