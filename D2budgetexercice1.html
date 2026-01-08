@@ -1,20 +1,209 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Module D2 : Le Budget</title> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style> :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f8fafc; } body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 12px; }
-        @media (min-width: 640px){ body{ padding: 18px; } } .container { max-width: 650px; margin: 0 auto; } header { background: var(--primary); color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); } .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.95rem; margin-top: 10px; }
-        header h1 { font-size: clamp(1.4rem, 3.6vw, 2rem); line-height: 1.15; } .cours-section { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--primary); } .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .q-text { font-weight: 700; margin-bottom: 12px; display: block; font-size: 1.1rem; } .options { display: grid; gap: 10px; grid-template-columns: 1fr; }
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Module D2 : Le Budget</title> 
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    
+    <style> 
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f8fafc; } 
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 12px; }
+        @media (min-width: 640px){ body{ padding: 18px; } } 
+        .container { max-width: 650px; margin: 0 auto; } 
+        header { background: var(--primary); color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); } 
+        .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.95rem; margin-top: 10px; }
+        header h1 { font-size: clamp(1.4rem, 3.6vw, 2rem); line-height: 1.15; } 
+        .cours-section { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--primary); } 
+        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } 
+        .q-text { font-weight: 700; margin-bottom: 12px; display: block; font-size: 1.1rem; } 
+        .options { display: grid; gap: 10px; grid-template-columns: 1fr; }
         @media (min-width: 640px) { .options { grid-template-columns: repeat(2, 1fr); } }
-        .opt-btn:focus-visible, .btn-valider:focus-visible, input:focus-visible {
-            outline: 3px solid rgba(37, 99, 235, 0.35);
-            outline-offset: 2px;
-        }
+        .opt-btn:focus-visible, .btn-valider:focus-visible, input:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.35); outline-offset: 2px; }
         .locked .opt-btn { pointer-events: none; opacity: 0.95; }
         .locked #solde-val { pointer-events: none; }
-        canvas { max-width: 100%; } .opt-btn { padding: 18px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; cursor: pointer; font-size: 1rem; font-weight: 600; text-align: center; transition: 0.2s; } .opt-btn.selected { border-color: var(--primary); background: #eff6ff; } .opt-btn.is-correct { background: #dcfce7 !important; border-color: var(--success) !important; color: #166534; } .opt-btn.is-wrong { background: #fee2e2 !important; border-color: var(--error) !important; color: #991b1b; } .btn-valider { width: 100%; padding: 22px; background: #1e293b; color: white; border: none; border-radius: 15px; font-size: 1.2rem; font-weight: 800; margin: 25px 0; cursor: pointer; transition: transform 0.1s; } .btn-valider:active { transform: scale(0.98); } #result-zone { display: none; background: white; padding: 25px; border-radius: 15px; border: 3px solid var(--primary); text-align: center; } .chart-box { height: 280px; margin: 20px 0; }
-        @media (max-width: 380px){ .chart-box{ height: 240px; } } .remed-box { text-align: left; background: #f1f5f9; padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 0.95rem; } .aide-calcul { font-size: 0.85rem; color: #64748b; background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 5px; display: block; } </style>
+        canvas { max-width: 100%; } 
+        .opt-btn { padding: 18px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; cursor: pointer; font-size: 1rem; font-weight: 600; text-align: center; transition: 0.2s; } 
+        .opt-btn.selected { border-color: var(--primary); background: #eff6ff; } 
+        .opt-btn.is-correct { background: #dcfce7 !important; border-color: var(--success) !important; color: #166534; } 
+        .opt-btn.is-wrong { background: #fee2e2 !important; border-color: var(--error) !important; color: #991b1b; } 
+        .btn-valider { width: 100%; padding: 22px; background: #1e293b; color: white; border: none; border-radius: 15px; font-size: 1.2rem; font-weight: 800; margin: 25px 0; cursor: pointer; transition: transform 0.1s; } 
+        .btn-valider:active { transform: scale(0.98); } 
+        #result-zone { display: none; background: white; padding: 25px; border-radius: 15px; border: 3px solid var(--primary); text-align: center; } 
+        .chart-box { height: 280px; margin: 20px 0; }
+        @media (max-width: 380px){ .chart-box{ height: 240px; } } 
+        .remed-box { text-align: left; background: #f1f5f9; padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 0.95rem; } 
+        .aide-calcul { font-size: 0.85rem; color: #64748b; background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 5px; display: block; } 
+    </style>
 </head>
-<body> <div class="container"> <header> <h1 style="margin:0;">Module D2 : Le Budget</h1> <div class="obj-box"> <strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget et au choix d'une épargne. </div> </header> <div class="cours-section"> <h3 style="margin-top:0;">Les Recettes (Revenus)</h3> <p>• <strong>Revenus du travail :</strong> Salaire, primes (ex: 1453 € brut). <br> • <strong>Revenus sociaux :</strong> Aides de l'État (CAF, APL, Bourses). </p> </div> <div class="cours-section"> <h3>Les Dépenses</h3> <p>• <strong>Fixes :</strong> On ne peut pas les réduire (Loyer, Impôts). <br> • <strong>Courantes :</strong> Indispensables mais varient (Alimentation, Carburant). <br> • <strong>Exceptionnelles :</strong> Peuvent être reportées (Loisirs, Cadeaux). </p> </div> <div id="quiz-container"></div> <div class="card"> <span class="q-text">Calcul du Solde Mensuel :</span> <p>Revenus totaux : 1257,45 € | Dépenses totales : 853,70 €</p> <span class="aide-calcul">💡 Aide : Le Solde = Recettes (ce que je gagne) - Dépenses (ce que je paye). </span> <input type="number" step="0.01" id="solde-val" placeholder="Entrez le résultat en €" style="width:100%; padding:15px; border-radius:10px; border:2px solid #cbd5e1; font-size:1.1rem; margin-top:10px;"> <div id="fb-solde" style="margin-top:15px; display:none; font-weight:bold;"></div> </div> <button class="btn-valider" id="submit-btn" onclick="calculer()">TERMINER ET VOIR MON ANALYSE</button> <div id="result-zone"> <h2 style="margin-top:0;">Ton Score : <span id="score-final">00</span> / 20</h2> <div class="chart-box"><canvas id="barChart"></canvas></div> <div id="remed-list"></div> <button class="btn-valider" style="background:#64748b" onclick="location.reload()">🔄 RECOMMENCER</button> </div>
-</div> <script> const questions = [ { q: "Salaire de Killian (1453,00 €)", cat: "Revenus", type: "travail", opts: ["Revenu lié au travail", "Revenu social (Aide)"] }, { q: "Allocation de rentrée scolaire (400,00 €)", cat: "Revenus", type: "social", opts: ["Revenu lié au travail", "Revenu social (Aide)"] }, { q: "Loyer de l'appartement (510,45 €)", cat: "Dépenses", type: "fixe", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, { q: "Courses alimentaires (250,00 €)", cat: "Dépenses", type: "courante", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, { q: "Achat d'une console de jeux (399,00 €)", cat: "Dépenses", type: "exceptionnelle", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, { q: "Assurance du véhicule (45,00 €)", cat: "Dépenses", type: "fixe", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, { q: "Facture de carburant (85,20 €)", cat: "Dépenses", type: "courante", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, { q: "Cadeau de Noël (120,00 €)", cat: "Dépenses", type: "exceptionnelle", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] } ]; const container = document.getElementById('quiz-container'); questions.forEach((item, i) => { let html = `<div class="card" id="q${i}"> <span class="q-text">${item.q} :</span> <div class="options">`; item.opts.forEach(opt => { let val = opt.toLowerCase().includes('travail') ? 'travail' : opt.toLowerCase().includes('social') ? 'social' : opt.toLowerCase().includes('fixe') ? 'fixe' : opt.toLowerCase().includes('courante') ? 'courante' : 'exceptionnelle'; html += `<div class="opt-btn" onclick="select(this, ${i})" data-val="${val}">${opt}</div>`; }); html += `</div></div>`; container.innerHTML += html; }); function select(btn, qIdx) { const parent = btn.parentElement; parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); } function calculer() { let score = 0; let stats = { "Revenus": 0, "Dépenses": 0 }; questions.forEach((item, i) => { const card = document.getElementById(`q${i}`); const sel = card.querySelector('.selected'); const btns = card.querySelectorAll('.opt-btn'); btns.forEach(b => { if(b.dataset.val === item.type) b.classList.add('is-correct'); if(sel && sel === b && b.dataset.val !== item.type) b.classList.add('is-wrong'); }); if(sel && sel.dataset.val === item.type) { score += 2; stats[item.cat]++; } }); const soldeSaisi = parseFloat(document.getElementById('solde-val').value); const fbS = document.getElementById('fb-solde'); fbS.style.display = 'block'; if(Math.abs(soldeSaisi - 403.75) < 0.01) { score += 4; fbS.innerHTML = "✅ Correct : 1257,45 - 853,70 = 403,75 €"; fbS.style.color = "var(--success)"; } else { fbS.innerHTML = "❌ Erreur : Le bon résultat est 403,75 €"; fbS.style.color = "var(--error)"; } document.getElementById('result-zone').style.display = 'block'; document.getElementById('score-final').innerText = score; document.getElementById('submit-btn').style.display = 'none'; new Chart(document.getElementById('barChart'), { type: 'bar', data: { labels: Object.keys(stats), datasets: [{ label: '% de réussite', data: [ (stats["Revenus"]/2)*100, (stats["Dépenses"]/6)*100 ], backgroundColor: '#2563eb' }] }, options: { scales: { y: { beginAtZero: true, max: 100 } } } }); let remed = "<h3>Analyse de tes résultats :</h3>"; if((stats["Revenus"]/2) < 1) remed += `<div class="remed-box">⚠️ Révise la différence entre <b>revenu lié au travail</b> et <b>revenu social</b>.</div>`; if((stats["Dépenses"]/6) < 0.7) remed += `<div class="remed-box">⚠️ Retravaille la classification des dépenses (Fixes, Courantes, Exceptionnelles).</div>`; if(Math.abs(soldeSaisi - 403.75) > 0.01) remed += `<div class="remed-box">⚠️ Attention au calcul du <b>Solde</b> (Recettes - Dépenses).</div>`; document.getElementById('remed-list').innerHTML = remed; window.scrollTo({ top: document.getElementById('result-zone').offsetTop, behavior: 'smooth' }); }
+<body> 
+    <div class="container"> 
+        <header> 
+            <h1 style="margin:0;">Module D2 : Le Budget</h1> 
+            <div class="obj-box"> 
+                <strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget et au choix d'une épargne. 
+            </div> 
+        </header> 
+        
+        <script>
+            // On enregistre la visite dès le chargement
+            if(typeof enregistrerVisite === "function") {
+                enregistrerVisite("Exercice Budget D2");
+            }
+        </script>
+
+        <div class="cours-section"> 
+            <h3 style="margin-top:0;">Les Recettes (Revenus)</h3> 
+            <p>• <strong>Revenus du travail :</strong> Salaire, primes (ex: 1453 € brut). <br> • <strong>Revenus sociaux :</strong> Aides de l'État (CAF, APL, Bourses). </p> 
+        </div> 
+        <div class="cours-section"> 
+            <h3>Les Dépenses</h3> 
+            <p>• <strong>Fixes :</strong> On ne peut pas les réduire (Loyer, Impôts). <br> • <strong>Courantes :</strong> Indispensables mais varient (Alimentation, Carburant). <br> • <strong>Exceptionnelles :</strong> Peuvent être reportées (Loisirs, Cadeaux). </p> 
+        </div> 
+        
+        <div id="quiz-container"></div> 
+        
+        <div class="card"> 
+            <span class="q-text">Calcul du Solde Mensuel :</span> 
+            <p>Revenus totaux : 1257,45 € | Dépenses totales : 853,70 €</p> 
+            <span class="aide-calcul">💡 Aide : Le Solde = Recettes (ce que je gagne) - Dépenses (ce que je paye). </span> 
+            <input type="number" step="0.01" id="solde-val" placeholder="Entrez le résultat en €" style="width:100%; padding:15px; border-radius:10px; border:2px solid #cbd5e1; font-size:1.1rem; margin-top:10px;"> 
+            <div id="fb-solde" style="margin-top:15px; display:none; font-weight:bold;"></div> 
+        </div> 
+        
+        <button class="btn-valider" id="submit-btn" onclick="calculer()">TERMINER ET VOIR MON ANALYSE</button> 
+        
+        <div id="result-zone"> 
+            <h2 style="margin-top:0;">Ton Score : <span id="score-final">00</span> / 20</h2> 
+            <div class="chart-box"><canvas id="barChart"></canvas></div> 
+            <div id="remed-list"></div> 
+            <button class="btn-valider" style="background:#64748b" onclick="location.reload()">🔄 RECOMMENCER</button> 
+        </div>
+    </div> 
+
+<script> 
+    const questions = [ 
+        { q: "Salaire de Killian (1453,00 €)", cat: "Revenus", type: "travail", opts: ["Revenu lié au travail", "Revenu social (Aide)"] }, 
+        { q: "Allocation de rentrée scolaire (400,00 €)", cat: "Revenus", type: "social", opts: ["Revenu lié au travail", "Revenu social (Aide)"] }, 
+        { q: "Loyer de l'appartement (510,45 €)", cat: "Dépenses", type: "fixe", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+        { q: "Courses alimentaires (250,00 €)", cat: "Dépenses", type: "courante", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+        { q: "Achat d'une console de jeux (399,00 €)", cat: "Dépenses", type: "exceptionnelle", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+        { q: "Assurance du véhicule (45,00 €)", cat: "Dépenses", type: "fixe", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+        { q: "Facture de carburant (85,20 €)", cat: "Dépenses", type: "courante", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+        { q: "Cadeau de Noël (120,00 €)", cat: "Dépenses", type: "exceptionnelle", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] } 
+    ]; 
+    
+    const container = document.getElementById('quiz-container'); 
+    questions.forEach((item, i) => { 
+        let html = `<div class="card" id="q${i}"> <span class="q-text">${item.q} :</span> <div class="options">`; 
+        item.opts.forEach(opt => { 
+            let val = opt.toLowerCase().includes('travail') ? 'travail' : opt.toLowerCase().includes('social') ? 'social' : opt.toLowerCase().includes('fixe') ? 'fixe' : opt.toLowerCase().includes('courante') ? 'courante' : 'exceptionnelle'; 
+            html += `<div class="opt-btn" onclick="select(this, ${i})" data-val="${val}">${opt}</div>`; 
+        }); 
+        html += `</div></div>`; 
+        container.innerHTML += html; 
+    }); 
+
+    function select(btn, qIdx) { 
+        const parent = btn.parentElement; 
+        parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); 
+        btn.classList.add('selected'); 
+    } 
+
+    async function calculer() { 
+        let score = 0; 
+        let stats = { "Revenus": 0, "Dépenses": 0 }; 
+        
+        // 1. Calcul du Score
+        questions.forEach((item, i) => { 
+            const card = document.getElementById(`q${i}`); 
+            const sel = card.querySelector('.selected'); 
+            const btns = card.querySelectorAll('.opt-btn'); 
+            btns.forEach(b => { 
+                if(b.dataset.val === item.type) b.classList.add('is-correct'); 
+                if(sel && sel === b && b.dataset.val !== item.type) b.classList.add('is-wrong'); 
+            }); 
+            if(sel && sel.dataset.val === item.type) { 
+                score += 2; 
+                stats[item.cat]++; 
+            } 
+        }); 
+
+        const soldeSaisi = parseFloat(document.getElementById('solde-val').value); 
+        const fbS = document.getElementById('fb-solde'); 
+        fbS.style.display = 'block'; 
+        
+        if(Math.abs(soldeSaisi - 403.75) < 0.01) { 
+            score += 4; 
+            fbS.innerHTML = "✅ Correct : 1257,45 - 853,70 = 403,75 €"; 
+            fbS.style.color = "var(--success)"; 
+        } else { 
+            fbS.innerHTML = "❌ Erreur : Le bon résultat est 403,75 €"; 
+            fbS.style.color = "var(--error)"; 
+        } 
+
+        // 2. Affichage des résultats visuels
+        document.getElementById('result-zone').style.display = 'block'; 
+        document.getElementById('score-final').innerText = score; 
+        document.getElementById('submit-btn').style.display = 'none'; 
+        
+        new Chart(document.getElementById('barChart'), { 
+            type: 'bar', 
+            data: { 
+                labels: Object.keys(stats), 
+                datasets: [{ 
+                    label: '% de réussite', 
+                    data: [ (stats["Revenus"]/2)*100, (stats["Dépenses"]/6)*100 ], 
+                    backgroundColor: '#2563eb' 
+                }] 
+            }, 
+            options: { scales: { y: { beginAtZero: true, max: 100 } } } 
+        }); 
+
+        let remed = "<h3>Analyse de tes résultats :</h3>"; 
+        if((stats["Revenus"]/2) < 1) remed += `<div class="remed-box">⚠️ Révise la différence entre <b>revenu lié au travail</b> et <b>revenu social</b>.</div>`; 
+        if((stats["Dépenses"]/6) < 0.7) remed += `<div class="remed-box">⚠️ Retravaille la classification des dépenses (Fixes, Courantes, Exceptionnelles).</div>`; 
+        if(Math.abs(soldeSaisi - 403.75) > 0.01) remed += `<div class="remed-box">⚠️ Attention au calcul du <b>Solde</b> (Recettes - Dépenses).</div>`; 
+        document.getElementById('remed-list').innerHTML = remed; 
+        
+        window.scrollTo({ top: document.getElementById('result-zone').offsetTop, behavior: 'smooth' });
+
+        // 3. ENVOI DES DONNÉES VERS FIREBASE (COMPÉTENCES C1 & C2)
+        try {
+            // Initialisation si nécessaire (utilise la config d'annuaire.js)
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Budget",
+                note: score,
+                total: 20,
+                competences: {
+                    "C1": score, // On attribue la note globale à C1
+                    "C2": score  // Et aussi à C2
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
+
+        } catch (e) {
+            console.error("Erreur lors de l'envoi Firebase : ", e);
+        }
+    }
 </script>
 </body>
 </html>
