@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Module D2 : Le Budget d'Amira</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
@@ -33,7 +38,7 @@
         .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
         .chart-box { height: 350px; margin: 20px 0; }
 
-        /* ✅ Ajustements techniques (sans modifier le contenu pédagogique) */
+        /* ✅ Ajustements techniques */
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body { padding: 15px; }
@@ -45,11 +50,9 @@
         .chart-box { position: relative; width: 100%; }
         canvas { max-width: 100% !important; height: 100% !important; }
 
-        /* Empêche débordement horizontal sur mobile */
         body { overflow-x: hidden; }
         .container { overflow-x: hidden; }
 
-        /* Solde: éviter la ligne trop large sur mobile */
         .context-box input#in-solde { max-width: 140px; }
 
         @media (max-width: 600px) {
@@ -62,7 +65,6 @@
             input[type="number"] { width: 120px; }
             .btn-valider { padding: 16px; font-size: 1.1rem; border-radius: 12px; }
             .chart-box { height: 280px; }
-            /* Ligne solde en colonne sur mobile */
             .context-box .solde-row { flex-direction: column; align-items: flex-start !important; gap: 10px; }
             .context-box .solde-row input#in-solde { width: 100%; max-width: 220px; }
         }
@@ -74,6 +76,13 @@
         <h1 style="margin:0;">Module D2 : Le Budget</h1>
         <div class="obj-box"><strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget.</div>
     </header>
+
+    <script>
+        if(typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Amira - Budget");
+        }
+    </script>
+
     <div class="context-box">
         <strong>Situation :</strong> Amira perçoit un <b>salaire de 2 257,14 €</b>. Elle reçoit également une <b>allocation de soutien familial de 113,22 €</b>. <br><br>
         Ses opérations : Loyer (1 027,13 €), Taxe d'habitation (60,00 €), Mutuelle (57,13 €), Facture d'électricité (113,33 €), Courses alimentaires (297,23 €), Transport (100,00 €), Abonnement transport (30,00 €), Hygiène (27,00 €), Coiffeur (35,00 €), Achat d'un ordinateur (650,00 €) et Habillement (83,00 €).
@@ -165,7 +174,7 @@
 
     let _barChartInstance = null;
 
-    function analyser() {
+    async function analyser() {
         const btn = document.getElementById('btn-analyser');
         if (btn && btn.disabled) return;
         if (btn) { btn.disabled = true; btn.style.opacity = "0.85"; btn.style.cursor = "not-allowed"; }
@@ -199,13 +208,16 @@
         if (Math.abs(inO - 768.00) < 0.01) score += 1.5;
         if (Math.abs(inSolde - (-162.79)) < 0.01) score += 0.5;
 
+        // Arrondi pour affichage et note
+        const finalScore = Math.round(Math.min(20, score));
+
         document.getElementById("result-zone").style.display = "block";
-        document.getElementById("final-score").innerText = `Score : ${Math.round(Math.min(20, score))} / 20`;
+        document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
         document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 2370.36) < 0.01 ? '✅' : '❌'}`;
         document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 2533.15) < 0.01 ? '✅' : '❌'}`;
         document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - (-162.79)) < 0.01 ? '✅' : '❌'}`;
 
-        // Anti-crash / anti-duplication Chart si l'élève clique plusieurs fois
+        // Anti-crash Chart
         try {
             const ctx = document.getElementById('barChart');
             if (_barChartInstance) { _barChartInstance.destroy(); _barChartInstance = null; }
@@ -222,63 +234,40 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
             });
-        } catch(e) {
-            // Si Chart.js ne charge pas (réseau), on ne bloque pas l'exercice
-        }
+        } catch(e) { }
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
-    }
-</script>
-</body>
-    <script type="module">
-    // 1. Importation des outils Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 2. Configuration (La clé de ton projet devoirs-pse)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-
-    // 3. Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 4. Récupération automatique du Nom et du Support
-    // Il prend ce qui est écrit dans la balise <title> tout en haut
-    let nomPage = document.title;
-    
-    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
-    if (!nomPage || nomPage === "") {
-        nomPage = window.location.pathname.split("/").pop();
-    }
-
-    // Détection Mobile ou Ordinateur
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const support = isMobile ? "Mobile" : "Ordinateur";
-
-    // 5. Envoi vers Firebase
-    async function envoyerLaVisite() {
+        // --- ENVOI FIREBASE (Compétences C1 & C2) ---
         try {
-            await addDoc(collection(db, "statistiques_usage"), {
-                page: nomPage,
-                device: support,
-                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
-                date: new Date().toISOString()
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Budget Amira",
+                note: finalScore,
+                total: 20,
+                competences: {
+                    "C1": finalScore, 
+                    "C2": finalScore  
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
+            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
+
         } catch (e) {
-            console.error("Erreur lors de l'envoi de la stat :", e);
+            console.error("Erreur lors de l'envoi Firebase : ", e);
         }
     }
-
-    // Exécution immédiate au chargement de la page
-    envoyerLaVisite();
 </script>
 </body>
 </html>
