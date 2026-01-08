@@ -1,5 +1,5 @@
 /* 📁 ANNUAIRE CENTRAL & CONFIGURATION - Dépôt PSE
-   Mise à jour : Ajout des codes VISITEURS (INV / PSE)
+   Mise à jour : Mouchard Intelligent (Récupération Classe + Période Horaire)
    Ce fichier contient la clé Firebase, le mouchard et la liste des codes.
 */
 
@@ -59,28 +59,61 @@ const ANNUAIRE = {
     "ZP60": "C2VAN", "QF14": "C2VAN", "MX88": "C2VAN", "LS23": "C2VAN", "VA71": "C2VAN", "CN05": "C2VAN"
 };
 
-// 3. FONCTION MOUCHARD (Statistiques automatiques)
+// 3. FONCTION MOUCHARD (Statistiques Intelligentes pour Cockpit)
 async function enregistrerVisite(nomPage) {
     try {
         const app = firebase.getApp();
         const db = firebase.firestore(app);
         
-        // Détection Mobile ou Ordi pour les stats
+        // A. Récupération de l'identité
+        let codeActuel = localStorage.getItem("codeEleve");
+        // Si aucun code (accès libre comme Glossaire), on marque "ANONYME"
+        if (!codeActuel) codeActuel = "ANONYME"; 
+        
+        // B. Identification de la Classe via l'Annuaire
+        let classeActuelle = "AUTRE";
+        if (ANNUAIRE[codeActuel]) {
+            classeActuelle = ANNUAIRE[codeActuel];
+        }
+
+        // C. Analyse Temporelle (Pour tes graphiques Jour/Nuit/Semaine)
+        const now = new Date();
+        const jour = now.getDay(); // 0 = Dimanche, 6 = Samedi
+        const heure = now.getHours();
+        
+        let periode = "Soir/Nuit"; // Par défaut
+        if (jour === 0 || jour === 6) {
+            periode = "Week-end";
+        } else if (heure >= 8 && heure < 18) {
+            periode = "Scolaire (8h-18h)";
+        }
+
+        // D. Device
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const deviceType = isMobile ? "Mobile" : "Ordinateur";
 
+        // E. Envoi des données enrichies vers Firebase
         await db.collection("statistiques_usage").add({
-            date: new Date().toISOString(),
+            date: now.toISOString(),
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             page: nomPage,
             action: "Consultation",
-            device: deviceType
+            device: deviceType,
+            
+            // --- NOUVEAUX CHAMPS POUR LE COCKPIT ---
+            userCode: codeActuel,   // Pour filtrer par élève (ex: KA47)
+            classe: classeActuelle, // Pour filtrer par classe (ex: B1AGO1)
+            periode: periode,       // Pour le graph circulaire (Scolaire/Soir/WE)
+            heure: heure,           // Pour le pic d'activité par heure
+            jourSemaine: jour       // Pour l'histogramme Semaine
         });
-        console.log("📍 Visite enregistrée pour : " + nomPage);
+        
+        console.log(`📍 Visite : ${nomPage} | ${codeActuel} (${classeActuelle}) | ${periode}`);
+
     } catch (e) {
         console.error("Erreur mouchard : ", e);
     }
 }
 
 // Vérification de chargement
-console.log("✅ Annuaire complet chargé (avec accès INV/PSE).");
+console.log("✅ Annuaire chargé. Mouchard prêt (Mode: Identité + Classe + Horaire).");
