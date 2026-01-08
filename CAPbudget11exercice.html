@@ -1,227 +1,242 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Module D2 : Apprendre par l'erreur - Épargne (Responsive)</title>
-<style>
-    :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f8fafc; }
-    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #1e293b; margin:0; }
-    .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    header { background: var(--primary); color: white; padding: 18px; border-radius: 12px; text-align: center; margin-bottom: 18px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module D2 : Apprendre par l'erreur - Épargne</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
 
-    .doc-image { width: 100%; max-width: 800px; border: 2px solid #cbd5e1; border-radius: 8px; margin: 15px auto; display: block; }
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #1e293b; margin:0; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        header { background: var(--primary); color: white; padding: 18px; border-radius: 12px; text-align: center; margin-bottom: 18px; }
 
-    /* TABLE SAFE & RESPONSIVE */
-    .table-wrapper { width:100%; overflow-x:auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 700px; }
-    th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; vertical-align: top; }
-    th { background: #f1f5f9; color: var(--primary); font-weight: bold; }
+        .doc-image { width: 100%; max-width: 800px; border: 2px solid #cbd5e1; border-radius: 8px; margin: 15px auto; display: block; }
 
-    select { width: 100%; padding: 10px; border-radius: 6px; border: 2px solid #cbd5e1; cursor: pointer; font-size: 0.95rem; margin-bottom: 5px; }
-    .feedback { display: none; font-size: 0.85rem; margin-top: 8px; padding: 10px; border-radius: 6px; line-height: 1.4; }
-    .feedback.show { display: block; }
-    .feedback.msg-correct { background-color: #dcfce7; color: #166534; border-left: 4px solid var(--success); }
-    .feedback.msg-error { background-color: #fee2e2; color: #991b1b; border-left: 4px solid var(--error); }
+        /* TABLE SAFE & RESPONSIVE */
+        .table-wrapper { width:100%; overflow-x:auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; vertical-align: top; }
+        th { background: #f1f5f9; color: var(--primary); font-weight: bold; }
 
-    .btn-valider { width: 100%; padding: 18px; background: #1e293b; color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 25px; }
-    .btn-valider:hover { background: #334155; }
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 2px solid #cbd5e1; cursor: pointer; font-size: 0.95rem; margin-bottom: 5px; }
+        .feedback { display: none; font-size: 0.85rem; margin-top: 8px; padding: 10px; border-radius: 6px; line-height: 1.4; }
+        .feedback.show { display: block; }
+        .feedback.msg-correct { background-color: #dcfce7; color: #166534; border-left: 4px solid var(--success); }
+        .feedback.msg-error { background-color: #fee2e2; color: #991b1b; border-left: 4px solid var(--error); }
 
-    .correct-ui { border-color: var(--success) !important; background-color: #f0fdf4; }
-    .error-ui { border-color: var(--error) !important; background-color: #fef2f2; }
+        .btn-valider { width: 100%; padding: 18px; background: #1e293b; color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 25px; }
+        .btn-valider:hover { background: #334155; }
 
-    #resultat { display: none; margin-top: 20px; text-align: center; padding: 18px; border-radius: 10px; border: 3px solid var(--primary); background: #eff6ff; }
+        .correct-ui { border-color: var(--success) !important; background-color: #f0fdf4; }
+        .error-ui { border-color: var(--error) !important; background-color: #fef2f2; }
 
-    @media (max-width:600px){
-        .container{padding:12px;}
-        header h1{font-size:1.2rem;}
-    }
-</style>
+        #resultat { display: none; margin-top: 20px; text-align: center; padding: 18px; border-radius: 10px; border: 3px solid var(--primary); background: #eff6ff; }
+
+        @media (max-width:600px){
+            .container{padding:12px;}
+            header h1{font-size:1.2rem;}
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-<header>
-<h1>Analyse Comparative : Pourquoi choisir ce placement ?</h1>
-<p>Consultez votre <b>Document A</b> pour justifier vos choix.</p>
-</header>
+    <header>
+        <h1>Analyse Comparative : Pourquoi choisir ce placement ?</h1>
+        <p>Consultez votre <b>Document A</b> pour justifier vos choix.</p>
+    </header>
 
-<img src="tableau-epargne.jpg" alt="Document A - Tableau des taux et plafonds" class="doc-image">
+    <script>
+        if(typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Épargne - Erreur");
+        }
+    </script>
 
-<div class="table-wrapper">
-<table>
-<thead>
-<tr>
-<th style="width: 35%;">Situation</th>
-<th style="width: 30%;">Contrainte</th>
-<th style="width: 35%;">Produit idéal</th>
-</tr>
-</thead>
-<tbody id="quiz-table">
+    <img src="tableau-epargne.jpg" alt="Document A - Tableau des taux et plafonds" class="doc-image">
 
-<tr data-c="age" data-p="livret-jeune">
-<td><b>1. Inès (19 ans)</b><br><small>Placement : 400 € | Retrait libre.</small></td>
-<td>
-<select class="sel-c">
-<option value="">-- Pourquoi ? --</option>
-<option value="age">Elle a entre 12 et 25 ans</option>
-<option value="revenu">Ses revenus sont bas</option>
-<option value="immo">Elle veut acheter un logement</option>
-</select>
-<div class="feedback f-c"></div>
-</td>
-<td>
-<select class="sel-p">
-<option value="">-- Quel produit ? --</option>
-<option value="livret-a">Livret A (1,70%)</option>
-<option value="livret-jeune">Livret Jeune</option>
-<option value="cel">CEL</option>
-</select>
-<div class="feedback f-p"></div>
-</td>
-</tr>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Situation</th>
+                    <th style="width: 30%;">Contrainte</th>
+                    <th style="width: 35%;">Produit idéal</th>
+                </tr>
+            </thead>
+            <tbody id="quiz-table">
+                <tr data-c="age" data-p="livret-jeune">
+                    <td><b>1. Inès (19 ans)</b><br><small>Placement : 400 € | Retrait libre.</small></td>
+                    <td>
+                        <select class="sel-c">
+                            <option value="">-- Pourquoi ? --</option>
+                            <option value="age">Elle a entre 12 et 25 ans</option>
+                            <option value="revenu">Ses revenus sont bas</option>
+                            <option value="immo">Elle veut acheter un logement</option>
+                        </select>
+                        <div class="feedback f-c"></div>
+                    </td>
+                    <td>
+                        <select class="sel-p">
+                            <option value="">-- Quel produit ? --</option>
+                            <option value="livret-a">Livret A (1,70%)</option>
+                            <option value="livret-jeune">Livret Jeune</option>
+                            <option value="cel">CEL</option>
+                        </select>
+                        <div class="feedback f-p"></div>
+                    </td>
+                </tr>
 
-<tr data-c="revenu" data-p="lep">
-<td><b>2. M. Traoré</b><br><small>Placement : 2000 € | Revenus modestes.</small></td>
-<td>
-<select class="sel-c">
-<option value="">-- Pourquoi ? --</option>
-<option value="age">Critère d'âge</option>
-<option value="revenu">Revenu fiscal bas</option>
-<option value="immo">Projet immobilier</option>
-</select>
-<div class="feedback f-c"></div>
-</td>
-<td>
-<select class="sel-p">
-<option value="">-- Quel produit ? --</option>
-<option value="ldds">LDDS</option>
-<option value="lep">LEP</option>
-<option value="livret-a">Livret A</option>
-</select>
-<div class="feedback f-p"></div>
-</td>
-</tr>
+                <tr data-c="revenu" data-p="lep">
+                    <td><b>2. M. Traoré</b><br><small>Placement : 2000 € | Revenus modestes.</small></td>
+                    <td>
+                        <select class="sel-c">
+                            <option value="">-- Pourquoi ? --</option>
+                            <option value="age">Critère d'âge</option>
+                            <option value="revenu">Revenu fiscal bas</option>
+                            <option value="immo">Projet immobilier</option>
+                        </select>
+                        <div class="feedback f-c"></div>
+                    </td>
+                    <td>
+                        <select class="sel-p">
+                            <option value="">-- Quel produit ? --</option>
+                            <option value="ldds">LDDS</option>
+                            <option value="lep">LEP</option>
+                            <option value="livret-a">Livret A</option>
+                        </select>
+                        <div class="feedback f-p"></div>
+                    </td>
+                </tr>
 
-<tr data-c="immo" data-p="pel">
-<td><b>3. Sophie</b><br><small>Projet immobilier | Argent bloqué 4 ans.</small></td>
-<td>
-<select class="sel-c">
-<option value="">-- Pourquoi ? --</option>
-<option value="age">Age</option>
-<option value="revenu">Revenus</option>
-<option value="immo">Achat logement</option>
-</select>
-<div class="feedback f-c"></div>
-</td>
-<td>
-<select class="sel-p">
-<option value="">-- Quel produit ? --</option>
-<option value="pel">PEL</option>
-<option value="livret-jeune">Livret Jeune</option>
-<option value="ldds">LDDS</option>
-</select>
-<div class="feedback f-p"></div>
-</td>
-</tr>
+                <tr data-c="immo" data-p="pel">
+                    <td><b>3. Sophie</b><br><small>Projet immobilier | Argent bloqué 4 ans.</small></td>
+                    <td>
+                        <select class="sel-c">
+                            <option value="">-- Pourquoi ? --</option>
+                            <option value="age">Age</option>
+                            <option value="revenu">Revenus</option>
+                            <option value="immo">Achat logement</option>
+                        </select>
+                        <div class="feedback f-c"></div>
+                    </td>
+                    <td>
+                        <select class="sel-p">
+                            <option value="">-- Quel produit ? --</option>
+                            <option value="pel">PEL</option>
+                            <option value="livret-jeune">Livret Jeune</option>
+                            <option value="ldds">LDDS</option>
+                        </select>
+                        <div class="feedback f-p"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-</tbody>
-</table>
-</div>
+    <button class="btn-valider" onclick="corriger()">VÉRIFIER ET VOIR LES EXPLICATIONS</button>
 
-<button class="btn-valider" onclick="corriger()">VÉRIFIER ET VOIR LES EXPLICATIONS</button>
-
-<div id="resultat">
-<h2 id="final-score"></h2>
-<p>Regarde les explications dans le tableau.</p>
-</div>
+    <div id="resultat">
+        <h2 id="final-score"></h2>
+        <p>Regarde les explications dans le tableau.</p>
+    </div>
 </div>
 
 <script>
-const explications = {
-'livret-jeune': 'Réservé aux 12-25 ans + généralement plus avantageux que le Livret A.',
-'lep': 'Meilleur taux pour revenus modestes.',
-'pel': 'Argent bloqué + projet immobilier = PEL.',
-'age': 'Critère principal = âge.',
-'revenu': 'Critère principal = ressources.',
-'immo': 'Critère principal = projet achat logement.'
-};
-
-function corriger() {
-let score = 0;
-document.querySelectorAll('#quiz-table tr').forEach(row => {
-const valC = row.querySelector('.sel-c').value;
-const valP = row.querySelector('.sel-p').value;
-const ansC = row.dataset.c;
-const ansP = row.dataset.p;
-
-const feedC = row.querySelector('.f-c');
-if(valC === ansC){ score++; feedC.innerHTML='✅ '+explications[ansC]; feedC.className='feedback show msg-correct'; row.querySelector('.sel-c').classList.add('correct-ui'); }
-else{ feedC.innerHTML='❌ '+explications[ansC]; feedC.className='feedback show msg-error'; row.querySelector('.sel-c').classList.add('error-ui'); }
-
-const feedP = row.querySelector('.f-p');
-if(valP === ansP){ score++; feedP.innerHTML='✅ '+explications[ansP]; feedP.className='feedback show msg-correct'; row.querySelector('.sel-p').classList.add('correct-ui'); }
-else{ feedP.innerHTML='❌ '+explications[ansP]; feedP.className='feedback show msg-error'; row.querySelector('.sel-p').classList.add('error-ui'); }
-
-row.querySelectorAll('select').forEach(s=>s.disabled=true);
-});
-
-document.getElementById('resultat').style.display='block';
-document.getElementById('final-score').innerText='Note : '+score+' / 6';
-window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
-}
-</script>
-    <script type="module">
-    // 1. Importation des outils Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-    // 2. Configuration (La clé de ton projet devoirs-pse)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    const explications = {
+        'livret-jeune': 'Réservé aux 12-25 ans + généralement plus avantageux que le Livret A.',
+        'lep': 'Meilleur taux pour revenus modestes.',
+        'pel': 'Argent bloqué + projet immobilier = PEL.',
+        'age': 'Critère principal = âge.',
+        'revenu': 'Critère principal = ressources.',
+        'immo': 'Critère principal = projet achat logement.'
     };
 
-    // 3. Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    async function corriger() {
+        // Anti double-clic
+        const btn = document.querySelector('.btn-valider');
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
 
-    // 4. Récupération automatique du Nom et du Support
-    // Il prend ce qui est écrit dans la balise <title> tout en haut
-    let nomPage = document.title;
-    
-    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
-    if (!nomPage || nomPage === "") {
-        nomPage = window.location.pathname.split("/").pop();
-    }
+        let score = 0;
+        
+        document.querySelectorAll('#quiz-table tr').forEach(row => {
+            const valC = row.querySelector('.sel-c').value;
+            const valP = row.querySelector('.sel-p').value;
+            const ansC = row.dataset.c;
+            const ansP = row.dataset.p;
 
-    // Détection Mobile ou Ordinateur
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const support = isMobile ? "Mobile" : "Ordinateur";
+            const feedC = row.querySelector('.f-c');
+            if(valC === ansC){ 
+                score++; 
+                feedC.innerHTML='✅ '+explications[ansC]; 
+                feedC.className='feedback show msg-correct'; 
+                row.querySelector('.sel-c').classList.add('correct-ui'); 
+            } else { 
+                feedC.innerHTML='❌ '+explications[ansC]; 
+                feedC.className='feedback show msg-error'; 
+                row.querySelector('.sel-c').classList.add('error-ui'); 
+            }
 
-    // 5. Envoi vers Firebase
-    async function envoyerLaVisite() {
+            const feedP = row.querySelector('.f-p');
+            if(valP === ansP){ 
+                score++; 
+                feedP.innerHTML='✅ '+explications[ansP]; 
+                feedP.className='feedback show msg-correct'; 
+                row.querySelector('.sel-p').classList.add('correct-ui'); 
+            } else { 
+                feedP.innerHTML='❌ '+explications[ansP]; 
+                feedP.className='feedback show msg-error'; 
+                row.querySelector('.sel-p').classList.add('error-ui'); 
+            }
+
+            row.querySelectorAll('select').forEach(s => s.disabled=true);
+        });
+
+        // Calcul Note sur 20 (Score max = 6)
+        const finalNote = Math.round((score / 6) * 20);
+
+        document.getElementById('resultat').style.display='block';
+        document.getElementById('final-score').innerText = 'Note : ' + score + ' / 6 (' + finalNote + '/20)';
+        window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+
+        // --- ENVOI FIREBASE (Compétences C1, C2, C4) ---
         try {
-            await addDoc(collection(db, "statistiques_usage"), {
-                page: nomPage,
-                device: support,
-                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
-                date: new Date().toISOString()
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Epargne Erreur",
+                note: finalNote,
+                total: 20,
+                competences: {
+                    "C1": finalNote, 
+                    "C2": finalNote,
+                    "C4": finalNote
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
+            console.log("✅ Résultats envoyés vers C1, C2 et C4 pour " + code);
+
         } catch (e) {
-            console.error("Erreur lors de l'envoi de la stat :", e);
+            console.error("Erreur lors de l'envoi Firebase : ", e);
         }
     }
-
-    // Exécution immédiate au chargement de la page
-    envoyerLaVisite();
 </script>
-</body>
 
 </body>
 </html>
