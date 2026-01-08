@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Module D2 : Le Budget d'Amanda</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
 
-        /* ✅ Robustesse mobile + anti-débordement (sans toucher au contenu pédagogique) */
+        /* ✅ Robustesse mobile + anti-débordement */
         *, *::before, *::after { box-sizing: border-box; }
         html, body { max-width: 100%; overflow-x: hidden; }
         img, svg, canvas { max-width: 100%; height: auto; }
@@ -44,7 +49,6 @@
         .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
         .status-options { display: flex; justify-content: space-around; margin-top: 15px; padding: 10px; background: #fff; border-radius: 8px; border: 1px solid #cbd5e1; }
 
-        /* ✅ Mobile */
         @media (max-width: 520px) {
             body { padding: 10px; }
             header { padding: 16px; }
@@ -58,7 +62,6 @@
             .btn-valider { padding: 16px; font-size: 1.05rem; }
         }
 
-        /* ✅ Très petits écrans */
         @media (max-width: 360px) {
             .syn-row { flex-direction: column; align-items: flex-start; }
             .syn-row .val { width: 100%; text-align: left; }
@@ -73,6 +76,12 @@
         <h1 style="margin:0;">Module D2 : Le Budget d'Amanda</h1>
         <div class="obj-box">Objectif : Identifier l'état d'un budget après calcul du solde.</div>
     </header>
+
+    <script>
+        if(typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Amanda - Budget");
+        }
+    </script>
 
     <div class="context-box">
         <strong>Situation :</strong> Amanda est infirmière. Elle perçoit un <b>salaire de 2 450,00 €</b> et une <b>prime d'activité de 113,14 €</b>. <br><br>
@@ -174,16 +183,23 @@
         };
     });
 
-    function analyser() {
+    async function analyser() {
+        const btn = document.querySelector('.btn-valider');
+        if (btn && btn.disabled) return;
+        if (btn) { btn.disabled = true; btn.style.opacity = "0.7"; btn.style.cursor = "not-allowed"; }
+
         let score = 0;
 
         items.forEach(item => {
             let el = document.getElementById("i-" + item.id);
-            // ✅ Anti-crash : si l'élément est resté dans la banque (ou déplacé ailleurs), dataset peut être absent
             let parentCat = el && el.parentElement && el.parentElement.dataset ? el.parentElement.dataset.category : undefined;
 
-            if (parentCat === item.cat) { score += 1; el.style.borderColor = "#28a745"; }
-            else { if(el) el.style.borderColor = "#dc3545"; }
+            if (parentCat === item.cat) { 
+                score += 1; // 12 items = 12 points
+                el.style.borderColor = "#28a745"; 
+            } else { 
+                if(el) el.style.borderColor = "#dc3545"; 
+            }
         });
 
         const inR = parseFloat(document.getElementById("in-recettes").value) || 0;
@@ -195,6 +211,7 @@
 
         const totalD = Number((inF + inC + inO).toFixed(2));
 
+        // Calcul des points supplémentaires (8 points)
         if (Math.abs(inR - 2563.14) < 0.01) score += 2;
         if (Math.abs(inF - 1090.73) < 0.01) score += 1.5;
         if (Math.abs(inC - 729.27) < 0.01) score += 1.5;
@@ -202,8 +219,10 @@
         if (Math.abs(inSolde - 3.14) < 0.01) score += 1;
         if (inStatus === "equilibre") score += 0.5;
 
+        const finalScore = Math.round(score);
+
         document.getElementById("result-zone").style.display = "block";
-        document.getElementById("final-score").innerText = `Score : ${Math.round(score)} / 20`;
+        document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
 
         document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 2563.14) < 0.01 ? '✅' : '❌'}`;
         document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 2560.00) < 0.01 ? '✅' : '❌'}`;
@@ -211,58 +230,37 @@
         document.querySelector("#syn-status .val").innerHTML = `${inStatus === "equilibre" ? "Équilibré ✅" : "Erreur ❌"}`;
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
-    }
-</script>
-</body>
-    <script type="module">
-    // 1. Importation des outils Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 2. Configuration (La clé de ton projet devoirs-pse)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-
-    // 3. Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 4. Récupération automatique du Nom et du Support
-    // Il prend ce qui est écrit dans la balise <title> tout en haut
-    let nomPage = document.title;
-    
-    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
-    if (!nomPage || nomPage === "") {
-        nomPage = window.location.pathname.split("/").pop();
-    }
-
-    // Détection Mobile ou Ordinateur
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const support = isMobile ? "Mobile" : "Ordinateur";
-
-    // 5. Envoi vers Firebase
-    async function envoyerLaVisite() {
+        // --- ENVOI FIREBASE (Compétences C1 & C2) ---
         try {
-            await addDoc(collection(db, "statistiques_usage"), {
-                page: nomPage,
-                device: support,
-                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
-                date: new Date().toISOString()
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Budget Amanda",
+                note: finalScore,
+                total: 20,
+                competences: {
+                    "C1": finalScore, 
+                    "C2": finalScore  
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
+            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
+
         } catch (e) {
-            console.error("Erreur lors de l'envoi de la stat :", e);
+            console.error("Erreur lors de l'envoi Firebase : ", e);
         }
     }
-
-    // Exécution immédiate au chargement de la page
-    envoyerLaVisite();
 </script>
 </body>
 </html>
