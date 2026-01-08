@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exercice PSE : Gérer son Budget</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
         body { font-family: sans-serif; background: var(--bg); padding: 20px; color: #1e293b; }
@@ -20,7 +25,7 @@
         .btn-submit { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
         #resultat { display: none; margin-top: 25px; text-align: center; font-size: 1.5rem; font-weight: bold; padding: 20px; border-radius: 10px; background: #f8fafc; }
 
-        /* ✅ Ajustements techniques (sans modifier le contenu pédagogique) */
+        /* ✅ Ajustements techniques */
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body { padding: 20px; }
@@ -46,6 +51,12 @@
     <header style="text-align:center; margin-bottom:20px;">
         <h1>L'état de mon Budget</h1>
     </header>
+
+    <script>
+        if(typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice PSE - États du Budget");
+        }
+    </script>
 
     <section class="cours">
         <strong>Rappel simple :</strong>
@@ -131,13 +142,13 @@
         };
     });
 
-    document.getElementById('valider').onclick = function() {
+    document.getElementById('valider').onclick = async function() {
         if (this.disabled) return;
         this.disabled = true;
         this.style.opacity = '0.85';
         this.style.cursor = 'not-allowed';
 
-        let score = 0;
+        let rawScore = 0;
         const situations = document.querySelectorAll('.situation-card');
 
         situations.forEach(card => {
@@ -152,66 +163,48 @@
                     btn.classList.add('wrong');
                 }
             });
-            if (selected && selected.getAttribute('data-value') === correct) { score++; }
+            if (selected && selected.getAttribute('data-value') === correct) { rawScore++; }
         });
+
+        // Conversion de la note sur 20
+        const noteSur20 = Math.round((rawScore / 6) * 20);
 
         const final = document.getElementById('resultat');
         final.style.display = 'block';
-        final.innerHTML = "Ton score : " + score + " / " + situations.length;
+        final.innerHTML = "Ton score : " + rawScore + " / 6 <br> Note : " + noteSur20 + "/20";
         this.style.display = 'none';
-    };
-</script>
 
-</body>
-    <script type="module">
-    // 1. Importation des outils Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-    // 2. Configuration (La clé de ton projet devoirs-pse)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-
-    // 3. Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 4. Récupération automatique du Nom et du Support
-    // Il prend ce qui est écrit dans la balise <title> tout en haut
-    let nomPage = document.title;
-    
-    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
-    if (!nomPage || nomPage === "") {
-        nomPage = window.location.pathname.split("/").pop();
-    }
-
-    // Détection Mobile ou Ordinateur
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const support = isMobile ? "Mobile" : "Ordinateur";
-
-    // 5. Envoi vers Firebase
-    async function envoyerLaVisite() {
+        // --- ENVOI FIREBASE (Compétences C1 & C2) ---
         try {
-            await addDoc(collection(db, "statistiques_usage"), {
-                page: nomPage,
-                device: support,
-                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
-                date: new Date().toISOString()
-            });
-            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
-        } catch (e) {
-            console.error("Erreur lors de l'envoi de la stat :", e);
-        }
-    }
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
 
-    // Exécution immédiate au chargement de la page
-    envoyerLaVisite();
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Exercice PSE - États du Budget",
+                note: noteSur20,
+                total: 20,
+                competences: {
+                    "C1": noteSur20, 
+                    "C2": noteSur20  
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
+
+        } catch (e) {
+            console.error("Erreur lors de l'envoi Firebase : ", e);
+        }
+    };
 </script>
+
 </body>
 </html>
