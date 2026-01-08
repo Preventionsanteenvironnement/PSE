@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escape Game Finance : Le Coffre de Sophie</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
@@ -45,7 +50,7 @@
         #result-zone { display: none; margin-top: 30px; text-align: center; width: 100%; }
         .chart-box { height: 300px; margin: 20px 0; background: white; border-radius: 15px; padding: 15px; }
 
-        /* ✅ AJUSTEMENTS TECHNIQUES (SANS TOUCHER AU CONTENU PÉDAGOGIQUE) */
+        /* ✅ AJUSTEMENTS TECHNIQUES */
         * { box-sizing: border-box; }
         body { margin: 0; }
         .container, header, .mission-box, #item-bank, .safe-zone, #result-zone { max-width: 100%; }
@@ -68,9 +73,15 @@
 
 <div class="container">
     <header>
-        <h1>🔐 ESCAPE GAME : LE COFFRE DE SOPHIE</h1>
+        <h1 style="margin:0;">🔐 ESCAPE GAME : LE COFFRE DE SOPHIE</h1>
         <div class="obj-box">Mission : Classez les flux et trouvez le code pour débloquer la récompense !</div>
     </header>
+
+    <script>
+        if(typeof enregistrerVisite === "function") {
+            enregistrerVisite("Escape Game - Sophie");
+        }
+    </script>
 
     <div class="mission-box">
         <strong>LE DOSSIER :</strong> Le code du coffre est le <strong>Solde Mensuel exact</strong> de Sophie.<br><br>
@@ -160,10 +171,9 @@
         };
     });
 
-    // ✅ Anti double-graphe + fallback Chart.js + confetti safe
     let chartInstance = null;
 
-    function ouvrirCoffre() {
+    async function ouvrirCoffre() {
         const btn = document.getElementById("btn-open");
         if (btn && btn.disabled) return;
         if (btn) { btn.disabled = true; btn.style.opacity = "0.75"; btn.style.cursor = "not-allowed"; }
@@ -173,12 +183,13 @@
         let scoreClassification = 0;
         let stats = { "Recettes": 0, "Dépenses": 0 };
 
+        // 1. Calcul du Score
         items.forEach(item => {
             let el = document.getElementById("i-" + item.id);
             let info = document.getElementById("info-" + item.id);
             let parentCat = (el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
             if (parentCat === item.cat) {
-                scoreClassification++;
+                scoreClassification++; // 1 point par item bien placé
                 if(item.cat.includes("recette")) stats["Recettes"]++; else stats["Dépenses"]++;
             } else {
                 el.style.borderColor = "#dc2626";
@@ -186,6 +197,15 @@
             }
         });
 
+        // La Note sur 20 : 9 points pour le classement (1 par item) + 11 points pour le code
+        let finalNote = scoreClassification; // Max 9
+        if (Math.abs(userCode - correctSolde) < 0.01) {
+            finalNote += 11; // Bonus Coffre ouvert
+        }
+        // Sécurité si dépassement (peu probable ici)
+        finalNote = Math.min(20, finalNote);
+
+        // 2. Gestion Animation Coffre (Uniquement si tout est parfait pour le "Jeu")
         if (Math.abs(userCode - correctSolde) < 0.01 && scoreClassification === items.length) {
             document.getElementById('lock-status').innerText = "🔓";
             document.getElementById('lock-status').style.transform = "scale(1.5)";
@@ -197,15 +217,14 @@
             setTimeout(() => document.getElementById('lock-status').innerText = "🔒", 2000);
         }
 
+        // 3. Affichage Graphique
         document.getElementById('result-zone').style.display = "block";
-
         const pcRec = (stats["Recettes"]/2)*100;
         const pcDep = (stats["Dépenses"]/7)*100;
         const pcOpen = (Math.abs(userCode - correctSolde) < 0.01 ? 100 : 0);
 
         const fallback = document.getElementById("chart-fallback");
         if (fallback) fallback.style.display = "none";
-
         const canvas = document.getElementById('barChart');
         const canDraw = (typeof Chart !== "undefined") && canvas && canvas.getContext;
 
@@ -230,18 +249,38 @@
                     }
                 });
             } catch (e) {
-                if (fallback) {
-                    fallback.style.display = "block";
-                    fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
-                    Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Ouverture : ${pcOpen.toFixed(0)}%`;
-                }
+                if (fallback) fallback.style.display = "block";
             }
-        } else {
-            if (fallback) {
-                fallback.style.display = "block";
-                fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
-                Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Ouverture : ${pcOpen.toFixed(0)}%`;
+        }
+
+        // 4. ENVOI FIREBASE (Compétences C1 & C2)
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
             }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Escape Game Finance - Sophie",
+                note: finalNote,
+                total: 20,
+                competences: {
+                    "C1": finalNote, 
+                    "C2": finalNote  
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
+
+        } catch (e) {
+            console.error("Erreur lors de l'envoi Firebase : ", e);
         }
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
@@ -250,57 +289,6 @@
             if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer"; }
         }, 600);
     }
-</script>
-</body>
-    <script type="module">
-    // 1. Importation des outils Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-    // 2. Configuration (La clé de ton projet devoirs-pse)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-
-    // 3. Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 4. Récupération automatique du Nom et du Support
-    // Il prend ce qui est écrit dans la balise <title> tout en haut
-    let nomPage = document.title;
-    
-    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
-    if (!nomPage || nomPage === "") {
-        nomPage = window.location.pathname.split("/").pop();
-    }
-
-    // Détection Mobile ou Ordinateur
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const support = isMobile ? "Mobile" : "Ordinateur";
-
-    // 5. Envoi vers Firebase
-    async function envoyerLaVisite() {
-        try {
-            await addDoc(collection(db, "statistiques_usage"), {
-                page: nomPage,
-                device: support,
-                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
-                date: new Date().toISOString()
-            });
-            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
-        } catch (e) {
-            console.error("Erreur lors de l'envoi de la stat :", e);
-        }
-    }
-
-    // Exécution immédiate au chargement de la page
-    envoyerLaVisite();
 </script>
 </body>
 </html>
