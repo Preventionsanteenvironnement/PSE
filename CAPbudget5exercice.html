@@ -230,4 +230,55 @@
     }
 </script>
 </body>
+    <script type="module">
+    // 1. Importation des outils Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // 2. Configuration (La clé de ton projet devoirs-pse)
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+        authDomain: "devoirs-pse.firebaseapp.com",
+        projectId: "devoirs-pse",
+        storageBucket: "devoirs-pse.appspot.com",
+        messagingSenderId: "614730413904",
+        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    // 3. Initialisation
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 4. Récupération automatique du Nom et du Support
+    // Il prend ce qui est écrit dans la balise <title> tout en haut
+    let nomPage = document.title;
+    
+    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
+    if (!nomPage || nomPage === "") {
+        nomPage = window.location.pathname.split("/").pop();
+    }
+
+    // Détection Mobile ou Ordinateur
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const support = isMobile ? "Mobile" : "Ordinateur";
+
+    // 5. Envoi vers Firebase
+    async function envoyerLaVisite() {
+        try {
+            await addDoc(collection(db, "statistiques_usage"), {
+                page: nomPage,
+                device: support,
+                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
+                date: new Date().toISOString()
+            });
+            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
+        } catch (e) {
+            console.error("Erreur lors de l'envoi de la stat :", e);
+        }
+    }
+
+    // Exécution immédiate au chargement de la page
+    envoyerLaVisite();
+</script>
+</body>
 </html>
