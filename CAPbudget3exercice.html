@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Module D2 : Le Budget de Nabila</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
@@ -43,14 +48,13 @@
         .syn-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
         .chart-box { height: 350px; margin: 20px 0; }
 
-        /* ✅ AJUSTEMENTS TECHNIQUES (SANS TOUCHER AU CONTENU PÉDAGOGIQUE) */
+        /* ✅ AJUSTEMENTS TECHNIQUES */
         * { box-sizing: border-box; }
         .context-box, .container, #result-zone { overflow-wrap: anywhere; }
         .chart-box canvas { max-width: 100% !important; height: 100% !important; }
         .drop-zone, .sub-zone { overflow: auto; }
         .draggable-item { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
-        /* Calcul final responsive sans modifier le texte */
         .final-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 12px; flex-wrap: wrap; }
         .final-row > span { flex: 1 1 260px; min-width: 200px; }
         .final-row > input { flex: 0 0 auto; }
@@ -73,6 +77,13 @@
         <h1 style="margin:0;">Module D2 : Le Budget</h1>
         <div class="obj-box"><strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget.</div>
     </header>
+
+    <script>
+        // On enregistre la visite dès le chargement
+        if(typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Nabila - Budget");
+        }
+    </script>
 
     <div class="context-box">
         <strong>Situation :</strong> Nabila est salariée. Elle reçoit son <b>salaire de 1 850 €</b>. Elle perçoit également une <b>allocation familiale de 120 €</b>. <br><br>
@@ -174,7 +185,7 @@
     // ✅ Anti-crash Chart.js + anti multi-clic
     let chartInstance = null;
 
-    function analyser() {
+    async function analyser() {
         const btn = document.getElementById("btn-analyser");
         if (btn && btn.disabled) return;
         if (btn) { btn.disabled = true; btn.style.opacity = "0.7"; btn.style.cursor = "not-allowed"; }
@@ -202,8 +213,8 @@
         const inSolde = parseInt(document.getElementById("in-solde").value) || 0;
 
         const totalD = inF + inC + inO;
-        const soldeCorrect = 1970 - 1490; // 480€
-
+        
+        // Calcul pour vérification : 1970 - 1490 = 480
         if (inR === 1970) score += 2;
         if (inF === 965) score += 2;
         if (inC === 440) score += 2;
@@ -249,73 +260,42 @@
                     }
                 });
             } catch (e) {
-                if (fallback) {
-                    fallback.style.display = "block";
-                    fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
-                    Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Solde : ${pcSolde.toFixed(0)}%`;
-                }
-            }
-        } else {
-            if (fallback) {
-                fallback.style.display = "block";
-                fallback.innerHTML = `<strong>Graphique indisponible</strong>.<br>
-                Recettes : ${pcRec.toFixed(0)}% • Dépenses : ${pcDep.toFixed(0)}% • Solde : ${pcSolde.toFixed(0)}%`;
+                if (fallback) fallback.style.display = "block";
             }
         }
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
-    }
-</script>
-</body>
-    <script type="module">
-    // 1. Importation des outils Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 2. Configuration (La clé de ton projet devoirs-pse)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-
-    // 3. Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 4. Récupération automatique du Nom et du Support
-    // Il prend ce qui est écrit dans la balise <title> tout en haut
-    let nomPage = document.title;
-    
-    // Sécurité : si tu as oublié le titre, il prend le nom du fichier (ex: index.html)
-    if (!nomPage || nomPage === "") {
-        nomPage = window.location.pathname.split("/").pop();
-    }
-
-    // Détection Mobile ou Ordinateur
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const support = isMobile ? "Mobile" : "Ordinateur";
-
-    // 5. Envoi vers Firebase
-    async function envoyerLaVisite() {
+        // --- ENVOI FIREBASE (Compétences C1 & C2) ---
         try {
-            await addDoc(collection(db, "statistiques_usage"), {
-                page: nomPage,
-                device: support,
-                timestamp: serverTimestamp(), // Enregistre l'heure exacte pour tes stats Jour/Nuit
-                date: new Date().toISOString()
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.firestore();
+            
+            // Récupération Identité
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            // Envoi
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Budget Nabila",
+                note: score,
+                total: 20,
+                competences: {
+                    "C1": score, 
+                    "C2": score  
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("🚀 Statistique envoyée : " + nomPage + " (" + support + ")");
+            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
+
         } catch (e) {
-            console.error("Erreur lors de l'envoi de la stat :", e);
+            console.error("Erreur lors de l'envoi Firebase : ", e);
         }
     }
-
-    // Exécution immédiate au chargement de la page
-    envoyerLaVisite();
 </script>
 </body>
 </html>
