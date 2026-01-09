@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget de Léa - Maths & Tri</title>
     <style>
         :root {
@@ -20,9 +21,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        h1 { margin-bottom: 10px; }
+        h1 { margin-bottom: 10px; text-align: center; }
 
         /* BOUTONS */
         .controls {
@@ -90,7 +92,7 @@
 
         /* INPUTS POUR CALCUL */
         .calc-area {
-            margin-top: auto; /* Pousse vers le bas */
+            margin-top: auto;
             width: 90%;
             text-align: center;
             background: #eee;
@@ -135,8 +137,8 @@
             background: #fff;
             border: 2px solid #ccc;
             border-radius: 8px;
-            padding: 5px;
-            margin-bottom: 5px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
             width: 95%;
             cursor: grab;
             display: flex;
@@ -144,6 +146,8 @@
             justify-content: space-between;
             font-size: 1rem;
             font-weight: bold;
+            touch-action: manipulation;
+            user-select: none;
         }
         .icon { font-size: 1.5rem; margin-right: 5px; }
         .price { background: #eee; padding: 2px 6px; border-radius: 4px; }
@@ -178,6 +182,55 @@
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
 
+        /* AIDE MOBILE (sélecteur de colonne) */
+        .mobile-helper {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+        }
+        .mobile-helper .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .mobile-helper select {
+            padding: 10px 12px;
+            font-size: 1.05rem;
+            border-radius: 10px;
+            border: 2px solid #999;
+            font-weight: bold;
+        }
+        .hint {
+            font-size: 0.95rem;
+            opacity: 0.85;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* RESPONSIVE MOBILE */
+        @media (max-width: 900px) {
+            .game-area {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .column {
+                width: 100%;
+                min-height: 220px;
+            }
+            .bank-container {
+                max-width: 100%;
+            }
+            #resultat { width: 95%; }
+            .mobile-helper { display: block; }
+        }
     </style>
 </head>
 <body>
@@ -189,6 +242,22 @@
         <button class="check-btn" onclick="verifierTout()">✅ VÉRIFIER MES CALCULS</button>
         <button class="sol-btn" onclick="montrerSolution()">🔑 SOLUTION</button>
         <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+    </div>
+
+    <!-- Plan B mobile : on clique un item puis il va dans la colonne choisie -->
+    <div class="mobile-helper" id="mobile-helper">
+        <div class="row">
+            <strong>Sur téléphone :</strong>
+            <span>je choisis une colonne → je clique une étiquette</span>
+            <select id="mobile-target">
+                <option value="recettes">📥 Rentrées</option>
+                <option value="fixes">🔒 Fixes</option>
+                <option value="courantes">🛒 Courantes</option>
+                <option value="occas">🎉 Plaisirs</option>
+                <option value="banque">🏦 Banque (retour)</option>
+            </select>
+        </div>
+        <div class="hint">Sur ordinateur, tu peux glisser-déposer normalement.</div>
     </div>
 
     <div class="game-area">
@@ -283,8 +352,19 @@
             div.id = item.id;
             div.dataset.cat = item.cat;
             div.dataset.price = item.price;
-            div.onclick = () => speak(item.name + ", " + item.price + " euros");
+
+            div.onclick = () => {
+                // Audio (si dispo)
+                speak(item.name + ", " + item.price + " euros");
+
+                // Plan B mobile: clique => déplacer vers la colonne choisie
+                if (isMobileLayout()) {
+                    moveItemToSelectedTarget(div);
+                }
+            };
+
             div.ondragstart = drag;
+
             div.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <span class="icon">${item.icon}</span>
@@ -296,33 +376,62 @@
         });
     }
 
+    function isMobileLayout() {
+        return window.matchMedia("(max-width: 900px)").matches;
+    }
+
+    function moveItemToSelectedTarget(itemEl) {
+        const targetId = document.getElementById('mobile-target').value;
+        const target = document.getElementById(targetId);
+
+        if (!target) return;
+
+        // Insertion avant calc-area si colonne, sinon append (banque)
+        const calcArea = target.querySelector('.calc-area');
+        if (calcArea) {
+            target.insertBefore(itemEl, calcArea);
+        } else {
+            target.appendChild(itemEl);
+        }
+
+        // Reset styles + feedback
+        itemEl.style.border = "2px solid #ccc";
+        document.getElementById('resultat').style.display = 'none';
+    }
+
     function allowDrop(ev) { ev.preventDefault(); }
     function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+
     function drop(ev) {
         ev.preventDefault();
         var data = ev.dataTransfer.getData("text");
         let target = ev.target;
-        while (!target.classList.contains('column') && !target.classList.contains('bank-container')) {
+
+        while (target && !target.classList.contains('column') && !target.classList.contains('bank-container')) {
             target = target.parentElement;
-            if(!target) return;
         }
+        if(!target) return;
+
+        const el = document.getElementById(data);
+
         // Insertion avant la zone de calcul (calc-area)
         const calcArea = target.querySelector('.calc-area');
         if(calcArea) {
-            target.insertBefore(document.getElementById(data), calcArea);
+            target.insertBefore(el, calcArea);
         } else {
-            target.appendChild(document.getElementById(data));
+            target.appendChild(el);
         }
-        
-        // Reset styles
-        document.getElementById(data).style.border = "2px solid #ccc";
+
+        el.style.border = "2px solid #ccc";
         document.getElementById('resultat').style.display = 'none';
     }
 
     function speak(txt) {
-        const msg = new SpeechSynthesisUtterance(txt);
-        msg.lang = 'fr-FR';
-        window.speechSynthesis.speak(msg);
+        try {
+            const msg = new SpeechSynthesisUtterance(txt);
+            msg.lang = 'fr-FR';
+            window.speechSynthesis.speak(msg);
+        } catch(e) {}
     }
     
     function lireConsigne() {
@@ -333,21 +442,20 @@
         let erreursTri = 0;
         let erreursCalcul = 0;
         const cols = ['recettes', 'fixes', 'courantes', 'occas'];
-        
-        // 1. VERIF DU TRI
+
         cols.forEach(colId => {
             const container = document.getElementById(colId);
             const items = container.getElementsByClassName('item');
+
             for (let item of items) {
                 if (item.dataset.cat !== colId) {
-                    item.style.border = "4px solid #ff4444"; // Erreur tri
+                    item.style.border = "4px solid #ff4444";
                     erreursTri++;
                 } else {
-                    item.style.border = "4px solid #4caf50"; // Bon tri
+                    item.style.border = "4px solid #4caf50";
                 }
             }
-            
-            // 2. VERIF DES CALCULS COLONNES
+
             const input = document.getElementById('input-' + colId);
             const val = parseInt(input.value);
             if (val !== solutions[colId]) {
@@ -360,7 +468,6 @@
             }
         });
 
-        // 3. VERIF DU BILAN FINAL
         const fRec = parseInt(document.getElementById('final-recettes').value);
         const fDep = parseInt(document.getElementById('final-depenses').value);
         const fSolde = parseInt(document.getElementById('final-solde').value);
@@ -370,7 +477,6 @@
         if(fDep !== solutions['total_depenses']) erreursBilan++;
         if(fSolde !== solutions['solde']) erreursBilan++;
 
-        // FEEDBACK
         const resDiv = document.getElementById('resultat');
         resDiv.style.display = 'block';
 
@@ -394,7 +500,6 @@
     }
 
     function montrerSolution() {
-        // Range tout
         itemsData.forEach(itemData => {
             const itemElement = document.getElementById(itemData.id);
             const bonneColonne = document.getElementById(itemData.cat);
@@ -403,18 +508,15 @@
             itemElement.style.border = "4px solid #4caf50";
         });
 
-        // Remplit les inputs
         document.getElementById('input-recettes').value = solutions['recettes'];
         document.getElementById('input-fixes').value = solutions['fixes'];
         document.getElementById('input-courantes').value = solutions['courantes'];
         document.getElementById('input-occas').value = solutions['occas'];
-        
-        // Remplit le bilan
+
         document.getElementById('final-recettes').value = solutions['recettes'];
         document.getElementById('final-depenses').value = solutions['total_depenses'];
         document.getElementById('final-solde').value = solutions['solde'];
 
-        // Met tout en vert
         document.querySelectorAll('input').forEach(i => i.style.border = "3px solid #4caf50");
 
         const resDiv = document.getElementById('resultat');
