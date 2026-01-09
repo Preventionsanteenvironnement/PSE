@@ -1,404 +1,515 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>La Recette des Pâtes</title>
-    <style>
-        :root {
-            --bg: #fff3e0;
-            --primary: #ff5722; /* Couleur Tomate */
-            --basket: #795548;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Recette des Pâtes</title>
+  <style>
+    :root{
+      --bg:#fff3e0;
+      --primary:#ff5722;
+      --basket:#795548;
+      --ok:#2e7d32;
+      --ko:#c62828;
+      --focus:#000;
+    }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    body{
+      font-family:Arial,sans-serif;
+      background-color:var(--bg);
+      margin:0;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      overflow-x:hidden;
+    }
 
-        h1 { color: #d84315; margin-bottom: 10px; }
+    h1{color:#d84315;margin:8px 0 10px 0;text-align:center}
 
-        /* ZONE DE JEU (3 Colonnes) */
-        .game-area {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 1200px;
-            gap: 15px;
-            margin-top: 10px;
-        }
+    .controls{margin:0 0 10px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+    .audio-btn,.reset-btn,.sound-btn{
+      color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:1rem;
+      box-shadow:0 4px 0 rgba(0,0,0,0.2);user-select:none
+    }
+    .audio-btn{background:#e91e63}
+    .sound-btn{background:#2c3e50}
+    .reset-btn{background:#607d8b}
+    .audio-btn:active,.reset-btn:active,.sound-btn:active{transform:translateY(4px);box-shadow:none}
 
-        /* 1. LA LISTE (Objectif) */
-        .recipe-card {
-            background: white;
-            border: 4px solid var(--primary);
-            border-radius: 15px;
-            padding: 15px;
-            width: 25%;
-            text-align: center;
-        }
-        .recipe-title { font-weight: bold; font-size: 1.5rem; margin-bottom: 15px; text-decoration: underline; }
-        
-        .recipe-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 5px;
-            border-radius: 8px;
-            opacity: 0.5; /* Grisé au début */
-            transition: all 0.3s;
-        }
-        .recipe-item.found {
-            opacity: 1;
-            background-color: #c8e6c9;
-            border: 2px solid green;
-            transform: scale(1.05);
-        }
-        .check-icon { font-size: 1.5rem; margin-right: 10px; width: 30px;}
+    .game-area{
+      display:flex;
+      justify-content:space-between;
+      width:100%;
+      max-width:1200px;
+      gap:15px;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
 
-        /* 2. LE RAYON (Magasin) */
-        .shelf {
-            background: #fff;
-            border: 4px dashed #999;
-            border-radius: 15px;
-            padding: 15px;
-            width: 40%;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            align-content: flex-start;
-            min-height: 400px;
-        }
+    .recipe-card{
+      background:#fff;
+      border:4px solid var(--primary);
+      border-radius:15px;
+      padding:15px;
+      width:25%;
+      min-width:280px;
+      box-sizing:border-box;
+      text-align:center;
+    }
+    .recipe-title{font-weight:bold;font-size:1.5rem;margin-bottom:15px;text-decoration:underline}
 
-        /* 3. LE PANIER */
-        .basket-zone {
-            background: #d7ccc8;
-            border: 4px solid var(--basket);
-            border-radius: 15px;
-            padding: 15px;
-            width: 30%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .basket-title { font-weight: bold; font-size: 1.5rem; color: var(--basket); margin-bottom: 10px; }
-        
-        .basket-content {
-            background: rgba(255,255,255,0.5);
-            width: 95%;
-            min-height: 250px;
-            border-radius: 10px;
-            border: 2px inset #ccc;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 10px;
-        }
+    .recipe-item{
+      display:flex;
+      align-items:center;
+      margin-bottom:10px;
+      padding:6px 8px;
+      border-radius:10px;
+      opacity:0.5;
+      transition:all 0.25s;
+      background:#fff;
+      border:2px solid transparent;
+    }
+    .recipe-item.found{
+      opacity:1;
+      background-color:#c8e6c9;
+      border-color:var(--ok);
+      transform:scale(1.02);
+    }
+    .check-icon{font-size:1.5rem;margin-right:10px;width:30px}
 
-        /* ITEMS GLISSABLES */
-        .item {
-            background: white;
-            border: 2px solid #555;
-            border-radius: 10px;
-            width: 90px;
-            height: 90px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: grab;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            font-weight: bold;
-            font-size: 0.9rem;
-            user-select: none;
-        }
-        .item:active { cursor: grabbing; transform: scale(1.1); }
-        .big-emoji { font-size: 2.5rem; }
-        .price-tag { background: #333; color: white; padding: 2px 6px; border-radius: 4px; margin-top: 2px;}
+    .shelf{
+      background:#fff;
+      border:4px dashed #999;
+      border-radius:15px;
+      padding:15px;
+      width:40%;
+      min-width:320px;
+      box-sizing:border-box;
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:10px;
+      align-content:flex-start;
+      min-height:420px;
+    }
 
-        /* CALCULATRICE ET VALIDATION */
-        .calc-area {
-            width: 100%;
-            text-align: center;
-            display: none; /* Caché tant que panier pas plein */
-        }
-        input[type="number"] {
-            width: 80px;
-            padding: 10px;
-            font-size: 1.5rem;
-            text-align: center;
-            border-radius: 10px;
-            border: 3px solid #ccc;
-            font-weight: bold;
-        }
-        .btn-valid {
-            background: #4caf50; color: white; border: none; padding: 10px 20px;
-            font-size: 1.2rem; border-radius: 50px; cursor: pointer; margin-top: 10px;
-        }
+    .basket-zone{
+      background:#d7ccc8;
+      border:4px solid var(--basket);
+      border-radius:15px;
+      padding:15px;
+      width:30%;
+      min-width:300px;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    .basket-title{font-weight:bold;font-size:1.5rem;color:var(--basket);margin-bottom:10px}
 
-        /* FEEDBACK */
-        #feedback {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 20px;
-            font-size: 2rem;
-            display: none;
-            z-index: 100;
-            text-align: center;
-        }
+    .basket-content{
+      background:rgba(255,255,255,0.55);
+      width:95%;
+      min-height:260px;
+      border-radius:10px;
+      border:2px inset #ccc;
+      margin-bottom:16px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-content:flex-start;
+      justify-content:center;
+      padding:10px 8px;
+      box-sizing:border-box;
+    }
 
-        .controls { margin-bottom: 10px; }
-        .audio-btn { background: #e91e63; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 1rem; }
-        .reset-btn { background: #607d8b; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 1rem; margin-left: 10px;}
+    .item{
+      background:#fff;
+      border:2px solid #555;
+      border-radius:12px;
+      width:96px;
+      height:96px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      cursor:grab;
+      box-shadow:2px 2px 5px rgba(0,0,0,0.2);
+      font-weight:bold;
+      font-size:0.9rem;
+      user-select:none;
+      transition:transform 0.1s,border-color 0.1s;
+      touch-action:none;
+    }
+    .item:active{cursor:grabbing;transform:scale(1.06)}
+    .item.selected{border-color:var(--focus);transform:scale(1.05)}
+    .big-emoji{font-size:2.5rem;line-height:1}
+    .price-tag{background:#333;color:#fff;padding:2px 8px;border-radius:999px;margin-top:4px;font-weight:bold;font-size:0.85rem}
 
-    </style>
+    .calc-area{
+      width:100%;
+      text-align:center;
+      display:none;
+      background:rgba(255,255,255,0.7);
+      border:1px solid rgba(0,0,0,0.15);
+      border-radius:12px;
+      padding:12px;
+      box-sizing:border-box;
+    }
+    input[type="number"]{
+      width:90px;
+      padding:10px;
+      font-size:1.5rem;
+      text-align:center;
+      border-radius:10px;
+      border:3px solid #ccc;
+      font-weight:bold;
+    }
+    .btn-valid{
+      background:#4caf50;color:#fff;border:none;padding:10px 20px;
+      font-size:1.2rem;border-radius:50px;cursor:pointer;margin-top:10px;
+      box-shadow:0 4px 0 rgba(0,0,0,0.2);
+    }
+    .btn-valid:active{transform:translateY(4px);box-shadow:none}
+
+    #feedback{
+      position:fixed;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(0,0,0,0.9);
+      color:#fff;
+      padding:18px 28px;
+      border-radius:20px;
+      font-size:1.8rem;
+      display:none;
+      z-index:100;
+      text-align:center;
+      max-width:92vw;
+    }
+
+    .drag-over{outline:4px solid rgba(0,0,0,0.2);outline-offset:4px}
+
+    @media (max-width: 1100px){
+      .recipe-card,.shelf,.basket-zone{width:100%}
+    }
+  </style>
 </head>
 <body>
 
-    <h1>🍝 La Recette des Pâtes Bolo</h1>
-    
-    <div class="controls">
-        <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
-        <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+  <h1>🍝 La Recette des Pâtes Bolo</h1>
+
+  <div class="controls">
+    <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
+    <button class="sound-btn" id="btn-sound" onclick="toggleSound()">🔈 Son : ON</button>
+    <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+  </div>
+
+  <div class="game-area">
+
+    <div class="recipe-card">
+      <div class="recipe-title">📜 LA LISTE</div>
+
+      <div class="recipe-item" id="list-pates">
+        <span class="check-icon">⬜</span>
+        <span style="font-size:2rem;">🍝</span>
+        <div style="text-align:left;margin-left:10px;">
+          <div>Pâtes</div>
+          <small>Pour manger</small>
+        </div>
+      </div>
+
+      <div class="recipe-item" id="list-viande">
+        <span class="check-icon">⬜</span>
+        <span style="font-size:2rem;">🥩</span>
+        <div style="text-align:left;margin-left:10px;">
+          <div>Viande</div>
+          <small>Pour la force</small>
+        </div>
+      </div>
+
+      <div class="recipe-item" id="list-sauce">
+        <span class="check-icon">⬜</span>
+        <span style="font-size:2rem;">🍅</span>
+        <div style="text-align:left;margin-left:10px;">
+          <div>Sauce Tomate</div>
+          <small>Pour le goût</small>
+        </div>
+      </div>
+
+      <div class="recipe-item" id="list-fromage">
+        <span class="check-icon">⬜</span>
+        <span style="font-size:2rem;">🧀</span>
+        <div style="text-align:left;margin-left:10px;">
+          <div>Fromage</div>
+          <small>Pour le plaisir</small>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;font-weight:bold;">
+        Ingrédients trouvés : <span id="count-found">0</span> / 4
+      </div>
+      <div style="font-size:0.95rem;color:#555;margin-top:6px;">
+        Astuce : clique un produit, puis clique le panier ou le rayon.
+      </div>
     </div>
 
-    <div class="game-area">
-        
-        <div class="recipe-card">
-            <div class="recipe-title">📜 LA LISTE</div>
-            
-            <div class="recipe-item" id="list-pates">
-                <span class="check-icon">⬜</span>
-                <span style="font-size:2rem;">🍝</span> 
-                <div style="text-align:left; margin-left:10px;">
-                    <div>Pâtes</div>
-                    <small>Pour manger</small>
-                </div>
-            </div>
+    <div class="shelf" id="shelf"></div>
 
-            <div class="recipe-item" id="list-viande">
-                <span class="check-icon">⬜</span>
-                <span style="font-size:2rem;">🥩</span> 
-                <div style="text-align:left; margin-left:10px;">
-                    <div>Viande</div>
-                    <small>Pour la force</small>
-                </div>
-            </div>
+    <div class="basket-zone">
+      <div class="basket-title">🛒 MON PANIER</div>
+      <div class="basket-content" id="basket"></div>
 
-            <div class="recipe-item" id="list-sauce">
-                <span class="check-icon">⬜</span>
-                <span style="font-size:2rem;">🍅</span> 
-                <div style="text-align:left; margin-left:10px;">
-                    <div>Sauce Tomate</div>
-                    <small>Pour le goût</small>
-                </div>
-            </div>
-
-            <div class="recipe-item" id="list-fromage">
-                <span class="check-icon">⬜</span>
-                <span style="font-size:2rem;">🧀</span> 
-                <div style="text-align:left; margin-left:10px;">
-                    <div>Fromage</div>
-                    <small>Pour le plaisir</small>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="shelf" id="shelf" ondrop="drop(event)" ondragover="allowDrop(event)">
-            </div>
-
-        <div class="basket-zone">
-            <div class="basket-title">🛒 MON PANIER</div>
-            <div class="basket-content" id="basket" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            
-            <div class="calc-area" id="calc-area">
-                <p style="font-weight:bold;">Tous les ingrédients sont là !</p>
-                <label>Quel est le PRIX TOTAL ?</label><br>
-                <input type="number" id="input-price" placeholder="?"> €
-                <br>
-                <button class="btn-valid" onclick="verifierPrix()">✅ Vérifier</button>
-            </div>
-        </div>
-
+      <div class="calc-area" id="calc-area">
+        <p style="font-weight:bold;margin:0 0 8px 0;">Tous les ingrédients sont là !</p>
+        <label style="font-weight:bold;">Quel est le PRIX TOTAL ?</label><br><br>
+        <input type="number" id="input-price" placeholder="?"> €
+        <br>
+        <button class="btn-valid" onclick="verifierPrix()">✅ Vérifier</button>
+      </div>
     </div>
 
-    <div id="feedback"></div>
+  </div>
+
+  <div id="feedback"></div>
 
 <script>
-    // LISTE DES ITEMS (Bons et Mauvais)
-    // type: 'good' = ingrédient recette, 'bad' = intrus
-    // ref: correspond à l'ID dans la liste recette
-    const products = [
-        { id: 'p1', name: 'Pâtes', icon: '🍝', price: 2, type: 'good', ref: 'list-pates' },
-        { id: 'p2', name: 'Viande', icon: '🥩', price: 5, type: 'good', ref: 'list-viande' },
-        { id: 'p3', name: 'Sauce', icon: '🍅', price: 3, type: 'good', ref: 'list-sauce' },
-        { id: 'p4', name: 'Fromage', icon: '🧀', price: 4, type: 'good', ref: 'list-fromage' },
-        
-        // Distracteurs
-        { id: 'bad1', name: 'Cactus', icon: '🌵', price: 10, type: 'bad' },
-        { id: 'bad2', name: 'Voiture', icon: '🚗', price: 20, type: 'bad' },
-        { id: 'bad3', name: 'Chaussette', icon: '🧦', price: 2, type: 'bad' },
-        { id: 'bad4', name: 'Ballon', icon: '⚽', price: 15, type: 'bad' },
-        { id: 'bad5', name: 'Marteau', icon: '🔨', price: 8, type: 'bad' }
-    ];
+  const products = [
+    { id:"p1", name:"Pâtes", icon:"🍝", price:2, type:"good", ref:"list-pates" },
+    { id:"p2", name:"Viande", icon:"🥩", price:5, type:"good", ref:"list-viande" },
+    { id:"p3", name:"Sauce", icon:"🍅", price:3, type:"good", ref:"list-sauce" },
+    { id:"p4", name:"Fromage", icon:"🧀", price:4, type:"good", ref:"list-fromage" },
 
-    let itemsInBasket = 0;
-    const TOTAL_ITEMS_NEEDED = 4; // 4 ingrédients
-    let realTotalPrice = 0;
+    { id:"bad1", name:"Cactus", icon:"🌵", price:10, type:"bad" },
+    { id:"bad2", name:"Voiture", icon:"🚗", price:20, type:"bad" },
+    { id:"bad3", name:"Chaussette", icon:"🧦", price:2, type:"bad" },
+    { id:"bad4", name:"Ballon", icon:"⚽", price:15, type:"bad" },
+    { id:"bad5", name:"Marteau", icon:"🔨", price:8, type:"bad" }
+  ];
 
-    function init() {
-        const shelf = document.getElementById('shelf');
-        // Mélanger les produits
-        products.sort(() => Math.random() - 0.5);
+  const TOTAL_ITEMS_NEEDED = 4;
 
-        products.forEach(prod => {
-            const div = document.createElement('div');
-            div.className = 'item';
-            div.draggable = true;
-            div.id = prod.id;
-            div.dataset.type = prod.type;
-            div.dataset.price = prod.price;
-            div.dataset.ref = prod.ref || '';
-            div.dataset.name = prod.name;
-            div.ondragstart = drag;
-            div.onclick = () => speak(prod.name + ", " + prod.price + " euros");
-            
-            div.innerHTML = `
-                <span class="big-emoji">${prod.icon}</span>
-                <span>${prod.name}</span>
-                <span class="price-tag">${prod.price} €</span>
-            `;
-            shelf.appendChild(div);
-        });
-        
-        // Calculer le vrai prix total
-        products.forEach(p => {
-            if(p.type === 'good') realTotalPrice += p.price;
-        });
-    }
+  let realTotalPrice = 0;
+  let selectedItem = null;
+  let soundEnabled = true;
 
-    // --- DRAG & DROP ---
-    function allowDrop(ev) { ev.preventDefault(); }
-    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+  function toggleSound(){
+    soundEnabled = !soundEnabled;
+    document.getElementById("btn-sound").textContent = soundEnabled ? "🔈 Son : ON" : "🔇 Son : OFF";
+    try{ if(!soundEnabled && window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+  }
 
-    function drop(ev) {
-        ev.preventDefault();
-        var data = ev.dataTransfer.getData("text");
-        const itemElement = document.getElementById(data);
-        
-        // Identifier la zone de drop
-        let target = ev.target;
-        let isBasket = target.closest('#basket');
-        let isShelf = target.closest('#shelf');
+  function speak(txt){
+    if(!soundEnabled) return;
+    try{
+      if(!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const msg = new SpeechSynthesisUtterance(txt);
+      msg.lang = "fr-FR";
+      window.speechSynthesis.speak(msg);
+    }catch(e){}
+  }
 
-        if (isBasket) {
-            // VERIFICATION : Est-ce un bon ingrédient ?
-            if (itemElement.dataset.type === 'good') {
-                // OUI : On accepte
-                document.getElementById('basket').appendChild(itemElement);
-                playFeedback(true, "Super !");
-                checkListItem(itemElement.dataset.ref); // Cocher la liste
-                itemsInBasket++;
-                checkCompletion();
-            } else {
-                // NON : On refuse (Rebond)
-                playFeedback(false, "Non ! On ne mange pas ça !");
-                speak("Non ! On ne cuisine pas avec " + itemElement.dataset.name);
-            }
-        } 
-        else if (isShelf) {
-            // Retour au rayon (si l'élève veut enlever un item du panier)
-            document.getElementById('shelf').appendChild(itemElement);
-            // Si c'était un bon item, on décoche la liste
-            if (itemElement.dataset.type === 'good') {
-                 uncheckListItem(itemElement.dataset.ref);
-                 itemsInBasket--;
-                 hideCalc();
-            }
+  function lireConsigne(){
+    speak("Regarde la liste à gauche. Cherche les ingrédients dans le rayon et mets-les dans le panier. Attention, ne prends pas les objets inutiles. Tu peux aussi cliquer un produit puis cliquer le panier.");
+  }
+
+  function init(){
+    const shelf = document.getElementById("shelf");
+
+    products.sort(() => Math.random() - 0.5);
+
+    products.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.draggable = true;
+      div.id = p.id;
+      div.dataset.type = p.type;
+      div.dataset.price = p.price;
+      div.dataset.ref = p.ref || "";
+      div.dataset.name = p.name;
+
+      div.innerHTML = `
+        <span class="big-emoji">${p.icon}</span>
+        <span>${p.name}</span>
+        <span class="price-tag">${p.price} €</span>
+      `;
+
+      div.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", div.id);
+        select(div);
+      });
+
+      div.addEventListener("click", () => {
+        if(selectedItem === div){
+          speak(p.name + ", " + p.price + " euros");
+        }else{
+          select(div);
         }
+      });
+
+      shelf.appendChild(div);
+
+      if(p.type === "good") realTotalPrice += p.price;
+    });
+
+    setupDropZone(document.getElementById("shelf"), "shelf");
+    setupDropZone(document.getElementById("basket"), "basket");
+
+    document.getElementById("shelf").addEventListener("click", (e) => {
+      if(e.target.closest(".item")) return;
+      if(selectedItem) moveItemToShelf(selectedItem);
+    });
+
+    document.querySelector(".basket-zone").addEventListener("click", (e) => {
+      if(e.target.closest(".calc-area")) return;
+      if(e.target.closest(".item")) return;
+      if(selectedItem) attemptMoveToBasket(selectedItem, true);
+    });
+
+    refreshProgress();
+  }
+
+  function setupDropZone(zone, kind){
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      const id = e.dataTransfer.getData("text/plain");
+      const el = document.getElementById(id);
+      if(!el) return;
+
+      if(kind === "basket") attemptMoveToBasket(el, false);
+      else moveItemToShelf(el);
+    });
+  }
+
+  function select(el){
+    deselect();
+    selectedItem = el;
+    el.classList.add("selected");
+  }
+
+  function deselect(){
+    if(selectedItem){
+      selectedItem.classList.remove("selected");
+      selectedItem = null;
+    }
+  }
+
+  function playFeedback(isGood, text){
+    const fb = document.getElementById("feedback");
+    fb.textContent = text;
+    fb.style.display = "block";
+    fb.style.backgroundColor = isGood ? "rgba(0,100,0,0.85)" : "rgba(200,0,0,0.85)";
+    setTimeout(() => fb.style.display = "none", 1200);
+  }
+
+  function checkListItem(refId){
+    if(!refId) return;
+    const el = document.getElementById(refId);
+    el.classList.add("found");
+    el.querySelector(".check-icon").textContent = "✅";
+  }
+
+  function uncheckListItem(refId){
+    if(!refId) return;
+    const el = document.getElementById(refId);
+    el.classList.remove("found");
+    el.querySelector(".check-icon").textContent = "⬜";
+  }
+
+  function refreshProgress(){
+    const count = getGoodCountInBasket();
+    document.getElementById("count-found").textContent = count;
+
+    if(count >= TOTAL_ITEMS_NEEDED){
+      document.getElementById("calc-area").style.display = "block";
+    }else{
+      document.getElementById("calc-area").style.display = "none";
+    }
+  }
+
+  function getGoodCountInBasket(){
+    const basket = document.getElementById("basket");
+    const goods = basket.querySelectorAll('.item[data-type="good"]');
+    return goods.length;
+  }
+
+  function attemptMoveToBasket(itemElement, fromClick){
+    const basket = document.getElementById("basket");
+    const fromBasket = itemElement.parentElement && itemElement.parentElement.id === "basket";
+    if(fromBasket){
+      deselect();
+      return;
     }
 
-    // --- GESTION LISTE VISUELLE ---
-    function checkListItem(refId) {
-        if(!refId) return;
-        const el = document.getElementById(refId);
-        el.classList.add('found');
-        el.querySelector('.check-icon').innerText = '✅';
+    if(itemElement.dataset.type === "good"){
+      basket.appendChild(itemElement);
+      playFeedback(true, "Super !");
+      checkListItem(itemElement.dataset.ref);
+      if(fromClick) speak("Ajouté au panier.");
+      refreshProgress();
+
+      if(getGoodCountInBasket() === TOTAL_ITEMS_NEEDED){
+        speak("Bravo ! Tu as trouvé tous les ingrédients. Maintenant, calcule le prix total.");
+      }
+    }else{
+      playFeedback(false, "Non ! On ne mange pas ça !");
+      speak("Non ! On ne cuisine pas avec " + (itemElement.dataset.name || "ça") + ".");
     }
 
-    function uncheckListItem(refId) {
-        if(!refId) return;
-        const el = document.getElementById(refId);
-        el.classList.remove('found');
-        el.querySelector('.check-icon').innerText = '⬜';
+    deselect();
+  }
+
+  function moveItemToShelf(itemElement){
+    const shelf = document.getElementById("shelf");
+    const fromShelf = itemElement.parentElement && itemElement.parentElement.id === "shelf";
+    if(fromShelf){
+      deselect();
+      return;
     }
 
-    function checkCompletion() {
-        // Si on a les 4 ingrédients
-        if (itemsInBasket === TOTAL_ITEMS_NEEDED) {
-            document.getElementById('calc-area').style.display = 'block';
-            speak("Bravo ! Tu as trouvé tous les ingrédients. Maintenant, calcule le prix total.");
-        }
-    }
-    
-    function hideCalc() {
-        document.getElementById('calc-area').style.display = 'none';
+    shelf.appendChild(itemElement);
+
+    if(itemElement.dataset.type === "good"){
+      uncheckListItem(itemElement.dataset.ref);
     }
 
-    // --- FEEDBACK VISUEL ---
-    function playFeedback(isGood, text) {
-        const fb = document.getElementById('feedback');
-        fb.innerText = text;
-        fb.style.display = 'block';
-        fb.style.backgroundColor = isGood ? 'rgba(0,100,0,0.8)' : 'rgba(200,0,0,0.8)';
-        
-        setTimeout(() => {
-            fb.style.display = 'none';
-        }, 1500);
+    deselect();
+    refreshProgress();
+  }
+
+  function verifierPrix(){
+    const userPrice = parseInt(document.getElementById("input-price").value, 10);
+
+    if(!Number.isFinite(userPrice)){
+      playFeedback(false, "Écris un nombre");
+      speak("Écris un nombre.");
+      return;
     }
 
-    // --- VERIFICATION PRIX ---
-    function verifierPrix() {
-        const userPrice = parseInt(document.getElementById('input-price').value);
-        
-        if (userPrice === realTotalPrice) {
-            playFeedback(true, "EXCELLENT !");
-            speak("Excellent ! Tu as tout bon. Bon appétit !");
-            confettiEffect();
-        } else {
-            playFeedback(false, "Mauvais calcul...");
-            speak("Mauvais calcul. Additionne les prix des 4 ingrédients.");
-        }
+    if(getGoodCountInBasket() < TOTAL_ITEMS_NEEDED){
+      playFeedback(false, "Il manque des ingrédients");
+      speak("Il manque des ingrédients.");
+      return;
     }
 
-    function confettiEffect() {
-        document.body.style.backgroundColor = "#c8e6c9";
-        // Simple changement de fond pour fêter
+    if(userPrice === realTotalPrice){
+      playFeedback(true, "EXCELLENT !");
+      speak("Excellent ! Tu as tout bon. Bon appétit !");
+      document.body.style.backgroundColor = "#c8e6c9";
+    }else{
+      playFeedback(false, "Mauvais calcul...");
+      speak("Mauvais calcul. Additionne les prix des 4 ingrédients.");
     }
+  }
 
-    function speak(txt) {
-        const msg = new SpeechSynthesisUtterance(txt);
-        msg.lang = 'fr-FR';
-        window.speechSynthesis.speak(msg);
-    }
-
-    function lireConsigne() {
-        speak("Nous allons faire des pâtes bolognaises. Regarde la liste à gauche. Cherche les ingrédients dans le rayon et mets-les dans le panier. Attention, ne prends pas les objets inutiles !");
-    }
-
-    init();
-
+  init();
 </script>
 
 </body>
