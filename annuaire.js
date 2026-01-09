@@ -204,10 +204,80 @@ function resetCodeEleve() {
   localStorage.removeItem("userClasse");
 }
 
+
+// 7) ENVOI DEVOIRS (centralisé) — appelé depuis tes pages : PSE_submitDevoir(payload)
+async function PSE_submitDevoir(payload) {
+  try {
+    const db = _ensureDb();
+    if (!db) throw new Error("db indisponible (Firebase non chargé ?)");
+
+    // Identification (si exigée)
+    const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
+    const codeUpper = _normCode(raw);
+    const codeRequired = (window.PSE_CODE_REQUIRED === true);
+
+    if (codeRequired && (!_isValidCode(codeUpper))) {
+      demanderCode((payload && (payload.devoirId || payload.titre || payload.exercice_titre)) || "Devoir");
+      throw new Error("Identification requise");
+    }
+
+    const finalCode = (_isValidCode(codeUpper) ? codeUpper : "ANONYME");
+    const finalClasseCode = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
+
+    const nowISO = new Date().toISOString();
+
+    const doc = {
+      // Champs faciles pour Cockpit
+      devoirId: payload?.devoirId || payload?.meta?.devoirId || payload?.meta?.module || document.title || "devoir",
+      titre: payload?.devoirTitre || payload?.titre || payload?.exercice_titre || document.title || "",
+      url: payload?.url || location.href,
+      niveau: payload?.niveau || payload?.meta?.niveau || "",
+      thematique: payload?.thematique || payload?.meta?.thematique || "",
+      module: payload?.module || payload?.meta?.module || "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAtISO: nowISO,
+
+      eleve: {
+        code: finalCode,
+        classeCode: finalClasseCode,
+        classe: payload?.classe || payload?.meta?.classe || "",
+        nom: payload?.nom || payload?.meta?.nom || "",
+        prenom: payload?.prenom || payload?.meta?.prenom || ""
+      },
+
+      // Données devoir
+      reponses: payload?.reponses || {},
+      resultat_auto: {
+        score: payload?.meta?.score,
+        maxScore: payload?.meta?.maxScore,
+        bareme: payload?.meta?.bareme,
+        details: payload?.meta?.details
+      },
+
+      // Copie brute (pour ne rien perdre)
+      raw: payload || null
+    };
+
+    // Anti double-envoi (session)
+    const antiKey = "devoir_sent_" + doc.devoirId + "_" + doc.url;
+    if (sessionStorage.getItem(antiKey)) {
+      throw new Error("Déjà envoyé (session)");
+    }
+
+    const ref = await db.collection("devoirs_rendus").add(doc);
+    sessionStorage.setItem(antiKey, "1");
+    return { ok: true, id: ref.id };
+  } catch (e) {
+    console.error("PSE_submitDevoir error:", e);
+    return { ok: false, error: (e && e.message) ? e.message : String(e) };
+  }
+}
+
 // Expose
 window.ANNUAIRE = ANNUAIRE;
 window.enregistrerVisite = enregistrerVisite;
 window.demanderCode = demanderCode;
 window.resetCodeEleve = resetCodeEleve;
+window.PSE_submitDevoir = PSE_submitDevoir;
 
 console.log("✅ annuaire.js chargé (v8 + casse OK + pages libres OK).");
