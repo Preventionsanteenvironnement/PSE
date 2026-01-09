@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget de Théo - Maths & Tri</title>
     <style>
         :root {
@@ -13,16 +14,17 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background-color: var(--bg);
             margin: 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        h1 { margin-bottom: 10px; }
+        h1 { margin-bottom: 10px; text-align: center; }
 
         /* BOUTONS */
         .controls {
@@ -46,11 +48,12 @@
             box-shadow: 0 4px 0 rgba(0,0,0,0.2);
         }
         button:active { transform: translateY(4px); box-shadow: none; }
-        
+
         .audio-btn { background: #e91e63; }
         .check-btn { background: #4caf50; font-weight: bold; font-size: 1.2rem; }
         .sol-btn { background: #ffeb3b; color: #333; border: 2px solid #fbc02d; }
         .reset-btn { background: #607d8b; }
+        .mute-btn { background: #111827; }
 
         /* ZONE DE JEU */
         .game-area {
@@ -97,7 +100,7 @@
             padding: 10px;
             border-radius: 10px;
         }
-        
+
         input[type="number"] {
             width: 80%;
             padding: 10px;
@@ -120,7 +123,7 @@
             text-align: center;
             border: 3px solid #333;
         }
-        
+
         .operation-row {
             display: flex;
             justify-content: center;
@@ -135,8 +138,8 @@
             background: #fff;
             border: 2px solid #ccc;
             border-radius: 8px;
-            padding: 5px;
-            margin-bottom: 5px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
             width: 95%;
             cursor: grab;
             display: flex;
@@ -144,6 +147,8 @@
             justify-content: space-between;
             font-size: 1rem;
             font-weight: bold;
+            user-select: none;
+            touch-action: manipulation;
         }
         .icon { font-size: 1.8rem; margin-right: 5px; }
         .price { background: #eee; padding: 2px 6px; border-radius: 4px; }
@@ -178,100 +183,154 @@
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
 
+        /* AIDE MOBILE */
+        .mobile-helper {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+        }
+        .mobile-helper .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .mobile-helper select {
+            padding: 10px 12px;
+            font-size: 1.05rem;
+            border-radius: 10px;
+            border: 2px solid #999;
+            font-weight: bold;
+        }
+        .hint {
+            font-size: 0.95rem;
+            opacity: 0.85;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .game-area {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .column {
+                width: 100%;
+                min-height: 220px;
+            }
+            #resultat { width: 95%; }
+            .mobile-helper { display: block; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>🔧 Le Budget de Théo</h1>
+<h1>🔧 Le Budget de Théo</h1>
 
-    <div class="controls">
-        <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
-        <button class="check-btn" onclick="verifierTout()">✅ VÉRIFIER MES CALCULS</button>
-        <button class="sol-btn" onclick="montrerSolution()">🔑 SOLUTION</button>
-        <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+<div class="controls">
+    <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
+    <button class="mute-btn" id="btn-mute" onclick="toggleSon()">🔈 Son : ON</button>
+    <button class="check-btn" onclick="verifierTout()">✅ VÉRIFIER MES CALCULS</button>
+    <button class="sol-btn" onclick="montrerSolution()">🔑 SOLUTION</button>
+    <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
+</div>
+
+<div class="mobile-helper" id="mobile-helper">
+    <div class="row">
+        <strong>Sur téléphone :</strong>
+        <span>je choisis une colonne → je clique une étiquette</span>
+        <select id="mobile-target">
+            <option value="recettes">📥 Rentrées</option>
+            <option value="fixes">🔒 Fixes</option>
+            <option value="courantes">🛒 Courantes</option>
+            <option value="occas">🎉 Plaisirs</option>
+            <option value="banque">🏦 Banque (retour)</option>
+        </select>
     </div>
+    <div class="hint">Sur ordinateur, tu peux glisser-déposer normalement.</div>
+</div>
 
-    <div class="game-area">
-        <div class="column col-recettes" ondrop="drop(event)" ondragover="allowDrop(event)" id="recettes">
-            <div class="col-header">📥 RENTRÉES</div>
-            <div class="calc-area">
-                <label>Total ?</label><br>
-                <input type="number" id="input-recettes" placeholder="..."> €
-            </div>
-        </div>
-
-        <div class="column col-fixes" ondrop="drop(event)" ondragover="allowDrop(event)" id="fixes">
-            <div class="col-header">🔒 FIXES</div>
-            <div class="calc-area">
-                <label>Total ?</label><br>
-                <input type="number" id="input-fixes" placeholder="..."> €
-            </div>
-        </div>
-
-        <div class="column col-courantes" ondrop="drop(event)" ondragover="allowDrop(event)" id="courantes">
-            <div class="col-header">🛒 COURANTES</div>
-            <div class="calc-area">
-                <label>Total ?</label><br>
-                <input type="number" id="input-courantes" placeholder="..."> €
-            </div>
-        </div>
-
-        <div class="column col-occas" ondrop="drop(event)" ondragover="allowDrop(event)" id="occas">
-            <div class="col-header">🎉 PLAISIRS</div>
-            <div class="calc-area">
-                <label>Total ?</label><br>
-                <input type="number" id="input-occas" placeholder="..."> €
-            </div>
+<div class="game-area">
+    <div class="column col-recettes" ondrop="drop(event)" ondragover="allowDrop(event)" id="recettes">
+        <div class="col-header">📥 RENTRÉES</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="number" id="input-recettes" placeholder="..."> €
         </div>
     </div>
 
-    <div class="bank-container" id="banque" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-
-    <div class="bilan-section">
-        <h2>🧮 LE BILAN (Calculatrice)</h2>
-        <div class="operation-row">
-            <div>
-                <span style="display:block; font-size:1rem;">Total Recettes</span>
-                <input type="number" id="final-recettes" style="width:100px; border-color:var(--recette);">
-            </div>
-            ➖
-            <div>
-                <span style="display:block; font-size:1rem;">Total Dépenses</span>
-                <input type="number" id="final-depenses" style="width:100px; border-color:red;">
-            </div>
-            🟰
-            <div>
-                <span style="display:block; font-size:1rem;">Il reste (Solde)</span>
-                <input type="number" id="final-solde" style="width:100px; border-color:blue;">
-            </div>
+    <div class="column col-fixes" ondrop="drop(event)" ondragover="allowDrop(event)" id="fixes">
+        <div class="col-header">🔒 FIXES</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="number" id="input-fixes" placeholder="..."> €
         </div>
     </div>
 
-    <div id="resultat"></div>
+    <div class="column col-courantes" ondrop="drop(event)" ondragover="allowDrop(event)" id="courantes">
+        <div class="col-header">🛒 COURANTES</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="number" id="input-courantes" placeholder="..."> €
+        </div>
+    </div>
+
+    <div class="column col-occas" ondrop="drop(event)" ondragover="allowDrop(event)" id="occas">
+        <div class="col-header">🎉 PLAISIRS</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="number" id="input-occas" placeholder="..."> €
+        </div>
+    </div>
+</div>
+
+<div class="bank-container" id="banque" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+<div class="bilan-section">
+    <h2>🧮 LE BILAN (Calculatrice)</h2>
+    <div class="operation-row">
+        <div>
+            <span style="display:block; font-size:1rem;">Total Recettes</span>
+            <input type="number" id="final-recettes" style="width:100px; border-color:var(--recette);">
+        </div>
+        ➖
+        <div>
+            <span style="display:block; font-size:1rem;">Total Dépenses</span>
+            <input type="number" id="final-depenses" style="width:100px; border-color:red;">
+        </div>
+        🟰
+        <div>
+            <span style="display:block; font-size:1rem;">Il reste (Solde)</span>
+            <input type="number" id="final-solde" style="width:100px; border-color:blue;">
+        </div>
+    </div>
+</div>
+
+<div id="resultat"></div>
 
 <script>
-    // --- NOUVELLES DONNÉES POUR THÉO ---
     const itemsData = [
         { id: 'i1', name: 'Salaire Apprenti', icon: '🔧', price: 800, cat: 'recettes' },
         { id: 'i2', name: 'Cadeau Mamie', icon: '👵', price: 50, cat: 'recettes' },
-        
+
         { id: 'i3', name: 'Forfait Téléphone', icon: '📱', price: 20, cat: 'fixes' },
         { id: 'i4', name: 'Carte de Bus', icon: '🚌', price: 30, cat: 'fixes' },
-        
+
         { id: 'i5', name: 'Repas Midi', icon: '🥪', price: 100, cat: 'courantes' },
         { id: 'i6', name: 'Vêtements', icon: '👟', price: 50, cat: 'courantes' },
-        
+
         { id: 'i7', name: 'Jeu Vidéo', icon: '🎮', price: 60, cat: 'occas' },
         { id: 'i8', name: 'Kebab', icon: '🥙', price: 10, cat: 'occas' }
     ];
 
-    // SOLUTIONS
-    // Recettes: 800+50 = 850
-    // Fixes: 20+30 = 50
-    // Courantes: 100+50 = 150
-    // Occas: 60+10 = 70
-    // Total Dépenses: 50 + 150 + 70 = 270
-    // Solde: 850 - 270 = 580
     const solutions = {
         'recettes': 850,
         'fixes': 50,
@@ -281,6 +340,28 @@
         'solde': 580
     };
 
+    let soundEnabled = true;
+
+    function isMobileLayout() {
+        return window.matchMedia("(max-width: 900px)").matches;
+    }
+
+    function toggleSon() {
+        soundEnabled = !soundEnabled;
+        const btn = document.getElementById('btn-mute');
+        btn.textContent = soundEnabled ? "🔈 Son : ON" : "🔇 Son : OFF";
+        if (!soundEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function setDraggableMode() {
+        const items = document.querySelectorAll('.item');
+        const enableDrag = !isMobileLayout();
+        items.forEach(it => {
+            it.draggable = enableDrag;        // Désactive drag en mobile = fiable
+            it.style.cursor = enableDrag ? 'grab' : 'pointer';
+        });
+    }
+
     function init() {
         const banque = document.getElementById('banque');
         itemsData.sort(() => Math.random() - 0.5);
@@ -288,12 +369,19 @@
         itemsData.forEach(item => {
             const div = document.createElement('div');
             div.className = 'item';
-            div.draggable = true;
             div.id = item.id;
             div.dataset.cat = item.cat;
             div.dataset.price = item.price;
-            div.onclick = () => speak(item.name + ", " + item.price + " euros");
+
+            div.onclick = () => {
+                speak(item.name + ", " + item.price + " euros");
+                if (isMobileLayout()) {
+                    moveItemToSelectedTarget(div);
+                }
+            };
+
             div.ondragstart = drag;
+
             div.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <span class="icon">${item.icon}</span>
@@ -303,44 +391,94 @@
             `;
             banque.appendChild(div);
         });
+
+        setDraggableMode();
+        window.addEventListener('resize', setDraggableMode);
+    }
+
+    function moveItemToSelectedTarget(itemEl) {
+        const targetId = document.getElementById('mobile-target').value;
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        const calcArea = target.querySelector('.calc-area');
+        if (calcArea) target.insertBefore(itemEl, calcArea);
+        else target.appendChild(itemEl);
+
+        itemEl.style.border = "2px solid #ccc";
+        document.getElementById('resultat').style.display = 'none';
     }
 
     function allowDrop(ev) { ev.preventDefault(); }
-    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+
+    function drag(ev) {
+        if (isMobileLayout()) return;
+        ev.dataTransfer.setData("text", ev.target.id);
+    }
+
     function drop(ev) {
+        if (isMobileLayout()) return;
         ev.preventDefault();
-        var data = ev.dataTransfer.getData("text");
+        const data = ev.dataTransfer.getData("text");
         let target = ev.target;
-        while (!target.classList.contains('column') && !target.classList.contains('bank-container')) {
+
+        while (target && !target.classList.contains('column') && !target.classList.contains('bank-container')) {
             target = target.parentElement;
-            if(!target) return;
         }
+        if(!target) return;
+
+        const el = document.getElementById(data);
+
         const calcArea = target.querySelector('.calc-area');
-        if(calcArea) {
-            target.insertBefore(document.getElementById(data), calcArea);
-        } else {
-            target.appendChild(document.getElementById(data));
-        }
-        document.getElementById(data).style.border = "2px solid #ccc";
+        if(calcArea) target.insertBefore(el, calcArea);
+        else target.appendChild(el);
+
+        el.style.border = "2px solid #ccc";
         document.getElementById('resultat').style.display = 'none';
     }
 
     function speak(txt) {
-        const msg = new SpeechSynthesisUtterance(txt);
-        msg.lang = 'fr-FR';
-        window.speechSynthesis.speak(msg);
+        if (!soundEnabled) return;
+        try {
+            const msg = new SpeechSynthesisUtterance(txt);
+            msg.lang = 'fr-FR';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(msg);
+        } catch(e) {}
     }
-    
+
     function lireConsigne() {
         speak("Voici le budget de Théo. Théo est apprenti mécanicien. Il paye son téléphone, son bus, et ses repas. Il aime les jeux vidéo. Trie les étiquettes, puis calcule les totaux avec ta calculatrice.");
     }
 
     function verifierTout() {
+        const cols = ['recettes', 'fixes', 'courantes', 'occas'];
+
+        const inputsAverifier = [
+            'input-recettes','input-fixes','input-courantes','input-occas',
+            'final-recettes','final-depenses','final-solde'
+        ];
+        const vides = inputsAverifier.filter(id => {
+            const el = document.getElementById(id);
+            return !el.value || String(el.value).trim() === '';
+        });
+        if (vides.length > 0) {
+            const resDiv = document.getElementById('resultat');
+            resDiv.style.display = 'block';
+            resDiv.className = 'error';
+            resDiv.innerHTML = "⚠️ Remplis d'abord toutes les cases de total (colonnes + bilan).";
+            vides.forEach(id => {
+                const el = document.getElementById(id);
+                el.style.border = "3px solid #ff4444";
+                el.style.backgroundColor = "#fee";
+            });
+            speak("Remplis d'abord toutes les cases de total.");
+            return;
+        }
+
         let erreursTri = 0;
         let erreursCalcul = 0;
-        const cols = ['recettes', 'fixes', 'courantes', 'occas'];
-        
-        // 1. VERIF DU TRI
+
         cols.forEach(colId => {
             const container = document.getElementById(colId);
             const items = container.getElementsByClassName('item');
@@ -352,10 +490,9 @@
                     item.style.border = "4px solid #4caf50";
                 }
             }
-            
-            // 2. VERIF DES CALCULS
+
             const input = document.getElementById('input-' + colId);
-            const val = parseInt(input.value);
+            const val = parseInt(input.value, 10);
             if (val !== solutions[colId]) {
                 input.style.border = "3px solid #ff4444";
                 input.style.backgroundColor = "#fee";
@@ -366,10 +503,9 @@
             }
         });
 
-        // 3. VERIF DU BILAN
-        const fRec = parseInt(document.getElementById('final-recettes').value);
-        const fDep = parseInt(document.getElementById('final-depenses').value);
-        const fSolde = parseInt(document.getElementById('final-solde').value);
+        const fRec = parseInt(document.getElementById('final-recettes').value, 10);
+        const fDep = parseInt(document.getElementById('final-depenses').value, 10);
+        const fSolde = parseInt(document.getElementById('final-solde').value, 10);
 
         let erreursBilan = 0;
         if(fRec !== solutions['recettes']) erreursBilan++;
@@ -411,12 +547,15 @@
         document.getElementById('input-fixes').value = solutions['fixes'];
         document.getElementById('input-courantes').value = solutions['courantes'];
         document.getElementById('input-occas').value = solutions['occas'];
-        
+
         document.getElementById('final-recettes').value = solutions['recettes'];
         document.getElementById('final-depenses').value = solutions['total_depenses'];
         document.getElementById('final-solde').value = solutions['solde'];
 
-        document.querySelectorAll('input').forEach(i => i.style.border = "3px solid #4caf50");
+        document.querySelectorAll('input').forEach(i => {
+            i.style.border = "3px solid #4caf50";
+            i.style.backgroundColor = "#e8f5e9";
+        });
 
         const resDiv = document.getElementById('resultat');
         resDiv.style.display = 'block';
