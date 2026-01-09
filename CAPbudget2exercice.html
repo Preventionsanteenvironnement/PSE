@@ -34,7 +34,6 @@
         .chart-box { height: 350px; margin: 20px 0; }
         * { box-sizing: border-box; }
         .context-box, .container, #result-zone { overflow-wrap: anywhere; }
-        .chart-box canvas { max-width: 100% !important; height: 100% !important; }
         .final-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 12px; flex-wrap: wrap; }
     </style>
 </head>
@@ -213,41 +212,52 @@
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
 
-        // --- ENVOI FIREBASE (Identité sécurisée par le Douanier) ---
+        // --- ENVOI DISCRET VERS FIREBASE (Score & Compétences) ---
         try {
             const code = localStorage.getItem("userCode") || "ANONYME";
             const classe = localStorage.getItem("userClasse") || "AUTRE";
 
-            await db.collection("resultats_exercices").add({
-                eleve: code,
-                classe: classe,
-                exercice: document.title,
-                note: score,
-                total: 20,
-                competences: { "C1": score, "C2": score },
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            console.log("✅ Résultats envoyés pour " + code);
-        } catch (e) {
-            console.error("Erreur d'envoi scores:", e);
-        }
+            if (window.db) {
+                await db.collection("resultats_exercices").add({
+                    eleve: code,
+                    classe: classe,
+                    exercice: document.title,
+                    note: score,
+                    total: 20,
+                    competences: { "C1": score, "C2": score },
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        } catch (e) { console.error("Score send fail", e); }
     }
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-  <script>
-    // On active le blocage par code pour cet exercice
-    window.PSE_CODE_REQUIRED = true; 
-    
-    // On lance le mouchard de visite
-    if (typeof enregistrerVisite === "function") {
-        enregistrerVisite();
-    }
-  </script>
-  
-  <script src="annuaire.js"></script>
+<script>
+  window.PSE_CODE_REQUIRED = true; // Force l'identification au début
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.appspot.com",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+  };
+
+  if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+  }
+  window.db = firebase.firestore();
+
+  if (typeof enregistrerVisite === "function") {
+      enregistrerVisite(); // Trace la visite discrètement
+  }
+</script>
+
+<script src="annuaire.js"></script>
 
 </body>
 </html>
