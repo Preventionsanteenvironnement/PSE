@@ -212,7 +212,7 @@
         </div>
         <div>
           <label for="classe">Classe</label><br/>
-          <input id="classe" type="text" autocomplete="organization" placeholder="ex : CAP..." />
+          <input id="classe" type="text" autocomplete="organization" placeholder="ex : 2CAP..." />
         </div>
       </div>
 
@@ -452,20 +452,18 @@
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script type="module" src="./annuaire.js"></script>
 
-  <script>window.PSE_CODE_REQUIRED = true;</script>
-  <script src="./annuaire.js"></script>
-
-  <script>
+  <script type="module">
     const MAX_SCORE = 20;
-
-    try{
-      if(typeof window.enregistrerVisite === "function"){
-        window.enregistrerVisite("Devoir CAP A3 — Sédentarité");
-      }
-    }catch(e){}
+    
+    // --- INITIALISATION AUTOMATIQUE ---
+    setTimeout(() => {
+        // Demande le code élève dès le début (si pas déjà connecté)
+        if(typeof window.demanderCode === "function"){
+            window.demanderCode("Devoir CAP A3 — Sédentarité");
+        }
+    }, 500);
 
     const answerKey = {
       "1": { correct: ["A"], points: 2, competence: "C1" },
@@ -569,7 +567,6 @@
     function getIdentite(){
       const nom = $("#nom").value.trim();
       const prenom = $("#prenom").value.trim();
-      // On force la classe en majuscules pour que ce soit propre dans le tableau prof
       const classe = $("#classe").value.trim().toUpperCase();
       return { nom, prenom, classe };
     }
@@ -623,39 +620,44 @@
       setStatus("Fichier JSON téléchargé.", "ok");
     }
 
+    // --- ENVOI FIREBASE V10 ---
     async function sendToFirebase(){
       if(!validateMinimal()) return;
       const payload = buildPayload();
       setStatus("Envoi en cours…", "");
 
+      // Métadonnées du devoir pour le tri dans le Cockpit
       const devoirMeta = {
         devoirId: "CAP_A3_SEDENTARITE_V1",
         devoirTitre: "Devoir A3 — Activité physique / Sédentarité",
         niveau: "CAP",
         thematique: "A",
-        module: "A3",
-        url: location.href
+        module: "A3"
       };
 
-      try{
-        if(typeof window.PSE_submitDevoir === "function"){
-          const res = await window.PSE_submitDevoir({ ...payload, ...devoirMeta });
-          if(res && res.ok){
-            setStatus("Envoyé. Tu peux fermer la page.", "ok");
-          } else {
-            setStatus("Erreur d’envoi : " + (res?.error || "inconnue"), "err");
-          }
-        } else if (window.db && window.db.collection){
-          await window.db.collection("devoirs_rendus").add({ ...payload, ...devoirMeta, createdAtISO: new Date().toISOString() });
-          setStatus("Envoyé. Tu peux fermer la page.", "ok");
+      try {
+        // On vérifie que annuaire.js est bien chargé
+        if(typeof window.PSE_submitDevoir !== "function"){
+           alert("Attends une seconde, le système démarre...");
+           return;
+        }
+
+        // Appel unifié V10
+        const res = await window.PSE_submitDevoir({ ...payload, ...devoirMeta });
+        
+        if(res && res.ok){
+          setStatus("Envoyé avec succès ! Tu peux fermer.", "ok");
+          $("#sendBtn").disabled = true; // Empêche le double envoi
+          $("#sendBtn").style.opacity = 0.5;
         } else {
-          setStatus("Erreur : moteur Firebase indisponible.", "err");
+          setStatus("Erreur d’envoi : " + (res?.error || "inconnue"), "err");
         }
       } catch(err){
-        setStatus("Erreur d’envoi : " + (err?.message || "inconnue"), "err");
+        setStatus("Erreur technique : " + (err?.message || "inconnue"), "err");
       }
     }
 
+    // UI Bindings
     $("#zoomIn").addEventListener("click", () => {
       state.scale = clamp(state.scale + 0.1, 1, 1.6);
       document.documentElement.style.setProperty("--scale", state.scale.toFixed(2));
