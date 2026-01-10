@@ -1,8 +1,12 @@
-/* 📁 ANNUAIRE CENTRAL & CONFIGURATION — Dépôt PSE
-   Version corrigée complète (stable pour prof-v2 + grille-correction)
+/* 📁 ANNUAIRE.JS — VERSION MODERNE (v10)
+   Gestion centralisée : Auth, Annuaire, Envoi Devoirs, Tracking
 */
 
-// 1) CONFIG FIREBASE (officielle)
+// 1. IMPORTS MODERNES (Directement depuis Google)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// 2. TA CONFIGURATION SECRÈTE
 const firebaseConfig = {
   apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
   authDomain: "devoirs-pse.firebaseapp.com",
@@ -12,230 +16,189 @@ const firebaseConfig = {
   appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
 
-// 2) ANNUAIRE (codes -> classe)
+// 3. DÉMARRAGE DU MOTEUR
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// On rend la base de données accessible partout (pour la Zone Prof)
+window.db = db;
+// On crée une petite fonction pour confirmer que la DB est prête
+window._ensureDb = () => window.db; 
+
+console.log("✅ [annuaire.js] Firebase v10 initialisé avec succès.");
+
+// 4. L'ANNUAIRE (Tes codes élèves)
 const ANNUAIRE = {
-  "INV": "VISITEUR",
-  "PSE": "VISITEUR",
-  // --- B1AGO1 ---
-  "KA47": "B1AGO1", "LU83": "B1AGO1", "MO12": "B1AGO1", "QF59": "B1AGO1", "RA26": "B1AGO1", "TI74": "B1AGO1", "NE08": "B1AGO1", "SA91": "B1AGO1",
-  // --- B1AGO2 ---
-  "VO35": "B1AGO2", "PY64": "B1AGO2", "XK19": "B1AGO2", "DF82": "B1AGO2", "RT57": "B1AGO2", "ML03": "B1AGO2", "HG68": "B1AGO2", "CP41": "B1AGO2", "AJ90": "B1AGO2", "BN25": "B1AGO2",
-  // --- B1MELEC ---
-  "EU14": "B1MELEC", "SO76": "B1MELEC", "KT52": "B1MELEC", "WD88": "B1MELEC", "LP09": "B1MELEC", "YM63": "B1MELEC", "RF31": "B1MELEC",
-  // --- B2GATL1 ---
-  "CZ72": "B2GATL1", "QL16": "B2GATL1", "MX48": "B2GATL1", "VA95": "B2GATL1", "HU27": "B2GATL1", "PN60": "B2GATL1", "SJ04": "B2GATL1", "DK81": "B2GATL1",
-  // --- B2GATL2 ---
-  "TG36": "B2GATL2", "AR58": "B2GATL2", "ZN73": "B2GATL2", "FK10": "B2GATL2", "WL92": "B2GATL2", "BM45": "B2GATL2", "EO67": "B2GATL2", "JC21": "B2GATL2",
-  // --- B2MELEC ---
-  "PS84": "B2MELEC", "NV33": "B2MELEC", "KQ56": "B2MELEC", "LR07": "B2MELEC", "UH69": "B2MELEC", "XT18": "B2MELEC", "DF94": "B2MELEC", "MA02": "B2MELEC",
-  // --- BTAGO1 ---
-  "RL61": "BTAGO1", "ZC28": "BTAGO1", "PW75": "BTAGO1", "SF13": "BTAGO1", "QN80": "BTAGO1", "HK47": "BTAGO1", "VT96": "BTAGO1", "JE34": "BTAGO1", "LY52": "BTAGO1",
-  // --- BTAGO2 ---
-  "MO71": "BTAGO2", "AZ19": "BTAGO2", "KC83": "BTAGO2", "RF06": "BTAGO2", "PU44": "BTAGO2", "YD90": "BTAGO2", "QH27": "BTAGO2", "NS68": "BTAGO2", "LX11": "BTAGO2",
-  // --- BTMELEC ---
-  "CM59": "BTMELEC", "VA14": "BTMELEC", "ZR72": "BTMELEC", "HP03": "BTMELEC", "WX88": "BTMELEC",
-  // --- C1CAN ---
-  "JD41": "C1CAN", "EM65": "C1CAN", "TK92": "C1CAN", "QF18": "C1CAN", "LP77": "C1CAN", "ZS24": "C1CAN", "RN50": "C1CAN", "HU09": "C1CAN",
-  // --- C1HORT ---
-  "AC36": "C1HORT", "QJ81": "C1HORT", "MS47": "C1HORT", "VR02": "C1HORT", "KX93": "C1HORT", "PD68": "C1HORT", "ET15": "C1HORT", "NB74": "C1HORT",
-  // --- C1JP ---
-  "WY59": "C1JP", "HL07": "C1JP", "MX84": "C1JP", "QP22": "C1JP", "SZ96": "C1JP", "RV31": "C1JP", "JC68": "C1JP", "DT10": "C1JP",
-  // --- C1PSR ---
-  "KF73": "C1PSR", "PX04": "C1PSR", "NS58": "C1PSR", "QV91": "C1PSR", "HR27": "C1PSR", "LW62": "C1PSR", "ZM19": "C1PSR", "EA80": "C1PSR", "CJ45": "C1PSR",
-  // --- C1VAN ---
-  "RH12": "C1VAN", "MV66": "C1VAN", "KP90": "C1VAN", "AZ37": "C1VAN",
-  // --- C2CAN ---
-  "TD54": "C2CAN", "QS71": "C2CAN", "LN08": "C2CAN", "PX29": "C2CAN", "RF63": "C2CAN", "WJ16": "C2CAN", "ZH82": "C2CAN", "AC40": "C2CAN",
-  // --- C2HORT ---
-  "NE55": "C2HORT", "XQ03": "C2HORT", "HM79": "C2HORT", "VZ24": "C2HORT", "CP68": "C2HORT", "SJ91": "C2HORT", "FT12": "C2HORT",
-  // --- C2JP ---
-  "RD27": "C2JP", "WM83": "C2JP", "ZF05": "C2JP", "LC66": "C2JP", "QJ19": "C2JP", "AP74": "C2JP", "SV92": "C2JP", "TK38": "C2JP", "HX11": "C2JP", "GX61": "C2JP",
-  // --- C2PSR ---
-  "PM70": "C2PSR", "ZR26": "C2PSR", "NX51": "C2PSR", "CS09": "C2PSR", "VT84": "C2PSR", "KF17": "C2PSR", "QL63": "C2PSR", "MA28": "C2PSR", "RW95": "C2PSR", "DH42": "C2PSR",
-  // --- C2VAN ---
-  "ZP60": "C2VAN", "QF14": "C2VAN", "MX88": "C2VAN", "LS23": "C2VAN", "VA71": "C2VAN", "CN05": "C2VAN"
+  "INV": "VISITEUR", "PSE": "VISITEUR",
+  // B1AGO1
+  "KA47": "B1AGO1", "LU83": "B1AGO1", "MO12": "B1AGO1", "QF59": "B1AGO1", 
+  "RA26": "B1AGO1", "TI74": "B1AGO1", "NE08": "B1AGO1", "SA91": "B1AGO1",
+  // B1AGO2
+  "VO35": "B1AGO2", "PY64": "B1AGO2", "XK19": "B1AGO2", "DF82": "B1AGO2", 
+  "GE73": "B1AGO2", "MU51": "B1AGO2", "ZO28": "B1AGO2", "HI96": "B1AGO2",
+  // 1CAP
+  "BA14": "1CAP", "CE72": "1CAP", "DI39": "1CAP", "FO85": "1CAP", "GU61": "1CAP",
+  "JE27": "1CAP", "KO93": "1CAP", "LA58": "1CAP", "ME04": "1CAP", "NA46": "1CAP",
+  "PE11": "1CAP", "QU75": "1CAP", "RI32": "1CAP", "SO98": "1CAP", "TU65": "1CAP",
+  // 2CAP
+  "VE21": "2CAP", "WA87": "2CAP", "XA53": "2CAP", "YA19": "2CAP", "ZO76": "2CAP",
+  "BU42": "2CAP", "CU08": "2CAP", "DU64": "2CAP", "FU31": "2CAP", "GU97": "2CAP",
+  "HU52": "2CAP", "JU18": "2CAP", "KU84": "2CAP", "LU49": "2CAP", "MU15": "2CAP",
+  // TCAP
+  "NU71": "TCAP", "OU37": "TCAP", "PU03": "TCAP", "RU69": "TCAP", "SU25": "TCAP",
+  "TU91": "TCAP", "VU57": "TCAP", "WU13": "TCAP", "XU79": "TCAP", "YU45": "TCAP",
+  "ZU01": "TCAP", "AV67": "TCAP", "BV23": "TCAP", "CV89": "TCAP", "DV55": "TCAP",
+  // 2BACPRO
+  "EV11": "2BACPRO", "FV77": "2BACPRO", "GV33": "2BACPRO", "HV99": "2BACPRO",
+  "IV55": "2BACPRO", "JV11": "2BACPRO", "KV77": "2BACPRO", "LV33": "2BACPRO",
+  "MV99": "2BACPRO", "NV55": "2BACPRO", "OV11": "2BACPRO", "PV77": "2BACPRO",
+  "QV33": "2BACPRO", "RV99": "2BACPRO", "SV55": "2BACPRO",
+  // 1BACPRO
+  "TV11": "1BACPRO", "UV77": "1BACPRO", "VV33": "1BACPRO", "WV99": "1BACPRO",
+  "XV55": "1BACPRO", "YV11": "1BACPRO", "ZV77": "1BACPRO", "AW33": "1BACPRO",
+  "BW99": "1BACPRO", "CW55": "1BACPRO", "DW11": "1BACPRO", "EW77": "1BACPRO",
+  "FW33": "1BACPRO", "GW99": "1BACPRO", "HW55": "1BACPRO",
+  // TBACPRO
+  "IW11": "TBACPRO", "JW77": "TBACPRO", "KW33": "TBACPRO", "LW99": "TBACPRO",
+  "MW55": "TBACPRO", "NW11": "TBACPRO", "OW77": "TBACPRO", "PW33": "TBACPRO",
+  "QW99": "TBACPRO", "RW55": "TBACPRO", "SW11": "TBACPRO", "TW77": "TBACPRO",
+  "UW33": "TBACPRO", "VW99": "TBACPRO", "WW55": "TBACPRO",
+  // PROF
+  "PROFPSE": "PROF", "BRAHMSPSE": "PROF"
 };
 
-// 3) OUTILS
-function _normCode(raw) {
-  return (raw || "").toString().trim().toUpperCase();
-}
-function _classeFromCode(codeUpper) {
-  return ANNUAIRE[codeUpper] || "AUTRE";
-}
-function _isValidCode(codeUpper) {
-  return !!ANNUAIRE[codeUpper];
-}
-function _deviceType() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  return isMobile ? "Mobile" : "Ordinateur";
-}
-function _periodeInfo(now) {
-  const jour = now.getDay(); // 0=Dimanche 6=Samedi
-  const heure = now.getHours();
-  let periode = "Soir/Nuit";
-  if (jour === 0 || jour === 6) periode = "Week-end";
-  else if (heure >= 8 && heure < 18) periode = "Scolaire (8h-18h)";
-  return { jour, heure, periode };
-}
-function _ensureDb() {
-  try {
-    if (typeof firebase === "undefined") return null;
-    if (!firebase.apps || !firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+// 5. FONCTIONS GLOBALES (Pour que tes pages HTML puissent les appeler)
+
+// A. Demander le code élève (Pop-up)
+window.demanderCode = function(pageName) {
+  return new Promise((resolve) => {
+    // Vérif si déjà connecté
+    const storedCode = localStorage.getItem("codeEleve");
+    const storedClasse = localStorage.getItem("userClasse");
+    
+    if (storedCode && storedClasse) {
+      // Déjà connecté, on trace juste la visite
+      window.enregistrerVisite(pageName);
+      return resolve({ code: storedCode, classe: storedClasse });
     }
-    if (!window.db) window.db = firebase.firestore();
-    return window.db;
-  } catch (e) {
-    console.error("Firebase init/db error:", e);
-    return null;
-  }
-}
 
-// ✅ AJOUT IMPORTANT : rendre _ensureDb accessible si un jour tu veux l’appeler depuis une page
-window._ensureDb = _ensureDb;
+    // Sinon, on crée la fenêtre de connexion
+    const overlay = document.createElement("div");
+    overlay.style = "position:fixed;inset:0;background:#0f172a;z-index:99999;display:flex;align-items:center;justify-content:center;color:white;font-family:system-ui,sans-serif;";
+    overlay.innerHTML = `
+      <div style="background:#1e293b;padding:30px;border-radius:16px;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+        <h2 style="margin-top:0">🔒 Identification</h2>
+        <p style="color:#94a3b8;margin-bottom:20px">Entre ton code personnel.</p>
+        <input type="text" id="codeIn" placeholder="Code (ex: KA47)" style="font-size:18px;padding:12px;width:80%;text-align:center;border-radius:8px;border:none;margin-bottom:20px;text-transform:uppercase;">
+        <br>
+        <button id="btnGo" style="background:#2563eb;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;cursor:pointer;font-weight:bold;">Entrer</button>
+        <div id="msgErr" style="color:#ef4444;margin-top:15px;font-size:14px;min-height:20px;"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
 
-// 4) DOUANIER (optionnel)
-function demanderCode(_pageName) {
-  if (document.getElementById("douanier-overlay")) return;
-  const overlay = document.createElement("div");
-  overlay.id = "douanier-overlay";
-  overlay.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;padding:20px;";
-  overlay.innerHTML = `
-    <div style="background:#1e293b;padding:26px 24px;border-radius:14px;border:1px solid #334155;max-width:360px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-      <div style="font-weight:800;font-size:18px;margin:0 0 6px;">Identification</div>
-      <div style="color:#94a3b8;font-size:13px;line-height:1.4;margin:0 0 16px;">Saisissez votre code d'accès</div>
-      <input id="codeIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
-        style="padding:12px;border-radius:10px;border:1px solid #475569;width:100%;text-align:center;text-transform:uppercase;font-weight:800;font-size:18px;outline:none;">
-      <button id="valBtn"
-        style="margin-top:14px;padding:12px 18px;background:#3b82f6;color:white;border:none;border-radius:10px;font-weight:800;cursor:pointer;width:100%;">Valider</button>
-      <div id="err" style="color:#ef4444;margin-top:12px;display:none;font-weight:800;">Code non reconnu</div>
-      <div style="margin-top:10px;color:#64748b;font-size:11px;">Astuce : minuscules/majuscules acceptées</div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  const input = overlay.querySelector("#codeIn");
-  const err = overlay.querySelector("#err");
-  const verifier = () => {
-    const val = _normCode(input.value);
-    if (_isValidCode(val)) {
-      localStorage.setItem("codeEleve", val);
-      localStorage.setItem("userCode", val);
-      localStorage.setItem("userClasse", ANNUAIRE[val]);
-      overlay.remove();
-      if (typeof enregistrerVisite === "function") {
-        enregistrerVisite(_pageName || (document.title || "Page"));
+    const input = overlay.querySelector("#codeIn");
+    const btn = overlay.querySelector("#btnGo");
+    const msg = overlay.querySelector("#msgErr");
+
+    function valider() {
+      const code = input.value.trim().toUpperCase();
+      if (ANNUAIRE[code]) {
+        const classe = ANNUAIRE[code];
+        // On sauvegarde
+        localStorage.setItem("codeEleve", code);
+        localStorage.setItem("userClasse", classe);
+        localStorage.setItem("userCode", code); // Legacy support
+        
+        window.enregistrerVisite(pageName);
+        overlay.remove();
+        resolve({ code, classe });
+      } else {
+        msg.textContent = "Code inconnu. Réessaie.";
+        input.value = "";
+        input.focus();
       }
-    } else {
-      err.style.display = "block";
-      input.style.border = "2px solid #ef4444";
     }
-  };
-  overlay.querySelector("#valBtn").onclick = verifier;
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter") verifier(); });
-  setTimeout(() => input.focus(), 50);
-}
 
-// 5) MOUCHARD
-async function enregistrerVisite(nomPage) {
+    btn.onclick = valider;
+    input.onkeydown = (e) => { if (e.key === "Enter") valider(); };
+    setTimeout(() => input.focus(), 100);
+  });
+};
+
+// B. Envoyer le devoir (Le coeur du réacteur)
+window.PSE_submitDevoir = async function(payload) {
+  console.log("📤 Envoi en cours...", payload);
+  
   try {
-    const db = _ensureDb();
-    if (!db) { console.warn("Mouchard: db indisponible."); return; }
-    const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
-    const codeUpper = _normCode(raw);
-    const codeRequired = (window.PSE_CODE_REQUIRED === true);
-    if (codeRequired && (!_isValidCode(codeUpper))) {
-      demanderCode(nomPage);
-      return;
-    }
-    const finalCode = (_isValidCode(codeUpper) ? codeUpper : "ANONYME");
-    const finalClasse = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
-    const now = new Date();
-    const info = _periodeInfo(now);
-    const key = "trace_" + (nomPage || "") + "_" + location.pathname;
-    if (sessionStorage.getItem(key)) return;
-    await db.collection("statistiques_usage").add({
-      date: now.toISOString(),
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      page: nomPage || (document.title || "Page"),
-      action: "Consultation",
-      device: _deviceType(),
-      userCode: finalCode,
-      classe: finalClasse,
-      periode: info.periode,
-      heure: info.heure,
-      jourSemaine: info.jour
-    });
-    sessionStorage.setItem(key, "1");
-  } catch (e) { console.error("Erreur mouchard:", e); }
-}
+    // On récupère l'identité
+    const codeLocal = localStorage.getItem("codeEleve") || "ANONYME";
+    const classeLocal = localStorage.getItem("userClasse") || "UNKNOWN";
 
-// 6) OUTILS PUBLICS
-function resetCodeEleve() {
-  localStorage.removeItem("codeEleve");
-  localStorage.removeItem("userCode");
-  localStorage.removeItem("userClasse");
-}
-
-// 7) ENVOI DEVOIRS
-async function PSE_submitDevoir(payload) {
-  try {
-    const db = _ensureDb();
-    if (!db) throw new Error("db indisponible (Firebase non chargé ?)");
-    const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
-    const codeUpper = _normCode(raw);
-    const codeRequired = (window.PSE_CODE_REQUIRED === true);
-    if (codeRequired && (!_isValidCode(codeUpper))) {
-      demanderCode((payload && (payload.devoirId || payload.titre || payload.exercice_titre)) || "Devoir");
-      throw new Error("Identification requise");
-    }
-    const finalCode = (_isValidCode(codeUpper) ? codeUpper : "ANONYME");
-    const finalClasseCode = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
-    const nowISO = new Date().toISOString();
-    const doc = {
-      devoirId: payload?.devoirId || payload?.meta?.devoirId || payload?.meta?.module || document.title || "devoir",
-      titre: payload?.devoirTitre || payload?.titre || payload?.exercice_titre || document.title || "",
-      url: payload?.url || location.href,
-      niveau: payload?.niveau || payload?.meta?.niveau || "",
-      thematique: payload?.thematique || payload?.meta?.thematique || "",
-      module: payload?.module || payload?.meta?.module || "",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      createdAtISO: nowISO,
+    const docData = {
+      devoirId: payload.devoirId || "Inconnu",
+      titre: payload.titre || payload.module || "",
+      url: window.location.href,
+      module: payload.module || "",
+      
+      // Dates
+      createdAt: serverTimestamp(),
+      createdAtISO: new Date().toISOString(),
+      
+      // Identité Élève
       eleve: {
-        code: finalCode,
-        classeCode: finalClasseCode,
-        classe: payload?.classe || payload?.meta?.classe || "",
-        nom: payload?.nom || payload?.meta?.nom || "",
-        prenom: payload?.prenom || payload?.meta?.prenom || ""
+        code: codeLocal,
+        classeCode: classeLocal,
+        classe: payload.classe || classeLocal, // Priorité au champ formulaire si rempli
+        nom: payload.nom || "",
+        prenom: payload.prenom || ""
       },
-      reponses: payload?.reponses || {},
-      resultat_auto: {
-        score: payload?.meta?.score,
-        maxScore: payload?.meta?.maxScore,
-        bareme: payload?.meta?.bareme,
-        details: payload?.meta?.details
-      },
-      raw: payload || null
+      
+      // Contenu
+      reponses: payload.reponses || {},
+      resultat_auto: payload.resultat_auto || {}, // Score calculé
+      raw: payload // Sauvegarde de sécurité
     };
-    const antiKey = "devoir_sent_" + doc.devoirId + "_" + doc.url;
-    if (sessionStorage.getItem(antiKey)) throw new Error("Déjà envoyé (session)");
-    const ref = await db.collection("devoirs_rendus").add(doc);
+
+    // Vérification anti-doublon simple (session)
+    const antiKey = "sent_" + docData.devoirId + "_" + docData.createdAtISO.slice(0,16); // à la minute près
+    if (sessionStorage.getItem(antiKey)) {
+        console.warn("Doublon évité.");
+        return { ok: true, id: "doublon" };
+    }
+
+    // ENVOI VERS FIRESTORE
+    const ref = await addDoc(collection(db, "devoirs_rendus"), docData);
+    
     sessionStorage.setItem(antiKey, "1");
+    console.log("✅ Devoir enregistré ! ID:", ref.id);
     return { ok: true, id: ref.id };
+
   } catch (e) {
-    console.error("PSE_submitDevoir error:", e);
-    return { ok: false, error: (e && e.message) ? e.message : String(e) };
+    console.error("❌ Erreur envoi:", e);
+    return { ok: false, error: e.message };
   }
-}
+};
 
-// Expose
-window.ANNUAIRE = ANNUAIRE;
-window.enregistrerVisite = enregistrerVisite;
-window.demanderCode = demanderCode;
-window.resetCodeEleve = resetCodeEleve;
-window.PSE_submitDevoir = PSE_submitDevoir;
+// C. Enregistrer une visite (Statistiques)
+window.enregistrerVisite = async function(nomPage) {
+    try {
+        const code = localStorage.getItem("codeEleve") || "INV";
+        const classe = localStorage.getItem("userClasse") || "VISITEUR";
+        
+        await addDoc(collection(db, "statistiques_usage"), {
+            date: new Date().toISOString(),
+            timestamp: serverTimestamp(),
+            page: nomPage || document.title,
+            action: "Consultation",
+            userCode: code,
+            classe: classe
+        });
+    } catch(e) { console.warn("Erreur stats (pas grave)", e); }
+};
 
-// Auto-init DB pour que la zone prof/grille ait window.db dès le chargement
-try { _ensureDb(); } catch (e) {}
-
-console.log("✅ annuaire.js chargé (v8 + casse OK + pages libres OK).");
+// D. Déconnexion
+window.resetCodeEleve = function() {
+  localStorage.clear();
+  location.reload();
+};
