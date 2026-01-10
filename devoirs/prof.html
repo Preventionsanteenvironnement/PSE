@@ -3,80 +3,156 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PSE — Devoirs</title>
+  <title>PSE — Zone Prof (rendus)</title>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#111827;--muted:#4b5563;--border:#e5e7eb;--accent:#2563eb;--shadow:0 10px 30px rgba(0,0,0,.08);--radius:18px}
+    :root{--bg:#f6f7fb;--card:#fff;--text:#111827;--muted:#4b5563;--border:#e5e7eb;--accent:#2563eb;--shadow:0 10px 30px rgba(0,0,0,.08);--radius:18px;--focus:0 0 0 3px rgba(37,99,235,.25)}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 70px}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px 14px 70px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
     h1{margin:0 0 6px;font-size:1.25rem}
     p{margin:0 0 12px;color:var(--muted);font-weight:600}
-    .grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
-    @media (max-width:720px){.grid{grid-template-columns:1fr}}
-    a.item{display:block;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:14px;background:#fff;padding:14px}
-    a.item:hover{border-color:rgba(37,99,235,.45)}
-    .tag{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--muted);font-weight:800;font-size:.9rem}
-    .title{font-weight:900;margin:8px 0 6px}
-    .meta{color:var(--muted);font-weight:700;font-size:.95rem}
-    .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    button{cursor:pointer;border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:900}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+    input{padding:10px 12px;border:1px solid var(--border);border-radius:12px;min-width:260px;font-size:1rem}
+    input:focus{outline:none;box-shadow:var(--focus)}
+    button{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
     button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-    .note{margin-top:10px;font-size:.92rem;color:var(--muted);font-weight:700}
-    code{background:#fff;border:1px solid var(--border);border-radius:10px;padding:2px 6px}
+    .status{font-weight:800;color:var(--muted);margin-top:8px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border-top:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:top;font-size:.95rem}
+    th{color:var(--muted);font-weight:900}
+    code{background:#f3f4f6;padding:2px 6px;border-radius:8px}
+    a{color:var(--accent);font-weight:800;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--muted);font-weight:800;font-size:.95rem}
+    .small{font-size:.9rem;color:var(--muted);font-weight:700}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>PSE — Devoirs</h1>
-      <p>Accès aux devoirs hébergés sur GitHub Pages.</p>
+      <h1>PSE — Zone Prof (rendus)</h1>
+      <p>Cette page lit la collection <code>devoirs_rendus</code> dans Firestore et affiche les derniers envois.</p>
 
-      <div class="btnrow">
-        <button id="resetBtn" type="button">Réinitialiser le code</button>
-        <button id="goA3" class="primary" type="button">Ouvrir Devoir CAP A3</button>
+      <div class="row">
+        <span class="pill">Accès</span>
+        <input id="profCode" type="password" placeholder="Code prof" autocomplete="current-password" />
+        <button class="primary" id="unlockBtn" type="button">Déverrouiller</button>
+        <button id="refreshBtn" type="button" disabled>Actualiser</button>
+        <span class="status" id="status"></span>
       </div>
 
-      <p class="note">
-        Si le devoir ne redemande pas le code, c’est qu’il est déjà mémorisé dans le navigateur.
-        Tu peux le réinitialiser avec le bouton ci-dessus.
-      </p>
+      <div class="small">Astuce : si rien n’apparaît, vérifie que l’envoi depuis le devoir crée bien un document dans Firestore (collection <code>devoirs_rendus</code>).</div>
 
-      <div class="grid" style="margin-top:12px">
-        <a class="item" href="./PSE_devoirs_CAP_A3_sedentarite_v1.html">
-          <span class="tag">CAP • A3</span>
-          <div class="title">Sédentarité, effort et bien-être</div>
-          <div class="meta">Fichier : <code>PSE_devoirs_CAP_A3_sedentarite_v1.html</code></div>
-        </a>
-      </div>
-
-      <p class="note">
-        URL attendue : <code>https://preventionsanteenvironnement.github.io/PSE/devoirs/</code>
-        et cette page doit s’appeler <code>index.html</code> dans le dossier <code>devoirs</code>.
-      </p>
+      <div id="tableWrap"></div>
     </div>
   </div>
 
-  <script>
-    // Bouton reset : fonctionne si annuaire.js expose resetCodeEleve()
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      try{
-        if(typeof resetCodeEleve === "function"){
-          resetCodeEleve();
-          alert("Code effacé. Recharge la page.");
-        }else{
-          localStorage.removeItem("userCode");
-          localStorage.removeItem("userClasse");
-          localStorage.removeItem("codeEleve");
-          alert("localStorage effacé. Recharge la page.");
-        }
-      }catch(e){
-        alert("Erreur reset : " + (e?.message || "inconnue"));
-      }
-    });
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    document.getElementById("goA3").addEventListener("click", () => {
-      location.href = "./PSE_devoirs_CAP_A3_sedentarite_v1.html";
-    });
+  <script>window.PSE_CODE_REQUIRED = false;</script>
+  <script src="./annuaire.js"></script>
+
+  <script>
+    const $ = (s)=>document.querySelector(s);
+    const statusEl = $("#status");
+    const tableWrap = $("#tableWrap");
+    const unlockBtn = $("#unlockBtn");
+    const refreshBtn = $("#refreshBtn");
+    const profCodeInput = $("#profCode");
+
+    function setStatus(msg){ statusEl.textContent = msg || ""; }
+
+    // ✅ À CHANGER : ton mot de passe prof
+    const PROF_PASSWORD = "PROF";
+
+    function esc(v){ return String(v ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    async function loadRendus(){
+      setStatus("Chargement…");
+      try{
+        if(!window.db || !window.db.collection) throw new Error("Firestore indisponible (db).");
+
+        const snap = await window.db.collection("devoirs_rendus")
+          .orderBy("createdAtISO", "desc")
+          .limit(50)
+          .get();
+
+        const rows = [];
+        snap.forEach(doc => rows.push({ id: doc.id, ...doc.data() }));
+
+        render(rows);
+        setStatus(rows.length ? `${rows.length} rendu(s) affiché(s).` : "Aucun rendu trouvé.");
+      }catch(e){
+        setStatus("Erreur : " + (e?.message || e));
+      }
+    }
+
+    function render(rows){
+      if(!rows.length){
+        tableWrap.innerHTML = "";
+        return;
+      }
+
+      tableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Élève</th>
+              <th>Classe</th>
+              <th>Devoir</th>
+              <th>Score</th>
+              <th>Voir JSON</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const eleveNom = r?.eleve?.nom || r?.nom || "";
+              const elevePrenom = r?.eleve?.prenom || r?.prenom || "";
+              const classe = r?.eleve?.classe || r?.classe || "";
+              const devoirId = r?.devoirId || "";
+              const module = r?.module || r?.meta?.module || "";
+              const score = (r?.meta?.score ?? r?.score ?? "");
+              const max = (r?.meta?.maxScore ?? r?.maxScore ?? "");
+              const dt = r?.createdAtISO || r?.meta?.createdAt || "";
+              const labelScore = (score!=="" && max!=="") ? `${score} / ${max}` : (score!=="" ? String(score) : "");
+
+              const json = encodeURIComponent(JSON.stringify(r, null, 2));
+              return `
+                <tr>
+                  <td>${esc(dt)}</td>
+                  <td>${esc((elevePrenom+" "+eleveNom).trim())}</td>
+                  <td>${esc(classe)}</td>
+                  <td>${esc(devoirId)} ${module?`<span class="small">(module ${esc(module)})</span>`:""}</td>
+                  <td>${esc(labelScore)}</td>
+                  <td><a href="data:application/json;charset=utf-8,${json}" download="rendu_${esc(devoirId)}_${esc(r.id)}.json">Télécharger</a></td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function unlock(){
+      const v = (profCodeInput.value || "").trim();
+      if(v !== PROF_PASSWORD){
+        setStatus("Code prof incorrect.");
+        refreshBtn.disabled = true;
+        tableWrap.innerHTML = "";
+        return;
+      }
+      setStatus("OK. Clique Actualiser.");
+      refreshBtn.disabled = false;
+      loadRendus();
+    }
+
+    unlockBtn.addEventListener("click", unlock);
+    refreshBtn.addEventListener("click", loadRendus);
+    profCodeInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") unlock(); });
+
+    setStatus("Entre le code prof puis Déverrouiller.");
   </script>
 </body>
 </html>
