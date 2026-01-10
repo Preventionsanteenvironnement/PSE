@@ -64,9 +64,26 @@
 
     function getParam(k){ return new URLSearchParams(location.search).get(k) || ""; }
 
-    async function fetchDoc(docId){
+    // ✅ NEW: prendre la collection depuis l'URL (fallback devoirs_rendus)
+    function getCollection(){
+      return getParam("collection") || "devoirs_rendus";
+    }
+
+    // ✅ NEW: cache session + sécurité parsing
+    function getCached(docId){
+      try{
+        const cached = sessionStorage.getItem("PSE_CORRIGE_DATA_" + docId);
+        if(!cached) return null;
+        return JSON.parse(cached);
+      }catch(e){
+        return null;
+      }
+    }
+
+    // ✅ NEW: Firestore fetch sur la bonne collection
+    async function fetchDoc(collectionName, docId){
       if(!window.db) throw new Error("db indisponible");
-      const snap = await window.db.collection("devoirs_rendus").doc(docId).get();
+      const snap = await window.db.collection(collectionName).doc(docId).get();
       if(!snap.exists) throw new Error("copie introuvable");
       return { id: snap.id, ...snap.data() };
     }
@@ -85,17 +102,28 @@
       const nom = getParam("nom"), prenom = getParam("prenom"), classe = getParam("classe"), devoirId = getParam("devoirId");
       metaEl.textContent = [prenom, nom, classe, devoirId].filter(Boolean).join(" • ");
 
-      setStatus("Chargement Firestore…");
+      const collectionName = getCollection();
+
+      setStatus("Chargement…");
       try{
-        const cached = sessionStorage.getItem("PSE_CORRIGE_DATA_" + docId);
-        if(cached){
-          const parsed = JSON.parse(cached);
-          jsonBox.textContent = safeJson(parsed);
+        // 1) cache session
+        const cachedObj = getCached(docId);
+        if(cachedObj){
+          jsonBox.textContent = safeJson(cachedObj);
           setStatus("Copie chargée (cache session).", "ok");
           return;
         }
 
-        const data = await fetchDoc(docId);
+        // 2) Firestore
+        setStatus("Chargement Firestore…");
+        const data = await fetchDoc(collectionName, docId);
+
+        // ✅ NEW: remettre en cache pour navigation rapide
+        try{
+          sessionStorage.setItem("PSE_CORRIGE_DOCID", docId);
+          sessionStorage.setItem("PSE_CORRIGE_DATA_" + docId, JSON.stringify(data));
+        }catch(e){}
+
         jsonBox.textContent = safeJson(data);
         setStatus("Copie chargée (Firestore).", "ok");
       }catch(e){
@@ -107,27 +135,42 @@
       return localStorage.getItem("PSE_GRID_URL") || "";
     }
 
+    // ✅ NEW: construire les params à transmettre à la grille (toujours docId + collection + infos élève)
+    function buildParamsForGrid(){
+      const docId = getParam("docId") || sessionStorage.getItem("PSE_CORRIGE_DOCID") || "";
+      const params = new URLSearchParams();
+      params.set("docId", docId);
+      params.set("collection", getCollection());
+
+      // recopie des métas si présentes
+      ["devoirId","classe","nom","prenom"].forEach(k=>{
+        const v = getParam(k);
+        if(v) params.set(k, v);
+      });
+
+      return params;
+    }
+
     function openGrid(){
       const saved = getSavedGridUrl();
       const manual = gridUrlIn.value.trim();
       const url = manual || saved;
+
       if(!url){
         setStatus("Ajoute l’URL de ta grille puis Enregistrer l’URL.", "err");
         return;
       }
 
-      const docId = getParam("docId") || sessionStorage.getItem("PSE_CORRIGE_DOCID") || "";
-      const params = new URLSearchParams(location.search);
-      params.set("docId", docId);
-      params.set("collection", "devoirs_rendus");
-
+      const params = buildParamsForGrid();
       const joiner = url.includes("?") ? "&" : "?";
       window.open(url + joiner + params.toString(), "_blank", "noopener");
     }
 
     $("#reloadBtn").addEventListener("click", ()=>{
       const docId = getParam("docId") || sessionStorage.getItem("PSE_CORRIGE_DOCID") || "";
-      if(docId) sessionStorage.removeItem("PSE_CORRIGE_DATA_" + docId);
+      if(docId){
+        try{ sessionStorage.removeItem("PSE_CORRIGE_DATA_" + docId); }catch(e){}
+      }
       load();
     });
 
