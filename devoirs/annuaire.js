@@ -1,15 +1,10 @@
 /* 📁 ANNUAIRE CENTRAL & CONFIGURATION — Dépôt PSE
-   Version corrigée :
-   - Compatible Firebase v8 (firebase.initializeApp / firebase.firestore)
-   - Codes insensibles à la casse (maj/min)
-   - Ne bloque PAS les pages libres
-   - Bloque uniquement si window.PSE_CODE_REQUIRED === true
-   - Traçage compatible Cockpit (champs attendus)
+   Version corrigée avec Auto-Init
 */
 
 // 1) CONFIG FIREBASE (officielle)
 const firebaseConfig = {
-  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", // J'ai remis la clé originale sans le "3" en trop
   authDomain: "devoirs-pse.firebaseapp.com",
   projectId: "devoirs-pse",
   storageBucket: "devoirs-pse.appspot.com",
@@ -19,10 +14,8 @@ const firebaseConfig = {
 
 // 2) ANNUAIRE (codes -> classe)
 const ANNUAIRE = {
-  // --- ACCÈS VISITEURS (Fonctionne en majuscule ou minuscule) ---
   "INV": "VISITEUR",
   "PSE": "VISITEUR",
-
   // --- B1AGO1 ---
   "KA47": "B1AGO1", "LU83": "B1AGO1", "MO12": "B1AGO1", "QF59": "B1AGO1", "RA26": "B1AGO1", "TI74": "B1AGO1", "NE08": "B1AGO1", "SA91": "B1AGO1",
   // --- B1AGO2 ---
@@ -88,11 +81,9 @@ function _periodeInfo(now) {
 function _ensureDb() {
   try {
     if (typeof firebase === "undefined") return null;
-
     if (!firebase.apps || !firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
-
     if (!window.db) window.db = firebase.firestore();
     return window.db;
   } catch (e) {
@@ -101,14 +92,12 @@ function _ensureDb() {
   }
 }
 
-// 4) DOUANIER (optionnel) — utilisé seulement si window.PSE_CODE_REQUIRED === true
+// 4) DOUANIER (optionnel)
 function demanderCode(_pageName) {
   if (document.getElementById("douanier-overlay")) return;
-
   const overlay = document.createElement("div");
   overlay.id = "douanier-overlay";
   overlay.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;padding:20px;";
-
   overlay.innerHTML = `
     <div style="background:#1e293b;padding:26px 24px;border-radius:14px;border:1px solid #334155;max-width:360px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
       <div style="font-weight:800;font-size:18px;margin:0 0 6px;">Identification</div>
@@ -121,21 +110,16 @@ function demanderCode(_pageName) {
       <div style="margin-top:10px;color:#64748b;font-size:11px;">Astuce : minuscules/majuscules acceptées</div>
     </div>
   `;
-
   document.body.appendChild(overlay);
-
   const input = overlay.querySelector("#codeIn");
   const err = overlay.querySelector("#err");
-
   const verifier = () => {
     const val = _normCode(input.value);
     if (_isValidCode(val)) {
       localStorage.setItem("codeEleve", val);
       localStorage.setItem("userCode", val);
       localStorage.setItem("userClasse", ANNUAIRE[val]);
-
       overlay.remove();
-
       if (typeof enregistrerVisite === "function") {
         enregistrerVisite(_pageName || (document.title || "Page"));
       }
@@ -144,90 +128,68 @@ function demanderCode(_pageName) {
       input.style.border = "2px solid #ef4444";
     }
   };
-
   overlay.querySelector("#valBtn").onclick = verifier;
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") verifier(); });
   setTimeout(() => input.focus(), 50);
 }
 
-// 5) MOUCHARD — appelé depuis tes pages : enregistrerVisite("Nom page")
+// 5) MOUCHARD
 async function enregistrerVisite(nomPage) {
   try {
     const db = _ensureDb();
-    if (!db) {
-      console.warn("Mouchard: db indisponible (Firebase non chargé ?).");
-      return;
-    }
-
+    if (!db) { console.warn("Mouchard: db indisponible."); return; }
     const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
     const codeUpper = _normCode(raw);
     const codeRequired = (window.PSE_CODE_REQUIRED === true);
-
     if (codeRequired && (!_isValidCode(codeUpper))) {
       demanderCode(nomPage);
       return;
     }
-
     const finalCode = (_isValidCode(codeUpper) ? codeUpper : "ANONYME");
     const finalClasse = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
-
     const now = new Date();
     const info = _periodeInfo(now);
-
     const key = "trace_" + (nomPage || "") + "_" + location.pathname;
     if (sessionStorage.getItem(key)) return;
-
     await db.collection("statistiques_usage").add({
       date: now.toISOString(),
       timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       page: nomPage || (document.title || "Page"),
       action: "Consultation",
       device: _deviceType(),
-
       userCode: finalCode,
       classe: finalClasse,
       periode: info.periode,
       heure: info.heure,
       jourSemaine: info.jour
     });
-
     sessionStorage.setItem(key, "1");
-  } catch (e) {
-    console.error("Erreur mouchard:", e);
-  }
+  } catch (e) { console.error("Erreur mouchard:", e); }
 }
 
-// 6) OUTILS PUBLICS (optionnels)
+// 6) OUTILS PUBLICS
 function resetCodeEleve() {
   localStorage.removeItem("codeEleve");
   localStorage.removeItem("userCode");
   localStorage.removeItem("userClasse");
 }
 
-
-// 7) ENVOI DEVOIRS (centralisé) — appelé depuis tes pages : PSE_submitDevoir(payload)
+// 7) ENVOI DEVOIRS
 async function PSE_submitDevoir(payload) {
   try {
     const db = _ensureDb();
     if (!db) throw new Error("db indisponible (Firebase non chargé ?)");
-
-    // Identification (si exigée)
     const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
     const codeUpper = _normCode(raw);
     const codeRequired = (window.PSE_CODE_REQUIRED === true);
-
     if (codeRequired && (!_isValidCode(codeUpper))) {
       demanderCode((payload && (payload.devoirId || payload.titre || payload.exercice_titre)) || "Devoir");
       throw new Error("Identification requise");
     }
-
     const finalCode = (_isValidCode(codeUpper) ? codeUpper : "ANONYME");
     const finalClasseCode = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
-
     const nowISO = new Date().toISOString();
-
     const doc = {
-      // Champs faciles pour Cockpit
       devoirId: payload?.devoirId || payload?.meta?.devoirId || payload?.meta?.module || document.title || "devoir",
       titre: payload?.devoirTitre || payload?.titre || payload?.exercice_titre || document.title || "",
       url: payload?.url || location.href,
@@ -236,7 +198,6 @@ async function PSE_submitDevoir(payload) {
       module: payload?.module || payload?.meta?.module || "",
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdAtISO: nowISO,
-
       eleve: {
         code: finalCode,
         classeCode: finalClasseCode,
@@ -244,8 +205,6 @@ async function PSE_submitDevoir(payload) {
         nom: payload?.nom || payload?.meta?.nom || "",
         prenom: payload?.prenom || payload?.meta?.prenom || ""
       },
-
-      // Données devoir
       reponses: payload?.reponses || {},
       resultat_auto: {
         score: payload?.meta?.score,
@@ -253,17 +212,10 @@ async function PSE_submitDevoir(payload) {
         bareme: payload?.meta?.bareme,
         details: payload?.meta?.details
       },
-
-      // Copie brute (pour ne rien perdre)
       raw: payload || null
     };
-
-    // Anti double-envoi (session)
     const antiKey = "devoir_sent_" + doc.devoirId + "_" + doc.url;
-    if (sessionStorage.getItem(antiKey)) {
-      throw new Error("Déjà envoyé (session)");
-    }
-
+    if (sessionStorage.getItem(antiKey)) throw new Error("Déjà envoyé (session)");
     const ref = await db.collection("devoirs_rendus").add(doc);
     sessionStorage.setItem(antiKey, "1");
     return { ok: true, id: ref.id };
@@ -279,5 +231,8 @@ window.enregistrerVisite = enregistrerVisite;
 window.demanderCode = demanderCode;
 window.resetCodeEleve = resetCodeEleve;
 window.PSE_submitDevoir = PSE_submitDevoir;
+
+// Auto-init DB pour que la Zone Prof ait window.db dès le chargement
+try { _ensureDb(); } catch (e) {}
 
 console.log("✅ annuaire.js chargé (v8 + casse OK + pages libres OK).");
