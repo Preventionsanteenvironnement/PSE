@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PSE — Grille de correction</title>
+  <title>PSE — Grille de correction (Passerelle V10)</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f6f7fb;color:#111827}
     .wrap{max-width:1200px;margin:0 auto;padding:16px}
@@ -24,7 +24,7 @@
     <div class="card">
       <div class="row" style="justify-content:space-between">
         <div class="row">
-          <span class="pill">Grille</span>
+          <span class="pill">Passerelle de Correction</span>
           <span class="small" id="meta"></span>
         </div>
         <div class="row">
@@ -37,20 +37,20 @@
 
     <div class="card">
       <div class="row" style="margin-bottom:10px">
-        <span class="pill">Copie JSON</span>
-        <input id="gridUrl" placeholder="URL de ta grille (optionnel)" style="min-width:320px;flex:1" />
+        <span class="pill">Données Brutes (JSON)</span>
+        <input id="gridUrl" placeholder="URL de ta grille visuelle (optionnel)" style="min-width:320px;flex:1" />
         <button id="saveGridUrlBtn">Enregistrer l’URL</button>
       </div>
       <pre id="jsonBox">{}</pre>
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script>window.PSE_CODE_REQUIRED = false;</script>
-  <script src="./annuaire.js"></script>
+  <script type="module" src="./annuaire.js"></script>
 
-  <script>
+  <script type="module">
+    // 2. On importe les outils Firebase v10
+    import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
     const $ = (s)=>document.querySelector(s);
     const statusEl = $("#status");
     const metaEl = $("#meta");
@@ -63,91 +63,95 @@
     }
 
     function getParam(k){ return new URLSearchParams(location.search).get(k) || ""; }
+    function getCollection(){ return getParam("collection") || "devoirs_rendus"; }
 
-    // ✅ NEW: prendre la collection depuis l'URL (fallback devoirs_rendus)
-    function getCollection(){
-      return getParam("collection") || "devoirs_rendus";
-    }
-
-    // ✅ NEW: cache session + sécurité parsing
     function getCached(docId){
       try{
         const cached = sessionStorage.getItem("PSE_CORRIGE_DATA_" + docId);
         if(!cached) return null;
         return JSON.parse(cached);
-      }catch(e){
-        return null;
-      }
-    }
-
-    // ✅ NEW: Firestore fetch sur la bonne collection
-    async function fetchDoc(collectionName, docId){
-      if(!window.db) throw new Error("db indisponible");
-      const snap = await window.db.collection(collectionName).doc(docId).get();
-      if(!snap.exists) throw new Error("copie introuvable");
-      return { id: snap.id, ...snap.data() };
+      }catch(e){ return null; }
     }
 
     function safeJson(v){
       try { return JSON.stringify(v, null, 2); } catch(e){ return String(v); }
     }
 
+    // --- FONCTION DE CHARGEMENT MODERNE ---
     async function load(){
       const docId = getParam("docId") || sessionStorage.getItem("PSE_CORRIGE_DOCID") || "";
+      
       if(!docId){
-        setStatus("docId manquant. Reviens sur la zone prof et clique Corriger.", "err");
+        setStatus("Aucun ID de copie fourni. Passe par le Cockpit ou la Zone Prof.", "err");
         return;
       }
 
-      const nom = getParam("nom"), prenom = getParam("prenom"), classe = getParam("classe"), devoirId = getParam("devoirId");
-      metaEl.textContent = [prenom, nom, classe, devoirId].filter(Boolean).join(" • ");
+      // Méta-données URL
+      const nom = getParam("nom"), prenom = getParam("prenom"), classe = getParam("classe");
+      metaEl.textContent = [prenom, nom, classe].filter(Boolean).join(" • ");
 
-      const collectionName = getCollection();
+      setStatus("Connexion à la base...");
 
-      setStatus("Chargement…");
       try{
-        // 1) cache session
+        // 1) Cache session (rapide)
         const cachedObj = getCached(docId);
         if(cachedObj){
           jsonBox.textContent = safeJson(cachedObj);
-          setStatus("Copie chargée (cache session).", "ok");
+          setStatus("Copie chargée (Mémoire Cache).", "ok");
           return;
         }
 
-        // 2) Firestore
-        setStatus("Chargement Firestore…");
-        const data = await fetchDoc(collectionName, docId);
+        // 2) Firestore V10
+        // On attend que annuaire.js ait initialisé la DB
+        let attempts = 0;
+        while (!window.db && attempts < 50) {
+            await new Promise(r => setTimeout(r, 100));
+            attempts++;
+        }
+        if (!window.db) throw new Error("La base de données ne répond pas.");
 
-        // ✅ NEW: remettre en cache pour navigation rapide
+        setStatus("Récupération Cloud...");
+        
+        // Récupération moderne
+        const docRef = doc(window.db, getCollection(), docId);
+        const snap = await getDoc(docRef);
+
+        if(!snap.exists()) throw new Error("Cette copie n'existe plus sur le serveur.");
+
+        const data = { id: snap.id, ...snap.data() };
+
+        // Mise en cache pour la suite
         try{
           sessionStorage.setItem("PSE_CORRIGE_DOCID", docId);
           sessionStorage.setItem("PSE_CORRIGE_DATA_" + docId, JSON.stringify(data));
         }catch(e){}
 
         jsonBox.textContent = safeJson(data);
-        setStatus("Copie chargée (Firestore).", "ok");
+        setStatus("Copie chargée avec succès (Cloud).", "ok");
+
       }catch(e){
-        setStatus("Erreur : " + (e?.message || e), "err");
+        setStatus("Erreur : " + e.message, "err");
+        console.error(e);
       }
     }
+
+    // --- GESTION DES LIENS ---
 
     function getSavedGridUrl(){
       return localStorage.getItem("PSE_GRID_URL") || "";
     }
 
-    // ✅ NEW: construire les params à transmettre à la grille (toujours docId + collection + infos élève)
     function buildParamsForGrid(){
       const docId = getParam("docId") || sessionStorage.getItem("PSE_CORRIGE_DOCID") || "";
       const params = new URLSearchParams();
       params.set("docId", docId);
       params.set("collection", getCollection());
 
-      // recopie des métas si présentes
+      // On transmet tout le contexte à la grille finale
       ["devoirId","classe","nom","prenom"].forEach(k=>{
         const v = getParam(k);
         if(v) params.set(k, v);
       });
-
       return params;
     }
 
@@ -157,20 +161,19 @@
       const url = manual || saved;
 
       if(!url){
-        setStatus("Ajoute l’URL de ta grille puis Enregistrer l’URL.", "err");
+        setStatus("⚠️ Renseigne l'URL de ta grille visuelle (ex: ./ma-grille.html) ci-dessous.", "err");
         return;
       }
 
       const params = buildParamsForGrid();
       const joiner = url.includes("?") ? "&" : "?";
+      // Ouverture de la grille finale
       window.open(url + joiner + params.toString(), "_blank", "noopener");
     }
 
     $("#reloadBtn").addEventListener("click", ()=>{
       const docId = getParam("docId") || sessionStorage.getItem("PSE_CORRIGE_DOCID") || "";
-      if(docId){
-        try{ sessionStorage.removeItem("PSE_CORRIGE_DATA_" + docId); }catch(e){}
-      }
+      if(docId) try{ sessionStorage.removeItem("PSE_CORRIGE_DATA_" + docId); }catch(e){}
       load();
     });
 
@@ -178,13 +181,14 @@
       const v = gridUrlIn.value.trim();
       if(!v) return;
       localStorage.setItem("PSE_GRID_URL", v);
-      setStatus("URL grille enregistrée.", "ok");
+      setStatus("URL enregistrée !", "ok");
     });
 
     $("#openGridBtn").addEventListener("click", openGrid);
 
     gridUrlIn.value = getSavedGridUrl();
 
+    // Démarrage
     load();
   </script>
 </body>
