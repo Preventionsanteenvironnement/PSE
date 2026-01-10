@@ -455,6 +455,9 @@
   <script type="module" src="./annuaire.js"></script>
 
   <script type="module">
+    // IMPORT INDISPENSABLE POUR LE MODE MIROIR
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
     const MAX_SCORE = 20;
     
     // --- INITIALISATION AUTOMATIQUE ---
@@ -696,6 +699,88 @@
 
     updateScore();
     gotoStep(0);
+
+    // ==========================================
+    // 👁️ MODE MIROIR (RELECTURE COPIE ÉLÈVE)
+    // ==========================================
+    (async function checkReplayMode() {
+        const params = new URLSearchParams(window.location.search);
+        const docId = params.get("docId");
+
+        if (docId) {
+            console.log("🔄 Mode Relecture activé pour :", docId);
+            setStatus("Chargement de la copie élève...", "neutral");
+            
+            // On masque le bouton envoyer
+            $("#sendBtn").style.display = "none";
+            $("#finish").textContent = "Relecture terminée";
+            
+            // On attend que annuaire.js soit chargé
+            let attempts = 0;
+            while (!window.db && attempts < 20) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+            }
+
+            if(window.db) {
+                try {
+                    // On récupère la copie
+                    const docRef = doc(window.db, "devoirs_rendus", docId);
+                    const snap = await getDoc(docRef);
+                    
+                    if(snap.exists()) {
+                        const data = snap.data();
+                        
+                        // 1. Réinjection des réponses
+                        state.reponses = data.reponses || {};
+                        
+                        // 2. Remplissage Identité
+                        if(data.eleve) {
+                            $("#nom").value = data.eleve.nom || "";
+                            $("#prenom").value = data.eleve.prenom || "";
+                            $("#classe").value = data.eleve.classe || "";
+                        }
+
+                        // 3. Mise à jour visuelle
+                        // Radios
+                        document.querySelectorAll('input[type="radio"]').forEach(r => {
+                            if(state.reponses[r.name] === r.value) r.checked = true;
+                            r.disabled = true; // Verrouillage
+                        });
+                        
+                        // Toggles (boutons vignette)
+                        document.querySelectorAll('.mini[data-sed]').forEach(mini => {
+                            const sed = mini.getAttribute("data-sed");
+                            const qnum = String(5 + Number(sed));
+                            const val = state.reponses[qnum];
+                            if(val) {
+                                const btn = mini.querySelector(`.tbtn[data-value="${val}"]`);
+                                if(btn) btn.classList.add("active");
+                            }
+                            mini.style.pointerEvents = "none"; // Verrouillage
+                        });
+
+                        // 4. Recalcul et affichage
+                        updateScore();
+                        setStatus("Copie de l'élève chargée.", "ok");
+                        
+                        // 5. Bandeau "Mode Prof"
+                        const banner = document.createElement("div");
+                        banner.style = "position:fixed;top:0;left:0;right:0;background:#fef3c7;color:#92400e;text-align:center;padding:12px;font-weight:bold;z-index:9999;border-bottom:2px solid #fcd34d;box-shadow:0 2px 10px rgba(0,0,0,0.1);";
+                        banner.innerHTML = `👁️ MODE RELECTURE — Copie de ${data.eleve?.prenom} ${data.eleve?.nom} (${data.resultat_auto?.score}/20)`;
+                        document.body.prepend(banner);
+                        document.body.style.paddingTop = "60px";
+
+                    } else {
+                        setStatus("Copie introuvable sur le serveur.", "err");
+                    }
+                } catch(e) { 
+                    console.error(e); 
+                    setStatus("Erreur lecture: " + e.message, "err"); 
+                }
+            }
+        }
+    })();
   </script>
 </body>
 </html>
