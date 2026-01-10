@@ -1,5 +1,5 @@
 /* 📁 ANNUAIRE CENTRAL & CONFIGURATION — Dépôt PSE
-   Version corrigée complète
+   Version corrigée complète (stable pour prof-v2 + grille-correction)
 */
 
 // 1) CONFIG FIREBASE (officielle)
@@ -91,6 +91,9 @@ function _ensureDb() {
     return null;
   }
 }
+
+// ✅ AJOUT IMPORTANT : rendre _ensureDb accessible si un jour tu veux l’appeler depuis une page
+window._ensureDb = _ensureDb;
 
 // 4) DOUANIER (optionnel)
 function demanderCode(_pageName) {
@@ -232,7 +235,7 @@ window.demanderCode = demanderCode;
 window.resetCodeEleve = resetCodeEleve;
 window.PSE_submitDevoir = PSE_submitDevoir;
 
-// Auto-init DB pour que la Zone Prof ait window.db dès le chargement
+// Auto-init DB pour que la zone prof/grille ait window.db dès le chargement
 try { _ensureDb(); } catch (e) {}
 
 console.log("✅ annuaire.js chargé (v8 + casse OK + pages libres OK).");
