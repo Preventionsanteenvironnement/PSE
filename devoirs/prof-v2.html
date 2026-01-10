@@ -3,27 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PSE — Zone Prof (V4)</title>
+  <title>PSE — Zone Prof (V10 Moderne)</title>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--text:#111827;--muted:#4b5563;--border:#e5e7eb;--accent:#2563eb;--shadow:0 10px 30px rgba(0,0,0,.08);--radius:18px;--focus:0 0 0 3px rgba(37,99,235,.25)}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
     .wrap{max-width:1200px;margin:0 auto;padding:18px 14px 70px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:20px}
     h1{margin:0 0 6px;font-size:1.25rem}
-
+    
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
     input, select{padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:0.95rem}
     input:focus, select:focus{outline:none;box-shadow:var(--focus);border-color:var(--accent)}
-
+    
     button{border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;transition:all .2s}
     button:hover{background:#f9fafb;border-color:#d1d5db}
-
     button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
     button.primary:hover{background:#1d4ed8}
-
     button.success{background:#10b981;border-color:#10b981;color:#fff}
     button.success:hover{background:#059669}
-
     button.danger{background:#fff;border-color:#fee2e2;color:#dc2626}
     button.danger:hover{background:#fee2e2;border-color:#dc2626}
 
@@ -32,12 +29,13 @@
     th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:middle}
     th{color:var(--muted);font-weight:800;background:#f9fafb;white-space:nowrap}
     tr:hover td{background:#f9fafb}
-
+    
     .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:0.8em;font-weight:700;background:#e5e7eb;color:#374151}
     .tag.cls{background:#dbeafe;color:#1e40af}
     .score-bad{color:#dc2626;font-weight:800}
     .score-good{color:#16a34a;font-weight:800}
 
+    /* Modal */
     .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:999}
     .modal-overlay.open{display:flex}
     .modal{background:#fff;width:90%;max-width:800px;max-height:90vh;border-radius:14px;display:flex;flex-direction:column;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1)}
@@ -52,9 +50,9 @@
 </head>
 <body>
   <div class="wrap">
-
+    
     <div class="card" id="loginCard">
-      <h1>🔐 Accès Prof V4</h1>
+      <h1>🔐 Accès Prof V10</h1>
       <div class="toolbar" style="border:none;margin:0;padding:0">
         <input id="profCode" type="password" placeholder="Mot de passe..." autocomplete="current-password" />
         <button class="primary" id="unlockBtn">Déverrouiller</button>
@@ -110,21 +108,23 @@
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script>window.PSE_CODE_REQUIRED = false;</script>
-  <script src="./annuaire.js"></script>
+  <script type="module" src="./annuaire.js"></script>
 
-  <script>
-    const PROF_PASSWORD = "BrahmsPSE";
+  <script type="module">
+    // Imports V10 nécessaires pour cette page
+    import { getDocs, collection, query, orderBy, limit, deleteDoc, doc } 
+      from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // Page de correction (grille)
+    const PROF_PASSWORD = "BrahmsPSE"; 
+    
+    // Config Correction
     const CORRIGER_URL = "./grille-correction.html";
     const CORRIGER_COLLECTION = "devoirs_rendus";
 
     const $ = (s)=>document.querySelector(s);
-    let ALL_DATA = [];
+    let ALL_DATA = []; 
 
+    // --- LOGIN ---
     $("#unlockBtn").addEventListener("click", () => {
       if($("#profCode").value.trim() === PROF_PASSWORD){
         $("#loginCard").hidden = true;
@@ -138,12 +138,13 @@
     $("#profCode").addEventListener("keydown", (e) => { if(e.key==="Enter") $("#unlockBtn").click(); });
     $("#refreshBtn").addEventListener("click", loadData);
 
+    // --- EXPORT CSV ---
     $("#csvBtn").addEventListener("click", () => {
       if(!ALL_DATA.length) return alert("Aucune donnée à exporter.");
-
+      
       let csv = "Date;Nom;Prenom;Classe;Devoir;Score;Max\n";
       ALL_DATA.forEach(r => {
-        const dt = r.createdAtISO ? new Date(r.createdAtISO).toLocaleDateString("fr-FR") : "?";
+        const dt = r.createdAtISO ? new Date(r.createdAtISO).toLocaleDateString('fr-FR') : "?";
         const nom = (r.eleve?.nom || r.nom || "").toUpperCase();
         const prenom = (r.eleve?.prenom || r.prenom || "");
         const classe = (r.eleve?.classe || r.classe || "").toUpperCase();
@@ -153,7 +154,7 @@
         csv += `${dt};${nom};${prenom};${classe};${devoir};${sc};${max}\n`;
       });
 
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -163,14 +164,32 @@
       document.body.removeChild(a);
     });
 
+    // --- CHARGEMENT DES DONNÉES (MODE V10) ---
     async function loadData(){
       const status = $("#countStatus");
       status.textContent = "Chargement...";
+      
+      // Attente active de la DB (fournie par annuaire.js)
+      let attempts = 0;
+      while (!window.db && attempts < 20) {
+          await new Promise(r => setTimeout(r, 100));
+          attempts++;
+      }
+
+      if(!window.db) {
+        status.textContent = "Erreur : DB non prête.";
+        status.className = "status err";
+        return;
+      }
+
       try {
-        if(!window.db) throw new Error("Erreur DB");
-        const snap = await window.db.collection("devoirs_rendus").orderBy("createdAtISO", "desc").limit(100).get();
+        // REQUÊTE MODERNE V10
+        const q = query(collection(window.db, "devoirs_rendus"), orderBy("createdAtISO", "desc"), limit(100));
+        const snap = await getDocs(q);
+
         ALL_DATA = [];
-        snap.forEach(doc => ALL_DATA.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(docSnap => ALL_DATA.push({ id: docSnap.id, ...docSnap.data() }));
+
         updateFiltersOptions();
         renderTable();
       } catch(e) {
@@ -198,12 +217,12 @@
       const fDevoir = $("#filterDevoir").value.toLowerCase();
       const fClasse = $("#filterClasse").value.trim().toLowerCase();
       const fEleve = $("#filterEleve").value.trim().toLowerCase();
-
+      
       const filtered = ALL_DATA.filter(r => {
         const devId = (r.devoirId || r.module || "").toLowerCase();
         const cls = (r.eleve?.classe || r.classe || "").toLowerCase();
         const nomComplet = ((r.eleve?.nom||"") + " " + (r.eleve?.prenom||"")).toLowerCase();
-
+        
         if(fDevoir && !devId.includes(fDevoir)) return false;
         if(fClasse && !cls.includes(fClasse)) return false;
         if(fEleve && !nomComplet.includes(fEleve)) return false;
@@ -220,20 +239,20 @@
         const prenom = (r.eleve?.prenom || r.prenom || "");
         const classe = (r.eleve?.classe || r.classe || "").toUpperCase();
         const devoir = r.devoirId || r.module || "?";
-
+        
         const sc = r.resultat_auto?.score ?? r.meta?.score ?? r.score;
         const max = r.resultat_auto?.maxScore ?? r.meta?.maxScore ?? r.maxScore;
         let scoreDisp = "";
         let scoreClass = "";
-
+        
         if(sc !== undefined && sc !== ""){
-          scoreDisp = max ? `${sc}/${max}` : sc;
-          if(max && Number(sc) < 10) scoreClass = "score-bad";
-          else if(max && Number(sc) >= 14) scoreClass = "score-good";
+           scoreDisp = max ? `${sc}/${max}` : sc;
+           if(max && Number(sc) < 10) scoreClass = "score-bad";
+           else if(max && Number(sc) >= 14) scoreClass = "score-good";
         }
 
-        const date = r.createdAtISO ? new Date(r.createdAtISO).toLocaleString("fr-FR") : "?";
-
+        const date = r.createdAtISO ? new Date(r.createdAtISO).toLocaleString('fr-FR') : "?";
+        
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td style="font-size:0.85em;color:#666">${date}</td>
@@ -241,7 +260,7 @@
           <td><span class="tag cls">${classe}</span></td>
           <td>${devoir}</td>
           <td class="${scoreClass}">${scoreDisp}</td>
-          <td>
+          <td style="display:flex; gap:5px;">
             <button class="success" onclick='corriger("${r.id}")' title="Corriger">✍️</button>
             <button onclick='viewJson("${r.id}")' title="Voir JSON">👁️</button>
             <button class="danger" onclick='deleteItem("${r.id}", "${nom}")' title="Supprimer">🗑️</button>
@@ -255,20 +274,13 @@
     $("#filterClasse").addEventListener("input", renderTable);
     $("#filterEleve").addEventListener("input", renderTable);
 
-    window.viewJson = (id) => {
-      const item = ALL_DATA.find(i => i.id === id);
-      if(!item) return;
-      $("#modalTitle").textContent = `Détail copie — ${(item.eleve?.nom || item.nom || "")} ${(item.eleve?.prenom || item.prenom || "")}`;
-      $("#jsonContent").textContent = JSON.stringify(item, null, 2);
-      $("#jsonModal").classList.add("open");
-    };
+    // --- ACTIONS ---
 
-    // ✅ OUVRIR LA GRILLE DE CORRECTION EN PASSANT docId (et quelques infos utiles)
+    // 1. Correction
     window.corriger = (id) => {
       const item = ALL_DATA.find(i => i.id === id);
       if(!item) return;
 
-      // Cache local (optionnel, pratique si tu veux pré-remplir sans re-fetch)
       try {
         sessionStorage.setItem("PSE_CORRIGE_DOCID", id);
         sessionStorage.setItem("PSE_CORRIGE_DATA_" + id, JSON.stringify(item));
@@ -286,11 +298,23 @@
       window.open(CORRIGER_URL + "?" + params.toString(), "_blank", "noopener");
     };
 
+    // 2. Voir JSON
+    window.viewJson = (id) => {
+      const item = ALL_DATA.find(i => i.id === id);
+      if(!item) return;
+      $("#modalTitle").textContent = `Copie de ${(item.eleve?.nom || item.nom)}`;
+      $("#jsonContent").textContent = JSON.stringify(item, null, 2);
+      $("#jsonModal").classList.add("open");
+    };
+
+    // 3. Supprimer (Mode V10)
     window.deleteItem = async (id, nomEleve) => {
-      if(!confirm(`⚠️ ATTENTION ⚠️\n\nTu vas supprimer définitivement la copie de ${nomEleve}.\n\nEs-tu sûr de vouloir faire ça ?`)) return;
+      if(!confirm(`⚠️ ATTENTION ⚠️\n\nTu vas supprimer définitivement la copie de "${nomEleve}".\n\nEs-tu sûr ?`)) return;
 
       try {
-        await window.db.collection("devoirs_rendus").doc(id).delete();
+        // DELETE V10
+        await deleteDoc(doc(window.db, "devoirs_rendus", id));
+        
         ALL_DATA = ALL_DATA.filter(item => item.id !== id);
         updateFiltersOptions();
         renderTable();
