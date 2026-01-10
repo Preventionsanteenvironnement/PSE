@@ -16,6 +16,7 @@
     input:focus{outline:none;box-shadow:var(--focus)}
     button{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
     button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    button:disabled{opacity:.5;cursor:not-allowed}
     .status{font-weight:800;color:var(--muted);margin-top:8px}
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{border-top:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:top;font-size:.95rem}
@@ -25,6 +26,7 @@
     a:hover{text-decoration:underline}
     .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--muted);font-weight:800;font-size:.95rem}
     .small{font-size:.9rem;color:var(--muted);font-weight:700}
+    .warn{color:#b45309;font-weight:900}
   </style>
 </head>
 <body>
@@ -41,16 +43,22 @@
         <span class="status" id="status"></span>
       </div>
 
-      <div class="small">Astuce : si rien n’apparaît, vérifie que l’envoi depuis le devoir crée bien un document dans Firestore (collection <code>devoirs_rendus</code>).</div>
+      <div class="small">
+        Astuce : si rien n’apparaît, vérifie que l’envoi depuis le devoir crée bien un document dans Firestore (collection <code>devoirs_rendus</code>).
+      </div>
 
       <div id="tableWrap"></div>
     </div>
   </div>
 
+  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+  <!-- Pas d’identification élève sur la zone prof -->
   <script>window.PSE_CODE_REQUIRED = false;</script>
+
+  <!-- Annuaire + init db (window.db) -->
   <script src="./annuaire.js"></script>
 
   <script>
@@ -61,9 +69,12 @@
     const refreshBtn = $("#refreshBtn");
     const profCodeInput = $("#profCode");
 
-    function setStatus(msg){ statusEl.textContent = msg || ""; }
+    function setStatus(msg, cls=""){
+      statusEl.textContent = msg || "";
+      statusEl.className = "status " + (cls||"");
+    }
 
-    // ✅ À CHANGER : ton mot de passe prof
+    // ✅ Mets ton code ici
     const PROF_PASSWORD = "PROFPSE";
 
     function esc(v){ return String(v ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -71,12 +82,14 @@
     async function loadRendus(){
       setStatus("Chargement…");
       try{
-        if(!window.db || !window.db.collection) throw new Error("Firestore indisponible (db).");
+        if(!window.db || !window.db.collection){
+          throw new Error("Firestore indisponible (db). Vérifie que ./annuaire.js est bien chargé et initialise window.db.");
+        }
 
-        const snap = await window.db.collection("devoirs_rendus")
-          .orderBy("createdAtISO", "desc")
-          .limit(50)
-          .get();
+        const ref = window.db.collection("devoirs_rendus");
+
+        // On suppose que createdAtISO existe (tu l’écris déjà)
+        const snap = await ref.orderBy("createdAtISO", "desc").limit(50).get();
 
         const rows = [];
         snap.forEach(doc => rows.push({ id: doc.id, ...doc.data() }));
@@ -84,7 +97,7 @@
         render(rows);
         setStatus(rows.length ? `${rows.length} rendu(s) affiché(s).` : "Aucun rendu trouvé.");
       }catch(e){
-        setStatus("Erreur : " + (e?.message || e));
+        setStatus("Erreur : " + (e?.message || e), "warn");
       }
     }
 
@@ -119,6 +132,8 @@
               const labelScore = (score!=="" && max!=="") ? `${score} / ${max}` : (score!=="" ? String(score) : "");
 
               const json = encodeURIComponent(JSON.stringify(r, null, 2));
+              const dlName = `rendu_${(devoirId||"devoir")}_${r.id}.json`;
+
               return `
                 <tr>
                   <td>${esc(dt)}</td>
@@ -126,7 +141,7 @@
                   <td>${esc(classe)}</td>
                   <td>${esc(devoirId)} ${module?`<span class="small">(module ${esc(module)})</span>`:""}</td>
                   <td>${esc(labelScore)}</td>
-                  <td><a href="data:application/json;charset=utf-8,${json}" download="rendu_${esc(devoirId)}_${esc(r.id)}.json">Télécharger</a></td>
+                  <td><a href="data:application/json;charset=utf-8,${json}" download="${esc(dlName)}">Télécharger</a></td>
                 </tr>
               `;
             }).join("")}
