@@ -1,10 +1,10 @@
 /* 📁 ANNUAIRE CENTRAL & CONFIGURATION — Dépôt PSE
-   Version corrigée avec Auto-Init
+   Version corrigée complète
 */
 
 // 1) CONFIG FIREBASE (officielle)
 const firebaseConfig = {
-  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", // J'ai remis la clé originale sans le "3" en trop
+  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
   authDomain: "devoirs-pse.firebaseapp.com",
   projectId: "devoirs-pse",
   storageBucket: "devoirs-pse.appspot.com",
