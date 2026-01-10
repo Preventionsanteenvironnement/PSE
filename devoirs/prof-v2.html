@@ -118,7 +118,9 @@
   <script>
     const PROF_PASSWORD = "BrahmsPSE";
 
+    // Page de correction (grille)
     const CORRIGER_URL = "./grille-correction.html";
+    const CORRIGER_COLLECTION = "devoirs_rendus";
 
     const $ = (s)=>document.querySelector(s);
     let ALL_DATA = [];
@@ -141,7 +143,7 @@
 
       let csv = "Date;Nom;Prenom;Classe;Devoir;Score;Max\n";
       ALL_DATA.forEach(r => {
-        const dt = r.createdAtISO ? new Date(r.createdAtISO).toLocaleDateString('fr-FR') : "?";
+        const dt = r.createdAtISO ? new Date(r.createdAtISO).toLocaleDateString("fr-FR") : "?";
         const nom = (r.eleve?.nom || r.nom || "").toUpperCase();
         const prenom = (r.eleve?.prenom || r.prenom || "");
         const classe = (r.eleve?.classe || r.classe || "").toUpperCase();
@@ -226,8 +228,8 @@
 
         if(sc !== undefined && sc !== ""){
           scoreDisp = max ? `${sc}/${max}` : sc;
-          if(max && sc < 10) scoreClass = "score-bad";
-          else if(max && sc >= 14) scoreClass = "score-good";
+          if(max && Number(sc) < 10) scoreClass = "score-bad";
+          else if(max && Number(sc) >= 14) scoreClass = "score-good";
         }
 
         const date = r.createdAtISO ? new Date(r.createdAtISO).toLocaleString("fr-FR") : "?";
@@ -256,15 +258,17 @@
     window.viewJson = (id) => {
       const item = ALL_DATA.find(i => i.id === id);
       if(!item) return;
-      $("#modalTitle").textContent = `Copie de ${(item.eleve?.nom || item.nom)}`;
+      $("#modalTitle").textContent = `Détail copie — ${(item.eleve?.nom || item.nom || "")} ${(item.eleve?.prenom || item.prenom || "")}`;
       $("#jsonContent").textContent = JSON.stringify(item, null, 2);
       $("#jsonModal").classList.add("open");
     };
 
+    // ✅ OUVRIR LA GRILLE DE CORRECTION EN PASSANT docId (et quelques infos utiles)
     window.corriger = (id) => {
       const item = ALL_DATA.find(i => i.id === id);
       if(!item) return;
 
+      // Cache local (optionnel, pratique si tu veux pré-remplir sans re-fetch)
       try {
         sessionStorage.setItem("PSE_CORRIGE_DOCID", id);
         sessionStorage.setItem("PSE_CORRIGE_DATA_" + id, JSON.stringify(item));
@@ -272,7 +276,7 @@
 
       const params = new URLSearchParams({
         docId: id,
-        collection: "devoirs_rendus",
+        collection: CORRIGER_COLLECTION,
         devoirId: item.devoirId || "",
         classe: item.eleve?.classe || item.classe || "",
         nom: item.eleve?.nom || item.nom || "",
