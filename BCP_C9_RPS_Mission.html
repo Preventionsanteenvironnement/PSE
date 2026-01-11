@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission RPS : Bac Pro</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #bb86fc;
+            --secondary: #03dac6;
+            --error: #cf6679;
+            --text: #ffffff;
+            --text-muted: #b0b0b0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Container Mobile */
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Header & Progress */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 30, 0.95);
+            padding: 10px 20px;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            margin-top: 40px; /* Space for header */
+            text-align: center;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2 { margin-bottom: 15px; }
+        h2 { color: var(--secondary); font-size: 1.4rem; }
+        p { color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; }
+
+        /* Images */
+        .img-wrapper {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 5px;
+            object-fit: contain;
+        }
+
+        /* Boutons */
+        .btn-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            border: 2px solid #333;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        button:hover, button:active {
+            background-color: #444;
+            transform: scale(1.02);
+        }
+
+        button.selected-correct {
+            background-color: rgba(3, 218, 198, 0.2);
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+
+        button.selected-wrong {
+            background-color: rgba(207, 102, 121, 0.2);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        button.primary-action {
+            background: var(--primary);
+            color: black;
+            border: none;
+            text-align: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        /* Feedback Zone */
+        .feedback-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #2c2c2c;
+            display: none;
+            border-left: 4px solid var(--secondary);
+            text-align: left;
+        }
+        .feedback-box.error { border-left-color: var(--error); }
+
+        /* Screens visibility */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Checklist Auto-eval */
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            background: #333;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .checklist-item input {
+            transform: scale(1.5);
+            margin-right: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="font-weight:bold;">Mission RPS</div>
+        <div id="score-display">Score: 0</div>
+    </header>
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+    <div class="app-container">
+        
+        <div id="screen-welcome" class="screen active card">
+            <h1>🎓 Mission : Prévention</h1>
+            <p>Bonjour. Vous allez intégrer l'équipe "Sécurité" de l'entreprise. <br><br>Votre objectif : Diagnostiquer les Risques Psychosociaux (RPS) et proposer des solutions.</p>
+            <div class="img-wrapper">
+                <img src="imagesrps/risquepsychosociaux.jpg" alt="Intro">
+            </div>
+            <p>20 questions pour valider votre module C3.</p>
+            <button class="primary-action" onclick="startQuiz()">Commencer la mission</button>
+        </div>
+
+        <div id="screen-quiz" class="screen card">
+            <h2 id="q-category">Catégorie</h2>
+            <div id="q-image-container" class="img-wrapper" style="display:none;">
+                <img id="q-image" src="" alt="Situation">
+            </div>
+            <p id="q-text">La question va ici...</p>
+            
+            <div id="options-container" class="btn-grid">
+                </div>
+
+            <div id="feedback" class="feedback-box">
+                <strong id="feedback-title"></strong>
+                <p id="feedback-text" style="margin:5px 0 0 0; color:white; font-size:0.9rem;"></p>
+                <button class="primary-action" onclick="nextQuestion()">Continuer ➔</button>
+            </div>
+        </div>
+
+        <div id="screen-autoeval" class="screen card">
+            <h2>📝 Auto-évaluation</h2>
+            <p>Avant de voir votre score final, cochez les compétences que vous pensez maîtriser :</p>
+            <div class="checklist-item">
+                <input type="checkbox"> <span>Je sais définir le Stress et les Violences.</span>
+            </div>
+            <div class="checklist-item">
+                <input type="checkbox"> <span>Je connais les 6 facteurs de risques (Gollac).</span>
+            </div>
+            <div class="checklist-item">
+                <input type="checkbox"> <span>Je distingue Burn-out et Bore-out.</span>
+            </div>
+            <div class="checklist-item">
+                <input type="checkbox"> <span>Je connais les obligations de l'employeur.</span>
+            </div>
+            <button class="primary-action" onclick="showResults()">Voir mon bilan</button>
+        </div>
+
+        <div id="screen-result" class="screen card">
+            <h1>Mission Terminée !</h1>
+            <div id="final-score-circle" style="font-size:3rem; font-weight:bold; color:var(--secondary); margin:20px 0;"></div>
+            <p id="final-msg">Analyse en cours...</p>
+            <button class="primary-action" onclick="location.reload()">Recommencer la mission ↺</button>
+        </div>
+
+    </div>
+
+<script>
+    // --- DONNÉES DU QUIZ ---
+    // CORRECTION ICI : Toutes les images ont maintenant le préfixe "imagesrps/"
+    const quizData = [
+        // PHASE 1 : DIAGNOSTIC (3 questions)
+        {
+            category: "1. Diagnostic",
+            text: "C'est quoi exactement un 'RPS' ?",
+            options: ["Un risque lié uniquement aux machines", "Un risque pour la santé mentale et physique lié au travail", "Un conflit personnel sans lien avec le travail"],
+            correct: 1,
+            feedback: "Exact ! Les Risques Psychosociaux touchent à la fois le mental et le physique et sont causés par l'organisation du travail."
+        },
+        {
+            category: "1. Diagnostic",
+            text: "Qui est responsable légalement de la santé des salariés ?",
+            options: ["Le salarié lui-même", "L'employeur (Obligation de sécurité)", "La médecine du travail uniquement"],
+            correct: 1,
+            feedback: "C'est l'employeur ! Selon le Code du travail, il a une obligation de résultat concernant la sécurité."
+        },
+        {
+            category: "1. Diagnostic",
+            text: "Les RPS coûtent de l'argent à l'entreprise. Vrai ou Faux ?",
+            options: ["Vrai", "Faux"],
+            correct: 0,
+            feedback: "Vrai. Absentéisme, baisse de productivité et turnover coûtent très cher."
+        },
+
+        // PHASE 2 : L'ACADÉMIE (Vocabulaire - 5 questions)
+        {
+            category: "2. Vocabulaire",
+            text: "Analysez cette image. De quoi souffre ce salarié ?",
+            image: "imagesrps/Stress.jpg",
+            options: ["De harcèlement", "De stress (Surcharge)", "De violence externe"],
+            correct: 1,
+            feedback: "C'est le Stress : un déséquilibre entre ce qu'on lui demande (la pile de dossiers) et ses ressources."
+        },
+        {
+            category: "2. Vocabulaire",
+            text: "Quelle est la différence entre ces deux situations ?",
+            image: "imagesrps/boreout.jpg",
+            options: ["L'image montre un Burn-out (Surcharge)", "L'image montre un Bore-out (Ennui)", "C'est la même chose"],
+            correct: 1,
+            feedback: "C'est un BORE-out. L'épuisement par l'ennui et le manque de tâches, contraire du Burn-out."
+        },
+        {
+            category: "2. Vocabulaire",
+            text: "Cette scène se passe dans l'ascenseur entre collègues. Quel est ce type de risque ?",
+            image: "imagesrps/violenceinterne.jpg",
+            options: ["Violence Interne", "Violence Externe", "Stress"],
+            correct: 0,
+            feedback: "Violence Interne : Harcèlement ou conflit qui se passe À L'INTÉRIEUR de l'équipe."
+        },
+        {
+            category: "2. Vocabulaire",
+            text: "Un client insulte un ouvrier sur un chantier. C'est...",
+            image: "imagesrps/violenceexterne.jpg",
+            options: ["Une incivilité interne", "Une violence externe", "Un conflit de valeur"],
+            correct: 1,
+            feedback: "Violence Externe : L'agresseur (client, usager) est extérieur à l'entreprise."
+        },
+        {
+            category: "2. Vocabulaire",
+            text: "Le Harcèlement sexuel est défini comme...",
+            options: ["Des propos ou comportements à connotation sexuelle répétés", "Une simple blague lourde une fois", "Une critique sur le travail"],
+            correct: 0,
+            feedback: "Oui. Depuis la loi du 2 août 2021, la définition a été renforcée."
+        },
+
+        // PHASE 3 : ENQUÊTE TERRAIN (Les 6 Facteurs - 6 questions)
+        {
+            category: "3. Les Facteurs (Causes)",
+            text: "Regardez cette image. Quel est le facteur de risque ?",
+            image: "imagesrps/manquedautonomie.jpg",
+            options: ["Intensité du travail", "Manque d'autonomie", "Insécurité de l'emploi"],
+            correct: 1,
+            feedback: "Manque d'autonomie. Le salarié est 'cadenassé', il ne peut pas prendre de décisions sur son travail."
+        },
+        {
+            category: "3. Les Facteurs (Causes)",
+            text: "Devoir cacher sa tristesse ou sourire forcé face à un client, c'est...",
+            image: "imagesrps/Exigencesemotionnelles.jpg",
+            options: ["Des exigences émotionnelles", "Des rapports sociaux dégradés", "De la violence physique"],
+            correct: 0,
+            feedback: "Exigences émotionnelles. Il faut maîtriser ses émotions pour le travail, ce qui est épuisant."
+        },
+        {
+            category: "3. Les Facteurs (Causes)",
+            text: "Avoir peur de perdre son emploi ou ne pas savoir si son contrat sera renouvelé.",
+            image: "imagesrps/Insecuritedelasituationdetravail.jpg",
+            options: ["Conflit de valeurs", "Insécurité de la situation de travail", "Intensité du travail"],
+            correct: 1,
+            feedback: "Insécurité de la situation de travail. La précarité est un gros facteur de stress."
+        },
+        {
+            category: "3. Les Facteurs (Causes)",
+            text: "Travailler dans le bruit, être interrompu tout le temps, devoir aller trop vite.",
+            image: "imagesrps/Intensiteetempsde travail.jpg",
+            options: ["Rapports sociaux dégradés", "Intensité et temps de travail", "Manque d'autonomie"],
+            correct: 1,
+            feedback: "Intensité et temps de travail. C'est la pression du rythme et des conditions difficiles."
+        },
+        {
+            category: "3. Les Facteurs (Causes)",
+            text: "Devoir vendre un produit qu'on sait être une arnaque. Ça heurte ma conscience.",
+            image: "imagesrps/conflitsdevaleurs.jpg",
+            options: ["Conflits de valeurs", "Exigences émotionnelles", "Violence interne"],
+            correct: 0,
+            feedback: "Conflit de valeurs (ou conflit éthique). On me demande de faire quelque chose que je désapprouve."
+        },
+        {
+            category: "3. Les Facteurs (Causes)",
+            text: "Mon chef ne me dit jamais bonjour et me critique devant tout le monde.",
+            image: "imagesrps/Rapportssociauxautravaildegrades.jpg",
+            options: ["Rapports sociaux dégradés", "Insécurité de l'emploi", "Intensité du travail"],
+            correct: 0,
+            feedback: "Rapports sociaux dégradés. Le manque de soutien et la mauvaise ambiance sont toxiques."
+        },
+
+        // PHASE 4 : CONSÉQUENCES & PRÉVENTION (6 questions)
+        {
+            category: "4. Conséquences & Solutions",
+            text: "Quelle image représente une conséquence PHYSIQUE (sur le corps) ?",
+            image: "imagesrps/integritephysique.jpg",
+            options: ["Le mal de dos (TMS)", "La dépression", "L'absentéisme"],
+            correct: 0,
+            feedback: "Correct. Les Troubles Musculo-Squelettiques (TMS) sont des atteintes physiques liées au stress et aux postures."
+        },
+        {
+            category: "4. Conséquences & Solutions",
+            text: "Quelle image représente une atteinte à la santé MENTALE ?",
+            image: "imagesrps/integritementale.jpg",
+            options: ["Maladie cardio-vasculaire", "Dépression / Anxiété", "Accident du travail"],
+            correct: 1,
+            feedback: "Dépression et anxiété sont des atteintes à l'intégrité mentale (psychique)."
+        },
+        {
+            category: "4. Conséquences & Solutions",
+            text: "Si les salariés sont malades, l'entreprise en souffre aussi. Comment ?",
+            image: "imagesrps/consequence_entreprise.jpg",
+            options: ["Elle ne souffre pas", "Augmentation de l'absentéisme et baisse de qualité", "Baisse des impôts"],
+            correct: 1,
+            feedback: "C'est un coût énorme pour l'entreprise : absentéisme, turnover, mauvaise image."
+        },
+        {
+            category: "4. Conséquences & Solutions",
+            text: "Situation : Trop de bruit dans l'open-space. Quelle est la MEILLEURE prévention ?",
+            options: ["Donner des boules quies (Protection individuelle)", "Installer des cloisons anti-bruit (Prévention collective)", "Dire aux gens de chuchoter (Information)"],
+            correct: 1,
+            feedback: "Toujours privilégier la prévention COLLECTIVE (modifier l'environnement) avant l'individuelle."
+        },
+        {
+            category: "4. Conséquences & Solutions",
+            text: "Le Document Unique (DUERP) sert à...",
+            image: "imagesrps/Lecadre_reglementaire.jpg",
+            options: ["Licencier les gens stressés", "Lister et évaluer les risques dans l'entreprise", "Donner des amendes"],
+            correct: 1,
+            feedback: "C'est obligatoire. L'employeur y liste tous les risques identifiés et les solutions prévues."
+        },
+        {
+            category: "4. Conséquences & Solutions",
+            text: "Dernière question ! Qui peut aider un salarié en souffrance ?",
+            options: ["Le médecin du travail", "Les représentants du personnel (CSE)", "Les deux"],
+            correct: 2,
+            feedback: "Les deux ! On peut aussi contacter l'inspection du travail ou des psychologues."
+        }
+    ];
+
+    // --- LOGIQUE JS ---
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let userResponses = [];
+
+    function startQuiz() {
+        showScreen('screen-quiz');
+        loadQuestion();
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function loadQuestion() {
+        const q = quizData[currentQuestionIndex];
+        
+        // Mise à jour UI
+        document.getElementById('q-category').innerText = q.category;
+        document.getElementById('q-text').innerText = q.text;
+        
+        // Image ?
+        const imgContainer = document.getElementById('q-image-container');
+        const img = document.getElementById('q-image');
+        if(q.image) {
+            imgContainer.style.display = 'inline-block';
+            img.src = q.image;
+        } else {
+            imgContainer.style.display = 'none';
+        }
+
+        // Options
+        const optionsDiv = document.getElementById('options-container');
+        optionsDiv.innerHTML = '';
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(index, btn);
+            optionsDiv.appendChild(btn);
+        });
+
+        // Reset Feedback
+        document.getElementById('feedback').style.display = 'none';
+        
+        // Progress Bar
+        const pct = (currentQuestionIndex / quizData.length) * 100;
+        document.getElementById('progress').style.width = pct + '%';
+    }
+
+    function checkAnswer(selectedIndex, btnElement) {
+        // Désactiver tous les boutons
+        const buttons = document.querySelectorAll('#options-container button');
+        buttons.forEach(b => b.disabled = true);
+
+        const q = quizData[currentQuestionIndex];
+        const isCorrect = (selectedIndex === q.correct);
+        
+        if(isCorrect) {
+            btnElement.classList.add('selected-correct');
+            document.getElementById('feedback').classList.remove('error');
+            document.getElementById('feedback-title').innerText = "✅ Excellent !";
+            score++;
+        } else {
+            btnElement.classList.add('selected-wrong');
+            // Montrer la bonne réponse
+            buttons[q.correct].classList.add('selected-correct');
+            document.getElementById('feedback').classList.add('error');
+            document.getElementById('feedback-title').innerText = "❌ Aïe...";
+        }
+
+        document.getElementById('feedback-text').innerText = q.feedback;
+        document.getElementById('feedback').style.display = 'block';
+        document.getElementById('score-display').innerText = `Score: ${score}`;
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if(currentQuestionIndex < quizData.length) {
+            loadQuestion();
+        } else {
+            showScreen('screen-autoeval');
+            document.getElementById('progress').style.width = '100%';
+        }
+    }
+
+    function showResults() {
+        showScreen('screen-result');
+        const finalScore = document.getElementById('final-score-circle');
+        const msg = document.getElementById('final-msg');
+        
+        finalScore.innerText = `${score} / ${quizData.length}`;
+        
+        if(score >= 15) {
+            msg.innerHTML = "🌟 <strong>Expert en Prévention !</strong><br>Vous maîtrisez parfaitement le module C3. Prêt pour l'examen.";
+        } else if (score >= 10) {
+            msg.innerHTML = "👍 <strong>Bon travail.</strong><br>Les bases sont là, mais relisez les définitions des facteurs de risques.";
+        } else {
+            msg.innerHTML = "⚠️ <strong>Attention.</strong><br>Il faut revoir les fiches, notamment les 6 facteurs de Gollac.";
+        }
+    }
+</script>
+
+</body>
+</html>
