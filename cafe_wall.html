@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Café des Parents - Live</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; margin: 0; }
+        .container { max-width: 500px; margin: auto; }
+        h1 { color: #db2777; margin-bottom: 5px; }
+        .status-badge { background: #1e293b; color: #94a3b8; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; display: inline-block; margin-bottom: 20px; }
+        
+        /* ÉCRANS (STEPS) */
+        .step-screen { display: none; animation: fadeIn 0.5s; }
+        .step-screen.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+        /* BOUTONS */
+        .btn-option { display: block; width: 100%; padding: 15px; margin: 10px 0; background: #334155; border: none; border-radius: 12px; color: white; font-size: 1.1rem; cursor: pointer; transition: 0.2s; text-align: left; display:flex; align-items:center; gap:10px; }
+        .btn-option:active { transform: scale(0.98); background: #db2777; }
+        .emoji-big { font-size: 2rem; }
+
+        /* INPUT TEXTE */
+        input[type="text"] { width: 100%; padding: 15px; border-radius: 10px; border: none; margin-bottom: 10px; font-size: 1rem; box-sizing: border-box; }
+        .btn-send { background: #db2777; color: white; width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        
+        /* FEEDBACK */
+        #feedback { color: #4ade80; font-weight: bold; height: 20px; margin-top: 10px; opacity: 0; transition: 0.5s; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>☕ Café Parents</h1>
+    <div class="status-badge">🔒 Connexion Anonyme</div>
+
+    <div id="step-attente" class="step-screen active">
+        <div style="margin-top: 50px;">
+            <div style="font-size: 3rem;">⏳</div>
+            <h3>En attente du lancement...</h3>
+            <p style="color:#94a3b8;">Regardez l'écran géant, ça va commencer !</p>
+        </div>
+    </div>
+
+    <div id="step-meteo" class="step-screen">
+        <h3>Comment vous sentez-vous ?</h3>
+        <button class="btn-option" onclick="sendData('mood', 'super')"><span class="emoji-big">🤩</span> En pleine forme</button>
+        <button class="btn-option" onclick="sendData('mood', 'bien')"><span class="emoji-big">🙂</span> Ça va bien</button>
+        <button class="btn-option" onclick="sendData('mood', 'bof')"><span class="emoji-big">🤔</span> Un peu fatigué(e)</button>
+        <button class="btn-option" onclick="sendData('mood', 'mauvais')"><span class="emoji-big">😰</span> Inquiet(e) / Stressé(e)</button>
+    </div>
+
+    <div id="step-nuage" class="step-screen">
+        <h3>De quoi voulez-vous parler ?</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Envoyez un mot-clé ou choisissez un thème.</p>
+        
+        <input type="text" id="word-input" placeholder="Écrivez un mot ici...">
+        <button class="btn-send" onclick="sendWord()">Envoyer 🚀</button>
+
+        <div style="margin-top: 30px; text-align: left;">
+            <small style="color:#64748b; text-transform: uppercase; font-weight: bold;">Suggestions rapides :</small>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                <button onclick="sendQuick('Orientation 🎓')" class="btn-option" style="width:auto; padding:8px 15px; font-size:0.9rem;">Orientation 🎓</button>
+                <button onclick="sendQuick('Harcèlement 🛑')" class="btn-option" style="width:auto; padding:8px 15px; font-size:0.9rem;">Harcèlement 🛑</button>
+                <button onclick="sendQuick('Écrans 📱')" class="btn-option" style="width:auto; padding:8px 15px; font-size:0.9rem;">Écrans 📱</button>
+                <button onclick="sendQuick('Motivation 💪')" class="btn-option" style="width:auto; padding:8px 15px; font-size:0.9rem;">Motivation 💪</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="step-sondage" class="step-screen">
+        <h3>Sondage Rapide</h3>
+        <p>Le lycée répond-il à vos attentes ?</p>
+        <button class="btn-option" onclick="sendData('poll', 'oui_top')">⭐⭐⭐ Oui, tout à fait</button>
+        <button class="btn-option" onclick="sendData('poll', 'oui_moyen')">⭐⭐ Plutôt oui</button>
+        <button class="btn-option" onclick="sendData('poll', 'non_bof')">⭐ Pas vraiment</button>
+    </div>
+
+    <div id="feedback">Envoyé ! ✅</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // MÊME CONFIG QUE TON COCKPIT
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    let activeSessionId = null;
+
+    // 1. ÉCOUTER LE CERVEAU (COCKPIT)
+    // Le téléphone écoute "config/live" pour savoir quoi afficher
+    onSnapshot(doc(db, "config", "live"), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            activeSessionId = data.activeSessionId; // On récupère l'ID de la session en cours
+            
+            // Changer d'écran automatiquement
+            showStep(data.currentStep || 'attente');
+        }
+    });
+
+    function showStep(stepName) {
+        document.querySelectorAll('.step-screen').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById('step-' + stepName);
+        if(target) target.classList.add('active');
+        else document.getElementById('step-attente').classList.add('active'); // Sécurité
+    }
+
+    // 2. ENVOYER DES DONNÉES
+    window.sendData = async function(type, content) {
+        if(!activeSessionId) { alert("Aucune session active !"); return; }
+        
+        showFeedback();
+        
+        // On écrit dans la sous-collection de la session active
+        await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
+            type: type,
+            content: content,
+            timestamp: new Date(),
+            userCode: localStorage.getItem('userCode') || 'anon_' + Math.floor(Math.random()*1000)
+        });
+    }
+
+    window.sendWord = function() {
+        const input = document.getElementById('word-input');
+        if(input.value.trim()) {
+            sendData('word', input.value.trim());
+            input.value = "";
+        }
+    }
+    
+    window.sendQuick = function(word) {
+        sendData('word', word);
+    }
+
+    function showFeedback() {
+        const fb = document.getElementById('feedback');
+        fb.style.opacity = "1";
+        setTimeout(() => fb.style.opacity = "0", 1500);
+    }
+</script>
+</body>
+</html>

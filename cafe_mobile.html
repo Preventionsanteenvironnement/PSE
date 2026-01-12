@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Café Parents - Écran Géant</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { margin: 0; background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        /* HEADER */
+        .header { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .title { font-size: 2rem; font-weight: bold; color: #db2777; text-shadow: 0 0 20px rgba(219,39,119,0.5); }
+        .qr-box { background: white; padding: 10px; border-radius: 10px; color: black; text-align: center; }
+        
+        /* ÉCRANS */
+        .wall-screen { display: none; height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; align-items: center; justify-content: center; flex-direction: column; }
+        .wall-screen.active { display: flex; animation: fadeZoom 0.8s; }
+        @keyframes fadeZoom { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+        /* NUAGES (Bulles) */
+        #cloud-container { width: 90%; height: 80%; position: relative; }
+        .bubble { position: absolute; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.3); font-weight: bold; font-size: 1.5rem; color: white; transition: 0.5s; white-space: nowrap; box-shadow: 0 0 15px rgba(219,39,119,0.2); animation: float 6s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        /* MÉTÉO */
+        .meteo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; width: 80%; text-align: center; }
+        .meteo-item { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; border: 1px solid rgba(255,255,255,0.1); }
+        .meteo-emoji { font-size: 5rem; display: block; margin-bottom: 20px; transition: 0.3s; }
+        .meteo-bar { width: 100%; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; }
+        .meteo-fill { height: 100%; width: 0%; background: #db2777; transition: 1s ease-out; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title" id="session-title">☕ Bienvenue</div>
+        <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://preventionsanteenvironnement.github.io/PSE/cafe_mobile.html" alt="QR">
+            <div style="font-size: 0.8rem; font-weight: bold; margin-top: 5px;">Scannez pour participer</div>
+        </div>
+    </div>
+
+    <div id="wall-attente" class="wall-screen active">
+        <h1 style="font-size: 4rem;">La séance va commencer...</h1>
+        <p style="font-size: 2rem; color: #94a3b8;">Prenez votre téléphone 📱</p>
+    </div>
+
+    <div id="wall-meteo" class="wall-screen">
+        <h2 style="font-size: 3rem; margin-bottom: 50px;">Météo du groupe 🧠</h2>
+        <div class="meteo-grid">
+            <div class="meteo-item">
+                <span class="meteo-emoji">🤩</span>
+                <div class="meteo-bar"><div id="bar-super" class="meteo-fill"></div></div>
+                <h3 id="count-super">0</h3>
+            </div>
+            <div class="meteo-item">
+                <span class="meteo-emoji">🙂</span>
+                <div class="meteo-bar"><div id="bar-bien" class="meteo-fill" style="background:#4ade80;"></div></div>
+                <h3 id="count-bien">0</h3>
+            </div>
+            <div class="meteo-item">
+                <span class="meteo-emoji">🤔</span>
+                <div class="meteo-bar"><div id="bar-bof" class="meteo-fill" style="background:#facc15;"></div></div>
+                <h3 id="count-bof">0</h3>
+            </div>
+            <div class="meteo-item">
+                <span class="meteo-emoji">😰</span>
+                <div class="meteo-bar"><div id="bar-mauvais" class="meteo-fill" style="background:#f87171;"></div></div>
+                <h3 id="count-mauvais">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <div id="wall-nuage" class="wall-screen">
+        <div id="cloud-container">
+            </div>
+    </div>
+    
+    <div id="wall-sondage" class="wall-screen">
+        <h2 style="font-size: 3rem;">Résultats du Sondage</h2>
+        <div style="width: 60%; height: 50%;">
+            <canvas id="pollChart"></canvas>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let activeSessionId = null;
+    let inputsUnsubscribe = null;
+    let pollChartInstance = null;
+
+    // 1. ÉCOUTER LE PILOTAGE (Le changement d'écran)
+    onSnapshot(doc(db, "config", "live"), (docSnap) => {
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // Si la session change, on change l'écoute des données
+            if(data.activeSessionId !== activeSessionId) {
+                activeSessionId = data.activeSessionId;
+                document.getElementById('session-title').innerText = "☕ " + (data.sessionTitle || "Café Parents");
+                if(activeSessionId) listenToData(activeSessionId);
+            }
+
+            // Changer l'affichage
+            showWall(data.currentStep || 'attente');
+        }
+    });
+
+    function showWall(stepName) {
+        document.querySelectorAll('.wall-screen').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById('wall-' + stepName);
+        if(target) target.classList.add('active');
+        
+        // Si sondage, on init le chart
+        if(stepName === 'sondage') initChart();
+    }
+
+    // 2. ÉCOUTER LES DONNÉES (Nuages, Votes...)
+    function listenToData(sessId) {
+        if(inputsUnsubscribe) inputsUnsubscribe();
+        
+        const q = query(collection(db, `sessions/${sessId}/inputs`));
+        
+        inputsUnsubscribe = onSnapshot(q, (snapshot) => {
+            const words = [];
+            const moods = { super:0, bien:0, bof:0, mauvais:0 };
+            const poll = { oui_top:0, oui_moyen:0, non_bof:0 };
+            let totalMood = 0;
+
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                if(d.banned) return; // Ignore les mots censurés
+
+                if(d.type === 'word') words.push(d.content);
+                if(d.type === 'mood') { moods[d.content]++; totalMood++; }
+                if(d.type === 'poll') { poll[d.content]++; }
+            });
+
+            updateCloud(words);
+            updateMeteo(moods, totalMood);
+            updatePoll(poll);
+        });
+    }
+
+    // --- ANIMATIONS VISUELLES ---
+
+    // NUAGE
+    function updateCloud(words) {
+        const container = document.getElementById('cloud-container');
+        // Compter les occurrences
+        const counts = {};
+        words.forEach(w => counts[w] = (counts[w] || 0) + 1);
+        
+        // Vider et recréer (pour faire simple)
+        container.innerHTML = "";
+        
+        Object.keys(counts).forEach(word => {
+            const count = counts[word];
+            const el = document.createElement('div');
+            el.className = 'bubble';
+            el.innerText = word;
+            
+            // Taille selon popularité
+            let size = 1.5 + (count * 0.5); 
+            el.style.fontSize = Math.min(size, 5) + "rem";
+            
+            // Position Aléatoire
+            el.style.left = Math.random() * 80 + "%";
+            el.style.top = Math.random() * 80 + "%";
+            
+            // Couleurs aléatoires (Palette néon)
+            const colors = ['#db2777', '#2563eb', '#16a34a', '#d97706'];
+            el.style.borderColor = colors[Math.floor(Math.random()*colors.length)];
+            
+            container.appendChild(el);
+        });
+    }
+
+    // MÉTÉO
+    function updateMeteo(moods, total) {
+        if(total === 0) total = 1; // éviter div/0
+        
+        document.getElementById('bar-super').style.width = (moods.super/total*100) + "%";
+        document.getElementById('count-super').innerText = moods.super;
+
+        document.getElementById('bar-bien').style.width = (moods.bien/total*100) + "%";
+        document.getElementById('count-bien').innerText = moods.bien;
+        
+        document.getElementById('bar-bof').style.width = (moods.bof/total*100) + "%";
+        document.getElementById('count-bof').innerText = moods.bof;
+        
+        document.getElementById('bar-mauvais').style.width = (moods.mauvais/total*100) + "%";
+        document.getElementById('count-mauvais').innerText = moods.mauvais;
+    }
+
+    // CHART SONDAGE
+    function initChart() {
+        const ctx = document.getElementById('pollChart');
+        if(pollChartInstance) return; // Déjà créé
+
+        pollChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Oui, super', 'Plutôt oui', 'Pas vraiment'],
+                datasets: [{
+                    label: 'Votes',
+                    data: [0, 0, 0],
+                    backgroundColor: ['#4ade80', '#facc15', '#f87171']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    function updatePoll(pollData) {
+        if(pollChartInstance) {
+            pollChartInstance.data.datasets[0].data = [
+                pollData.oui_top || 0, 
+                pollData.oui_moyen || 0, 
+                pollData.non_bof || 0
+            ];
+            pollChartInstance.update();
+        }
+    }
+
+</script>
+</body>
+</html>
