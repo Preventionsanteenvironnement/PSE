@@ -1,10 +1,10 @@
-/* PSE Runner v1 (HTML natif + moteur commun) */
-/* Prérequis recommandé : Firebase v8 initialisé dans window.db (firestore) */
+/* PSE Runner v2 (débutant-friendly) */
+/* Prérequis : Firebase v8 initialisé dans window.db (firestore) */
 
 (function () {
   const PSE = {
     collections: {
-      submissions: "copies",            // ou "resultats_exercices"
+      submissions: "copies",
       usage: "statistiques_usage"
     },
     autosaveMs: 800,
@@ -21,7 +21,40 @@
     el.className = "pse-toast" + (kind ? " " + kind : "");
     el.textContent = msg;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2500);
+    setTimeout(() => el.remove(), 2600);
+  }
+
+  function bannerEnsure() {
+    let b = qs("#pse-banner");
+    if (b) return b;
+    b = document.createElement("div");
+    b.id = "pse-banner";
+    b.className = "pse-banner";
+    b.innerHTML = `
+      <div id="pse-banner-text">PSE : prêt</div>
+      <div class="pse-banner-actions">
+        <button type="button" id="pse-btn-reset">Recommencer</button>
+      </div>
+    `;
+    document.body.prepend(b);
+
+    const resetBtn = qs("#pse-btn-reset");
+    resetBtn.addEventListener("click", () => {
+      const exId = getExerciceId();
+      localStorage.removeItem(draftKey(exId));
+      localStorage.removeItem(sentKey(exId));
+      location.reload();
+    });
+
+    return b;
+  }
+
+  function setBanner(text, kind) {
+    const b = bannerEnsure();
+    const t = qs("#pse-banner-text");
+    t.textContent = text;
+    b.classList.remove("ok","err");
+    if (kind) b.classList.add(kind);
   }
 
   function getMeta(name, fallback = "") {
@@ -30,11 +63,7 @@
   }
 
   function getExerciceId() {
-    return (
-      getMeta("pse-exercice") ||
-      (document.title || "devoir").trim().slice(0, 120) ||
-      "devoir"
-    );
+    return (getMeta("pse-exercice") || (document.title || "devoir")).trim().slice(0, 120) || "devoir";
   }
 
   function getVersion() {
@@ -46,14 +75,14 @@
     return (p.get("mode") || getMeta("pse-mode") || "").toLowerCase();
   }
 
-  function ensureDb() {
+  function ensureDbOrExplain() {
     if (window.db && typeof window.db.collection === "function") return true;
-    toast("Firestore non initialisé (window.db manquant).", "err");
+    setBanner("Erreur : Firebase/Firestore non initialisé (window.db absent).", "err");
+    alert("Erreur : Firestore non initialisé.\n\nIl faut que la page contienne le bloc Firebase v8 (firebase-app + firebase-firestore + firebase.initializeApp + window.db).");
     return false;
   }
 
   async function ensureAuth() {
-    // Si tu as déjà demanderCode() via annuaire.js, on l’utilise.
     if (typeof window.demanderCode === "function") {
       const res = await window.demanderCode();
       if (res && res.code) {
@@ -67,7 +96,6 @@
       return true;
     }
 
-    // Fallback simple si pas d’annuaire.js (optionnel)
     const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve");
     if (code) return true;
 
@@ -98,7 +126,7 @@
       const type = (el.getAttribute("type") || "").toLowerCase();
 
       if (tag === "input" && type === "radio") {
-        if (!reponses.hasOwnProperty(key)) reponses[key] = "";
+        if (!Object.prototype.hasOwnProperty.call(reponses, key)) reponses[key] = "";
         if (el.checked) reponses[key] = el.value;
         return;
       }
@@ -165,6 +193,7 @@
     const reponses = collectReponses(document);
     const payload = { ts: Date.now(), exerciceId, version: getVersion(), reponses };
     localStorage.setItem(draftKey(exerciceId), JSON.stringify(payload));
+    setBanner("Brouillon sauvegardé automatiquement", null);
   }
 
   function restoreDraft(exerciceId) {
@@ -174,6 +203,7 @@
       const payload = JSON.parse(raw);
       if (!payload || !payload.reponses) return false;
       applyReponses(payload.reponses, document);
+      setBanner("Brouillon restauré", "ok");
       toast("Brouillon restauré", "ok");
       return true;
     } catch {
@@ -191,7 +221,7 @@
   }
 
   async function traceUsage(exerciceId) {
-    if (!ensureDb()) return;
+    if (!ensureDbOrExplain()) return;
     const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "";
     const classe = localStorage.getItem("userClasse") || localStorage.getItem("userClasseNom") || "";
 
@@ -207,7 +237,7 @@
   }
 
   async function submit() {
-    if (!ensureDb()) return;
+    if (!ensureDbOrExplain()) return;
     const exerciceId = getExerciceId();
     const btn = qs("#" + PSE.submitBtnId);
     if (btn) btn.disabled = true;
@@ -218,11 +248,8 @@
     const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "";
     const classe = localStorage.getItem("userClasse") || localStorage.getItem("userClasseNom") || "";
 
-    // Option score si tu as une fonction globale dans le devoir
     let score = null;
-    try {
-      if (typeof window.computeScore === "function") score = window.computeScore();
-    } catch {}
+    try { if (typeof window.computeScore === "function") score = window.computeScore(); } catch {}
 
     const payload = {
       ts: Date.now(),
@@ -238,10 +265,14 @@
     try {
       await window.db.collection(PSE.collections.submissions).add(payload);
       localStorage.setItem(sentKey(exerciceId), String(Date.now()));
+      setBanner("Envoyé au prof ✅", "ok");
       toast("Devoir envoyé", "ok");
+      alert("Envoyé au prof ✅\n\nÉtape suivante : ouvre Firebase > Firestore > collection '" + PSE.collections.submissions + "' pour voir la copie.");
       lockAfterSend();
     } catch (e) {
-      toast("Erreur envoi. Reviens au brouillon et réessaie.", "err");
+      setBanner("Erreur d’envoi : copie non envoyée", "err");
+      const msg = (e && e.message) ? e.message : String(e);
+      alert("Erreur d’envoi :\n" + msg + "\n\nTon travail reste sauvegardé (brouillon).");
       if (btn) btn.disabled = false;
     }
   }
@@ -269,14 +300,18 @@
     const mode = getMode();
     if (mode === "prof" || mode === "builder") return;
 
+    bannerEnsure();
     const exerciceId = getExerciceId();
 
-    // Si déjà envoyé, verrouille
-    if (localStorage.getItem(sentKey(exerciceId))) {
+    const sentTs = localStorage.getItem(sentKey(exerciceId));
+    if (sentTs) {
+      const d = new Date(parseInt(sentTs, 10));
+      setBanner("Déjà envoyé ✅ (" + d.toLocaleString() + ")", "ok");
       lockAfterSend();
     } else {
       restoreDraft(exerciceId);
       setupAutosave(exerciceId);
+      setBanner("Prêt : réponds puis clique ENVOYER AU PROF", null);
     }
 
     setupSubmitButton();
