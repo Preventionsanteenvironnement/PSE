@@ -1,0 +1,2924 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devoir PSE - Éditeur (Version 20 - Vérifier + Anti-collage + Responsive)</title>
+    <style>
+        /* --- STYLE ECRAN (WEB) --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 950px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; color: #333; padding-bottom: 150px; }
+        .container { background-color: white; padding: 40px; box-shadow: 0 0 15px rgba(0,0,0,0.05); border-radius: 8px; position: relative; }
+        
+        input, textarea, select, button { font-size: inherit; font-family: inherit; }
+
+        h1 { color: #2c3e50; text-align: center; font-size: 1.8em; margin-bottom: 30px; text-transform: uppercase; border-bottom: 3px solid #3498db; padding-bottom: 15px; }
+        .main-title-editable { border-bottom: 2px dashed #ccc; padding: 0 10px; color: #3498db; cursor: text; }
+        
+        /* BANDEAU ELEVE COMPACT */
+        .student-info { 
+            background-color: #eef2f3; padding: 10px 15px; border-radius: 8px; border: 1px solid #bdc3c7; margin-bottom: 20px; 
+            display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: nowrap;
+        }
+        .input-group { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .input-group label { font-weight: bold; color: #555; font-size: 0.9em; margin: 0; }
+        .input-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em; width: 130px; }
+        
+        /* GRILLE EVALUATION */
+        .eval-section { margin-bottom: 20px; border: 2px solid #2c3e50; }
+        .eval-header { background-color: #2c3e50; color: white; padding: 8px; font-weight: bold; text-align: center; text-transform: uppercase; }
+        table.eval-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        table.eval-table th, table.eval-table td { border: 1px solid #999; padding: 5px; text-align: center; }
+        table.eval-table th { background-color: #ecf0f1; }
+        .row-c6 { background-color: #fff8e1; border-top: 2px solid #aaa; }
+        .row-c6 input.point-input-c6 { width: 45px; text-align: center; border: 1px solid #aaa; border-radius: 3px; background-color: #fff; padding: 2px; }
+        .c6-text-editable { font-style: italic; cursor: text; border-bottom: 1px dashed #ccc; padding: 2px; font-size: 0.9em; font-weight: bold;}
+        .print-only { display: none; }
+        .legend-inline { font-size: 0.7em; font-weight: normal; color: #555; float: left; text-align: left; line-height: 1.1; font-style: italic; padding-left: 5px;}
+
+        /* BLOCS QUESTIONS */
+        .question-block { margin-bottom: 30px; background-color: #fff; border: 1px solid #ddd; border-left: 4px solid #3498db; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; padding: 0; }
+        
+        /* En-tête gris avec Barème */
+        .q-meta-bar { background-color: #f8f9fa; border-bottom: 1px solid #eee; padding: 5px 10px; text-align: right; display: flex; justify-content: flex-end; align-items: center; height: 30px; }
+        
+        /* Ligne Question */
+        .q-content-row { padding: 15px; display: flex; align-items: flex-start; gap: 15px; }
+        .num-selector-wrapper { flex-shrink: 0; }
+        .editable-text { flex-grow: 1; border-bottom: 1px dashed transparent; cursor: text; padding: 2px 5px; font-weight: normal; min-height: 24px; color: inherit; }
+        .editable-text:hover { border-bottom: 1px dashed #bbb; } 
+        [contenteditable="true"]:focus { outline: 2px solid #3498db; background-color: #fff; border-radius: 3px; border-bottom: none; }
+
+        /* ZONE EXERCICES (Simplifiée pour éviter les bugs) */
+        .exo-container { padding: 0 15px 15px 15px; }
+
+        .prof-comment-zone { margin-top: 10px; border-top: 1px solid #eee; padding: 10px; }
+        .prof-comment-area { width: 100%; height: 40px; border: 1px dashed #e74c3c; background-color: #fff5f5; color: #c0392b; font-size: 0.9em; padding: 5px; border-radius: 4px; font-family: 'Segoe UI', sans-serif; }
+        
+        
+        /* ZONE ORANGÉE - ÉLÉMENTS DE RÉPONSE (PROF) */
+        .answer-key-zone { margin-top: 10px; border-top: 1px solid #eee; padding: 10px; background-color: #fff7e6; border: 1px dashed #e67e22; border-radius: 6px; }
+        .answer-key-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+        .answer-key-label { font-weight: bold; color: #d35400; }
+        .answer-key-level { font-size: 0.9em; color: #7a4a00; display: flex; align-items: center; gap: 6px; }
+        select.level-selector { border: 1px solid #e67e22; background: #fff3d6; color: #7a4a00; font-weight: bold; border-radius: 4px; padding: 3px 6px; cursor: pointer; }
+        .answer-key-area { width: 100%; min-height: 60px; border: 1px dashed #e67e22; background-color: #fff3d6; color: #7a4a00; font-size: 0.9em; padding: 8px; border-radius: 4px; font-family: 'Segoe UI', sans-serif; resize: vertical; box-sizing: border-box; }
+
+
+
+        /* --- Zone Évaluation par compétence (Prof) --- */
+        .prof-comment-zone{ background:#f3f8ff; border: 1px dashed #2980b9; border-radius: 6px; }
+        .prof-eval-header{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+        .prof-eval-label{ font-weight:bold; color:#1f4f7a; }
+        .prof-eval-level{ font-size:0.9em; color:#1f4f7a; display:flex; align-items:center; gap:6px; }
+        select.mastery-selector{ border:1px solid #2980b9; background:#eaf2ff; color:#1f4f7a; font-weight:bold; border-radius:4px; padding:3px 6px; cursor:pointer; }
+        .prof-comment-area{ min-height:70px; resize:vertical; box-sizing:border-box; }
+.section-block { margin: 30px 0 20px 0; padding: 10px; position: relative; text-align: center; border-top: 2px solid #eee; border-bottom: 2px solid #eee; }
+        .section-title-editable { font-size: 1.4em; font-weight: bold; color: #2c3e50; text-transform: uppercase; letter-spacing: 1px; cursor: text; border: none; background: transparent; width: 100%; text-align: center; }
+
+        .doc-block, .text-block { margin-bottom: 15px; padding: 10px; padding-right: 110px; background-color: #fff; border: 1px solid #eee; position: relative; }
+        .numbered-header { display: flex; align-items: center; background-color: #e9ecef; border-left: 5px solid #34495e; padding: 10px; margin-top: 25px; margin-bottom: 15px; border-radius: 0 5px 5px 0; position: relative; padding-right: 110px; }
+        .num-box { font-size: 1.5em; font-weight: bold; color: #34495e; margin-right: 15px; min-width: 30px; text-align: center; cursor: text; border-right: 2px solid #ccc; padding-right: 10px; }
+        .text-box { font-size: 1.1em; font-weight: bold; color: #2c3e50; flex: 1; cursor: text; }
+
+        /* OUTILS */
+        select.comp-selector { background-color: #e8f8f5; color: #16a085; border: 1px solid #16a085; border-radius: 4px; padding: 3px; font-weight: bold; cursor: pointer; font-size: 0.8em; }
+        select.num-selector { color: #e74c3c; font-size: 1.1em; font-weight: bold; border: 1px solid #e74c3c; background-color: #fff; padding: 3px; border-radius: 4px; cursor: pointer; min-width: 60px; }
+        .points-wrapper { display: flex; align-items: center; font-size: 0.9em; color: #333; white-space: nowrap; margin-left: 10px; background-color: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee; }
+        input.student-score { width: 45px; padding: 3px; margin-right: 5px; border: 2px solid #2980b9; border-radius: 4px; text-align: center; font-weight: bold; color: #2980b9; background-color: #eaf2f8; }
+        input.point-input { width: 45px; padding: 3px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight: bold; color: #7f8c8d; }
+        .print-only-grade { display: none; } 
+
+        textarea.reponse-eleve { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', Courier, monospace; min-height: 60px; resize: vertical; background-color: #fafafa; box-sizing: border-box; overflow-y: hidden; }
+        table.exo-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table.exo-table td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
+        
+        .img-container { text-align: center; margin: 10px 0; position: relative; display: inline-block; width: 100%; }
+        .img-container img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .doc-title { font-size: 1.1em; font-weight: bold; color: #d35400; margin-bottom: 15px; cursor: text; border-left: 5px solid #d35400; padding-left: 10px; background-color: #fff5f0; padding: 5px 10px; }
+        .consigne-simple { font-weight: normal; margin-bottom: 15px; margin-top: 20px; cursor: text; }
+
+/* --- OUTILS D'ANALYSE (ITAMaMi / Ishikawa) --- */
+.analysis-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.analysis-table td, .analysis-table th { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
+.analysis-table th { background: #f8f9fa; text-align: left; width: 28%; }
+.analysis-label-editable { font-weight: bold; cursor: text; }
+
+.ishikawa-wrapper { margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fbfbfb; }
+.ishikawa-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin-bottom: 10px; }
+.ishikawa-effect { border: 2px solid #c0392b; background: #fff5f5; color: #c0392b; padding: 10px; border-radius: 8px; min-height: 42px; font-weight: bold; cursor: text; text-align: center; }
+.ishikawa-diagram { display: grid; grid-template-rows: auto 60px auto; gap: 12px; align-items: center; }
+.ishikawa-row { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+.ish-cat { position: relative; flex: 1 1 180px; min-width: 180px; border: 1px solid #e5e7eb; border-radius: 10px; background: white; padding: 10px; }
+.ish-cat::before { content: ""; position: absolute; top: 50%; width: 22px; height: 2px; background: #3498db; }
+.ish-cat[data-side="top"]::before { right: -22px; transform: translateY(-50%) rotate(-25deg); transform-origin: left center; }
+.ish-cat[data-side="bottom"]::before { right: -22px; transform: translateY(-50%) rotate(25deg); transform-origin: left center; }
+.ish-cat-title { font-weight: bold; color: #2c3e50; margin-bottom: 6px; cursor: text; }
+textarea.ish-cat-causes { width: 100%; min-height: 70px; resize: vertical; box-sizing: border-box; }
+.ish-spine { position: relative; height: 60px; display: flex; align-items: center; justify-content: flex-end; }
+.ish-line { position: absolute; left: 0; right: 160px; top: 50%; height: 4px; background: #3498db; border-radius: 4px; transform: translateY(-50%); }
+.ish-arrow { position: absolute; right: 160px; top: 50%; width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 16px solid #3498db; transform: translateY(-50%); }
+.ish-effect-box { width: 150px; border: 2px solid #c0392b; border-radius: 10px; padding: 8px; background: #fff5f5; color: #c0392b; font-weight: bold; text-align: center; cursor: text; min-height: 44px; }
+
+/* Masquer/afficher la case Effet (Ishikawa) */
+.ish-hide-effect .ish-effect-box { display: none !important; }
+.ish-hide-effect .ish-line { right: 0 !important; }
+.ish-hide-effect .ish-arrow { right: 0 !important; }
+.ish-hide-effect .ish-spine { justify-content: flex-end; }
+
+
+body.student-view .ishikawa-tools { display: none !important; }
+body.student-view .analysis-label-editable, body.student-view .ish-cat-title, body.student-view .ish-effect-box { cursor: default; }
+
+        /* --- STYLES EXERCICES INTERACTIFS --- */
+                .word-btn { display: inline-block; padding: 5px 10px; margin: 3px; background: #3498db; color: white; border-radius: 4px; cursor: pointer; font-size: 1rem; user-select: none; }
+        .word-btn.hole-active { background: #bdc3c7; color: #7f8c8d; text-decoration: line-through; }
+        input.trou-eleve { border: none; border-bottom: 2px solid #2c3e50; background: #f4f6f7; color: #2980b9; font-weight: bold; text-align: center; min-width: 120px; width: clamp(120px, 22vw, 240px); max-width: 260px; padding: 0 6px; }
+        select.trou-eleve { border: 1px solid #3498db; background: #eaf2f8; color: #2c3e50; font-weight: bold; padding: 2px 5px; border-radius: 4px; }
+
+        .word-bank { margin: 12px 0 8px 0; padding: 10px; background: #eef6ff; border: 1px solid #cfe3ff; border-radius: 10px; }
+        .word-bank-title { font-weight: bold; color: #2c3e50; margin-bottom: 6px; }
+        .word-chip { display: inline-block; padding: 6px 10px; margin: 4px; background: #3498db; color: white; border-radius: 999px; cursor: pointer; user-select: none; font-weight: 600; }
+        .word-chip.used { background: #bdc3c7; color: #7f8c8d; text-decoration: line-through; }
+        
+        .pair-row { display: flex; gap: 10px; margin-bottom: 5px; align-items: center; }
+        .pair-input { flex: 1; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .matching-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        .matching-select { width: 100%; padding: 8px; border: 2px solid #3498db; border-radius: 4px; font-weight: bold; color: #2c3e50; cursor: pointer; }
+        .print-matching-container { display: none; } 
+        
+        .qcm-row { display: flex; gap: 10px; margin-bottom: 5px; align-items: center; }
+        .qcm-option-input { flex: 1; padding: 5px; border: 1px solid #ccc; }
+        .qcm-student-option { display: flex; align-items: center; margin-bottom: 8px; font-size: 1.05em; cursor: pointer; }
+        .qcm-student-option input { transform: scale(1.3); margin-right: 10px; cursor: pointer; }
+
+        
+        .pair-input { resize: vertical; }
+        .matching-table td { vertical-align: top; }
+        .matching-table .matching-left { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .matching-table .matching-right { width: 50%; }
+        .matching-table .matching-left { width: 50%; }
+        .word-bank { margin: 10px 0; padding: 8px 10px; background: #f1f5f9; border: 1px dashed #94a3b8; border-radius: 6px; font-size: 0.95em; }
+        .word-bank .word-chip { display: inline-block; margin: 3px; padding: 4px 8px; border-radius: 999px; background: #e2e8f0; }
+/* MODE PROF */
+        body.teacher-mode .question-block { border-left: 4px solid #f39c12; border-style: dashed; }
+        body.teacher-mode .numbered-header { border-left: 5px solid #f39c12; border-style: dashed; }
+        body.teacher-mode .doc-block { border: 2px dashed #95a5a6; } 
+        body.teacher-mode .text-block { border: 2px dashed #f1c40f; background: #fef9e7; }
+        body.teacher-mode .section-block { border: 2px dashed #8e44ad; }
+        body.teacher-mode .img-container { cursor: pointer; border: 2px dashed #3498db; padding: 5px;}
+        body.teacher-mode .img-container:hover::after { content: "📂 Changer l'image"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; }
+        .teacher-controls { display: none; }
+        body.teacher-mode .teacher-controls { display: block; margin-top: 10px; text-align: center; }
+        .block-controls { position: absolute; top: -10px; right: -10px; display: flex; gap: 2px; background: #fff; padding: 2px; border-radius: 20px; border: 1px solid #ccc; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-add-q { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin: 3px; display:inline-flex; align-items:center; gap:5px; }
+        .btn-del-q { background: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 50%; cursor: pointer; font-size: 0.9em; opacity: 0.8; width:25px; height:25px; display:flex; align-items:center; justify-content:center;}
+        .btn-del-q:hover { opacity: 1; }
+        .btn-move { background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 50%; cursor: pointer; font-size: 0.9em; opacity: 0.8; width:25px; height:25px; display:flex; align-items:center; justify-content:center;}
+        .btn-move:hover { opacity: 1; }
+        .tools-panel { position: fixed; bottom: 20px; right: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000; justify-content: flex-end; flex-wrap: wrap; }
+        .btn-tool { padding: 12px 20px; border-radius: 30px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s; color: white;}
+        .btn-tool:hover { transform: translateY(-2px); }
+        .btn-print { background: #3498db; }
+        .btn-generate { background: #27ae60; border: 2px solid white;} 
+        .btn-save-master { background: #8e44ad; }
+        .btn-qc { background: #f39c12; } 
+
+        #rich-format-toolbar { position: absolute; display: none; background: #34495e; padding: 5px; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 9999; flex-wrap: nowrap; gap: 5px; }
+        #rich-format-toolbar::after { content: ""; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); border-width: 5px; border-style: solid; border-color: #34495e transparent transparent transparent; }
+        .fmt-btn { background: transparent; border: none; color: white; cursor: pointer; padding: 5px 8px; border-radius: 3px; font-size: 14px; font-weight: bold; }
+        .fmt-btn:hover { background: rgba(255,255,255,0.2); }
+        .fmt-sep { width: 1px; background: rgba(255,255,255,0.3); margin: 0 2px; }
+
+        .general-comment-box { margin-top: 15px; border: 2px solid #c0392b; padding: 10px; background-color: #fff9f9; border-radius: 5px; }
+
+        /* --- STYLE IMPRESSION ELEVE --- */
+        @media print {
+            body { background-color: white; color: black; font-family: 'Times New Roman', serif; font-size: 12pt; padding: 0; margin: 0; line-height: 1.2; }
+            .container { box-shadow: none; padding: 0; border: none; width: 100%; max-width: 100%; }
+            #student-actions, #access-panel, .prof-comment-zone, .answer-key-zone { display: none !important; }
+            h1 { font-size: 16pt; margin: 10px 0; border-bottom: 2px solid black; padding-bottom: 5px; color: black; }
+            .activity-header { background: #eee; color: black; border: 1px solid #999; padding: 5px; font-size: 12pt; margin-top: 15px; }
+            .doc-title { background: none; border-left: 3px solid black; color: black; padding-left: 5px; margin-bottom: 5px; }
+            .student-info { background: none; border: none; padding: 0; margin-bottom: 10px; border-bottom: 1px solid #000; gap: 20px; }
+            .student-info .input-group input { border: none; border-radius: 0; padding: 0; width: 150px; text-align: left; }
+            .question-block, .doc-block, .text-block, .section-block { border: none !important; margin-bottom: 15px; box-shadow: none; page-break-inside: avoid; }
+            .section-block { border-top: 1px solid black !important; border-bottom: 1px solid black !important; }
+            .q-meta-bar { background: transparent !important; border: none !important; justify-content: flex-end; padding: 0; margin-bottom: -20px; font-size: 0.9em; position:relative; top: 5px; z-index: 5;}
+            .q-content-row { padding: 5px 0; display: flex; justify-content: flex-start; gap: 10px; align-items: baseline; }
+            .num-selector-wrapper { margin-right: 0; } 
+            .editable-text { border: none; padding: 0; }
+            textarea.reponse-eleve {
+                font-family: 'Times New Roman', serif; background-color: transparent; border: 1px solid #ccc;
+                background-image: repeating-linear-gradient(transparent, transparent 29px, #ccc 30px);
+                line-height: 30px; padding: 0 5px; min-height: 90px; resize: none; margin-top: 10px;
+            }
+            .q-response-zone { padding: 0; }
+            .points-wrapper { border: none !important; background: transparent !important; padding: 0 !important; }
+            .points-wrapper input, .points-wrapper select, .teacher-part, .frozen-score { display: none !important; }
+            .print-only-grade, .frozen-num { display: inline-block !important; font-style: italic; font-size: 0.9em; color: black; }
+            .frozen-num { border-color: black !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-only { display: inline-block !important; }
+            .row-c6 input { display: none !important; }
+            .matching-table { display: none; }
+            .matching-print-view { display: block !important; width: 100%; margin-top: 10px; }
+            .print-match-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+            .print-match-col { width: 40%; border: none; padding: 5px; min-height: 25px; }
+            .print-match-dot { font-size: 20px; font-weight: bold; }
+            input::placeholder, textarea::placeholder { color: transparent; }
+            table.eval-table, table.exo-table { width: 100%; border: 1px solid black; font-size: 10pt; }
+            table.eval-table th, table.eval-table td, table.exo-table td { border: 1px solid black; padding: 2px; }
+            .eval-header { background: #ddd; color: black; border: 1px solid black; }
+            .general-comment-box { display: none; }
+            .img-container img { max-width: 80%; box-shadow: none; border: 1px solid black; }
+        }
+    
+
+        /* --- VERIF : Détection de collage (zones de réponse élève) --- */
+        #paste-toast {
+            position: fixed;
+            left: 16px;
+            bottom: 90px;
+            z-index: 99999;
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95em;
+            max-width: 300px;
+            display: none;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+        }
+        .paste-warning {
+            outline: 3px solid #e67e22 !important;
+            background-color: #fff3e6 !important;
+        }
+
+        /* --- RESPONSIVE (mobile) --- */
+        @media (max-width: 720px) {
+            body { padding: 10px; }
+            .container { padding: 18px; }
+            .student-info { flex-wrap: wrap; gap: 10px; }
+            .input-group { flex: 1 1 45%; }
+            .input-group input { width: 100%; min-width: 0; }
+            .q-content-row { flex-wrap: wrap; }
+            .num-selector-wrapper { margin-bottom: 6px; }
+            .tools-panel { left: 10px; right: 10px; bottom: 10px; flex-direction: column; }
+            .btn-tool { padding: 10px 14px; }
+        }
+
+        @media print {
+            #paste-toast { display: none !important; }
+        }
+
+
+
+        /* --- BANQUE DE COMMENTAIRES (PROF) --- */
+        .btn-bank { background: #2c3e50; border: 2px solid white; }
+        #comment-bank-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 20000; display: none; align-items: center; justify-content: center; padding: 16px; }
+        #comment-bank-modal.open { display: flex; }
+        #comment-bank-box { width: min(920px, 96vw); max-height: 86vh; overflow: auto; background: #fff; border-radius: 14px; box-shadow: 0 18px 60px rgba(0,0,0,0.35); border: 1px solid #e5e7eb; }
+        #comment-bank-head { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 14px; display:flex; gap:10px; align-items:center; justify-content: space-between; z-index: 1; }
+        #comment-bank-head h3 { margin: 0; font-size: 1.05em; color: #2c3e50; }
+        #comment-bank-close { border: none; background: #fff5f5; color: #c0392b; border: 1px solid #e74c3c; border-radius: 10px; padding: 8px 10px; cursor: pointer; font-weight: 700; }
+        #comment-bank-body { padding: 12px 14px 16px 14px; }
+        .cb-row { display:flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .cb-row > * { flex: 0 0 auto; }
+        .cb-row select, .cb-row input, .cb-row textarea, .cb-row button { font: inherit; }
+        .cb-row select, .cb-row input { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 10px; }
+        .cb-row input[type="text"] { width: min(360px, 70vw); }
+        .cb-pill { display:inline-flex; align-items:center; gap:8px; padding: 7px 10px; border-radius: 999px; border: 1px solid #e5e7eb; background:#f8fafc; font-size: 0.92em; }
+        .cb-switch { display:flex; gap:6px; align-items:center; }
+        .cb-switch input { transform: scale(1.15); }
+        .cb-list { margin-top: 12px; display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .cb-item { text-align:left; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 12px; background: #fff; cursor: pointer; }
+        .cb-item:hover { background: #f8fafc; }
+        .cb-item small { display:block; opacity: 0.75; margin-top: 6px; }
+        .cb-sep { height: 1px; background: #e5e7eb; margin: 14px 0; }
+        .cb-subtitle { margin: 0 0 8px 0; font-size: 0.95em; color: #334155; }
+        .cb-actions button { border: none; border-radius: 10px; padding: 8px 10px; cursor: pointer; font-weight: 700; }
+        .cb-actions .ok { background: #27ae60; color: #fff; }
+        .cb-actions .ghost { background: #fff; border: 1px solid #d1d5db; }
+        .cb-actions .danger { background: #fff5f5; color: #c0392b; border: 1px solid #e74c3c; }
+        .comment-mini-tools { margin-top: 6px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .comment-mini-tools button { border: none; border-radius: 10px; padding: 7px 10px; cursor: pointer; font-weight: 700; }
+        .comment-mini-tools .open { background: #2c3e50; color: #fff; }
+        .comment-mini-tools .clear { background: #fff5f5; color: #c0392b; border: 1px solid #e74c3c; }
+        .comment-mini-tools .hint { background: #f8fafc; border: 1px solid #e5e7eb; color:#334155; }
+
+        @media (max-width: 640px) {
+            #comment-bank-box { width: 96vw; }
+            .cb-row input[type="text"] { width: 92vw; }
+        }
+
+        @media print { #comment-bank-modal, .comment-mini-tools, .btn-bank { display: none !important; } }
+    
+/* Modes */
+.builder-only, .prof-only, .student-only { display: none; }
+body.builder-view .builder-only { display: inline-flex; }
+body.prof-view .prof-only { display: inline-flex; }
+body.student-view .student-only { display: inline-flex; }
+
+body.prof-view #rich-format-toolbar { display:none !important; }
+body.prof-view .teacher-controls { display:none !important; }
+body.prof-view .btn-save-master, body.prof-view .btn-generate, body.prof-view .btn-qc { display:none !important; }
+body.student-view #rich-format-toolbar { display:none !important; }
+body.student-view .teacher-controls { display:none !important; }
+body.student-view .answer-key-zone, body.student-view .prof-comment-zone, body.student-view #comment-bank-modal { display:none !important; }
+
+
+/* =========================
+   TABLEAUX RISQUES PRO
+   ========================= */
+.risk-gravite-wrap{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+.risk-gravite-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.rg-choice{display:flex;gap:10px;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f8fafc}
+.rg-sub{font-weight:800;margin-bottom:8px}
+.rg-textarea{width:100%;min-height:84px;resize:vertical;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fff}
+
+.risk-matrix-wrap{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+.risk-matrix-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:13px;color:#334155}
+.legend-item{display:flex;align-items:center;gap:8px}
+.legend-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.15)}
+.legend-swatch.nonprioritaire{background:#dcfce7}
+.legend-swatch.prioritaire{background:#ffedd5}
+.risk-axis-label.top{font-weight:800;margin-bottom:8px}
+.risk-grid{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:start}
+.risk-y-label{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:800;color:#0f172a;font-size:13px;align-self:stretch;justify-self:center}
+.risk-matrix{width:100%;border-collapse:collapse}
+.risk-matrix th,.risk-matrix td{border:1px solid #cbd5e1;padding:8px;text-align:center}
+.risk-matrix th{background:#f1f5f9;font-weight:800;font-size:13px}
+.risk-matrix th.corner{background:#fff;border-left-color:#fff;border-top-color:#fff}
+.risk-cell{cursor:pointer;min-width:70px;min-height:44px;font-size:18px;font-weight:900;user-select:none}
+.risk-cell.selected{outline:3px solid rgba(37,99,235,.35);outline-offset:-3px}
+.zone-nonprioritaire{background:#dcfce7}
+.zone-prioritaire{background:#ffedd5}
+.risk-decision{margin-top:12px;border-top:1px dashed #cbd5e1;padding-top:12px}
+.risk-decision-title{font-weight:900;margin-bottom:8px}
+.risk-decision-choice{display:flex;gap:10px;align-items:center;margin:6px 0}
+
+.prevention-wrap{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+.prevention-objectif{font-weight:800;color:#0f172a;margin-bottom:10px}
+.prevention-table{width:100%;border-collapse:collapse}
+.prevention-table th,.prevention-table td{border:1px solid #cbd5e1;padding:10px;vertical-align:top}
+.prevention-table th{background:#f1f5f9;text-align:left;font-weight:900}
+.prevention-table .col-type{width:34%;font-weight:800}
+.prev-cell{width:100%;min-height:70px;resize:vertical;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+
+/* --- Schéma situation de travail 2 --- */
+.st2-page{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+.st2-header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:12px}
+.st2-title{font-weight:1000;font-size:16px;color:#0f172a}
+.st2-sub{font-size:13px;color:#334155}
+.st2-dots{letter-spacing:2px}
+.st2-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.st2-box{border:1px solid #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc}
+.st2-boxtitle{font-weight:900;margin-bottom:6px;color:#0f172a}
+.st2-hint{font-size:12px;color:#475569;margin-bottom:8px}
+.st2-ta{width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:10px;resize:vertical;background:#fff}
+.st2-box.pres{grid-column:2 / 3}
+.st2-box.reel{grid-column:1 / 3}
+.st2-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.st2-splittitle{font-weight:900;margin-bottom:4px}
+@media (max-width: 720px){
+  .st2-grid{grid-template-columns:1fr}
+  .st2-box.pres{grid-column:auto}
+  .st2-box.reel{grid-column:auto}
+  .risk-gravite-choices{grid-template-columns:1fr}
+  .risk-grid{grid-template-columns:1fr}
+  .risk-y-label{writing-mode:horizontal-tb;transform:none;justify-self:start}
+}
+
+</style>
+  <script src="banque.js"></script>
+<script src="annuaire.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+</head>
+<body class="builder-view teacher-mode"> 
+
+<div id="rich-format-toolbar">
+    <button class="fmt-btn" onclick="formatDoc('bold')" title="Gras">B</button>
+    <button class="fmt-btn" onclick="formatDoc('italic')" title="Italique">I</button>
+    <button class="fmt-btn" onclick="formatDoc('underline')" title="Souligné">U</button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" style="color:#e74c3c;" onclick="formatDoc('foreColor', '#e74c3c')" title="Rouge">A</button>
+    <button class="fmt-btn" style="color:#3498db;" onclick="formatDoc('foreColor', '#3498db')" title="Bleu">A</button>
+    <button class="fmt-btn" style="color:#2c3e50;" onclick="formatDoc('foreColor', '#2c3e50')" title="Noir">A</button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="formatDoc('hiliteColor', 'yellow')" title="Surligner">🖍️</button>
+    <button class="fmt-btn" onclick="formatDoc('fontSize', '5')" title="Grossir">A+</button>
+    <button class="fmt-btn" onclick="formatDoc('fontSize', '3')" title="Normal">A-</button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="formatDoc('removeFormat')" title="Effacer style">🧹</button>
+</div>
+
+<div class="tools-panel" id="main-tools">
+    <button class="btn-tool btn-save-master builder-only" onclick="saveMasterHTML()">💾 Sauvegarder mon Modèle</button>
+    <button class="btn-tool btn-generate builder-only" onclick="generateStudentVersion()">🚀 Générer Devoir Élève</button>
+    <button id="btn-qc" class="btn-tool btn-qc builder-only" onclick="runQualityCheck()">✅ Vérifier</button>
+
+    <button id="btn-cbank" class="btn-tool btn-bank prof-only" onclick="openCommentBank()">💬 Banque</button>
+    <button class="btn-tool btn-print prof-only" onclick="window.print()">🖨️ PDF</button>
+
+    <button id="btn-send" class="btn-tool btn-send student-only" onclick="submitStudentDevoir()" disabled>📤 Envoyer</button>
+</div>
+
+<div id="paste-toast"></div>
+
+<input type="file" id="img-uploader" accept="image/*" style="display: none;">
+
+<div class="container">
+    <div id="version-badge" style="position:absolute; top:12px; right:16px; background:#111827; color:#fff; padding:6px 10px; border-radius:999px; font-size:12px; opacity:0.85;">v20</div>
+
+    <h1><span class="main-title-editable" contenteditable="true">Titre du Module</span></h1>
+
+    <div class="student-info">
+        <div class="input-group"><label>Nom :</label><input type="text" id="nom-eleve"></div>
+        <div class="input-group"><label>Prénom :</label><input type="text" id="prenom-eleve"></div>
+        <div class="input-group"><label>Classe :</label><input type="text"></div>
+        <div class="input-group"><label>Date :</label><input type="date"></div>
+    </div>
+
+    <div class="eval-section" id="eval-section-container">
+        <div class="eval-header">GRILLE D'ÉVALUATION</div>
+        <table class="eval-table">
+            <thead>
+                <tr><th rowspan="2">Compétences</th><th rowspan="2">Questions</th><th colspan="4">Niveau</th><th rowspan="2">Barème</th><th rowspan="2">Points</th></tr>
+                <tr><th>NT</th><th>I</th><th>A</th><th>M</th></tr>
+            </thead>
+            <tbody id="grid-body"></tbody>
+            <tbody>
+                <tr class="row-c6">
+                    <td><b>C6</b></td>
+                    <td class="c6-text-editable" contenteditable="true">Communication</td>
+                    <td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
+                    <td style="display:flex; align-items:center; justify-content:center;">
+                        <input type="number" id="c6-score" class="point-input-c6" value="0" min="0" step="0.5" oninput="updateGrid()" placeholder="Pts">
+                        <span class="no-print">&nbsp;/&nbsp;</span>
+                        <input type="number" id="c6-max" class="point-input-c6" value="2" min="0" step="0.5" oninput="updateGrid()">
+                        <span class="print-only" id="c6-print-span">2</span>
+                    </td>
+                    <td id="c6-display-score" style="font-weight:bold;"><span class="no-print">0</span><span class="print-only">......</span></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                 <tr style="border-top: 2px solid #000;">
+                    <td colspan="6">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="legend-inline">
+                                <b>Légende :</b> <b>NT</b>: Non Traité | <b>I</b>: Insuffisant | <b>A</b>: Acceptable | <b>M</b>: Maîtrisé
+                            </div>
+                            <span style="font-weight: bold; font-size:1.1em;">TOTAL :</span>
+                        </div>
+                    </td>
+                    <td style="font-weight: bold;" id="total-bareme">/ 20</td>
+                    <td style="font-weight: bold; color: #2980b9;" id="total-obtenu"><span class="no-print">0</span><span class="print-only">......</span></td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div class="general-comment-box">
+            <span class="general-comment-label">📝 Appréciation Générale :</span>
+            <textarea class="general-comment-area" placeholder="Commentaire global sur le devoir..."></textarea>
+        </div>
+    </div>
+
+    <br><hr><br>
+
+    <div class="questions-container" id="questions-container"></div>
+    
+    <div class="teacher-controls">
+        <div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center; background:#ecf0f1; padding:10px; border-radius:8px; margin-top:20px;">
+            <button class="btn-add-q" style="background:#8e44ad;" onclick="addSectionTitle(this)">+ 📌 Titre Section</button>
+            <button class="btn-add-q" style="background:#34495e;" onclick="addNumberedTitle(this)">+ 1. Titre Partie</button>
+            <div style="width:100%; height:1px; background:#bdc3c7; margin:5px 0;"></div>
+            <button class="btn-add-q" onclick="addQuestion(this)">+ Question</button>
+            <button class="btn-add-q" onclick="addTableQuestion(this)">+ Tab. QQOQCP</button>
+            <button class="btn-add-q" style="background:#16a085;" onclick="addITAMaMi(this)">+ Tab. ITAMaMi</button>
+            <button class="btn-add-q" style="background:#c0392b;" onclick="addIshikawa(this)">+ Ishikawa</button>
+
+            <button class="btn-add-q" style="background:#7c3aed;" onclick="addGraviteDommage(this)">+ Tab. Gravité</button>
+            <button class="btn-add-q" style="background:#0ea5e9;" onclick="addEvaluationRisque(this)">+ Tab. Éval. risque</button>
+            <button class="btn-add-q" style="background:#f59e0b;" onclick="addMesuresPrevention(this)">+ Tab. Prévention</button>
+            <button class="btn-add-q" style="background:#64748b;" onclick="addSchemaSituationTravail(this)">+ Schéma ST2</button>
+            <button class="btn-add-q" style="background:#e67e22;" onclick="addClozeTest(this)">+ Trous</button>
+            <button class="btn-add-q" style="background:#3498db;" onclick="addMatchingExercise(this)">+ Reliage</button>
+            <button class="btn-add-q" style="background:#8e44ad;" onclick="addQCM(this)">+ QCM</button>
+            <div style="width:100%; height:1px; background:#bdc3c7; margin:5px 0;"></div>
+            <button class="btn-add-q" style="background:#7f8c8d;" onclick="addSimpleDoc(this)">+ 📄 Image Seule</button>
+            <button class="btn-add-q" style="background:#f1c40f; color:#333;" onclick="addSimpleText(this)">+ 🗣️ Consigne / Texte</button>
+        </div>
+    </div>
+
+</div>
+
+<div id="qc-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:20000; padding:20px; box-sizing:border-box;">
+  <div style="max-width:900px; margin:40px auto; background:white; border-radius:12px; padding:16px 16px 10px 16px; box-shadow:0 10px 30px rgba(0,0,0,0.35);">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+      <div style="font-weight:800; color:#2c3e50; font-size:1.1em;">Contrôle rapide du devoir</div>
+      <button onclick="closeQC()" style="border:none; background:#e74c3c; color:white; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700;">Fermer</button>
+    </div>
+    <div id="qc-summary" style="padding:10px; background:#f8f9fa; border:1px solid #e5e7eb; border-radius:10px; margin-bottom:10px;"></div>
+    <ol id="qc-list" style="margin:0; padding-left:20px; max-height:55vh; overflow:auto;"></ol>
+    <div style="margin-top:10px; font-size:0.9em; color:#555;">
+      Astuce : clique sur une alerte pour aller directement à la question concernée.
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('paste', function (e) {
+        if (e.target && e.target.isContentEditable) {
+            e.preventDefault();
+            const cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+            const text = cd ? cd.getData('text/plain') : '';
+            document.execCommand('insertText', false, text);
+        }
+    });
+
+    let isTeacherMode = true; 
+    let currentImgContainer = null;
+    const uploader = document.getElementById('img-uploader');
+
+// --- UTILITAIRES ---
+function parseNumber(val) {
+    const s = (val ?? '').toString().trim().replace(',', '.');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function escapeHTML(str) {
+    return (str ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+function downloadFile(content, filename) {
+    const blob = new Blob([content], { type: "text/html;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 250);
+}
+
+function snapshotFormValues(root) {
+    root.querySelectorAll('input, textarea, select').forEach(el => {
+        if (el.tagName === 'TEXTAREA') {
+            el.textContent = el.value;
+        } else if (el.tagName === 'SELECT') {
+            el.querySelectorAll('option').forEach(opt => {
+                if (opt.value === el.value) opt.setAttribute('selected', 'selected');
+                else opt.removeAttribute('selected');
+            });
+        } else if (el.type === 'checkbox' || el.type === 'radio') {
+            if (el.checked) el.setAttribute('checked', 'checked');
+            else el.removeAttribute('checked');
+        } else {
+            el.setAttribute('value', el.value);
+        }
+    });
+}
+
+function saveMasterHTML() {
+    const nomFichier = prompt("Nom du fichier du modèle ?", "Modele_PSE");
+    if (!nomFichier) return;
+    snapshotFormValues(document);
+    const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    downloadFile(html, nomFichier + ".html");
+}
+
+
+    function triggerImgUpload(container) {
+        if(!isTeacherMode) return; 
+        currentImgContainer = container;
+        uploader.click();
+    }
+
+    uploader.addEventListener('change', function() {
+        if (this.files && this.files[0] && currentImgContainer) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = currentImgContainer.querySelector('img');
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+        this.value = '';
+    });
+
+    const toolbar = document.getElementById('rich-format-toolbar');
+
+    document.addEventListener('selectionchange', () => {
+        if (!isTeacherMode) return; 
+        const selection = window.getSelection();
+        if (!selection.rangeCount || selection.isCollapsed) { toolbar.style.display = 'none'; return; }
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        let parent = range.commonAncestorContainer.parentElement;
+        let isEditable = false;
+        while (parent) { if (parent.isContentEditable) { isEditable = true; break; } parent = parent.parentElement; }
+        if (isEditable && rect.width > 0) {
+            toolbar.style.display = 'flex';
+            toolbar.style.top = (rect.top + window.scrollY - 50) + 'px';
+            toolbar.style.left = (rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2)) + 'px';
+        } else { toolbar.style.display = 'none'; }
+    });
+    
+    toolbar.addEventListener('mousedown', (e) => { e.preventDefault(); });
+    function formatDoc(cmd, value) { document.execCommand(cmd, false, value); }
+
+    function moveUp(btn) {
+        const block = btn.closest('.question-block') || btn.closest('.doc-block') || btn.closest('.text-block') || btn.closest('.numbered-header') || btn.closest('.section-block');
+        if (block && block.previousElementSibling) { block.parentNode.insertBefore(block, block.previousElementSibling); }
+    }
+
+    function moveDown(btn) {
+        const block = btn.closest('.question-block') || btn.closest('.doc-block') || btn.closest('.text-block') || btn.closest('.numbered-header') || btn.closest('.section-block');
+        if (block && block.nextElementSibling) { block.parentNode.insertBefore(block.nextElementSibling, block); }
+    }
+
+function qqRowHTML(label) {
+    return `<tr>
+        <td>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span class="question-bold" contenteditable="true">${label}</span>
+                <button class="btn-del-q teacher-controls" style="position:static;" onclick="qqRemoveRow(this)">✖</button>
+            </div>
+        </td>
+        <td><textarea class="reponse-eleve"></textarea></td>
+    </tr>`;
+}
+function qqAddRow(btn) {
+    const table = btn.closest('.exo-container').querySelector('table.exo-table');
+    if(!table) return;
+    const tmp = document.createElement('tbody');
+    tmp.innerHTML = qqRowHTML("Nouvelle ligne");
+    const tr = tmp.querySelector('tr');
+    table.appendChild(tr);
+    const tx = tr.querySelector('textarea');
+    if(tx) {
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
+        tx.dispatchEvent(new Event('input'));
+    }
+    updateGrid();
+}
+function qqRemoveRow(btn) {
+    const tr = btn.closest('tr');
+    if(tr) tr.remove();
+    updateGrid();
+}
+
+
+    function initSelects(parent) {
+        let numOptionsHTML = "";
+        for (let i = 1; i <= 20; i++) {
+            numOptionsHTML += `<option value="${i}">${i}</option>`;
+            for (let j = 1; j <= 10; j++) { numOptionsHTML += `<option value="${i}.${j}">${i}.${j}</option>`; }
+        }
+        let compOptionsHTML = "";
+        for (let c = 1; c <= 6; c++) { compOptionsHTML += `<option value="C${c}">C${c}</option>`; }
+
+        parent.querySelectorAll('.num-selector').forEach(s => { 
+            if(s.innerHTML === "") s.innerHTML = numOptionsHTML;
+            if(s.dataset.defaut) s.value = s.dataset.defaut;
+            s.addEventListener('change', updateGrid);
+        });
+        parent.querySelectorAll('.comp-selector').forEach(s => { 
+            if(s.innerHTML === "") s.innerHTML = compOptionsHTML;
+            if(s.dataset.selected) s.value = s.dataset.selected;
+            s.addEventListener('change', updateGrid);
+        });
+        parent.querySelectorAll('.point-input').forEach(i => i.addEventListener('input', updateGrid));
+        parent.querySelectorAll('.student-score').forEach(i => i.addEventListener('input', updateGrid)); 
+    }
+
+    function getControlButtonsHTML() {
+        return `<div class="block-controls teacher-controls"><button class="btn-move" onclick="moveUp(this)">⬆️</button><button class="btn-move" onclick="moveDown(this)">⬇️</button><button class="btn-del-q" onclick="removeQuestion(this)">✖</button></div>`;
+    }
+    function getControlButtonsHTMLTitle() {
+        return `<div class="block-controls teacher-controls"><button class="btn-move" onclick="moveUp(this)">⬆️</button><button class="btn-move" onclick="moveDown(this)">⬇️</button><button class="btn-del-q" onclick="this.closest('.text-block') ? this.closest('.text-block').remove() : this.closest('.section-block').remove()">✖</button></div>`;
+    }
+    function getControlButtonsHTMLSimple() {
+        return `<div class="block-controls teacher-controls"><button class="btn-move" onclick="moveUp(this)">⬆️</button><button class="btn-move" onclick="moveDown(this)">⬇️</button><button class="btn-del-q" onclick="this.closest('.doc-block') ? this.closest('.doc-block').remove() : this.closest('.text-block').remove()">✖</button></div>`;
+    }
+
+    function addSectionTitle(btn) {
+        const container = document.querySelector('.questions-container');
+        const div = document.createElement('div'); div.className = 'section-block';
+        div.innerHTML = `${getControlButtonsHTMLTitle()}<input class="section-title-editable" value="ANALYSER LA SITUATION" placeholder="Titre de section">`;
+        container.appendChild(div);
+    }
+
+    function addNumberedTitle(btn) {
+        const container = document.querySelector('.questions-container');
+        const div = document.createElement('div'); div.className = 'text-block numbered-header';
+        div.innerHTML = `${getControlButtonsHTMLTitle()}<div class="num-box" contenteditable="true">1</div><div class="text-box" contenteditable="true">À partir du document... (Titre de la partie)</div>`;
+        container.appendChild(div);
+    }
+
+    function addQuestion(btn) {
+        const container = document.querySelector('.questions-container');
+        const div = document.createElement('div'); div.className = 'question-block';
+        div.innerHTML = `
+            ${getControlButtonsHTML()}
+            <div class="q-meta-bar">
+                <div class="points-wrapper">
+                    <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                    <span class="teacher-part">/</span> 
+                    <input type="number" class="point-input" value="1" step="0.5" oninput="updateGrid()"> 
+                    <span class="teacher-part">pts (</span>
+                    <select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select>
+                    <span class="teacher-part">)</span>
+                    <span class="print-only-grade"></span>
+                </div>
+            </div>
+            <div class="q-content-row">
+                <div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.1"></select></div>
+                <div class="editable-text" contenteditable="true">Question...</div>
+            </div>
+            <div class="exo-container"><textarea class="reponse-eleve"></textarea></div>
+            <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+        `;
+        container.appendChild(div); initSelects(div); updateGrid(); div.querySelectorAll('textarea').forEach(tx => { tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); });
+    }
+
+    function addSimpleDoc(btn) {
+        const container = document.querySelector('.questions-container');
+        const div = document.createElement('div'); div.className = 'doc-block';
+        div.innerHTML = `${getControlButtonsHTMLSimple()}<div class="doc-title" contenteditable="true">Document X : Titre...</div><div class="img-container" onclick="triggerImgUpload(this)"><img src="https://via.placeholder.com/600x200?text=Cliquez+pour+ajouter+une+image" alt="Doc"></div>`;
+        container.appendChild(div);
+    }
+    
+    function addSimpleText(btn) {
+        const container = document.querySelector('.questions-container');
+        const div = document.createElement('div'); div.className = 'text-block';
+        div.innerHTML = `${getControlButtonsHTMLSimple()}<div class="consigne-simple" contenteditable="true">Écrivez ici votre consigne ou votre texte de transition...</div>`;
+        container.appendChild(div);
+    }
+
+    function addTableQuestion(btn) {
+    const container = document.querySelector('.questions-container');
+    const div = document.createElement('div');
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span>
+                <input type="number" class="point-input" value="2" step="0.5" oninput="updateGrid()">
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.2"></select></div>
+            <div class="editable-text" contenteditable="true">Compléter le tableau d'analyse.</div>
+        </div>
+        <div class="exo-container">
+            <table class="exo-table qqoqcp-table">
+                ${qqRowHTML("Quoi ?")}
+                ${qqRowHTML("Qui ?")}
+                ${qqRowHTML("Où ?")}
+                ${qqRowHTML("Quand ?")}
+                ${qqRowHTML("Comment ?")}
+                ${qqRowHTML("Pourquoi ?")}
+            </table>
+            <div class="teacher-controls" style="margin-top:10px; text-align:center;">
+                <button class="btn-add-q" style="background:#34495e;" onclick="qqAddRow(this)">+ Ligne</button>
+            </div>
+        </div>
+        
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    updateGrid();
+
+    div.querySelectorAll('textarea').forEach(tx => {
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
+        tx.dispatchEvent(new Event('input'));
+    });
+}
+
+function addITAMaMi(btn) {
+    const container = document.querySelector('.questions-container');
+    const div = document.createElement('div'); 
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="3" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.6"></select></div>
+            <div class="editable-text" contenteditable="true">Compléter le tableau ITAMaMi.</div>
+        </div>
+        <div class="exo-container">
+            <table class="analysis-table">
+                <tr><th><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span class="analysis-label-editable" contenteditable="true">Individu</span><button class="btn-del-q teacher-controls" style="position:static;" onclick="removeAnalysisRow(this)">✖</button></div><div style="font-size:0.9em; color:#666;">Qui est l’opérateur ? Quelles caractéristiques ?</div></th><td><textarea class="reponse-eleve"></textarea></td></tr>
+                <tr><th><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span class="analysis-label-editable" contenteditable="true">Tâche</span><button class="btn-del-q teacher-controls" style="position:static;" onclick="removeAnalysisRow(this)">✖</button></div><div style="font-size:0.9em; color:#666;">Quel travail demandé ?</div></th><td><textarea class="reponse-eleve"></textarea></td></tr>
+                <tr><th><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span class="analysis-label-editable" contenteditable="true">Activité</span><button class="btn-del-q teacher-controls" style="position:static;" onclick="removeAnalysisRow(this)">✖</button></div><div style="font-size:0.9em; color:#666;">Comment le travail est réalisé ?</div></th><td><textarea class="reponse-eleve"></textarea></td></tr>
+                <tr><th><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span class="analysis-label-editable" contenteditable="true">Matériel</span><button class="btn-del-q teacher-controls" style="position:static;" onclick="removeAnalysisRow(this)">✖</button></div><div style="font-size:0.9em; color:#666;">Quels équipements utilisés ?</div></th><td><textarea class="reponse-eleve"></textarea></td></tr>
+                <tr><th><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span class="analysis-label-editable" contenteditable="true">Milieu</span><button class="btn-del-q teacher-controls" style="position:static;" onclick="removeAnalysisRow(this)">✖</button></div><div style="font-size:0.9em; color:#666;">Où, quand, avec qui ?</div></th><td><textarea class="reponse-eleve"></textarea></td></tr>
+            </table>
+            <div class="teacher-controls" style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                <button class="btn-add-q" style="background:#16a085;" onclick="addAnalysisRow(this)">+ Ligne</button>
+                <button class="btn-add-q" style="background:#e67e22;" onclick="itamamiToggleEffect(this)">Effet</button>
+            </div>
+        </div>
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+    `;
+    container.appendChild(div); 
+    initSelects(div); 
+    updateGrid();
+    div.querySelectorAll('textarea').forEach(tx => { 
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); 
+    });
+}
+
+function addAnalysisRow(btn) {
+    const wrap = btn.closest('.analysis-wrap') || btn.closest('.question-block') || document;
+    const table = wrap.querySelector('table.analysis-table');
+    if (!table) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <th style="display:flex;gap:8px;align-items:center;">
+        <span contenteditable="true">Nouvelle entrée</span>
+        <button class="btn-del-mini" type="button" onclick="removeAnalysisRow(this)">✖</button>
+      </th>
+      <td><textarea class="reponse-eleve" placeholder="Réponse élève..."></textarea></td>
+    `;
+    table.appendChild(tr);
+
+    const tx = tr.querySelector('textarea');
+    if (tx) {
+        tx.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        setTimeout(() => {
+            tx.style.height = 'auto';
+            tx.style.height = tx.scrollHeight + 'px';
+        }, 0);
+    }
+}
+
+function removeAnalysisRow(btn) {
+    const tr = btn.closest('tr');
+    if (tr) tr.remove();
+}
+
+function itamamiToggleEffect(btn) {
+    const exo = btn.closest('.question-block');
+    if(!exo) return;
+    const table = exo.querySelector('table.analysis-table');
+    if(!table) return;
+    const existing = table.querySelector('tr.itamami-effect-row');
+    if(existing) {
+        existing.remove();
+        return;
+    }
+    const tr = document.createElement('tr');
+    tr.className = 'itamami-effect-row';
+    tr.innerHTML = `
+        <th><span class="analysis-label-editable" contenteditable="true">Effet / Dommage</span><div style="font-size:0.9em; color:#666;">Quel résultat / conséquence ?</div></th>
+        <td><textarea class="reponse-eleve"></textarea></td>
+    `;
+    table.appendChild(tr);
+    const tx = tr.querySelector('textarea');
+    if(tx) tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
+}
+
+function addIshikawa(btn) {
+    const container = document.querySelector('.questions-container');
+    const div = document.createElement('div'); 
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="4" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.7"></select></div>
+            <div class="editable-text" contenteditable="true">Construire un diagramme d’Ishikawa : compléter les causes par familles.</div>
+        </div>
+        <div class="exo-container">
+            <div class="ishikawa-wrapper">
+                <div class="ishikawa-tools teacher-controls">
+                    <button class="btn-add-q" style="background:#c0392b;" onclick="ishAdd5M(this)">5M</button>
+                    <button class="btn-add-q" style="background:#e67e22;" onclick="ishToggleEffect(this)">Effet</button>
+                    <button class="btn-add-q" style="background:#3498db;" onclick="ishAddCategory(this)">+ Famille</button>
+                </div>
+                <div class="ishikawa-diagram">
+                    <div class="ishikawa-row ish-top"></div>
+                    <div class="ish-spine">
+                        <div class="ish-line"></div>
+                        <div class="ish-arrow"></div>
+                        <div class="ish-effect-box" contenteditable="true">Effet (à définir)</div>
+                    </div>
+                    <div class="ishikawa-row ish-bottom"></div>
+                </div>
+            </div>
+        </div>
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    // Par défaut : 5M
+    const exo = div.querySelector('.exo-container');
+    const topRow = exo.querySelector('.ish-top');
+    const bottomRow = exo.querySelector('.ish-bottom');
+    const titles = ["Matière", "Milieu", "Main-d'œuvre", "Matériel", "Méthode"];
+    titles.forEach((t, idx) => {
+        const side = (idx % 2 === 0) ? 'top' : 'bottom';
+        ishCreateCat(side === 'top' ? topRow : bottomRow, side, t);
+    });
+    updateGrid();
+    div.querySelectorAll('textarea').forEach(tx => { 
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); 
+    });
+}
+
+function ishCreateCat(rowEl, side, title) {
+    const cat = document.createElement('div');
+    cat.className = 'ish-cat';
+    cat.dataset.side = side;
+    cat.innerHTML = `
+        <div class="ish-cat-title" contenteditable="true">${title}</div>
+        <textarea class="reponse-eleve ish-cat-causes" placeholder="Causes (une par ligne)"></textarea>
+        <div class="teacher-controls" style="margin-top:8px; display:flex; gap:8px; justify-content:center;">
+            <button class="btn-del-q" style="position:static;" onclick="this.closest('.ish-cat').remove()">✖</button>
+            <button class="btn-add-q" style="background:#7f8c8d;" onclick="ishToggleSide(this)">⇅</button>
+        </div>
+    `;
+    rowEl.appendChild(cat);
+}
+
+function ishAddCategory(btn) {
+    const wrapper = btn.closest('.ishikawa-wrapper');
+    const topRow = wrapper.querySelector('.ish-top');
+    const bottomRow = wrapper.querySelector('.ish-bottom');
+    const toTop = (topRow.children.length <= bottomRow.children.length);
+    ishCreateCat(toTop ? topRow : bottomRow, toTop ? 'top' : 'bottom', "Nouvelle famille");
+}
+
+function ishAdd5M(btn) {
+    const wrapper = btn.closest('.ishikawa-wrapper');
+    const topRow = wrapper.querySelector('.ish-top');
+    const bottomRow = wrapper.querySelector('.ish-bottom');
+    topRow.innerHTML = "";
+    bottomRow.innerHTML = "";
+    const titles = ["Matière", "Milieu", "Main-d'œuvre", "Matériel", "Méthode"];
+    titles.forEach((t, idx) => {
+        const side = (idx % 2 === 0) ? 'top' : 'bottom';
+        ishCreateCat(side === 'top' ? topRow : bottomRow, side, t);
+    });
+}
+
+function ishToggleSide(btn) {
+    const cat = btn.closest('.ish-cat');
+    const wrapper = btn.closest('.ishikawa-wrapper');
+    const topRow = wrapper.querySelector('.ish-top');
+    const bottomRow = wrapper.querySelector('.ish-bottom');
+    const isTop = cat.dataset.side === 'top';
+    cat.dataset.side = isTop ? 'bottom' : 'top';
+    (isTop ? bottomRow : topRow).appendChild(cat);
+}
+
+function ishToggleEffect(btn) {
+    const wrapper = btn.closest('.ishikawa-wrapper');
+    if(!wrapper) return;
+    wrapper.classList.toggle('ish-hide-effect');
+}
+
+
+// --- TABLEAUX RISQUES PRO (gravité / évaluation / prévention / schéma ST2)
+
+function addGraviteDommage(btn){
+    const container = document.querySelector('.questions-container');
+    const uid = Date.now();
+    const div = document.createElement('div');
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="1" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C3" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="2.1"></select></div>
+            <div class="editable-text" contenteditable="true">Estimer la gravité du dommage.</div>
+        </div>
+        <div class="exo-container">
+          <div class="risk-gravite-wrap">
+            <div class="risk-gravite-choices">
+              <label class="rg-choice"><input type="radio" name="grav_${uid}" value="1"> Faible (1)</label>
+              <label class="rg-choice"><input type="radio" name="grav_${uid}" value="2"> Moyen (2)</label>
+              <label class="rg-choice"><input type="radio" name="grav_${uid}" value="3"> Grave (3)</label>
+              <label class="rg-choice"><input type="radio" name="grav_${uid}" value="4"> Très grave (4)</label>
+            </div>
+
+            <div class="risk-gravite-justif">
+              <div class="rg-sub">Justification</div>
+              <textarea class="reponse-eleve rg-textarea" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    updateGrid();
+    div.querySelectorAll('textarea').forEach(tx => { 
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); 
+    });
+}
+function addEvaluationRisque(btn){
+    const container = document.querySelector('.questions-container');
+    const uid = Date.now();
+    const div = document.createElement('div');
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="2" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C3" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="2.2"></select></div>
+            <div class="editable-text" contenteditable="true">Évaluer le risque à partir de la matrice.</div>
+        </div>
+        <div class="exo-container">
+          <div class="risk-matrix-wrap">
+            <div class="risk-matrix-legend" aria-label="Légende">
+              <span class="legend-item"><span class="legend-swatch nonprioritaire"></span> Réduction du risque non prioritaire</span>
+              <span class="legend-item"><span class="legend-swatch prioritaire"></span> Réduction du risque prioritaire</span>
+            </div>
+            <div class="risk-axis-label top">Niveau de gravité du dommage</div>
+            <div class="risk-grid">
+              <div class="risk-y-label">Niveau de probabilité d'occurrence du dommage</div>
+              <table class="risk-matrix" role="grid" aria-label="Matrice d'évaluation du risque">
+                <thead>
+                  <tr>
+                    <th class="corner"></th>
+                    <th>Faible (1)</th>
+                    <th>Moyen (2)</th>
+                    <th>Grave (3)</th>
+                    <th>Très grave (4)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>Très improbable (1)</th>
+                    <td class="risk-cell zone-nonprioritaire" data-pos="P1-G1"></td>
+                    <td class="risk-cell zone-nonprioritaire" data-pos="P1-G2"></td>
+                    <td class="risk-cell zone-nonprioritaire" data-pos="P1-G3"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P1-G4"></td>
+                  </tr>
+                  <tr>
+                    <th>Improbable (2)</th>
+                    <td class="risk-cell zone-nonprioritaire" data-pos="P2-G1"></td>
+                    <td class="risk-cell zone-nonprioritaire" data-pos="P2-G2"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P2-G3"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P2-G4"></td>
+                  </tr>
+                  <tr>
+                    <th>Probable (3)</th>
+                    <td class="risk-cell zone-nonprioritaire" data-pos="P3-G1"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P3-G2"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P3-G3"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P3-G4"></td>
+                  </tr>
+                  <tr>
+                    <th>Très probable (4)</th>
+                    <td class="risk-cell zone-prioritaire" data-pos="P4-G1"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P4-G2"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P4-G3"></td>
+                    <td class="risk-cell zone-prioritaire" data-pos="P4-G4"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <input type="hidden" class="risk-cell-value" value="" />
+            <div class="risk-decision">
+              <div class="risk-decision-title">Décision (cocher une seule réponse)</div>
+              <label class="risk-decision-choice">
+                <input type="radio" name="decision_${uid}" value="non_prioritaire">
+                Réduction du risque non prioritaire
+              </label>
+              <label class="risk-decision-choice">
+                <input type="radio" name="decision_${uid}" value="prioritaire">
+                Réduction du risque prioritaire
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    initRiskMatrix(div);
+    updateGrid();
+}
+window.addBlockToDoc = function(html, btn) {
+    // Sécurisation : on cherche par ID ou par classe
+    const container = document.getElementById("questions-container") || document.querySelector(".questions-container");
+    
+    if (!container) {
+        alert("Erreur technique : Conteneur des questions introuvable.");
+        return;
+    }
+
+    const temp = document.createElement("div");
+    temp.innerHTML = (typeof html === "string") ? html.trim() : "";
+    const el = temp.firstElementChild;
+    
+    if (el) {
+        container.appendChild(el);
+        // Réinitialiser les selecteurs et calculs si les fonctions existent
+        if (typeof initSelects === 'function') initSelects(el);
+        if (typeof updateGrid === 'function') updateGrid();
+        
+        // Auto-resize des textarea
+        el.querySelectorAll('textarea').forEach(tx => {
+            tx.addEventListener('input', function(){ 
+                this.style.height='auto'; 
+                this.style.height=this.scrollHeight+'px'; 
+            });
+        });
+        
+        el.scrollIntoView({behavior:"smooth", block:"center"});
+    }
+};
+function addMesuresPrevention(btn){
+    const container = document.querySelector('.questions-container');
+    const div = document.createElement('div');
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="2" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C3" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="2.3"></select></div>
+            <div class="editable-text" contenteditable="true">Proposer des mesures de prévention.</div>
+        </div>
+        <div class="exo-container">
+          <div class="prevention-wrap">
+            <div class="prevention-objectif">Objectif : aller du plus efficace au moins efficace.</div>
+            <table class="prevention-table" role="table" aria-label="Mesures de prévention">
+              <thead>
+                <tr>
+                  <th class="col-type">Type de mesure</th>
+                  <th>Mesures proposées</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="col-type">Supprimer ou réduire le risque</td>
+                  <td><textarea class="reponse-eleve prev-cell" rows="2"></textarea></td>
+                </tr>
+                <tr>
+                  <td class="col-type">Protection collective</td>
+                  <td><textarea class="reponse-eleve prev-cell" rows="2"></textarea></td>
+                </tr>
+                <tr>
+                  <td class="col-type">Protection individuelle</td>
+                  <td><textarea class="reponse-eleve prev-cell" rows="2"></textarea></td>
+                </tr>
+                <tr>
+                  <td class="col-type">Information / formation</td>
+                  <td><textarea class="reponse-eleve prev-cell" rows="2"></textarea></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    updateGrid();
+    div.querySelectorAll('textarea').forEach(tx => { 
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); 
+    });
+}
+function addSchemaSituationTravail(btn){
+    const container = document.querySelector('.questions-container');
+    const uid = Date.now();
+    const div = document.createElement('div');
+    div.className = 'question-block';
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="4" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="2.4"></select></div>
+            <div class="editable-text" contenteditable="true">Compléter le schéma de compréhension de la situation de travail 2.</div>
+        </div>
+        <div class="exo-container">
+          <div class="st2-page">
+            <div class="st2-header">
+              <div class="st2-title">Schéma de compréhension de la situation de travail 2</div>
+              <div class="st2-sub">Situation : <span class="st2-dots">…</span></div>
+            </div>
+            <div class="st2-grid">
+              <div class="st2-box op">
+                <div class="st2-boxtitle">Déterminants opérateur</div>
+                <div class="st2-hint">(Ex : âge, état de santé, compétences, fatigue…)</div>
+                <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+              </div>
+              <div class="st2-box ent">
+                <div class="st2-boxtitle">Déterminants entreprise</div>
+                <div class="st2-hint">(Ex : organisation, moyens matériels, planning…)</div>
+                <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+              </div>
+              <div class="st2-box pres">
+                <div class="st2-boxtitle">Travail prescrit</div>
+                <div class="st2-hint">(Ce qui est demandé par l'entreprise : consignes, objectifs…)</div>
+                <textarea class="reponse-eleve st2-ta" rows="3"></textarea>
+              </div>
+              <div class="st2-box reel">
+                <div class="st2-boxtitle">Travail réel</div>
+                <div class="st2-split">
+                  <div class="st2-splitcol">
+                    <div class="st2-splittitle">Tâche réelle</div>
+                    <div class="st2-hint">(Ce qui est réellement fait)</div>
+                    <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+                  </div>
+                  <div class="st2-splitcol">
+                    <div class="st2-splittitle">Activité réelle</div>
+                    <div class="st2-hint">(Comment c'est fait : gestes, postures, rythme…)</div>
+                    <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+                  </div>
+                </div>
+              </div>
+              <div class="st2-box effop">
+                <div class="st2-boxtitle">Effets sur l'opérateur</div>
+                <div class="st2-hint">(Effet 1 : … / Effet 2 : … / Effet 3 : …)</div>
+                <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+              </div>
+              <div class="st2-box effent">
+                <div class="st2-boxtitle">Effets sur l'entreprise</div>
+                <div class="st2-hint">(Ex : retard, baisse de qualité, accident, arrêt de travail…)</div>
+                <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    updateGrid();
+    div.querySelectorAll('textarea').forEach(tx => { 
+        tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); 
+    });
+}
+// Template du schéma ST2 (option 1 : numérotation manuelle)
+function getSchemaST2Template(uid){
+  return `
+    <div class="st2-page">
+      <div class="st2-header">
+        <div class="st2-title">Schéma de compréhension de la situation de travail 2</div>
+        <div class="st2-sub">Situation : <span class="st2-dots">…</span></div>
+      </div>
+
+      <div class="st2-grid">
+        <div class="st2-box op">
+          <div class="st2-boxtitle">Déterminants opérateur</div>
+          <div class="st2-hint">(Ex : âge, état de santé, compétences, fatigue…)</div>
+          <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+        </div>
+
+        <div class="st2-box ent">
+          <div class="st2-boxtitle">Déterminants entreprise</div>
+          <div class="st2-hint">(Ex : organisation, moyens matériels, planning…)</div>
+          <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+        </div>
+
+        <div class="st2-box pres">
+          <div class="st2-boxtitle">Travail prescrit</div>
+          <div class="st2-hint">(Ce qui est demandé par l’entreprise : consignes, objectifs…)</div>
+          <textarea class="reponse-eleve st2-ta" rows="3"></textarea>
+        </div>
+
+        <div class="st2-box reel">
+          <div class="st2-boxtitle">Travail réel</div>
+
+          <div class="st2-split">
+            <div class="st2-splitcol">
+              <div class="st2-splittitle">Tâche réelle</div>
+              <div class="st2-hint">(Ce qui est réellement fait)</div>
+              <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+            </div>
+            <div class="st2-splitcol">
+              <div class="st2-splittitle">Activité réelle</div>
+              <div class="st2-hint">(Comment c’est fait : gestes, postures, rythme…)</div>
+              <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="st2-box effop">
+          <div class="st2-boxtitle">Effets sur l’opérateur</div>
+          <div class="st2-hint">(Effet 1 : … / Effet 2 : … / Effet 3 : …)</div>
+          <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+        </div>
+
+        <div class="st2-box effent">
+          <div class="st2-boxtitle">Effets sur l’entreprise</div>
+          <div class="st2-hint">(Ex : retard, baisse de qualité, accident, arrêt de travail…)</div>
+          <textarea class="reponse-eleve st2-ta" rows="4"></textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+
+    function removeQuestion(btn) {
+        if(confirm("Supprimer cette question ?")) { btn.closest('.question-block').remove(); updateGrid(); }
+    }
+    
+    function updateGrid() {
+        const gridBody = document.getElementById('grid-body');
+        const totalBaremeEl = document.getElementById('total-bareme');
+        const totalObtenuEl = document.getElementById('total-obtenu');
+        const blocks = document.querySelectorAll('.question-block');
+        let data = {}; let totalBareme = 0; let totalObtenu = 0;
+
+        blocks.forEach(block => {
+            const compSel = block.querySelector('.comp-selector');
+            const comp = compSel ? compSel.value : 'C?';
+            const numSel = block.querySelector('.num-selector');
+            const num = numSel ? numSel.value : '?';
+            const maxPtsInput = block.querySelector('.point-input');
+            const maxPts = maxPtsInput ? (parseNumber(maxPtsInput.value) || 0) : 0;
+            const scoreInput = block.querySelector('.student-score');
+            let score = scoreInput ? parseNumber(scoreInput.value) : NaN;
+            
+            const printSpan = block.querySelector('.print-only-grade');
+            if(printSpan) {
+                printSpan.textContent = `${maxPts} (${comp})`;
+            }
+
+            if(isNaN(score)) score = 0; 
+            if(scoreInput && score > maxPts) scoreInput.style.backgroundColor = '#fadbd8';
+            else if(scoreInput) scoreInput.style.backgroundColor = '#eaf2f8';
+
+            if (!data[comp]) data[comp] = { questions: [], maxPoints: 0, obtainedPoints: 0 };
+            data[comp].questions.push(num);
+            data[comp].maxPoints += maxPts;
+            data[comp].obtainedPoints += score;
+            totalBareme += maxPts;
+            totalObtenu += score;
+        });
+
+        const c6MaxInput = document.getElementById('c6-max');
+        const c6ScoreInput = document.getElementById('c6-score');
+        const c6Display = document.getElementById('c6-display-score');
+        
+        let valC6_max = c6MaxInput ? parseNumber(c6MaxInput.value) : 2;
+        let valC6_score = c6ScoreInput ? parseNumber(c6ScoreInput.value) : 0;
+        
+        const c6PrintSpan = document.getElementById('c6-print-span');
+        if(c6PrintSpan) { c6PrintSpan.textContent = `${valC6_max}`; }
+        
+        if(isNaN(valC6_score)) valC6_score = 0;
+        if(valC6_score > valC6_max) { c6ScoreInput.style.backgroundColor = '#fadbd8'; } else { c6ScoreInput.style.backgroundColor = 'white'; }
+        if(c6Display) { c6Display.innerHTML = `<span class="no-print">${valC6_score}</span><span class="print-only">......</span>`; }
+
+        totalBareme += valC6_max;
+        totalObtenu += valC6_score;
+
+        gridBody.innerHTML = '';
+        Object.keys(data).sort().forEach(key => {
+            const item = data[key];
+            const row = document.createElement('tr');
+            row.innerHTML = '<td><b>'+key+'</b></td><td>'+item.questions.join(', ')+'</td><td></td><td></td><td></td><td></td><td>'+item.maxPoints+'</td><td style="color:#2980b9; font-weight:bold;"><span class="no-print">'+item.obtainedPoints+'</span><span class="print-only">......</span></td>';
+            gridBody.appendChild(row);
+        });
+
+        if(totalBaremeEl) totalBaremeEl.textContent = '/ ' + totalBareme;
+        if(totalObtenuEl) { totalObtenuEl.innerHTML = `<span class="no-print">${totalObtenu}</span><span class="print-only">......</span>`; }
+    }
+
+    function generateStudentVersion() {
+        const nomFichier = prompt("Nom du fichier pour l'élève ?", "Devoir_PSE_A_Completer");
+        if(!nomFichier) return;
+
+        const docClone = document.documentElement.cloneNode(true);
+        docClone.querySelector('body').classList.remove('teacher-mode');
+        docClone.querySelector('body').classList.add('student-view');
+        
+        const toRemove = docClone.querySelectorAll('#teacher-panel, #rich-format-toolbar, .teacher-controls, .block-controls, #img-uploader, .btn-save-master, .btn-generate, .btn-del-q, .btn-move, #main-tools, #exit-preview-btn');
+        toRemove.forEach(el => el.remove());
+
+        docClone.querySelectorAll('input').forEach(input => input.setAttribute('value', input.value));
+        docClone.querySelectorAll('textarea').forEach(txt => { txt.textContent = txt.value; });
+        docClone.querySelectorAll('[contenteditable="true"]').forEach(el => { el.setAttribute('contenteditable','false'); });
+
+        docClone.querySelectorAll('select').forEach(select => {
+            select.querySelectorAll('option').forEach(opt => {
+                if(opt.value === select.value) opt.setAttribute('selected', 'selected');
+            });
+        });
+
+        docClone.querySelectorAll('.question-block, .numbered-header').forEach(block => {
+            const numSel = block.querySelector('.num-selector');
+            if(numSel) {
+                const span = document.createElement('span'); span.className = 'frozen-num'; span.textContent = numSel.value; 
+                numSel.parentElement.insertBefore(span, numSel);
+            }
+            const ptsWrapper = block.querySelector('.points-wrapper');
+            if(ptsWrapper) {
+                const maxInp = ptsWrapper.querySelector('.point-input');
+                const compSel = ptsWrapper.querySelector('.comp-selector');
+                if(maxInp && compSel) {
+                    const txt = "/ " + maxInp.value + " pts (" + compSel.value + ")";
+                    const span = document.createElement('span');
+                    span.className = 'frozen-score';
+                    span.textContent = txt;
+                    ptsWrapper.appendChild(span);
+                }
+            }
+        });
+
+        docClone.querySelectorAll('textarea.reponse-eleve').forEach(el => { el.innerHTML = ''; el.value = ''; });
+        docClone.querySelectorAll('input.trou-eleve').forEach(el => { el.setAttribute('value', ''); el.value = ''; });
+        docClone.querySelectorAll('select.trou-eleve').forEach(el => { el.querySelectorAll('option').forEach(o => o.removeAttribute('selected')); el.value = ""; });
+        docClone.querySelectorAll('.question-block input[type="checkbox"], .question-block input[type="radio"]').forEach(el => { el.removeAttribute('checked'); el.checked = false; });
+        docClone.querySelectorAll('.matching-select').forEach(el => { el.querySelectorAll('option').forEach(o => o.removeAttribute('selected')); el.value = ""; });
+        docClone.querySelectorAll('.student-score').forEach(el => { el.setAttribute('value', ''); el.value = ''; });
+        
+        // Nettoie les matrices de risque (sélection cellule)
+        docClone.querySelectorAll('.risk-cell').forEach(c => { c.textContent=''; c.classList.remove('selected'); });
+        docClone.querySelectorAll('.risk-cell-value').forEach(h => { h.value=''; h.setAttribute('value',''); });
+        
+        const c6s = docClone.querySelector('#c6-score'); if(c6s) c6s.setAttribute('value', '0');
+        const c6d = docClone.querySelector('#c6-display-score'); if(c6d) c6d.textContent = '0';
+
+        // Generation auto de la vue papier reliage
+        docClone.querySelectorAll('.question-block').forEach(q => {
+            if(q.querySelector('.matching-result') && !q.querySelector('.matching-print-view')) {
+                const rows = q.querySelectorAll('.matching-table tr');
+                if(rows.length > 0) {
+                    const printDiv = document.createElement('div');
+                    printDiv.className = 'matching-print-view print-matching-container';
+                    rows.forEach(tr => {
+                        const leftText = tr.querySelector('.matching-left').textContent;
+                        const rowDiv = document.createElement('div');
+                        rowDiv.className = 'print-match-row';
+                        rowDiv.innerHTML = '<div class="print-match-col">'+leftText+'</div><div class="print-match-dot">•</div><div style="flex:1;"></div><div class="print-match-dot">•</div><div class="print-match-col" style="text-align:right; color:#999; border:1px solid #ccc;"></div>';
+                        printDiv.appendChild(rowDiv);
+                    });
+                    q.querySelector('.exo-container').appendChild(printDiv);
+                }
+            }
+        });
+
+        docClone.querySelectorAll('script').forEach(s => s.remove());
+
+        const eleveScript = `
+        <style>
+            body.dyslexia-mode { font-family: 'Comic Sans MS', 'Verdana', sans-serif !important; line-height: 1.8 !important; letter-spacing: 0.05em; }
+            body.contrast-mode { background-color: #222 !important; color: #f1c40f !important; }
+            body.contrast-mode .container, body.contrast-mode .question-block, body.contrast-mode .doc-block, body.contrast-mode textarea, body.contrast-mode input { background-color: #333 !important; color: #fff !important; border-color: #555 !important; }
+            body.contrast-mode .numbered-header { background-color: #444 !important; color: #f1c40f !important; }
+            body.contrast-mode h1, body.contrast-mode .section-title-center { color: #f39c12 !important; }
+            
+            #access-panel { position: fixed; top: 50%; right: 0; transform: translateY(-50%); background: #2980b9; padding: 10px; border-radius: 10px 0 0 10px; z-index: 10000; box-shadow: -2px 0 10px rgba(0,0,0,0.2); transition: 0.3s; display: flex; flex-direction: column; gap: 10px; width: 40px; overflow: hidden; }
+            #access-panel:hover { width: 180px; }
+            .access-btn { background: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; white-space: nowrap; font-weight: bold; font-size: 0.9em; color: #2980b9; width: 100%; text-align: left; }
+            .access-btn:hover { background: #ecf0f1; }
+            .access-icon { font-size: 1.2em; min-width: 25px; text-align: center; }
+            .range-container { width: 100%; padding: 5px; background: rgba(255,255,255,0.2); border-radius: 5px; margin-top: 5px; }
+            .range-label { color: white; font-size: 0.8em; margin-bottom: 3px; display: block; text-align: center; }
+            input[type=range] { width: 100%; cursor: pointer; }
+            
+            #student-actions { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+            .btn-float { padding: 15px 25px; border: none; border-radius: 50px; font-size: 1.1em; font-weight: bold; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; gap: 10px; justify-content: center; }
+            .btn-float:hover { transform: scale(1.05); }
+            .btn-save-eleve { background-color: #27ae60; }
+            .btn-print-eleve { background-color: #e67e22; }
+            
+            #toggle-correction-btn { background: #c0392b; display: none; }
+
+            /* --- STYLES MODE ÉLÈVE FIGÉ (PROPRE) --- */
+            body.student-view .prof-comment-zone, body.student-view .answer-key-zone { display: none; }
+            body.student-view .student-score, body.student-view .point-input, body.student-view .comp-selector, body.student-view .num-selector, body.student-view .teacher-part, body.student-view .print-only-grade { display: none !important; }
+            
+            body.student-view .frozen-num { display: inline-block !important; font-size: 1.5em; font-weight: bold; color: #e74c3c; margin-right: 10px; min-width: 40px; text-align:center; border-right: 2px solid #ddd; padding-right:10px; }
+            body.student-view .frozen-score { display: inline !important; font-weight: bold; color: #555; margin-left:5px; }
+            
+            .frozen-num, .frozen-score { display: none; }
+
+            /* --- STYLE IMPRESSION ELEVE --- */
+            @media print {
+                body { background-color: white; color: black; font-family: 'Times New Roman', serif; font-size: 12pt; padding: 0; margin: 0; line-height: 1.2; }
+                .container { box-shadow: none; padding: 0; border: none; width: 100%; max-width: 100%; }
+                #student-actions, #access-panel, .prof-comment-zone, .answer-key-zone { display: none !important; }
+                h1 { font-size: 16pt; margin: 10px 0; border-bottom: 2px solid black; padding-bottom: 5px; color: black; }
+                
+                .activity-header { background: #eee; color: black; border: 1px solid #999; padding: 5px; font-size: 12pt; margin-top: 15px; }
+                .doc-title { background: none; border-left: 3px solid black; color: black; padding-left: 5px; margin-bottom: 5px; }
+                
+                .student-info { background: none; border: none; padding: 0; margin-bottom: 10px; border-bottom: 1px solid #000; gap: 20px; }
+                .student-info .input-group input { border: none; border-radius: 0; padding: 0; width: 150px; text-align: left; }
+                
+                .question-block, .doc-block, .text-block, .section-block { border: none !important; margin-bottom: 15px; box-shadow: none; page-break-inside: avoid; }
+                .section-block { border-top: 1px solid black !important; border-bottom: 1px solid black !important; }
+                .q-meta-bar { background: transparent !important; border: none !important; justify-content: flex-end; padding: 0; margin-bottom: -20px; font-size: 0.9em; position:relative; top: 5px; z-index: 5;}
+                
+                .q-content-row { padding: 5px 0; display: flex; justify-content: flex-start; gap: 10px; align-items: baseline; }
+                .num-selector-wrapper { margin-right: 0; } 
+                .editable-text { border: none; padding: 0; }
+
+                textarea.reponse-eleve {
+                    font-family: 'Times New Roman', serif;
+                    background-color: transparent;
+                    border: 1px solid #ccc;
+                    background-image: repeating-linear-gradient(transparent, transparent 29px, #ccc 30px);
+                    line-height: 30px; padding: 0 5px; min-height: 90px; resize: none; margin-top: 10px;
+                }
+                .q-response-zone { padding: 0; }
+                
+                .points-wrapper { border: none !important; background: transparent !important; padding: 0 !important; }
+                .points-wrapper input, .points-wrapper select, .teacher-part, .frozen-score { display: none !important; }
+                .print-only-grade, .frozen-num { display: inline-block !important; font-style: italic; font-size: 0.9em; color: black; }
+                .frozen-num { border-color: black !important; color: black !important; }
+
+                /* Grille Propre */
+                .no-print { display: none !important; }
+                .print-only { display: inline-block !important; }
+                .row-c6 input { display: none !important; }
+
+                /* Reliage Papier */
+                .matching-table { display: none; }
+                .matching-print-view { display: block !important; width: 100%; margin-top: 10px; }
+                .print-match-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+                .print-match-col { width: 40%; border: none; padding: 5px; min-height: 25px; }
+                .print-match-dot { font-size: 20px; font-weight: bold; }
+
+                input::placeholder, textarea::placeholder { color: transparent; }
+                table.eval-table, table.exo-table { width: 100%; border: 1px solid black; font-size: 10pt; }
+                table.eval-table th, table.eval-table td, table.exo-table td { border: 1px solid black; padding: 2px; }
+                .eval-header { background: #ddd; color: black; border: 1px solid black; }
+                .general-comment-box { display: none; }
+                .img-container img { max-width: 80%; box-shadow: none; border: 1px solid black; }
+            }
+        </style>
+
+        <script>
+            document.addEventListener('paste', function (e) {
+        if (e.target && e.target.isContentEditable) {
+            e.preventDefault();
+            const cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+            const text = cd ? cd.getData('text/plain') : '';
+            document.execCommand('insertText', false, text);
+        }
+    });
+
+
+            // --- Détection de collage dans les zones de réponse ---
+            let __pasteCount = 0;
+
+            function ensurePasteToast() {
+                let t = document.getElementById('paste-toast');
+                if (!t) {
+                    t = document.createElement('div');
+                    t.id = 'paste-toast';
+                    document.body.appendChild(t);
+                }
+                return t;
+            }
+
+            function showPasteToast(msg) {
+                const t = ensurePasteToast();
+                t.textContent = msg;
+                t.style.display = 'block';
+                clearTimeout(window.__pasteToastTimer);
+                window.__pasteToastTimer = setTimeout(() => { t.style.display = 'none'; }, 2800);
+            }
+
+            function initPasteDetection() {
+                const selector = 'textarea.reponse-eleve, textarea.ish-cat-causes, input.trou-eleve';
+                document.querySelectorAll(selector).forEach(el => {
+                    if (el.dataset.pasteWatch === '1') return;
+                    el.dataset.pasteWatch = '1';
+                    el.addEventListener('paste', () => {
+                        if (!document.body.classList.contains('student-view')) return;
+                        __pasteCount++;
+                        showPasteToast('Collage détecté dans une zone de réponse (' + __pasteCount + ')');
+                        el.classList.add('paste-warning');
+                        setTimeout(() => el.classList.remove('paste-warning'), 900);
+                    });
+                });
+            }
+
+            window.addEventListener('DOMContentLoaded', () => {
+                initPasteDetection();
+                const mo = new MutationObserver(() => initPasteDetection());
+                mo.observe(document.body, { childList: true, subtree: true });
+            });
+
+
+
+            function parseNumber(val) {
+                const s = (val ?? '').toString().trim().replace(',', '.');
+                const n = parseFloat(s);
+                return Number.isFinite(n) ? n : 0;
+            }
+
+            function toggleDyslexia() { document.body.classList.toggle('dyslexia-mode'); }
+            function toggleContrast() { document.body.classList.toggle('contrast-mode'); }
+            function initSlider() { const slider = document.getElementById('font-slider'); if(slider) { slider.addEventListener('input', function() { document.body.style.fontSize = this.value + 'px'; }); } }
+            function stopSpeech() { window.speechSynthesis.cancel(); }
+            function speakSelection() { const text = window.getSelection().toString(); if(!text) return alert("Sélectionnez du texte d'abord."); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'fr-FR'; window.speechSynthesis.speak(utterance); }
+
+            function downloadWork() {
+                const nom = document.getElementById('nom-eleve').value || '';
+                const prenom = document.getElementById('prenom-eleve').value || '';
+                const identite = (nom + '_' + prenom).replace(/ /g, '_') || 'Eleve';
+                document.querySelectorAll('input, textarea').forEach(el => { if(el.type !== 'checkbox' && el.type !== 'radio') el.setAttribute('value', el.value); if(el.tagName === 'TEXTAREA') el.innerHTML = el.value; });
+                document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => { if(el.checked) el.setAttribute('checked', 'checked'); else el.removeAttribute('checked'); });
+                const html = "<!DOCTYPE html>\\n" + document.documentElement.outerHTML;
+                const blob = new Blob([html], {type: "text/html"});
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "Copie_" + identite + ".html";
+                a.click();
+            }
+
+            function toggleCorrection() {
+                document.body.classList.toggle('student-view');
+                if(!document.body.classList.contains('student-view')) { updateGrid(); }
+            }
+
+            function updateGrid() {
+                const gridBody = document.getElementById('grid-body');
+                const totalBaremeEl = document.getElementById('total-bareme');
+                const totalObtenuEl = document.getElementById('total-obtenu');
+                const blocks = document.querySelectorAll('.question-block');
+                let data = {}; let totalBareme = 0; let totalObtenu = 0;
+
+                blocks.forEach(block => {
+                    const compSel = block.querySelector('.comp-selector');
+                    const comp = compSel ? compSel.value : 'C?';
+                    const numSel = block.querySelector('.num-selector');
+                    const num = numSel ? numSel.value : '?';
+                    const maxPtsInput = block.querySelector('.point-input');
+                    const maxPts = maxPtsInput ? (parseNumber(maxPtsInput.value) || 0) : 0;
+                    const scoreInput = block.querySelector('.student-score');
+                    let score = scoreInput ? parseNumber(scoreInput.value) : NaN;
+                    
+                    if(isNaN(score)) score = 0; 
+                    if(scoreInput && score > maxPts) scoreInput.style.backgroundColor = '#fadbd8';
+                    else if(scoreInput) scoreInput.style.backgroundColor = '#eaf2f8';
+
+                    if (!data[comp]) data[comp] = { questions: [], maxPoints: 0, obtainedPoints: 0 };
+                    data[comp].questions.push(num);
+                    data[comp].maxPoints += maxPts;
+                    data[comp].obtainedPoints += score;
+                    totalBareme += maxPts;
+                    totalObtenu += score;
+                });
+
+                const c6MaxInput = document.getElementById('c6-max');
+                const c6ScoreInput = document.getElementById('c6-score');
+                const c6Display = document.getElementById('c6-display-score');
+                let valC6_max = c6MaxInput ? parseNumber(c6MaxInput.value) : 2;
+                let valC6_score = c6ScoreInput ? parseNumber(c6ScoreInput.value) : 0;
+                
+                if(isNaN(valC6_score)) valC6_score = 0;
+                if(c6Display) c6Display.textContent = valC6_score;
+
+                totalBareme += valC6_max;
+                totalObtenu += valC6_score;
+
+                gridBody.innerHTML = '';
+                Object.keys(data).sort().forEach(key => {
+                    const item = data[key];
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td><b>'+key+'</b></td><td>'+item.questions.join(', ')+'</td><td></td><td></td><td></td><td></td><td>/ '+item.maxPoints+'</td><td style="color:#2980b9; font-weight:bold;">'+item.obtainedPoints+'</td>';
+                    gridBody.appendChild(row);
+                });
+
+                if(totalBaremeEl) totalBaremeEl.textContent = '/ ' + totalBareme;
+                if(totalObtenuEl) totalObtenuEl.textContent = totalObtenu;
+            }
+
+            document.querySelectorAll('textarea').forEach(tx => { tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=(this.scrollHeight)+'px'; }); });
+            document.addEventListener('input', function(e) { if(e.target.classList.contains('student-score') || e.target.id === 'c6-score') { updateGrid(); } });
+            window.addEventListener('DOMContentLoaded', () => { 
+                initSlider(); 
+                const sName = document.getElementById('nom-eleve').value;
+                if(sName && sName.trim() !== "") {
+                   document.getElementById('toggle-correction-btn').style.display = 'flex';
+                }
+            });
+        <\/script>
+        `;
+        
+        const accessPanel = document.createElement('div');
+        accessPanel.id = "access-panel";
+        accessPanel.innerHTML = `<div style="text-align:center; color:white; font-size:20px; padding-bottom:5px;">⚙️</div><button class="access-btn" onclick="toggleDyslexia()"><span class="access-icon">Abc</span> Police DYS</button><div class="range-container"><span class="range-label">Taille du Texte</span><input type="range" id="font-slider" min="14" max="40" step="1" value="16"></div><button class="access-btn" onclick="toggleContrast()"><span class="access-icon">🌗</span> Contraste</button><button class="access-btn" onclick="speakSelection()"><span class="access-icon">🔊</span> Lire sélection</button><button class="access-btn" onclick="stopSpeech()" style="color:#e74c3c;"><span class="access-icon">🔇</span> STOP Audio</button>`;
+        docClone.querySelector('body').appendChild(accessPanel);
+        
+        const actionsContainer = document.createElement('div');
+        actionsContainer.id = "student-actions";
+        actionsContainer.innerHTML = `<button class="btn-float btn-save-eleve" onclick="downloadWork()">💾 Enregistrer (Clé USB)</button><button class="btn-float btn-print-eleve" onclick="window.print()">🖨️ Imprimer / PDF</button><button class="btn-float" id="toggle-correction-btn" onclick="toggleCorrection()">✏️ Afficher/Masquer Correction</button>`;
+        docClone.querySelector('body').appendChild(actionsContainer);
+
+        docClone.querySelector('body').insertAdjacentHTML('beforeend', eleveScript);
+        
+        const evalSection = docClone.querySelector('.eval-section'); if(evalSection) evalSection.id = "eval-section-container";
+        const htmlContent = "<!DOCTYPE html>\\n" + docClone.outerHTML;
+        downloadFile(htmlContent, nomFichier + ".html");
+    }
+
+    function addClozeTest(btn) {
+    const container = document.querySelector('.questions-container');
+    const div = document.createElement('div'); 
+    div.className = 'question-block';
+    const uid = Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    div.innerHTML = `
+        ${getControlButtonsHTML()}
+        <div class="q-meta-bar">
+            <div class="points-wrapper">
+                <input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()">
+                <span class="teacher-part">/</span> 
+                <input type="number" class="point-input" value="2" step="0.5" oninput="updateGrid()"> 
+                <span class="teacher-part">pts (</span>
+                <select class="comp-selector" data-selected="C1" onchange="updateGrid()"></select>
+                <span class="teacher-part">)</span>
+                <span class="print-only-grade"></span>
+            </div>
+        </div>
+        <div class="q-content-row">
+            <div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.3"></select></div>
+            <div class="editable-text" contenteditable="true" style="color:#d35400; font-weight:bold;">Complétez le texte.</div>
+        </div>
+        <div class="exo-container">
+            <div class="cloze-editor teacher-controls">
+                <textarea class="cloze-source" style="width:100%; height:90px; margin-bottom:10px;" placeholder="Collez votre texte ici..."></textarea>
+                <div style="margin-bottom: 10px; background: #eee; padding: 5px; border-radius: 4px;">
+                    <strong>Type :</strong>
+                    <label style="margin-right:15px; cursor:pointer;">
+                        <input type="radio" name="cloze-mode-${uid}" value="input" checked> Écriture
+                    </label>
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="cloze-mode-${uid}" value="select"> Liste Déroulante
+                    </label>
+                    <span style="margin-left:15px;">
+                        <label style="cursor:pointer;">
+                            <input type="checkbox" class="cloze-show-bank"> Afficher une banque de mots
+                        </label>
+                    </span>
+                </div>
+                <button class="btn-add-q" onclick="generateWordButtons(this)">1. Découper</button>
+                <button class="btn-add-q" style="background:#7f8c8d; display:none;" onclick="resetCloze(this)">↩︎ Revenir au texte</button>
+                <div class="word-area" style="margin:10px 0;"></div>
+                <button class="btn-save-master" style="display:none;" onclick="finalizeCloze(this)">2. Valider</button>
+            </div>
+
+            <div class="cloze-result" style="line-height: 2em; font-size: 1.1em;"></div>
+
+            <div class="teacher-controls" style="margin-top:10px; text-align:center;">
+                <button class="btn-add-q" style="background:#e67e22;" onclick="editCloze(this)">✏️ Modifier l'exercice</button>
+            </div>
+        </div>
+        
+        <div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>
+
+    `;
+    container.appendChild(div);
+    initSelects(div);
+    updateGrid();
+}
+
+    function generateWordButtons(btn) {
+        const editor = btn.parentElement;
+        const text = editor.querySelector('textarea.cloze-source').value;
+        const area = editor.querySelector('.word-area');
+        const validateBtn = editor.querySelector('.btn-save-master');
+        const resetBtn = editor.querySelector('button[onclick="resetCloze(this)"]');
+
+        if(!text.trim()) return alert("Écrivez du texte d'abord !");
+        const words = text.split(/\s+/);
+        area.innerHTML = "";
+        words.forEach((word) => {
+            const span = document.createElement('span');
+            span.className = 'word-btn';
+            span.textContent = word;
+            span.onclick = function() { this.classList.toggle('hole-active'); };
+            area.appendChild(span);
+            area.appendChild(document.createTextNode(" "));
+        });
+
+        validateBtn.style.display = "inline-block";
+        if(resetBtn) resetBtn.style.display = "inline-block";
+        btn.style.display = "none";
+        editor.querySelector('textarea.cloze-source').style.display = "none";
+    }
+
+
+function resetCloze(btn) {
+    const editor = btn.closest('.cloze-editor');
+    const qBlock = btn.closest('.question-block');
+    if(!editor || !qBlock) return;
+
+    const source = editor.querySelector('textarea.cloze-source');
+    const cutBtn = editor.querySelector('button[onclick="generateWordButtons(this)"]');
+    const validateBtn = editor.querySelector('.btn-save-master');
+    const wordArea = editor.querySelector('.word-area');
+    const resultArea = qBlock.querySelector('.cloze-result');
+
+    if(source) source.style.display = "block";
+    if(cutBtn) cutBtn.style.display = "inline-block";
+    if(validateBtn) validateBtn.style.display = "none";
+    btn.style.display = "none";
+    if(wordArea) wordArea.innerHTML = "";
+    if(resultArea) resultArea.innerHTML = "";
+}
+
+function editCloze(btn) {
+    const qBlock = btn.closest('.question-block');
+    if(!qBlock) return;
+    const editor = qBlock.querySelector('.cloze-editor');
+    if(editor) editor.style.display = "block";
+
+    const validateBtn = qBlock.querySelector('.cloze-editor .btn-save-master');
+    const resetBtn = qBlock.querySelector('.cloze-editor button[onclick="resetCloze(this)"]');
+    if(validateBtn) validateBtn.style.display = "inline-block";
+    if(resetBtn) resetBtn.style.display = "inline-block";
+}
+
+function splitPunct(token) {
+    const m = token.match(/^([«"“”'()\[\]{}]*)(.*?)([\.,;:!?…»"“”')\[\]{}]*)$/);
+    if(!m) return { pre:"", core: token, post:"" };
+    return { pre: m[1] || "", core: m[2] || token, post: m[3] || "" };
+}
+
+    function finalizeCloze(btn) {
+    const editor = btn.parentElement;
+    const qBlock = editor.closest('.question-block');
+    const resultArea = qBlock.querySelector('.cloze-result');
+    const wordSpans = editor.querySelectorAll('.word-btn');
+    const mode = editor.querySelector('input[type="radio"]:checked').value;
+    const showBank = !!(editor.querySelector('.cloze-show-bank') && editor.querySelector('.cloze-show-bank').checked);
+
+    const hiddenWordsRaw = [];
+    wordSpans.forEach(span => {
+        if (span.classList.contains('hole-active')) {
+            const parts = splitPunct(span.textContent);
+            let w = (parts.core || '').trim();
+            // Nettoyage léger (garde lettres/chiffres/apostrophes/tirets)
+            w = w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()«»"“”'’!?…]/g, "");
+            if (w) hiddenWordsRaw.push(w);
+        }
+    });
+
+    const hiddenWords = [...new Set(hiddenWordsRaw)];
+    const shuffledHidden = hiddenWords.slice().sort(() => Math.random() - 0.5);
+
+    resultArea.innerHTML = "";
+
+    if (showBank && shuffledHidden.length) {
+        const bank = document.createElement('div');
+        bank.className = 'word-bank';
+        const title = document.createElement('div');
+        title.className = 'word-bank-title';
+        title.textContent = 'Banque de mots :';
+        bank.appendChild(title);
+
+        shuffledHidden.forEach(w => {
+            const chip = document.createElement('span');
+            chip.className = 'word-chip';
+            chip.textContent = w;
+            bank.appendChild(chip);
+        });
+        resultArea.appendChild(bank);
+    }
+
+    const textWrap = document.createElement('div');
+    textWrap.className = 'cloze-text';
+    resultArea.appendChild(textWrap);
+
+    wordSpans.forEach(span => {
+        const parts = splitPunct(span.textContent);
+        if (span.classList.contains('hole-active')) {
+            if (parts.pre) textWrap.appendChild(document.createTextNode(parts.pre));
+
+            if (mode === 'input') {
+                const input = document.createElement('input');
+                input.type = "text";
+                input.className = "trou-eleve save-me";
+                textWrap.appendChild(input);
+            } else {
+                const select = document.createElement('select');
+                select.className = "trou-eleve save-me";
+                const defaultOpt = document.createElement('option');
+                defaultOpt.text = "???";
+                defaultOpt.value = "";
+                select.appendChild(defaultOpt);
+                shuffledHidden.forEach(w => {
+                    const opt = document.createElement('option');
+                    opt.value = w;
+                    opt.text = w;
+                    select.appendChild(opt);
+                });
+                textWrap.appendChild(select);
+            }
+
+            if (parts.post) textWrap.appendChild(document.createTextNode(parts.post));
+        } else {
+            textWrap.appendChild(document.createTextNode(span.textContent));
+        }
+        textWrap.appendChild(document.createTextNode(" "));
+    });
+
+    editor.style.display = "none";
+}
+
+    function addMatchingExercise(btn) {
+        const container = document.querySelector('.questions-container');
+        const div = document.createElement('div'); div.className = 'question-block';
+        div.innerHTML = `${getControlButtonsHTML()}<div class="q-meta-bar"><div class="points-wrapper"><input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()"><span class="teacher-part">/</span> <input type="number" class="point-input" value="2" step="0.5" oninput="updateGrid()"> <span class="teacher-part">pts (</span><select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select><span class="teacher-part">)</span><span class="print-only-grade"></span></div></div><div class="q-content-row"><div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.4"></select></div><div class="editable-text" contenteditable="true" style="color:#3498db; font-weight:bold;">Reliez chaque élément.</div></div><div class="exo-container"><div class="matching-editor teacher-controls"><div class="pairs-container"></div><button class="btn-add-q" onclick="addPairRow(this)" style="margin-top:10px;">+ Paire</button><button class="btn-save-master" onclick="finalizeMatching(this)">Valider</button></div><div class="matching-result"></div></div><div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>`;
+        container.appendChild(div); initSelects(div); addPairRow(div.querySelector('.btn-add-q')); updateGrid();
+    }
+    function addPairRow(btn) {
+        const container = btn.parentElement.querySelector('.pairs-container');
+        const row = document.createElement('div');
+        row.className = 'pair-row';
+        row.innerHTML = `<textarea class="pair-input pair-left" rows="2" placeholder="Gauche"></textarea>
+            <span style="font-weight:bold;">⮕</span>
+            <textarea class="pair-input pair-right" rows="2" placeholder="Droite"></textarea>
+            <button class="btn-del-q" style="position:static;" onclick="this.parentElement.remove()">✖</button>`;
+        container.appendChild(row);
+        row.querySelectorAll('textarea').forEach(tx => {
+            tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
+            tx.dispatchEvent(new Event('input'));
+        });
+    }
+    function finalizeMatching(btn) {
+        const editor = btn.parentElement; const resultArea = editor.closest('.question-block').querySelector('.matching-result'); const rows = editor.querySelectorAll('.pair-row'); let pairs = []; let rightOptions = [];
+        rows.forEach(row => { const left = row.querySelector('.pair-left').value.trim(); const right = row.querySelector('.pair-right').value.trim(); if(left && right) { pairs.push({left, right}); rightOptions.push(right); } });
+        if(pairs.length < 2) return alert("Au moins 2 paires !");
+        rightOptions.sort(() => Math.random() - 0.5);
+        
+        let tableHTML = '<table class="matching-table">';
+        pairs.forEach((pair, index) => { let optionsHTML = '<option value="">???</option>'; rightOptions.forEach(opt => { optionsHTML += `<option value="${escapeHTML(opt)}">${escapeHTML(opt)}</option>`; }); tableHTML += `<tr><td class="matching-left">${escapeHTML(pair.left).replace(/\n/g,"<br>")}</td><td class="matching-center">➡</td><td class="matching-right"><select class="matching-select save-me-match" data-id="match_${index}">${optionsHTML}</select></td></tr>`; });
+        tableHTML += '</table>';
+        
+        let printHTML = '<div class="matching-print-view print-matching-container">';
+        pairs.forEach(pair => {
+             printHTML += `<div class="print-match-row"><div class="print-match-col" style="text-align:right;">${escapeHTML(pair.left).replace(/\n/g,"<br>")}</div><div class="print-match-dot">•</div><div style="flex:1;"></div><div class="print-match-dot">•</div><div class="print-match-col"></div></div>`;
+        });
+        printHTML += '</div>';
+
+        resultArea.innerHTML = tableHTML + printHTML; 
+        editor.style.display = 'none';
+    }
+
+
+    function addQCM(btn) {
+        const container = document.querySelector('.questions-container'); const div = document.createElement('div'); div.className = 'question-block';
+        div.innerHTML = `${getControlButtonsHTML()}<div class="q-meta-bar"><div class="points-wrapper"><input type="number" class="student-score" value="" min="0" step="0.5" placeholder="Note" oninput="updateGrid()"><span class="teacher-part">/</span> <input type="number" class="point-input" value="1" step="0.5" oninput="updateGrid()"> <span class="teacher-part">pts (</span><select class="comp-selector" data-selected="C2" onchange="updateGrid()"></select><span class="teacher-part">)</span><span class="print-only-grade"></span></div></div><div class="q-content-row"><div class="num-selector-wrapper"><select class="num-selector" data-defaut="1.5"></select></div><div class="editable-text" contenteditable="true" style="color:#8e44ad; font-weight:bold;">Cochez la bonne réponse.</div></div><div class="exo-container"><div class="qcm-editor teacher-controls"><div style="margin-bottom:10px; background:#f5eef8; padding:5px; border-radius:4px;"><strong>Type :</strong> <label style="margin-right:15px; cursor:pointer;"><input type="radio" name="qcm-type-${Date.now()}" value="radio" checked> Unique</label><label style="cursor:pointer;"><input type="radio" name="qcm-type-${Date.now()}" value="checkbox"> Multiple</label></div><div class="qcm-options-container"></div><button class="btn-add-q" onclick="addQCMOption(this)" style="margin-top:10px; background:#8e44ad;">+ Option</button><button class="btn-save-master" onclick="finalizeQCM(this)">Valider</button></div><div class="qcm-result"></div></div><div class="answer-key-zone">
+            <div class="answer-key-header">
+                <span class="answer-key-label">🟠 Éléments de réponse (Corrigé — réservé au prof)</span>
+            </div>
+            <textarea class="answer-key-area" placeholder="✅ Ce qui est attendu (mots-clés, étapes, exemples, critères)..."></textarea>
+        </div>
+
+        <div class="prof-comment-zone">
+            <div class="prof-eval-header">
+                <span class="prof-eval-label">🔵 Évaluation par compétence (réservé au prof)</span>
+                <label class="prof-eval-level">Niveau :
+                    <select class="mastery-selector">
+                        <option value="">—</option>
+                        <option value="NT">Non traité</option>
+                        <option value="I">Insuffisant</option>
+                        <option value="A">Acceptable</option>
+                        <option value="M">Maîtrisé</option>
+                    </select>
+                </label>
+            </div>
+            <textarea class="prof-comment-area" placeholder="📝 Appréciation / Correction (Réservé au prof)"></textarea>
+        </div>`;
+        container.appendChild(div); initSelects(div); addQCMOption(div.querySelector('.btn-add-q')); addQCMOption(div.querySelector('.btn-add-q')); updateGrid();
+    }
+    function addQCMOption(btn) { const container = btn.parentElement.querySelector('.qcm-options-container'); const row = document.createElement('div'); row.className = 'qcm-row'; row.innerHTML = `<input type="text" class="qcm-option-input" placeholder="Réponse possible..."><button class="btn-del-q" style="position:static;" onclick="this.parentElement.remove()">✖</button>`; container.appendChild(row); }
+    function finalizeQCM(btn) { const editor = btn.parentElement; const resultArea = editor.closest('.question-block').querySelector('.qcm-result'); const type = editor.querySelector('input[type="radio"]:checked').value; const inputs = editor.querySelectorAll('.qcm-option-input'); let options = []; inputs.forEach(inp => { if(inp.value.trim()) options.push(inp.value.trim()); }); if(options.length < 1) return alert("Au moins une option !"); const groupName = 'qcm_group_' + Date.now() + Math.random().toString(36).substr(2, 5); let html = ''; options.forEach(opt => { html += `<label class="qcm-student-option"><input type="${type}" name="${groupName}" class="save-me-qcm"><span>${opt}</span></label>`; }); resultArea.innerHTML = html; editor.style.display = 'none'; }
+
+
+// --- CONTROLE QUALITE (PROF) ---
+function closeQC() {
+    const modal = document.getElementById('qc-modal');
+    if(modal) modal.style.display = 'none';
+}
+function openQC() {
+    const modal = document.getElementById('qc-modal');
+    if(modal) modal.style.display = 'block';
+}
+function qcGoTo(id) {
+    const el = document.getElementById(id);
+    if(!el) return;
+    closeQC();
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.boxShadow = '0 0 0 4px rgba(243,156,18,0.45)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 1500);
+}
+function normalizeText(t){
+    return (t || '').toString().replace(/\s+/g,' ').trim();
+}
+function extractFirstWord(sentence){
+    const s = normalizeText(sentence).toLowerCase();
+    const w = s.split(' ')[0] || '';
+    return w.replace(/^[^a-zàâäéèêëîïôöùûüçœ-]+/i,'').replace(/[^a-zàâäéèêëîïôöùûüçœ-]+$/i,'');
+}
+function parseNumToTuple(v){
+    const s = (v||'').toString().trim();
+    if(!s) return null;
+    const parts = s.split('.');
+    const a = parseInt(parts[0],10);
+    const b = parts.length>1 ? parseInt(parts[1],10) : 0;
+    return [Number.isFinite(a)?a:9999, Number.isFinite(b)?b:9999];
+}
+function tupleLess(t1,t2){ return (t1[0] < t2[0]) || (t1[0]===t2[0] && t1[1] < t2[1]); }
+function runQualityCheck() {
+    const warnings = [];
+    const blocks = Array.from(document.querySelectorAll('.question-block'));
+    const seenNums = new Map();
+    const verbes = new Set([
+        'indiquer','citer','donner','nommer','relever','repérer','identifier','définir','associer','classer',
+        'expliquer','justifier','décrire','analyser','comparer','argumenter','proposer','calculer','compléter',
+        'cocher','entourer','relier','surligner','écrire','rédiger','résumer','lister','choisir'
+    ]);
+
+    let prevTuple = null;
+
+    blocks.forEach((block, i) => {
+        if(!block.id) block.id = 'qc-' + (i+1);
+
+        const numSel = block.querySelector('.num-selector');
+        const compSel = block.querySelector('.comp-selector');
+        const ptsInp = block.querySelector('.point-input');
+        const questionEl = block.querySelector('.editable-text');
+
+        const num = numSel ? numSel.value : '';
+        const comp = compSel ? compSel.value : '';
+        const pts = ptsInp ? parseNumber(ptsInp.value) : 0;
+        const qtxt = questionEl ? normalizeText(questionEl.textContent) : '';
+
+        // Numéro manquant / doublon
+        if(!num){
+            warnings.push({id:block.id, msg:`Question ${i+1} : numéro manquant.`});
+        } else {
+            const c = (seenNums.get(num) || 0) + 1;
+            seenNums.set(num, c);
+            if(c > 1){
+                warnings.push({id:block.id, msg:`Numérotation en doublon : ${num}.`});
+            }
+            const tup = parseNumToTuple(num);
+            if(prevTuple && tup && tupleLess(tup, prevTuple)){
+                warnings.push({id:block.id, msg:`Ordre de numérotation incohérent : ${num} arrive après un numéro plus grand.`});
+            }
+            if(tup) prevTuple = tup;
+        }
+
+        // Compétence manquante
+        if(!/^C[1-6]$/.test(comp)){
+            warnings.push({id:block.id, msg:`${num || ('Question '+(i+1))} : compétence non renseignée.`});
+        }
+
+        // Barème manquant ou zéro
+        if(!ptsInp || pts <= 0){
+            warnings.push({id:block.id, msg:`${num || ('Question '+(i+1))} : barème manquant ou à 0.`});
+        }
+
+        // Consigne : verbe d’action (heuristique)
+        const first = extractFirstWord(qtxt);
+        const looksInf = (first.endsWith('er') || first.endsWith('ir') || first.endsWith('re'));
+        if(qtxt && !(verbes.has(first) || looksInf)){
+            warnings.push({id:block.id, msg:`${num || ('Question '+(i+1))} : la consigne ne commence pas clairement par un verbe d’action (début : ${first || '…'}).`});
+        }
+
+        // Deux demandes dans une même question (heuristique)
+        const lower = qtxt.toLowerCase();
+        if(lower.includes(' et ') || lower.includes(' puis ') || lower.includes(' ainsi que ')){
+            // on cherche plusieurs verbes connus
+            let count = 0;
+            verbes.forEach(v => { if(lower.includes(v+' ')) count++; });
+            if(count >= 2){
+                warnings.push({id:block.id, msg:`${num || ('Question '+(i+1))} : possible double consigne (séparer en 2 sous-questions si besoin).`});
+            }
+        }
+    });
+
+    // Total barème (optionnel)
+    const c6max = parseNumber((document.getElementById('c6-max')||{}).value);
+    const total = blocks.reduce((s,b)=> s + parseNumber((b.querySelector('.point-input')||{}).value), 0) + (Number.isFinite(c6max)?c6max:0);
+    if(Number.isFinite(total) && total !== 0 && Math.abs(total - 20) > 0.001){
+        warnings.unshift({id:'eval-section-container', msg:`Total barème = ${total} (info).`});
+        const evalSec = document.getElementById('eval-section-container');
+        if(evalSec && !evalSec.id) evalSec.id = 'eval-section-container';
+    }
+
+    const list = document.getElementById('qc-list');
+    const summary = document.getElementById('qc-summary');
+    if(list) list.innerHTML = '';
+    if(summary){
+        summary.innerHTML = warnings.length
+            ? `<b>${warnings.length}</b> point(s) à vérifier.`
+            : `<b>Aucune alerte détectée</b> (contrôle rapide).`;
+    }
+
+    if(list && warnings.length){
+        warnings.forEach(w => {
+            const li = document.createElement('li');
+            li.style.margin = '6px 0';
+            li.innerHTML = `<a href="#" onclick="qcGoTo('${w.id}'); return false;" style="color:#2980b9; text-decoration:none; font-weight:600;">${w.msg}</a>`;
+            list.appendChild(li);
+        });
+    }
+    openQC();
+}
+
+
+
+// --- GARDE-FOU : le bouton Vérifier ne doit jamais disparaître ---
+function ensureQCButton(){
+  try{
+    const tools=document.getElementById('main-tools');
+    if(!tools) return;
+    if(document.getElementById('btn-qc')) return;
+    const btn=document.createElement('button');
+    btn.id='btn-qc';
+    btn.className='btn-tool btn-qc';
+    btn.textContent='✅ Vérifier';
+    btn.onclick=runQualityCheck;
+    // insertion avant le bouton PDF si possible
+    const pdf=tools.querySelector('.btn-print');
+    if(pdf) tools.insertBefore(btn, pdf);
+    else tools.appendChild(btn);
+  }catch(e){}
+}
+window.addEventListener('DOMContentLoaded', ensureQCButton);
+
+    initSelects(document);
+    document.querySelectorAll('textarea').forEach(tx => { tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }); });
+    updateGrid();
+
+
+
+// =======================
+// BANQUE DE COMMENTAIRES
+// =======================
+// Banque externalisée : voir banque_external.js (window.COMMENT_BANK_V1)
+
+
+const COMMENT_CUSTOM_KEY = 'pse_comment_bank_custom_v1';
+let cbLastFocusedTextarea = null;
+let cbPreferedScope = 'GENERAL';
+
+function cbLoadCustom() {
+  try { return JSON.parse(localStorage.getItem(COMMENT_CUSTOM_KEY) || '{}') || {}; }
+  catch(e){ return {}; }
+}
+function cbSaveCustom(obj) {
+  localStorage.setItem(COMMENT_CUSTOM_KEY, JSON.stringify(obj || {}));
+}
+
+function setCbTarget(textarea, label) {
+  cbLastFocusedTextarea = textarea;
+  const tgt = document.getElementById('cb-target');
+  if(tgt) tgt.textContent = label || 'sélectionnée';
+}
+
+function openCommentBank(presetScope) {
+  if (!window.COMMENT_BANK_V1) { alert('banque.js manquant : ajoute-le à côté du HTML'); return; }
+
+  const modal = document.getElementById('comment-bank-modal');
+  if(!modal) return;
+  if(presetScope) cbPreferedScope = presetScope;
+  const scopeSel = document.getElementById('cb-scope');
+  if(scopeSel) scopeSel.value = cbPreferedScope;
+  const levelSel = document.getElementById('cb-level');
+  if(levelSel && !levelSel.value) levelSel.value = 'A';
+  modal.classList.add('open');
+  cbRenderList();
+  const search = document.getElementById('cb-search');
+  if(search) { search.value = ''; search.focus(); }
+}
+
+function closeCommentBank() {
+  const modal = document.getElementById('comment-bank-modal');
+  if(!modal) return;
+  modal.classList.remove('open');
+}
+
+function cbGetTemplates(scope, level) {
+  const base = (COMMENT_BANK_V1[scope] && COMMENT_BANK_V1[scope][level]) ? COMMENT_BANK_V1[scope][level] : [];
+  const customAll = cbLoadCustom();
+  const custom = (customAll[scope] && customAll[scope][level]) ? customAll[scope][level] : [];
+  return [...custom, ...base];
+}
+
+function cbRenderList() {
+  const list = document.getElementById('cb-list');
+  if(!list) return;
+  const scope = (document.getElementById('cb-scope')||{}).value || 'GENERAL';
+  const level = (document.getElementById('cb-level')||{}).value || 'A';
+  const q = ((document.getElementById('cb-search')||{}).value || '').trim().toLowerCase();
+  const templates = cbGetTemplates(scope, level);
+  const filtered = q ? templates.filter(t => t.toLowerCase().includes(q)) : templates;
+  list.innerHTML = '';
+
+  if(filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'cb-item';
+    empty.style.opacity = '0.8';
+    empty.textContent = 'Aucun commentaire trouvé.';
+    list.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach((txt, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cb-item';
+    btn.textContent = txt;
+    btn.onclick = () => cbInsert(txt);
+    const meta = document.createElement('small');
+    meta.textContent = scope + ' • ' + level;
+    btn.appendChild(meta);
+    list.appendChild(btn);
+  });
+}
+
+function cbInsert(text) {
+  if(!cbLastFocusedTextarea) {
+    alert('Clique d’abord dans une zone de commentaire.');
+    return;
+  }
+  const append = !!(document.getElementById('cb-append')||{}).checked;
+  const ta = cbLastFocusedTextarea;
+  const cur = ta.value || '';
+  const next = append ? (cur.trim() ? (cur.trimEnd() + "\n" + text) : text) : text;
+  ta.value = next;
+  ta.dispatchEvent(new Event('input', {bubbles:true}));
+  ta.focus();
+}
+
+function addCustomComment() {
+  const ta = document.getElementById('cb-custom');
+  const txt = (ta ? ta.value : '').trim();
+  if(!txt) return;
+  const scope = (document.getElementById('cb-scope')||{}).value || 'GENERAL';
+  const level = (document.getElementById('cb-level')||{}).value || 'A';
+  const all = cbLoadCustom();
+  all[scope] = all[scope] || {NT:[], I:[], A:[], M:[]};
+  all[scope][level] = all[scope][level] || [];
+  all[scope][level].unshift(txt);
+  cbSaveCustom(all);
+  ta.value = '';
+  cbRenderList();
+}
+
+function insertCustomNow() {
+  const ta = document.getElementById('cb-custom');
+  const txt = (ta ? ta.value : '').trim();
+  if(!txt) return;
+  cbInsert(txt);
+}
+
+function resetCustomComments() {
+  if(!confirm('Effacer tous tes commentaires ajoutés ?')) return;
+  localStorage.removeItem(COMMENT_CUSTOM_KEY);
+  cbRenderList();
+}
+
+function cbAttachMiniTools() {
+  if(!document.body.classList.contains('teacher-mode')) return;
+
+  // Général
+  const gen = document.querySelector('.general-comment-box .general-comment-area');
+  if(gen && !gen.parentElement.querySelector('.comment-mini-tools')) {
+    const tools = document.createElement('div');
+    tools.className = 'comment-mini-tools teacher-controls';
+    tools.innerHTML = `
+      <button type="button" class="open" title="Ouvrir la banque" >💬 Banque</button>
+      <button type="button" class="hint" title="Cible" >🎯 Général</button>
+      <button type="button" class="clear" title="Effacer" >🧹 Effacer</button>
+    `;
+    gen.parentElement.insertBefore(tools, gen);
+
+    tools.querySelector('.open').onclick = () => { setCbTarget(gen, 'Appréciation générale'); cbPreferedScope = 'GENERAL'; openCommentBank('GENERAL'); };
+    tools.querySelector('.clear').onclick = () => { gen.value=''; gen.dispatchEvent(new Event('input',{bubbles:true})); gen.focus(); };
+    tools.querySelector('.hint').onclick = () => { setCbTarget(gen, 'Appréciation générale'); };
+
+    gen.addEventListener('focus', () => setCbTarget(gen, 'Appréciation générale'));
+  }
+
+  // Par question
+  document.querySelectorAll('.prof-comment-zone').forEach(zone => {
+    const txt = zone.querySelector('textarea.prof-comment-area');
+    if(!txt) return;
+    if(zone.querySelector('.comment-mini-tools')) return;
+
+    const tools = document.createElement('div');
+    tools.className = 'comment-mini-tools teacher-controls';
+    tools.innerHTML = `
+      <button type="button" class="open" title="Ouvrir la banque" >💬 Banque</button>
+      <button type="button" class="hint" title="Cible" >🎯 Cible</button>
+      <button type="button" class="clear" title="Effacer" >🧹 Effacer</button>
+    `;
+    zone.insertBefore(tools, txt);
+
+    function getScopeFromBlock() {
+      const block = zone.closest('.question-block');
+      const compSel = block ? block.querySelector('.comp-selector') : null;
+      return compSel ? compSel.value : 'GENERAL';
+    }
+
+    tools.querySelector('.open').onclick = () => {
+      const scope = getScopeFromBlock();
+      cbPreferedScope = scope || 'GENERAL';
+      const num = (zone.closest('.question-block')?.querySelector('.num-selector')?.value) || (zone.closest('.question-block')?.querySelector('.frozen-num')?.textContent) || '';
+      setCbTarget(txt, 'Commentaire question ' + (num ? num : '')); 
+      openCommentBank(cbPreferedScope);
+    };
+    tools.querySelector('.clear').onclick = () => { txt.value=''; txt.dispatchEvent(new Event('input',{bubbles:true})); txt.focus(); };
+    tools.querySelector('.hint').onclick = () => {
+      const num = (zone.closest('.question-block')?.querySelector('.num-selector')?.value) || '';
+      setCbTarget(txt, 'Commentaire question ' + (num ? num : '')); 
+    };
+
+    txt.addEventListener('focus', () => {
+      const num = (zone.closest('.question-block')?.querySelector('.num-selector')?.value) || '';
+      setCbTarget(txt, 'Commentaire question ' + (num ? num : '')); 
+      cbPreferedScope = getScopeFromBlock();
+    });
+  });
+}
+
+// Raccourci clavier : Échap ferme
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeCommentBank();
+});
+
+// Clic hors de la boite ferme
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('comment-bank-modal');
+  if(!modal || !modal.classList.contains('open')) return;
+  const box = document.getElementById('comment-bank-box');
+  if(box && !box.contains(e.target) && e.target === modal) closeCommentBank();
+});
+
+// Mises à jour UI
+['cb-scope','cb-level','cb-search','cb-append'].forEach(id => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  const ev = (id==='cb-search') ? 'input' : 'change';
+  el.addEventListener(ev, cbRenderList);
+});
+
+// Initialisation
+window.addEventListener('DOMContentLoaded', () => {
+  cbAttachMiniTools();
+});
+
+// Ré-attache après ajout de blocs
+const _cbOldAddQuestion = window.addQuestion;
+if(typeof _cbOldAddQuestion === 'function') {
+  window.addQuestion = function(btn){
+    const r = _cbOldAddQuestion(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+const _cbOldAddTableQuestion = window.addTableQuestion;
+if(typeof _cbOldAddTableQuestion === 'function') {
+  window.addTableQuestion = function(btn){
+    const r = _cbOldAddTableQuestion(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+const _cbOldAddITAMaMi = window.addITAMaMi;
+if(typeof _cbOldAddITAMaMi === 'function') {
+  window.addITAMaMi = function(btn){
+    const r = _cbOldAddITAMaMi(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+const _cbOldAddIshikawa = window.addIshikawa;
+if(typeof _cbOldAddIshikawa === 'function') {
+  window.addIshikawa = function(btn){
+    const r = _cbOldAddIshikawa(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+const _cbOldAddClozeTest = window.addClozeTest;
+if(typeof _cbOldAddClozeTest === 'function') {
+  window.addClozeTest = function(btn){
+    const r = _cbOldAddClozeTest(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+const _cbOldAddMatchingExercise = window.addMatchingExercise;
+if(typeof _cbOldAddMatchingExercise === 'function') {
+  window.addMatchingExercise = function(btn){
+    const r = _cbOldAddMatchingExercise(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+const _cbOldAddQCM = window.addQCM;
+if(typeof _cbOldAddQCM === 'function') {
+  window.addQCM = function(btn){
+    const r = _cbOldAddQCM(btn);
+    setTimeout(cbAttachMiniTools, 0);
+    return r;
+  }
+}
+
+</script>
+
+<script>
+// Force-close modals on load (prevents a hidden overlay from blocking clicks)
+document.addEventListener('DOMContentLoaded', () => {
+    // Assigne des niveaux aux cases C6 (pour la synchro)
+    try {
+      const c6 = document.querySelector('tr.row-c6');
+      if(c6){
+        const map = ['NT','I','A','M'];
+        c6.querySelectorAll('input[type=checkbox]').forEach((cb,i)=>{ cb.dataset.level = map[i] || ''; cb.classList.add('mchk'); });
+      }
+    } catch(e) {}
+
+  const qc = document.getElementById('qc-modal');
+  if (qc) qc.style.display = 'none';
+  const cb = document.getElementById('comment-bank-modal');
+  if (cb) { cb.classList.remove('open'); cb.style.display = 'none'; }
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      try{ if(typeof closeQC==='function') closeQC(); }catch(_){}
+      try{ if(typeof closeCommentBank==='function') closeCommentBank(); }catch(_){}
+    }
+  });
+});
+
+/* ====== PSE MODES + ENVOI (Eleve/Prof/Builder) ====== */
+(function() {
+    // --- MOTEUR FIREBASE (Ajouté) ---
+    const firebaseConfig = {
+    apiKey: "AIzaSyAwdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.firebasestorage.app",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+};
+    
+    // Initialisation sécurisée
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = (typeof firebase !== 'undefined') ? firebase.firestore() : null;
+
+    // Fonction d'envoi des copies
+    window.PSE_submitDevoir = async function(payload) {
+        if (!db) return { ok: false, error: "Firebase non connecté" };
+        try {
+            console.log("Envoi en cours...", payload);
+            await db.collection("copies").add(payload);
+            return { ok: true };
+        } catch (e) {
+            console.error("Erreur Envoi:", e);
+            return { ok: false, error: e.message };
+        }
+    };
+    
+
+    function getMode() {
+        const params = new URLSearchParams(window.location.search);
+        const m = (params.get('mode') || '').toLowerCase();
+        if (m === 'prof' || m === 'builder' || m === 'eleve') return m;
+        // par défaut : en ligne -> élève ; en fichier local -> builder
+        return (location.protocol === 'file:') ? 'builder' : 'eleve';
+    }
+
+    function setMode(mode) {
+        document.body.classList.remove('builder-view','student-view','prof-view','teacher-mode');
+        if (mode === 'builder') {
+            document.body.classList.add('builder-view','teacher-mode');
+        } else if (mode === 'prof') {
+            document.body.classList.add('prof-view','teacher-mode');
+        } else {
+            document.body.classList.add('student-view');
+        }
+    }
+
+    function meta() {
+        const title = (document.querySelector('.main-title-editable')?.innerText || document.title || '').trim();
+        const version = (document.querySelector('#version-badge')?.innerText || '').trim();
+        return {
+            devoirId: title || "Devoir",
+            version: version || "",
+            thematique: title || ""
+        };
+    }
+
+    function collectReponses() {
+        const out = {};
+        const ignore = (el) => !!el.closest('.answer-key-zone') || !!el.closest('#comment-bank-modal') || !!el.closest('#main-tools') || !!el.closest('#rich-format-toolbar');
+        const els = Array.from(document.querySelectorAll('input, textarea, select'));
+        let idx = 0;
+        for (const el of els) {
+            if (ignore(el)) continue;
+
+            // Skip hidden/disabled fields that are not student answers
+            if (el.type === 'file') continue;
+
+            const key = el.getAttribute('data-qid') || el.id || el.name || ('field_' + (++idx));
+            let val = null;
+
+            if (el.tagName === 'SELECT') {
+                val = el.value;
+            } else if (el.tagName === 'TEXTAREA') {
+                val = el.value;
+            } else if (el.type === 'checkbox') {
+                val = !!el.checked;
+            } else if (el.type === 'radio') {
+                if (el.checked) val = el.value;
+                else continue; // only store checked radios
+            } else {
+                val = el.value;
+            }
+
+            out[key] = val;
+        }
+        return out;
+    }
+
+    async function ensureAuth() {
+        const btn = document.getElementById('btn-send');
+        if (!btn) return;
+
+        btn.disabled = true;
+
+        if (typeof window.demanderCode === 'function') {
+            const m = meta();
+            const res = await window.demanderCode(m.devoirId);
+            // auto-fill classe if field exists
+            const classeInput = document.querySelector('.student-info .input-group:nth-child(3) input');
+            if (classeInput && res?.classe) {
+                classeInput.value = res.classe;
+                classeInput.setAttribute('readonly','readonly');
+            }
+            // hide nom/prenom fields for RGPD
+            const g1 = document.querySelector('.student-info .input-group:nth-child(1)');
+            const g2 = document.querySelector('.student-info .input-group:nth-child(2)');
+            if (g1) g1.style.display = 'none';
+            if (g2) g2.style.display = 'none';
+            btn.disabled = false;
+        } else {
+            // pas d'annuaire.js : on bloque l'envoi
+            btn.disabled = true;
+        }
+    }
+
+    window.submitStudentDevoir = async function() {
+        const btn = document.getElementById('btn-send');
+        if (btn) btn.disabled = true;
+
+        const m = meta();
+        const payload = {
+            devoirId: m.devoirId,
+            module: m.thematique,
+            version: m.version,
+            url: window.location.href,
+            reponses: collectReponses(),
+            // snapshot HTML figé (utile cockpit)
+            copieHTML: document.documentElement.outerHTML
+        };
+
+        if (typeof window.PSE_submitDevoir === 'function') {
+            const res = await window.PSE_submitDevoir(payload);
+            if (res?.ok) {
+                // verrouillage copie
+                Array.from(document.querySelectorAll('input, textarea, select, button')).forEach(el => {
+                    if (el.id === 'btn-send') return;
+                    if (el.closest('#comment-bank-modal')) return;
+                    if (el.closest('#main-tools')) return;
+                    el.setAttribute('disabled','disabled');
+                });
+                const toast = document.getElementById('paste-toast');
+                if (toast) {
+                    toast.textContent = "✅ Devoir envoyé.";
+                    toast.style.display = "block";
+                } else {
+                    alert("✅ Devoir envoyé.");
+                }
+            } else {
+                alert("❌ Envoi impossible : " + (res?.error || "erreur"));
+                if (btn) btn.disabled = false;
+            }
+        } else {
+            alert("❌ annuaire.js absent : impossible d'envoyer.");
+            if (btn) btn.disabled = false;
+        }
+    };
+
+    // Mode init
+    const mode = getMode();
+    setMode(mode);
+
+    // Init per mode
+    window.addEventListener('DOMContentLoaded', () => {
+        if (mode === 'eleve') ensureAuth();
+        if (mode === 'prof') {
+            // afficher les zones corrigé
+            document.querySelectorAll('.answer-key-zone, .prof-comment-zone').forEach(el => el.style.display = '');
+        }
+    });
+})();
+
+</script>
+</body>
+</html>
