@@ -326,6 +326,8 @@ body.prof-view .btn-save-master, body.prof-view .btn-generate, body.prof-view .b
 body.student-view #rich-format-toolbar { display:none !important; }
 body.student-view .teacher-controls { display:none !important; }
 body.student-view .answer-key-zone, body.student-view .prof-comment-zone, body.student-view #comment-bank-modal { display:none !important; }
+body.student-view #eval-section-container { display:none !important; }
+body.student-view #eval-section-container { display:none !important; }
 
 
 /* =========================
@@ -422,6 +424,7 @@ body.student-view .answer-key-zone, body.student-view .prof-comment-zone, body.s
     <button id="btn-cbank" class="btn-tool btn-bank prof-only" onclick="openCommentBank()">💬 Banque</button>
     <button class="btn-tool btn-print prof-only" onclick="window.print()">🖨️ PDF</button>
 
+    <button id="btn-print-student" class="btn-tool student-only" onclick="window.print()" style="background-color:#7f8c8d;">🖨️ Imprimer / PDF</button>
     <button id="btn-send" class="btn-tool btn-send student-only" onclick="submitStudentDevoir()" disabled>📤 Envoyer</button>
 </div>
 
@@ -430,7 +433,7 @@ body.student-view .answer-key-zone, body.student-view .prof-comment-zone, body.s
 <input type="file" id="img-uploader" accept="image/*" style="display: none;">
 
 <div class="container">
-    <div id="version-badge" style="position:absolute; top:12px; right:16px; background:#111827; color:#fff; padding:6px 10px; border-radius:999px; font-size:12px; opacity:0.85;">v20</div>
+    <div id="version-badge" class="no-print builder-only" style="position:absolute; top:12px; right:16px; background:#111827; color:#fff; padding:6px 10px; border-radius:999px; font-size:12px; opacity:0.85;">v20</div>
 
     <h1><span class="main-title-editable" contenteditable="true">Titre du Module</span></h1>
 
@@ -591,7 +594,7 @@ function saveMasterHTML() {
     const nomFichier = prompt("Nom du fichier du modèle ?", "Modele_PSE");
     if (!nomFichier) return;
     snapshotFormValues(document);
-    const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+   const html = "<!DOCTYPE html>" + document.documentElement.outerHTML;
     downloadFile(html, nomFichier + ".html");
 }
 
@@ -1745,7 +1748,7 @@ function getSchemaST2Template(uid){
             @media print {
                 body { background-color: white; color: black; font-family: 'Times New Roman', serif; font-size: 12pt; padding: 0; margin: 0; line-height: 1.2; }
                 .container { box-shadow: none; padding: 0; border: none; width: 100%; max-width: 100%; }
-                #student-actions, #access-panel, .prof-comment-zone, .answer-key-zone { display: none !important; }
+                #student-actions, #access-panel, .prof-comment-zone, .answer-key-zone, #eval-section-container { display: none !important; }
                 h1 { font-size: 16pt; margin: 10px 0; border-bottom: 2px solid black; padding-bottom: 5px; color: black; }
                 
                 .activity-header { background: #eee; color: black; border: 1px solid #999; padding: 5px; font-size: 12pt; margin-top: 15px; }
@@ -1795,6 +1798,42 @@ function getSchemaST2Template(uid){
                 .general-comment-box { display: none; }
                 .img-container img { max-width: 80%; box-shadow: none; border: 1px solid black; }
             }
+            /* --- RÈGLES D'IMPRESSION OPTIMISÉES --- */
+@media print {
+    /* Cacher les éléments non imprimables */
+    #btn-send, #btn-print-student, #btn-print, #main-tools, .prof-tools, 
+    .tools-panel, #paste-toast, .block-controls, .teacher-controls,
+    #rich-format-toolbar, #comment-bank-modal, #access-panel {
+        display: none !important;
+    }
+    /* Force l'affichage de la grille d'évaluation sur papier */
+    #eval-section-container {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+    
+    /* Optimisation d'impression */
+    body {
+        background-color: white !important;
+        color: black !important;
+    }
+    
+    /* Éviter de couper les éléments */
+    .question-block, .doc-block, .text-block, table {
+        page-break-inside: avoid;
+    }
+    
+    /* Forcer fond blanc pour économie d'encre */
+    * {
+        background-color: white !important;
+        box-shadow: none !important;
+    }
+    
+    /* Garder les bordures importantes */
+    .question-block, .eval-section, table {
+        border: 1px solid black !important;
+    }
+}
         </style>
 
         <script>
@@ -2911,7 +2950,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Init per mode
     window.addEventListener('DOMContentLoaded', () => {
-        if (mode === 'eleve') ensureAuth();
+        if (mode === 'eleve') {
+    ensureAuth();
+    // Masquer la grille d'évaluation pour l'élève
+    const grilleEval = document.getElementById('eval-section-container');
+    if (grilleEval) {
+        grilleEval.style.display = 'none';
+    }
+}
         if (mode === 'prof') {
             // afficher les zones corrigé
             document.querySelectorAll('.answer-key-zone, .prof-comment-zone').forEach(el => el.style.display = '');
