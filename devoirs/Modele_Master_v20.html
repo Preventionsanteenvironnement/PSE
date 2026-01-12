@@ -1654,27 +1654,36 @@ function getSchemaST2Template(uid){
         if(!nomFichier) return;
 
         const docClone = document.documentElement.cloneNode(true);
-        docClone.querySelector('body').classList.remove('teacher-mode');
+        docClone.querySelector('body').classList.remove('teacher-mode', 'builder-view', 'prof-view');
         docClone.querySelector('body').classList.add('student-view');
         
-        const toRemove = docClone.querySelectorAll('#teacher-panel, #rich-format-toolbar, .teacher-controls, .block-controls, #img-uploader, .btn-save-master, .btn-generate, .btn-del-q, .btn-move, #main-tools, #exit-preview-btn');
+        // 1. Nettoyage des outils profs
+        const toRemove = docClone.querySelectorAll('#teacher-panel, #rich-format-toolbar, .teacher-controls, .block-controls, #img-uploader, .btn-save-master, .btn-generate, .btn-del-q, .btn-move, #main-tools, #exit-preview-btn, #qc-modal, .prof-comment-zone, .answer-key-zone');
         toRemove.forEach(el => el.remove());
 
+        // 2. Figer les valeurs (Input -> Value)
         docClone.querySelectorAll('input').forEach(input => input.setAttribute('value', input.value));
         docClone.querySelectorAll('textarea').forEach(txt => { txt.textContent = txt.value; });
         docClone.querySelectorAll('[contenteditable="true"]').forEach(el => { el.setAttribute('contenteditable','false'); });
-
+        
+        // 3. Figer les listes déroulantes
         docClone.querySelectorAll('select').forEach(select => {
             select.querySelectorAll('option').forEach(opt => {
                 if(opt.value === select.value) opt.setAttribute('selected', 'selected');
             });
         });
 
+        // 4. Transformer les notes et numéros en texte figé (Rouge et Gras)
         docClone.querySelectorAll('.question-block, .numbered-header').forEach(block => {
             const numSel = block.querySelector('.num-selector');
             if(numSel) {
-                const span = document.createElement('span'); span.className = 'frozen-num'; span.textContent = numSel.value; 
-                numSel.parentElement.insertBefore(span, numSel);
+                const span = document.createElement('span'); 
+                span.className = 'frozen-num'; 
+                span.textContent = numSel.value; 
+                // Style direct pour être sûr
+                span.style.cssText = "display: inline-block; font-size: 1.2em; font-weight: bold; color: #e74c3c; margin-right: 10px; border-right: 2px solid #ddd; padding-right: 10px;";
+                if(numSel.parentElement) numSel.parentElement.insertBefore(span, numSel);
+                numSel.remove(); // On enlève le sélecteur
             }
             const ptsWrapper = block.querySelector('.points-wrapper');
             if(ptsWrapper) {
@@ -1685,339 +1694,154 @@ function getSchemaST2Template(uid){
                     const span = document.createElement('span');
                     span.className = 'frozen-score';
                     span.textContent = txt;
+                    span.style.cssText = "font-weight: bold; color: #555; margin-left: 5px; font-size: 0.9em;";
                     ptsWrapper.appendChild(span);
+                    // On supprime les inputs profs
+                    maxInp.remove();
+                    compSel.remove();
                 }
             }
         });
 
+        // 5. Nettoyage des champs réponses pour l'élève (Remise à zéro)
         docClone.querySelectorAll('textarea.reponse-eleve').forEach(el => { el.innerHTML = ''; el.value = ''; });
         docClone.querySelectorAll('input.trou-eleve').forEach(el => { el.setAttribute('value', ''); el.value = ''; });
         docClone.querySelectorAll('select.trou-eleve').forEach(el => { el.querySelectorAll('option').forEach(o => o.removeAttribute('selected')); el.value = ""; });
         docClone.querySelectorAll('.question-block input[type="checkbox"], .question-block input[type="radio"]').forEach(el => { el.removeAttribute('checked'); el.checked = false; });
-        docClone.querySelectorAll('.matching-select').forEach(el => { el.querySelectorAll('option').forEach(o => o.removeAttribute('selected')); el.value = ""; });
-        docClone.querySelectorAll('.student-score').forEach(el => { el.setAttribute('value', ''); el.value = ''; });
+        docClone.querySelectorAll('.student-score').forEach(el => { el.remove(); }); // On enlève la case note élève
         
-        // Nettoie les matrices de risque (sélection cellule)
+        // Nettoyage des tableaux Risques
         docClone.querySelectorAll('.risk-cell').forEach(c => { c.textContent=''; c.classList.remove('selected'); });
         docClone.querySelectorAll('.risk-cell-value').forEach(h => { h.value=''; h.setAttribute('value',''); });
-        
-        const c6s = docClone.querySelector('#c6-score'); if(c6s) c6s.setAttribute('value', '0');
-        const c6d = docClone.querySelector('#c6-display-score'); if(c6d) c6d.textContent = '0';
 
-        // Generation auto de la vue papier reliage
-        docClone.querySelectorAll('.question-block').forEach(q => {
-            if(q.querySelector('.matching-result') && !q.querySelector('.matching-print-view')) {
-                const rows = q.querySelectorAll('.matching-table tr');
-                if(rows.length > 0) {
-                    const printDiv = document.createElement('div');
-                    printDiv.className = 'matching-print-view print-matching-container';
-                    rows.forEach(tr => {
-                        const leftText = tr.querySelector('.matching-left').textContent;
-                        const rowDiv = document.createElement('div');
-                        rowDiv.className = 'print-match-row';
-                        rowDiv.innerHTML = '<div class="print-match-col">'+leftText+'</div><div class="print-match-dot">•</div><div style="flex:1;"></div><div class="print-match-dot">•</div><div class="print-match-col" style="text-align:right; color:#999; border:1px solid #ccc;"></div>';
-                        printDiv.appendChild(rowDiv);
-                    });
-                    q.querySelector('.exo-container').appendChild(printDiv);
-                }
-            }
-        });
-
+        // 6. Suppression de TOUS les scripts existants (Important !)
         docClone.querySelectorAll('script').forEach(s => s.remove());
 
+        // 7. INJECTION DU CERVEAU (C'est la partie qu'il te manquait !)
         const eleveScript = `
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"><\/script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"><\/script>
+        
         <style>
+            /* Styles Élève */
+            body { padding-bottom: 100px; }
             body.dyslexia-mode { font-family: 'Comic Sans MS', 'Verdana', sans-serif !important; line-height: 1.8 !important; letter-spacing: 0.05em; }
             body.contrast-mode { background-color: #222 !important; color: #f1c40f !important; }
-            body.contrast-mode .container, body.contrast-mode .question-block, body.contrast-mode .doc-block, body.contrast-mode textarea, body.contrast-mode input { background-color: #333 !important; color: #fff !important; border-color: #555 !important; }
-            body.contrast-mode .numbered-header { background-color: #444 !important; color: #f1c40f !important; }
-            body.contrast-mode h1, body.contrast-mode .section-title-center { color: #f39c12 !important; }
+            body.contrast-mode .container { background-color: #333 !important; color: white !important; }
             
-            #access-panel { position: fixed; top: 50%; right: 0; transform: translateY(-50%); background: #2980b9; padding: 10px; border-radius: 10px 0 0 10px; z-index: 10000; box-shadow: -2px 0 10px rgba(0,0,0,0.2); transition: 0.3s; display: flex; flex-direction: column; gap: 10px; width: 40px; overflow: hidden; }
-            #access-panel:hover { width: 180px; }
-            .access-btn { background: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; white-space: nowrap; font-weight: bold; font-size: 0.9em; color: #2980b9; width: 100%; text-align: left; }
-            .access-btn:hover { background: #ecf0f1; }
-            .access-icon { font-size: 1.2em; min-width: 25px; text-align: center; }
-            .range-container { width: 100%; padding: 5px; background: rgba(255,255,255,0.2); border-radius: 5px; margin-top: 5px; }
-            .range-label { color: white; font-size: 0.8em; margin-bottom: 3px; display: block; text-align: center; }
-            input[type=range] { width: 100%; cursor: pointer; }
+            /* Cacher strictement les éléments profs restants */
+            .prof-comment-zone, .answer-key-zone, .teacher-controls, #eval-section-container, .teacher-part { display: none !important; }
             
-            #student-actions { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-            .btn-float { padding: 15px 25px; border: none; border-radius: 50px; font-size: 1.1em; font-weight: bold; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; gap: 10px; justify-content: center; }
-            .btn-float:hover { transform: scale(1.05); }
+            /* Boutons Flottants Élève */
+            #student-actions { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+            .btn-float { padding: 12px 20px; border: none; border-radius: 50px; font-size: 1em; font-weight: bold; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; gap: 10px; }
             .btn-save-eleve { background-color: #27ae60; }
             .btn-print-eleve { background-color: #e67e22; }
-            
-            #toggle-correction-btn { background: #c0392b; display: none; }
+            .btn-send-eleve { background-color: #3498db; border: 2px solid white; }
+            .btn-send-eleve:disabled { background-color: #95a5a6; cursor: not-allowed; }
 
-            /* --- STYLES MODE ÉLÈVE FIGÉ (PROPRE) --- */
-            body.student-view .prof-comment-zone, body.student-view .answer-key-zone { display: none; }
-            body.student-view .student-score, body.student-view .point-input, body.student-view .comp-selector, body.student-view .num-selector, body.student-view .teacher-part, body.student-view .print-only-grade { display: none !important; }
-            
-            body.student-view .frozen-num { display: inline-block !important; font-size: 1.5em; font-weight: bold; color: #e74c3c; margin-right: 10px; min-width: 40px; text-align:center; border-right: 2px solid #ddd; padding-right:10px; }
-            body.student-view .frozen-score { display: inline !important; font-weight: bold; color: #555; margin-left:5px; }
-            
-            .frozen-num, .frozen-score { display: none; }
-
-            /* --- STYLE IMPRESSION ELEVE --- */
+            /* Impression propre */
             @media print {
-                body { background-color: white; color: black; font-family: 'Times New Roman', serif; font-size: 12pt; padding: 0; margin: 0; line-height: 1.2; }
-                .container { box-shadow: none; padding: 0; border: none; width: 100%; max-width: 100%; }
-                #student-actions, #access-panel, .prof-comment-zone, .answer-key-zone, #eval-section-container { display: none !important; }
-                h1 { font-size: 16pt; margin: 10px 0; border-bottom: 2px solid black; padding-bottom: 5px; color: black; }
-                
-                .activity-header { background: #eee; color: black; border: 1px solid #999; padding: 5px; font-size: 12pt; margin-top: 15px; }
-                .doc-title { background: none; border-left: 3px solid black; color: black; padding-left: 5px; margin-bottom: 5px; }
-                
-                .student-info { background: none; border: none; padding: 0; margin-bottom: 10px; border-bottom: 1px solid #000; gap: 20px; }
-                .student-info .input-group input { border: none; border-radius: 0; padding: 0; width: 150px; text-align: left; }
-                
-                .question-block, .doc-block, .text-block, .section-block { border: none !important; margin-bottom: 15px; box-shadow: none; page-break-inside: avoid; }
-                .section-block { border-top: 1px solid black !important; border-bottom: 1px solid black !important; }
-                .q-meta-bar { background: transparent !important; border: none !important; justify-content: flex-end; padding: 0; margin-bottom: -20px; font-size: 0.9em; position:relative; top: 5px; z-index: 5;}
-                
-                .q-content-row { padding: 5px 0; display: flex; justify-content: flex-start; gap: 10px; align-items: baseline; }
-                .num-selector-wrapper { margin-right: 0; } 
-                .editable-text { border: none; padding: 0; }
-
-                textarea.reponse-eleve {
-                    font-family: 'Times New Roman', serif;
-                    background-color: transparent;
-                    border: 1px solid #ccc;
-                    background-image: repeating-linear-gradient(transparent, transparent 29px, #ccc 30px);
-                    line-height: 30px; padding: 0 5px; min-height: 90px; resize: none; margin-top: 10px;
-                }
-                .q-response-zone { padding: 0; }
-                
-                .points-wrapper { border: none !important; background: transparent !important; padding: 0 !important; }
-                .points-wrapper input, .points-wrapper select, .teacher-part, .frozen-score { display: none !important; }
-                .print-only-grade, .frozen-num { display: inline-block !important; font-style: italic; font-size: 0.9em; color: black; }
-                .frozen-num { border-color: black !important; color: black !important; }
-
-                /* Grille Propre */
-                .no-print { display: none !important; }
-                .print-only { display: inline-block !important; }
-                .row-c6 input { display: none !important; }
-
-                /* Reliage Papier */
-                .matching-table { display: none; }
-                .matching-print-view { display: block !important; width: 100%; margin-top: 10px; }
-                .print-match-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-                .print-match-col { width: 40%; border: none; padding: 5px; min-height: 25px; }
-                .print-match-dot { font-size: 20px; font-weight: bold; }
-
-                input::placeholder, textarea::placeholder { color: transparent; }
-                table.eval-table, table.exo-table { width: 100%; border: 1px solid black; font-size: 10pt; }
-                table.eval-table th, table.eval-table td, table.exo-table td { border: 1px solid black; padding: 2px; }
-                .eval-header { background: #ddd; color: black; border: 1px solid black; }
-                .general-comment-box { display: none; }
-                .img-container img { max-width: 80%; box-shadow: none; border: 1px solid black; }
+                #student-actions, #access-panel { display: none !important; }
             }
-            /* --- RÈGLES D'IMPRESSION OPTIMISÉES --- */
-@media print {
-    /* Cacher les éléments non imprimables */
-    #btn-send, #btn-print-student, #btn-print, #main-tools, .prof-tools, 
-    .tools-panel, #paste-toast, .block-controls, .teacher-controls,
-    button, .btn-tool, .student-only {
-    display: none !important;
-    visibility: hidden !important;
-}
-    /* Force l'affichage de la grille d'évaluation sur papier */
-    #eval-section-container {
-        display: block !important;
-        page-break-inside: avoid;
-    }
-    
-    /* Optimisation d'impression */
-    body {
-        background-color: white !important;
-        color: black !important;
-    }
-    
-    /* Éviter de couper les éléments */
-    .question-block, .doc-block, .text-block, table {
-        page-break-inside: avoid;
-    }
-    
-    /* Forcer fond blanc pour économie d'encre */
-    * {
-        background-color: white !important;
-        box-shadow: none !important;
-    }
-    
-    /* Garder les bordures importantes */
-    .question-block, .eval-section, table {
-        border: 1px solid black !important;
-    }
-}
         </style>
 
         <script>
-            document.addEventListener('paste', function (e) {
-        if (e.target && e.target.isContentEditable) {
-            e.preventDefault();
-            const cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
-            const text = cd ? cd.getData('text/plain') : '';
-            document.execCommand('insertText', false, text);
-        }
-    });
+            // --- CONFIG FIREBASE ---
+            const firebaseConfig = {
+                apiKey: "AIzaSyAwdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+                authDomain: "devoirs-pse.firebaseapp.com",
+                projectId: "devoirs-pse",
+                storageBucket: "devoirs-pse.firebasestorage.app",
+                messagingSenderId: "614730413904",
+                appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+            };
 
-
-            // --- Détection de collage dans les zones de réponse ---
-            let __pasteCount = 0;
-
-            function ensurePasteToast() {
-                let t = document.getElementById('paste-toast');
-                if (!t) {
-                    t = document.createElement('div');
-                    t.id = 'paste-toast';
-                    document.body.appendChild(t);
+            // Initialisation
+            window.addEventListener('load', function() {
+                if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    window.db = firebase.firestore();
+                    console.log("Firebase Élève Prêt");
                 }
-                return t;
-            }
-
-            function showPasteToast(msg) {
-                const t = ensurePasteToast();
-                t.textContent = msg;
-                t.style.display = 'block';
-                clearTimeout(window.__pasteToastTimer);
-                window.__pasteToastTimer = setTimeout(() => { t.style.display = 'none'; }, 2800);
-            }
-
-            function initPasteDetection() {
-                const selector = 'textarea.reponse-eleve, textarea.ish-cat-causes, input.trou-eleve';
-                document.querySelectorAll(selector).forEach(el => {
-                    if (el.dataset.pasteWatch === '1') return;
-                    el.dataset.pasteWatch = '1';
-                    el.addEventListener('paste', () => {
-                        if (!document.body.classList.contains('student-view')) return;
-                        __pasteCount++;
-                        showPasteToast('Collage détecté dans une zone de réponse (' + __pasteCount + ')');
-                        el.classList.add('paste-warning');
-                        setTimeout(() => el.classList.remove('paste-warning'), 900);
-                    });
-                });
-            }
-
-            window.addEventListener('DOMContentLoaded', () => {
-                initPasteDetection();
-                const mo = new MutationObserver(() => initPasteDetection());
-                mo.observe(document.body, { childList: true, subtree: true });
             });
 
-
-
-            function parseNumber(val) {
-                const s = (val ?? '').toString().trim().replace(',', '.');
-                const n = parseFloat(s);
-                return Number.isFinite(n) ? n : 0;
-            }
-
-            function toggleDyslexia() { document.body.classList.toggle('dyslexia-mode'); }
-            function toggleContrast() { document.body.classList.toggle('contrast-mode'); }
-            function initSlider() { const slider = document.getElementById('font-slider'); if(slider) { slider.addEventListener('input', function() { document.body.style.fontSize = this.value + 'px'; }); } }
-            function stopSpeech() { window.speechSynthesis.cancel(); }
-            function speakSelection() { const text = window.getSelection().toString(); if(!text) return alert("Sélectionnez du texte d'abord."); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'fr-FR'; window.speechSynthesis.speak(utterance); }
-
+            // Sauvegarde USB
             function downloadWork() {
-                const nom = document.getElementById('nom-eleve').value || '';
-                const prenom = document.getElementById('prenom-eleve').value || '';
-                const identite = (nom + '_' + prenom).replace(/ /g, '_') || 'Eleve';
-                document.querySelectorAll('input, textarea').forEach(el => { if(el.type !== 'checkbox' && el.type !== 'radio') el.setAttribute('value', el.value); if(el.tagName === 'TEXTAREA') el.innerHTML = el.value; });
-                document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => { if(el.checked) el.setAttribute('checked', 'checked'); else el.removeAttribute('checked'); });
-                const html = "<!DOCTYPE html>\\n" + document.documentElement.outerHTML;
+                const nom = prompt("Votre nom pour le fichier ?", "Ma_Copie");
+                if(!nom) return;
+                document.querySelectorAll('input, textarea').forEach(el => el.setAttribute('value', el.value));
+                document.querySelectorAll('textarea').forEach(el => el.innerHTML = el.value);
+                const html = "<!DOCTYPE html>" + document.documentElement.outerHTML;
                 const blob = new Blob([html], {type: "text/html"});
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(blob);
-                a.download = "Copie_" + identite + ".html";
+                a.download = "Copie_" + nom + ".html";
                 a.click();
             }
 
-            function toggleCorrection() {
-                document.body.classList.toggle('student-view');
-                if(!document.body.classList.contains('student-view')) { updateGrid(); }
-            }
+            // Envoi de la copie
+            async function submitStudentDevoir() {
+                const btn = document.querySelector('.btn-send-eleve');
+                if(btn) { btn.disabled = true; btn.textContent = "⏳ Envoi..."; }
 
-            function updateGrid() {
-                const gridBody = document.getElementById('grid-body');
-                const totalBaremeEl = document.getElementById('total-bareme');
-                const totalObtenuEl = document.getElementById('total-obtenu');
-                const blocks = document.querySelectorAll('.question-block');
-                let data = {}; let totalBareme = 0; let totalObtenu = 0;
-
-                blocks.forEach(block => {
-                    const compSel = block.querySelector('.comp-selector');
-                    const comp = compSel ? compSel.value : 'C?';
-                    const numSel = block.querySelector('.num-selector');
-                    const num = numSel ? numSel.value : '?';
-                    const maxPtsInput = block.querySelector('.point-input');
-                    const maxPts = maxPtsInput ? (parseNumber(maxPtsInput.value) || 0) : 0;
-                    const scoreInput = block.querySelector('.student-score');
-                    let score = scoreInput ? parseNumber(scoreInput.value) : NaN;
-                    
-                    if(isNaN(score)) score = 0; 
-                    if(scoreInput && score > maxPts) scoreInput.style.backgroundColor = '#fadbd8';
-                    else if(scoreInput) scoreInput.style.backgroundColor = '#eaf2f8';
-
-                    if (!data[comp]) data[comp] = { questions: [], maxPoints: 0, obtainedPoints: 0 };
-                    data[comp].questions.push(num);
-                    data[comp].maxPoints += maxPts;
-                    data[comp].obtainedPoints += score;
-                    totalBareme += maxPts;
-                    totalObtenu += score;
+                // Collecte des réponses
+                const out = {};
+                document.querySelectorAll('input, textarea, select').forEach((el, idx) => {
+                    if(el.type === 'file' || el.type === 'submit' || el.type === 'button') return;
+                    const key = el.id || el.name || ('rep_' + idx);
+                    if(el.type === 'checkbox' || el.type === 'radio') {
+                        if(el.checked) out[key] = el.value;
+                    } else {
+                        out[key] = el.value;
+                    }
                 });
 
-                const c6MaxInput = document.getElementById('c6-max');
-                const c6ScoreInput = document.getElementById('c6-score');
-                const c6Display = document.getElementById('c6-display-score');
-                let valC6_max = c6MaxInput ? parseNumber(c6MaxInput.value) : 2;
-                let valC6_score = c6ScoreInput ? parseNumber(c6ScoreInput.value) : 0;
-                
-                if(isNaN(valC6_score)) valC6_score = 0;
-                if(c6Display) c6Display.textContent = valC6_score;
+                const payload = {
+                    devoirId: document.title,
+                    date: new Date().toISOString(),
+                    reponses: out,
+                    copieHTML: document.documentElement.outerHTML
+                };
 
-                totalBareme += valC6_max;
-                totalObtenu += valC6_score;
-
-                gridBody.innerHTML = '';
-                Object.keys(data).sort().forEach(key => {
-                    const item = data[key];
-                    const row = document.createElement('tr');
-                    row.innerHTML = '<td><b>'+key+'</b></td><td>'+item.questions.join(', ')+'</td><td></td><td></td><td></td><td></td><td>/ '+item.maxPoints+'</td><td style="color:#2980b9; font-weight:bold;">'+item.obtainedPoints+'</td>';
-                    gridBody.appendChild(row);
-                });
-
-                if(totalBaremeEl) totalBaremeEl.textContent = '/ ' + totalBareme;
-                if(totalObtenuEl) totalObtenuEl.textContent = totalObtenu;
-            }
-
-            document.querySelectorAll('textarea').forEach(tx => { tx.addEventListener('input', function(){ this.style.height='auto'; this.style.height=(this.scrollHeight)+'px'; }); });
-            document.addEventListener('input', function(e) { if(e.target.classList.contains('student-score') || e.target.id === 'c6-score') { updateGrid(); } });
-            window.addEventListener('DOMContentLoaded', () => { 
-                initSlider(); 
-                const sName = document.getElementById('nom-eleve').value;
-                if(sName && sName.trim() !== "") {
-                   document.getElementById('toggle-correction-btn').style.display = 'flex';
+                try {
+                    if(!window.db) throw new Error("Connexion impossible (DB manquante)");
+                    await window.db.collection("copies").add(payload);
+                    alert("✅ Copie envoyée avec succès !\\nLe prof l'a bien reçue.");
+                    if(btn) btn.textContent = "✅ Envoyé";
+                } catch(e) {
+                    console.error(e);
+                    alert("❌ Erreur d'envoi : " + e.message + "\\n\\nSauvegardez sur clé USB !");
+                    if(btn) { btn.disabled = false; btn.textContent = "📤 Envoyer"; }
                 }
-            });
+            }
         <\/script>
         `;
         
-        const accessPanel = document.createElement('div');
-        accessPanel.id = "access-panel";
-        accessPanel.innerHTML = `<div style="text-align:center; color:white; font-size:20px; padding-bottom:5px;">⚙️</div><button class="access-btn" onclick="toggleDyslexia()"><span class="access-icon">Abc</span> Police DYS</button><div class="range-container"><span class="range-label">Taille du Texte</span><input type="range" id="font-slider" min="14" max="40" step="1" value="16"></div><button class="access-btn" onclick="toggleContrast()"><span class="access-icon">🌗</span> Contraste</button><button class="access-btn" onclick="speakSelection()"><span class="access-icon">🔊</span> Lire sélection</button><button class="access-btn" onclick="stopSpeech()" style="color:#e74c3c;"><span class="access-icon">🔇</span> STOP Audio</button>`;
-        docClone.querySelector('body').appendChild(accessPanel);
-        
+        // 8. Ajout des Boutons Flottants (USB, Print, Envoyer)
         const actionsContainer = document.createElement('div');
         actionsContainer.id = "student-actions";
-        actionsContainer.innerHTML = `<button class="btn-float btn-save-eleve" onclick="downloadWork()">💾 Enregistrer (Clé USB)</button><button class="btn-float btn-print-eleve" onclick="window.print()">🖨️ Imprimer / PDF</button><button class="btn-float" id="toggle-correction-btn" onclick="toggleCorrection()">✏️ Afficher/Masquer Correction</button>`;
-        docClone.querySelector('body').appendChild(actionsContainer);
+        actionsContainer.innerHTML = `
+            <button class="btn-float btn-save-eleve" onclick="downloadWork()">💾 Clé USB</button>
+            <button class="btn-float btn-print-eleve" onclick="window.print()">🖨️ PDF</button>
+            <button class="btn-float btn-send-eleve" onclick="submitStudentDevoir()">📤 Envoyer</button>
+        `;
+        docClone.body.appendChild(actionsContainer);
 
-        docClone.querySelector('body').insertAdjacentHTML('beforeend', eleveScript);
+        // 9. Insertion du script final
+        docClone.body.insertAdjacentHTML('beforeend', eleveScript);
         
-        const evalSection = docClone.querySelector('.eval-section'); if(evalSection) evalSection.id = "eval-section-container";
-        const htmlContent = "<!DOCTYPE html>\\n" + docClone.outerHTML;
-        downloadFile(htmlContent, nomFichier + ".html");
+        // 10. Téléchargement du fichier final
+        const htmlContent = "<!DOCTYPE html>\n" + docClone.outerHTML;
+        
+        // Petite fonction utilitaire interne pour télécharger
+        const blob = new Blob([htmlContent], {type: "text/html"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = nomFichier + ".html";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     function addClozeTest(btn) {
