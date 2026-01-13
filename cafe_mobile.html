@@ -147,11 +147,15 @@
     }
 
     function showScreen(stepName) {
+        // Mapping de sécurité : si le prof envoie "attente", on affiche "wait"
+        if(stepName === 'attente') stepName = 'wait';
+
         document.querySelectorAll('.screen-section').forEach(el => el.classList.remove('active'));
         const target = document.getElementById('step-' + stepName);
         if(target) {
             target.classList.add('active');
         } else {
+            // Par défaut si écran inconnu
             document.getElementById('step-wait').classList.add('active');
         }
     }
@@ -161,14 +165,16 @@
     // ENVOI MÉTÉO
     window.sendMood = async function(moodValue) {
         if(!activeSessionId) return;
-        await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
-            type: 'mood',
-            content: moodValue,
-            user: currentUser, // Sera "Parent Anonyme"
-            timestamp: serverTimestamp()
-        });
-        alert("Humeur enregistrée !");
-        showScreen('wait'); 
+        try {
+            await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
+                type: 'mood',
+                content: moodValue,
+                user: currentUser,
+                timestamp: serverTimestamp()
+            });
+            alert("Humeur enregistrée !");
+            showScreen('wait'); 
+        } catch(e) { console.error(e); }
     }
 
     // ENVOI MOT
@@ -176,29 +182,34 @@
         const word = document.getElementById('word-input').value.trim();
         if(!word || !activeSessionId) return;
 
-        await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
-            type: 'word',
-            content: word,
-            user: currentUser, // Sera "Parent Anonyme"
-            timestamp: serverTimestamp(),
-            banned: false
-        });
-        
-        document.getElementById('word-input').value = ""; 
-        alert("Envoyé !");
+        try {
+            await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
+                type: 'word',
+                content: word,
+                user: currentUser,
+                timestamp: serverTimestamp(),
+                banned: false
+            });
+            
+            document.getElementById('word-input').value = ""; 
+            alert("Message envoyé !");
+            // On laisse l'utilisateur sur la page pour qu'il puisse en envoyer d'autres
+        } catch(e) { console.error(e); }
     }
 
     // ENVOI SONDAGE
     window.sendPoll = async function(voteValue) {
         if(!activeSessionId) return;
-        await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
-            type: 'poll',
-            content: voteValue,
-            user: currentUser, // Sera "Parent Anonyme"
-            timestamp: serverTimestamp()
-        });
-        alert("Vote pris en compte !");
-        showScreen('wait');
+        try {
+            await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
+                type: 'poll',
+                content: voteValue,
+                user: currentUser,
+                timestamp: serverTimestamp()
+            });
+            alert("Vote pris en compte !");
+            showScreen('wait');
+        } catch(e) { console.error(e); }
     }
 
 </script>
