@@ -1,294 +1,540 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escape Game Finance : Le Coffre de Sophie</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="annuaire.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escape Game Finance : Le Coffre de Sophie</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <style>
-        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #0f172a; --gold: #fbbf24; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #e2e8f0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 1100px; width: 100%; }
-        header { background: linear-gradient(135deg, #1e293b, #334155); color: var(--gold); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; border: 2px solid var(--gold); box-shadow: 0 0 20px rgba(251, 191, 36, 0.2); }
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="annuaire.js"></script>
 
-        .mission-box { background: #1e293b; padding: 20px; border-radius: 15px; border-left: 5px solid var(--gold); margin-bottom: 25px; line-height: 1.6; }
-        #item-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #334155; padding: 20px; border-radius: 12px; border: 2px dashed var(--gold); margin-bottom: 25px; min-height: 80px; }
-        .draggable-item { padding: 12px 15px; background: #f8fafc; border: 2px solid #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; color: #1e293b; transition: 0.2s; }
-        .draggable-item.selected { border-color: var(--gold); background: #fef3c7; transform: scale(1.05); }
-        .correct-info { display: none; font-size: 0.85rem; color: #f87171; margin-top: 5px; font-weight: bold; }
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
-        .budget-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; width: 100%; }
-        .column { background: #1e293b; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; min-height: 350px; border-top: 6px solid #64748b; }
-        #col-recettes { border-top-color: #28a745; }
-        #col-fixes { border-top-color: #007bff; }
-        #col-courantes { border-top-color: #ffc107; }
-        #col-occas { border-top-color: #dc3545; }
+  <style>
+    :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#0f172a; --gold:#fbbf24; }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    body{
+      font-family:'Segoe UI',sans-serif; background:var(--bg); color:#e2e8f0;
+      padding:20px; display:flex; flex-direction:column; align-items:center;
+      overflow-x:hidden;
+    }
+    .container{ max-width:1100px; width:100%; }
+    header{
+      background:linear-gradient(135deg,#1e293b,#334155); color:var(--gold);
+      padding:30px; border-radius:15px; text-align:center; margin-bottom:25px;
+      border:2px solid var(--gold); box-shadow:0 0 20px rgba(251,191,36,0.2);
+      max-width:100%;
+    }
+    .obj-box{
+      margin-top:10px; padding:10px; border-radius:10px;
+      background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25);
+      color:#fde68a; font-weight:700;
+    }
+    .mission-box{
+      background:#1e293b; padding:20px; border-radius:15px;
+      border-left:5px solid var(--gold); margin-bottom:25px; line-height:1.6;
+      overflow-wrap:anywhere; max-width:100%;
+    }
 
-        .drop-zone { flex-grow: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); min-height: 120px; cursor: pointer; margin-bottom: 10px; }
-        .sub-zone { background: rgba(40, 167, 69, 0.1); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
-        h3 { text-align: center; margin: 0 0 15px 0; font-size: 0.9rem; color: var(--gold); }
-        h4 { margin: 0 0 8px 0; font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; }
+    #item-bank{
+      display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+      background:#334155; padding:20px; border-radius:12px;
+      border:2px dashed var(--gold); margin-bottom:25px; min-height:80px;
+      max-width:100%;
+    }
+    .draggable-item{
+      padding:12px 15px; background:#f8fafc; border:2px solid #64748b;
+      border-radius:10px; cursor:pointer; font-weight:900; color:#1e293b;
+      transition:0.15s; user-select:none; text-align:center;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      max-width:100%;
+    }
+    .draggable-item.selected{ border-color:var(--gold); background:#fef3c7; transform:scale(1.03); }
+    .draggable-item.correct{ border-color:var(--success); }
+    .draggable-item.wrong{ border-color:var(--error); }
 
-        .calc-zone { text-align: center; border-top: 1px solid #334155; padding-top: 10px; }
-        input[type="number"] { width: 90px; padding: 8px; border: 2px solid #334155; border-radius: 6px; text-align: center; background: #0f172a; color: white; }
+    .correct-info{ display:none; font-size:0.85rem; color:#f87171; margin-top:6px; font-weight:900; }
 
-        /* Animation Coffre */
-        .safe-zone { margin-top: 40px; background: #1e293b; padding: 30px; border-radius: 20px; border: 4px solid var(--gold); text-align: center; width: 100%; max-width: 600px; position: relative; overflow: hidden;}
-        .lock-icon { font-size: 4rem; transition: transform 0.5s; display: block; margin-bottom: 10px; }
-        .safe-display { font-family: 'Courier New', monospace; background: #000; color: #0f0; padding: 20px; font-size: 2rem; border-radius: 10px; margin: 20px 0; border: 2px solid #334155; width: 80%; }
-        .btn-unlock { background: var(--gold); color: #0f172a; border: none; padding: 20px 40px; border-radius: 12px; font-size: 1.3rem; font-weight: 900; cursor: pointer; }
+    .budget-container{
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+      gap:12px; width:100%; max-width:100%;
+    }
+    .column{
+      background:#1e293b; border-radius:12px; padding:15px;
+      display:flex; flex-direction:column; min-height:350px;
+      border-top:6px solid #64748b;
+      max-width:100%;
+    }
+    #col-recettes{ border-top-color:#28a745; }
+    #col-fixes{ border-top-color:#007bff; }
+    #col-courantes{ border-top-color:#ffc107; }
+    #col-occas{ border-top-color:#dc3545; }
 
-        .victory-badge { display: none; background: linear-gradient(45deg, #fbbf24, #f59e0b); color: #1e293b; padding: 20px; border-radius: 15px; font-weight: 900; margin-top: 20px; animation: bounce 1s infinite; }
-        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .drop-zone{
+      flex-grow:1; padding:10px; border-radius:10px;
+      background:rgba(255,255,255,0.05); min-height:120px;
+      cursor:pointer; margin-bottom:10px; overflow:auto;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    }
+    .sub-zone{
+      background:rgba(40,167,69,0.1); border-radius:10px;
+      padding:8px; margin-bottom:8px; overflow:auto;
+    }
+    h3{
+      text-align:center; margin:0 0 15px 0; font-size:0.9rem; color:var(--gold);
+      letter-spacing:0.06em;
+    }
+    h4{
+      margin:0 0 8px 0; font-size:0.78rem; color:#94a3b8;
+      text-transform:uppercase; letter-spacing:0.06em;
+    }
 
-        #result-zone { display: none; margin-top: 30px; text-align: center; width: 100%; }
-        .chart-box { height: 300px; margin: 20px 0; background: white; border-radius: 15px; padding: 15px; }
+    .calc-zone{
+      text-align:center; border-top:1px solid #334155; padding-top:10px;
+      display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;
+    }
+    input[type="text"]{
+      width:110px; padding:8px; border:2px solid #334155; border-radius:8px;
+      text-align:center; background:#0f172a; color:white; font-weight:900;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    }
+    .hint{ width:100%; font-size:0.85rem; color:#94a3b8; }
 
-        /* ✅ AJUSTEMENTS TECHNIQUES */
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        .container, header, .mission-box, #item-bank, .safe-zone, #result-zone { max-width: 100%; }
-        .mission-box { overflow-wrap: anywhere; }
-        .drop-zone, .sub-zone { overflow: auto; }
-        .draggable-item { user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        .safe-display { max-width: 100%; }
-        .chart-box canvas { max-width: 100% !important; height: 100% !important; display: block; }
+    .safe-zone{
+      margin-top:40px; background:#1e293b; padding:30px; border-radius:20px;
+      border:4px solid var(--gold); text-align:center; width:100%; max-width:600px;
+      position:relative; overflow:hidden;
+    }
+    .lock-icon{ font-size:4rem; transition:transform 0.5s; display:block; margin-bottom:10px; }
+    .safe-display{
+      font-family:'Courier New',monospace; background:#000; color:#0f0;
+      padding:16px; font-size:2rem; border-radius:12px; margin:16px 0 10px;
+      border:2px solid #334155; width:100%; max-width:420px;
+    }
+    .btn-unlock{
+      background:var(--gold); color:#0f172a; border:none;
+      padding:20px 40px; border-radius:14px; font-size:1.25rem;
+      font-weight:1000; cursor:pointer; width:auto;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    }
+    .btn-disabled{ opacity:0.75; cursor:not-allowed; }
 
-        @media (max-width: 600px) {
-            body { padding: 12px; }
-            header { padding: 18px; }
-            .btn-unlock { width: 100%; padding: 16px; font-size: 1.1rem; }
-            .safe-display { width: 100%; font-size: 1.6rem; }
-            .chart-box { height: 260px; padding: 12px; }
-        }
-    </style>
+    .victory-badge{
+      display:none; background:linear-gradient(45deg,#fbbf24,#f59e0b);
+      color:#1e293b; padding:18px; border-radius:15px; font-weight:1000;
+      margin-top:18px; animation:bounce 1s infinite;
+    }
+    @keyframes bounce{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
+
+    #result-zone{ display:none; margin-top:25px; text-align:center; width:100%; max-width:100%; }
+    .chart-box{ height:300px; margin:20px 0; background:white; border-radius:15px; padding:15px; max-width:100%; }
+    .chart-box canvas{ max-width:100% !important; height:100% !important; display:block; }
+
+    .score-card{
+      max-width:700px; margin:0 auto; background:rgba(255,255,255,0.06);
+      border:1px solid rgba(148,163,184,0.35); border-radius:14px;
+      padding:12px 14px; text-align:left;
+    }
+    .row{
+      display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      padding:6px 0; border-bottom:1px dashed rgba(148,163,184,0.25);
+    }
+    .row:last-child{ border-bottom:none; }
+    .row b{ color:#fde68a; }
+    .row .ok{ color:#86efac; font-weight:900; }
+    .row .ko{ color:#fca5a5; font-weight:900; }
+
+    @media (max-width:600px){
+      body{ padding:12px; }
+      header{ padding:18px; }
+      .btn-unlock{ width:100%; padding:16px; font-size:1.05rem; }
+      .safe-display{ font-size:1.6rem; }
+      .chart-box{ height:260px; padding:12px; }
+      input[type="text"]{ width:140px; }
+    }
+  </style>
 </head>
-<body>
 
-<div class="container">
+<body>
+  <div class="container">
     <header>
-        <h1 style="margin:0;">🔐 ESCAPE GAME : LE COFFRE DE SOPHIE</h1>
-        <div class="obj-box">Mission : Classez les flux et trouvez le code pour débloquer la récompense !</div>
+      <h1 style="margin:0;">🔐 ESCAPE GAME : LE COFFRE DE SOPHIE</h1>
+      <div class="obj-box">Mission : classe les flux et trouve le solde exact pour ouvrir le coffre</div>
     </header>
 
     <script>
-        if(typeof enregistrerVisite === "function") {
-            enregistrerVisite("Escape Game - Sophie");
-        }
+      if(typeof enregistrerVisite === "function") {
+        try { enregistrerVisite("Escape Game - Sophie"); } catch(e) {}
+      }
     </script>
 
     <div class="mission-box">
-        <strong>LE DOSSIER :</strong> Le code du coffre est le <strong>Solde Mensuel exact</strong> de Sophie.<br><br>
-        <strong>Les données :</strong> Salaire net (1 753,12 €), Aide au logement (154,50 €). <br>
-        Dépenses : Loyer (652,30 €), Internet (31,99 €), Assurance (45,12 €), Courses (342,65 €), Transport (85,00 €), Coiffeur (45,00 €) et Vélo (420,50 €).
+      <strong>LE DOSSIER :</strong> le code du coffre est le <strong>Solde Mensuel exact</strong> de Sophie<br><br>
+      <strong>Données :</strong> Salaire net (1 753,12 €), Aide au logement (154,50 €)<br>
+      <strong>Dépenses :</strong> Loyer (652,30 €), Internet (31,99 €), Assurance (45,12 €), Courses (342,65 €),
+      Transport (85,00 €), Coiffeur (45,00 €) et Vélo (420,50 €)
     </div>
 
-    <div id="item-bank"></div>
+    <div id="item-bank" aria-label="Banque d'étiquettes"></div>
 
     <div class="budget-container">
-        <div class="column" id="col-recettes">
-            <h3>RECETTES</h3>
-            <div class="drop-zone sub-zone" data-category="recette-travail"><h4>TRAVAIL</h4></div>
-            <div class="drop-zone sub-zone" data-category="recette-social"><h4>SOCIAL</h4></div>
-            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-recettes"> €</div>
+      <div class="column" id="col-recettes">
+        <h3>RECETTES</h3>
+        <div class="drop-zone sub-zone" data-category="recette-travail" role="button" tabindex="0"><h4>TRAVAIL</h4></div>
+        <div class="drop-zone sub-zone" data-category="recette-social" role="button" tabindex="0"><h4>SOCIAL</h4></div>
+        <div class="calc-zone">
+          Total :
+          <input type="text" inputmode="decimal" id="in-recettes" placeholder="1907,62">
+          €
+          <div class="hint">Virgule, point, espaces et € acceptés</div>
         </div>
-        <div class="column" id="col-fixes">
-            <h3>FIXES</h3>
-            <div class="drop-zone" data-category="fixe"></div>
-            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-fixes"> €</div>
+      </div>
+
+      <div class="column" id="col-fixes">
+        <h3>FIXES</h3>
+        <div class="drop-zone" data-category="fixe" role="button" tabindex="0"></div>
+        <div class="calc-zone">
+          Total :
+          <input type="text" inputmode="decimal" id="in-fixes" placeholder="729,41">
+          €
         </div>
-        <div class="column" id="col-courantes">
-            <h3>COURANTES</h3>
-            <div class="drop-zone" data-category="courante"></div>
-            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-courantes"> €</div>
+      </div>
+
+      <div class="column" id="col-courantes">
+        <h3>COURANTES</h3>
+        <div class="drop-zone" data-category="courante" role="button" tabindex="0"></div>
+        <div class="calc-zone">
+          Total :
+          <input type="text" inputmode="decimal" id="in-courantes" placeholder="427,65">
+          €
         </div>
-        <div class="column" id="col-occas">
-            <h3>OCCASIONNELLES</h3>
-            <div class="drop-zone" data-category="occas"></div>
-            <div class="calc-zone">Total : <input type="number" step="0.01" id="in-occas"> €</div>
+      </div>
+
+      <div class="column" id="col-occas">
+        <h3>OCCASIONNELLES</h3>
+        <div class="drop-zone" data-category="occas" role="button" tabindex="0"></div>
+        <div class="calc-zone">
+          Total :
+          <input type="text" inputmode="decimal" id="in-occas" placeholder="465,50">
+          €
         </div>
+      </div>
     </div>
 
     <div class="safe-zone" id="safe-container">
-        <span class="lock-icon" id="lock-status">🔒</span>
-        <h2>CODE DE DÉVERROUILLAGE</h2>
-        <input type="number" step="0.01" id="final-code-input" class="safe-display" placeholder="000.00">
-        <br>
-        <button class="btn-unlock" id="btn-open" onclick="ouvrirCoffre()">TENTER L'OUVERTURE</button>
-        <div class="victory-badge" id="badge">🏆 MAÎTRE DES FINANCES 🏆</div>
+      <span class="lock-icon" id="lock-status">🔒</span>
+      <h2 style="margin:0 0 6px 0; color:#fde68a;">CODE DE DÉVERROUILLAGE</h2>
+      <div style="color:#94a3b8; font-weight:700; margin-bottom:8px;">Entre le solde mensuel exact (Recettes - Dépenses)</div>
+
+      <input type="text" inputmode="decimal" id="final-code-input" class="safe-display" placeholder="285,06">
+      <br>
+      <button class="btn-unlock" id="btn-open" type="button">TENTER L'OUVERTURE</button>
+      <div class="victory-badge" id="badge">🏆 MAÎTRE DES FINANCES 🏆</div>
     </div>
 
     <div id="result-zone">
-        <div class="chart-box"><canvas id="barChart"></canvas></div>
-        <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(148,163,184,0.35); text-align:left;"></div>
-        <button class="btn-unlock" style="background: #64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
-    </div>
-</div>
+      <h2 id="final-score" style="margin:10px 0 0 0; color:#fde68a;">Score : -- / 20</h2>
 
-<script>
+      <div class="score-card" id="score-details"></div>
+
+      <div class="chart-box"><canvas id="barChart"></canvas></div>
+      <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(148,163,184,0.35); text-align:left;"></div>
+      <button class="btn-unlock" type="button" style="background:#64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
+    </div>
+  </div>
+
+  <script>
+    window.PSE_CODE_REQUIRED = true;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    try {
+      if (typeof firebase !== "undefined" && firebaseConfig && !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      window.db = (typeof firebase !== "undefined") ? firebase.firestore() : null;
+    } catch(e) {
+      window.db = null;
+    }
+  </script>
+
+  <script>
     const items = [
-        { id: 1, name: "Salaire", val: 1753.12, cat: "recette-travail", label: "Travail" },
-        { id: 2, name: "Aide Logement", val: 154.50, cat: "recette-social", label: "Social" },
-        { id: 3, name: "Loyer", val: 652.30, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 4, name: "Internet", val: 31.99, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 5, name: "Assurance", val: 45.12, cat: "fixe", label: "Dépenses Fixes" },
-        { id: 6, name: "Courses", val: 342.65, cat: "courante", label: "Dépenses Courantes" },
-        { id: 7, name: "Transport", val: 85.00, cat: "courante", label: "Dépenses Courantes" },
-        { id: 8, name: "Coiffeur", val: 45.00, cat: "occas", label: "Occasionnelle" },
-        { id: 9, name: "VÉLO", val: 420.50, cat: "occas", label: "Occasionnelle" }
+      { id: 1, name: "Salaire",       val: 1753.12, cat: "recette-travail", label: "TRAVAIL" },
+      { id: 2, name: "Aide logement", val:  154.50, cat: "recette-social",  label: "SOCIAL" },
+      { id: 3, name: "Loyer",        val:  652.30, cat: "fixe",            label: "FIXES" },
+      { id: 4, name: "Internet",     val:   31.99, cat: "fixe",            label: "FIXES" },
+      { id: 5, name: "Assurance",    val:   45.12, cat: "fixe",            label: "FIXES" },
+      { id: 6, name: "Courses",      val:  342.65, cat: "courante",        label: "COURANTES" },
+      { id: 7, name: "Transport",    val:   85.00, cat: "courante",        label: "COURANTES" },
+      { id: 8, name: "Coiffeur",     val:   45.00, cat: "occas",           label: "OCCASIONNELLES" },
+      { id: 9, name: "Vélo",         val:  420.50, cat: "occas",           label: "OCCASIONNELLES" }
     ];
+
+    const EXPECT = {
+      recettes: 1907.62,
+      fixes:    729.41,
+      cour:     427.65,
+      occas:    465.50,
+      dep:     1622.56,
+      solde:    285.06
+    };
+
+    function normalizeNumberInput(str){
+      if(!str) return null;
+      let s = String(str).replace(/\u00A0/g," ").trim();
+      s = s.replace(/\s+/g,"").replace(/€/g,"");
+      s = s.replace(/[^0-9+\-.,]/g,"");
+
+      const lastComma = s.lastIndexOf(",");
+      const lastDot   = s.lastIndexOf(".");
+      const decPos = Math.max(lastComma,lastDot);
+
+      if(decPos !== -1){
+        const intPart = s.slice(0,decPos).replace(/[.,]/g,"");
+        const decPart = s.slice(decPos+1).replace(/[.,]/g,"");
+        s = intPart + "." + decPart;
+      } else {
+        s = s.replace(/[.,]/g,"");
+      }
+
+      if(!s || s==="+" || s==="-" || s==="." || s==="+." || s==="-.") return null;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function isClose(n,target,tol){
+      return (typeof n==="number") && Number.isFinite(n) && Math.abs(n-target) <= tol;
+    }
+
+    function kbActivate(e, fn){
+      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); fn(); }
+    }
 
     let selectedItem = null;
     const bank = document.getElementById("item-bank");
 
-    items.sort(() => Math.random() - 0.5).forEach(item => {
-        let el = document.createElement("div");
-        el.className = "draggable-item";
-        el.id = "i-" + item.id;
-        el.innerHTML = `${item.name}<br>${item.val.toFixed(2)}€ <div class="correct-info" id="info-${item.id}">Doit être en : ${item.label}</div>`;
-        el.onclick = (e) => {
-            e.stopPropagation();
-            if(selectedItem) selectedItem.classList.remove('selected');
-            selectedItem = el;
-            el.classList.add('selected');
-        };
-        bank.appendChild(el);
+    function toggleSelect(el){
+      if(selectedItem === el){
+        el.classList.remove("selected");
+        selectedItem = null;
+        return;
+      }
+      if(selectedItem) selectedItem.classList.remove("selected");
+      selectedItem = el;
+      el.classList.add("selected");
+    }
+
+    items.slice().sort(()=>Math.random()-0.5).forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "draggable-item";
+      el.id = "i-" + item.id;
+      el.setAttribute("role","button");
+      el.setAttribute("tabindex","0");
+      el.innerHTML = `${item.name}<br>${item.val.toFixed(2)}€ <div class="correct-info" id="info-${item.id}">Doit être en : ${item.label}</div>`;
+      el.onclick = (e)=>{ e.stopPropagation(); toggleSelect(el); };
+      el.onkeydown = (e)=>kbActivate(e, ()=>toggleSelect(el));
+      bank.appendChild(el);
     });
 
-    document.querySelectorAll('.drop-zone, #item-bank').forEach(zone => {
-        zone.onclick = () => {
-            if(selectedItem) {
-                zone.appendChild(selectedItem);
-                selectedItem.classList.remove('selected');
-                selectedItem = null;
-            }
-        };
+    document.querySelectorAll(".drop-zone, #item-bank").forEach(zone=>{
+      zone.onclick = ()=>{
+        if(selectedItem){
+          zone.appendChild(selectedItem);
+          selectedItem.classList.remove("selected");
+          selectedItem = null;
+        }
+      };
+      zone.onkeydown = (e)=>kbActivate(e, ()=>zone.click());
     });
+
+    function resetFeedback(){
+      items.forEach(item=>{
+        const el = document.getElementById("i-" + item.id);
+        const info = document.getElementById("info-" + item.id);
+        if(el){ el.classList.remove("correct","wrong"); el.style.borderColor=""; }
+        if(info){ info.style.display="none"; }
+      });
+    }
 
     let chartInstance = null;
+    let sending = false;
 
-    async function ouvrirCoffre() {
-        const btn = document.getElementById("btn-open");
-        if (btn && btn.disabled) return;
-        if (btn) { btn.disabled = true; btn.style.opacity = "0.75"; btn.style.cursor = "not-allowed"; }
+    document.getElementById("btn-open").addEventListener("click", ouvrirCoffre);
 
-        const userCode = parseFloat(document.getElementById('final-code-input').value) || 0;
-        const correctSolde = 285.06;
-        let scoreClassification = 0;
-        let stats = { "Recettes": 0, "Dépenses": 0 };
+    async function ouvrirCoffre(){
+      const btn = document.getElementById("btn-open");
+      if(sending) return;
+      sending = true;
+      btn.disabled = true;
+      btn.classList.add("btn-disabled");
 
-        // 1. Calcul du Score
-        items.forEach(item => {
-            let el = document.getElementById("i-" + item.id);
-            let info = document.getElementById("info-" + item.id);
-            let parentCat = (el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
-            if (parentCat === item.cat) {
-                scoreClassification++; // 1 point par item bien placé
-                if(item.cat.includes("recette")) stats["Recettes"]++; else stats["Dépenses"]++;
-            } else {
-                el.style.borderColor = "#dc2626";
-                info.style.display = "block";
-            }
-        });
+      resetFeedback();
 
-        // La Note sur 20 : 9 points pour le classement (1 par item) + 11 points pour le code
-        let finalNote = scoreClassification; // Max 9
-        if (Math.abs(userCode - correctSolde) < 0.01) {
-            finalNote += 11; // Bonus Coffre ouvert
-        }
-        // Sécurité si dépassement (peu probable ici)
-        finalNote = Math.min(20, finalNote);
+      let goodPlace = 0;
+      let stats = { rec:0, dep:0 };
+      const totalItems = items.length;
 
-        // 2. Gestion Animation Coffre (Uniquement si tout est parfait pour le "Jeu")
-        if (Math.abs(userCode - correctSolde) < 0.01 && scoreClassification === items.length) {
-            document.getElementById('lock-status').innerText = "🔓";
-            document.getElementById('lock-status').style.transform = "scale(1.5)";
-            document.getElementById('safe-container').style.borderColor = "#16a34a";
-            document.getElementById('badge').style.display = "block";
-            try { if (typeof confetti !== "undefined") confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); } catch(e) {}
+      items.forEach(item=>{
+        const el = document.getElementById("i-" + item.id);
+        const info = document.getElementById("info-" + item.id);
+        const parentCat = (el && el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
+
+        if(parentCat === item.cat){
+          goodPlace++;
+          el.classList.add("correct");
+          if(item.cat.includes("recette")) stats.rec++; else stats.dep++;
         } else {
-            document.getElementById('lock-status').innerText = "❌";
-            setTimeout(() => document.getElementById('lock-status').innerText = "🔒", 2000);
+          el.classList.add("wrong");
+          if(info) info.style.display = "block";
         }
+      });
 
-        // 3. Affichage Graphique
-        document.getElementById('result-zone').style.display = "block";
-        const pcRec = (stats["Recettes"]/2)*100;
-        const pcDep = (stats["Dépenses"]/7)*100;
-        const pcOpen = (Math.abs(userCode - correctSolde) < 0.01 ? 100 : 0);
+      const vRec = normalizeNumberInput(document.getElementById("in-recettes").value);
+      const vFix = normalizeNumberInput(document.getElementById("in-fixes").value);
+      const vCou = normalizeNumberInput(document.getElementById("in-courantes").value);
+      const vOcc = normalizeNumberInput(document.getElementById("in-occas").value);
+      const vCode = normalizeNumberInput(document.getElementById("final-code-input").value);
 
-        const fallback = document.getElementById("chart-fallback");
-        if (fallback) fallback.style.display = "none";
-        const canvas = document.getElementById('barChart');
+      const recOk = isClose(vRec, EXPECT.recettes, 0.03);
+      const fixOk = isClose(vFix, EXPECT.fixes,   0.03);
+      const couOk = isClose(vCou, EXPECT.cour,    0.03);
+      const occOk = isClose(vOcc, EXPECT.occas,   0.03);
+      const codeOk = isClose(vCode, EXPECT.solde, 0.05);
+
+      // Barème fiable /20 : 9 placements + 4 totaux + 7 code
+      let note = 0;
+      note += goodPlace;                 // /9
+      if(recOk) note += 1;
+      if(fixOk) note += 1;
+      if(couOk) note += 1;
+      if(occOk) note += 1;              // +4
+      if(codeOk) note += 7;             // +7
+      note = Math.max(0, Math.min(20, Math.round(note)));
+
+      // Coffre : ouverture visuelle si code OK (pas bloquant)
+      const lock = document.getElementById("lock-status");
+      const badge = document.getElementById("badge");
+      const safe = document.getElementById("safe-container");
+
+      if(codeOk){
+        lock.innerText = "🔓";
+        lock.style.transform = "scale(1.5)";
+        safe.style.borderColor = "var(--success)";
+        if(codeOk && goodPlace === totalItems && recOk && fixOk && couOk && occOk){
+          badge.style.display = "block";
+          try{ if(typeof confetti !== "undefined") confetti({ particleCount: 160, spread: 70, origin:{ y:0.6 } }); }catch(e){}
+        } else {
+          badge.style.display = "none";
+        }
+      } else {
+        badge.style.display = "none";
+        lock.innerText = "❌";
+        lock.style.transform = "scale(1)";
+        safe.style.borderColor = "var(--gold)";
+        setTimeout(()=>{ lock.innerText = "🔒"; }, 900);
+      }
+
+      // Résultats
+      document.getElementById("result-zone").style.display = "block";
+      document.getElementById("final-score").innerText = `Score : ${note} / 20`;
+
+      const details = document.getElementById("score-details");
+      const ok = (b)=> b ? '<span class="ok">✅</span>' : '<span class="ko">❌</span>';
+      details.innerHTML = `
+        <div class="row"><span><b>Classement</b> (${goodPlace}/${totalItems})</span><span>${ok(goodPlace===totalItems)}</span></div>
+        <div class="row"><span>Total recettes</span><span>${ok(recOk)}</span></div>
+        <div class="row"><span>Total fixes</span><span>${ok(fixOk)}</span></div>
+        <div class="row"><span>Total courantes</span><span>${ok(couOk)}</span></div>
+        <div class="row"><span>Total occasionnelles</span><span>${ok(occOk)}</span></div>
+        <div class="row"><span><b>Code (solde)</b></span><span>${ok(codeOk)}</span></div>
+      `;
+
+      // Graphique (anti-crash + fallback)
+      const pcRec = ((stats.rec + (recOk ? 1 : 0)) / 3) * 100;          // 2 placements + total
+      const pcDep = ((stats.dep + ((fixOk?1:0)+(couOk?1:0)+(occOk?1:0))) / 10) * 100; // 7 placements + 3 totaux
+      const pcCode = codeOk ? 100 : 0;
+
+      const fallback = document.getElementById("chart-fallback");
+      if(fallback) fallback.style.display = "none";
+
+      try{
+        const canvas = document.getElementById("barChart");
         const canDraw = (typeof Chart !== "undefined") && canvas && canvas.getContext;
-
-        if (canDraw) {
-            try {
-                if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-                chartInstance = new Chart(canvas, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Recettes', 'Dépenses', 'Ouverture Coffre'],
-                        datasets: [{
-                            label: '% de réussite',
-                            data: [pcRec, pcDep, pcOpen],
-                            backgroundColor: ['#28a745', '#ffc107', '#2563eb']
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true, max: 100 } },
-                        plugins: { legend: { display: false } }
-                    }
-                });
-            } catch (e) {
-                if (fallback) fallback.style.display = "block";
+        if(canDraw){
+          if(chartInstance){ chartInstance.destroy(); chartInstance = null; }
+          chartInstance = new Chart(canvas, {
+            type:"bar",
+            data:{
+              labels:["Recettes","Dépenses","Code"],
+              datasets:[{
+                label:"% de réussite",
+                data:[pcRec, pcDep, pcCode],
+                borderRadius:8
+              }]
+            },
+            options:{
+              responsive:true,
+              maintainAspectRatio:false,
+              scales:{ y:{ beginAtZero:true, max:100 } },
+              plugins:{ legend:{ display:false } }
             }
+          });
+        } else if(fallback){
+          fallback.style.display = "block";
+          fallback.innerHTML = `<b>Résultats</b><br>Recettes : ${Math.round(pcRec)}%<br>Dépenses : ${Math.round(pcDep)}%<br>Code : ${Math.round(pcCode)}%`;
         }
+      } catch(e){
+        if(fallback){
+          fallback.style.display = "block";
+          fallback.innerHTML = `<b>Résultats</b><br>Recettes : ${Math.round(pcRec)}%<br>Dépenses : ${Math.round(pcDep)}%<br>Code : ${Math.round(pcCode)}%`;
+        }
+      }
 
-        // 4. ENVOI FIREBASE (Compétences C1 & C2)
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            const db = firebase.firestore();
-            
-            // Récupération Identité
-            const code = localStorage.getItem("codeEleve") || "ANONYME";
-            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+      window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior:"smooth" });
 
-            // Envoi
+      // Envoi Firebase (1 fois par session et par élève)
+      try{
+        const codeEleve = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
+        const classe =
+          localStorage.getItem("userClasse") ||
+          ((typeof ANNUAIRE !== "undefined" && ANNUAIRE && ANNUAIRE[codeEleve]) ? ANNUAIRE[codeEleve] : "AUTRE");
+
+        if(window.db && typeof firebase !== "undefined"){
+          const sentKey = "sent_escape_sophie_" + codeEleve;
+          if(!sessionStorage.getItem(sentKey)){
             await db.collection("resultats_exercices").add({
-                eleve: code,
-                classe: classe,
-                exercice: "Escape Game Finance - Sophie",
-                note: finalNote,
-                total: 20,
-                competences: {
-                    "C1": finalNote, 
-                    "C2": finalNote  
-                },
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+              eleve: codeEleve,
+              classe: classe,
+              exercice: "Escape Game Finance - Sophie",
+              note: note,
+              total: 20,
+              competences: { "C1": note, "C2": note },
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
-
-        } catch (e) {
-            console.error("Erreur lors de l'envoi Firebase : ", e);
+            sessionStorage.setItem(sentKey, "1");
+          }
         }
+      } catch(e){
+        console.error("Erreur lors de l'envoi Firebase : ", e);
+      }
 
-        window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
-
-        setTimeout(() => {
-            if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer"; }
-        }, 600);
+      setTimeout(()=>{
+        btn.disabled = false;
+        btn.classList.remove("btn-disabled");
+        sending = false;
+      }, 450);
     }
-</script>
+  </script>
 </body>
 </html>
