@@ -3,126 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interface Participant</title>
+    <title>Café Parents - Mobile</title>
     <style>
-        body { margin: 0; padding: 20px; background: #0f172a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; text-align: center; }
-        .hidden { display: none !important; }
-        
-        /* HEADER */
-        h1 { color: #f472b6; font-size: 1.5rem; margin-bottom: 5px; }
-        .badge { background: rgba(255,255,255,0.1); color: #4ade80; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 20px; }
-
-        /* BOUTONS DYNAMIQUES */
-        .btn-option {
-            width: 100%; max-width: 400px; padding: 18px; margin-bottom: 12px;
-            background: #1e293b; color: white; border: 2px solid #334155; border-radius: 12px;
-            font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.1s;
+        /* DESIGN ZEN & ÉPURÉ */
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 20px; 
+            background: #0f172a; /* Bleu Nuit */
+            color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; text-align: center;
         }
-        .btn-option:active { transform: scale(0.98); border-color: #db2777; background: #db2777; }
-        
-        /* INPUT TEXTE */
-        input[type="text"] { width: 100%; max-width: 400px; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; margin-bottom: 10px; text-align: center; }
-        .btn-send { background: #db2777; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; font-size: 1rem; cursor: pointer; }
 
-        /* EMOJIS */
-        .grid-mood { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 350px; }
-        .btn-mood { font-size: 3rem; background: #1e293b; border-radius: 15px; padding: 15px; cursor: pointer; border: 2px solid #334155; }
-        .btn-mood:active { border-color: #db2777; transform: scale(0.9); }
+        h1 { color: #f472b6; font-size: 1.6rem; margin: 0 0 10px 0; }
+        p { color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px; }
+
+        /* BADGE ANONYME */
+        .badge { 
+            background: rgba(255, 255, 255, 0.05); color: #4ade80; 
+            padding: 6px 12px; border-radius: 50px; border: 1px solid rgba(74, 222, 128, 0.2);
+            font-size: 0.8rem; font-weight: bold; margin-bottom: 20px; display: inline-block;
+        }
+
+        /* CONTAINER DYNAMIQUE */
+        #dynamic-screen { width: 100%; max-width: 400px; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+        /* BOUTONS CHOIX (Sondage & Quiz) */
+        .btn-choice {
+            width: 100%; padding: 18px; margin-bottom: 12px;
+            background: #1e293b; color: white; border: 2px solid #334155; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.1s; text-align: left; position: relative;
+        }
+        .btn-choice:active { transform: scale(0.98); background: #db2777; border-color: #db2777; }
+        .btn-choice::after { content: '👉'; position: absolute; right: 20px; opacity: 0.5; }
+
+        /* INPUT TEXTE (Nuage) */
+        input[type="text"] {
+            width: 100%; padding: 16px; background: #1e293b; border: 2px solid #334155;
+            color: white; border-radius: 12px; font-size: 1.1rem; text-align: center; margin-bottom: 15px; outline: none;
+        }
+        input[type="text"]:focus { border-color: #db2777; }
+        
+        .btn-send { width: 100%; background: #db2777; color: white; border: none; padding: 16px; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+
+        /* EMOJIS MÉTÉO */
+        .mood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .mood-btn { background: #1e293b; border: 2px solid #334155; border-radius: 16px; padding: 15px; font-size: 3rem; cursor: pointer; }
+        .mood-btn:active { border-color: #db2777; transform: scale(0.95); }
+
+        /* LOADING */
+        .loader { font-size: 3rem; animation: pulse 2s infinite; display: block; margin-top: 20px; }
+        @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: scale(0.9); } }
     </style>
 </head>
 <body>
 
-    <h1 id="app-title">Bienvenue</h1>
-    <div class="badge">🔒 Anonyme</div>
+    <h1 id="app-title">Café Parents</h1>
+    <div class="badge">🔒 Connexion Anonyme</div>
 
-    <div id="container">
-        <p style="color:#94a3b8; margin-top:50px;">En attente de l'animateur...</p>
-        <div style="font-size:3rem; animation:pulse 2s infinite">📡</div>
+    <div id="dynamic-screen">
+        <div class="loader">☕</div>
+        <p>En attente de l'animateur...</p>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    const app = initializeApp({ apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse" });
+    const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.appspot.com", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+    const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
     let activeSessionId = null;
 
-    // ÉCOUTE CONFIG
+    // 1. ÉCOUTER LE COCKPIT
     onSnapshot(doc(db, "config", "live"), (snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
         activeSessionId = data.activeSessionId;
-        
+
+        // Mise à jour du titre
         if(data.sessionTitle) document.getElementById('app-title').innerText = data.sessionTitle;
+
+        // Moteur d'affichage
         renderScreen(data);
     });
 
     function renderScreen(data) {
-        const c = document.getElementById('container');
-        c.innerHTML = ""; // Reset total
+        const container = document.getElementById('dynamic-screen');
+        container.innerHTML = ""; // On nettoie l'écran
 
-        const step = data.currentStep || 'wait';
-
-        // 1. ATTENTE
-        if(step === 'wait' || !activeSessionId) {
-            c.innerHTML = `<p style="color:#94a3b8; margin-top:50px;">Regardez l'écran géant...</p><div style="font-size:3rem;">👀</div>`;
+        // Si pas de session ou mode "pause"
+        if (!activeSessionId || !data.currentStep || data.currentStep === 'wait' || data.currentStep === 'attente') {
+            container.innerHTML = `<div class="loader">☕</div><p>Regardez l'écran géant...</p>`;
             return;
         }
 
-        // 2. MÉTÉO
-        if(step === 'meteo') {
-            c.innerHTML = `
-                <p>Votre humeur ?</p>
-                <div class="grid-mood">
-                    <div class="btn-mood" onclick="send('mood', 'super')">🤩</div>
-                    <div class="btn-mood" onclick="send('mood', 'bien')">🙂</div>
-                    <div class="btn-mood" onclick="send('mood', 'bof')">🤔</div>
-                    <div class="btn-mood" onclick="send('mood', 'mauvais')">😰</div>
-                </div>`;
+        // MODE : MÉTÉO
+        if (data.currentStep === 'meteo') {
+            container.innerHTML = `
+                <p>Comment ça va ?</p>
+                <div class="mood-grid">
+                    <div class="mood-btn" onclick="sendInput('mood', 'super')">🤩</div>
+                    <div class="mood-btn" onclick="sendInput('mood', 'bien')">🙂</div>
+                    <div class="mood-btn" onclick="sendInput('mood', 'bof')">🤔</div>
+                    <div class="mood-btn" onclick="sendInput('mood', 'mauvais')">😰</div>
+                </div>
+            `;
         }
 
-        // 3. NUAGE
-        if(step === 'nuage') {
-            let html = `<p>Envoyez un mot :</p>`;
-            // Mots suggérés
-            if(data.wordBank && data.wordBank.length) {
-                data.wordBank.forEach(w => {
-                    html += `<button class="btn-option" onclick="send('word', '${w}')">${w}</button>`;
+        // MODE : NUAGE
+        else if (data.currentStep === 'nuage') {
+            let html = `<p>Envoyez vos idées :</p>`;
+            // Mots suggérés (Bibliothèque)
+            if (data.wordBank && data.wordBank.length > 0) {
+                data.wordBank.forEach(word => {
+                    html += `<button class="btn-choice" onclick="sendInput('word', '${word}')">${word}</button>`;
                 });
-                html += `<p style="margin:20px 0;">Ou écrivez :</p>`;
+                html += `<hr style="border:0; border-top:1px solid #334155; margin:20px 0;">`;
             }
-            html += `<input type="text" id="word-in" placeholder="Votre idée..."><button class="btn-send" onclick="sendCustomWord()">Envoyer 🚀</button>`;
-            c.innerHTML = html;
+            // Champ libre
+            html += `
+                <input type="text" id="custom-word" placeholder="Ou écrivez ici...">
+                <button class="btn-send" onclick="sendCustomWord()">Envoyer 🚀</button>
+            `;
+            container.innerHTML = html;
         }
 
-        // 4. SONDAGE ou QUIZ
-        if(step === 'sondage' || step === 'quiz') {
+        // MODE : SONDAGE ou QUIZ
+        else if (data.currentStep === 'sondage' || data.currentStep === 'quiz') {
             const question = data.pollQuestion || data.quizQuestion || "Question ?";
             const options = data.pollOptions || data.quizOptions || [];
             
-            let html = `<h2 style="font-size:1.2rem; margin-bottom:20px;">${question}</h2>`;
-            options.forEach((opt, idx) => {
-                // Pour le quiz, on envoie l'index (0, 1, 2) pour comparer. Pour le sondage, le texte.
-                const val = (step === 'quiz') ? idx : opt; 
-                html += `<button class="btn-option" onclick="send('${step}', '${val}')">${opt}</button>`;
+            let html = `<p style="font-weight:bold; color:white; font-size:1.2rem;">${question}</p>`;
+            
+            options.forEach((opt, index) => {
+                // IMPORTANT : Pour le QUIZ, on envoie le numéro (index) pour vérifier la réponse.
+                // Pour le SONDAGE, on envoie le texte.
+                let valueToSend = (data.currentStep === 'quiz') ? index : opt;
+                
+                // On échappe les guillemets pour éviter les bugs JS dans le HTML
+                let safeVal = (typeof valueToSend === 'string') ? valueToSend.replace(/'/g, "\\'") : valueToSend;
+
+                html += `<button class="btn-choice" onclick="sendInput('${data.currentStep}', '${safeVal}')">${opt}</button>`;
             });
-            c.innerHTML = html;
+            container.innerHTML = html;
         }
     }
 
-    // ENVOI
-    window.send = async function(type, content) {
+    // 2. FONCTION D'ENVOI (Globale)
+    window.sendInput = async function(type, content) {
         if(!activeSessionId) return;
-        await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), { type, content, timestamp: serverTimestamp() });
-        // Feedback simple
-        document.getElementById('container').innerHTML = `<h2 style="color:#4ade80; margin-top:50px;">Reçu ! ✅</h2>`;
+        
+        try {
+            await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
+                type: type,
+                content: content,
+                timestamp: serverTimestamp()
+            });
+            
+            // Feedback visuel
+            document.getElementById('dynamic-screen').innerHTML = `
+                <div style="font-size:3rem; margin-bottom:20px;">✅</div>
+                <p style="color:#4ade80; font-weight:bold;">Bien reçu !</p>
+                <p>En attente de la suite...</p>
+            `;
+        } catch(e) {
+            alert("Erreur d'envoi. Vérifiez votre connexion.");
+        }
     }
 
     window.sendCustomWord = function() {
-        const val = document.getElementById('word-in').value.trim();
-        if(val) window.send('word', val);
+        const val = document.getElementById('custom-word').value.trim();
+        if(val) window.sendInput('word', val);
     }
+
 </script>
 </body>
 </html>
