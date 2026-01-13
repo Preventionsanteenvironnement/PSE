@@ -15,16 +15,14 @@
 
         h1 { color: #db2777; margin-bottom: 10px; font-size: 1.8rem; text-align: center; }
         p { color: #cbd5e1; text-align: center; margin-bottom: 30px; }
+        .question-text { font-size: 1.2rem; font-weight: bold; color: white; margin-bottom: 20px; text-align: center; }
 
         /* BADGE ANONYME */
         .badge-anon {
             background: rgba(255, 255, 255, 0.1);
-            color: #4ade80; /* Vert rassurant */
-            padding: 5px 15px; border-radius: 50px;
-            font-size: 0.9rem; font-weight: bold;
-            border: 1px solid #4ade80;
-            display: inline-flex; align-items: center; gap: 5px;
-            margin-bottom: 20px;
+            color: #4ade80; padding: 5px 15px; border-radius: 50px;
+            font-size: 0.9rem; font-weight: bold; border: 1px solid #4ade80;
+            display: inline-flex; align-items: center; gap: 5px; margin-bottom: 20px;
         }
 
         /* INPUTS */
@@ -36,7 +34,7 @@
         }
         input[type="text"]:focus { border-color: #db2777; }
 
-        /* BOUTONS */
+        /* BOUTONS GÉNÉRAUX */
         .btn {
             background: #db2777; color: white; border: none;
             padding: 15px 30px; border-radius: 50px;
@@ -45,6 +43,16 @@
             margin-bottom: 10px; display: block;
         }
         .btn:active { transform: scale(0.95); }
+
+        /* BOUTONS DYNAMIQUES (Sondage & Mots) */
+        .dynamic-btn {
+            background: #334155; color: white; border: 2px solid #475569;
+            padding: 15px; border-radius: 12px; margin-bottom: 10px;
+            width: 100%; max-width: 300px; font-size: 1.1rem; cursor: pointer;
+            transition: 0.2s; text-align: center; font-weight: 600;
+        }
+        .dynamic-btn:hover { background: #475569; border-color: #db2777; }
+        .dynamic-btn:active { transform: scale(0.98); background: #db2777; border-color: #db2777; }
 
         /* ÉCRANS (Météo, Nuage, etc.) */
         .screen-section { display: none; width: 100%; display: flex; flex-direction: column; align-items: center; }
@@ -65,7 +73,7 @@
 <body>
 
     <div id="step-welcome" class="screen-section active">
-        <h1>☕ Café Parents</h1>
+        <h1 id="app-title">☕ Café Parents</h1>
         <div class="badge-anon">🔒 100% Anonyme</div>
         <p>Bienvenue ! Exprimez-vous librement, aucune donnée personnelle n'est enregistrée.</p>
         <button class="btn" onclick="startApp()">Participer maintenant</button>
@@ -91,17 +99,20 @@
 
     <div id="step-nuage" class="screen-section">
         <h1>☁️ Nuage de mots</h1>
-        <p>Envoyez une idée (Anonyme) :</p>
-        <input type="text" id="word-input" placeholder="Écrivez ici...">
+        <p>Cliquez ou écrivez une idée :</p>
+        
+        <div id="word-suggestions" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:20px;"></div>
+
+        <input type="text" id="word-input" placeholder="Ou écrivez ici...">
         <button class="btn" onclick="sendWord()">Envoyer 🚀</button>
     </div>
 
     <div id="step-sondage" class="screen-section">
         <h1>📊 Sondage</h1>
-        <p>Votre avis compte (Vote anonyme)</p>
-        <button class="btn" style="background:#22c55e;" onclick="sendPoll('oui_top')">Oui, tout à fait 👍</button>
-        <button class="btn" style="background:#eab308;" onclick="sendPoll('oui_moyen')">Plutôt oui 😐</button>
-        <button class="btn" style="background:#ef4444;" onclick="sendPoll('non_bof')">Pas vraiment 👎</button>
+        <div class="badge-anon">Vote Anonyme</div>
+        <p id="poll-question-display" class="question-text">Chargement de la question...</p>
+        
+        <div id="poll-options-container" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
     </div>
 
 <script type="module">
@@ -120,7 +131,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // On force l'utilisateur en "Anonyme"
     const currentUser = "Parent Anonyme"; 
     let activeSessionId = null;
 
@@ -128,17 +138,51 @@
     window.startApp = function() {
         document.getElementById('step-welcome').classList.remove('active');
         document.getElementById('step-wait').classList.add('active');
-        listenToSession(); // On commence à écouter
+        listenToSession(); 
     }
 
-    // 2. ÉCOUTER L'ÉTAT DE LA SÉANCE (Piloté par l'animateur)
+    // 2. ÉCOUTER LE CERVEAU (COCKPIT)
     function listenToSession() {
         onSnapshot(doc(db, "config", "live"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 activeSessionId = data.activeSessionId;
                 
-                // Si on n'est pas encore sur l'écran d'accueil, on suit le live
+                // A. Mettre à jour le TITRE de l'appli
+                if(data.sessionTitle) {
+                    document.getElementById('app-title').innerText = "📍 " + data.sessionTitle;
+                }
+
+                // B. Générer les BOUTONS DE MOTS (si le prof en a mis)
+                const wordContainer = document.getElementById('word-suggestions');
+                wordContainer.innerHTML = ""; // On vide avant de remplir
+                if(data.wordBank && data.wordBank.length > 0) {
+                    data.wordBank.forEach(mot => {
+                        const btn = document.createElement('button');
+                        btn.className = "dynamic-btn";
+                        btn.innerText = mot;
+                        btn.onclick = () => sendWord(mot); // Clic = Envoi direct
+                        wordContainer.appendChild(btn);
+                    });
+                }
+
+                // C. Générer le SONDAGE (Question + Options)
+                if(data.pollQuestion) {
+                    document.getElementById('poll-question-display').innerText = data.pollQuestion;
+                }
+                const pollContainer = document.getElementById('poll-options-container');
+                pollContainer.innerHTML = "";
+                if(data.pollOptions && data.pollOptions.length > 0) {
+                    data.pollOptions.forEach(opt => {
+                        const btn = document.createElement('button');
+                        btn.className = "dynamic-btn";
+                        btn.innerText = opt;
+                        btn.onclick = () => sendPoll(opt);
+                        pollContainer.appendChild(btn);
+                    });
+                }
+
+                // D. Changer l'écran
                 if(!document.getElementById('step-welcome').classList.contains('active')) {
                     showScreen(data.currentStep || 'wait');
                 }
@@ -147,53 +191,45 @@
     }
 
     function showScreen(stepName) {
-        // Mapping de sécurité : si le prof envoie "attente", on affiche "wait"
-        if(stepName === 'attente') stepName = 'wait';
+        if(stepName === 'attente') stepName = 'wait'; // Traduction Cockpit -> Mobile
 
         document.querySelectorAll('.screen-section').forEach(el => el.classList.remove('active'));
         const target = document.getElementById('step-' + stepName);
         if(target) {
             target.classList.add('active');
         } else {
-            // Par défaut si écran inconnu
             document.getElementById('step-wait').classList.add('active');
         }
     }
 
-    // 3. FONCTIONS D'ENVOI (Toujours Anonyme)
+    // 3. FONCTIONS D'ENVOI
     
     // ENVOI MÉTÉO
     window.sendMood = async function(moodValue) {
         if(!activeSessionId) return;
         try {
             await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
-                type: 'mood',
-                content: moodValue,
-                user: currentUser,
-                timestamp: serverTimestamp()
+                type: 'mood', content: moodValue, user: currentUser, timestamp: serverTimestamp()
             });
             alert("Humeur enregistrée !");
             showScreen('wait'); 
         } catch(e) { console.error(e); }
     }
 
-    // ENVOI MOT
-    window.sendWord = async function() {
-        const word = document.getElementById('word-input').value.trim();
+    // ENVOI MOT (Direct par bouton OU par champ texte)
+    window.sendWord = async function(forcedWord = null) {
+        // Soit c'est le mot du bouton cliqué, soit c'est ce qui est écrit dans le champ
+        const word = forcedWord || document.getElementById('word-input').value.trim();
+        
         if(!word || !activeSessionId) return;
 
         try {
             await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
-                type: 'word',
-                content: word,
-                user: currentUser,
-                timestamp: serverTimestamp(),
-                banned: false
+                type: 'word', content: word, user: currentUser, timestamp: serverTimestamp(), banned: false
             });
             
             document.getElementById('word-input').value = ""; 
             alert("Message envoyé !");
-            // On laisse l'utilisateur sur la page pour qu'il puisse en envoyer d'autres
         } catch(e) { console.error(e); }
     }
 
@@ -202,16 +238,12 @@
         if(!activeSessionId) return;
         try {
             await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
-                type: 'poll',
-                content: voteValue,
-                user: currentUser,
-                timestamp: serverTimestamp()
+                type: 'poll', content: voteValue, user: currentUser, timestamp: serverTimestamp()
             });
             alert("Vote pris en compte !");
             showScreen('wait');
         } catch(e) { console.error(e); }
     }
-
 </script>
 </body>
 </html>
