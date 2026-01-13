@@ -18,11 +18,6 @@
         .wall-screen.active { display: flex; animation: fadeZoom 0.8s; }
         @keyframes fadeZoom { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 
-        /* NUAGE (Bulles) */
-        #cloud-container { width: 90%; height: 70%; position: relative; display:flex; justify-content:center; align-items:center; }
-        .bubble { position: absolute; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.3); font-weight: bold; font-size: 1.5rem; color: white; transition: 0.5s; white-space: nowrap; box-shadow: 0 0 15px rgba(219,39,119,0.2); animation: float 6s infinite ease-in-out; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-
         /* MÉTÉO */
         .meteo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; width: 80%; text-align: center; }
         .meteo-item { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; border: 1px solid rgba(255,255,255,0.1); }
@@ -30,9 +25,11 @@
         .meteo-bar { width: 100%; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; }
         .meteo-fill { height: 100%; width: 0%; background: #db2777; transition: 1s ease-out; }
 
-        /* EMPTY STATE */
-        .empty-msg { color: #64748b; font-size: 1.5rem; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
+        /* NUAGE */
+        #cloud-container { width: 90%; height: 70%; position: relative; }
+        .bubble { position: absolute; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.3); font-weight: bold; font-size: 1.5rem; color: white; transition: 0.5s; white-space: nowrap; box-shadow: 0 0 15px rgba(219,39,119,0.2); animation: float 6s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .empty-msg { width:100%; text-align:center; color: #64748b; font-size: 1.5rem; position:absolute; top:50%; transform:translateY(-50%); }
 
     </style>
 </head>
@@ -57,39 +54,23 @@
     <div id="wall-meteo" class="wall-screen">
         <h2 style="font-size: 3rem; margin-bottom: 50px;">Météo du groupe 🧠</h2>
         <div class="meteo-grid">
-            <div class="meteo-item">
-                <span class="meteo-emoji">🤩</span>
-                <div class="meteo-bar"><div id="bar-super" class="meteo-fill"></div></div>
-                <h3 id="count-super">0</h3>
-            </div>
-            <div class="meteo-item">
-                <span class="meteo-emoji">🙂</span>
-                <div class="meteo-bar"><div id="bar-bien" class="meteo-fill" style="background:#4ade80;"></div></div>
-                <h3 id="count-bien">0</h3>
-            </div>
-            <div class="meteo-item">
-                <span class="meteo-emoji">🤔</span>
-                <div class="meteo-bar"><div id="bar-bof" class="meteo-fill" style="background:#facc15;"></div></div>
-                <h3 id="count-bof">0</h3>
-            </div>
-            <div class="meteo-item">
-                <span class="meteo-emoji">😰</span>
-                <div class="meteo-bar"><div id="bar-mauvais" class="meteo-fill" style="background:#f87171;"></div></div>
-                <h3 id="count-mauvais">0</h3>
-            </div>
+            <div class="meteo-item"><span class="meteo-emoji">🤩</span><div class="meteo-bar"><div id="bar-super" class="meteo-fill"></div></div><h3 id="count-super">0</h3></div>
+            <div class="meteo-item"><span class="meteo-emoji">🙂</span><div class="meteo-bar"><div id="bar-bien" class="meteo-fill" style="background:#4ade80;"></div></div><h3 id="count-bien">0</h3></div>
+            <div class="meteo-item"><span class="meteo-emoji">🤔</span><div class="meteo-bar"><div id="bar-bof" class="meteo-fill" style="background:#facc15;"></div></div><h3 id="count-bof">0</h3></div>
+            <div class="meteo-item"><span class="meteo-emoji">😰</span><div class="meteo-bar"><div id="bar-mauvais" class="meteo-fill" style="background:#f87171;"></div></div><h3 id="count-mauvais">0</h3></div>
         </div>
     </div>
 
     <div id="wall-nuage" class="wall-screen">
         <h2 style="font-size: 3rem; margin-bottom: 20px;">☁️ Nuage de mots</h2>
         <div id="cloud-container">
-            <div class="empty-msg">En attente des premiers mots...</div>
+            <div class="empty-msg">En attente...</div>
         </div>
     </div>
     
     <div id="wall-sondage" class="wall-screen">
-        <h2 style="font-size: 3rem;">Résultats du Sondage</h2>
-        <div style="width: 60%; height: 50%;">
+        <h2 id="poll-title-display" style="font-size: 2.5rem; margin-bottom:20px; color:#fff;">Résultats du Sondage</h2>
+        <div style="width: 70%; height: 60%;">
             <canvas id="pollChart"></canvas>
         </div>
     </div>
@@ -113,57 +94,51 @@
     let activeSessionId = null;
     let inputsUnsubscribe = null;
     let pollChartInstance = null;
+    let currentPollOptions = []; // Pour stocker les choix actuels (ex: Lundi, Mardi...)
 
-    console.log("🖥️ Écran Géant démarré. En attente de session...");
-
-    // 1. ÉCOUTER LE PILOTAGE (Le changement d'écran)
+    // 1. ÉCOUTER LE CONFIG (Pour savoir QUOI afficher)
     onSnapshot(doc(db, "config", "live"), (docSnap) => {
         if(docSnap.exists()) {
             const data = docSnap.data();
-            console.log("📥 Config reçue :", data);
             
-            // Si la session change, on change l'écoute des données
+            // Titre global
+            if(data.sessionTitle) document.getElementById('session-title').innerText = "📍 " + data.sessionTitle;
+
+            // Session ID
             if(data.activeSessionId && data.activeSessionId !== activeSessionId) {
                 activeSessionId = data.activeSessionId;
                 listenToData(activeSessionId);
             } else if (!data.activeSessionId) {
-                // Session terminée
+                // Session fermée
                 activeSessionId = null;
-                if(inputsUnsubscribe) inputsUnsubscribe();
                 showWall('attente');
                 return;
             }
 
-            // Changer l'affichage
+            // Configuration du Sondage (Si elle change)
+            if(data.pollQuestion) document.getElementById('poll-title-display').innerText = data.pollQuestion;
+            
+            // Si les options changent, on recrée le graphique
+            if(data.pollOptions && JSON.stringify(data.pollOptions) !== JSON.stringify(currentPollOptions)) {
+                currentPollOptions = data.pollOptions;
+                initChart(currentPollOptions);
+            }
+
+            // Navigation
             showWall(data.currentStep || 'attente');
         }
     });
 
     function showWall(stepName) {
-        console.log("👀 Affichage écran :", stepName);
+        if(stepName === 'welcome' || stepName === 'wait') stepName = 'attente';
+        
         document.querySelectorAll('.wall-screen').forEach(el => el.classList.remove('active'));
-        
-        // Mapping simple
-        let wallStep = stepName;
-        if(stepName === 'welcome' || stepName === 'wait') wallStep = 'attente';
-
-        const target = document.getElementById('wall-' + wallStep);
-        if(target) {
-            target.classList.add('active');
-        } else {
-            console.warn("⚠️ Écran inconnu :", wallStep);
-            document.getElementById('wall-attente').classList.add('active');
-        }
-        
-        // Gestion Chart.js (Redessiner pour éviter bug taille)
-        if(wallStep === 'sondage') {
-            setTimeout(initChart, 100); 
-        }
+        const target = document.getElementById('wall-' + stepName);
+        if(target) target.classList.add('active');
     }
 
-    // 2. ÉCOUTER LES DONNÉES (Nuages, Votes...)
+    // 2. ÉCOUTER LES RÉPONSES (Pour COMPTER)
     function listenToData(sessId) {
-        console.log("📡 Écoute des données session :", sessId);
         if(inputsUnsubscribe) inputsUnsubscribe();
         
         const q = query(collection(db, `sessions/${sessId}/inputs`));
@@ -171,125 +146,117 @@
         inputsUnsubscribe = onSnapshot(q, (snapshot) => {
             const words = [];
             const moods = { super:0, bien:0, bof:0, mauvais:0 };
-            const poll = { oui_top:0, oui_moyen:0, non_bof:0 };
+            
+            // Compteur dynamique pour le sondage
+            // On initialise tout à 0 selon les options actuelles
+            const pollCounts = {}; 
+            currentPollOptions.forEach(opt => pollCounts[opt] = 0);
+
             let totalMood = 0;
 
             snapshot.forEach(docSnap => {
                 const d = docSnap.data();
-                if(d.banned) return; // Ignore les mots censurés
+                if(d.banned) return; 
 
                 if(d.type === 'word') words.push(d.content);
+                
                 if(d.type === 'mood') { 
-                    if(moods[d.content] !== undefined) {
-                        moods[d.content]++; 
-                        totalMood++; 
-                    }
+                    if(moods[d.content] !== undefined) { moods[d.content]++; totalMood++; }
                 }
+                
                 if(d.type === 'poll') { 
-                    if(poll[d.content] !== undefined) poll[d.content]++; 
+                    // On compte le vote s'il correspond à une option valide
+                    if(pollCounts[d.content] !== undefined) {
+                        pollCounts[d.content]++;
+                    } else if(currentPollOptions.length === 0) {
+                        // Cas par défaut (vieux sondage ou pas d'options définies)
+                        pollCounts[d.content] = (pollCounts[d.content] || 0) + 1;
+                    }
                 }
             });
 
             updateCloud(words);
             updateMeteo(moods, totalMood);
-            updatePoll(poll);
+            updatePollChart(pollCounts);
         });
     }
 
-    // --- ANIMATIONS VISUELLES ---
+    // --- VISUELS ---
 
-    // NUAGE
     function updateCloud(words) {
         const container = document.getElementById('cloud-container');
-        
-        if(words.length === 0) {
-            container.innerHTML = '<div class="empty-msg">En attente des premiers mots...</div>';
-            return;
-        }
+        if(words.length === 0) { container.innerHTML = '<div class="empty-msg">En attente...</div>'; return; }
 
-        // Compter les occurrences
         const counts = {};
         words.forEach(w => counts[w] = (counts[w] || 0) + 1);
         
-        // Vider et recréer
         container.innerHTML = "";
-        
         Object.keys(counts).forEach(word => {
             const count = counts[word];
             const el = document.createElement('div');
             el.className = 'bubble';
             el.innerText = word;
-            
-            // Taille selon popularité
             let size = 1.5 + (count * 0.5); 
             el.style.fontSize = Math.min(size, 6) + "rem";
-            
-            // Position Aléatoire (centrée un peu mieux)
             el.style.left = (Math.random() * 80 + 5) + "%";
             el.style.top = (Math.random() * 80 + 5) + "%";
-            
-            // Couleurs aléatoires
             const colors = ['#db2777', '#2563eb', '#16a34a', '#d97706', '#8b5cf6'];
             el.style.borderColor = colors[Math.floor(Math.random()*colors.length)];
-            
             container.appendChild(el);
         });
     }
 
-    // MÉTÉO
     function updateMeteo(moods, total) {
-        if(total === 0) total = 1; // éviter div/0
-        
+        if(total === 0) total = 1;
         document.getElementById('bar-super').style.width = (moods.super/total*100) + "%";
         document.getElementById('count-super').innerText = moods.super;
-
         document.getElementById('bar-bien').style.width = (moods.bien/total*100) + "%";
         document.getElementById('count-bien').innerText = moods.bien;
-        
         document.getElementById('bar-bof').style.width = (moods.bof/total*100) + "%";
         document.getElementById('count-bof').innerText = moods.bof;
-        
         document.getElementById('bar-mauvais').style.width = (moods.mauvais/total*100) + "%";
         document.getElementById('count-mauvais').innerText = moods.mauvais;
     }
 
-    // CHART SONDAGE
-    function initChart() {
+    // --- CHART DYNAMIQUE ---
+
+    function initChart(labels) {
         const ctx = document.getElementById('pollChart');
-        if(pollChartInstance) {
-            pollChartInstance.destroy(); // Important pour éviter les bugs de redimensionnement
-        }
+        if(pollChartInstance) pollChartInstance.destroy();
+
+        // Couleurs automatiques
+        const bgColors = labels.map((_, i) => {
+            const palette = ['#4ade80', '#facc15', '#f87171', '#3b82f6', '#a855f7'];
+            return palette[i % palette.length];
+        });
 
         pollChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Oui, super', 'Plutôt oui', 'Pas vraiment'],
+                labels: labels, // <--- C'est ici que la magie opère (ex: ["Lundi", "Mardi"])
                 datasets: [{
                     label: 'Votes',
-                    data: [0, 0, 0],
-                    backgroundColor: ['#4ade80', '#facc15', '#f87171'],
-                    borderRadius: 10
+                    data: new Array(labels.length).fill(0),
+                    backgroundColor: bgColors,
+                    borderRadius: 15
                 }]
             },
             options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false }, title: { display: true, text: 'Nombre de votes', color: 'white', font: {size: 20} } },
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
                 scales: { 
-                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: 'white', font: {size: 16} } },
-                    x: { ticks: { color: 'white', font: {size: 18} } }
+                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: 'white', font:{size:20}, precision:0 } },
+                    x: { ticks: { color: 'white', font:{size:24, weight:'bold'} } }
                 } 
             }
         });
     }
 
-    function updatePoll(pollData) {
+    function updatePollChart(counts) {
         if(pollChartInstance) {
-            pollChartInstance.data.datasets[0].data = [
-                pollData.oui_top || 0, 
-                pollData.oui_moyen || 0, 
-                pollData.non_bof || 0
-            ];
+            // On transforme l'objet {Lundi: 3, Mardi: 1} en tableau [3, 1] dans le bon ordre
+            const dataArray = pollChartInstance.data.labels.map(label => counts[label] || 0);
+            pollChartInstance.data.datasets[0].data = dataArray;
             pollChartInstance.update();
         }
     }
