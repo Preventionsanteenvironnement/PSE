@@ -1,210 +1,295 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exercice PSE : Gérer son Budget</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="annuaire.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exercice PSE : Gérer son Budget</title>
 
-    <style>
-        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
-        body { font-family: sans-serif; background: var(--bg); padding: 20px; color: #1e293b; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .cours { background: #eff6ff; border-left: 5px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 25px; }
-        .situation-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
-        .situation-header { font-weight: bold; color: var(--primary); margin-bottom: 10px; font-size: 1.1rem; }
-        .options { display: flex; flex-direction: column; gap: 8px; }
-        .option-btn { padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 1rem; }
-        .option-btn:hover { border-color: var(--primary); }
-        .option-btn.selected { background: #dbeafe; border-color: var(--primary); }
-        .option-btn.correct { background: var(--success); color: white; border-color: var(--success); }
-        .option-btn.wrong { background: var(--error); color: white; border-color: var(--error); }
-        .btn-submit { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        #resultat { display: none; margin-top: 25px; text-align: center; font-size: 1.5rem; font-weight: bold; padding: 20px; border-radius: 10px; background: #f8fafc; }
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="annuaire.js"></script>
 
-        /* ✅ Ajustements techniques */
-        * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; }
-        body { padding: 20px; }
-        .container { width: 100%; max-width: 800px; }
-        .option-btn, .btn-submit { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        .option-btn { width: 100%; }
-        ul { padding-left: 20px; }
-        p { overflow-wrap: anywhere; }
+  <style>
+    :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#f1f5f9; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; padding:0; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); padding: 20px; color:#1e293b; overflow-x:hidden; }
+    .container { width:100%; max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .cours { background: #eff6ff; border-left: 5px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+    .situation-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+    .situation-header { font-weight: 800; color: var(--primary); margin-bottom: 10px; font-size: 1.1rem; }
+    .options { display:flex; flex-direction:column; gap:8px; }
+    .option-btn {
+      padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; background: white;
+      cursor: pointer; text-align:left; font-size: 1rem; width:100%;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+      transition: 0.12s;
+    }
+    .option-btn:hover { border-color: var(--primary); }
+    .option-btn.selected { background: #dbeafe; border-color: var(--primary); }
+    .option-btn.correct { background: var(--success); color: white; border-color: var(--success); }
+    .option-btn.wrong { background: var(--error); color: white; border-color: var(--error); }
+    .btn-submit {
+      width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 12px;
+      font-size: 1.2rem; font-weight: 900; cursor: pointer; margin-top: 20px;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .btn-submit[disabled]{ opacity:0.85; cursor:not-allowed; }
+    #resultat {
+      display:none; margin-top: 25px; text-align: center; font-size: 1.25rem; font-weight: 900;
+      padding: 16px; border-radius: 12px; background: #f8fafc; border:1px solid #e2e8f0;
+      overflow-wrap:anywhere;
+    }
+    #alerte {
+      display:none; margin-top: 14px; padding: 12px 14px; border-radius: 12px;
+      background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-weight: 800;
+      overflow-wrap:anywhere;
+    }
+    ul { padding-left: 20px; }
+    p { overflow-wrap:anywhere; }
 
-        @media (max-width: 600px) {
-            body { padding: 12px; }
-            .container { padding: 16px; border-radius: 12px; }
-            .situation-card { padding: 12px; }
-            .situation-header { font-size: 1.05rem; }
-            .btn-submit { padding: 16px; font-size: 1.1rem; }
-            #resultat { font-size: 1.25rem; padding: 14px; }
-        }
-    </style>
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .container { padding: 16px; border-radius: 12px; }
+      .situation-card { padding: 12px; }
+      .situation-header { font-size: 1.05rem; }
+      .btn-submit { padding: 16px; font-size: 1.1rem; }
+      #resultat { font-size: 1.15rem; padding: 14px; }
+    }
+  </style>
 </head>
-<body>
 
-<div class="container">
+<body>
+  <div class="container">
     <header style="text-align:center; margin-bottom:20px;">
-        <h1>L'état de mon Budget</h1>
+      <h1 style="margin:0;">L'état de mon Budget</h1>
     </header>
 
-    <script>
-        if(typeof enregistrerVisite === "function") {
-            enregistrerVisite("Exercice PSE - États du Budget");
-        }
-    </script>
-
     <section class="cours">
-        <strong>Rappel simple :</strong>
-        <ul>
-            <li><strong>Excédentaire :</strong> On gagne plus qu'on ne dépense. On peut épargner.</li>
-            <li><strong>Équilibré :</strong> Les dépenses sont environ égales aux revenus. On finit à 0.</li>
-            <li><strong>Déficitaire :</strong> Les dépenses sont supérieures aux revenus. On manque d'argent.</li>
-        </ul>
+      <strong>Rappel simple :</strong>
+      <ul>
+        <li><strong>Excédentaire :</strong> on gagne plus qu'on ne dépense. On peut épargner.</li>
+        <li><strong>Équilibré :</strong> les dépenses sont environ égales aux revenus. On finit à 0.</li>
+        <li><strong>Déficitaire :</strong> les dépenses sont supérieures aux revenus. On manque d'argent.</li>
+      </ul>
     </section>
 
-    <div id="quiz">
-        <div class="situation-card" data-correct="excedentaire">
-            <div class="situation-header">Situation 1 : Noémie</div>
-            <p>Elle a payé toutes ses charges. À la fin du mois, elle met 25 € sur son livret d'épargne.</p>
-            <div class="options">
-                <button class="option-btn" data-value="excedentaire">Budget Excédentaire</button>
-                <button class="option-btn" data-value="equilibre">Budget Équilibré</button>
-                <button class="option-btn" data-value="deficitaire">Budget Déficitaire</button>
-            </div>
+    <div id="quiz" aria-label="Quiz états du budget">
+      <div class="situation-card" data-correct="excedentaire">
+        <div class="situation-header">Situation 1 : Noémie</div>
+        <p>Elle a payé toutes ses charges. À la fin du mois, elle met 25 € sur son livret d'épargne.</p>
+        <div class="options">
+          <button class="option-btn" type="button" data-value="excedentaire">Budget Excédentaire</button>
+          <button class="option-btn" type="button" data-value="equilibre">Budget Équilibré</button>
+          <button class="option-btn" type="button" data-value="deficitaire">Budget Déficitaire</button>
         </div>
+      </div>
 
-        <div class="situation-card" data-correct="deficitaire">
-            <div class="situation-header">Situation 2 : Coumba</div>
-            <p>Elle dépense sans compter. Elle n'a plus assez d'argent pour payer ses dernières factures.</p>
-            <div class="options">
-                <button class="option-btn" data-value="excedentaire">Budget Excédentaire</button>
-                <button class="option-btn" data-value="equilibre">Budget Équilibré</button>
-                <button class="option-btn" data-value="deficitaire">Budget Déficitaire</button>
-            </div>
+      <div class="situation-card" data-correct="deficitaire">
+        <div class="situation-header">Situation 2 : Coumba</div>
+        <p>Elle dépense sans compter. Elle n'a plus assez d'argent pour payer ses dernières factures.</p>
+        <div class="options">
+          <button class="option-btn" type="button" data-value="excedentaire">Budget Excédentaire</button>
+          <button class="option-btn" type="button" data-value="equilibre">Budget Équilibré</button>
+          <button class="option-btn" type="button" data-value="deficitaire">Budget Déficitaire</button>
         </div>
+      </div>
 
-        <div class="situation-card" data-correct="equilibre">
-            <div class="situation-header">Situation 3 : Tristan</div>
-            <p>Il a utilisé tout son salaire. Il finit le mois avec exactement 0 € sur son compte.</p>
-            <div class="options">
-                <button class="option-btn" data-value="excedentaire">Budget Excédentaire</button>
-                <button class="option-btn" data-value="equilibre">Budget Équilibré</button>
-                <button class="option-btn" data-value="deficitaire">Budget Déficitaire</button>
-            </div>
+      <div class="situation-card" data-correct="equilibre">
+        <div class="situation-header">Situation 3 : Tristan</div>
+        <p>Il a utilisé tout son salaire. Il finit le mois avec exactement 0 € sur son compte.</p>
+        <div class="options">
+          <button class="option-btn" type="button" data-value="excedentaire">Budget Excédentaire</button>
+          <button class="option-btn" type="button" data-value="equilibre">Budget Équilibré</button>
+          <button class="option-btn" type="button" data-value="deficitaire">Budget Déficitaire</button>
         </div>
+      </div>
 
-        <div class="situation-card" data-correct="excedentaire">
-            <div class="situation-header">Situation 4 : Marc</div>
-            <p>Marc gagne 1 500 € par mois. Ses dépenses totales s'élèvent à 1 200 €.</p>
-            <div class="options">
-                <button class="option-btn" data-value="excedentaire">Budget Excédentaire</button>
-                <button class="option-btn" data-value="equilibre">Budget Équilibré</button>
-                <button class="option-btn" data-value="deficitaire">Budget Déficitaire</button>
-            </div>
+      <div class="situation-card" data-correct="excedentaire">
+        <div class="situation-header">Situation 4 : Marc</div>
+        <p>Marc gagne 1 500 € par mois. Ses dépenses totales s'élèvent à 1 200 €.</p>
+        <div class="options">
+          <button class="option-btn" type="button" data-value="excedentaire">Budget Excédentaire</button>
+          <button class="option-btn" type="button" data-value="equilibre">Budget Équilibré</button>
+          <button class="option-btn" type="button" data-value="deficitaire">Budget Déficitaire</button>
         </div>
+      </div>
 
-        <div class="situation-card" data-correct="deficitaire">
-            <div class="situation-header">Situation 5 : Léa</div>
-            <p>Léa perçoit 800 € d'aides. Son loyer et ses courses coûtent 950 €. Elle est à découvert.</p>
-            <div class="options">
-                <button class="option-btn" data-value="excedentaire">Budget Excédentaire</button>
-                <button class="option-btn" data-value="equilibre">Budget Équilibré</button>
-                <button class="option-btn" data-value="deficitaire">Budget Déficitaire</button>
-            </div>
+      <div class="situation-card" data-correct="deficitaire">
+        <div class="situation-header">Situation 5 : Léa</div>
+        <p>Léa perçoit 800 € d'aides. Son loyer et ses courses coûtent 950 €. Elle est à découvert.</p>
+        <div class="options">
+          <button class="option-btn" type="button" data-value="excedentaire">Budget Excédentaire</button>
+          <button class="option-btn" type="button" data-value="equilibre">Budget Équilibré</button>
+          <button class="option-btn" type="button" data-value="deficitaire">Budget Déficitaire</button>
         </div>
+      </div>
 
-        <div class="situation-card" data-correct="equilibre">
-            <div class="situation-header">Situation 6 : Yassine</div>
-            <p>Yassine gagne 1 200 €. Ses dépenses sont de 1 198 €. Il lui reste 2 €, ce qui est presque nul.</p>
-            <div class="options">
-                <button class="option-btn" data-value="excedentaire">Budget Excédentaire</button>
-                <button class="option-btn" data-value="equilibre">Budget Équilibré</button>
-                <button class="option-btn" data-value="deficitaire">Budget Déficitaire</button>
-            </div>
+      <div class="situation-card" data-correct="equilibre">
+        <div class="situation-header">Situation 6 : Yassine</div>
+        <p>Yassine gagne 1 200 €. Ses dépenses sont de 1 198 €. Il lui reste 2 €, ce qui est presque nul.</p>
+        <div class="options">
+          <button class="option-btn" type="button" data-value="excedentaire">Budget Excédentaire</button>
+          <button class="option-btn" type="button" data-value="equilibre">Budget Équilibré</button>
+          <button class="option-btn" type="button" data-value="deficitaire">Budget Déficitaire</button>
         </div>
+      </div>
     </div>
 
-    <button class="btn-submit" id="valider">VÉRIFIER MES RÉPONSES</button>
-    <div id="resultat"></div>
-</div>
+    <div id="alerte"></div>
 
-<script>
-    document.querySelectorAll('.option-btn').forEach(btn => {
-        btn.onclick = function() {
-            const parent = this.closest('.situation-card');
-            parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-        };
+    <button class="btn-submit" id="valider" type="button">VÉRIFIER MES RÉPONSES</button>
+    <div id="resultat"></div>
+  </div>
+
+  <script>
+    window.PSE_CODE_REQUIRED = true;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    (function initFirebaseOnce(){
+      try {
+        if (typeof firebase !== "undefined" && firebaseConfig) {
+          if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+          window.db = firebase.firestore();
+        } else {
+          window.db = null;
+        }
+      } catch(e) {
+        window.db = null;
+      }
+    })();
+
+    (function traceVisite(){
+      try {
+        if (typeof enregistrerVisite === "function") {
+          enregistrerVisite("Exercice PSE - États du Budget");
+        }
+      } catch(e) {}
+    })();
+
+    function getIdentity(){
+      const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
+      const classe =
+        localStorage.getItem("userClasse") ||
+        ((typeof ANNUAIRE !== "undefined" && ANNUAIRE && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE");
+      return { code, classe };
+    }
+
+    function showAlert(msg){
+      const a = document.getElementById("alerte");
+      a.style.display = "block";
+      a.textContent = msg;
+      a.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+
+    function hideAlert(){
+      const a = document.getElementById("alerte");
+      a.style.display = "none";
+      a.textContent = "";
+    }
+
+    function lockOptions(){
+      document.querySelectorAll(".option-btn").forEach(b=>{
+        b.disabled = true;
+        b.style.pointerEvents = "none";
+      });
+    }
+
+    function allAnswered(){
+      const cards = document.querySelectorAll(".situation-card");
+      for (const c of cards) {
+        if (!c.querySelector(".option-btn.selected")) return false;
+      }
+      return true;
+    }
+
+    document.querySelectorAll(".option-btn").forEach(btn => {
+      btn.setAttribute("tabindex","0");
+      btn.addEventListener("click", function() {
+        const parent = this.closest(".situation-card");
+        parent.querySelectorAll(".option-btn").forEach(b => b.classList.remove("selected"));
+        this.classList.add("selected");
+        hideAlert();
+      });
+      btn.addEventListener("keydown", function(e){
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          this.click();
+        }
+      });
     });
 
-    document.getElementById('valider').onclick = async function() {
-        if (this.disabled) return;
-        this.disabled = true;
-        this.style.opacity = '0.85';
-        this.style.cursor = 'not-allowed';
+    document.getElementById("valider").addEventListener("click", async function() {
+      const btn = this;
+      if (btn.disabled) return;
 
-        let rawScore = 0;
-        const situations = document.querySelectorAll('.situation-card');
+      if (!allAnswered()){
+        showAlert("Réponds à toutes les situations avant de valider");
+        return;
+      }
 
-        situations.forEach(card => {
-            const selected = card.querySelector('.option-btn.selected');
-            const correct = card.getAttribute('data-correct');
+      hideAlert();
+      btn.disabled = true;
 
-            card.querySelectorAll('.option-btn').forEach(btn => {
-                btn.style.pointerEvents = 'none';
-                if (btn.getAttribute('data-value') === correct) {
-                    btn.classList.add('correct');
-                } else if (btn.classList.contains('selected')) {
-                    btn.classList.add('wrong');
-                }
-            });
-            if (selected && selected.getAttribute('data-value') === correct) { rawScore++; }
+      let rawScore = 0;
+      const situations = document.querySelectorAll(".situation-card");
+
+      situations.forEach(card => {
+        const selected = card.querySelector(".option-btn.selected");
+        const correct = card.getAttribute("data-correct");
+
+        card.querySelectorAll(".option-btn").forEach(b => {
+          b.classList.remove("correct","wrong");
+          if (b.getAttribute("data-value") === correct) {
+            b.classList.add("correct");
+          } else if (b.classList.contains("selected")) {
+            b.classList.add("wrong");
+          }
         });
 
-        // Conversion de la note sur 20
-        const noteSur20 = Math.round((rawScore / 6) * 20);
+        if (selected && selected.getAttribute("data-value") === correct) rawScore++;
+      });
 
-        const final = document.getElementById('resultat');
-        final.style.display = 'block';
-        final.innerHTML = "Ton score : " + rawScore + " / 6 <br> Note : " + noteSur20 + "/20";
-        this.style.display = 'none';
+      lockOptions();
 
-        // --- ENVOI FIREBASE (Compétences C1 & C2) ---
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            const db = firebase.firestore();
-            
-            // Récupération Identité
-            const code = localStorage.getItem("codeEleve") || "ANONYME";
-            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+      const noteSur20 = Math.round((rawScore / 6) * 20);
 
-            // Envoi
+      const final = document.getElementById("resultat");
+      final.style.display = "block";
+      final.innerHTML = "Ton score : " + rawScore + " / 6<br>Note : " + noteSur20 + " / 20";
+
+      btn.style.display = "none";
+
+      try {
+        const { code, classe } = getIdentity();
+
+        if (window.db && typeof firebase !== "undefined") {
+          const sentKey = "sent_etats_budget_" + code;
+          if (!sessionStorage.getItem(sentKey)) {
             await db.collection("resultats_exercices").add({
-                eleve: code,
-                classe: classe,
-                exercice: "Exercice PSE - États du Budget",
-                note: noteSur20,
-                total: 20,
-                competences: {
-                    "C1": noteSur20, 
-                    "C2": noteSur20  
-                },
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+              eleve: code,
+              classe: classe,
+              exercice: "Exercice PSE - États du Budget",
+              note: noteSur20,
+              total: 20,
+              competences: { C1: noteSur20, C2: noteSur20 },
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("✅ Résultats envoyés vers C1 et C2 pour " + code);
-
-        } catch (e) {
-            console.error("Erreur lors de l'envoi Firebase : ", e);
+            sessionStorage.setItem(sentKey, "1");
+          }
         }
-    };
-</script>
-
+      } catch(e) {
+        console.error("Erreur lors de l'envoi Firebase : ", e);
+      }
+    });
+  </script>
 </body>
 </html>
