@@ -2,42 +2,71 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Écran Géant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Écran Géant - Café Parents</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { margin: 0; background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; display:flex; justify-content:center; align-items:center; height:100vh; }
-        .hidden { display: none !important; }
-        .screen { width: 90%; height: 80%; display:none; flex-direction:column; align-items:center; }
-        .active { display: flex; animation: fadeUp 0.5s; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        /* DESIGN MUR ÉCRAN */
+        body { 
+            margin: 0; background: #0f172a; color: white; 
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh;
+        }
         
-        h1 { font-size: 3rem; color: #db2777; margin-bottom: 10px; text-align:center; }
-        h2 { font-size: 2.5rem; margin-bottom: 30px; text-align:center; }
+        /* HEADER */
+        .header { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .title-main { font-size: 2rem; font-weight: bold; color: #db2777; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* QR CODE */
+        .qr-box { background: white; padding: 10px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; }
+        .qr-text { color: black; font-weight: bold; font-size: 0.9rem; margin-top: 5px; }
 
-        /* CHART */
-        .chart-container { width: 80%; height: 60vh; position: relative; }
-        
-        /* NUAGE */
-        #cloud-box { position: relative; width: 100%; height: 60vh; }
-        .bubble { position: absolute; padding: 10px 20px; border-radius: 30px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); font-weight: bold; color:white; transition: 0.5s; }
+        /* VUES (Écrans) */
+        .screen { display: none; width: 90%; height: 80%; flex-direction: column; align-items: center; justify-content: center; animation: zoomIn 0.5s; }
+        .active { display: flex; }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        h1 { font-size: 3.5rem; text-align: center; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h2 { font-size: 2rem; color: #cbd5e1; margin-bottom: 40px; }
+
+        /* GRAPHIQUE */
+        .chart-wrapper { width: 80%; height: 60vh; position: relative; }
+
+        /* NUAGE DE MOTS */
+        #cloud-container { width: 100%; height: 60vh; position: relative; }
+        .bubble { 
+            position: absolute; padding: 10px 25px; border-radius: 50px; 
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
+            color: white; font-weight: bold; transition: all 0.5s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
 
+    <div class="header">
+        <div class="title-main" id="session-title-display">☕ Café Parents</div>
+        <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://preventionsanteenvironnement.github.io/PSE/cafe_mobile.html" alt="QR">
+            <div class="qr-text">Scannez pour jouer</div>
+        </div>
+    </div>
+
     <div id="view-wait" class="screen active">
-        <h1 style="font-size:5rem;">☕ Café Parents</h1>
-        <p style="font-size:2rem; color:#94a3b8;">La session va commencer...</p>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://preventionsanteenvironnement.github.io/PSE/cafe_mobile.html" style="margin-top:30px; border-radius:10px;">
+        <h1>Bienvenue !</h1>
+        <h2>Installez-vous, nous allons commencer.</h2>
+        <div style="font-size: 5rem; animation: float 3s infinite ease-in-out;">👋</div>
     </div>
 
     <div id="view-nuage" class="screen">
         <h1>☁️ Nuage de mots</h1>
-        <div id="cloud-box"></div>
+        <div id="cloud-container"></div>
     </div>
 
-    <div id="view-poll" class="screen">
-        <h2 id="poll-question">Question...</h2>
-        <div class="chart-container">
+    <div id="view-chart" class="screen">
+        <h1 id="question-display" style="font-size: 2.5rem;">Question...</h1>
+        <div class="chart-wrapper">
             <canvas id="myChart"></canvas>
         </div>
     </div>
@@ -46,118 +75,149 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    const app = initializeApp({ apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse" });
+    const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.appspot.com", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+    const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    
+
     let activeSessionId = null;
     let chartInstance = null;
-    let currentOptions = [];
-    let correctIndex = -1; // Pour le quiz
-    let isRevealed = false;
+    
+    // Variables pour gérer l'état
+    let currentLabels = [];
+    let currentQuizCorrectIndex = -1;
+    let currentQuizState = 'voting'; // 'voting' ou 'revealed'
+    let currentType = 'poll'; // 'poll', 'quiz', 'meteo'
 
-    // CONFIG
+    // 1. ÉCOUTE DE LA CONFIGURATION (Le Cerveau)
     onSnapshot(doc(db, "config", "live"), (snap) => {
         if(!snap.exists()) return;
         const data = snap.data();
-        
-        // Session ID
+
+        // Mise à jour Session
+        if(data.sessionTitle) document.getElementById('session-title-display').innerText = data.sessionTitle;
         if(data.activeSessionId !== activeSessionId) {
             activeSessionId = data.activeSessionId;
-            if(activeSessionId) listenData(activeSessionId);
+            if(activeSessionId) listenToVotes(activeSessionId);
+            else showScreen('wait');
         }
 
-        // Navigation
-        let step = data.currentStep || 'wait';
-        if(step === 'meteo') step = 'poll'; // Météo utilise la vue graphique aussi
-        if(step === 'quiz') step = 'poll'; // Quiz utilise la vue graphique
+        // Mise à jour État Quiz
+        currentQuizState = data.quizState || 'voting';
 
-        document.querySelectorAll('.screen').forEach(e => e.classList.remove('active'));
-        const target = document.getElementById(step === 'nuage' ? 'view-nuage' : (step === 'poll' ? 'view-poll' : 'view-wait'));
-        if(target) target.classList.add('active');
-
-        // Setup Graphique
-        if(data.currentStep === 'sondage' || data.currentStep === 'quiz' || data.currentStep === 'meteo') {
-            let labels = [];
-            let question = "";
-            
-            if(data.currentStep === 'meteo') {
-                labels = ['🤩 Super', '🙂 Bien', '🤔 Bof', '😰 Mauvais'];
-                question = "Météo du groupe";
-            } else if (data.currentStep === 'quiz') {
-                labels = data.quizOptions || [];
-                question = data.quizQuestion;
-                correctIndex = data.quizCorrect;
-                isRevealed = (data.quizState === 'revealed');
-            } else {
-                labels = data.pollOptions || [];
-                question = data.pollQuestion;
-                correctIndex = -1; // Pas de bonne réponse
-            }
-
-            document.getElementById('poll-question').innerText = question;
-            if(JSON.stringify(labels) !== JSON.stringify(currentOptions)) {
-                currentOptions = labels;
-                initChart(labels);
-            }
-            // Si c'est un quiz et qu'on révèle, on update les couleurs
-            if(data.currentStep === 'quiz') updateChartColors();
-        }
+        // Gestion Navigation
+        handleNavigation(data);
     });
 
-    // DONNEES
-    function listenData(sessId) {
-        onSnapshot(query(collection(db, `sessions/${sessId}/inputs`)), (snap) => {
-            const counts = new Array(currentOptions.length).fill(0);
-            const words = [];
-            
-            snap.forEach(d => {
-                const val = d.data().content;
-                const type = d.data().type;
+    function handleNavigation(data) {
+        let step = data.currentStep || 'wait';
+        
+        // Configuration des Labels et Questions selon le mode
+        if(step === 'meteo') {
+            setupChartMode("Météo du groupe", ['🤩 Super', '🙂 Bien', '🤔 Bof', '😰 Mauvais'], 'meteo');
+        } 
+        else if (step === 'sondage') {
+            setupChartMode(data.pollQuestion, data.pollOptions, 'poll');
+        }
+        else if (step === 'quiz') {
+            currentQuizCorrectIndex = data.quizCorrect; // On garde la bonne réponse en mémoire
+            setupChartMode(data.quizQuestion, data.quizOptions, 'quiz');
+        }
+        else if (step === 'nuage') {
+            showScreen('nuage');
+        } 
+        else {
+            showScreen('wait');
+        }
+    }
 
-                if(type === 'word') words.push(val);
+    function setupChartMode(question, options, type) {
+        currentType = type;
+        document.getElementById('question-display').innerText = question || "Sondage";
+        
+        // Si les options ont changé, on refait le graphique
+        if(JSON.stringify(options) !== JSON.stringify(currentLabels)) {
+            currentLabels = options || [];
+            initChart(currentLabels);
+        }
+        
+        // Si c'est un quiz, on met à jour les couleurs (vert/rouge) selon l'état
+        if(type === 'quiz') updateChartColors();
+        
+        showScreen('chart');
+    }
+
+    function showScreen(name) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById('view-' + name);
+        if(target) target.classList.add('active');
+    }
+
+    // 2. ÉCOUTE DES VOTES (Les données)
+    function listenToVotes(sessId) {
+        onSnapshot(query(collection(db, `sessions/${sessId}/inputs`)), (snap) => {
+            
+            const counts = new Array(currentLabels.length).fill(0);
+            const words = [];
+
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
                 
-                // Comptage votes
-                if(type === 'quiz') {
-                    if(val >= 0 && val < counts.length) counts[val]++;
-                } else if (type === 'poll') {
-                    const idx = currentOptions.indexOf(val);
-                    if(idx !== -1) counts[idx]++;
-                } else if (type === 'mood') {
-                    const map = { 'super':0, 'bien':1, 'bof':2, 'mauvais':3 };
-                    if(map[val] !== undefined) counts[map[val]]++;
+                // NUAGE
+                if(d.type === 'word' && !d.banned) words.push(d.content);
+
+                // GRAPHIQUES
+                if(d.type === currentType) {
+                    if(currentType === 'quiz') {
+                        // Quiz : le contenu est un index (0, 1, 2...)
+                        const idx = parseInt(d.content);
+                        if(idx >= 0 && idx < counts.length) counts[idx]++;
+                    } 
+                    else if (currentType === 'poll') {
+                        // Sondage : le contenu est du texte
+                        const idx = currentLabels.indexOf(d.content);
+                        if(idx !== -1) counts[idx]++;
+                    }
+                    else if (currentType === 'meteo') {
+                        // Météo : mapping manuel
+                        const map = { 'super':0, 'bien':1, 'bof':2, 'mauvais':3 };
+                        if(map[d.content] !== undefined) counts[map[d.content]]++;
+                    }
                 }
             });
 
-            if(document.getElementById('view-nuage').classList.contains('active')) updateCloud(words);
-            else if(chartInstance) {
+            // Mettre à jour l'affichage
+            if(document.getElementById('view-nuage').classList.contains('active')) {
+                renderCloud(words);
+            } else if (chartInstance) {
                 chartInstance.data.datasets[0].data = counts;
                 chartInstance.update();
             }
         });
     }
 
-    // CHART
+    // 3. GESTION DU GRAPHIQUE (Chart.js)
     function initChart(labels) {
         const ctx = document.getElementById('myChart');
         if(chartInstance) chartInstance.destroy();
-        
+
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{ 
-                    label: 'Votes', 
+                datasets: [{
+                    label: 'Votes',
                     data: new Array(labels.length).fill(0),
-                    backgroundColor: '#3b82f6',
-                    borderRadius: 10
+                    backgroundColor: '#3b82f6', // Bleu par défaut
+                    borderRadius: 10,
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { 
-                    y: { beginAtZero: true, ticks: { color:'white', font:{size:20} } },
-                    x: { ticks: { color:'white', font:{size:24} } }
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: 'white', font: { size: 18 } }, grid: { color: '#334155' } },
+                    x: { ticks: { color: 'white', font: { size: 22, weight: 'bold' } }, grid: { display: false } }
                 }
             }
         });
@@ -165,32 +225,51 @@
 
     function updateChartColors() {
         if(!chartInstance) return;
-        const colors = currentOptions.map((_, i) => {
-            if(!isRevealed) return '#3b82f6'; // Bleu normal
-            return (i == correctIndex) ? '#10b981' : '#ef4444'; // Vert si juste, Rouge si faux
+
+        // Logique de couleur pour le QUIZ
+        const colors = currentLabels.map((_, index) => {
+            if (currentQuizState === 'revealed') {
+                // Si révélé : Vert pour la bonne réponse, Rouge transparent pour les autres
+                return (index === currentQuizCorrectIndex) ? '#22c55e' : '#ef4444';
+            } else {
+                // Si vote en cours : Bleu mystère
+                return '#3b82f6';
+            }
         });
+
         chartInstance.data.datasets[0].backgroundColor = colors;
         chartInstance.update();
     }
 
-    // NUAGE
-    function updateCloud(words) {
-        const box = document.getElementById('cloud-box');
-        box.innerHTML = "";
+    // 4. GESTION DU NUAGE
+    function renderCloud(words) {
+        const container = document.getElementById('cloud-container');
+        container.innerHTML = "";
+        
         const counts = {};
         words.forEach(w => counts[w] = (counts[w] || 0) + 1);
-        
-        Object.keys(counts).forEach(w => {
+
+        Object.keys(counts).forEach(word => {
             const el = document.createElement('div');
             el.className = 'bubble';
-            el.innerText = w;
-            const size = Math.min(2 + counts[w], 6);
-            el.style.fontSize = size + 'rem';
-            el.style.left = Math.random() * 80 + '%';
-            el.style.top = Math.random() * 80 + '%';
-            box.appendChild(el);
+            el.innerText = word;
+            
+            // Taille selon popularité
+            let size = 1.5 + (counts[word] * 0.5);
+            el.style.fontSize = Math.min(size, 5) + "rem";
+            
+            // Position aléatoire
+            el.style.left = Math.random() * 80 + "%";
+            el.style.top = Math.random() * 80 + "%";
+            
+            // Couleur aléatoire
+            const cols = ['#f472b6', '#4ade80', '#60a5fa', '#facc15'];
+            el.style.borderColor = cols[Math.floor(Math.random()*cols.length)];
+            
+            container.appendChild(el);
         });
     }
+
 </script>
 </body>
 </html>
