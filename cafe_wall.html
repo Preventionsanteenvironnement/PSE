@@ -11,15 +11,15 @@
         /* HEADER */
         .header { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         .title { font-size: 2rem; font-weight: bold; color: #db2777; text-shadow: 0 0 20px rgba(219,39,119,0.5); }
-        .qr-box { background: white; padding: 10px; border-radius: 10px; color: black; text-align: center; }
+        .qr-box { background: white; padding: 10px; border-radius: 10px; color: black; text-align: center; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
         
         /* ÉCRANS */
         .wall-screen { display: none; height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; align-items: center; justify-content: center; flex-direction: column; }
         .wall-screen.active { display: flex; animation: fadeZoom 0.8s; }
         @keyframes fadeZoom { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 
-        /* NUAGES (Bulles) */
-        #cloud-container { width: 90%; height: 80%; position: relative; }
+        /* NUAGE (Bulles) */
+        #cloud-container { width: 90%; height: 70%; position: relative; display:flex; justify-content:center; align-items:center; }
         .bubble { position: absolute; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.3); font-weight: bold; font-size: 1.5rem; color: white; transition: 0.5s; white-space: nowrap; box-shadow: 0 0 15px rgba(219,39,119,0.2); animation: float 6s infinite ease-in-out; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
@@ -29,6 +29,10 @@
         .meteo-emoji { font-size: 5rem; display: block; margin-bottom: 20px; transition: 0.3s; }
         .meteo-bar { width: 100%; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; }
         .meteo-fill { height: 100%; width: 0%; background: #db2777; transition: 1s ease-out; }
+
+        /* EMPTY STATE */
+        .empty-msg { color: #64748b; font-size: 1.5rem; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
 
     </style>
 </head>
@@ -43,9 +47,11 @@
     </div>
 
     <div id="wall-attente" class="wall-screen active">
-        <h1 style="font-size: 4rem;">Bienvenue !</h1>
+        <h1 style="font-size: 4rem; margin-bottom:10px;">Bienvenue !</h1>
         <p style="font-size: 2rem; color: #94a3b8;">Installez-vous, nous allons commencer.</p>
-        <p style="font-size: 1.5rem; color: #4ade80; margin-top: 20px;">🔒 Participation 100% Anonyme</p>
+        <p style="font-size: 1.5rem; color: #4ade80; margin-top: 40px; border: 1px solid #4ade80; padding:10px 20px; border-radius:50px;">
+            🔒 Participation 100% Anonyme
+        </p>
     </div>
 
     <div id="wall-meteo" class="wall-screen">
@@ -75,7 +81,10 @@
     </div>
 
     <div id="wall-nuage" class="wall-screen">
-        <div id="cloud-container"></div>
+        <h2 style="font-size: 3rem; margin-bottom: 20px;">☁️ Nuage de mots</h2>
+        <div id="cloud-container">
+            <div class="empty-msg">En attente des premiers mots...</div>
+        </div>
     </div>
     
     <div id="wall-sondage" class="wall-screen">
@@ -105,15 +114,24 @@
     let inputsUnsubscribe = null;
     let pollChartInstance = null;
 
+    console.log("🖥️ Écran Géant démarré. En attente de session...");
+
     // 1. ÉCOUTER LE PILOTAGE (Le changement d'écran)
     onSnapshot(doc(db, "config", "live"), (docSnap) => {
         if(docSnap.exists()) {
             const data = docSnap.data();
+            console.log("📥 Config reçue :", data);
             
             // Si la session change, on change l'écoute des données
-            if(data.activeSessionId !== activeSessionId) {
+            if(data.activeSessionId && data.activeSessionId !== activeSessionId) {
                 activeSessionId = data.activeSessionId;
-                if(activeSessionId) listenToData(activeSessionId);
+                listenToData(activeSessionId);
+            } else if (!data.activeSessionId) {
+                // Session terminée
+                activeSessionId = null;
+                if(inputsUnsubscribe) inputsUnsubscribe();
+                showWall('attente');
+                return;
             }
 
             // Changer l'affichage
@@ -122,23 +140,30 @@
     });
 
     function showWall(stepName) {
+        console.log("👀 Affichage écran :", stepName);
         document.querySelectorAll('.wall-screen').forEach(el => el.classList.remove('active'));
-        // Mapping entre les noms d'étapes mobile et wall
-        // mobile: welcome, wait, meteo, nuage, sondage
-        // wall: attente, meteo, nuage, sondage
         
+        // Mapping simple
         let wallStep = stepName;
         if(stepName === 'welcome' || stepName === 'wait') wallStep = 'attente';
 
         const target = document.getElementById('wall-' + wallStep);
-        if(target) target.classList.add('active');
+        if(target) {
+            target.classList.add('active');
+        } else {
+            console.warn("⚠️ Écran inconnu :", wallStep);
+            document.getElementById('wall-attente').classList.add('active');
+        }
         
-        // Si sondage, on init le chart
-        if(wallStep === 'sondage') initChart();
+        // Gestion Chart.js (Redessiner pour éviter bug taille)
+        if(wallStep === 'sondage') {
+            setTimeout(initChart, 100); 
+        }
     }
 
     // 2. ÉCOUTER LES DONNÉES (Nuages, Votes...)
     function listenToData(sessId) {
+        console.log("📡 Écoute des données session :", sessId);
         if(inputsUnsubscribe) inputsUnsubscribe();
         
         const q = query(collection(db, `sessions/${sessId}/inputs`));
@@ -176,6 +201,12 @@
     // NUAGE
     function updateCloud(words) {
         const container = document.getElementById('cloud-container');
+        
+        if(words.length === 0) {
+            container.innerHTML = '<div class="empty-msg">En attente des premiers mots...</div>';
+            return;
+        }
+
         // Compter les occurrences
         const counts = {};
         words.forEach(w => counts[w] = (counts[w] || 0) + 1);
@@ -191,14 +222,14 @@
             
             // Taille selon popularité
             let size = 1.5 + (count * 0.5); 
-            el.style.fontSize = Math.min(size, 5) + "rem";
+            el.style.fontSize = Math.min(size, 6) + "rem";
             
-            // Position Aléatoire
-            el.style.left = Math.random() * 80 + "%";
-            el.style.top = Math.random() * 80 + "%";
+            // Position Aléatoire (centrée un peu mieux)
+            el.style.left = (Math.random() * 80 + 5) + "%";
+            el.style.top = (Math.random() * 80 + 5) + "%";
             
             // Couleurs aléatoires
-            const colors = ['#db2777', '#2563eb', '#16a34a', '#d97706'];
+            const colors = ['#db2777', '#2563eb', '#16a34a', '#d97706', '#8b5cf6'];
             el.style.borderColor = colors[Math.floor(Math.random()*colors.length)];
             
             container.appendChild(el);
@@ -225,7 +256,9 @@
     // CHART SONDAGE
     function initChart() {
         const ctx = document.getElementById('pollChart');
-        if(pollChartInstance) return; // Déjà créé
+        if(pollChartInstance) {
+            pollChartInstance.destroy(); // Important pour éviter les bugs de redimensionnement
+        }
 
         pollChartInstance = new Chart(ctx, {
             type: 'bar',
@@ -234,16 +267,17 @@
                 datasets: [{
                     label: 'Votes',
                     data: [0, 0, 0],
-                    backgroundColor: ['#4ade80', '#facc15', '#f87171']
+                    backgroundColor: ['#4ade80', '#facc15', '#f87171'],
+                    borderRadius: 10
                 }]
             },
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false, 
-                plugins: { legend: { display: false }, title: { display: true, text: 'Nombre de votes', color: 'white' } },
+                plugins: { legend: { display: false }, title: { display: true, text: 'Nombre de votes', color: 'white', font: {size: 20} } },
                 scales: { 
-                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: 'white' } },
-                    x: { ticks: { color: 'white' } }
+                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: 'white', font: {size: 16} } },
+                    x: { ticks: { color: 'white', font: {size: 18} } }
                 } 
             }
         });
