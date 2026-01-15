@@ -1,6 +1,180 @@
-// --- DANS cafe_mobile.html ---
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Café Parents - Mobile</title>
+    <style>
+        /* === DESIGN MOBILE MODERNE & ÉPURÉ === */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; padding: 20px; 
+            background: #0f172a; /* Bleu Nuit Profond */
+            color: white; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; text-align: center;
+            overflow-x: hidden;
+        }
 
-    // 1. Remplacer la fonction renderMeteo par celle-ci :
+        /* HEADER */
+        header { margin-bottom: 20px; width: 100%; max-width: 500px; }
+        h1 { color: #f472b6; font-size: 1.5rem; margin: 0; font-weight: 800; letter-spacing: -0.5px; }
+        .status-badge { 
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(16, 185, 129, 0.1); color: #34d399; 
+            padding: 6px 14px; border-radius: 50px; border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 0.75rem; font-weight: 700; margin-top: 10px;
+        }
+
+        /* CONTENEUR PRINCIPAL */
+        #dynamic-screen { width: 100%; max-width: 500px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+        /* ÉCRAN D'ATTENTE */
+        .wait-screen { animation: fadeIn 0.8s; }
+        .coffee-loader { font-size: 4rem; animation: float 3s ease-in-out infinite; display: block; margin-bottom: 10px; }
+        
+        /* BOUTONS DE RÉPONSE (Design Carte) */
+        .btn-choice {
+            width: 100%; padding: 20px; margin-bottom: 15px;
+            background: #1e293b; color: #e2e8f0; 
+            border: 2px solid #334155; border-radius: 16px;
+            font-size: 1.1rem; font-weight: 600; text-align: left; 
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative; display: flex; align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-choice:active { transform: scale(0.96); }
+        .btn-choice.selected { background: #3b82f6; border-color: #60a5fa; color: white; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+        
+        /* LETTRES (A, B, C...) */
+        .btn-idx { 
+            width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); 
+            display: flex; align-items: center; justify-content: center; margin-right: 15px; 
+            font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+        }
+
+        /* FEEDBACK PÉDAGOGIQUE (Révélation) */
+        .btn-choice.correct { 
+            background: #059669 !important; border-color: #34d399 !important; color: white !important; 
+            animation: bounce 0.5s; opacity: 1 !important;
+        }
+        .btn-choice.wrong { 
+            background: #991b1b !important; border-color: #ef4444 !important; opacity: 0.6; 
+        }
+        .btn-choice.dimmed { opacity: 0.3; filter: grayscale(1); }
+
+        .feedback-banner {
+            margin-bottom: 20px; padding: 15px; border-radius: 12px; font-weight: bold; animation: slideDown 0.4s;
+        }
+        .feedback-success { background: #dcfce7; color: #166534; border: 1px solid #22c55e; }
+        .feedback-fail { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+
+        /* INPUT NUAGE */
+        input[type="text"] {
+            width: 100%; padding: 18px; background: #1e293b; border: 2px solid #475569;
+            color: white; border-radius: 14px; font-size: 1.2rem; text-align: center; margin-bottom: 15px; outline: none;
+        }
+        input[type="text"]:focus { border-color: #f472b6; box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.2); }
+        .btn-send { 
+            width: 100%; background: linear-gradient(135deg, #ec4899, #db2777); 
+            color: white; border: none; padding: 18px; border-radius: 50px; 
+            font-weight: 800; font-size: 1.2rem; cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+        }
+
+        /* STYLE SLIDER ÉNERGIE */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #ffffff; cursor: pointer; margin-top: -10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #475569; border-radius: 5px; }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Café Parents</h1>
+        <div class="status-badge" id="conn-status">📡 Connexion...</div>
+    </header>
+
+    <div id="dynamic-screen">
+        <div class="wait-screen">
+            <span class="coffee-loader">☕</span>
+            <p style="color:#94a3b8; font-size:1.1rem;">Bienvenue !<br>Regardez l'écran géant...</p>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.appspot.com", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let activeSessionId = null;
+    let currentUserCode = localStorage.getItem("parentCode") || "P_" + Math.floor(Math.random() * 9999);
+    localStorage.setItem("parentCode", currentUserCode);
+
+    let myVoteIndex = -1;
+    let currentStepSaved = '';
+    let selectedMoodVal = null; // Pour la météo
+
+    // 1. ÉCOUTE DE LA CONFIGURATION
+    onSnapshot(doc(db, "config", "live"), (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        
+        activeSessionId = data.activeSessionId;
+        const statusEl = document.getElementById('conn-status');
+        if(activeSessionId) {
+            statusEl.innerHTML = "🔓 Connecté (Anonyme)";
+            statusEl.style.color = "#34d399"; statusEl.style.borderColor = "rgba(52, 211, 153, 0.3)";
+        } else {
+            statusEl.innerHTML = "💤 En pause";
+            statusEl.style.color = "#94a3b8";
+            renderWait(); return;
+        }
+
+        // Reset si changement d'étape
+        if(data.currentStep !== currentStepSaved || data.quizQuestion !== document.body.dataset.lastQ) {
+            myVoteIndex = -1;
+            selectedMoodVal = null; // Reset météo
+            currentStepSaved = data.currentStep;
+            document.body.dataset.lastQ = data.quizQuestion;
+        }
+
+        const container = document.getElementById('dynamic-screen');
+        
+        if(data.currentStep === 'quiz' && data.quizState === 'revealed') {
+            renderQuizResult(data, container);
+            return; 
+        }
+
+        if (data.currentStep === 'meteo') renderMeteo(container);
+        else if (data.currentStep === 'nuage') renderCloudInput(container, data.wordBank);
+        else if (data.currentStep === 'sondage') renderPoll(container, data);
+        else if (data.currentStep === 'quiz') renderQuizVoting(container, data);
+        else renderWait(container);
+    });
+
+    // --- VUES ---
+
+    function renderWait(container) {
+        if(!container) container = document.getElementById('dynamic-screen');
+        container.innerHTML = `
+            <div class="wait-screen">
+                <span class="coffee-loader">☕</span>
+                <p style="color:#94a3b8; font-size:1.1rem; line-height:1.6;">Installez-vous confortablement.<br>La prochaine activité arrive.</p>
+            </div>`;
+    }
+
+    // --- NOUVELLE FONCTION MÉTÉO + ÉNERGIE ---
     function renderMeteo(container) {
         container.innerHTML = `
             <h2 style="margin-bottom:10px;">Votre Météo du jour ☀️</h2>
@@ -16,7 +190,7 @@
 
             <p style="color:#94a3b8; font-size:0.9rem; margin-bottom:10px;">Votre niveau d'énergie ? 🔋</p>
             <div style="background:#1e293b; padding:20px; border-radius:16px; border:1px solid #334155; margin-bottom:20px;">
-                <input type="range" id="energy-slider" min="0" max="100" value="50" style="width:100%; accent-color:#db2777; cursor:pointer;">
+                <input type="range" id="energy-slider" min="0" max="100" value="50" style="width:100%; accent-color:#db2777;">
                 <div style="display:flex; justify-content:space-between; color:#64748b; font-size:0.8rem; margin-top:10px;">
                     <span>😴 À plat</span>
                     <span id="energy-val" style="color:white; font-weight:bold;">50%</span>
@@ -27,29 +201,97 @@
             <button class="btn-send" onclick="sendMeteoVote()">Envoyer ma Météo 🚀</button>
         `;
 
-        // Petit script pour mettre à jour la valeur affichée du slider
+        // Active le slider
         setTimeout(() => {
             const slider = document.getElementById('energy-slider');
             const valDisplay = document.getElementById('energy-val');
             if(slider) {
                 slider.oninput = function() { 
                     valDisplay.innerText = this.value + '%';
-                    // Changement de couleur dynamique
-                    if(this.value < 30) valDisplay.style.color = "#ef4444"; // Rouge
-                    else if(this.value < 70) valDisplay.style.color = "#facc15"; // Jaune
-                    else valDisplay.style.color = "#22c55e"; // Vert
+                    if(this.value < 30) valDisplay.style.color = "#ef4444";
+                    else if(this.value < 70) valDisplay.style.color = "#facc15";
+                    else valDisplay.style.color = "#22c55e";
                 }
             }
         }, 100);
     }
 
-    // 2. Ajouter ces variables et fonctions juste avant ou après renderMeteo :
-    
-    let selectedMoodVal = null;
+    function renderCloudInput(container, suggestions) {
+        let html = `<h2 style="margin-bottom:10px;">Vos idées 💡</h2><p style="color:#94a3b8; font-size:0.9rem; margin-bottom:20px;">Envoyez un mot ou une courte phrase.</p>`;
+        if(suggestions && suggestions.length > 0) {
+            html += `<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px;">`;
+            suggestions.forEach(w => {
+                html += `<span onclick="fillAndSend('${w}')" style="background:#334155; padding:8px 16px; border-radius:20px; font-size:0.9rem; cursor:pointer; border:1px solid #475569;">${w}</span>`;
+            });
+            html += `</div>`;
+        }
+        html += `
+            <input type="text" id="word-input" placeholder="Écrivez ici...">
+            <button class="btn-send" onclick="sendWord()">Envoyer 🚀</button>
+        `;
+        container.innerHTML = html;
+    }
 
+    function renderPoll(container, data) {
+        let html = `<h3 style="margin-bottom:20px; font-weight:600;">${data.pollQuestion || "Sondage"}</h3>`;
+        data.pollOptions.forEach((opt, i) => {
+            const isSelected = (myVoteIndex === i) ? 'selected' : '';
+            html += `<button class="btn-choice ${isSelected}" onclick="vote(${i}, 'poll', '${opt.replace(/'/g, "\\'")}')">
+                <span class="btn-idx">${String.fromCharCode(65+i)}</span> ${opt}
+            </button>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function renderQuizVoting(container, data) {
+        let html = `<h3 style="margin-bottom:20px; font-weight:600;">${data.quizQuestion || "Quiz"}</h3>`;
+        data.quizOptions.forEach((opt, i) => {
+            const isSelected = (myVoteIndex === i) ? 'selected' : '';
+            html += `<button class="btn-choice ${isSelected}" onclick="vote(${i}, 'quiz', ${i})">
+                <span class="btn-idx">${String.fromCharCode(65+i)}</span> ${opt}
+            </button>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function renderQuizResult(data, container) {
+        const correctIdx = data.quizCorrect;
+        const userWon = (myVoteIndex === correctIdx);
+        const userVoted = (myVoteIndex !== -1);
+        
+        let feedbackHtml = "";
+        if(!userVoted) feedbackHtml = `<div class="feedback-banner" style="background:#f1f5f9; color:#475569;">👀 Vous n'avez pas voté, voici la réponse.</div>`;
+        else if(userWon) feedbackHtml = `<div class="feedback-banner feedback-success">🎉 Bravo ! C'est la bonne réponse.</div>`;
+        else feedbackHtml = `<div class="feedback-banner feedback-fail">🙃 Oups ! Regardez la correction ci-dessous.</div>`;
+
+        let html = feedbackHtml;
+        html += `<h3 style="margin-bottom:20px; font-weight:600; opacity:0.8;">${data.quizQuestion}</h3>`;
+
+        data.quizOptions.forEach((opt, i) => {
+            let classes = "btn-choice";
+            let icon = `<span class="btn-idx">${String.fromCharCode(65+i)}</span>`;
+            if (i === correctIdx) { classes += " correct"; icon = `<span class="btn-idx" style="background:white; color:#059669;">✔</span>`; } 
+            else if (i === myVoteIndex && !userWon) { classes += " wrong"; icon = `<span class="btn-idx" style="background:rgba(0,0,0,0.2);">✖</span>`; } 
+            else { classes += " dimmed"; }
+            html += `<button class="${classes}" disabled>${icon} ${opt}</button>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // --- ACTIONS ---
+    window.vote = function(index, type, content) {
+        myVoteIndex = index;
+        sendInput(type, content);
+        const btns = document.querySelectorAll('.btn-choice');
+        btns.forEach((b, i) => {
+            if(i === index) b.classList.add('selected');
+            else b.classList.remove('selected');
+        });
+    }
+
+    // Sélection Météo
     window.selectMood = function(index, val) {
         selectedMoodVal = val;
-        // Visuel de sélection
         document.querySelectorAll('.mood-selector').forEach(b => {
             b.style.borderColor = "#334155";
             b.style.background = "#1e293b";
@@ -64,16 +306,43 @@
     window.sendMeteoVote = function() {
         if(!selectedMoodVal) { alert("Sélectionnez d'abord une humeur !"); return; }
         const energy = document.getElementById('energy-slider').value;
-        
-        // On envoie un objet JSON combiné
         const payload = JSON.stringify({ mood: selectedMoodVal, energy: parseInt(energy) });
+        sendInput('meteo_full', payload);
         
-        sendInput('meteo_full', payload); // Nouveau type 'meteo_full'
-        
-        // Feedback
         document.getElementById('dynamic-screen').innerHTML = `
             <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
             <h2>Météo envoyée !</h2>
             <p style="color:#94a3b8;">Regardez l'écran géant...</p>
         `;
     }
+
+    window.sendInput = async function(type, content, btnElement = null) {
+        if(!activeSessionId) return;
+        try {
+            await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), {
+                type: type, content: content, user: currentUserCode, timestamp: serverTimestamp()
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    window.sendWord = function() {
+        const inp = document.getElementById('word-input');
+        const val = inp.value.trim();
+        if(val) {
+            sendInput('word', val);
+            inp.value = "";
+            const btn = document.querySelector('.btn-send');
+            const oldTxt = btn.innerText;
+            btn.innerText = "Envoyé ! ✅";
+            btn.style.background = "#22c55e";
+            setTimeout(()=>{ btn.innerText = oldTxt; btn.style.background = "linear-gradient(135deg, #ec4899, #db2777)"; }, 1500);
+        }
+    }
+    
+    window.fillAndSend = function(txt) {
+        document.getElementById('word-input').value = txt;
+        sendWord();
+    }
+</script>
+</body>
+</html>
