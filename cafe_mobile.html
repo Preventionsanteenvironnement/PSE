@@ -2,211 +2,316 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Café Parents - Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Écran Géant - Final</title>
     <style>
-        /* === DESIGN MOBILE === */
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 20px; background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; text-align: center; overflow-x: hidden; }
-        header { margin-bottom: 20px; width: 100%; max-width: 500px; }
-        h1 { color: #f472b6; font-size: 1.5rem; margin: 0; font-weight: 800; }
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.1); color: #34d399; padding: 6px 14px; border-radius: 50px; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.75rem; font-weight: 700; margin-top: 10px; }
-        #dynamic-screen { width: 100%; max-width: 500px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .wait-screen { animation: fadeIn 0.8s; }
-        .coffee-loader { font-size: 4rem; animation: float 3s infinite; display: block; margin-bottom: 10px; }
+        /* === DESIGN GLOBAL === */
+        body { margin: 0; background: #0f172a; color: white; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 80%); }
         
-        /* BOUTONS CHOIX */
-        .btn-choice { width: 100%; padding: 20px; margin-bottom: 15px; background: #1e293b; color: #e2e8f0; border: 2px solid #334155; border-radius: 16px; font-size: 1.1rem; font-weight: 600; text-align: left; cursor: pointer; transition: 0.2s; position: relative; display: flex; align-items: center; }
-        .btn-choice:active { transform: scale(0.96); }
-        .btn-choice.selected { background: #3b82f6; border-color: #60a5fa; color: white; }
-        .btn-idx { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: 800; }
+        .header { position: absolute; top: 30px; left: 40px; display: flex; align-items: center; gap: 15px; opacity: 0.9; }
+        .title-main { font-size: 1.8rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 2px;}
         
-        /* FEEDBACK QUIZ */
-        .btn-choice.correct { background: #059669 !important; border-color: #34d399 !important; color: white !important; }
-        .btn-choice.wrong { background: #991b1b !important; border-color: #ef4444 !important; opacity: 0.6; }
-        .feedback-banner { margin-bottom: 20px; padding: 15px; border-radius: 12px; font-weight: bold; }
-        .feedback-success { background: #dcfce7; color: #166534; } .feedback-fail { background: #fee2e2; color: #991b1b; }
+        .qr-box { position: absolute; top: 30px; right: 40px; background: white; padding: 10px; border-radius: 16px; box-shadow: 0 15px 40px -5px rgba(0,0,0,0.5); text-align: center; z-index: 50; }
+        .qr-text { color: #0f172a; font-weight: 800; font-size: 0.7rem; margin-top: 5px; text-transform: uppercase; }
 
-        /* NUAGE DE MOTS (CHIPS) */
-        .chip-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
-        .word-chip {
-            background: #334155; padding: 10px 18px; border-radius: 30px; font-size: 1rem; cursor: pointer; border: 1px solid #475569; transition: all 0.2s;
-        }
-        /* 👇 L'EFFET DE SURBRILLANCE DEMANDÉ */
-        .word-chip.active {
-            background: #db2777; border-color: #f472b6; color: white; transform: scale(1.1); box-shadow: 0 0 15px rgba(219, 39, 119, 0.5); font-weight: bold;
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.5s ease; padding: 0 5%; box-sizing: border-box; }
+        .active { display: flex; opacity: 1; }
+
+        /* === 1. CORRECTION TEXTE (Adaptatif) === */
+        .question-huge { 
+            font-weight: 800; 
+            text-align: center; 
+            line-height: 1.2; 
+            margin: 20px 0 40px 0; 
+            width: 100%;
+            /* La taille s'adapte : minimum 1.5rem, idéal 3.5vw, max 4rem */
+            font-size: clamp(1.8rem, 3.5vw, 4rem); 
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
-        input[type="text"] { width: 100%; padding: 18px; background: #1e293b; border: 2px solid #475569; color: white; border-radius: 14px; font-size: 1.2rem; text-align: center; margin-bottom: 15px; outline: none; }
-        .btn-send { width: 100%; background: linear-gradient(135deg, #ec4899, #db2777); color: white; border: none; padding: 18px; border-radius: 50px; font-weight: 800; font-size: 1.2rem; cursor: pointer; }
-        
-        /* SLIDER */
-        input[type=range] { width: 100%; accent-color: #db2777; margin: 15px 0; }
+        /* NUAGE */
+        #cloud-container { width: 100%; height: 60vh; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; align-items: center; gap: 15px; }
+        .bubble { padding: 12px 30px; border-radius: 50px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; white-space: nowrap; }
 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        /* QUIZ (Cartes) */
+        #options-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1200px; }
+        .option-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px; font-size: 1.4rem; border: 1px solid rgba(255,255,255,0.1); color: white; display: flex; align-items: center; transition: all 0.3s; }
+        .opt-letter { font-weight: 800; color: #94a3b8; margin-right: 15px; font-size: 1.2rem; background: rgba(255,255,255,0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
+        .reveal-mode .option-card.correct { background: #16a34a; border-color: #4ade80; color: white; transform: scale(1.03); box-shadow: 0 10px 30px rgba(22, 163, 74, 0.4); }
+        .reveal-mode .option-card.correct .opt-letter { background: white; color: #16a34a; }
+        .reveal-mode .option-card.wrong { opacity: 0.3; filter: grayscale(1); transform: scale(0.95); }
+
+        /* === 2. NOUVEAU SONDAGE (Barres Classées) === */
+        #poll-results { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 15px; }
+        .poll-bar-container { display: flex; align-items: center; width: 100%; animation: slideIn 0.5s ease-out; }
+        .poll-label { width: 30%; text-align: right; padding-right: 20px; font-size: 1.2rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .poll-track { flex: 1; height: 40px; background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; position: relative; }
+        .poll-fill { height: 100%; background: #3b82f6; width: 0%; transition: width 1s cubic-bezier(0.22, 1, 0.36, 1); border-radius: 8px; display: flex; align-items: center; padding-left: 10px; }
+        .poll-count { position: absolute; right: 10px; top: 0; bottom: 0; display: flex; align-items: center; font-weight: bold; font-size: 1.1rem; }
+        
+        /* Le gagnant en Or/Vert */
+        .poll-bar-container.winner .poll-fill { background: linear-gradient(90deg, #eab308, #facc15); box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
+        .poll-bar-container.winner .poll-label { color: #facc15; font-size: 1.3rem; }
+
+        /* METEO */
+        #meteo-system { width: 100%; height: 500px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .sun-emoji { font-size: 10rem; z-index: 10; animation: pulse 3s infinite; filter: drop-shadow(0 0 40px rgba(255, 200, 0, 0.4)); }
+        .orbit-ring { position: absolute; border: 2px dashed rgba(255,255,255,0.1); border-radius: 50%; animation: rotate 40s linear infinite; }
+        .planet-emoji { position: absolute; font-size: 3.5rem; filter: grayscale(0.5); }
+        .battery-container { width: 50%; height: 30px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 10px; position: relative; overflow: hidden; }
+        .battery-level { height: 100%; background: linear-gradient(90deg, #ef4444, #eab308, #22c55e); width: 0%; transition: width 1s; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-weight: bold; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 0.5; } }
+        .zen-circle { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%); border-radius: 50%; animation: breathe 6s infinite ease-in-out; z-index: -1; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Café Parents</h1>
-        <div class="status-badge" id="conn-status">📡 Connexion...</div>
-    </header>
-    <div id="dynamic-screen">
-        <div class="wait-screen"><span class="coffee-loader">☕</span><p style="color:#94a3b8;">Bienvenue !<br>Regardez l'écran géant...</p></div>
+
+    <div class="header">
+        <span style="font-size: 2rem;">☕</span>
+        <div class="title-main" id="session-title-display">Bienvenue</div>
+    </div>
+    <div class="qr-box">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&color=0f172a&bgcolor=ffffff&data=https://preventionsanteenvironnement.github.io/PSE/cafe_mobile.html" alt="QR" width="120" height="120">
+        <div class="qr-text">Scannez</div>
+    </div>
+
+    <div id="view-wait" class="screen active">
+        <div class="zen-circle"></div>
+        <div style="font-size: 6rem; animation: float 4s infinite ease-in-out;">👋</div>
+        <h1 style="margin-top:20px; font-size:3rem; font-weight:800;">Installez-vous</h1>
+        <h2 style="color:#94a3b8; font-weight:400;">La session va bientôt commencer.</h2>
+    </div>
+
+    <div id="view-nuage" class="screen">
+        <h1 style="font-size:3rem; margin-bottom:20px;">☁️ Vos idées en direct</h1>
+        <div id="cloud-container"></div>
+    </div>
+
+    <div id="view-quiz" class="screen">
+        <div id="quiz-question-display" class="question-huge">Question...</div>
+        <div id="options-container" class="voting-mode"></div>
+    </div>
+
+    <div id="view-sondage" class="screen">
+        <div id="poll-question-display" class="question-huge">Sondage</div>
+        <div id="poll-results"></div>
+    </div>
+
+    <div id="view-meteo" class="screen">
+        <h1>Météo du groupe</h1>
+        <div id="meteo-system"><div style="font-size:2rem; color:#64748b;">En attente de votes...</div></div>
+        <div class="battery-container">
+            <div class="battery-level" id="group-energy-bar">0%</div>
+        </div>
+        <div style="font-size:0.8rem; color:#64748b; margin-top:5px; text-transform:uppercase;">Énergie Moyenne</div>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.appspot.com", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
     let activeSessionId = null;
-    let currentUserCode = localStorage.getItem("parentCode") || "P_" + Math.floor(Math.random() * 9999);
-    localStorage.setItem("parentCode", currentUserCode);
-    
-    let myVoteIndex = -1;
-    let currentStepSaved = '';
-    let selectedMoodVal = null;
+    let currentQuizCorrectIndex = -1;
+    let currentPollOptions = []; // Pour stocker les labels du sondage
 
     onSnapshot(doc(db, "config", "live"), (snap) => {
-        if (!snap.exists()) return;
+        if(!snap.exists()) return;
         const data = snap.data();
-        activeSessionId = data.activeSessionId;
+        if(data.sessionTitle) document.getElementById('session-title-display').innerText = data.sessionTitle;
         
-        const statusEl = document.getElementById('conn-status');
-        if(activeSessionId) {
-            statusEl.innerHTML = "🔓 Connecté"; statusEl.style.color = "#34d399";
-        } else {
-            statusEl.innerHTML = "💤 En pause"; statusEl.style.color = "#94a3b8"; renderWait(); return;
+        if(data.activeSessionId !== activeSessionId) {
+            activeSessionId = data.activeSessionId;
+            if(activeSessionId) { 
+                listenToVotes(activeSessionId); // Nuage
+                listenToMeteo(activeSessionId); // Météo
+                listenToPoll(activeSessionId);  // Sondage
+            } else showScreen('wait');
         }
-
-        if(data.currentStep !== currentStepSaved || data.quizQuestion !== document.body.dataset.lastQ) {
-            myVoteIndex = -1; selectedMoodVal = null; currentStepSaved = data.currentStep; document.body.dataset.lastQ = data.quizQuestion;
-        }
-
-        const container = document.getElementById('dynamic-screen');
-        if(data.currentStep === 'quiz' && data.quizState === 'revealed') { renderQuizResult(data, container); return; }
-
-        if (data.currentStep === 'meteo') renderMeteo(container);
-        else if (data.currentStep === 'nuage') renderCloudInput(container, data.wordBank);
-        else if (data.currentStep === 'sondage') renderPoll(container, data);
-        else if (data.currentStep === 'quiz') renderQuizVoting(container, data);
-        else renderWait(container);
+        handleNavigation(data);
     });
 
-    function renderWait(container) {
-        if(!container) container = document.getElementById('dynamic-screen');
-        container.innerHTML = `<div class="wait-screen"><span class="coffee-loader">☕</span><p style="color:#94a3b8;">Installez-vous confortablement.<br>La prochaine activité arrive.</p></div>`;
-    }
+    function handleNavigation(data) {
+        const step = data.currentStep || 'wait';
+        const quizState = data.quizState || 'voting';
+        const optsContainer = document.getElementById('options-container');
+        optsContainer.classList.remove('voting-mode', 'reveal-mode');
 
-    function renderMeteo(container) {
-        container.innerHTML = `
-            <h2>Votre Météo du jour ☀️</h2>
-            <p style="color:#94a3b8; font-size:0.9rem;">Humeur dominante ?</p>
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:20px;">
-                ${['🤩','🙂','🤔','😰'].map((emoji, i) => `<button class="btn-choice mood-selector" id="mood-${i}" style="justify-content:center; font-size:2rem; padding:10px;" onclick="selectMood(${i}, '${['super','bien','bof','mauvais'][i]}')">${emoji}</button>`).join('')}
-            </div>
-            <p style="color:#94a3b8; font-size:0.9rem;">Énergie ? 🔋</p>
-            <div style="background:#1e293b; padding:15px; border-radius:16px; border:1px solid #334155; margin-bottom:20px;">
-                <input type="range" id="energy-slider" min="0" max="100" value="50">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem;"><span>😴 À plat</span><span id="energy-val" style="font-weight:bold;">50%</span><span>⚡ Au max</span></div>
-            </div>
-            <button class="btn-send" onclick="sendMeteoVote()">Envoyer 🚀</button>`;
-        setTimeout(() => { document.getElementById('energy-slider').oninput = function() { document.getElementById('energy-val').innerText = this.value + '%'; } }, 100);
-    }
-
-    function renderCloudInput(container, suggestions) {
-        let html = `<h2>Vos idées 💡</h2><p style="color:#94a3b8; font-size:0.9rem; margin-bottom:20px;">Sélectionnez ou écrivez :</p>`;
+        if(step === 'meteo') showScreen('meteo');
         
-        // GESTION DES CHIPS AVEC SURBRILLANCE
-        if(suggestions && suggestions.length > 0) {
-            html += `<div class="chip-container">`;
-            suggestions.forEach(w => {
-                // On passe 'this' à la fonction pour modifier le style
-                html += `<div class="word-chip" onclick="fillAndSend('${w}', this)">${w}</div>`;
+        else if (step === 'sondage') {
+            // Configuration SONDAGE
+            document.getElementById('poll-question-display').innerText = data.pollQuestion || data.quizQuestion || "Sondage";
+            currentPollOptions = data.pollOptions || data.quizOptions || [];
+            showScreen('sondage');
+            // Le rendu des barres se fera via listenToPoll
+        }
+        else if (step === 'quiz') {
+            // Configuration QUIZ
+            currentQuizCorrectIndex = data.quizCorrect;
+            setupQuizDisplay(data.quizQuestion || data.pollQuestion, data.quizOptions || data.pollOptions);
+            if(quizState === 'revealed') { optsContainer.classList.add('reveal-mode'); revealAnswer(); }
+            showScreen('quiz');
+        } 
+        else if (step === 'nuage') showScreen('nuage');
+        else showScreen('wait');
+    }
+
+    function showScreen(name) {
+        document.querySelectorAll('.screen').forEach(el => { el.style.opacity = 0; setTimeout(() => el.classList.remove('active'), 400); });
+        const target = document.getElementById('view-' + name);
+        if(target) { setTimeout(() => { target.classList.add('active'); setTimeout(() => target.style.opacity = 1, 50); }, 400); }
+    }
+
+    // --- QUIZ (Cartes) ---
+    function setupQuizDisplay(question, options) {
+        document.getElementById('quiz-question-display').innerText = question || "Question ?";
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        if(!options) return;
+        
+        options.forEach((optText, index) => {
+            const letter = String.fromCharCode(65 + index);
+            const card = document.createElement('div'); card.className = 'option-card'; card.id = 'opt-card-' + index;
+            card.innerHTML = `<span class="opt-letter">${letter}</span> ${optText}`;
+            container.appendChild(card);
+        });
+    }
+    
+    function revealAnswer() {
+        if(currentQuizCorrectIndex === undefined || currentQuizCorrectIndex < 0) return;
+        const cards = document.querySelectorAll('.option-card');
+        cards.forEach((card, index) => {
+            if(index === currentQuizCorrectIndex) card.classList.add('correct'); else card.classList.add('wrong');
+        });
+    }
+
+    // --- SONDAGE (Barres Classées) ---
+    function listenToPoll(sessId) {
+        onSnapshot(query(collection(db, `sessions/${sessId}/inputs`)), (snap) => {
+            // Ne traiter que si on est sur l'écran sondage
+            if(!document.getElementById('view-sondage').classList.contains('active')) return;
+
+            let counts = {};
+            // Init à 0 pour toutes les options connues
+            currentPollOptions.forEach(opt => counts[opt] = 0);
+
+            let totalVotes = 0;
+            snap.forEach(d => {
+                const data = d.data();
+                // On accepte 'poll' ou 'quiz' comme type de réponse pour être large
+                if((data.type === 'poll' || data.type === 'quiz') && data.content) {
+                    // Nettoyage des guillemets éventuels
+                    let val = data.content.replace ? data.content.replace(/^"|"$/g, '') : data.content; 
+                    if(counts[val] !== undefined) {
+                        counts[val]++;
+                        totalVotes++;
+                    }
+                }
+            });
+
+            renderPollBars(counts, totalVotes);
+        });
+    }
+
+    function renderPollBars(counts, total) {
+        const container = document.getElementById('poll-results');
+        container.innerHTML = "";
+
+        if(total === 0) {
+            container.innerHTML = "<div style='text-align:center; color:#64748b; font-size:1.5rem;'>En attente de votes...</div>";
+            return;
+        }
+
+        // TRIER : Du plus grand au plus petit
+        const sorted = Object.keys(counts).map(key => {
+            return { label: key, count: counts[key] };
+        }).sort((a,b) => b.count - a.count);
+
+        const max = sorted[0].count; // Le score du premier
+
+        sorted.forEach((item, index) => {
+            const pct = max > 0 ? (item.count / max) * 100 : 0; // Largeur relative au premier
+            const isWinner = (index === 0 && item.count > 0);
+            
+            const div = document.createElement('div');
+            div.className = `poll-bar-container ${isWinner ? 'winner' : ''}`;
+            
+            div.innerHTML = `
+                <div class="poll-label">${item.label}</div>
+                <div class="poll-track">
+                    <div class="poll-fill" style="width:${pct}%"></div>
+                    <div class="poll-count">${item.count}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // --- NUAGE & METEO (Déjà OK) ---
+    function listenToVotes(sessId) {
+        onSnapshot(query(collection(db, `sessions/${sessId}/inputs`)), (snap) => {
+            const words = [];
+            snap.forEach(d => { 
+                const data = d.data();
+                if(data.type === 'word' && !data.banned) words.push(data.content);
+            });
+            if(document.getElementById('view-nuage').classList.contains('active')) renderCloud(words);
+        });
+    }
+    function renderCloud(words) {
+        const container = document.getElementById('cloud-container');
+        container.innerHTML = "";
+        if(words.length === 0) { container.innerHTML = "<div style='color:#64748b; font-size:1.5rem;'>En attente de mots...</div>"; return; }
+        const counts = {}; words.forEach(w => counts[w] = (counts[w] || 0) + 1);
+        Object.keys(counts).forEach((word, i) => {
+            const el = document.createElement('div'); el.className = 'bubble'; el.innerText = word;
+            let size = 2 + (counts[word] - 1) * 1.5; el.style.fontSize = Math.min(size, 8) + "rem"; 
+            const cols = ['rgba(244, 114, 182, 0.9)', 'rgba(74, 222, 128, 0.9)', 'rgba(96, 165, 250, 0.9)', 'rgba(250, 204, 21, 0.9)'];
+            el.style.backgroundColor = cols[i % cols.length]; el.style.borderColor = el.style.backgroundColor.replace('0.9', '1');
+            el.style.zIndex = Math.floor(size * 10);
+            container.appendChild(el);
+        });
+    }
+    function listenToMeteo(sessId) {
+        onSnapshot(query(collection(db, `sessions/${sessId}/inputs`)), (snap) => {
+            let counts = { 'super':0, 'bien':0, 'bof':0, 'mauvais':0 }; let totalE=0, nbE=0;
+            snap.forEach(d => {
+                const data = d.data();
+                if(data.type === 'meteo_full') { try { const p = JSON.parse(data.content); counts[p.mood]++; if(p.energy){totalE+=p.energy; nbE++;} } catch(e){} } 
+                else if(data.type === 'mood') counts[data.content]++;
+            });
+            const avg = nbE > 0 ? Math.round(totalE/nbE) : 0;
+            document.getElementById('group-energy-bar').style.width = avg+"%"; document.getElementById('group-energy-bar').innerText = avg+"%";
+            renderSolarSystem(counts);
+        });
+    }
+    function renderSolarSystem(counts) {
+        const container = document.getElementById('meteo-system');
+        let winner='super', max=-1, total=0;
+        Object.keys(counts).forEach(k => { total+=counts[k]; if(counts[k]>max){max=counts[k]; winner=k;} });
+        if(total === 0) { container.innerHTML = "<div style='font-size:2rem; color:#64748b;'>En attente de votes...</div>"; return; }
+        const emojis = { 'super':'🤩', 'bien':'🙂', 'bof':'🤔', 'mauvais':'😰' };
+        let html = `<div class="sun-emoji">${emojis[winner]}</div>`;
+        const others = Object.keys(counts).filter(k => k !== winner && counts[k] > 0);
+        if(others.length > 0) {
+            html += `<div class="orbit-ring" style="width:350px; height:350px;">`;
+            others.forEach((k, i) => {
+                const angle = (360/others.length)*i;
+                html += `<div class="planet-emoji" style="top:0; left:50%; margin:-2rem; transform:rotate(${angle}deg) translateY(-175px) rotate(-${angle}deg);">${emojis[k]}</div>`;
             });
             html += `</div>`;
         }
-        
-        html += `<input type="text" id="word-input" placeholder="Écrivez ici..."><button class="btn-send" onclick="sendWord()">Envoyer 🚀</button>`;
         container.innerHTML = html;
-    }
-
-    function renderPoll(container, data) {
-        let html = `<h3>${data.pollQuestion || "Sondage"}</h3>`;
-        data.pollOptions.forEach((opt, i) => {
-            const isSel = (myVoteIndex === i) ? 'selected' : '';
-            html += `<button class="btn-choice ${isSel}" onclick="vote(${i}, 'poll', '${opt.replace(/'/g, "\\'")}')"><span class="btn-idx">${String.fromCharCode(65+i)}</span> ${opt}</button>`;
-        });
-        container.innerHTML = html;
-    }
-
-    function renderQuizVoting(container, data) {
-        let html = `<h3>${data.quizQuestion || "Quiz"}</h3>`;
-        data.quizOptions.forEach((opt, i) => {
-            const isSel = (myVoteIndex === i) ? 'selected' : '';
-            html += `<button class="btn-choice ${isSel}" onclick="vote(${i}, 'quiz', ${i})"><span class="btn-idx">${String.fromCharCode(65+i)}</span> ${opt}</button>`;
-        });
-        container.innerHTML = html;
-    }
-
-    function renderQuizResult(data, container) {
-        const correctIdx = data.quizCorrect;
-        const userWon = (myVoteIndex === correctIdx);
-        const userVoted = (myVoteIndex !== -1);
-        let msg = !userVoted ? "👀 Voici la réponse." : (userWon ? "🎉 Bravo ! Bonne réponse." : "🙃 Oups ! Regardez la correction.");
-        let cls = userWon ? "feedback-success" : (userVoted ? "feedback-fail" : "");
-        
-        let html = `<div class="feedback-banner ${cls}">${msg}</div><h3>${data.quizQuestion}</h3>`;
-        data.quizOptions.forEach((opt, i) => {
-            let classes = "btn-choice"; let icon = `<span class="btn-idx">${String.fromCharCode(65+i)}</span>`;
-            if (i === correctIdx) { classes += " correct"; icon = `<span class="btn-idx" style="background:white; color:#059669;">✔</span>`; }
-            else if (i === myVoteIndex && !userWon) { classes += " wrong"; icon = `<span class="btn-idx">✖</span>`; }
-            else { classes += " dimmed"; }
-            html += `<button class="${classes}" disabled>${icon} ${opt}</button>`;
-        });
-        container.innerHTML = html;
-    }
-
-    // ACTIONS
-    window.vote = function(index, type, content) {
-        myVoteIndex = index; sendInput(type, content);
-        document.querySelectorAll('.btn-choice').forEach((b, i) => { if(i===index) b.classList.add('selected'); else b.classList.remove('selected'); });
-    }
-    window.selectMood = function(index, val) {
-        selectedMoodVal = val;
-        document.querySelectorAll('.mood-selector').forEach(b => { b.style.borderColor="#334155"; b.style.background="#1e293b"; b.style.transform="scale(1)"; });
-        const btn = document.getElementById('mood-'+index); btn.style.borderColor="#db2777"; btn.style.background="rgba(219,39,119,0.2)"; btn.style.transform="scale(1.1)";
-    }
-    window.sendMeteoVote = function() {
-        if(!selectedMoodVal) { alert("Choisissez une humeur !"); return; }
-        const energy = document.getElementById('energy-slider').value;
-        sendInput('meteo_full', JSON.stringify({ mood: selectedMoodVal, energy: parseInt(energy) }));
-        document.getElementById('dynamic-screen').innerHTML = `<div style="font-size:4rem; margin-bottom:20px;">🚀</div><h2>Envoyé !</h2>`;
-    }
-    window.sendInput = async function(type, content) {
-        if(!activeSessionId) return;
-        await addDoc(collection(db, `sessions/${activeSessionId}/inputs`), { type, content, user: currentUserCode, timestamp: serverTimestamp() });
-    }
-    window.sendWord = function() {
-        const inp = document.getElementById('word-input'); const val = inp.value.trim();
-        if(val) { sendInput('word', val); inp.value=""; alert("Envoyé !"); }
-    }
-    
-    // NOUVEAU : Envoi avec effet visuel
-    window.fillAndSend = function(txt, element) {
-        // 1. Activer la classe visuelle
-        if(element) element.classList.add('active');
-        // 2. Envoyer
-        sendInput('word', txt);
-        // 3. Petit délai pour que l'utilisateur voie la couleur
-        setTimeout(() => {
-            if(element) element.classList.remove('active');
-        }, 500);
     }
 </script>
 </body>
