@@ -1,322 +1,121 @@
-/* PSE Runner v2 (débutant-friendly) */
-/* Prérequis : Firebase v8 initialisé dans window.db (firestore) */
+/* PSE RUNNER v4 - FUTURE PROOF (Firebase v9 Modular) */
 
-(function () {
-  const PSE = {
-    collections: {
-      submissions: "copies",
-      usage: "statistiques_usage"
-    },
-    autosaveMs: 800,
-    draftPrefix: "pse_draft_",
-    sentPrefix: "pse_sent_",
-    submitBtnId: "pse-submit"
-  };
+// On importe les fonctions modernes directement depuis les serveurs de Google
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, doc, getDoc } 
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  function qs(sel, root = document) { return root.querySelector(sel); }
-  function qsa(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
+// --- 1. CONFIGURATION (Vos clés) ---
+const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.firebasestorage.app",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+};
 
-  function toast(msg, kind) {
-    const el = document.createElement("div");
-    el.className = "pse-toast" + (kind ? " " + kind : "");
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2600);
-  }
+// --- 2. INITIALISATION ---
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+console.log("🔥 Firebase v9 (Modulaire) Initialisé");
 
-  function bannerEnsure() {
-    let b = qs("#pse-banner");
-    if (b) return b;
-    b = document.createElement("div");
-    b.id = "pse-banner";
-    b.className = "pse-banner";
-    b.innerHTML = `
-      <div id="pse-banner-text">PSE : prêt</div>
-      <div class="pse-banner-actions">
-        <button type="button" id="pse-btn-reset">Recommencer</button>
-      </div>
-    `;
-    document.body.prepend(b);
+// --- 3. LOGIQUE DU DEVOIR ---
 
-    const resetBtn = qs("#pse-btn-reset");
-    resetBtn.addEventListener("click", () => {
-      const exId = getExerciceId();
-      localStorage.removeItem(draftKey(exId));
-      localStorage.removeItem(sentKey(exId));
-      location.reload();
-    });
+// Fonction utilitaire pour sauvegarder en local (anti-crash)
+function getStorageKey() {
+    // Nettoie le titre pour en faire une clé unique
+    const id = document.title.replace(/[^a-zA-Z0-9]/g, '_');
+    return "brouillon_" + id;
+}
 
-    return b;
-  }
-
-  function setBanner(text, kind) {
-    const b = bannerEnsure();
-    const t = qs("#pse-banner-text");
-    t.textContent = text;
-    b.classList.remove("ok","err");
-    if (kind) b.classList.add(kind);
-  }
-
-  function getMeta(name, fallback = "") {
-    const m = document.querySelector(`meta[name="${name}"]`);
-    return m ? (m.getAttribute("content") || fallback) : fallback;
-  }
-
-  function getExerciceId() {
-    return (getMeta("pse-exercice") || (document.title || "devoir")).trim().slice(0, 120) || "devoir";
-  }
-
-  function getVersion() {
-    return getMeta("pse-version") || "v1";
-  }
-
-  function getMode() {
-    const p = new URLSearchParams(location.search);
-    return (p.get("mode") || getMeta("pse-mode") || "").toLowerCase();
-  }
-
-  function ensureDbOrExplain() {
-    if (window.db && typeof window.db.collection === "function") return true;
-    setBanner("Erreur : Firebase/Firestore non initialisé (window.db absent).", "err");
-    alert("Erreur : Firestore non initialisé.\n\nIl faut que la page contienne le bloc Firebase v8 (firebase-app + firebase-firestore + firebase.initializeApp + window.db).");
-    return false;
-  }
-
-  async function ensureAuth() {
-    if (typeof window.demanderCode === "function") {
-      const res = await window.demanderCode();
-      if (res && res.code) {
-        localStorage.setItem("userCode", res.code);
-        localStorage.setItem("codeEleve", res.code);
-      }
-      if (res && res.classe) {
-        localStorage.setItem("userClasse", res.classe);
-        localStorage.setItem("userClasseNom", res.classe);
-      }
-      return true;
-    }
-
-    const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve");
-    if (code) return true;
-
-    const input = prompt("Code élève");
-    if (!input) return false;
-    localStorage.setItem("userCode", input.trim());
-    localStorage.setItem("codeEleve", input.trim());
-    return true;
-  }
-
-  function stableKeyForField(el, idx) {
-    return el.getAttribute("data-qid") || el.id || el.name || ("field_" + idx);
-  }
-
-  function isInsideExcludedZone(el) {
-    return !!el.closest(".answer-key-zone, .prof-comment-zone, .teacher-only, .no-collect, #main-tools, #rich-format-toolbar, .modal, .pse-hidden");
-  }
-
-  function collectReponses(root = document) {
-    const fields = qsa("input, textarea, select", root)
-      .filter(el => !el.disabled)
-      .filter(el => !isInsideExcludedZone(el));
-
-    const reponses = {};
-    fields.forEach((el, idx) => {
-      const key = stableKeyForField(el, idx);
-      const tag = el.tagName.toLowerCase();
-      const type = (el.getAttribute("type") || "").toLowerCase();
-
-      if (tag === "input" && type === "radio") {
-        if (!Object.prototype.hasOwnProperty.call(reponses, key)) reponses[key] = "";
-        if (el.checked) reponses[key] = el.value;
-        return;
-      }
-
-      if (tag === "input" && type === "checkbox") {
-        reponses[key] = !!el.checked;
-        return;
-      }
-
-      reponses[key] = el.value ?? "";
-    });
-
-    return reponses;
-  }
-
-  function applyReponses(reponses, root = document) {
-    if (!reponses) return;
-    const fields = qsa("input, textarea, select", root)
-      .filter(el => !el.disabled)
-      .filter(el => !isInsideExcludedZone(el));
-
-    const byKey = new Map();
-    fields.forEach((el, idx) => {
-      const key = stableKeyForField(el, idx);
-      if (!byKey.has(key)) byKey.set(key, []);
-      byKey.get(key).push(el);
-    });
-
-    Object.keys(reponses).forEach(key => {
-      const els = byKey.get(key);
-      if (!els) return;
-      const val = reponses[key];
-
-      els.forEach(el => {
-        const tag = el.tagName.toLowerCase();
-        const type = (el.getAttribute("type") || "").toLowerCase();
-
-        if (tag === "input" && type === "checkbox") {
-          el.checked = !!val;
-          return;
+function saveDraft() {
+    const data = {};
+    document.querySelectorAll("input, textarea, select").forEach((el) => {
+        const key = el.getAttribute('data-qid') || el.id;
+        if (!key) return;
+        
+        if (el.type === 'radio' || el.type === 'checkbox') {
+            if (el.checked) data[key] = el.value;
+        } else {
+            data[key] = el.value;
         }
-
-        if (tag === "input" && type === "radio") {
-          el.checked = (String(el.value) === String(val));
-          return;
-        }
-
-        el.value = (val ?? "");
-      });
     });
-  }
+    localStorage.setItem(getStorageKey(), JSON.stringify(data));
+}
 
-  function draftKey(exerciceId) {
-    const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "X";
-    return PSE.draftPrefix + exerciceId + "_" + code;
-  }
-
-  function sentKey(exerciceId) {
-    const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "X";
-    return PSE.sentPrefix + exerciceId + "_" + code;
-  }
-
-  function saveDraft(exerciceId) {
-    const reponses = collectReponses(document);
-    const payload = { ts: Date.now(), exerciceId, version: getVersion(), reponses };
-    localStorage.setItem(draftKey(exerciceId), JSON.stringify(payload));
-    setBanner("Brouillon sauvegardé automatiquement", null);
-  }
-
-  function restoreDraft(exerciceId) {
-    const raw = localStorage.getItem(draftKey(exerciceId));
-    if (!raw) return false;
-    try {
-      const payload = JSON.parse(raw);
-      if (!payload || !payload.reponses) return false;
-      applyReponses(payload.reponses, document);
-      setBanner("Brouillon restauré", "ok");
-      toast("Brouillon restauré", "ok");
-      return true;
-    } catch {
-      return false;
+function restoreDraft() {
+    const saved = localStorage.getItem(getStorageKey());
+    if (saved) {
+        const data = JSON.parse(saved);
+        document.querySelectorAll("input, textarea, select").forEach((el) => {
+            const key = el.getAttribute('data-qid') || el.id;
+            if (data[key] !== undefined) {
+                if (el.type === 'radio' || el.type === 'checkbox') {
+                    if (el.value === data[key]) el.checked = true;
+                } else {
+                    el.value = data[key];
+                }
+            }
+        });
+        console.log("Brouillon restauré.");
     }
-  }
+}
 
-  function lockAfterSend() {
-    qsa("input, textarea, select, button").forEach(el => {
-      if (el.id === PSE.submitBtnId) return;
-      el.disabled = true;
-    });
-    const btn = qs("#" + PSE.submitBtnId);
-    if (btn) btn.disabled = true;
-  }
-
-  async function traceUsage(exerciceId) {
-    if (!ensureDbOrExplain()) return;
-    const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "";
-    const classe = localStorage.getItem("userClasse") || localStorage.getItem("userClasseNom") || "";
-
-    const payload = {
-      ts: Date.now(),
-      exercice: exerciceId,
-      url: location.href,
-      eleve: code,
-      classe: classe
-    };
-
-    try { await window.db.collection(PSE.collections.usage).add(payload); } catch {}
-  }
-
-  async function submit() {
-    if (!ensureDbOrExplain()) return;
-    const exerciceId = getExerciceId();
-    const btn = qs("#" + PSE.submitBtnId);
-    if (btn) btn.disabled = true;
-
-    const okAuth = await ensureAuth();
-    if (!okAuth) { if (btn) btn.disabled = false; return; }
-
-    const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "";
-    const classe = localStorage.getItem("userClasse") || localStorage.getItem("userClasseNom") || "";
-
-    let score = null;
-    try { if (typeof window.computeScore === "function") score = window.computeScore(); } catch {}
-
-    const payload = {
-      ts: Date.now(),
-      exercice: exerciceId,
-      version: getVersion(),
-      url: location.href,
-      eleve: code,
-      classe: classe,
-      reponses: collectReponses(document),
-      score: score
-    };
+// Fonction d'envoi exportée pour être utilisée dans le HTML
+window.envoyerCopie = async function() {
+    const btn = document.getElementById('btn-envoi');
+    if(btn) { btn.disabled = true; btn.innerText = "Envoi en cours..."; }
 
     try {
-      await window.db.collection(PSE.collections.submissions).add(payload);
-      localStorage.setItem(sentKey(exerciceId), String(Date.now()));
-      setBanner("Envoyé au prof ✅", "ok");
-      toast("Devoir envoyé", "ok");
-      alert("Envoyé au prof ✅\n\nÉtape suivante : ouvre Firebase > Firestore > collection '" + PSE.collections.submissions + "' pour voir la copie.");
-      lockAfterSend();
+        // 1. Récupération des réponses
+        const reponses = {};
+        document.querySelectorAll("input, textarea, select").forEach(el => {
+            const key = el.getAttribute('data-qid') || el.id;
+            if(key) {
+                if(el.type === 'radio') {
+                    if(el.checked) reponses[key] = el.value;
+                } else if (el.type === 'checkbox') {
+                    // Pour les checkbox, on gère souvent un tableau ou un booléen
+                    reponses[key] = el.checked; 
+                } else {
+                    reponses[key] = el.value;
+                }
+            }
+        });
+
+        // 2. Création du paquet de données
+        const paquet = {
+            date: new Date().toISOString(),
+            // L'ID du devoir est stocké dans le body ou le titre pour lier avec le Blueprint
+            idExercice: document.body.getAttribute('data-id-exercice') || "inconnu", 
+            eleve: {
+                nom: document.getElementById('nom-eleve')?.value || "Anonyme",
+                prenom: document.getElementById('prenom-eleve')?.value || "",
+                classe: document.querySelector('input[placeholder*="Classe"]')?.value || ""
+            },
+            reponses: reponses,
+            version: "v4_modern"
+        };
+
+        // 3. Envoi vers Firestore (Nouvelle syntaxe v9)
+        const docRef = await addDoc(collection(db, "copies"), paquet);
+        
+        console.log("Document écrit avec ID: ", docRef.id);
+        alert("✅ Copie envoyée au professeur !");
+        localStorage.removeItem(getStorageKey()); // Nettoyage brouillon
+        
+        if(btn) btn.innerText = "Envoyé avec succès";
+
     } catch (e) {
-      setBanner("Erreur d’envoi : copie non envoyée", "err");
-      const msg = (e && e.message) ? e.message : String(e);
-      alert("Erreur d’envoi :\n" + msg + "\n\nTon travail reste sauvegardé (brouillon).");
-      if (btn) btn.disabled = false;
+        console.error("Erreur d'ajout: ", e);
+        alert("❌ Erreur technique : " + e.message);
+        if(btn) { btn.disabled = false; btn.innerText = "Réessayer"; }
     }
-  }
+};
 
-  function setupAutosave(exerciceId) {
-    let t = null;
-    const handler = () => {
-      clearTimeout(t);
-      t = setTimeout(() => saveDraft(exerciceId), PSE.autosaveMs);
-    };
-    document.addEventListener("input", handler, true);
-    document.addEventListener("change", handler, true);
-  }
-
-  function setupSubmitButton() {
-    const btn = qs("#" + PSE.submitBtnId);
-    if (!btn) return;
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      submit();
-    });
-  }
-
-  function boot() {
-    const mode = getMode();
-    if (mode === "prof" || mode === "builder") return;
-
-    bannerEnsure();
-    const exerciceId = getExerciceId();
-
-    const sentTs = localStorage.getItem(sentKey(exerciceId));
-    if (sentTs) {
-      const d = new Date(parseInt(sentTs, 10));
-      setBanner("Déjà envoyé ✅ (" + d.toLocaleString() + ")", "ok");
-      lockAfterSend();
-    } else {
-      restoreDraft(exerciceId);
-      setupAutosave(exerciceId);
-      setBanner("Prêt : réponds puis clique ENVOYER AU PROF", null);
-    }
-
-    setupSubmitButton();
-    traceUsage(exerciceId);
-  }
-
-  document.addEventListener("DOMContentLoaded", boot);
-})();
+// Démarrage automatique au chargement de la page
+window.addEventListener('DOMContentLoaded', () => {
+    restoreDraft();
+    setInterval(saveDraft, 5000); // Sauvegarde auto toutes les 5s
+});
