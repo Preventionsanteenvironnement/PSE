@@ -1,4 +1,74 @@
-<!DOCTYPE html>
+Je veux que tu examines ce fichier, et aussi vérifie si il est aussi responsive. Retire les boutons « envoyer »et « imprimer » et aussi si on demande le nom «  (rgpd) tu retires bien si on demande le prénom ou nom ou surnom et installé le track suivant : « function changeSize(delta) {
+        currentSize += delta;
+        if (currentSize < 12) currentSize = 12;
+        if (currentSize > 24) currentSize = 24;
+        document.documentElement.style.fontSize = currentSize + 'px';
+        const h1 = document.querySelector('h1');
+        if(h1) h1.style.fontSize = (2 * (currentSize/16)) + 'rem';
+    }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.appspot.com",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let currentDocId = null;
+  let startTime = Date.now();
+
+  // On récupère l'identité si elle existe déjà, sinon on ne demande RIEN
+  function getIdentity() { return localStorage.getItem("cockpit_student_id"); }
+
+  async function demarrerVisite() {
+    try {
+      let userCode = getIdentity() || "ANONYME";
+      let userClass = localStorage.getItem("cockpit_student_class") || "VISITEUR";
+      const pageName = document.title || window.location.pathname.split("/").pop();
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+
+      // 1. Création de la visite (Départ à 0s)
+      const ref = await addDoc(collection(db, "statistiques_usage"), {
+        page: pageName, 
+        userCode: userCode, 
+        classe: userClass,
+        device: isMobile ? "Mobile" : "Desktop", 
+        action: "Consultation", 
+        duree: 0,
+        timestamp: serverTimestamp(), 
+        date: new Date().toISOString()
+      });
+      
+      currentDocId = ref.id;
+      
+      // 2. Le Chronomètre silencieux (Mise à jour toutes les 10s)
+      setInterval(async () => {
+        if (currentDocId && document.visibilityState === 'visible') {
+          try { 
+              await updateDoc(doc(db, "statistiques_usage", currentDocId), { 
+                  duree: Math.floor((Date.now() - startTime) / 1000) 
+              }); 
+          } catch (e) {}
+        }
+      }, 10000);
+      
+    } catch (e) { console.warn("Erreur Tracker", e); }
+  }
+  
+  demarrerVisite();
+</script>
+</body>
+</html> » et « <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
