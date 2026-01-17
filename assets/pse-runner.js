@@ -17,7 +17,7 @@ const firebaseConfig = {
 // --- 2. INITIALISATION ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-console.log("🔥 Firebase Connecté (v5)");
+console.log("🔥 Firebase Connecté (v5 - Vers devoirs_rendus)");
 
 // --- 3. GESTION BROUILLON (Local) ---
 function getStorageKey() {
@@ -66,11 +66,9 @@ window.envoyerCopie = async function() {
     if(btn) { btn.disabled = true; btn.innerText = "Envoi en cours... ⏳"; }
 
     try {
-        // A. Récupération Identité (Code stocké dans sessionStorage via annuaire.js)
-        // Ou fallback sur les inputs visibles s'ils existent
+        // A. Récupération Identité
         const codeEleve = sessionStorage.getItem("userCode") 
                        || document.getElementById('code-eleve')?.value 
-                       || document.getElementById('code-eleve')?.innerText 
                        || "ANONYME";
                        
         const classeEleve = sessionStorage.getItem("userClasse") 
@@ -81,7 +79,6 @@ window.envoyerCopie = async function() {
         const reponses = {};
         document.querySelectorAll("input, textarea, select").forEach(el => {
             const key = el.getAttribute('data-qid') || el.id;
-            // On ignore les champs d'identité pour ne pas polluer les réponses
             if(key && key !== 'code-eleve' && key !== 'classe-eleve') {
                 if(el.type === 'radio') {
                     if(el.checked) reponses[key] = el.value;
@@ -95,47 +92,36 @@ window.envoyerCopie = async function() {
 
         // C. Création du Colis (Structure attendue par le Cockpit)
         const paquet = {
-            // Champs obligatoires pour le tri dans le Cockpit
             devoirId: document.body.getAttribute('data-id-exercice') || document.title,
-            titre: document.title,
-            
-            // Dates (Format Firestore + ISO)
+            titre: document.querySelector('h1')?.innerText || document.title,
             createdAt: serverTimestamp(),
             createdAtISO: new Date().toISOString(),
-            date: new Date().toISOString(), // Doublon sécurité
-            
-            // Infos Élève (Structure Cockpit)
-            identifiant: codeEleve, // Le cockpit utilise ce champ pour l'affichage
-            classe: classeEleve,    // Le cockpit utilise ce champ pour le filtre
+            date: new Date().toISOString(), // Doublon sécurité pour le tri
+            identifiant: codeEleve, 
+            classe: classeEleve,
             eleve: {
                 code: codeEleve,
                 classe: classeEleve
             },
-            
-            // Le contenu
             reponses: reponses,
-            
-            // Métadonnées
-            temps_secondes: 0, // Pour futur usage (chrono)
+            temps_secondes: 0, 
             version: "v5_correct"
         };
 
-        console.log("📤 Envoi du paquet vers 'devoirs_rendus' :", paquet);
+        console.log("📤 Envoi vers 'devoirs_rendus' :", paquet);
 
-        // D. Dépôt dans la BONNE boîte aux lettres
-        // C'est ICI que c'était faux avant ("copies" -> "devoirs_rendus")
+        // D. Dépôt dans la BONNE boîte aux lettres (CORRECTION ICI)
         const docRef = await addDoc(collection(db, "devoirs_rendus"), paquet);
         
         console.log("✅ Reçu par Firebase ! ID:", docRef.id);
         alert("✅ Copie bien reçue par le professeur !");
         
-        // Nettoyage
         localStorage.removeItem(getStorageKey());
         if(btn) btn.innerText = "Envoyé avec succès ✅";
 
     } catch (e) {
         console.error("❌ Erreur critique:", e);
-        alert("Oups ! Erreur d'envoi. Vérifie ta connexion internet.\n\nDétail: " + e.message);
+        alert("Erreur d'envoi : " + e.message);
         if(btn) { btn.disabled = false; btn.innerText = "Réessayer l'envoi 📤"; }
     }
 };
