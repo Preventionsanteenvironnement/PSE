@@ -1,8 +1,7 @@
-/* PSE RUNNER v4 - FUTURE PROOF (Firebase v9 Modular) */
+/* PSE RUNNER v5 - CORRIGÉ POUR LE COCKPIT */
 
-// On importe les fonctions modernes directement depuis les serveurs de Google
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, getDoc } 
+import { getFirestore, collection, addDoc, serverTimestamp } 
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- 1. CONFIGURATION (Vos clés) ---
@@ -18,15 +17,11 @@ const firebaseConfig = {
 // --- 2. INITIALISATION ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-console.log("🔥 Firebase v9 (Modulaire) Initialisé");
+console.log("🔥 Firebase Connecté (v5)");
 
-// --- 3. LOGIQUE DU DEVOIR ---
-
-// Fonction utilitaire pour sauvegarder en local (anti-crash)
+// --- 3. GESTION BROUILLON (Local) ---
 function getStorageKey() {
-    // Nettoie le titre pour en faire une clé unique
-    const id = document.title.replace(/[^a-zA-Z0-9]/g, '_');
-    return "brouillon_" + id;
+    return "brouillon_" + (document.title.replace(/[^a-zA-Z0-9]/g, '_') || "defaut");
 }
 
 function saveDraft() {
@@ -47,36 +42,50 @@ function saveDraft() {
 function restoreDraft() {
     const saved = localStorage.getItem(getStorageKey());
     if (saved) {
-        const data = JSON.parse(saved);
-        document.querySelectorAll("input, textarea, select").forEach((el) => {
-            const key = el.getAttribute('data-qid') || el.id;
-            if (data[key] !== undefined) {
-                if (el.type === 'radio' || el.type === 'checkbox') {
-                    if (el.value === data[key]) el.checked = true;
-                } else {
-                    el.value = data[key];
+        try {
+            const data = JSON.parse(saved);
+            document.querySelectorAll("input, textarea, select").forEach((el) => {
+                const key = el.getAttribute('data-qid') || el.id;
+                if (data[key] !== undefined) {
+                    if (el.type === 'radio' || el.type === 'checkbox') {
+                        if (el.value === data[key]) el.checked = true;
+                    } else {
+                        el.value = data[key];
+                    }
                 }
-            }
-        });
-        console.log("Brouillon restauré.");
+            });
+            console.log("Brouillon restauré.");
+        } catch(e) {}
     }
 }
 
-// Fonction d'envoi exportée pour être utilisée dans le HTML
+// --- 4. FONCTION D'ENVOI (LE FACTEUR) ---
 window.envoyerCopie = async function() {
-    const btn = document.getElementById('btn-envoi');
-    if(btn) { btn.disabled = true; btn.innerText = "Envoi en cours..."; }
+    // Bouton feedback
+    const btn = document.querySelector('button[onclick*="tenterEnvoi"]') || document.querySelector('button');
+    if(btn) { btn.disabled = true; btn.innerText = "Envoi en cours... ⏳"; }
 
     try {
-        // 1. Récupération des réponses
+        // A. Récupération Identité (Code stocké dans sessionStorage via annuaire.js)
+        // Ou fallback sur les inputs visibles s'ils existent
+        const codeEleve = sessionStorage.getItem("userCode") 
+                       || document.getElementById('code-eleve')?.value 
+                       || document.getElementById('code-eleve')?.innerText 
+                       || "ANONYME";
+                       
+        const classeEleve = sessionStorage.getItem("userClasse") 
+                         || document.getElementById('classe-eleve')?.value 
+                         || "VISITEUR";
+
+        // B. Récupération Réponses
         const reponses = {};
         document.querySelectorAll("input, textarea, select").forEach(el => {
             const key = el.getAttribute('data-qid') || el.id;
-            if(key) {
+            // On ignore les champs d'identité pour ne pas polluer les réponses
+            if(key && key !== 'code-eleve' && key !== 'classe-eleve') {
                 if(el.type === 'radio') {
                     if(el.checked) reponses[key] = el.value;
                 } else if (el.type === 'checkbox') {
-                    // Pour les checkbox, on gère souvent un tableau ou un booléen
                     reponses[key] = el.checked; 
                 } else {
                     reponses[key] = el.value;
@@ -84,38 +93,55 @@ window.envoyerCopie = async function() {
             }
         });
 
-        // 2. Création du paquet de données
+        // C. Création du Colis (Structure attendue par le Cockpit)
         const paquet = {
-            date: new Date().toISOString(),
-            // L'ID du devoir est stocké dans le body ou le titre pour lier avec le Blueprint
-            idExercice: document.body.getAttribute('data-id-exercice') || "inconnu", 
+            // Champs obligatoires pour le tri dans le Cockpit
+            devoirId: document.body.getAttribute('data-id-exercice') || document.title,
+            titre: document.title,
+            
+            // Dates (Format Firestore + ISO)
+            createdAt: serverTimestamp(),
+            createdAtISO: new Date().toISOString(),
+            date: new Date().toISOString(), // Doublon sécurité
+            
+            // Infos Élève (Structure Cockpit)
+            identifiant: codeEleve, // Le cockpit utilise ce champ pour l'affichage
+            classe: classeEleve,    // Le cockpit utilise ce champ pour le filtre
             eleve: {
-                nom: document.getElementById('nom-eleve')?.value || "Anonyme",
-                prenom: document.getElementById('prenom-eleve')?.value || "",
-                classe: document.querySelector('input[placeholder*="Classe"]')?.value || ""
+                code: codeEleve,
+                classe: classeEleve
             },
+            
+            // Le contenu
             reponses: reponses,
-            version: "v4_modern"
+            
+            // Métadonnées
+            temps_secondes: 0, // Pour futur usage (chrono)
+            version: "v5_correct"
         };
 
-        // 3. Envoi vers Firestore (Nouvelle syntaxe v9)
-        const docRef = await addDoc(collection(db, "copies"), paquet);
+        console.log("📤 Envoi du paquet vers 'devoirs_rendus' :", paquet);
+
+        // D. Dépôt dans la BONNE boîte aux lettres
+        // C'est ICI que c'était faux avant ("copies" -> "devoirs_rendus")
+        const docRef = await addDoc(collection(db, "devoirs_rendus"), paquet);
         
-        console.log("Document écrit avec ID: ", docRef.id);
-        alert("✅ Copie envoyée au professeur !");
-        localStorage.removeItem(getStorageKey()); // Nettoyage brouillon
+        console.log("✅ Reçu par Firebase ! ID:", docRef.id);
+        alert("✅ Copie bien reçue par le professeur !");
         
-        if(btn) btn.innerText = "Envoyé avec succès";
+        // Nettoyage
+        localStorage.removeItem(getStorageKey());
+        if(btn) btn.innerText = "Envoyé avec succès ✅";
 
     } catch (e) {
-        console.error("Erreur d'ajout: ", e);
-        alert("❌ Erreur technique : " + e.message);
-        if(btn) { btn.disabled = false; btn.innerText = "Réessayer"; }
+        console.error("❌ Erreur critique:", e);
+        alert("Oups ! Erreur d'envoi. Vérifie ta connexion internet.\n\nDétail: " + e.message);
+        if(btn) { btn.disabled = false; btn.innerText = "Réessayer l'envoi 📤"; }
     }
 };
 
-// Démarrage automatique au chargement de la page
+// Démarrage auto
 window.addEventListener('DOMContentLoaded', () => {
     restoreDraft();
-    setInterval(saveDraft, 5000); // Sauvegarde auto toutes les 5s
+    setInterval(saveDraft, 5000);
 });
