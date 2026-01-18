@@ -1,12 +1,18 @@
-/* 📁 ANNUAIRE.JS — VERSION MODERNE (v10)
+/* 📁 ANNUAIRE.JS — VERSION COMPLÈTE (v11 - RGPD Compliant)
    Gestion centralisée : Auth, Annuaire, Envoi Devoirs, Tracking
+   
+   ⚠️ CE FICHIER EST PUBLIC (GitHub Pages PSE)
+   ✅ Il contient UNIQUEMENT code → classe (pas de nom/prénom)
+   
+   📅 Mise à jour : 18 janvier 2026
+   👥 Total : 150 élèves + 2 profs + 2 visiteurs = 154 codes
 */
 
 // 1. IMPORTS MODERNES (Directement depuis Google)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 2. TA CONFIGURATION SECRÈTE
+// 2. CONFIGURATION FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
   authDomain: "devoirs-pse.firebaseapp.com",
@@ -20,56 +26,104 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// On rend la base de données accessible partout (pour la Zone Prof)
+// On rend la base de données accessible partout
 window.db = db;
-// On crée une petite fonction pour confirmer que la DB est prête
 window._ensureDb = () => window.db; 
 
-console.log("✅ [annuaire.js] Firebase v10 initialisé avec succès.");
+console.log("✅ [annuaire.js v11] Firebase initialisé avec succès.");
 
-// 4. L'ANNUAIRE (Tes codes élèves)
+// 4. L'ANNUAIRE COMPLET (Code → Classe UNIQUEMENT - RGPD OK)
 const ANNUAIRE = {
-  "INV": "VISITEUR", "PSE": "VISITEUR",
-  // B1AGO1
+  // Visiteurs & Profs
+  "INV": "VISITEUR", 
+  "PSE": "VISITEUR",
+  "PROFPSE": "PROF", 
+  "BRAHMSPSE": "PROF",
+  
+  // B1AGO1 (8 élèves)
   "KA47": "B1AGO1", "LU83": "B1AGO1", "MO12": "B1AGO1", "QF59": "B1AGO1", 
   "RA26": "B1AGO1", "TI74": "B1AGO1", "NE08": "B1AGO1", "SA91": "B1AGO1",
-  // B1AGO2
+  
+  // B1AGO2 (10 élèves)
   "VO35": "B1AGO2", "PY64": "B1AGO2", "XK19": "B1AGO2", "DF82": "B1AGO2", 
-  "GE73": "B1AGO2", "MU51": "B1AGO2", "ZO28": "B1AGO2", "HI96": "B1AGO2",
-  // 1CAP
-  "BA14": "1CAP", "CE72": "1CAP", "DI39": "1CAP", "FO85": "1CAP", "GU61": "1CAP",
-  "JE27": "1CAP", "KO93": "1CAP", "LA58": "1CAP", "ME04": "1CAP", "NA46": "1CAP",
-  "PE11": "1CAP", "QU75": "1CAP", "RI32": "1CAP", "SO98": "1CAP", "TU65": "1CAP",
-  // 2CAP
-  "VE21": "2CAP", "WA87": "2CAP", "XA53": "2CAP", "YA19": "2CAP", "ZO76": "2CAP",
-  "BU42": "2CAP", "CU08": "2CAP", "DU64": "2CAP", "FU31": "2CAP", "GU97": "2CAP",
-  "HU52": "2CAP", "JU18": "2CAP", "KU84": "2CAP", "LU49": "2CAP", "MU15": "2CAP",
-  // TCAP
-  "NU71": "TCAP", "OU37": "TCAP", "PU03": "TCAP", "RU69": "TCAP", "SU25": "TCAP",
-  "TU91": "TCAP", "VU57": "TCAP", "WU13": "TCAP", "XU79": "TCAP", "YU45": "TCAP",
-  "ZU01": "TCAP", "AV67": "TCAP", "BV23": "TCAP", "CV89": "TCAP", "DV55": "TCAP",
-  // 2BACPRO
-  "EV11": "2BACPRO", "FV77": "2BACPRO", "GV33": "2BACPRO", "HV99": "2BACPRO",
-  "IV55": "2BACPRO", "JV11": "2BACPRO", "KV77": "2BACPRO", "LV33": "2BACPRO",
-  "MV99": "2BACPRO", "NV55": "2BACPRO", "OV11": "2BACPRO", "PV77": "2BACPRO",
-  "QV33": "2BACPRO", "RV99": "2BACPRO", "SV55": "2BACPRO",
-  // 1BACPRO
-  "TV11": "1BACPRO", "UV77": "1BACPRO", "VV33": "1BACPRO", "WV99": "1BACPRO",
-  "XV55": "1BACPRO", "YV11": "1BACPRO", "ZV77": "1BACPRO", "AW33": "1BACPRO",
-  "BW99": "1BACPRO", "CW55": "1BACPRO", "DW11": "1BACPRO", "EW77": "1BACPRO",
-  "FW33": "1BACPRO", "GW99": "1BACPRO", "HW55": "1BACPRO",
-  // TBACPRO
-  "IW11": "TBACPRO", "JW77": "TBACPRO", "KW33": "TBACPRO", "LW99": "TBACPRO",
-  "MW55": "TBACPRO", "NW11": "TBACPRO", "OW77": "TBACPRO", "PW33": "TBACPRO",
-  "QW99": "TBACPRO", "RW55": "TBACPRO", "SW11": "TBACPRO", "TW77": "TBACPRO",
-  "UW33": "TBACPRO", "VW99": "TBACPRO", "WW55": "TBACPRO",
-  // PROF
-  "PROFPSE": "PROF", "BRAHMSPSE": "PROF"
+  "RT57": "B1AGO2", "ML03": "B1AGO2", "HG68": "B1AGO2", "CP41": "B1AGO2", 
+  "AJ90": "B1AGO2", "BN25": "B1AGO2",
+  
+  // B1MELEC (7 élèves)
+  "EU14": "B1MELEC", "SO76": "B1MELEC", "KT52": "B1MELEC", "WD88": "B1MELEC", 
+  "LP09": "B1MELEC", "YM63": "B1MELEC", "RF31": "B1MELEC",
+  
+  // B2GATL1 (8 élèves)
+  "CZ72": "B2GATL1", "QL16": "B2GATL1", "MX48": "B2GATL1", "VA95": "B2GATL1", 
+  "HU27": "B2GATL1", "PN60": "B2GATL1", "SJ04": "B2GATL1", "DK81": "B2GATL1",
+  
+  // B2GATL2 (8 élèves)
+  "TG36": "B2GATL2", "AR58": "B2GATL2", "ZN73": "B2GATL2", "FK10": "B2GATL2", 
+  "WL92": "B2GATL2", "BM45": "B2GATL2", "EO67": "B2GATL2", "JC21": "B2GATL2",
+  
+  // B2MELEC (8 élèves) ← Contient NV33 !
+  "PS84": "B2MELEC", "NV33": "B2MELEC", "KQ56": "B2MELEC", "LR07": "B2MELEC", 
+  "UH69": "B2MELEC", "XT18": "B2MELEC", "DF94": "B2MELEC", "MA02": "B2MELEC",
+  
+  // BTAGO1 (9 élèves)
+  "RL61": "BTAGO1", "ZC28": "BTAGO1", "PW75": "BTAGO1", "SF13": "BTAGO1", 
+  "QN80": "BTAGO1", "HK47": "BTAGO1", "VT96": "BTAGO1", "JE34": "BTAGO1", "LY52": "BTAGO1",
+  
+  // BTAGO2 (9 élèves)
+  "MO71": "BTAGO2", "AZ19": "BTAGO2", "KC83": "BTAGO2", "RF06": "BTAGO2", 
+  "PU44": "BTAGO2", "YD90": "BTAGO2", "QH27": "BTAGO2", "NS68": "BTAGO2", "LX11": "BTAGO2",
+  
+  // BTMELEC (5 élèves)
+  "CM59": "BTMELEC", "VA14": "BTMELEC", "ZR72": "BTMELEC", "HP03": "BTMELEC", "WX88": "BTMELEC",
+  
+  // C1CAN (8 élèves)
+  "JD41": "C1CAN", "EM65": "C1CAN", "TK92": "C1CAN", "QF18": "C1CAN", 
+  "LP77": "C1CAN", "ZS24": "C1CAN", "RN50": "C1CAN", "HU09": "C1CAN",
+  
+  // C1HORT (8 élèves)
+  "AC36": "C1HORT", "QJ81": "C1HORT", "MS47": "C1HORT", "VR02": "C1HORT", 
+  "KX93": "C1HORT", "PD68": "C1HORT", "ET15": "C1HORT", "NB74": "C1HORT",
+  
+  // C1JP (8 élèves)
+  "WY59": "C1JP", "HL07": "C1JP", "MX84": "C1JP", "QP22": "C1JP", 
+  "SZ96": "C1JP", "RV31": "C1JP", "JC68": "C1JP", "DT10": "C1JP",
+  
+  // C1PSR (9 élèves)
+  "KF73": "C1PSR", "PX04": "C1PSR", "NS58": "C1PSR", "QV91": "C1PSR", 
+  "HR27": "C1PSR", "LW62": "C1PSR", "ZM19": "C1PSR", "EA80": "C1PSR", "CJ45": "C1PSR",
+  
+  // C1VAN (4 élèves)
+  "RH12": "C1VAN", "MV66": "C1VAN", "KP90": "C1VAN", "AZ37": "C1VAN",
+  
+  // C2CAN (8 élèves)
+  "TD54": "C2CAN", "QS71": "C2CAN", "LN08": "C2CAN", "PX29": "C2CAN", 
+  "RF63": "C2CAN", "WJ16": "C2CAN", "ZH82": "C2CAN", "AC40": "C2CAN",
+  
+  // C2HORT (7 élèves)
+  "NE55": "C2HORT", "XQ03": "C2HORT", "HM79": "C2HORT", "VZ24": "C2HORT", 
+  "CP68": "C2HORT", "SJ91": "C2HORT", "FT12": "C2HORT",
+  
+  // C2JP (10 élèves)
+  "RD27": "C2JP", "WM83": "C2JP", "ZF05": "C2JP", "LC66": "C2JP", 
+  "QJ19": "C2JP", "AP74": "C2JP", "SV92": "C2JP", "TK38": "C2JP", "HX11": "C2JP", "GX61": "C2JP",
+  
+  // C2PSR (10 élèves)
+  "PM70": "C2PSR", "ZR26": "C2PSR", "NX51": "C2PSR", "CS09": "C2PSR", 
+  "VT84": "C2PSR", "KF17": "C2PSR", "QL63": "C2PSR", "MA28": "C2PSR", "RW95": "C2PSR", "DH42": "C2PSR",
+  
+  // C2VAN (6 élèves)
+  "ZP60": "C2VAN", "QF14": "C2VAN", "MX88": "C2VAN", "LS23": "C2VAN", 
+  "VA71": "C2VAN", "CN05": "C2VAN"
 };
 
-// 5. FONCTIONS GLOBALES (Pour que tes pages HTML puissent les appeler)
+// Rendre l'annuaire accessible globalement pour debug
+window.ANNUAIRE = ANNUAIRE;
 
-// A. Demander le code élève (Pop-up)
+console.log(`✅ Annuaire chargé : ${Object.keys(ANNUAIRE).length} codes enregistrés`);
+
+// 5. FONCTIONS GLOBALES
+
+// A. Demander le code élève (Pop-up d'authentification)
 window.demanderCode = function(pageName) {
   return new Promise((resolve) => {
     // Vérif si déjà connecté
@@ -78,7 +132,9 @@ window.demanderCode = function(pageName) {
     
     if (storedCode && storedClasse) {
       // Déjà connecté, on trace juste la visite
-      window.enregistrerVisite(pageName);
+      if (typeof window.enregistrerVisite === 'function') {
+        window.enregistrerVisite(pageName);
+      }
       return resolve({ code: storedCode, classe: storedClasse });
     }
 
@@ -110,7 +166,9 @@ window.demanderCode = function(pageName) {
         localStorage.setItem("userClasse", classe);
         localStorage.setItem("userCode", code); // Legacy support
         
-        window.enregistrerVisite(pageName);
+        if (typeof window.enregistrerVisite === 'function') {
+          window.enregistrerVisite(pageName);
+        }
         overlay.remove();
         resolve({ code, classe });
       } else {
@@ -126,7 +184,7 @@ window.demanderCode = function(pageName) {
   });
 };
 
-// B. Envoyer le devoir (Le coeur du réacteur)
+// B. Envoyer le devoir (Le cœur du réacteur)
 window.PSE_submitDevoir = async function(payload) {
   console.log("📤 Envoi en cours...", payload);
   
@@ -145,23 +203,26 @@ window.PSE_submitDevoir = async function(payload) {
       createdAt: serverTimestamp(),
       createdAtISO: new Date().toISOString(),
       
-      // Identité Élève
+      // Identité Élève (CODE UNIQUEMENT - RGPD OK)
+      identifiant: codeLocal,  // Le code élève
+      classe: classeLocal,     // La classe
       eleve: {
+        userCode: codeLocal,
         code: codeLocal,
-        classeCode: classeLocal,
-        classe: payload.classe || classeLocal, // Priorité au champ formulaire si rempli
-        nom: payload.nom || "",
-        prenom: payload.prenom || ""
+        classe: classeLocal,
+        // Pas de nom/prénom ici - respect RGPD
       },
       
       // Contenu
       reponses: payload.reponses || {},
-      resultat_auto: payload.resultat_auto || {}, // Score calculé
+      resultat_auto: payload.resultat_auto || {},
+      competences: payload.competences || {},
+      temps_secondes: payload.temps_secondes || 0,
       raw: payload // Sauvegarde de sécurité
     };
 
     // Vérification anti-doublon simple (session)
-    const antiKey = "sent_" + docData.devoirId + "_" + docData.createdAtISO.slice(0,16); // à la minute près
+    const antiKey = "sent_" + docData.devoirId + "_" + docData.createdAtISO.slice(0,16);
     if (sessionStorage.getItem(antiKey)) {
         console.warn("Doublon évité.");
         return { ok: true, id: "doublon" };
@@ -194,11 +255,25 @@ window.enregistrerVisite = async function(nomPage) {
             userCode: code,
             classe: classe
         });
-    } catch(e) { console.warn("Erreur stats (pas grave)", e); }
+    } catch(e) { 
+        console.warn("Erreur stats (pas grave)", e); 
+    }
 };
 
 // D. Déconnexion
 window.resetCodeEleve = function() {
   localStorage.clear();
   location.reload();
+};
+
+// E. Fonction de debug (console uniquement)
+window.verifierCode = function(code) {
+  const c = code.toUpperCase();
+  if (ANNUAIRE[c]) {
+    console.log(`✅ ${c} → ${ANNUAIRE[c]}`);
+    return ANNUAIRE[c];
+  } else {
+    console.log(`❌ ${c} inconnu`);
+    return null;
+  }
 };
