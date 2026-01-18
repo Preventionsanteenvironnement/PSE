@@ -1,4 +1,4 @@
-/* PSE RUNNER v6 - DÉTECTION ID AMÉLIORÉE */
+/* PSE RUNNER v5 - CORRIGÉ POUR LE COCKPIT */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } 
@@ -17,7 +17,7 @@ const firebaseConfig = {
 // --- 2. INITIALISATION ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-console.log("🔥 Firebase Connecté (v6 - Détection ID améliorée)");
+console.log("🔥 Firebase Connecté (v5 - Vers devoirs_rendus)");
 
 // --- 3. GESTION BROUILLON (Local) ---
 function getStorageKey() {
@@ -59,41 +59,14 @@ function restoreDraft() {
     }
 }
 
-// --- 4. DÉTECTION INTELLIGENTE DE L'ID DEVOIR ---
-function detectDevoirId() {
-    // Méthode 1 : Attribut data-id-exercice (préféré)
-    const attrId = document.body.getAttribute('data-id-exercice');
-    if (attrId && attrId !== 'undefined' && attrId !== '') {
-        console.log("✅ ID trouvé via data-id-exercice:", attrId);
-        return attrId;
-    }
-    
-    // Méthode 2 : Variable globale MON_ID_DEVOIR
-    if (typeof window.MON_ID_DEVOIR !== 'undefined' && window.MON_ID_DEVOIR) {
-        console.log("✅ ID trouvé via MON_ID_DEVOIR:", window.MON_ID_DEVOIR);
-        return window.MON_ID_DEVOIR;
-    }
-    
-    // Méthode 3 : Extraction depuis l'URL (si hébergé)
-    const urlMatch = window.location.pathname.match(/devoir_\d+/);
-    if (urlMatch) {
-        console.log("✅ ID trouvé via URL:", urlMatch[0]);
-        return urlMatch[0];
-    }
-    
-    // Méthode 4 : Titre du document (fallback)
-    console.warn("⚠️ Fallback sur document.title:", document.title);
-    return document.title;
-}
-
-// --- 5. FONCTION D'ENVOI (LE FACTEUR) ---
+// --- 4. FONCTION D'ENVOI (LE FACTEUR) ---
 window.envoyerCopie = async function() {
     // Bouton feedback
     const btn = document.querySelector('button[onclick*="tenterEnvoi"]') || document.querySelector('button');
     if(btn) { btn.disabled = true; btn.innerText = "Envoi en cours... ⏳"; }
 
     try {
-        // A. Récupération Identité (RGPD : CODE ANONYME)
+        // A. Récupération Identité
         const codeEleve = sessionStorage.getItem("userCode") 
                        || document.getElementById('code-eleve')?.value 
                        || "ANONYME";
@@ -117,32 +90,27 @@ window.envoyerCopie = async function() {
             }
         });
 
-        // C. Détection intelligente de l'ID devoir
-        const idDevoir = detectDevoirId();
-        console.log("📋 ID Devoir détecté:", idDevoir);
-
-        // D. Création du Colis (Structure attendue par le Cockpit)
+        // C. Création du Colis (Structure attendue par le Cockpit)
         const paquet = {
-            idExercice: idDevoir,        // ← NOM STANDARD pour le Cockpit
-            devoirId: idDevoir,          // ← Doublon sécurité
+            devoirId: document.body.getAttribute('data-id-exercice') || document.title,
             titre: document.querySelector('h1')?.innerText || document.title,
             createdAt: serverTimestamp(),
             createdAtISO: new Date().toISOString(),
-            date: new Date().toISOString(),
-            identifiant: codeEleve,      // ← CODE ANONYME (RGPD)
+            date: new Date().toISOString(), // Doublon sécurité pour le tri
+            identifiant: codeEleve, 
             classe: classeEleve,
             eleve: {
-                code: codeEleve,         // ← CODE ANONYME (RGPD)
+                code: codeEleve,
                 classe: classeEleve
             },
             reponses: reponses,
             temps_secondes: 0, 
-            version: "v6_id_fix"
+            version: "v5_correct"
         };
 
         console.log("📤 Envoi vers 'devoirs_rendus' :", paquet);
 
-        // E. Dépôt dans Firebase
+        // D. Dépôt dans la BONNE boîte aux lettres (CORRECTION ICI)
         const docRef = await addDoc(collection(db, "devoirs_rendus"), paquet);
         
         console.log("✅ Reçu par Firebase ! ID:", docRef.id);
@@ -162,5 +130,4 @@ window.envoyerCopie = async function() {
 window.addEventListener('DOMContentLoaded', () => {
     restoreDraft();
     setInterval(saveDraft, 5000);
-    console.log("🔍 ID Devoir au chargement:", detectDevoirId());
 });
