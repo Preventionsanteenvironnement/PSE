@@ -1,6 +1,12 @@
-// ============================================================================
-// pse-runner.js - Version corrigée (à mettre sur GitHub)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════
+// pse-runner.js - Version 4.0 (Structure sécurisée finale)
+// ════════════════════════════════════════════════════════════════════════
+// 
+// CHEMIN D'ÉCRITURE : resultats/{eleveCode}/copies/{docId}
+// - Copie immuable (pas de modification possible après envoi)
+// - Seul le prof peut lire la liste complète
+//
+// ════════════════════════════════════════════════════════════════════════
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { 
@@ -23,31 +29,38 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner chargé - Version v2.0 (Fix Visiteur)");
+console.log("🚀 PSE Runner v4.0 - Structure sécurisée finale");
 
 /**
  * Fonction d'envoi de la copie élève à Firebase
- * @param {string} code - Code élève (8 chiffres)
+ * @param {string} code - Code élève (ex: KA47M9P2)
  * @param {object} pasteStats - Statistiques de copier-coller
- * @param {object} eleveData - Données élève depuis l'annuaire (NOUVEAU)
+ * @param {object} eleveData - Données élève depuis l'annuaire
  */
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Tentative d'envoi...", { code, eleveData });
     
     try {
-        // ⭐ FIX PRINCIPAL: Utiliser eleveData si disponible
+        // Récupérer les infos élève
         const eleveInfo = eleveData || {
             code: code,
-            prenom: "Visiteur",
+            prenom: "Élève",
             nom: "",
             classe: "?"
         };
         
+        // Normaliser le code (majuscules, sans espaces)
+        const eleveCode = (eleveInfo.code || code).toUpperCase().trim();
+        
+        if (!eleveCode || eleveCode.length < 4) {
+            throw new Error("Code élève invalide (minimum 4 caractères)");
+        }
+        
         console.log("👤 Élève identifié:", eleveInfo);
         
-        // ============================================
+        // ════════════════════════════════════════════════════════════
         // 1. COLLECTER TOUTES LES RÉPONSES
-        // ============================================
+        // ════════════════════════════════════════════════════════════
         const reponses = {};
         
         // Réponses textuelles (textarea)
@@ -55,17 +68,16 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             const questionBlock = el.closest('.question-block');
             const numSelector = questionBlock?.querySelector('.num-selector');
             const questionNum = numSelector?.value || `Q${i+1}`;
-            
             reponses[questionNum] = el.value.trim();
         });
         
-        // Réponses à choix multiples (exercices "relier")
+        // Réponses à choix multiples
         document.querySelectorAll('.save-me-match').forEach((el) => {
             const id = el.dataset.id || `match_${Math.random()}`;
             reponses[id] = el.value;
         });
         
-        // Réponses "trous" (exercices à compléter)
+        // Réponses "trous"
         document.querySelectorAll('.trou-eleve').forEach((el, i) => {
             const id = `trou_${i}`;
             reponses[id] = el.tagName === 'SELECT' ? el.value : el.value.trim();
@@ -73,9 +85,9 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         
         console.log("📝 Réponses collectées:", Object.keys(reponses).length);
         
-        // ============================================
+        // ════════════════════════════════════════════════════════════
         // 2. CALCULER LES COMPÉTENCES
-        // ============================================
+        // ════════════════════════════════════════════════════════════
         const competences = {};
         let totalPoints = 0;
         let maxPoints = 0;
@@ -91,14 +103,12 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 const max = parseFloat(maxInput.value) || 0;
                 
                 if(comp && max > 0) {
-                    // Calculer le niveau (0-3)
                     const ratio = score / max;
                     let niveau = 0;
                     if(ratio >= 0.85) niveau = 3;
                     else if(ratio >= 0.65) niveau = 2;
                     else if(ratio >= 0.40) niveau = 1;
                     
-                    // Ajouter au total de la compétence
                     if(!competences[comp]) competences[comp] = 0;
                     competences[comp] += niveau;
                     
@@ -111,43 +121,39 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         const noteSur20 = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 20 * 10) / 10 : 0;
         
         console.log("🎯 Compétences:", competences);
-        console.log("📊 Note:", noteSur20, "/20");
+        console.log("📊 Note auto:", noteSur20, "/20");
         
-        // ============================================
+        // ════════════════════════════════════════════════════════════
         // 3. CALCULER LE TEMPS PASSÉ
-        // ============================================
-        const startTime = parseInt(localStorage.getItem('devoir_start_time_' + (document.body.dataset.idExercice || 'unknown'))) || Date.now();
+        // ════════════════════════════════════════════════════════════
+        const devoirId = document.body.dataset.idExercice || "unknown";
+        const startTime = parseInt(localStorage.getItem('devoir_start_time_' + devoirId)) || Date.now();
         const tempsSecondes = Math.floor((Date.now() - startTime) / 1000);
         
-        console.log("⏱️ Temps passé:", tempsSecondes, "secondes");
-        
-        // ============================================
-        // 4. PRÉPARER LES DONNÉES COMPLÈTES
-        // ============================================
-        const devoirId = document.body.dataset.idExercice || "unknown";
+        // ════════════════════════════════════════════════════════════
+        // 4. PRÉPARER LES DONNÉES
+        // ════════════════════════════════════════════════════════════
         const titre = document.querySelector('.main-title-editable')?.textContent.trim() || "Devoir PSE";
         
         const data = {
-            // ⭐ INFORMATIONS ÉLÈVE (CLÉ STABLE)
+            // Identifiants
+            eleveCode: eleveCode,
+            devoirId: devoirId,
+            titre: titre,
+            classe: eleveInfo.classe,
+            
+            // Informations élève
             eleve: {
-                userCode: eleveInfo.code,      // CLÉ UNIQUE ET STABLE
+                userCode: eleveCode,
                 prenom: eleveInfo.prenom,
                 nom: eleveInfo.nom,
                 classe: eleveInfo.classe
             },
             
-            // ⭐ IDENTIFIANT LISIBLE (pour affichage)
-            identifiant: eleveInfo.prenom + " " + eleveInfo.nom,
-            
-            // Informations devoir
-            devoirId: devoirId,
-            titre: titre,
-            classe: eleveInfo.classe,
-            
             // Réponses et scores
             reponses: reponses,
             competences: competences,
-            note_finale: noteSur20,
+            note_auto: noteSur20,
             
             // Métadonnées
             temps_secondes: tempsSecondes,
@@ -155,36 +161,31 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             
             // Timestamps
             createdAt: serverTimestamp(),
-            createdAtISO: new Date().toISOString(),
-            date: new Date().toISOString()
+            createdAtISO: new Date().toISOString()
         };
         
         console.log("📦 Données complètes:", data);
         
-        // ============================================
-        // 5. ENREGISTRER LE TEMPS DE DÉBUT (si pas déjà fait)
-        // ============================================
-        if(!localStorage.getItem('devoir_start_time_' + devoirId)) {
-            localStorage.setItem('devoir_start_time_' + devoirId, Date.now().toString());
-        }
+        // ════════════════════════════════════════════════════════════
+        // 5. ENVOI À FIREBASE (CHEMIN SÉCURISÉ)
+        // ════════════════════════════════════════════════════════════
+        // CHEMIN : resultats/{eleveCode}/copies/{docId}
         
-        // ============================================
-        // 6. ENVOI À FIREBASE
-        // ============================================
-        const docId = `${eleveInfo.code}_${devoirId}_${Date.now()}`;
+        const docId = `${devoirId}_${Date.now()}`;
         
-        await setDoc(doc(db, "devoirs_rendus", docId), data);
+        await setDoc(doc(db, "resultats", eleveCode, "copies", docId), data);
         
-        console.log("✅ Envoi réussi! Doc ID:", docId);
+        console.log("✅ Envoi réussi!");
+        console.log("📍 Chemin:", `resultats/${eleveCode}/copies/${docId}`);
         
-        // ============================================
-        // 7. CONFIRMATION VISUELLE
-        // ============================================
+        // ════════════════════════════════════════════════════════════
+        // 6. CONFIRMATION VISUELLE
+        // ════════════════════════════════════════════════════════════
         alert("✅ COPIE ENVOYÉE AVEC SUCCÈS !\n\n" +
               "Élève : " + eleveInfo.prenom + " " + eleveInfo.nom + "\n" +
               "Classe : " + eleveInfo.classe + "\n" +
               "Devoir : " + titre + "\n" +
-              "Note : " + noteSur20 + " / 20\n\n" +
+              "Note auto : " + noteSur20 + " / 20\n\n" +
               "Votre devoir a bien été transmis au professeur.\n" +
               "Vous pouvez maintenant fermer cette page.");
         
@@ -192,7 +193,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         localStorage.removeItem('paste_log_' + devoirId);
         localStorage.removeItem('devoir_start_time_' + devoirId);
         
-        // Optionnel : Bloquer la page pour éviter double envoi
+        // Bloquer la page
         document.body.innerHTML = `
             <div style="display:flex; align-items:center; justify-content:center; height:100vh; flex-direction:column; font-family:Arial; text-align:center; padding:20px;">
                 <div style="font-size:4rem; margin-bottom:20px;">✅</div>
@@ -200,7 +201,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 <p style="color:#64748b; font-size:1.1rem;">Vous pouvez fermer cette fenêtre.</p>
                 <p style="color:#94a3b8; font-size:0.9rem; margin-top:20px;">
                     ${eleveInfo.prenom} ${eleveInfo.nom} • ${eleveInfo.classe}<br>
-                    ${titre} • Note: ${noteSur20}/20
+                    ${titre} • Note auto: ${noteSur20}/20
                 </p>
             </div>
         `;
@@ -209,15 +210,12 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         console.error("❌ Erreur lors de l'envoi:", error);
         
         alert("❌ ERREUR D'ENVOI\n\n" +
-              "Une erreur s'est produite lors de l'envoi de votre copie.\n\n" +
+              "Une erreur s'est produite.\n\n" +
               "Détails : " + error.message + "\n\n" +
-              "Veuillez :\n" +
-              "1. Vérifier votre connexion internet\n" +
-              "2. Réessayer dans quelques instants\n" +
-              "3. Si le problème persiste, contactez votre professeur");
+              "Veuillez réessayer ou contacter votre professeur.");
         
-        throw error; // Propager l'erreur pour debugging
+        throw error;
     }
 };
 
-console.log("✅ window.envoyerCopie défini et prêt");
+console.log("✅ window.envoyerCopie v4.0 prêt");
