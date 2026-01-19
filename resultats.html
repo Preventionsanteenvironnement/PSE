@@ -41,6 +41,7 @@
         .note-green { background: #dcfce7; color: #166534; }
         .note-orange { background: #fef3c7; color: #92400e; }
         .note-red { background: #fee2e2; color: #991b1b; }
+        .note-pending { background: #e0e7ff; color: #3730a3; }
         .eval-appreciation { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 10px 15px; margin-top: 10px; border-radius: 0 8px 8px 0; }
         
         .empty-state { text-align: center; padding: 40px; color: #64748b; }
@@ -49,6 +50,10 @@
         .loader { text-align: center; padding: 40px; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top-color: #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600; margin-left: 10px; }
+        .status-corrected { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef3c7; color: #92400e; }
     </style>
 </head>
 <body>
@@ -85,6 +90,10 @@
                 <div class="stat-value" id="statNbEvals">0</div>
                 <div class="stat-label">Évaluations</div>
             </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statPending">0</div>
+                <div class="stat-label">En attente</div>
+            </div>
         </div>
         
         <div id="evaluationsList">
@@ -95,7 +104,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -111,6 +120,7 @@
 
     let currentCode = null;
     let evaluationsData = [];
+    let copiesData = [];
 
     window.connecter = connecter;
     window.deconnecter = deconnecter;
@@ -137,26 +147,50 @@
         loginBtn.textContent = "Chargement...";
 
         try {
-            // ⭐ CHEMIN SÉCURISÉ : resultats/{eleveCode}/evaluations/
-            const q = query(collection(db, "resultats", code, "evaluations"), limit(50));
-            const snapshot = await getDocs(q);
+            // ⭐ 1. Charger les ÉVALUATIONS (corrigées par le prof)
+            const qEval = query(collection(db, "resultats", code, "evaluations"), limit(50));
+            const evalSnapshot = await getDocs(qEval);
+            
+            evaluationsData = [];
+            evalSnapshot.forEach(doc => {
+                evaluationsData.push({ id: doc.id, ...doc.data(), type: 'evaluation' });
+            });
 
-            if (snapshot.empty) {
-                errorDiv.textContent = "❌ Aucune évaluation trouvée pour ce code.";
+            // ⭐ 2. Charger les COPIES (non encore corrigées)
+            const qCopies = query(collection(db, "resultats", code, "copies"), limit(50));
+            const copiesSnapshot = await getDocs(qCopies);
+            
+            copiesData = [];
+            copiesSnapshot.forEach(doc => {
+                const d = doc.data();
+                // Vérifier si cette copie a déjà une évaluation
+                const devoirId = d.devoirId || doc.id.split('_')[0];
+                const hasEval = evaluationsData.some(e => e.devoirId === devoirId);
+                if (!hasEval) {
+                    copiesData.push({ 
+                        id: doc.id, 
+                        ...d, 
+                        type: 'copy',
+                        note_finale: d.note_auto || null,
+                        isPending: true
+                    });
+                }
+            });
+
+            // Si rien du tout
+            if (evaluationsData.length === 0 && copiesData.length === 0) {
+                errorDiv.textContent = "❌ Aucun résultat trouvé pour ce code.";
                 errorDiv.classList.add('visible');
                 loginBtn.disabled = false;
                 loginBtn.textContent = "Accéder";
                 return;
             }
 
-            evaluationsData = [];
-            snapshot.forEach(doc => {
-                evaluationsData.push({ id: doc.id, ...doc.data() });
-            });
-
-            evaluationsData.sort((a, b) => {
-                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : new Date(0);
-                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : new Date(0);
+            // Combiner et trier
+            const allResults = [...evaluationsData, ...copiesData];
+            allResults.sort((a, b) => {
+                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : (a.savedAt ? new Date(a.savedAt) : new Date(0));
+                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.savedAt ? new Date(b.savedAt) : new Date(0));
                 return dateB - dateA;
             });
 
@@ -165,16 +199,16 @@
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('resultsScreen').classList.add('active');
 
-            const firstEval = evaluationsData[0];
+            const firstItem = allResults[0];
             document.getElementById('studentName').textContent = code;
-            document.getElementById('studentClass').textContent = firstEval?.classe || "";
+            document.getElementById('studentClass').textContent = firstItem?.classe || "";
 
-            renderEvaluations();
+            renderEvaluations(allResults);
             renderStats();
 
         } catch (error) {
             console.error("Erreur:", error);
-            errorDiv.textContent = "❌ Erreur de connexion.";
+            errorDiv.textContent = "❌ Erreur de connexion: " + error.message;
             errorDiv.classList.add('visible');
         }
 
@@ -185,37 +219,52 @@
     function deconnecter() {
         currentCode = null;
         evaluationsData = [];
+        copiesData = [];
         document.getElementById('resultsScreen').classList.remove('active');
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('codeInput').value = '';
         document.getElementById('errorMessage').classList.remove('visible');
     }
 
-    function renderEvaluations() {
+    function renderEvaluations(allResults) {
         const container = document.getElementById('evaluationsList');
 
-        if (evaluationsData.length === 0) {
+        if (allResults.length === 0) {
             container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aucune évaluation</p></div>`;
             return;
         }
 
         let html = '';
-        evaluationsData.forEach((evaluation) => {
-            const titre = evaluation.titre || evaluation.devoirId || "Évaluation";
-            const date = evaluation.createdAtISO ? new Date(evaluation.createdAtISO).toLocaleDateString('fr-FR') : "Date inconnue";
-            const note = evaluation.note_finale;
-            let noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
+        allResults.forEach((item) => {
+            const titre = item.titre || item.devoirId || "Évaluation";
+            const dateStr = item.createdAtISO || item.savedAt;
+            const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "Date inconnue";
+            const note = item.note_finale;
+            const isPending = item.isPending || item.type === 'copy';
+            
+            let noteDisplay, noteClass, statusBadge;
+            
+            if (isPending) {
+                noteDisplay = item.note_auto ? `${item.note_auto.toFixed(1)}*` : "⏳";
+                noteClass = 'note-pending';
+                statusBadge = '<span class="status-badge status-pending">⏳ En attente de correction</span>';
+            } else {
+                noteDisplay = note !== undefined && note !== null ? `${note.toFixed(1)}/20` : "--";
+                noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
+                statusBadge = '<span class="status-badge status-corrected">✅ Corrigé</span>';
+            }
 
             html += `
                 <div class="eval-card">
                     <div class="eval-header">
                         <div>
-                            <div class="eval-title">${titre}</div>
+                            <div class="eval-title">${titre} ${statusBadge}</div>
                             <div class="eval-date">📅 ${date}</div>
                         </div>
-                        <div class="eval-note ${noteClass}">${note.toFixed(1)}/20</div>
+                        <div class="eval-note ${noteClass}">${noteDisplay}</div>
                     </div>
-                    ${evaluation.appreciation ? `<div class="eval-appreciation"><strong>💬 Appréciation:</strong> ${evaluation.appreciation}</div>` : ''}
+                    ${item.appreciation ? `<div class="eval-appreciation"><strong>💬 Appréciation:</strong> ${item.appreciation}</div>` : ''}
+                    ${isPending && item.note_auto ? `<div style="font-size:0.8em;color:#64748b;margin-top:8px;">* Note automatique provisoire - En attente de correction par le professeur</div>` : ''}
                 </div>
             `;
         });
@@ -224,19 +273,22 @@
     }
 
     function renderStats() {
+        // Calculer moyenne sur les évaluations corrigées uniquement
         let totalNotes = 0, nbNotes = 0;
         evaluationsData.forEach(e => {
-            if (e.note_finale !== undefined) {
+            if (e.note_finale !== undefined && e.note_finale !== null) {
                 totalNotes += e.note_finale;
                 nbNotes++;
             }
         });
+        
         const moyenne = nbNotes > 0 ? (totalNotes / nbNotes).toFixed(1) : '--';
         document.getElementById('statMoyenne').textContent = moyenne !== '--' ? moyenne + '/20' : '--';
         document.getElementById('statNbEvals').textContent = nbNotes;
+        document.getElementById('statPending').textContent = copiesData.length;
     }
 
-    console.log("✅ Page Résultats v4.0");
+    console.log("✅ Page Résultats v2.0 - Structure sécurisée");
 </script>
 
 </body>
