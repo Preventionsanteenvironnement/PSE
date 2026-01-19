@@ -10,36 +10,158 @@
     <script src="annuaire.js"></script>
 
     <style>
-        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #1e293b; margin:0; }
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --warning: #f59e0b; --bg: #f8fafc; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; color: #1e293b; margin: 0; line-height: 1.5; }
         .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         header { background: var(--primary); color: white; padding: 18px; border-radius: 12px; text-align: center; margin-bottom: 18px; }
+        header h1 { margin: 0 0 8px 0; font-size: 1.3rem; }
+        header p { margin: 0; opacity: 0.95; }
 
         .doc-image { width: 100%; max-width: 800px; border: 2px solid #cbd5e1; border-radius: 8px; margin: 15px auto; display: block; }
+        
+        /* MESSAGE SI IMAGE MANQUANTE */
+        .image-fallback {
+            display: none;
+            background: #fef3c7;
+            border: 2px dashed var(--warning);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px auto;
+            max-width: 800px;
+        }
+        .image-fallback.show { display: block; }
 
-        /* TABLE SAFE & RESPONSIVE */
-        .table-wrapper { width:100%; overflow-x:auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; vertical-align: top; }
-        th { background: #f1f5f9; color: var(--primary); font-weight: bold; }
+        /* AVERTISSEMENT RÉPONSES VIDES */
+        .warning-banner {
+            display: none;
+            background: #fef3c7;
+            border-left: 5px solid var(--warning);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .warning-banner.show { display: block; }
 
-        select { width: 100%; padding: 10px; border-radius: 6px; border: 2px solid #cbd5e1; cursor: pointer; font-size: 0.95rem; margin-bottom: 5px; }
-        .feedback { display: none; font-size: 0.85rem; margin-top: 8px; padding: 10px; border-radius: 6px; line-height: 1.4; }
+        /* CARDS MOBILE-FIRST */
+        .quiz-cards { display: flex; flex-direction: column; gap: 20px; }
+        
+        .quiz-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            background: #fafafa;
+        }
+        .quiz-card-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .quiz-card-header h3 { margin: 0; font-size: 1.1rem; }
+        .quiz-card-header small { opacity: 0.9; }
+        
+        .question-group { margin-bottom: 15px; }
+        .question-group label { 
+            display: block; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            color: #334155;
+        }
+
+        select { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 2px solid #cbd5e1; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            background: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        select:focus { border-color: var(--primary); outline: none; }
+        
+        .feedback { 
+            display: none; 
+            font-size: 0.9rem; 
+            margin-top: 10px; 
+            padding: 12px; 
+            border-radius: 8px; 
+            line-height: 1.5; 
+        }
         .feedback.show { display: block; }
         .feedback.msg-correct { background-color: #dcfce7; color: #166534; border-left: 4px solid var(--success); }
         .feedback.msg-error { background-color: #fee2e2; color: #991b1b; border-left: 4px solid var(--error); }
 
-        .btn-valider { width: 100%; padding: 18px; background: #1e293b; color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 25px; }
+        .btn-valider { 
+            width: 100%; 
+            padding: 18px; 
+            background: #1e293b; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 20px; 
+            transition: background 0.2s;
+        }
         .btn-valider:hover { background: #334155; }
+        .btn-valider:disabled { background: #94a3b8; cursor: not-allowed; }
 
-        .correct-ui { border-color: var(--success) !important; background-color: #f0fdf4; }
-        .error-ui { border-color: var(--error) !important; background-color: #fef2f2; }
+        .correct-ui { border-color: var(--success) !important; background-color: #f0fdf4 !important; }
+        .error-ui { border-color: var(--error) !important; background-color: #fef2f2 !important; }
 
-        #resultat { display: none; margin-top: 20px; text-align: center; padding: 18px; border-radius: 10px; border: 3px solid var(--primary); background: #eff6ff; }
+        #resultat { 
+            display: none; 
+            margin-top: 25px; 
+            text-align: center; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 3px solid var(--primary); 
+            background: #eff6ff; 
+        }
+        #resultat h2 { margin: 0 0 10px 0; color: var(--primary); }
 
-        @media (max-width:600px){
-            .container{padding:12px;}
-            header h1{font-size:1.2rem;}
+        .btn-restart {
+            display: none;
+            width: 100%;
+            padding: 15px;
+            background: #64748b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .btn-restart:hover { background: #475569; }
+        .btn-restart.show { display: block; }
+
+        /* TABLE VERSION DESKTOP */
+        .table-wrapper { display: none; width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; vertical-align: top; }
+        th { background: #f1f5f9; color: var(--primary); font-weight: bold; }
+
+        /* RESPONSIVE */
+        @media (min-width: 768px) {
+            .quiz-cards { display: none; }
+            .table-wrapper { display: block; }
+            header h1 { font-size: 1.5rem; }
+        }
+        
+        @media (max-width: 767px) {
+            .container { padding: 12px; }
+            header { padding: 15px; }
+            header h1 { font-size: 1.1rem; }
         }
     </style>
 </head>
@@ -47,8 +169,8 @@
 
 <div class="container">
     <header>
-        <h1>Analyse Comparative : Pourquoi choisir ce placement ?</h1>
-        <p>Consultez votre <b>Document A</b> pour justifier vos choix.</p>
+        <h1>📊 Analyse Comparative : Pourquoi choisir ce placement ?</h1>
+        <p>Consultez votre <b>Document A</b> (tableau ci-dessous) pour justifier vos choix.</p>
     </header>
 
     <script>
@@ -57,14 +179,120 @@
         }
     </script>
 
-    <img src="tableau-epargne.jpg" alt="Document A - Tableau des taux et plafonds" class="doc-image">
+    <!-- IMAGE DU DOCUMENT -->
+    <img src="tableau-epargne.jpg" alt="Document A - Tableau des taux et plafonds" class="doc-image" id="doc-image" onerror="document.getElementById('image-fallback').classList.add('show'); this.style.display='none';">
+    
+    <div id="image-fallback" class="image-fallback">
+        <strong>⚠️ Image du tableau non chargée</strong><br>
+        <small>Rappel : Livret Jeune (12-25 ans), LEP (revenus modestes, meilleur taux), PEL (projet immobilier, argent bloqué)</small>
+    </div>
 
+    <!-- AVERTISSEMENT -->
+    <div id="warning-banner" class="warning-banner">
+        ⚠️ <strong>Attention !</strong> Réponds à toutes les questions avant de valider.
+    </div>
+
+    <!-- VERSION MOBILE : CARDS -->
+    <div class="quiz-cards" id="quiz-cards">
+        
+        <!-- CARD 1 : Inès -->
+        <div class="quiz-card" data-c="age" data-p="livret-jeune">
+            <div class="quiz-card-header">
+                <h3>1. Inès (19 ans)</h3>
+                <small>Placement : 400 € | Retrait libre souhaité</small>
+            </div>
+            
+            <div class="question-group">
+                <label>Quelle est la contrainte principale ?</label>
+                <select class="sel-c">
+                    <option value="">-- Choisir --</option>
+                    <option value="age">Elle a entre 12 et 25 ans</option>
+                    <option value="revenu">Ses revenus sont bas</option>
+                    <option value="immo">Elle veut acheter un logement</option>
+                </select>
+                <div class="feedback f-c"></div>
+            </div>
+            
+            <div class="question-group">
+                <label>Quel produit d'épargne lui conseiller ?</label>
+                <select class="sel-p">
+                    <option value="">-- Choisir --</option>
+                    <option value="livret-a">Livret A (2,40%)</option>
+                    <option value="livret-jeune">Livret Jeune (≥ 2,40%)</option>
+                    <option value="cel">CEL (1,50%)</option>
+                </select>
+                <div class="feedback f-p"></div>
+            </div>
+        </div>
+
+        <!-- CARD 2 : M. Traoré -->
+        <div class="quiz-card" data-c="revenu" data-p="lep">
+            <div class="quiz-card-header">
+                <h3>2. M. Traoré</h3>
+                <small>Placement : 2 000 € | Revenus modestes</small>
+            </div>
+            
+            <div class="question-group">
+                <label>Quelle est la contrainte principale ?</label>
+                <select class="sel-c">
+                    <option value="">-- Choisir --</option>
+                    <option value="age">Critère d'âge</option>
+                    <option value="revenu">Revenu fiscal bas</option>
+                    <option value="immo">Projet immobilier</option>
+                </select>
+                <div class="feedback f-c"></div>
+            </div>
+            
+            <div class="question-group">
+                <label>Quel produit d'épargne lui conseiller ?</label>
+                <select class="sel-p">
+                    <option value="">-- Choisir --</option>
+                    <option value="ldds">LDDS (2,40%)</option>
+                    <option value="lep">LEP (3,50%)</option>
+                    <option value="livret-a">Livret A (2,40%)</option>
+                </select>
+                <div class="feedback f-p"></div>
+            </div>
+        </div>
+
+        <!-- CARD 3 : Sophie -->
+        <div class="quiz-card" data-c="immo" data-p="pel">
+            <div class="quiz-card-header">
+                <h3>3. Sophie</h3>
+                <small>Projet immobilier | Accepte argent bloqué 4 ans</small>
+            </div>
+            
+            <div class="question-group">
+                <label>Quelle est la contrainte principale ?</label>
+                <select class="sel-c">
+                    <option value="">-- Choisir --</option>
+                    <option value="age">Critère d'âge</option>
+                    <option value="revenu">Revenus</option>
+                    <option value="immo">Achat logement</option>
+                </select>
+                <div class="feedback f-c"></div>
+            </div>
+            
+            <div class="question-group">
+                <label>Quel produit d'épargne lui conseiller ?</label>
+                <select class="sel-p">
+                    <option value="">-- Choisir --</option>
+                    <option value="pel">PEL (1,75%)</option>
+                    <option value="livret-jeune">Livret Jeune</option>
+                    <option value="ldds">LDDS</option>
+                </select>
+                <div class="feedback f-p"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VERSION DESKTOP : TABLE -->
     <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
                     <th style="width: 35%;">Situation</th>
-                    <th style="width: 30%;">Contrainte</th>
+                    <th style="width: 30%;">Contrainte principale</th>
                     <th style="width: 35%;">Produit idéal</th>
                 </tr>
             </thead>
@@ -83,16 +311,16 @@
                     <td>
                         <select class="sel-p">
                             <option value="">-- Quel produit ? --</option>
-                            <option value="livret-a">Livret A (1,70%)</option>
-                            <option value="livret-jeune">Livret Jeune</option>
-                            <option value="cel">CEL</option>
+                            <option value="livret-a">Livret A (2,40%)</option>
+                            <option value="livret-jeune">Livret Jeune (≥ 2,40%)</option>
+                            <option value="cel">CEL (1,50%)</option>
                         </select>
                         <div class="feedback f-p"></div>
                     </td>
                 </tr>
 
                 <tr data-c="revenu" data-p="lep">
-                    <td><b>2. M. Traoré</b><br><small>Placement : 2000 € | Revenus modestes.</small></td>
+                    <td><b>2. M. Traoré</b><br><small>Placement : 2 000 € | Revenus modestes.</small></td>
                     <td>
                         <select class="sel-c">
                             <option value="">-- Pourquoi ? --</option>
@@ -105,9 +333,9 @@
                     <td>
                         <select class="sel-p">
                             <option value="">-- Quel produit ? --</option>
-                            <option value="ldds">LDDS</option>
-                            <option value="lep">LEP</option>
-                            <option value="livret-a">Livret A</option>
+                            <option value="ldds">LDDS (2,40%)</option>
+                            <option value="lep">LEP (3,50%)</option>
+                            <option value="livret-a">Livret A (2,40%)</option>
                         </select>
                         <div class="feedback f-p"></div>
                     </td>
@@ -118,7 +346,7 @@
                     <td>
                         <select class="sel-c">
                             <option value="">-- Pourquoi ? --</option>
-                            <option value="age">Age</option>
+                            <option value="age">Critère d'âge</option>
                             <option value="revenu">Revenus</option>
                             <option value="immo">Achat logement</option>
                         </select>
@@ -127,7 +355,7 @@
                     <td>
                         <select class="sel-p">
                             <option value="">-- Quel produit ? --</option>
-                            <option value="pel">PEL</option>
+                            <option value="pel">PEL (1,75%)</option>
                             <option value="livret-jeune">Livret Jeune</option>
                             <option value="ldds">LDDS</option>
                         </select>
@@ -138,85 +366,155 @@
         </table>
     </div>
 
-    <button class="btn-valider" onclick="corriger()">VÉRIFIER ET VOIR LES EXPLICATIONS</button>
+    <button class="btn-valider" id="btn-valider" onclick="corriger()">✓ VÉRIFIER MES RÉPONSES</button>
 
     <div id="resultat">
         <h2 id="final-score"></h2>
-        <p>Regarde les explications dans le tableau.</p>
+        <p>Consulte les explications pour chaque question.</p>
     </div>
+
+    <button class="btn-restart" id="btn-restart" onclick="location.reload()">🔄 RECOMMENCER L'EXERCICE</button>
 </div>
 
 <script>
     const explications = {
-        'livret-jeune': 'Réservé aux 12-25 ans + généralement plus avantageux que le Livret A.',
-        'lep': 'Meilleur taux pour revenus modestes.',
-        'pel': 'Argent bloqué + projet immobilier = PEL.',
-        'age': 'Critère principal = âge.',
-        'revenu': 'Critère principal = ressources.',
-        'immo': 'Critère principal = projet achat logement.'
+        'livret-jeune': '✅ <b>Livret Jeune</b> : Réservé aux 12-25 ans, taux au moins égal au Livret A, idéal pour les jeunes.',
+        'lep': '✅ <b>LEP</b> : Meilleur taux d\'épargne réglementée (3,50%), réservé aux revenus modestes.',
+        'pel': '✅ <b>PEL</b> : Conçu pour les projets immobiliers, argent bloqué minimum 4 ans, donne droit à un prêt.',
+        'age': '✅ L\'<b>âge</b> est le critère principal : le Livret Jeune est limité aux 12-25 ans.',
+        'revenu': '✅ Le <b>revenu fiscal</b> est le critère principal : le LEP est réservé aux revenus modestes.',
+        'immo': '✅ Le <b>projet immobilier</b> est le critère principal : le PEL permet d\'obtenir un prêt avantageux.'
     };
 
+    function getActiveContainer() {
+        // Retourne le conteneur visible (cards sur mobile, table sur desktop)
+        const cards = document.getElementById('quiz-cards');
+        const table = document.getElementById('quiz-table');
+        
+        if (window.getComputedStyle(cards).display !== 'none') {
+            return cards.querySelectorAll('.quiz-card');
+        } else {
+            return table.querySelectorAll('tr');
+        }
+    }
+
+    function checkAllAnswered() {
+        const items = getActiveContainer();
+        let allAnswered = true;
+        
+        items.forEach(item => {
+            const selC = item.querySelector('.sel-c');
+            const selP = item.querySelector('.sel-p');
+            if (!selC.value || !selP.value) {
+                allAnswered = false;
+            }
+        });
+        
+        return allAnswered;
+    }
+
     async function corriger() {
+        const btn = document.getElementById('btn-valider');
+        
+        // Vérifier que toutes les réponses sont données
+        if (!checkAllAnswered()) {
+            document.getElementById('warning-banner').classList.add('show');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        
+        // Masquer l'avertissement
+        document.getElementById('warning-banner').classList.remove('show');
+        
         // Anti double-clic
-        const btn = document.querySelector('.btn-valider');
         if (btn.disabled) return;
         btn.disabled = true;
-        btn.style.opacity = "0.7";
+        btn.style.opacity = "0.6";
+        btn.textContent = "Correction en cours...";
 
         let score = 0;
+        const items = getActiveContainer();
         
-        document.querySelectorAll('#quiz-table tr').forEach(row => {
-            const valC = row.querySelector('.sel-c').value;
-            const valP = row.querySelector('.sel-p').value;
-            const ansC = row.dataset.c;
-            const ansP = row.dataset.p;
+        items.forEach(item => {
+            const selC = item.querySelector('.sel-c');
+            const selP = item.querySelector('.sel-p');
+            const valC = selC.value;
+            const valP = selP.value;
+            const ansC = item.dataset.c;
+            const ansP = item.dataset.p;
 
-            const feedC = row.querySelector('.f-c');
-            if(valC === ansC){ 
+            // Feedback contrainte
+            const feedC = item.querySelector('.f-c');
+            if (valC === ansC) { 
                 score++; 
-                feedC.innerHTML='✅ '+explications[ansC]; 
-                feedC.className='feedback show msg-correct'; 
-                row.querySelector('.sel-c').classList.add('correct-ui'); 
+                feedC.innerHTML = explications[ansC]; 
+                feedC.className = 'feedback show msg-correct'; 
+                selC.classList.add('correct-ui'); 
             } else { 
-                feedC.innerHTML='❌ '+explications[ansC]; 
-                feedC.className='feedback show msg-error'; 
-                row.querySelector('.sel-c').classList.add('error-ui'); 
+                feedC.innerHTML = '❌ Incorrect. ' + explications[ansC]; 
+                feedC.className = 'feedback show msg-error'; 
+                selC.classList.add('error-ui'); 
             }
 
-            const feedP = row.querySelector('.f-p');
-            if(valP === ansP){ 
+            // Feedback produit
+            const feedP = item.querySelector('.f-p');
+            if (valP === ansP) { 
                 score++; 
-                feedP.innerHTML='✅ '+explications[ansP]; 
-                feedP.className='feedback show msg-correct'; 
-                row.querySelector('.sel-p').classList.add('correct-ui'); 
+                feedP.innerHTML = explications[ansP]; 
+                feedP.className = 'feedback show msg-correct'; 
+                selP.classList.add('correct-ui'); 
             } else { 
-                feedP.innerHTML='❌ '+explications[ansP]; 
-                feedP.className='feedback show msg-error'; 
-                row.querySelector('.sel-p').classList.add('error-ui'); 
+                feedP.innerHTML = '❌ Incorrect. ' + explications[ansP]; 
+                feedP.className = 'feedback show msg-error'; 
+                selP.classList.add('error-ui'); 
             }
 
-            row.querySelectorAll('select').forEach(s => s.disabled=true);
+            // Désactiver les selects
+            selC.disabled = true;
+            selP.disabled = true;
         });
 
         // Calcul Note sur 20 (Score max = 6)
         const finalNote = Math.round((score / 6) * 20);
 
-        document.getElementById('resultat').style.display='block';
-        document.getElementById('final-score').innerText = 'Note : ' + score + ' / 6 (' + finalNote + '/20)';
-        window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+        // Affichage résultat
+        const resultat = document.getElementById('resultat');
+        resultat.style.display = 'block';
+        
+        let message = '';
+        if (score === 6) {
+            message = '🏆 Parfait !';
+        } else if (score >= 4) {
+            message = '👍 Bien joué !';
+        } else {
+            message = '📚 À revoir';
+        }
+        
+        document.getElementById('final-score').innerHTML = message + '<br>Score : ' + score + ' / 6 (' + finalNote + '/20)';
+        document.getElementById('btn-restart').classList.add('show');
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 
-        // --- ENVOI FIREBASE (Compétences C1, C2, C4) ---
+        // --- ENVOI FIREBASE ---
         try {
-            if (!firebase.apps.length) {
+            if (typeof firebase === 'undefined' || !firebase.apps) {
+                console.log("Firebase non disponible - Mode hors ligne");
+                return;
+            }
+            
+            if (!firebase.apps.length && typeof firebaseConfig !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
             }
-            const db = firebase.firestore();
             
-            // Récupération Identité
+            if (!firebase.apps.length) {
+                console.log("Configuration Firebase manquante");
+                return;
+            }
+            
+            const db = firebase.firestore();
             const code = localStorage.getItem("codeEleve") || "ANONYME";
             const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
 
-            // Envoi
             await db.collection("resultats_exercices").add({
                 eleve: code,
                 classe: classe,
