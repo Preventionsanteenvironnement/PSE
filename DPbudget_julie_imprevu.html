@@ -3,95 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <title>Julie et l'Imprévu</title>
-
-    <!-- RESPONSIVE INDISPENSABLE -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
 
     <style>
         :root {
             --bg: #ffebee;
-            --bank: #fff;
-            --column: #fff;
+            --success: #16a34a;
+            --error: #dc2626;
+            --warning: #f59e0b;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             background-color: var(--bg);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
         }
 
-        h1 { text-align: center; }
+        h1 { text-align: center; font-size: 1.5rem; margin-bottom: 10px; }
+
+        .intro-box {
+            background: white;
+            border-left: 5px solid #2196f3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            max-width: 800px;
+            width: 100%;
+        }
+        .intro-box p { margin: 5px 0; }
 
         .controls {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         button {
-            padding: 12px 25px;
-            font-size: 1.1rem;
+            padding: 10px 18px;
+            font-size: 1rem;
             cursor: pointer;
             border: none;
             border-radius: 50px;
             color: white;
             display: flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            gap: 8px;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s;
         }
-
-        button:active { transform: translateY(4px); box-shadow: none; }
+        button:active { transform: translateY(3px); box-shadow: none; }
 
         .audio-btn { background: #e91e63; }
-        .event-btn { background: #ff9800; font-weight: bold; border: 2px solid #f57c00; animation: pulse 2s infinite;}
+        .mute-btn { background: #111827; }
+        .event-btn { 
+            background: #ff9800; 
+            font-weight: bold; 
+            border: 2px solid #f57c00; 
+            animation: pulse 1.5s infinite;
+        }
         .reset-btn { background: #607d8b; }
+        .validate-btn { background: var(--success); font-weight: bold; }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
+            0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
         }
 
         .game-area {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             width: 100%;
             max-width: 1000px;
             justify-content: center;
         }
 
         .side-panel {
-            width: 25%;
+            width: 28%;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
         .bank {
             background: white;
-            border: 4px dashed #ccc;
+            border: 3px dashed #ccc;
             border-radius: 15px;
             padding: 10px;
-            min-height: 300px;
+            min-height: 280px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+        .bank h3 { margin: 5px 0 10px 0; font-size: 1rem; }
 
         .budget-board {
             background: white;
             width: 50%;
             border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            padding: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
             border: 2px solid #333;
         }
 
@@ -101,37 +124,45 @@
             align-items: center;
             padding: 10px;
             border-bottom: 1px solid #eee;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         .drop-zone {
             width: 100%;
-            min-height: 300px;
-            background: #f9f9f9;
-            border: 2px solid #eee;
+            min-height: 250px;
+            background: #fafafa;
+            border: 2px solid #ddd;
             border-radius: 10px;
             padding: 10px;
             margin-top: 10px;
         }
+        .drop-zone:empty::after {
+            content: "Glisse ou clique les dépenses ici";
+            color: #999;
+            font-style: italic;
+            display: block;
+            text-align: center;
+            padding: 20px;
+        }
 
         .result-box {
-            margin-top: 20px;
-            padding: 20px;
+            margin-top: 15px;
+            padding: 15px;
             border-radius: 10px;
             text-align: center;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: bold;
             border: 3px solid #333;
         }
 
-        .positive { background: #d4edda; color: #155724; border-color: #c3e6cb; }
-        .negative { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .positive { background: #dcfce7; color: #166534; border-color: var(--success); }
+        .negative { background: #fee2e2; color: #991b1b; border-color: var(--error); }
 
         .item {
             background: #fff;
             border: 2px solid #555;
             border-radius: 10px;
-            padding: 8px;
+            padding: 8px 10px;
             margin-bottom: 8px;
             width: 95%;
             cursor: grab;
@@ -139,14 +170,27 @@
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
+            font-size: 0.95rem;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            transition: border-color 0.2s;
         }
+        .item:hover { border-color: #333; }
 
-        .item.fixed { border-color: #ff9800; background: #fff3e0; }
+        .item.fixed { border-color: #ff9800; background: #fff8e1; }
         .item.fun { border-color: #9c27b0; background: #f3e5f5; }
-        .item.bad { border-color: #d32f2f; background: #ffebee; border-width: 4px; }
+        .item.bad { border-color: #d32f2f; background: #ffebee; border-width: 3px; }
 
-        .icon { font-size: 1.5rem; margin-right: 10px; }
+        .icon { font-size: 1.3rem; margin-right: 8px; }
+
+        /* POPUP ALERTE */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        .overlay.show { display: block; }
 
         #alert-box {
             display: none;
@@ -155,187 +199,457 @@
             transform: translate(-50%, -50%);
             background: white;
             border: 5px solid #d32f2f;
-            padding: 30px;
+            padding: 25px;
             border-radius: 20px;
             text-align: center;
             z-index: 100;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
             max-width: 90%;
+            width: 350px;
+        }
+        #alert-box.show { display: block; }
+        #alert-box h2 { color: #d32f2f; margin: 10px 0; }
+        #alert-box button {
+            margin-top: 15px;
+            background: #d32f2f;
+            padding: 12px 30px;
         }
 
-        #alert-box h2 { color: #d32f2f; }
+        /* POPUP CONCLUSION */
+        #conclusion-box {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 5px solid #2196f3;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            max-width: 95%;
+            width: 450px;
+        }
+        #conclusion-box.show { display: block; }
+        #conclusion-box h2 { margin: 10px 0; }
+        #conclusion-box .lesson {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: left;
+            line-height: 1.6;
+        }
+        #conclusion-box button {
+            background: #2196f3;
+            padding: 12px 25px;
+            margin-top: 10px;
+        }
+
+        /* MESSAGE RÉSULTAT */
+        #final-message {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        #final-message.show { display: block; }
+        #final-message.success { background: #dcfce7; border: 3px solid var(--success); }
+        #final-message.fail { background: #fee2e2; border: 3px solid var(--error); }
 
         /* RESPONSIVE MOBILE */
         @media (max-width: 768px) {
+            h1 { font-size: 1.3rem; }
             .game-area {
                 flex-direction: column;
                 align-items: stretch;
             }
-
-            .side-panel,
-            .budget-board {
+            .side-panel, .budget-board {
                 width: 100%;
             }
-
-            .bank,
-            .drop-zone {
-                min-height: 180px;
+            .bank, .drop-zone {
+                min-height: 150px;
             }
-
-            .item {
-                cursor: pointer;
-            }
+            .item { cursor: pointer; }
+            .budget-row { font-size: 1rem; }
+            .result-box { font-size: 1.1rem; }
         }
     </style>
 </head>
 
 <body>
 
-<h1>🐱 Le Budget de Julie</h1>
+<h1>🐱 Julie et l'Imprévu</h1>
+
+<div class="intro-box">
+    <p><strong>📋 Situation :</strong> Julie gagne <strong>1 200 €</strong> par mois.</p>
+    <p><strong>🎯 Mission :</strong> Gère son budget en plaçant les dépenses. Attention, le solde doit rester <strong>positif</strong> !</p>
+    <p><em>💡 Conseil : Tu n'es pas obligé(e) de tout dépenser...</em></p>
+</div>
 
 <div class="controls">
     <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
-    <button id="btn-imprevu" class="event-btn" onclick="declencherImprevu()" style="display:none;">⚠️ OH NON !</button>
+    <button class="mute-btn" id="btn-mute" onclick="toggleSon()">🔈 Son</button>
+    <button id="btn-imprevu" class="event-btn" style="display:none;">⚠️ IMPRÉVU !</button>
+    <button id="btn-valider" class="validate-btn" onclick="validerBudget()">✅ VALIDER MON BUDGET</button>
     <button class="reset-btn" onclick="location.reload()">🔄 Recommencer</button>
 </div>
 
 <div class="game-area">
 
     <div class="side-panel">
-        <h3 style="text-align:center;">Banque</h3>
-        <div class="bank" id="bank" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        <div class="bank" id="bank" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h3>🏦 Dépenses disponibles</h3>
+        </div>
     </div>
 
     <div class="budget-board">
-
         <div class="budget-row">
             <span>💰 SALAIRE de Julie :</span>
-            <span style="font-weight:bold; color:green;">1200 €</span>
+            <span style="font-weight:bold; color:green; font-size:1.2rem;">1 200 €</span>
         </div>
 
-        <h3>📉 Glisse ou clique les dépenses ici :</h3>
+        <h3 style="margin: 15px 0 5px 0;">📉 Dépenses choisies :</h3>
         <div class="drop-zone" id="depenses" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
 
         <div id="result-box" class="result-box positive">
-            Solde : <span id="solde-val">1200</span> €
+            Solde : <span id="solde-val">1 200</span> €
         </div>
 
-        <div style="text-align:center; margin-top:10px; font-style:italic; font-size:0.9rem;">
-            Le solde doit rester POSITIF
+        <div style="text-align:center; margin-top:8px; font-size:0.85rem; color:#666;">
+            ⚠️ Le solde doit rester positif pour faire face aux imprévus !
         </div>
     </div>
 </div>
+
+<div class="overlay" id="overlay"></div>
 
 <div id="alert-box">
-    <div style="font-size:4rem;">😿</div>
+    <div style="font-size:3.5rem;">😿</div>
     <h2>CATASTROPHE !</h2>
-    <p>Le chat est malade.<br>Payer le vétérinaire.</p>
-    <div class="item bad" id="veto-item" draggable="true" data-price="100">
-        <span>💉 Vétérinaire</span>
+    <p>Le chat de Julie est malade !<br>Il faut payer le <strong>vétérinaire</strong>.</p>
+    <div class="item bad" style="margin: 15px auto; width: 80%;">
+        <span><span class="icon">💉</span> Vétérinaire</span>
         <span>100 €</span>
     </div>
-    <button onclick="fermerAlerte()">OK</button>
+    <button onclick="ajouterImprevu()">😰 Payer 100 €</button>
 </div>
 
+<div id="conclusion-box">
+    <div id="conclusion-icon" style="font-size:3rem;"></div>
+    <h2 id="conclusion-title"></h2>
+    <div class="lesson" id="conclusion-lesson"></div>
+    <p id="conclusion-score"></p>
+    <button onclick="fermerConclusion()">J'ai compris !</button>
+</div>
+
+<div id="final-message"></div>
+
 <script>
-const itemsData = [
-    { id: 'i1', name: 'Loyer', icon: '🏠', price: 600, type: 'fixed' },
-    { id: 'i2', name: 'Courses', icon: '🛒', price: 300, type: 'fixed' },
-    { id: 'i3', name: 'Facture Elec', icon: '⚡', price: 50, type: 'fixed' },
-    { id: 'i4', name: 'Restaurant', icon: '🍝', price: 60, type: 'fun' },
-    { id: 'i5', name: 'Parc Attraction', icon: '🎢', price: 80, type: 'fun' },
-    { id: 'i6', name: 'Nouveau Pull', icon: '👕', price: 50, type: 'fun' }
-];
+    const itemsData = [
+        { id: 'i1', name: 'Loyer', icon: '🏠', price: 600, type: 'fixed', obligatoire: true },
+        { id: 'i2', name: 'Courses', icon: '🛒', price: 300, type: 'fixed', obligatoire: true },
+        { id: 'i3', name: 'Électricité', icon: '⚡', price: 50, type: 'fixed', obligatoire: true },
+        { id: 'i4', name: 'Restaurant', icon: '🍝', price: 60, type: 'fun', obligatoire: false },
+        { id: 'i5', name: 'Parc Attraction', icon: '🎢', price: 80, type: 'fun', obligatoire: false },
+        { id: 'i6', name: 'Nouveau Pull', icon: '👕', price: 50, type: 'fun', obligatoire: false }
+    ];
 
-const SALAIRE = 1200;
-let etapeImprevu = false;
+    const SALAIRE = 1200;
+    const IMPREVU = 100;
+    let etapeImprevu = false;
+    let imprevuAjoute = false;
+    let budgetValide = false;
+    let soundEnabled = true;
 
-function init() {
-    const bank = document.getElementById('bank');
-    itemsData.forEach(item => createItem(item, bank));
-    updateCalcul();
-}
-
-function createItem(item, container) {
-    const div = document.createElement('div');
-    div.className = `item ${item.type}`;
-    div.id = item.id;
-    div.dataset.price = item.price;
-    div.draggable = true;
-
-    div.innerHTML = `
-        <div style="display:flex; align-items:center;">
-            <span class="icon">${item.icon}</span>
-            <span>${item.name}</span>
-        </div>
-        <span>${item.price} €</span>
-    `;
-
-    div.ondragstart = drag;
-
-    div.onclick = () => {
-        const dep = document.getElementById('depenses');
+    function init() {
         const bank = document.getElementById('bank');
-        dep.contains(div) ? bank.appendChild(div) : dep.appendChild(div);
+        itemsData.forEach(item => createItem(item, bank));
         updateCalcul();
-    };
-
-    container.appendChild(div);
-}
-
-function allowDrop(ev) { ev.preventDefault(); }
-function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
-
-function drop(ev) {
-    ev.preventDefault();
-    const id = ev.dataTransfer.getData("text");
-    const zone = ev.target.closest('#bank') || ev.target.closest('#depenses');
-    if (zone) zone.appendChild(document.getElementById(id));
-    updateCalcul();
-}
-
-function updateCalcul() {
-    const items = document.getElementById('depenses').getElementsByClassName('item');
-    let total = 0;
-    for (let i of items) total += parseInt(i.dataset.price);
-    const solde = SALAIRE - total;
-
-    const box = document.getElementById('result-box');
-    document.getElementById('solde-val').innerText = solde;
-
-    box.className = "result-box " + (solde >= 0 ? "positive" : "negative");
-    box.innerHTML = solde >= 0
-        ? `Solde : ${solde} € 👍`
-        : `Solde : ${solde} € ⚠️`;
-
-    if (!etapeImprevu && solde >= 0 && document.getElementById('bank').children.length === 0) {
-        document.getElementById('btn-imprevu').style.display = 'flex';
+        
+        if (typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Julie - Imprévu");
+        }
     }
-}
 
-function declencherImprevu() {
-    document.getElementById('alert-box').style.display = 'block';
-    document.getElementById('btn-imprevu').style.display = 'none';
-    etapeImprevu = true;
-}
+    function createItem(item, container) {
+        const div = document.createElement('div');
+        div.className = `item ${item.type}`;
+        div.id = item.id;
+        div.dataset.price = item.price;
+        div.dataset.obligatoire = item.obligatoire;
+        div.draggable = true;
 
-function fermerAlerte() {
-    document.getElementById('depenses').appendChild(document.getElementById('veto-item'));
-    document.getElementById('alert-box').style.display = 'none';
-    updateCalcul();
-}
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="icon">${item.icon}</span>
+                <span>${item.name}</span>
+            </div>
+            <span>${item.price} €</span>
+        `;
 
-function speak(txt) {
-    const msg = new SpeechSynthesisUtterance(txt);
-    msg.lang = 'fr-FR';
-    speechSynthesis.speak(msg);
-}
+        div.ondragstart = drag;
 
-function lireConsigne() {
-    speak("Julie gagne 1200 euros. Place toutes les dépenses. Le solde doit rester positif.");
-}
+        div.onclick = () => {
+            if (budgetValide) return;
+            const dep = document.getElementById('depenses');
+            const bank = document.getElementById('bank');
+            if (dep.contains(div)) {
+                bank.appendChild(div);
+            } else {
+                dep.appendChild(div);
+            }
+            speak(item.name + ", " + item.price + " euros");
+            updateCalcul();
+        };
 
-init();
+        container.appendChild(div);
+    }
+
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { 
+        if (budgetValide) return;
+        ev.dataTransfer.setData("text", ev.target.id); 
+    }
+
+    function drop(ev) {
+        if (budgetValide) return;
+        ev.preventDefault();
+        const id = ev.dataTransfer.getData("text");
+        const zone = ev.target.closest('#bank') || ev.target.closest('#depenses');
+        if (zone && id) {
+            zone.appendChild(document.getElementById(id));
+            updateCalcul();
+        }
+    }
+
+    function updateCalcul() {
+        const items = document.getElementById('depenses').getElementsByClassName('item');
+        let total = 0;
+        for (let i of items) total += parseInt(i.dataset.price);
+        
+        if (imprevuAjoute) total += IMPREVU;
+        
+        const solde = SALAIRE - total;
+        const box = document.getElementById('result-box');
+        document.getElementById('solde-val').innerText = solde;
+
+        if (solde >= 0) {
+            box.className = "result-box positive";
+            box.innerHTML = `Solde : <span id="solde-val">${solde}</span> € 👍`;
+        } else {
+            box.className = "result-box negative";
+            box.innerHTML = `Solde : <span id="solde-val">${solde}</span> € ⚠️ NÉGATIF !`;
+        }
+    }
+
+    function validerBudget() {
+        if (budgetValide) return;
+        
+        // Vérifier que les dépenses obligatoires sont placées
+        const depenses = document.getElementById('depenses');
+        const itemsDep = depenses.getElementsByClassName('item');
+        
+        let obligatoiresManquantes = [];
+        itemsData.filter(i => i.obligatoire).forEach(item => {
+            const el = document.getElementById(item.id);
+            if (!depenses.contains(el)) {
+                obligatoiresManquantes.push(item.name);
+            }
+        });
+        
+        if (obligatoiresManquantes.length > 0) {
+            alert("⚠️ Attention ! Tu dois au moins payer les dépenses obligatoires :\n\n• " + obligatoiresManquantes.join("\n• ") + "\n\n(Ce sont les dépenses en orange)");
+            speak("Tu dois payer les dépenses obligatoires : " + obligatoiresManquantes.join(", "));
+            return;
+        }
+        
+        budgetValide = true;
+        document.getElementById('btn-valider').style.display = 'none';
+        
+        // Désactiver le drag & drop
+        document.querySelectorAll('.item').forEach(it => {
+            it.draggable = false;
+            it.style.cursor = 'default';
+        });
+        
+        // Afficher le bouton imprévu après 1 seconde
+        setTimeout(() => {
+            document.getElementById('btn-imprevu').style.display = 'flex';
+            document.getElementById('btn-imprevu').onclick = declencherImprevu;
+            speak("Oh non ! Un imprévu arrive. Clique sur le bouton orange.");
+        }, 1000);
+    }
+
+    function declencherImprevu() {
+        document.getElementById('overlay').classList.add('show');
+        document.getElementById('alert-box').classList.add('show');
+        document.getElementById('btn-imprevu').style.display = 'none';
+        speak("Catastrophe ! Le chat est malade. Il faut payer le vétérinaire, 100 euros.");
+    }
+
+    function ajouterImprevu() {
+        imprevuAjoute = true;
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('alert-box').classList.remove('show');
+        
+        // Ajouter visuellement l'imprévu
+        const depenses = document.getElementById('depenses');
+        const vetoDiv = document.createElement('div');
+        vetoDiv.className = 'item bad';
+        vetoDiv.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="icon">💉</span>
+                <span>Vétérinaire</span>
+            </div>
+            <span>100 €</span>
+        `;
+        vetoDiv.dataset.price = IMPREVU;
+        vetoDiv.style.cursor = 'default';
+        depenses.appendChild(vetoDiv);
+        
+        updateCalcul();
+        
+        // Afficher la conclusion après 1.5 seconde
+        setTimeout(afficherConclusion, 1500);
+    }
+
+    function afficherConclusion() {
+        const items = document.getElementById('depenses').getElementsByClassName('item');
+        let totalDepenses = 0;
+        for (let i of items) totalDepenses += parseInt(i.dataset.price);
+        
+        const soldeFinal = SALAIRE - totalDepenses;
+        const aReussi = soldeFinal >= 0;
+        
+        document.getElementById('overlay').classList.add('show');
+        document.getElementById('conclusion-box').classList.add('show');
+        
+        const iconEl = document.getElementById('conclusion-icon');
+        const titleEl = document.getElementById('conclusion-title');
+        const lessonEl = document.getElementById('conclusion-lesson');
+        const scoreEl = document.getElementById('conclusion-score');
+        
+        if (aReussi) {
+            iconEl.textContent = '🎉';
+            titleEl.textContent = 'BRAVO !';
+            titleEl.style.color = '#166534';
+            lessonEl.innerHTML = `
+                <strong>✅ Tu as bien géré !</strong><br><br>
+                Tu as gardé une <strong>réserve de ${soldeFinal} €</strong> qui t'a permis de payer l'imprévu sans problème.<br><br>
+                <strong>📚 La leçon :</strong> Il est important de ne pas tout dépenser et de garder une <strong>épargne de précaution</strong> pour faire face aux imprévus de la vie (panne, maladie, réparation...).
+            `;
+            scoreEl.innerHTML = `<span style="color:#166534; font-size:1.2rem;">Score : 20/20</span>`;
+            speak("Bravo ! Tu as bien géré ton budget. Tu avais gardé une réserve pour l'imprévu.");
+            envoyerResultatFinal(20);
+        } else {
+            iconEl.textContent = '😰';
+            titleEl.textContent = 'BUDGET DANS LE ROUGE !';
+            titleEl.style.color = '#dc2626';
+            lessonEl.innerHTML = `
+                <strong>❌ Tu as tout dépensé...</strong><br><br>
+                Tu n'avais pas assez de réserve pour payer l'imprévu. Ton solde est maintenant de <strong>${soldeFinal} €</strong>.<br><br>
+                <strong>📚 La leçon :</strong> Il ne faut pas dépenser tout son argent ! Il est important de garder une <strong>épargne de précaution</strong> (environ 10% de ses revenus) pour faire face aux imprévus.<br><br>
+                <em>💡 Astuce : Les dépenses "plaisir" (violet) peuvent être réduites ou reportées.</em>
+            `;
+            scoreEl.innerHTML = `<span style="color:#dc2626; font-size:1.2rem;">Score : 10/20 - Recommence pour améliorer !</span>`;
+            speak("Ton budget est dans le rouge. Tu as appris une leçon importante : il faut garder une épargne de précaution.");
+            envoyerResultatFinal(10);
+        }
+    }
+
+    function fermerConclusion() {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('conclusion-box').classList.remove('show');
+        
+        const soldeFinal = SALAIRE - getTotalDepenses();
+        const aReussi = soldeFinal >= 0;
+        
+        const finalMsg = document.getElementById('final-message');
+        finalMsg.classList.add('show');
+        finalMsg.className = 'show ' + (aReussi ? 'success' : 'fail');
+        
+        if (aReussi) {
+            finalMsg.innerHTML = `<h3>🏆 Mission réussie !</h3><p>Tu as compris l'importance de l'épargne de précaution.</p>`;
+        } else {
+            finalMsg.innerHTML = `<h3>📚 Leçon apprise !</h3><p>La prochaine fois, garde une réserve pour les imprévus.<br><button class="reset-btn" onclick="location.reload()" style="margin-top:15px;">🔄 Réessayer</button></p>`;
+        }
+    }
+    
+    function getTotalDepenses() {
+        const items = document.getElementById('depenses').getElementsByClassName('item');
+        let total = 0;
+        for (let i of items) total += parseInt(i.dataset.price);
+        return total;
+    }
+
+    function toggleSon() {
+        soundEnabled = !soundEnabled;
+        const btn = document.getElementById('btn-mute');
+        btn.textContent = soundEnabled ? "🔈 Son" : "🔇 Muet";
+        if (!soundEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function speak(txt) {
+        if (!soundEnabled) return;
+        try {
+            const msg = new SpeechSynthesisUtterance(txt);
+            msg.lang = 'fr-FR';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(msg);
+        } catch (e) {}
+    }
+
+    function lireConsigne() {
+        speak("Julie gagne 1200 euros. Place les dépenses dans son budget. Attention, garde une réserve pour les imprévus ! Le solde doit rester positif.");
+    }
+
+    // === ENVOI FIREBASE ===
+    async function envoyerResultatFinal(note) {
+        try {
+            if (typeof firebase === 'undefined' || !firebase.apps) {
+                console.log("Firebase non disponible - Mode hors ligne");
+                return;
+            }
+            
+            if (!firebase.apps.length && typeof firebaseConfig !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+            }
+            
+            if (!firebase.apps.length) {
+                console.log("Configuration Firebase manquante");
+                return;
+            }
+            
+            const db = firebase.firestore();
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Julie Imprévu",
+                note: note,
+                total: 20,
+                competences: {
+                    "C1": note, 
+                    "C2": note,
+                    "C4": note
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("✅ Résultats envoyés (" + note + "/20) pour " + code);
+
+        } catch (e) {
+            console.error("Erreur lors de l'envoi Firebase : ", e);
+        }
+    }
+
+    init();
 </script>
 
 </body>
