@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 4.0 (Structure sécurisée)
+// pse-runner.js - Version 4.1 (Collecte corrigée)
 // Écrit dans : resultats/{eleveCode}/copies/{docId}
 // ════════════════════════════════════════════════════════════════════════
 
@@ -18,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v4.0 - Structure sécurisée");
+console.log("🚀 PSE Runner v4.1 - Collecte corrigée");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
@@ -31,57 +31,162 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             throw new Error("Code élève invalide");
         }
         
-        // Collecter les réponses
+        // ════════════════════════════════════════════════════════════════
+        // ⭐ COLLECTE DES RÉPONSES CORRIGÉE
+        // ════════════════════════════════════════════════════════════════
         const reponses = {};
-        document.querySelectorAll('.reponse-eleve').forEach((el, i) => {
-            const questionBlock = el.closest('.question-block');
-            const numSelector = questionBlock?.querySelector('.num-selector');
-            const questionNum = numSelector?.value || `Q${i+1}`;
-            reponses[questionNum] = el.value.trim();
-        });
-        document.querySelectorAll('.save-me-match').forEach((el) => {
-            reponses[el.dataset.id || `match_${Math.random()}`] = el.value;
-        });
-        document.querySelectorAll('.trou-eleve').forEach((el, i) => {
-            reponses[`trou_${i}`] = el.tagName === 'SELECT' ? el.value : el.value.trim();
+        
+        // 1. Textarea et inputs avec data-qid
+        document.querySelectorAll('.reponse-eleve').forEach((el, idx) => {
+            const qid = el.dataset.qid;
+            
+            // Récupérer la valeur selon le type d'élément
+            let value = '';
+            if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+                if (el.type === 'radio') {
+                    // Radio button : ne prendre que si coché
+                    if (el.checked) {
+                        value = el.value;
+                    } else {
+                        return; // Skip si pas coché
+                    }
+                } else if (el.type === 'checkbox') {
+                    // Checkbox : ne prendre que si coché
+                    if (el.checked) {
+                        value = el.value || 'checked';
+                    } else {
+                        return; // Skip si pas coché
+                    }
+                } else {
+                    // Textarea ou input text
+                    value = el.value.trim();
+                }
+            }
+            
+            // Si pas de valeur, skip
+            if (!value) return;
+            
+            if (qid) {
+                // Si qid existe déjà, concaténer (pour les tableaux avec plusieurs cellules)
+                if (reponses[qid]) {
+                    // Vérifier si c'est déjà un tableau ou une string
+                    if (Array.isArray(reponses[qid])) {
+                        reponses[qid].push(value);
+                    } else {
+                        // Convertir en tableau
+                        reponses[qid] = [reponses[qid], value];
+                    }
+                } else {
+                    reponses[qid] = value;
+                }
+            } else {
+                // Pas de qid, utiliser un index
+                const questionBlock = el.closest('.question-block');
+                // Chercher le numéro dans .num-display (span) ou .num-selector (select)
+                const numDisplay = questionBlock?.querySelector('.num-display');
+                const numSelector = questionBlock?.querySelector('.num-selector');
+                let questionNum = numDisplay?.textContent?.trim() 
+                               || numSelector?.value 
+                               || `Q${idx + 1}`;
+                
+                // Éviter les doublons
+                let key = questionNum;
+                let suffix = 1;
+                while (reponses[key] !== undefined) {
+                    key = `${questionNum}_${suffix}`;
+                    suffix++;
+                }
+                reponses[key] = value;
+            }
         });
         
-        // Calculer compétences
+        // 2. QCM checkboxes
+        document.querySelectorAll('.save-me-qcm:checked').forEach((el) => {
+            const qid = el.dataset.qid;
+            const label = el.closest('label')?.textContent?.trim() || el.value;
+            if (qid) {
+                if (reponses[qid]) {
+                    if (Array.isArray(reponses[qid])) {
+                        reponses[qid].push(label);
+                    } else {
+                        reponses[qid] = [reponses[qid], label];
+                    }
+                } else {
+                    reponses[qid] = label;
+                }
+            }
+        });
+        
+        // 3. Matching (reliage)
+        document.querySelectorAll('.save-me-match').forEach((el) => {
+            const id = el.dataset.id || `match_${Math.random().toString(36).substr(2, 9)}`;
+            reponses[id] = el.value;
+        });
+        
+        // 4. Textes à trous
+        document.querySelectorAll('.trou-eleve').forEach((el, i) => {
+            const qid = el.dataset.qid || `trou_${i}`;
+            reponses[qid] = el.tagName === 'SELECT' ? el.value : el.value.trim();
+        });
+        
+        // 5. Matrice de risque (hidden input)
+        document.querySelectorAll('.risk-cell-value').forEach((el) => {
+            const qid = el.dataset.qid;
+            if (qid && el.value) {
+                reponses[qid + '_matrice'] = el.value;
+            }
+        });
+        
+        console.log("📋 Réponses collectées:", reponses);
+        
+        // ════════════════════════════════════════════════════════════════
+        // CALCUL DES COMPÉTENCES (inchangé)
+        // ════════════════════════════════════════════════════════════════
         const competences = {};
         let totalPoints = 0, maxPoints = 0;
         document.querySelectorAll('.question-block').forEach(block => {
             const compSelector = block.querySelector('.comp-selector');
+            const compDisplay = block.querySelector('.comp-display');
             const scoreInput = block.querySelector('.student-score');
             const maxInput = block.querySelector('.point-input');
-            if(compSelector && scoreInput && maxInput) {
-                const comp = compSelector.value;
-                const score = parseFloat(scoreInput.value) || 0;
-                const max = parseFloat(maxInput.value) || 0;
-                if(comp && max > 0) {
-                    const ratio = score / max;
-                    let niveau = ratio >= 0.85 ? 3 : ratio >= 0.65 ? 2 : ratio >= 0.40 ? 1 : 0;
-                    if(!competences[comp]) competences[comp] = 0;
-                    competences[comp] += niveau;
-                    totalPoints += score;
-                    maxPoints += max;
-                }
+            
+            const comp = compSelector?.value || compDisplay?.textContent?.trim();
+            const score = parseFloat(scoreInput?.value) || 0;
+            const max = parseFloat(maxInput?.value) || 0;
+            
+            if(comp && max > 0) {
+                const ratio = score / max;
+                let niveau = ratio >= 0.85 ? 3 : ratio >= 0.65 ? 2 : ratio >= 0.40 ? 1 : 0;
+                if(!competences[comp]) competences[comp] = 0;
+                competences[comp] += niveau;
+                totalPoints += score;
+                maxPoints += max;
             }
         });
         const noteSur20 = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 20 * 10) / 10 : 0;
         
-        // Temps
+        // ════════════════════════════════════════════════════════════════
+        // TEMPS ET MÉTADONNÉES
+        // ════════════════════════════════════════════════════════════════
         const devoirId = document.body.dataset.idExercice || "unknown";
         const startTime = parseInt(localStorage.getItem('devoir_start_time_' + devoirId)) || Date.now();
         const tempsSecondes = Math.floor((Date.now() - startTime) / 1000);
         
-        const titre = document.querySelector('.main-title-editable')?.textContent.trim() || "Devoir PSE";
+        const titre = document.querySelector('.main-title-editable')?.textContent.trim() 
+                   || document.querySelector('h1')?.textContent.trim()
+                   || "Devoir PSE";
         
         const data = {
             eleveCode: eleveCode,
             devoirId: devoirId,
             titre: titre,
             classe: eleveInfo.classe,
-            eleve: { userCode: eleveCode, prenom: eleveInfo.prenom, nom: eleveInfo.nom, classe: eleveInfo.classe },
+            eleve: { 
+                userCode: eleveCode, 
+                prenom: eleveInfo.prenom, 
+                nom: eleveInfo.nom, 
+                classe: eleveInfo.classe 
+            },
             reponses: reponses,
             competences: competences,
             note_auto: noteSur20,
@@ -96,13 +201,30 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         await setDoc(doc(db, "resultats", eleveCode, "copies", docId), data);
         
         console.log("✅ Envoyé:", `resultats/${eleveCode}/copies/${docId}`);
+        console.log("📦 Data:", data);
         
-        alert("✅ COPIE ENVOYÉE !\n\n" + eleveInfo.prenom + " " + eleveInfo.nom + "\n" + titre + "\nNote auto: " + noteSur20 + "/20");
+        alert("✅ COPIE ENVOYÉE !\n\n" + 
+              "👤 " + eleveInfo.prenom + " " + eleveInfo.nom + "\n" + 
+              "📝 " + titre + "\n" +
+              "📊 Réponses: " + Object.keys(reponses).length);
         
         localStorage.removeItem('paste_log_' + devoirId);
         localStorage.removeItem('devoir_start_time_' + devoirId);
         
-        document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;"><div style="font-size:4rem;">✅</div><h1 style="color:#16a34a;">Copie envoyée !</h1><p style="color:#64748b;">Vous pouvez fermer cette fenêtre.</p></div>`;
+        document.body.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
+                <div style="font-size:4rem;">✅</div>
+                <h1 style="color:#16a34a;">Copie envoyée !</h1>
+                <p style="color:#64748b;margin-top:10px;">
+                    ${eleveInfo.prenom} ${eleveInfo.nom}<br>
+                    ${titre}<br>
+                    ${Object.keys(reponses).length} réponses enregistrées
+                </p>
+                <p style="color:#94a3b8;margin-top:20px;font-size:0.9em;">
+                    Vous pouvez fermer cette fenêtre.
+                </p>
+            </div>
+        `;
         
     } catch(error) {
         console.error("❌ Erreur:", error);
@@ -111,4 +233,4 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     }
 };
 
-console.log("✅ window.envoyerCopie prêt");
+console.log("✅ window.envoyerCopie prêt (v4.1)");
