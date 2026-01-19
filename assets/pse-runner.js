@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 4.1 (Collecte corrigée)
+// pse-runner.js - Version 4.2 (ULTRA-COMPLET - Tous types d'exercices)
 // Écrit dans : resultats/{eleveCode}/copies/{docId}
 // ════════════════════════════════════════════════════════════════════════
 
@@ -18,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v4.1 - Collecte corrigée");
+console.log("🚀 PSE Runner v4.2 - ULTRA-COMPLET - Tous types d'exercices");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
@@ -117,16 +117,41 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             }
         });
         
-        // 3. Matching (reliage)
+        // 3. Matching (reliage) - AVEC qid du bloc parent
         document.querySelectorAll('.save-me-match').forEach((el) => {
+            const questionBlock = el.closest('.question-block');
+            const qidFromBlock = questionBlock?.querySelector('[data-qid]')?.dataset.qid;
             const id = el.dataset.id || `match_${Math.random().toString(36).substr(2, 9)}`;
-            reponses[id] = el.value;
+            
+            // Stocker avec l'ID du match ET avec le qid du bloc si disponible
+            if (el.value) {
+                reponses[id] = el.value;
+                
+                // Aussi stocker groupé par question
+                if (qidFromBlock) {
+                    if (!reponses[qidFromBlock]) reponses[qidFromBlock] = [];
+                    if (!Array.isArray(reponses[qidFromBlock])) reponses[qidFromBlock] = [reponses[qidFromBlock]];
+                    reponses[qidFromBlock].push(`${el.closest('tr')?.querySelector('.matching-left')?.textContent || ''} → ${el.value}`);
+                }
+            }
         });
         
-        // 4. Textes à trous
+        // 4. Textes à trous - AVEC qid du bloc parent
         document.querySelectorAll('.trou-eleve').forEach((el, i) => {
+            const questionBlock = el.closest('.question-block');
+            const qidFromBlock = questionBlock?.querySelector('[data-qid]')?.dataset.qid;
             const qid = el.dataset.qid || `trou_${i}`;
-            reponses[qid] = el.tagName === 'SELECT' ? el.value : el.value.trim();
+            const value = el.tagName === 'SELECT' ? el.value : el.value.trim();
+            
+            if (value) {
+                reponses[qid] = value;
+                
+                // Aussi stocker groupé par question
+                if (qidFromBlock && qidFromBlock !== qid) {
+                    if (!reponses[qidFromBlock + '_trous']) reponses[qidFromBlock + '_trous'] = [];
+                    reponses[qidFromBlock + '_trous'].push(value);
+                }
+            }
         });
         
         // 5. Matrice de risque (hidden input)
@@ -137,7 +162,24 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             }
         });
         
+        // 6. Radios de décision (réduction risque prioritaire/non prioritaire)
+        document.querySelectorAll('input[type="radio"][name*="decision"]:checked').forEach((el) => {
+            const qid = el.dataset.qid;
+            if (qid) {
+                reponses[qid + '_decision'] = el.value;
+            }
+        });
+        
+        // 7. Radios de gravité
+        document.querySelectorAll('input[type="radio"][name*="grav"]:checked').forEach((el) => {
+            const qid = el.dataset.qid;
+            if (qid && !reponses[qid + '_gravite']) {
+                reponses[qid + '_gravite'] = el.value;
+            }
+        });
+        
         console.log("📋 Réponses collectées:", reponses);
+        console.log("📊 Nombre de réponses:", Object.keys(reponses).length);
         
         // ════════════════════════════════════════════════════════════════
         // CALCUL DES COMPÉTENCES (inchangé)
@@ -233,4 +275,4 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     }
 };
 
-console.log("✅ window.envoyerCopie prêt (v4.1)");
+console.log("✅ window.envoyerCopie prêt (v4.2 ULTRA-COMPLET)");
