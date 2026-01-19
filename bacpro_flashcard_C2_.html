@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards Révision - Module C2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --success: #00b894;
+            --error: #d63031;
+            --dark: #2d3436;
+            --light: #dfe6e9;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: var(--dark);
+        }
+
+        /* --- UI ELEMENTS --- */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            z-index: 10;
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            background: rgba(255,255,255,0.3);
+            height: 8px;
+            border-radius: 10px;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #00cec9;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .score-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 800;
+            backdrop-filter: blur(5px);
+        }
+
+        /* --- CARD CONTAINER --- */
+        .card-container {
+            position: relative;
+            width: 90%;
+            max-width: 450px;
+            height: 70vh;
+            perspective: 1000px;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+            overflow-y: auto;
+        }
+
+        .card.hidden {
+            transform: translateX(120%) rotate(10deg);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .category-tag {
+            background: #dfe6e9;
+            color: #636e72;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-weight: 800;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 15px 0;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .card-image {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 10px;
+            margin: 0 auto 15px auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* --- OPTIONS --- */
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: #f1f2f6;
+            border: 2px solid transparent;
+            padding: 15px;
+            border-radius: 15px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            position: relative;
+        }
+
+        .option-btn:active { transform: scale(0.98); }
+
+        /* États de réponse */
+        .option-btn.correct {
+            background: #dff9fb;
+            border-color: var(--success);
+            color: var(--success);
+        }
+        .option-btn.correct::after { content: "✅"; position: absolute; right: 15px; }
+
+        .option-btn.wrong {
+            background: #ff7675;
+            border-color: var(--error);
+            color: white;
+        }
+        .option-btn.wrong::after { content: "❌"; position: absolute; right: 15px; }
+
+        /* --- REMEDIATION --- */
+        .remediation-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+        .remediation-box.success { background: #dff9fb; border-left: 5px solid var(--success); color: #006266; }
+        .remediation-box.error { background: #ffeaa7; border-left: 5px solid #e17055; color: #d63031; }
+
+        .next-btn {
+            background: var(--dark);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-top: 15px;
+            cursor: pointer;
+            display: none; /* Masqué par défaut */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- END SCREEN --- */
+        .end-screen {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 90%;
+            display: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .end-title { font-size: 2rem; color: var(--primary); margin-bottom: 10px; }
+        .end-score { font-size: 3rem; font-weight: 800; color: var(--dark); margin: 20px 0; }
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.4);
+            transition: transform 0.2s;
+        }
+        .action-btn:hover { transform: translateY(-3px); }
+
+        /* --- START SCREEN --- */
+        .start-screen {
+            background: rgba(255,255,255,0.95);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .objective-box {
+            background: #e3f2fd;
+            border-left: 5px solid #0984e3;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 8px;
+            max-width: 400px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div id="zen-btn" style="font-size:1.5rem; cursor:pointer;">🧘</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+        <div class="score-badge">🏆 <span id="score">0</span></div>
+    </div>
+
+    <div class="start-screen" id="start-screen">
+        <h1 style="color:var(--primary); font-size:2.5rem; margin-bottom:10px;">FLASHCARDS C.2</h1>
+        <h2 style="color:#636e72;">Prévention des Risques</h2>
+        
+        <div class="objective-box">
+            <strong>🎯 OBJECTIF DE LA SÉQUENCE :</strong><br>
+            Être capable d'analyser les dangers d'une activité de travail afin d'identifier les risques professionnels et d'appliquer les consignes de sécurité au poste de travail.
+        </div>
+
+        <button class="action-btn" onclick="startQuiz()">C'est parti ! 🚀</button>
+    </div>
+
+    <div class="card-container" id="quiz-container">
+        </div>
+
+    <div class="end-screen" id="end-screen">
+        <div class="end-title">Terminé ! 🎉</div>
+        <p>Voici ton score final :</p>
+        <div class="end-score" id="final-score">0/30</div>
+        <p id="feedback-msg"></p>
+        <button class="action-btn" id="retry-btn" onclick="retryErrors()">Revoir mes erreurs 🔄</button>
+        <br>
+        <button class="action-btn" style="background:#00cec9; margin-top:10px;" onclick="location.reload()">Tout recommencer 🏠</button>
+    </div>
+
+    <script>
+        // --- DONNÉES DU COURS (30 CARTES) ---
+        const allQuestions = [
+            // --- CONCEPTS DE BASE (SITUATION LOÏC) ---
+            {
+                cat: "Situation",
+                q: "Dans la situation de Loïc, quel était le problème principal ?",
+                img: "bacproC2/images/situation.jpg",
+                opts: ["Il est arrivé en retard", "Il n'a pas porté ses chaussures de sécurité", "La charge était trop lourde"],
+                ans: 1,
+                why: "Loïc a oublié ses chaussures de sécurité (EPI) au vestiaire, ce qui a conduit à l'écrasement de son pied."
+            },
+            {
+                cat: "Définition",
+                q: "Qu'est-ce qu'un DANGER ?",
+                opts: ["Une lésion ou atteinte à la santé", "La cause capable de provoquer une lésion", "Une situation de travail"],
+                ans: 1,
+                why: "Le danger est la CAUSE (ex: couteau, sol glissant). La lésion est le dommage."
+            },
+            {
+                cat: "Définition",
+                q: "Qu'est-ce qu'un OPÉRATEUR ?",
+                opts: ["La personne qui effectue la tâche", "Le patron de l'entreprise", "La machine utilisée"],
+                ans: 0,
+                why: "L'opérateur est le salarié ou la personne en situation de travail."
+            },
+            {
+                cat: "Définition",
+                q: "Qu'est-ce qu'une SITUATION DANGEREUSE ?",
+                opts: ["Quand l'accident est déjà arrivé", "Quand l'opérateur est face au danger", "Quand il y a beaucoup de bruit"],
+                ans: 1,
+                why: "C'est la rencontre entre l'opérateur et le danger (ex: Loïc manipule une charge lourde sans chaussures)."
+            },
+            {
+                cat: "Analyse",
+                q: "Dans le PAD, que se passe-t-il juste après la Situation Dangereuse ?",
+                opts: ["Le Dommage", "L'Événement Déclencheur", "L'Opérateur"],
+                ans: 1,
+                why: "L'événement déclencheur (ex: la charge glisse des mains) fait basculer la situation vers le dommage."
+            },
+            
+            // --- ANALYSE ACTIVITÉ 1 ---
+            {
+                cat: "Danger",
+                q: "Activité : Préparation de commandes. Quel est le danger ici ?",
+                img: "bacproC2/images/commandesetconduitdengin.jpg",
+                opts: ["Les cartons en équilibre", "Le transpalette", "L'éclairage"],
+                ans: 0,
+                why: "Les cartons mal empilés en hauteur représentent un danger de chute d'objet."
+            },
+            {
+                cat: "Dommage",
+                q: "Si un carton tombe sur l'opérateur, quel est le dommage potentiel ?",
+                opts: ["Mal de dos", "Fracture ou contusion", "Coupure"],
+                ans: 1,
+                why: "Le choc traumatique provoque généralement une contusion ou une fracture."
+            },
+            {
+                cat: "Danger",
+                q: "Activité : Aide à domicile. Quel danger est présent au sol ?",
+                img: "bacproC2/images/Aidelapersonnedomicile.jpg",
+                opts: ["Un tapis", "De l'eau (sol glissant)", "Des jouets"],
+                ans: 1,
+                why: "L'eau au sol est la cause (Danger) qui peut provoquer la chute."
+            },
+
+            // --- RELATION DANGER / DOMMAGE ---
+            {
+                cat: "PAD",
+                q: "Situation : Charger des cartons à la main. Quel est le danger ?",
+                img: "bacproC2/images/question2_chargeslourdes.jpg",
+                opts: ["Le sol", "La charge lourde", "La lumière"],
+                ans: 1,
+                why: "Le poids du carton (charge lourde) est la cause capable de provoquer le mal de dos."
+            },
+            {
+                cat: "PAD",
+                q: "Quel est le dommage potentiel lié à la manipulation de charges lourdes ?",
+                opts: ["Surdité", "Lombalgie (mal de dos)", "Brûlure"],
+                ans: 1,
+                why: "Les efforts physiques intenses provoquent des TMS (Troubles Musculo-Squelettiques) comme la lombalgie."
+            },
+            {
+                cat: "PAD",
+                q: "Samir utilise une friteuse. Quel est le danger ?",
+                img: "bacproC2/images/question_3_samir.jpg",
+                opts: ["L'électricité", "L'huile chaude", "La pomme de terre"],
+                ans: 1,
+                why: "L'huile chaude est la cause capable de provoquer une brûlure thermique."
+            },
+
+            // --- LES RISQUES PRO (17 FAMILLES) ---
+            {
+                cat: "Risques",
+                q: "Identifie ce risque professionnel.",
+                img: "bacproC2/images/risuqechutehauteu.jpg",
+                opts: ["Chute de plain-pied", "Chute de hauteur", "Chute d'objet"],
+                ans: 1,
+                why: "L'opérateur travaille en hauteur (échelle, échafaudage, toit)."
+            },
+            {
+                cat: "Risques",
+                q: "Quel est ce type de risque ?",
+                img: "bacproC2/images/risqueepsychosocial.jpg",
+                opts: ["Risque Bruit", "Risque Psychosocial", "Risque Routier"],
+                ans: 1,
+                why: "Stress, harcèlement, agression ou tension au travail = Risques Psychosociaux (RPS)."
+            },
+            {
+                cat: "Risques",
+                q: "Identifier le risque lié à cette image.",
+                img: "bacproC2/images/risqueproduits.jpg",
+                opts: ["Risque Biologique", "Risque Chimique", "Risque Incendie"],
+                ans: 1,
+                why: "Présence de produits toxiques, émissions ou déchets dangereux = Risque Chimique."
+            },
+            {
+                cat: "Risques",
+                q: "Quel risque est représenté ici ?",
+                img: "bacproC2/images/risqueelectricite.jpg",
+                opts: ["Risque Électrique", "Risque Thermique", "Risque Rayonnement"],
+                ans: 0,
+                why: "Contact avec des pièces nues sous tension = Électrisation ou Électrocution."
+            },
+            {
+                cat: "Risques",
+                q: "Quel est ce risque (bactéries, virus) ?",
+                img: "bacproC2/images/risqueebiologique.jpg",
+                opts: ["Risque Chimique", "Risque Biologique", "Risque Sanitaire"],
+                ans: 1,
+                why: "Exposition à des agents biologiques (virus, bactéries, parasites)."
+            },
+            {
+                cat: "Risques",
+                q: "Risque lié à l'utilisation de machines ou d'outils.",
+                img: "bacproC2/images/risqueeequipeemnt.jpg",
+                opts: ["Risque Équipements de travail", "Risque Mécanique", "Risque Physique"],
+                ans: 0,
+                why: "Utilisation d'outils (couteaux) ou machines (cisaille) pouvant couper ou écraser."
+            },
+            {
+                cat: "Risques",
+                q: "Quel est ce risque lié au froid ou au chaud ?",
+                img: "bacproC2/images/risquethermique.jpg",
+                opts: ["Risque Incendie", "Risque Ambiance Thermique", "Risque Rayonnement"],
+                ans: 1,
+                why: "Travail en chambre froide ou près d'un four = Ambiance Thermique."
+            },
+            {
+                cat: "Risques",
+                q: "Risque lié aux sons trop forts.",
+                img: "bacproC2/images/risquebruit.jpg",
+                opts: ["Risque Bruit", "Risque Stress", "Risque Vibration"],
+                ans: 0,
+                why: "Le bruit peut provoquer la surdité ou la fatigue auditive."
+            },
+
+            // --- SIGNALISATION & PRÉVENTION ---
+            {
+                cat: "Signalisation",
+                q: "Que signifie un panneau TRIANGULAIRE JAUNE ?",
+                img: "bacproC2/images/danger.jpg",
+                opts: ["Obligation", "Interdiction", "Danger / Avertissement"],
+                ans: 2,
+                why: "Le triangle jaune signale un DANGER (ex: Risque électrique)."
+            },
+            {
+                cat: "Signalisation",
+                q: "Que signifie un panneau ROND BLEU ?",
+                img: "bacproC2/images/obligation.jpg",
+                opts: ["Obligation", "Sauvetage", "Interdiction"],
+                ans: 0,
+                why: "Le rond bleu impose une OBLIGATION (ex: Porter des gants)."
+            },
+            {
+                cat: "Signalisation",
+                q: "Que signifie un panneau ROND ROUGE BARRÉ ?",
+                img: "bacproC2/images/interdiction.jpg",
+                opts: ["Danger", "Interdiction", "Incendie"],
+                ans: 1,
+                why: "Le rond rouge barré signale une INTERDICTION (ex: Interdit de fumer)."
+            },
+            {
+                cat: "Signalisation",
+                q: "Que signifie un panneau CARRÉ VERT ?",
+                img: "bacproC2/images/premiersecours.jpg",
+                opts: ["Sauvetage et Secours", "Zone fumeur", "Direction"],
+                ans: 0,
+                why: "Le vert indique le sauvetage (Sortie de secours, Douche de sécurité, Défibrillateur)."
+            },
+            
+            // --- CONSIGNES & SÉCURITÉ ---
+            {
+                cat: "Sécurité",
+                q: "Que signifie le sigle EPI ?",
+                opts: ["Équipement de Protection Incendie", "Équipement de Protection Individuelle", "Engin de Production Industriel"],
+                ans: 1,
+                why: "Les EPI (casque, gants, chaussures) protègent UN seul individu."
+            },
+            {
+                cat: "Sécurité",
+                q: "Dans la Fiche de Sécurité, où trouve-t-on les EPI obligatoires ?",
+                img: "bacproC2/images/fiche de securiteaupostedetrvail.jpg",
+                opts: ["Dans les triangles jaunes", "Dans les ronds bleus", "Dans le texte en bas"],
+                ans: 1,
+                why: "Les ronds bleus indiquent l'OBLIGATION de porter les EPI."
+            },
+            {
+                cat: "Incendie",
+                q: "Sur un plan d'évacuation, que repèrent les flèches vertes ?",
+                img: "bacproC2/images/exempledeplanevacuation.jpg",
+                opts: ["Les extincteurs", "Les toilettes", "Le chemin d'évacuation"],
+                ans: 2,
+                why: "Elles indiquent le chemin vers la sortie de secours la plus proche."
+            },
+            {
+                cat: "Incendie",
+                q: "Quel est ce pictogramme ?",
+                img: "bacproC2/images/extincteur.jpg",
+                opts: ["Alarme incendie", "Extincteur", "Robinet incendie"],
+                ans: 1,
+                why: "C'est l'emplacement d'un extincteur pour enrayer un début d'incendie."
+            },
+            {
+                cat: "Synthèse",
+                q: "L'outil QQOQCP sert à...",
+                opts: ["Analyser une situation de travail", "Calculer un salaire", "Réparer une machine"],
+                ans: 0,
+                why: "Qui, Quoi, Où, Quand, Comment, Pourquoi = Analyse complète d'une situation."
+            },
+            {
+                cat: "Bilan",
+                q: "Pour Loïc, quelle était l'action prioritaire avant de commencer ?",
+                opts: ["Manger", "Lire le journal", "Vérifier et porter ses EPI"],
+                ans: 2,
+                why: "Avant toute prise de poste, il faut respecter les consignes et porter ses EPI."
+            }
+        ];
+
+        // --- ETAT DU JEU ---
+        let currentPool = []; // Questions à jouer
+        let wrongAnswersPool = []; // Questions ratées à rejouer
+        let currentIndex = 0;
+        let score = 0;
+        let isRetryMode = false;
+
+        const container = document.getElementById('quiz-container');
+        const progressBar = document.getElementById('progress');
+        const scoreEl = document.getElementById('score');
+        
+        // --- INITIALISATION ---
+        function startQuiz() {
+            document.getElementById('start-screen').style.display = 'none';
+            currentPool = [...allQuestions]; // Copie
+            wrongAnswersPool = [];
+            currentIndex = 0;
+            score = 0;
+            isRetryMode = false;
+            updateScore();
+            loadCard();
+        }
+
+        function loadCard() {
+            container.innerHTML = ""; // Vider
+            
+            if (currentIndex >= currentPool.length) {
+                endQuiz();
+                return;
+            }
+
+            const data = currentPool[currentIndex];
+            const progressPct = ((currentIndex) / currentPool.length) * 100;
+            progressBar.style.width = progressPct + "%";
+
+            // Création de la carte HTML
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // Image conditionnelle
+            let imgHTML = data.img ? `<img src="${data.img}" class="card-image" alt="Illustration">` : '';
+
+            // Options HTML
+            let optionsHTML = "";
+            data.opts.forEach((opt, index) => {
+                optionsHTML += `<button class="option-btn" onclick="checkAnswer(this, ${index})">${opt}</button>`;
+            });
+
+            card.innerHTML = `
+                <div>
+                    <div class="card-header">
+                        <span class="category-tag">${data.cat}</span>
+                    </div>
+                    <div class="question-text">${data.q}</div>
+                    ${imgHTML}
+                    <div class="options-grid" id="opt-grid">
+                        ${optionsHTML}
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="remediation-box" id="remediation"></div>
+                    <button class="next-btn" id="next-btn" onclick="nextCard()">Continuer ➔</button>
+                </div>
+            `;
+
+            container.appendChild(card);
+        }
+
+        function checkAnswer(btn, selectedIndex) {
+            // Désactiver tous les boutons
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => {
+                b.style.pointerEvents = "none";
+                b.style.opacity = "0.7";
+            });
+
+            const data = currentPool[currentIndex];
+            const remBox = document.getElementById('remediation');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (selectedIndex === data.ans) {
+                // CORRECT
+                btn.classList.add('correct');
+                btn.style.opacity = "1";
+                remBox.classList.add('success');
+                remBox.innerHTML = `<strong>BRAVO ! 🎉</strong><br>${data.why}`;
+                if(!isRetryMode) score++; // On n'augmente pas le score en mode révision d'erreur
+                updateScore();
+            } else {
+                // FAUX
+                btn.classList.add('wrong');
+                btn.style.opacity = "1";
+                // Montrer la bonne réponse
+                allBtns[data.ans].classList.add('correct');
+                allBtns[data.ans].style.opacity = "1";
+                
+                remBox.classList.add('error');
+                remBox.innerHTML = `<strong>OUPS... 😕</strong><br>${data.why}`;
+                
+                // Ajouter à la liste des erreurs pour rejouer plus tard
+                if (!isRetryMode) {
+                    wrongAnswersPool.push(data);
+                }
+            }
+
+            remBox.style.display = 'block';
+            nextBtn.style.display = 'block';
+        }
+
+        function nextCard() {
+            // Animation de sortie
+            const card = document.querySelector('.card');
+            card.style.transform = "translateX(-120%) rotate(-10deg)";
+            card.style.opacity = "0";
+            
+            setTimeout(() => {
+                currentIndex++;
+                loadCard();
+            }, 300);
+        }
+
+        function updateScore() {
+            scoreEl.innerText = score;
+        }
+
+        function endQuiz() {
+            document.getElementById('end-screen').style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${allQuestions.length}`;
+            
+            const msg = document.getElementById('feedback-msg');
+            const retryBtn = document.getElementById('retry-btn');
+
+            if (wrongAnswersPool.length === 0) {
+                msg.innerText = "INCROYABLE ! Tu as tout maîtrisé du premier coup ! 🌟";
+                retryBtn.style.display = 'none';
+            } else {
+                msg.innerText = `Tu as fait ${wrongAnswersPool.length} erreur(s). C'est normal, on apprend !`;
+                retryBtn.style.display = 'inline-block';
+                retryBtn.innerText = `Revoir mes ${wrongAnswersPool.length} erreurs 🔄`;
+            }
+        }
+
+        function retryErrors() {
+            // Lancer le mode "Retry"
+            currentPool = [...wrongAnswersPool];
+            wrongAnswersPool = []; // On vide pour potentiellement re-rejouer
+            currentIndex = 0;
+            isRetryMode = true;
+            
+            document.getElementById('end-screen').style.display = 'none';
+            loadCard();
+        }
+
+        // Mode Zen (Respiration simple)
+        document.getElementById('zen-btn').addEventListener('click', () => {
+            alert("Inspirez... (4s)\nExpirez... (4s)\n\nPrenez le temps de réfléchir avant de répondre ! 🧘");
+        });
+
+    </script>
+</body>
+</html>
