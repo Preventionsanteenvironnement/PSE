@@ -39,6 +39,58 @@
       overflow-wrap:anywhere; max-width:100%;
     }
 
+    /* CALCULATRICE */
+    .calc-toggle{
+      position:fixed; bottom:20px; right:20px; z-index:1000;
+      background:var(--gold); color:#0f172a; border:none;
+      width:60px; height:60px; border-radius:50%; font-size:1.8rem;
+      cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+      transition:transform 0.2s; display:flex; align-items:center; justify-content:center;
+    }
+    .calc-toggle:hover{ transform:scale(1.1); }
+    .calc-toggle:active{ transform:scale(0.95); }
+
+    .calculator{
+      position:fixed; bottom:90px; right:20px; z-index:999;
+      background:#1e293b; border:3px solid var(--gold); border-radius:20px;
+      padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+      display:none; width:280px;
+    }
+    .calculator.visible{ display:block; animation:slideIn 0.3s; }
+    @keyframes slideIn{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
+
+    .calc-header{
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;
+    }
+    .calc-header h3{ margin:0; color:var(--gold); font-size:1.1rem; }
+    .calc-close{
+      background:transparent; border:none; color:#94a3b8; font-size:1.5rem;
+      cursor:pointer; padding:0; width:30px; height:30px;
+    }
+    .calc-close:hover{ color:var(--error); }
+
+    .calc-display{
+      background:#0f172a; color:#0f0; font-family:'Courier New',monospace;
+      padding:15px; border-radius:10px; font-size:1.5rem; text-align:right;
+      margin-bottom:15px; border:2px solid #334155; min-height:50px;
+      word-break:break-all;
+    }
+
+    .calc-buttons{
+      display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;
+    }
+    .calc-btn{
+      background:#334155; color:#e2e8f0; border:none; padding:15px;
+      border-radius:10px; font-size:1.1rem; font-weight:700; cursor:pointer;
+      transition:0.15s;
+    }
+    .calc-btn:hover{ background:#475569; }
+    .calc-btn:active{ transform:scale(0.95); }
+    .calc-btn.operator{ background:#3b82f6; color:white; }
+    .calc-btn.equals{ background:var(--success); color:white; grid-column:span 2; }
+    .calc-btn.clear{ background:var(--error); color:white; }
+    .calc-btn.zero{ grid-column:span 2; }
+
     #item-bank{
       display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
       background:#334155; padding:20px; border-radius:12px;
@@ -154,6 +206,9 @@
       .safe-display{ font-size:1.6rem; }
       .chart-box{ height:260px; padding:12px; }
       input[type="text"]{ width:140px; }
+      .calc-toggle{ bottom:15px; right:15px; width:55px; height:55px; font-size:1.6rem; }
+      .calculator{ bottom:80px; right:15px; width:260px; padding:15px; }
+      .calc-btn{ padding:12px; font-size:1rem; }
     }
   </style>
 </head>
@@ -246,9 +301,42 @@
     </div>
   </div>
 
-  <script>
-    window.PSE_CODE_REQUIRED = true;
+  <!-- CALCULATRICE -->
+  <button class="calc-toggle" id="calc-toggle" aria-label="Ouvrir la calculatrice">🧮</button>
+  
+  <div class="calculator" id="calculator">
+    <div class="calc-header">
+      <h3>Calculatrice</h3>
+      <button class="calc-close" id="calc-close" aria-label="Fermer">×</button>
+    </div>
+    <div class="calc-display" id="calc-display">0</div>
+    <div class="calc-buttons">
+      <button class="calc-btn clear" data-action="clear">C</button>
+      <button class="calc-btn operator" data-action="backspace">←</button>
+      <button class="calc-btn operator" data-action="divide">÷</button>
+      <button class="calc-btn operator" data-action="multiply">×</button>
+      
+      <button class="calc-btn" data-number="7">7</button>
+      <button class="calc-btn" data-number="8">8</button>
+      <button class="calc-btn" data-number="9">9</button>
+      <button class="calc-btn operator" data-action="subtract">−</button>
+      
+      <button class="calc-btn" data-number="4">4</button>
+      <button class="calc-btn" data-number="5">5</button>
+      <button class="calc-btn" data-number="6">6</button>
+      <button class="calc-btn operator" data-action="add">+</button>
+      
+      <button class="calc-btn" data-number="1">1</button>
+      <button class="calc-btn" data-number="2">2</button>
+      <button class="calc-btn" data-number="3">3</button>
+      <button class="calc-btn equals" data-action="equals">=</button>
+      
+      <button class="calc-btn zero" data-number="0">0</button>
+      <button class="calc-btn" data-action="decimal">,</button>
+    </div>
+  </div>
 
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
       authDomain: "devoirs-pse.firebaseapp.com",
@@ -266,6 +354,161 @@
     } catch(e) {
       window.db = null;
     }
+  </script>
+
+  <script>
+    // CALCULATRICE
+    const calcToggle = document.getElementById("calc-toggle");
+    const calculator = document.getElementById("calculator");
+    const calcClose = document.getElementById("calc-close");
+    const calcDisplay = document.getElementById("calc-display");
+
+    let calcValue = "0";
+    let calcOperator = null;
+    let calcPrevValue = null;
+    let calcWaitingForOperand = false;
+
+    function updateCalcDisplay(){
+      calcDisplay.textContent = calcValue.replace(".", ",");
+    }
+
+    function calcClear(){
+      calcValue = "0";
+      calcOperator = null;
+      calcPrevValue = null;
+      calcWaitingForOperand = false;
+      updateCalcDisplay();
+    }
+
+    function calcBackspace(){
+      if(calcValue.length > 1){
+        calcValue = calcValue.slice(0, -1);
+      } else {
+        calcValue = "0";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcInputNumber(num){
+      if(calcWaitingForOperand){
+        calcValue = String(num);
+        calcWaitingForOperand = false;
+      } else {
+        calcValue = calcValue === "0" ? String(num) : calcValue + num;
+      }
+      updateCalcDisplay();
+    }
+
+    function calcInputDecimal(){
+      if(calcWaitingForOperand){
+        calcValue = "0.";
+        calcWaitingForOperand = false;
+      } else if(calcValue.indexOf(".") === -1){
+        calcValue += ".";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcPerformOperation(nextOperator){
+      const inputValue = parseFloat(calcValue);
+
+      if(calcPrevValue === null){
+        calcPrevValue = inputValue;
+      } else if(calcOperator){
+        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+        calcValue = String(result);
+        calcPrevValue = result;
+      }
+
+      calcWaitingForOperand = true;
+      calcOperator = nextOperator;
+      updateCalcDisplay();
+    }
+
+    function calcCalculate(prev, current, op){
+      switch(op){
+        case "+": return prev + current;
+        case "-": return prev - current;
+        case "*": return prev * current;
+        case "/": return current !== 0 ? prev / current : 0;
+        default: return current;
+      }
+    }
+
+    function calcEquals(){
+      const inputValue = parseFloat(calcValue);
+      if(calcPrevValue !== null && calcOperator){
+        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+        calcValue = String(Math.round(result * 100) / 100);
+        calcOperator = null;
+        calcPrevValue = null;
+        calcWaitingForOperand = true;
+        updateCalcDisplay();
+      }
+    }
+
+    calcToggle.addEventListener("click", ()=>{
+      calculator.classList.toggle("visible");
+    });
+
+    calcClose.addEventListener("click", ()=>{
+      calculator.classList.remove("visible");
+    });
+
+    document.querySelectorAll(".calc-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const action = btn.dataset.action;
+        const number = btn.dataset.number;
+
+        if(number !== undefined){
+          calcInputNumber(number);
+        } else if(action === "clear"){
+          calcClear();
+        } else if(action === "backspace"){
+          calcBackspace();
+        } else if(action === "decimal"){
+          calcInputDecimal();
+        } else if(action === "add"){
+          calcPerformOperation("+");
+        } else if(action === "subtract"){
+          calcPerformOperation("-");
+        } else if(action === "multiply"){
+          calcPerformOperation("*");
+        } else if(action === "divide"){
+          calcPerformOperation("/");
+        } else if(action === "equals"){
+          calcEquals();
+        }
+      });
+    });
+
+    // Support clavier pour la calculatrice
+    document.addEventListener("keydown", (e)=>{
+      if(!calculator.classList.contains("visible")) return;
+
+      if(e.key >= "0" && e.key <= "9"){
+        calcInputNumber(e.key);
+      } else if(e.key === "," || e.key === "."){
+        calcInputDecimal();
+      } else if(e.key === "+"){
+        calcPerformOperation("+");
+      } else if(e.key === "-"){
+        calcPerformOperation("-");
+      } else if(e.key === "*"){
+        calcPerformOperation("*");
+      } else if(e.key === "/"){
+        e.preventDefault();
+        calcPerformOperation("/");
+      } else if(e.key === "Enter" || e.key === "="){
+        calcEquals();
+      } else if(e.key === "Escape"){
+        calculator.classList.remove("visible");
+      } else if(e.key === "Backspace"){
+        calcBackspace();
+      } else if(e.key === "c" || e.key === "C"){
+        calcClear();
+      }
+    });
   </script>
 
   <script>
@@ -412,17 +655,17 @@
       const occOk = isClose(vOcc, EXPECT.occas,   0.03);
       const codeOk = isClose(vCode, EXPECT.solde, 0.05);
 
-      // Barème fiable /20 : 9 placements + 4 totaux + 7 code
+      // Barème /20 : 9 placements + 4 totaux + 7 code
       let note = 0;
-      note += goodPlace;                 // /9
+      note += goodPlace;
       if(recOk) note += 1;
       if(fixOk) note += 1;
       if(couOk) note += 1;
-      if(occOk) note += 1;              // +4
-      if(codeOk) note += 7;             // +7
+      if(occOk) note += 1;
+      if(codeOk) note += 7;
       note = Math.max(0, Math.min(20, Math.round(note)));
 
-      // Coffre : ouverture visuelle si code OK (pas bloquant)
+      // Coffre
       const lock = document.getElementById("lock-status");
       const badge = document.getElementById("badge");
       const safe = document.getElementById("safe-container");
@@ -460,9 +703,9 @@
         <div class="row"><span><b>Code (solde)</b></span><span>${ok(codeOk)}</span></div>
       `;
 
-      // Graphique (anti-crash + fallback)
-      const pcRec = ((stats.rec + (recOk ? 1 : 0)) / 3) * 100;          // 2 placements + total
-      const pcDep = ((stats.dep + ((fixOk?1:0)+(couOk?1:0)+(occOk?1:0))) / 10) * 100; // 7 placements + 3 totaux
+      // Graphique
+      const pcRec = ((stats.rec + (recOk ? 1 : 0)) / 3) * 100;
+      const pcDep = ((stats.dep + ((fixOk?1:0)+(couOk?1:0)+(occOk?1:0))) / 10) * 100;
       const pcCode = codeOk ? 100 : 0;
 
       const fallback = document.getElementById("chart-fallback");
@@ -480,6 +723,7 @@
               datasets:[{
                 label:"% de réussite",
                 data:[pcRec, pcDep, pcCode],
+                backgroundColor:["#28a745","#ffc107","#fbbf24"],
                 borderRadius:8
               }]
             },
@@ -503,7 +747,7 @@
 
       window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior:"smooth" });
 
-      // Envoi Firebase (1 fois par session et par élève)
+      // Envoi Firebase
       try{
         const codeEleve = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
         const classe =
@@ -526,7 +770,7 @@
           }
         }
       } catch(e){
-        console.error("Erreur lors de l'envoi Firebase : ", e);
+        console.error("Erreur Firebase : ", e);
       }
 
       setTimeout(()=>{
