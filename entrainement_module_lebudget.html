@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entraînement Module D2 : Le Budget - Révisions Complètes</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="annuaire.js"></script>
+
+  <style>
+    :root {
+      --primary:#2563eb; --success:#16a34a; --warning:#f59e0b; --error:#dc2626;
+      --bg:#f8fafc; --card:#ffffff; --gold:#fbbf24;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px; min-height: 100vh;
+    }
+    .container {
+      max-width: 900px; margin: 0 auto;
+      background: var(--bg); border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 30px; position: relative;
+    }
+    
+    header {
+      text-align: center; margin-bottom: 30px;
+      padding: 25px; background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 15px; color: white;
+    }
+    header h1 { font-size: 1.8rem; margin-bottom: 10px; }
+    .subtitle { font-size: 0.95rem; opacity: 0.9; }
+
+    /* PROGRESSION */
+    .progress-bar {
+      background: #e2e8f0; height: 12px; border-radius: 10px;
+      margin: 20px 0; overflow: hidden; position: relative;
+    }
+    .progress-fill {
+      background: linear-gradient(90deg, var(--success), #10b981);
+      height: 100%; transition: width 0.5s ease; border-radius: 10px;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    .progress-text {
+      text-align: center; font-weight: 700; margin-top: 8px;
+      color: #64748b; font-size: 0.9rem;
+    }
+
+    /* ÉTAPES */
+    .step {
+      display: none; background: var(--card); padding: 25px;
+      border-radius: 15px; margin-bottom: 20px;
+      border: 2px solid #e2e8f0;
+    }
+    .step.active { display: block; animation: slideIn 0.4s; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .step-header {
+      display: flex; align-items: center; gap: 15px;
+      margin-bottom: 20px; padding-bottom: 15px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .step-number {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; width: 45px; height: 45px;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1.3rem;
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    }
+    .step-title { flex: 1; }
+    .step-title h2 { font-size: 1.4rem; color: #1e293b; margin-bottom: 5px; }
+    .step-title p { color: #64748b; font-size: 0.9rem; }
+
+    /* SCÉNARIO */
+    .scenario-box {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-left: 5px solid var(--gold);
+      padding: 20px; border-radius: 12px;
+      margin: 20px 0; line-height: 1.7;
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+    }
+    .scenario-box strong { color: #92400e; }
+
+    /* DRAG & DROP */
+    .items-bank {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      background: #f1f5f9; padding: 20px;
+      border-radius: 12px; margin: 20px 0;
+      border: 2px dashed #cbd5e1; min-height: 80px;
+    }
+    .draggable {
+      padding: 12px 18px; background: white;
+      border: 2px solid #64748b; border-radius: 10px;
+      cursor: pointer; font-weight: 700;
+      transition: all 0.2s; user-select: none;
+    }
+    .draggable:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .draggable.selected { border-color: var(--primary); background: #eff6ff; transform: scale(1.05); }
+    .draggable.correct { border-color: var(--success); background: #f0fdf4; }
+    .draggable.wrong { border-color: var(--error); background: #fef2f2; }
+
+    .drop-zones {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px; margin: 20px 0;
+    }
+    .drop-zone {
+      background: #fafafa; border: 2px dashed #cbd5e1;
+      border-radius: 12px; padding: 15px; min-height: 150px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .drop-zone:hover { border-color: var(--primary); background: #f8fafc; }
+    .drop-zone h4 {
+      margin: 0 0 12px 0; font-size: 0.95rem;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: #475569; border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .zone-recettes { border-color: #10b981; }
+    .zone-recettes h4 { color: #10b981; border-color: #10b981; }
+    .zone-depenses { border-color: #ef4444; }
+    .zone-depenses h4 { color: #ef4444; border-color: #ef4444; }
+
+    /* QUESTIONS */
+    .question {
+      background: #fafafa; padding: 20px;
+      border-radius: 12px; margin: 15px 0;
+      border-left: 4px solid var(--primary);
+    }
+    .question label {
+      display: flex; align-items: center;
+      padding: 12px; margin: 8px 0;
+      background: white; border-radius: 8px;
+      cursor: pointer; transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+    .question label:hover { border-color: var(--primary); }
+    .question input[type="radio"] {
+      margin-right: 12px; width: 20px; height: 20px;
+      cursor: pointer;
+    }
+    .question input[type="text"],
+    .question input[type="number"] {
+      width: 100%; padding: 12px; margin: 10px 0;
+      border: 2px solid #cbd5e1; border-radius: 8px;
+      font-size: 1rem; font-weight: 700;
+    }
+
+    /* FEEDBACK */
+    .feedback {
+      display: none; padding: 15px; margin: 15px 0;
+      border-radius: 10px; font-weight: 700;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .feedback.success {
+      background: #f0fdf4; border: 2px solid var(--success);
+      color: #166534;
+    }
+    .feedback.error {
+      background: #fef2f2; border: 2px solid var(--error);
+      color: #991b1b;
+    }
+    .feedback.info {
+      background: #eff6ff; border: 2px solid var(--primary);
+      color: #1e40af;
+    }
+    .explanation {
+      margin-top: 12px; padding: 12px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px; font-weight: 500;
+      line-height: 1.6;
+    }
+
+    /* TABLEAU ÉPARGNE */
+    .epargne-table {
+      width: 100%; margin: 20px 0;
+      border-collapse: collapse; font-size: 0.85rem;
+    }
+    .epargne-table th {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; padding: 12px; text-align: left;
+      font-weight: 700; font-size: 0.8rem;
+    }
+    .epargne-table td {
+      padding: 12px; border-bottom: 1px solid #e2e8f0;
+    }
+    .epargne-table tr:hover { background: #f8fafc; }
+    .epargne-table .highlight {
+      background: #fef3c7; font-weight: 700;
+    }
+
+    /* BOUTONS */
+    .btn {
+      padding: 15px 30px; border: none; border-radius: 10px;
+      font-weight: 900; font-size: 1.05rem;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-block; margin: 10px 5px;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #10b981);
+      color: white;
+    }
+    .btn-secondary {
+      background: #94a3b8; color: white;
+    }
+    .btn:disabled {
+      opacity: 0.5; cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* CALCULATRICE */
+    .calc-toggle {
+      position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+      background: var(--gold); color: #0f172a; border: none;
+      width: 60px; height: 60px; border-radius: 50%;
+      font-size: 1.8rem; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    .calc-toggle:hover { transform: scale(1.1); }
+    
+    .calculator {
+      position: fixed; bottom: 90px; right: 20px; z-index: 999;
+      background: #1e293b; border: 3px solid var(--gold);
+      border-radius: 20px; padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      display: none; width: 280px;
+    }
+    .calculator.visible { display: block; animation: slideIn 0.3s; }
+    
+    .calc-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 15px;
+    }
+    .calc-header h3 { margin: 0; color: var(--gold); font-size: 1.1rem; }
+    .calc-close {
+      background: transparent; border: none;
+      color: #94a3b8; font-size: 1.5rem;
+      cursor: pointer; padding: 0; width: 30px; height: 30px;
+    }
+    .calc-close:hover { color: var(--error); }
+    
+    .calc-display {
+      background: #0f172a; color: #0f0;
+      font-family: 'Courier New', monospace;
+      padding: 15px; border-radius: 10px;
+      font-size: 1.5rem; text-align: right;
+      margin-bottom: 15px; border: 2px solid #334155;
+      min-height: 50px; word-break: break-all;
+    }
+    
+    .calc-buttons {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .calc-btn {
+      background: #334155; color: #e2e8f0;
+      border: none; padding: 15px; border-radius: 10px;
+      font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; transition: 0.15s;
+    }
+    .calc-btn:hover { background: #475569; }
+    .calc-btn:active { transform: scale(0.95); }
+    .calc-btn.operator { background: #3b82f6; color: white; }
+    .calc-btn.equals {
+      background: var(--success); color: white;
+      grid-column: span 2;
+    }
+    .calc-btn.clear { background: var(--error); color: white; }
+    .calc-btn.zero { grid-column: span 2; }
+
+    /* RÉSULTATS FINAUX */
+    .final-results {
+      display: none; background: white;
+      padding: 30px; border-radius: 20px;
+      border: 4px solid var(--success);
+      text-align: center; margin: 30px 0;
+    }
+    .final-results.show { display: block; }
+    .score-circle {
+      width: 150px; height: 150px; margin: 20px auto;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 3rem; font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    .review-section {
+      margin: 20px 0; padding: 20px;
+      background: #f8fafc; border-radius: 12px;
+      text-align: left;
+    }
+    .review-item {
+      padding: 12px; margin: 8px 0;
+      border-radius: 8px; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .review-item.ok {
+      background: #f0fdf4; border-left: 4px solid var(--success);
+    }
+    .review-item.ko {
+      background: #fef2f2; border-left: 4px solid var(--error);
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 15px; }
+      header h1 { font-size: 1.4rem; }
+      .step { padding: 15px; }
+      .drop-zones { grid-template-columns: 1fr; }
+      .calc-toggle { bottom: 15px; right: 15px; width: 55px; height: 55px; }
+      .calculator { bottom: 80px; right: 15px; width: 260px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>🎓 ENTRAÎNEMENT MODULE D2 : LE BUDGET</h1>
+      <div class="subtitle">Révisions complètes avant l'évaluation</div>
+    </header>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+    </div>
+    <div class="progress-text" id="progress-text">Étape 0 / 7</div>
+
+    <!-- ÉTAPE 1 : BUDGET PERSONNEL -->
+    <div class="step active" id="step1">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <div class="step-title">
+          <h2>Budget Personnel de Léo</h2>
+          <p>Classifier les recettes et dépenses + calcul du solde</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>📱 Scénario :</strong> Léo a 18 ans et est en Bac Pro. Ce mois-ci, il veut économiser pour acheter un smartphone à <strong>800 €</strong>.
+        <br><br>
+        <strong>Ses flux ce mois-ci :</strong><br>
+        • Salaire apprentissage : 650 €<br>
+        • Aide au logement (CAF) : 180 €<br>
+        • Loyer : 400 €<br>
+        • Courses alimentaires : 220 €<br>
+        • Abonnement téléphone : 25 €<br>
+        • Transport (pass Navigo) : 75 €<br>
+        • Sortie cinéma : 30 €<br>
+        • Vêtements : 50 €
+      </div>
+
+      <p style="font-weight: 700; margin: 15px 0;">
+        📌 Clique sur une étiquette puis clique sur la zone correspondante
+      </p>
+
+      <div class="items-bank" id="bank1"></div>
+
+      <div class="drop-zones">
+        <div class="drop-zone zone-recettes" data-cat="recettes" id="zone-rec1">
+          <h4>💰 RECETTES (Revenus)</h4>
+        </div>
+        <div class="drop-zone zone-depenses" data-cat="depenses" id="zone-dep1">
+          <h4>💸 DÉPENSES</h4>
+        </div>
+      </div>
+
+      <div class="question">
+        <label style="display: block; margin-bottom: 15px; font-weight: 700;">
+          💵 Calcule le SOLDE de Léo (Recettes - Dépenses)
+        </label>
+        <input type="text" inputmode="decimal" id="solde1" placeholder="Exemple : 5.50 ou 5,50">
+        <small style="color: #64748b;">💡 Astuce : utilise la calculatrice en bas à droite !</small>
+      </div>
+
+      <div class="feedback" id="feedback1"></div>
+
+      <button class="btn btn-primary" onclick="verifier(1)">✅ VÉRIFIER MES RÉPONSES</button>
+    </div>
+
+    <!-- ÉTAPE 2 : ÉTAT DU BUDGET -->
+    <div class="step" id="step2">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <div class="step-title">
+          <h2>État du Budget</h2>
+          <p>Identifier si le budget est excédentaire, équilibré ou déficitaire</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>📊 Rappel :</strong> Le solde de Léo ce mois-ci est de <strong id="solde-rappel">-- €</strong>
+      </div>
+
+      <div class="question">
+        <p style="font-weight: 700; margin-bottom: 15px;">
+          Dans quel état est le budget de Léo ce mois-ci ?
+        </p>
+        <label>
+          <input type="radio" name="etat" value="excedentaire">
+          <span><strong>Excédentaire</strong> : Les recettes sont supérieures aux dépenses (solde positif)</span>
+        </label>
+        <label>
+          <input type="radio" name="etat" value="equilibre">
+          <span><strong>Équilibré</strong> : Les recettes sont égales aux dépenses (solde = 0)</span>
+        </label>
+        <label>
+          <input type="radio" name="etat" value="deficitaire">
+          <span><strong>Déficitaire</strong> : Les dépenses sont supérieures aux recettes (solde négatif)</span>
+        </label>
+      </div>
+
+      <div class="feedback" id="feedback2"></div>
+
+      <button class="btn btn-primary" onclick="verifier(2)">✅ VÉRIFIER</button>
+    </div>
+
+    <!-- ÉTAPE 3 : TYPES DE REVENUS -->
+    <div class="step" id="step3">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <div class="step-title">
+          <h2>Types de Revenus</h2>
+          <p>Distinguer revenus du travail et revenus sociaux</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>📚 Rappel des définitions :</strong><br>
+        • <strong>Revenus du TRAVAIL</strong> : Salaire, primes, revenus gagnés en échange d'un travail<br>
+        • <strong>Revenus SOCIAUX</strong> : Aides versées par l'État ou organismes sociaux (CAF, Pôle Emploi...)
+      </div>
+
+      <p style="font-weight: 700; margin: 15px 0;">
+        📌 Classe les revenus de Léo dans la bonne catégorie
+      </p>
+
+      <div class="items-bank" id="bank3"></div>
+
+      <div class="drop-zones">
+        <div class="drop-zone" data-cat="travail" id="zone-travail">
+          <h4>💼 REVENUS DU TRAVAIL</h4>
+        </div>
+        <div class="drop-zone" data-cat="social" id="zone-social">
+          <h4>🏛️ REVENUS SOCIAUX</h4>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback3"></div>
+
+      <button class="btn btn-primary" onclick="verifier(3)">✅ VÉRIFIER</button>
+    </div>
+
+    <!-- ÉTAPE 4 : TYPES DE DÉPENSES -->
+    <div class="step" id="step4">
+      <div class="step-header">
+        <div class="step-number">4</div>
+        <div class="step-title">
+          <h2>Types de Dépenses</h2>
+          <p>Classifier en fixes, courantes et occasionnelles</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>📚 Rappel des définitions :</strong><br>
+        • <strong>FIXES (incompressibles)</strong> : Dépenses obligatoires à échéance régulière qu'on ne peut pas réduire (loyer, assurances...)<br>
+        • <strong>COURANTES</strong> : Achats obligatoires mais dont le montant peut varier (courses, carburant...)<br>
+        • <strong>OCCASIONNELLES (exceptionnelles)</strong> : Dépenses qu'on peut réduire ou reporter (loisirs, vêtements...)
+      </div>
+
+      <p style="font-weight: 700; margin: 15px 0;">
+        📌 Classe les dépenses de Léo dans la bonne catégorie
+      </p>
+
+      <div class="items-bank" id="bank4"></div>
+
+      <div class="drop-zones">
+        <div class="drop-zone" data-cat="fixes" id="zone-fixes">
+          <h4>🔒 FIXES (Incompressibles)</h4>
+        </div>
+        <div class="drop-zone" data-cat="courantes" id="zone-courantes">
+          <h4>🛒 COURANTES</h4>
+        </div>
+        <div class="drop-zone" data-cat="occasionnelles" id="zone-occas">
+          <h4>🎉 OCCASIONNELLES</h4>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback4"></div>
+
+      <button class="btn btn-primary" onclick="verifier(4)">✅ VÉRIFIER</button>
+    </div>
+
+    <!-- ÉTAPE 5 : CHOIX D'ÉPARGNE -->
+    <div class="step" id="step5">
+      <div class="step-header">
+        <div class="step-number">5</div>
+        <div class="step-title">
+          <h2>Choix d'Épargne</h2>
+          <p>Sélectionner le meilleur placement selon la situation</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>💰 Situation :</strong> Léo veut mettre de côté son argent pour acheter son smartphone à 800 €.
+        Il veut pouvoir retirer l'argent quand il veut (disponibilité immédiate) et avoir un taux d'intérêt intéressant.
+      </div>
+
+      <table class="epargne-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Taux</th>
+            <th>Plafond</th>
+            <th>Disponibilité</th>
+            <th>Conditions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Livret A</strong></td>
+            <td>1,70%</td>
+            <td>22 950 €</td>
+            <td>✅ Immédiate</td>
+            <td>Tout le monde</td>
+          </tr>
+          <tr class="highlight">
+            <td><strong>Livret Jeune</strong></td>
+            <td>Min. 1,70%</td>
+            <td>1 600 €</td>
+            <td>✅ Immédiate</td>
+            <td>12-25 ans</td>
+          </tr>
+          <tr>
+            <td><strong>LDDS</strong></td>
+            <td>1,70%</td>
+            <td>12 000 €</td>
+            <td>✅ Immédiate</td>
+            <td>Majeur + France</td>
+          </tr>
+          <tr>
+            <td><strong>PEL</strong></td>
+            <td>1,75%</td>
+            <td>61 200 €</td>
+            <td>❌ Bloqué 4 ans</td>
+            <td>Achat immobilier</td>
+          </tr>
+          <tr>
+            <td><strong>LEP</strong></td>
+            <td>2,70%</td>
+            <td>10 000 €</td>
+            <td>✅ Immédiate</td>
+            <td>Revenus modestes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="question">
+        <p style="font-weight: 700; margin-bottom: 15px;">
+          Quelle épargne Léo doit-il choisir ?
+        </p>
+        <label>
+          <input type="radio" name="epargne" value="livretA">
+          <span>Livret A</span>
+        </label>
+        <label>
+          <input type="radio" name="epargne" value="livretJeune">
+          <span>Livret Jeune</span>
+        </label>
+        <label>
+          <input type="radio" name="epargne" value="ldds">
+          <span>LDDS</span>
+        </label>
+        <label>
+          <input type="radio" name="epargne" value="pel">
+          <span>PEL</span>
+        </label>
+        <label>
+          <input type="radio" name="epargne" value="lep">
+          <span>LEP</span>
+        </label>
+      </div>
+
+      <div class="feedback" id="feedback5"></div>
+
+      <button class="btn btn-primary" onclick="verifier(5)">✅ VÉRIFIER</button>
+    </div>
+
+    <!-- ÉTAPE 6 : CALCUL INTÉRÊTS -->
+    <div class="step" id="step6">
+      <div class="step-header">
+        <div class="step-number">6</div>
+        <div class="step-title">
+          <h2>Calcul des Intérêts</h2>
+          <p>Simuler le gain d'une épargne</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>💵 Situation :</strong> Léo place <strong>800 €</strong> sur un <strong>Livret Jeune</strong> avec un taux de <strong>2,00% par an</strong>.
+        <br><br>
+        <strong>📐 Formule :</strong> Intérêts = Capital × Taux ÷ 100
+      </div>
+
+      <div class="question">
+        <label style="display: block; margin-bottom: 10px; font-weight: 700;">
+          Combien Léo gagnera-t-il d'intérêts au bout d'1 an ?
+        </label>
+        <input type="text" inputmode="decimal" id="interets" placeholder="Exemple : 16 ou 16,00">
+        <small style="color: #64748b; display: block; margin-top: 8px;">
+          💡 Calcul : 800 × 2 ÷ 100 = ?
+        </small>
+      </div>
+
+      <div class="question" style="margin-top: 20px;">
+        <label style="display: block; margin-bottom: 10px; font-weight: 700;">
+          Quel sera le montant TOTAL sur son livret après 1 an ?
+        </label>
+        <input type="text" inputmode="decimal" id="total-epargne" placeholder="Capital + Intérêts">
+        <small style="color: #64748b; display: block; margin-top: 8px;">
+          💡 Total = Capital initial + Intérêts gagnés
+        </small>
+      </div>
+
+      <div class="feedback" id="feedback6"></div>
+
+      <button class="btn btn-primary" onclick="verifier(6)">✅ VÉRIFIER</button>
+    </div>
+
+    <!-- ÉTAPE 7 : TAUX ENDETTEMENT & CRÉDIT -->
+    <div class="step" id="step7">
+      <div class="step-header">
+        <div class="step-number">7</div>
+        <div class="step-title">
+          <h2>Taux d'Endettement & Crédit</h2>
+          <p>Peut-on emprunter sans risque ?</p>
+        </div>
+      </div>
+
+      <div class="scenario-box">
+        <strong>🏦 Nouvelle situation :</strong> 2 ans plus tard, Léo travaille et gagne <strong>1 500 €/mois</strong>.
+        Ses charges mensuelles (loyer + crédit voiture) sont de <strong>550 €</strong>.
+        <br><br>
+        Il veut faire un crédit pour acheter un ordinateur.
+        <br><br>
+        <strong>📐 Formule :</strong> Taux d'endettement = (Charges ÷ Revenus) × 100
+        <br><br>
+        <strong>🚦 Règle :</strong><br>
+        • Moins de 33% : ✅ Peut emprunter sans risque<br>
+        • Entre 33% et 40% : ⚠️ Emprunter avec prudence<br>
+        • Plus de 40% : ❌ Risque de surendettement
+      </div>
+
+      <div class="question">
+        <label style="display: block; margin-bottom: 10px; font-weight: 700;">
+          Quel est le taux d'endettement de Léo ? (arrondi à l'unité)
+        </label>
+        <input type="text" inputmode="decimal" id="taux-endettement" placeholder="Exemple : 33">
+        <small style="color: #64748b; display: block; margin-top: 8px;">
+          💡 Calcul : (550 ÷ 1500) × 100 = ?
+        </small>
+      </div>
+
+      <div class="question" style="margin-top: 20px;">
+        <p style="font-weight: 700; margin-bottom: 15px;">
+          Léo peut-il emprunter pour acheter son ordinateur ?
+        </p>
+        <label>
+          <input type="radio" name="credit" value="oui-sans-risque">
+          <span>✅ Oui, il peut emprunter sans risque</span>
+        </label>
+        <label>
+          <input type="radio" name="credit" value="oui-prudence">
+          <span>⚠️ Oui, mais avec prudence</span>
+        </label>
+        <label>
+          <input type="radio" name="credit" value="non">
+          <span>❌ Non, risque de surendettement</span>
+        </label>
+      </div>
+
+      <div class="feedback" id="feedback7"></div>
+
+      <button class="btn btn-primary" onclick="verifier(7)">✅ VÉRIFIER ET TERMINER</button>
+    </div>
+
+    <!-- RÉSULTATS FINAUX -->
+    <div class="final-results" id="final-results">
+      <h2 style="margin-bottom: 20px; color: #1e293b; font-size: 2rem;">
+        🎉 ENTRAÎNEMENT TERMINÉ !
+      </h2>
+      
+      <div class="score-circle" id="score-circle">
+        <span id="score-display">0/7</span>
+      </div>
+
+      <div class="review-section" id="review-section">
+        <h3 style="margin-bottom: 15px; color: #475569;">📊 Bilan de tes réponses</h3>
+        <div id="review-items"></div>
+      </div>
+
+      <div style="margin-top: 30px;">
+        <button class="btn btn-success" onclick="telechargerCorrige()">📄 TÉLÉCHARGER LE CORRIGÉ COMPLET</button>
+        <button class="btn btn-secondary" onclick="location.reload()">🔄 RECOMMENCER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALCULATRICE -->
+  <button class="calc-toggle" id="calc-toggle">🧮</button>
+  
+  <div class="calculator" id="calculator">
+    <div class="calc-header">
+      <h3>Calculatrice</h3>
+      <button class="calc-close" id="calc-close">×</button>
+    </div>
+    <div class="calc-display" id="calc-display">0</div>
+    <div class="calc-buttons">
+      <button class="calc-btn clear" data-action="clear">C</button>
+      <button class="calc-btn operator" data-action="backspace">←</button>
+      <button class="calc-btn operator" data-action="divide">÷</button>
+      <button class="calc-btn operator" data-action="multiply">×</button>
+      
+      <button class="calc-btn" data-number="7">7</button>
+      <button class="calc-btn" data-number="8">8</button>
+      <button class="calc-btn" data-number="9">9</button>
+      <button class="calc-btn operator" data-action="subtract">−</button>
+      
+      <button class="calc-btn" data-number="4">4</button>
+      <button class="calc-btn" data-number="5">5</button>
+      <button class="calc-btn" data-number="6">6</button>
+      <button class="calc-btn operator" data-action="add">+</button>
+      
+      <button class="calc-btn" data-number="1">1</button>
+      <button class="calc-btn" data-number="2">2</button>
+      <button class="calc-btn" data-number="3">3</button>
+      <button class="calc-btn equals" data-action="equals">=</button>
+      
+      <button class="calc-btn zero" data-number="0">0</button>
+      <button class="calc-btn" data-action="decimal">,</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    try {
+      if (typeof firebase !== "undefined" && firebaseConfig && !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      window.db = (typeof firebase !== "undefined") ? firebase.firestore() : null;
+    } catch(e) {
+      window.db = null;
+    }
+
+    if(typeof enregistrerVisite === "function") {
+      try { enregistrerVisite("Entraînement Module D2 - Budget Complet"); } catch(e) {}
+    }
+  </script>
+
+  <script>
+    // CALCULATRICE
+    const calcToggle = document.getElementById("calc-toggle");
+    const calculator = document.getElementById("calculator");
+    const calcClose = document.getElementById("calc-close");
+    const calcDisplay = document.getElementById("calc-display");
+
+    let calcValue = "0";
+    let calcOperator = null;
+    let calcPrevValue = null;
+    let calcWaitingForOperand = false;
+
+    function updateCalcDisplay(){
+      calcDisplay.textContent = calcValue.replace(".", ",");
+    }
+
+    function calcClear(){
+      calcValue = "0";
+      calcOperator = null;
+      calcPrevValue = null;
+      calcWaitingForOperand = false;
+      updateCalcDisplay();
+    }
+
+    function calcBackspace(){
+      if(calcValue.length > 1){
+        calcValue = calcValue.slice(0, -1);
+      } else {
+        calcValue = "0";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcInputNumber(num){
+      if(calcWaitingForOperand){
+        calcValue = String(num);
+        calcWaitingForOperand = false;
+      } else {
+        calcValue = calcValue === "0" ? String(num) : calcValue + num;
+      }
+      updateCalcDisplay();
+    }
+
+    function calcInputDecimal(){
+      if(calcWaitingForOperand){
+        calcValue = "0.";
+        calcWaitingForOperand = false;
+      } else if(calcValue.indexOf(".") === -1){
+        calcValue += ".";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcPerformOperation(nextOperator){
+      const inputValue = parseFloat(calcValue);
+
+      if(calcPrevValue === null){
+        calcPrevValue = inputValue;
+      } else if(calcOperator){
+        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+        calcValue = String(result);
+        calcPrevValue = result;
+      }
+
+      calcWaitingForOperand = true;
+      calcOperator = nextOperator;
+      updateCalcDisplay();
+    }
+
+    function calcCalculate(prev, current, op){
+      switch(op){
+        case "+": return prev + current;
+        case "-": return prev - current;
+        case "*": return prev * current;
+        case "/": return current !== 0 ? prev / current : 0;
+        default: return current;
+      }
+    }
+
+    function calcEquals(){
+      const inputValue = parseFloat(calcValue);
+      if(calcPrevValue !== null && calcOperator){
+        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+        calcValue = String(Math.round(result * 100) / 100);
+        calcOperator = null;
+        calcPrevValue = null;
+        calcWaitingForOperand = true;
+        updateCalcDisplay();
+      }
+    }
+
+    calcToggle.addEventListener("click", ()=>{
+      calculator.classList.toggle("visible");
+    });
+
+    calcClose.addEventListener("click", ()=>{
+      calculator.classList.remove("visible");
+    });
+
+    document.querySelectorAll(".calc-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const action = btn.dataset.action;
+        const number = btn.dataset.number;
+
+        if(number !== undefined){
+          calcInputNumber(number);
+        } else if(action === "clear"){
+          calcClear();
+        } else if(action === "backspace"){
+          calcBackspace();
+        } else if(action === "decimal"){
+          calcInputDecimal();
+        } else if(action === "add"){
+          calcPerformOperation("+");
+        } else if(action === "subtract"){
+          calcPerformOperation("-");
+        } else if(action === "multiply"){
+          calcPerformOperation("*");
+        } else if(action === "divide"){
+          calcPerformOperation("/");
+        } else if(action === "equals"){
+          calcEquals();
+        }
+      });
+    });
+
+    document.addEventListener("keydown", (e)=>{
+      if(!calculator.classList.contains("visible")) return;
+      if(e.key >= "0" && e.key <= "9"){
+        calcInputNumber(e.key);
+      } else if(e.key === "," || e.key === "."){
+        calcInputDecimal();
+      } else if(e.key === "+"){
+        calcPerformOperation("+");
+      } else if(e.key === "-"){
+        calcPerformOperation("-");
+      } else if(e.key === "*"){
+        calcPerformOperation("*");
+      } else if(e.key === "/"){
+        e.preventDefault();
+        calcPerformOperation("/");
+      } else if(e.key === "Enter" || e.key === "="){
+        calcEquals();
+      } else if(e.key === "Escape"){
+        calculator.classList.remove("visible");
+      } else if(e.key === "Backspace"){
+        calcBackspace();
+      } else if(e.key === "c" || e.key === "C"){
+        calcClear();
+      }
+    });
+  </script>
+
+  <script>
+    // DONNÉES
+    const DATA = {
+      step1: {
+        items: [
+          {id:1, name:"Salaire apprentissage (650€)", cat:"recettes", val:650},
+          {id:2, name:"Aide logement CAF (180€)", cat:"recettes", val:180},
+          {id:3, name:"Loyer (400€)", cat:"depenses", val:400},
+          {id:4, name:"Courses (220€)", cat:"depenses", val:220},
+          {id:5, name:"Abonnement tél. (25€)", cat:"depenses", val:25},
+          {id:6, name:"Transport (75€)", cat:"depenses", val:75},
+          {id:7, name:"Cinéma (30€)", cat:"depenses", val:30},
+          {id:8, name:"Vêtements (50€)", cat:"depenses", val:50}
+        ],
+        totalRec: 830,
+        totalDep: 800,
+        solde: 30
+      },
+      step3: {
+        items: [
+          {id:1, name:"Salaire apprentissage (650€)", cat:"travail"},
+          {id:2, name:"Aide logement CAF (180€)", cat:"social"}
+        ]
+      },
+      step4: {
+        items: [
+          {id:1, name:"Loyer (400€)", cat:"fixes"},
+          {id:2, name:"Abonnement tél. (25€)", cat:"fixes"},
+          {id:3, name:"Transport (75€)", cat:"fixes"},
+          {id:4, name:"Courses (220€)", cat:"courantes"},
+          {id:5, name:"Cinéma (30€)", cat:"occasionnelles"},
+          {id:6, name:"Vêtements (50€)", cat:"occasionnelles"}
+        ]
+      }
+    };
+
+    let currentStep = 1;
+    let results = {};
+    let selectedItem = null;
+
+    // INITIALISATION ÉTAPE 1
+    function initStep1(){
+      const bank = document.getElementById("bank1");
+      DATA.step1.items.sort(()=>Math.random()-0.5).forEach(item=>{
+        const el = document.createElement("div");
+        el.className = "draggable";
+        el.dataset.id = item.id;
+        el.dataset.cat = item.cat;
+        el.textContent = item.name;
+        el.onclick = ()=>selectItem(el);
+        bank.appendChild(el);
+      });
+
+      document.querySelectorAll("#step1 .drop-zone").forEach(zone=>{
+        zone.onclick = ()=>dropItem(zone);
+      });
+    }
+
+    // INITIALISATION ÉTAPE 3
+    function initStep3(){
+      const bank = document.getElementById("bank3");
+      DATA.step3.items.sort(()=>Math.random()-0.5).forEach(item=>{
+        const el = document.createElement("div");
+        el.className = "draggable";
+        el.dataset.id = item.id;
+        el.dataset.cat = item.cat;
+        el.textContent = item.name;
+        el.onclick = ()=>selectItem(el);
+        bank.appendChild(el);
+      });
+
+      document.querySelectorAll("#step3 .drop-zone").forEach(zone=>{
+        zone.onclick = ()=>dropItem(zone);
+      });
+    }
+
+    // INITIALISATION ÉTAPE 4
+    function initStep4(){
+      const bank = document.getElementById("bank4");
+      DATA.step4.items.sort(()=>Math.random()-0.5).forEach(item=>{
+        const el = document.createElement("div");
+        el.className = "draggable";
+        el.dataset.id = item.id;
+        el.dataset.cat = item.cat;
+        el.textContent = item.name;
+        el.onclick = ()=>selectItem(el);
+        bank.appendChild(el);
+      });
+
+      document.querySelectorAll("#step4 .drop-zone").forEach(zone=>{
+        zone.onclick = ()=>dropItem(zone);
+      });
+    }
+
+    function selectItem(el){
+      if(selectedItem) selectedItem.classList.remove("selected");
+      selectedItem = el;
+      el.classList.add("selected");
+    }
+
+    function dropItem(zone){
+      if(selectedItem){
+        zone.appendChild(selectedItem);
+        selectedItem.classList.remove("selected");
+        selectedItem = null;
+      }
+    }
+
+    function normalize(str){
+      if(!str) return null;
+      let s = String(str).replace(/\s/g,"").replace(/€/g,"").replace(",",".");
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function almostEqual(a,b,eps=0.5){
+      if(a===null || b===null) return false;
+      return Math.abs(a-b) < eps;
+    }
+
+    // VÉRIFICATIONS
+    function verifier(step){
+      const fb = document.getElementById(`feedback${step}`);
+      fb.style.display = "none";
+
+      if(step === 1){
+        // Vérifier classement
+        let scoreClass = 0;
+        const items = document.querySelectorAll("#step1 .draggable");
+        items.forEach(item=>{
+          const parentCat = item.parentElement.dataset.cat;
+          const correctCat = item.dataset.cat;
+          if(parentCat === correctCat){
+            item.classList.add("correct");
+            item.classList.remove("wrong");
+            scoreClass++;
+          } else {
+            item.classList.add("wrong");
+            item.classList.remove("correct");
+          }
+        });
+
+        // Vérifier solde
+        const soldeInput = normalize(document.getElementById("solde1").value);
+        const soldeOk = almostEqual(soldeInput, DATA.step1.solde);
+
+        if(scoreClass === items.length && soldeOk){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>PARFAIT !</strong> Tu as tout bon !
+            <div class="explanation">
+              • Recettes = 650 + 180 = <strong>830 €</strong><br>
+              • Dépenses = 400 + 220 + 25 + 75 + 30 + 50 = <strong>800 €</strong><br>
+              • Solde = 830 - 800 = <strong>30 €</strong>
+            </div>
+          `;
+          results.step1 = true;
+          document.getElementById("solde-rappel").textContent = "30";
+          setTimeout(()=>goToStep(2), 2000);
+        } else {
+          fb.className = "feedback error";
+          let msg = "❌ <strong>Pas tout à fait...</strong><br>";
+          if(scoreClass < items.length){
+            msg += `• Classement : ${scoreClass}/${items.length} correct(es)<br>`;
+          }
+          if(!soldeOk){
+            msg += `• Solde incorrect (tu as mis ${soldeInput}, attendu : 30 €)<br>`;
+          }
+          msg += `<div class="explanation">
+            <strong>💡 Explication :</strong><br>
+            • <strong>RECETTES</strong> = tout l'argent qui ENTRE (salaire + aides)<br>
+            • <strong>DÉPENSES</strong> = tout l'argent qui SORT<br>
+            • <strong>SOLDE</strong> = Recettes - Dépenses<br>
+            <br>
+            Ici : 830 - 800 = 30 €
+          </div>`;
+          fb.innerHTML = msg;
+          results.step1 = false;
+        }
+        fb.style.display = "block";
+      }
+
+      else if(step === 2){
+        const etat = document.querySelector('input[name="etat"]:checked')?.value;
+        if(!etat){
+          fb.className = "feedback error";
+          fb.innerHTML = "⚠️ Choisis une réponse !";
+          fb.style.display = "block";
+          return;
+        }
+
+        if(etat === "excedentaire"){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>EXACT !</strong>
+            <div class="explanation">
+              Le solde de Léo est de <strong>+30 €</strong> (positif).<br>
+              Ses recettes (830 €) sont supérieures à ses dépenses (800 €).<br>
+              Son budget est donc <strong>excédentaire</strong>.
+            </div>
+          `;
+          results.step2 = true;
+          setTimeout(()=>goToStep(3), 2000);
+        } else {
+          fb.className = "feedback error";
+          fb.innerHTML = `
+            ❌ <strong>Pas correct</strong>
+            <div class="explanation">
+              <strong>Rappel :</strong><br>
+              • <strong>Excédentaire</strong> : Solde positif (il reste de l'argent) ✅<br>
+              • <strong>Équilibré</strong> : Solde = 0<br>
+              • <strong>Déficitaire</strong> : Solde négatif (dans le rouge)<br>
+              <br>
+              Ici, le solde est de +30 €, donc <strong>excédentaire</strong>.
+            </div>
+          `;
+          results.step2 = false;
+        }
+        fb.style.display = "block";
+      }
+
+      else if(step === 3){
+        let score = 0;
+        const items = document.querySelectorAll("#step3 .draggable");
+        items.forEach(item=>{
+          const parentCat = item.parentElement.dataset.cat;
+          const correctCat = item.dataset.cat;
+          if(parentCat === correctCat){
+            item.classList.add("correct");
+            item.classList.remove("wrong");
+            score++;
+          } else {
+            item.classList.add("wrong");
+            item.classList.remove("correct");
+          }
+        });
+
+        if(score === items.length){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>BRAVO !</strong>
+            <div class="explanation">
+              • Salaire apprentissage → Revenu du <strong>TRAVAIL</strong><br>
+              • Aide logement CAF → Revenu <strong>SOCIAL</strong> (aide de l'État)
+            </div>
+          `;
+          results.step3 = true;
+          setTimeout(()=>goToStep(4), 2000);
+        } else {
+          fb.className = "feedback error";
+          fb.innerHTML = `
+            ❌ <strong>Pas tout à fait (${score}/${items.length})</strong>
+            <div class="explanation">
+              <strong>Rappel :</strong><br>
+              • <strong>Revenus du TRAVAIL</strong> : Salaires, primes gagnés en travaillant<br>
+              • <strong>Revenus SOCIAUX</strong> : Aides versées par la CAF, Pôle Emploi, etc.
+            </div>
+          `;
+          results.step3 = false;
+        }
+        fb.style.display = "block";
+      }
+
+      else if(step === 4){
+        let score = 0;
+        const items = document.querySelectorAll("#step4 .draggable");
+        items.forEach(item=>{
+          const parentCat = item.parentElement.dataset.cat;
+          const correctCat = item.dataset.cat;
+          if(parentCat === correctCat){
+            item.classList.add("correct");
+            item.classList.remove("wrong");
+            score++;
+          } else {
+            item.classList.add("wrong");
+            item.classList.remove("correct");
+          }
+        });
+
+        if(score === items.length){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>PARFAIT !</strong>
+            <div class="explanation">
+              • <strong>FIXES</strong> : Loyer, Tél., Transport (on ne peut pas les éviter)<br>
+              • <strong>COURANTES</strong> : Courses (obligatoire mais montant variable)<br>
+              • <strong>OCCASIONNELLES</strong> : Cinéma, Vêtements (on peut reporter)
+            </div>
+          `;
+          results.step4 = true;
+          setTimeout(()=>goToStep(5), 2000);
+        } else {
+          fb.className = "feedback error";
+          fb.innerHTML = `
+            ❌ <strong>Encore un effort (${score}/${items.length})</strong>
+            <div class="explanation">
+              <strong>Rappel :</strong><br>
+              • <strong>FIXES (incompressibles)</strong> : Dépenses obligatoires régulières<br>
+              • <strong>COURANTES</strong> : Obligatoires mais montant variable<br>
+              • <strong>OCCASIONNELLES</strong> : On peut réduire ou reporter
+            </div>
+          `;
+          results.step4 = false;
+        }
+        fb.style.display = "block";
+      }
+
+      else if(step === 5){
+        const epargne = document.querySelector('input[name="epargne"]:checked')?.value;
+        if(!epargne){
+          fb.className = "feedback error";
+          fb.innerHTML = "⚠️ Choisis une réponse !";
+          fb.style.display = "block";
+          return;
+        }
+
+        if(epargne === "livretJeune"){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>EXCELLENT CHOIX !</strong>
+            <div class="explanation">
+              Le <strong>Livret Jeune</strong> est parfait pour Léo car :<br>
+              ✅ Il a 18 ans (12-25 ans)<br>
+              ✅ Disponibilité immédiate<br>
+              ✅ Taux intéressant (min. 1,70%)<br>
+              ✅ Plafond suffisant pour 800 € (max 1600 €)
+            </div>
+          `;
+          results.step5 = true;
+          setTimeout(()=>goToStep(6), 2000);
+        } else {
+          fb.className = "feedback error";
+          let raison = "";
+          if(epargne === "livretA") raison = "Le Livret A convient, mais le Livret Jeune a souvent un meilleur taux pour les 12-25 ans.";
+          else if(epargne === "pel") raison = "Le PEL est bloqué 4 ans, Léo ne peut pas retirer l'argent quand il veut.";
+          else if(epargne === "ldds") raison = "Le LDDS est réservé aux majeurs, et Léo vient d'avoir 18 ans.";
+          else if(epargne === "lep") raison = "Le LEP a un excellent taux mais nécessite des revenus modestes justifiés.";
+          
+          fb.innerHTML = `
+            ❌ <strong>Pas le meilleur choix</strong>
+            <div class="explanation">
+              ${raison}<br><br>
+              Le <strong>Livret Jeune</strong> est idéal : disponible immédiatement, pour les 12-25 ans, bon taux.
+            </div>
+          `;
+          results.step5 = false;
+        }
+        fb.style.display = "block";
+      }
+
+      else if(step === 6){
+        const interets = normalize(document.getElementById("interets").value);
+        const totalEp = normalize(document.getElementById("total-epargne").value);
+
+        const interetsOk = almostEqual(interets, 16);
+        const totalOk = almostEqual(totalEp, 816);
+
+        if(interetsOk && totalOk){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>BRAVO !</strong>
+            <div class="explanation">
+              <strong>Calcul des intérêts :</strong><br>
+              800 × 2 ÷ 100 = <strong>16 €</strong><br>
+              <br>
+              <strong>Total après 1 an :</strong><br>
+              800 + 16 = <strong>816 €</strong>
+            </div>
+          `;
+          results.step6 = true;
+          setTimeout(()=>goToStep(7), 2000);
+        } else {
+          fb.className = "feedback error";
+          let msg = "❌ <strong>Vérifie tes calculs</strong><br>";
+          if(!interetsOk) msg += `• Intérêts incorrects (tu as mis ${interets}, attendu : 16 €)<br>`;
+          if(!totalOk) msg += `• Total incorrect (tu as mis ${totalEp}, attendu : 816 €)<br>`;
+          msg += `<div class="explanation">
+            <strong>Méthode :</strong><br>
+            Intérêts = Capital × Taux ÷ 100<br>
+            Intérêts = 800 × 2 ÷ 100 = <strong>16 €</strong><br>
+            <br>
+            Total = Capital + Intérêts<br>
+            Total = 800 + 16 = <strong>816 €</strong>
+          </div>`;
+          fb.innerHTML = msg;
+          results.step6 = false;
+        }
+        fb.style.display = "block";
+      }
+
+      else if(step === 7){
+        const taux = normalize(document.getElementById("taux-endettement").value);
+        const credit = document.querySelector('input[name="credit"]:checked')?.value;
+
+        if(!credit){
+          fb.className = "feedback error";
+          fb.innerHTML = "⚠️ Réponds aux 2 questions !";
+          fb.style.display = "block";
+          return;
+        }
+
+        const tauxOk = almostEqual(taux, 37, 2);
+        const creditOk = credit === "oui-prudence";
+
+        if(tauxOk && creditOk){
+          fb.className = "feedback success";
+          fb.innerHTML = `
+            ✅ <strong>PARFAIT !</strong>
+            <div class="explanation">
+              <strong>Taux d'endettement :</strong><br>
+              (550 ÷ 1500) × 100 = <strong>36,67% ≈ 37%</strong><br>
+              <br>
+              Entre 33% et 40% → ⚠️ Léo peut emprunter mais <strong>avec prudence</strong>.
+            </div>
+          `;
+          results.step7 = true;
+          setTimeout(()=>afficherResultatsFinaux(), 1500);
+        } else {
+          fb.className = "feedback error";
+          let msg = "❌ <strong>Pas tout à fait</strong><br>";
+          if(!tauxOk) msg += `• Taux incorrect (tu as ${taux}%, attendu : 37%)<br>`;
+          if(!creditOk) msg += `• Mauvaise interprétation du taux<br>`;
+          msg += `<div class="explanation">
+            <strong>Calcul :</strong><br>
+            Taux = (Charges ÷ Revenus) × 100<br>
+            Taux = (550 ÷ 1500) × 100 = <strong>37%</strong><br>
+            <br>
+            <strong>Règle :</strong><br>
+            • &lt; 33% : ✅ Sans risque<br>
+            • 33-40% : ⚠️ Avec prudence<br>
+            • &gt; 40% : ❌ Risque surendettement<br>
+            <br>
+            Ici 37% → <strong>Avec prudence</strong>
+          </div>`;
+          fb.innerHTML = msg;
+          results.step7 = false;
+        }
+        fb.style.display = "block";
+      }
+    }
+
+    function goToStep(n){
+      document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+      document.getElementById(`step${n}`).classList.add("active");
+      currentStep = n;
+      updateProgress();
+      window.scrollTo({top:0, behavior:"smooth"});
+
+      if(n===3) initStep3();
+      if(n===4) initStep4();
+    }
+
+    function updateProgress(){
+      const pct = ((currentStep - 1) / 7) * 100;
+      document.getElementById("progress-fill").style.width = pct + "%";
+      document.getElementById("progress-text").textContent = `Étape ${currentStep - 1} / 7`;
+    }
+
+    function afficherResultatsFinaux(){
+      document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+      document.getElementById("final-results").classList.add("show");
+      
+      const score = Object.values(results).filter(v=>v===true).length;
+      document.getElementById("score-display").textContent = `${score}/7`;
+
+      const review = document.getElementById("review-items");
+      const steps = [
+        "Budget personnel (classement + solde)",
+        "État du budget",
+        "Types de revenus",
+        "Types de dépenses",
+        "Choix d'épargne",
+        "Calcul intérêts",
+        "Taux endettement & crédit"
+      ];
+      
+      review.innerHTML = "";
+      steps.forEach((name, i)=>{
+        const ok = results[`step${i+1}`];
+        const div = document.createElement("div");
+        div.className = `review-item ${ok ? "ok" : "ko"}`;
+        div.innerHTML = `
+          <span><strong>Étape ${i+1}</strong> : ${name}</span>
+          <span style="font-size:1.5rem;">${ok ? "✅" : "❌"}</span>
+        `;
+        review.appendChild(div);
+      });
+
+      document.getElementById("progress-fill").style.width = "100%";
+      document.getElementById("progress-text").textContent = "Entraînement terminé !";
+
+      window.scrollTo({top:0, behavior:"smooth"});
+
+      // Envoi Firebase
+      try{
+        const codeEleve = localStorage.getItem("userCode") || "ANONYME";
+        const classe = localStorage.getItem("userClasse") || 
+          ((typeof ANNUAIRE !== "undefined" && ANNUAIRE && ANNUAIRE[codeEleve]) ? ANNUAIRE[codeEleve] : "AUTRE");
+
+        if(window.db && typeof firebase !== "undefined"){
+          const sentKey = "sent_entrain_d2_" + codeEleve;
+          if(!sessionStorage.getItem(sentKey)){
+            db.collection("resultats_exercices").add({
+              eleve: codeEleve,
+              classe: classe,
+              exercice: "Entraînement Module D2 - Budget Complet",
+              note: score,
+              total: 7,
+              details: results,
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            sessionStorage.setItem(sentKey, "1");
+          }
+        }
+      } catch(e){}
+    }
+
+    function telechargerCorrige(){
+      alert("📄 Le corrigé complet PDF va se générer et se télécharger automatiquement !");
+      // Cette fonction sera complétée avec la génération du PDF
+    }
+
+    // INITIALISATION
+    initStep1();
+    updateProgress();
+  </script>
+</body>
+</html>
