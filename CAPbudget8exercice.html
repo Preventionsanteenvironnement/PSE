@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#f1f5f9; }
+    :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#f1f5f9; --gold:#fbbf24; }
     * { box-sizing:border-box; }
     html, body { width:100%; max-width:100%; overflow-x:hidden; margin:0; padding:0; }
     body{
@@ -39,6 +39,58 @@
       font-weight:900;
       overflow-wrap:anywhere;
     }
+
+    /* CALCULATRICE */
+    .calc-toggle{
+      position:fixed; bottom:20px; right:20px; z-index:1000;
+      background:var(--gold); color:#0f172a; border:none;
+      width:60px; height:60px; border-radius:50%; font-size:1.8rem;
+      cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+      transition:transform 0.2s; display:flex; align-items:center; justify-content:center;
+    }
+    .calc-toggle:hover{ transform:scale(1.1); }
+    .calc-toggle:active{ transform:scale(0.95); }
+
+    .calculator{
+      position:fixed; bottom:90px; right:20px; z-index:999;
+      background:#1e293b; border:3px solid var(--gold); border-radius:20px;
+      padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+      display:none; width:280px;
+    }
+    .calculator.visible{ display:block; animation:slideIn 0.3s; }
+    @keyframes slideIn{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
+
+    .calc-header{
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;
+    }
+    .calc-header h3{ margin:0; color:var(--gold); font-size:1.1rem; }
+    .calc-close{
+      background:transparent; border:none; color:#94a3b8; font-size:1.5rem;
+      cursor:pointer; padding:0; width:30px; height:30px;
+    }
+    .calc-close:hover{ color:var(--error); }
+
+    .calc-display{
+      background:#0f172a; color:#0f0; font-family:'Courier New',monospace;
+      padding:15px; border-radius:10px; font-size:1.5rem; text-align:right;
+      margin-bottom:15px; border:2px solid #334155; min-height:50px;
+      word-break:break-all;
+    }
+
+    .calc-buttons{
+      display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;
+    }
+    .calc-btn{
+      background:#334155; color:#e2e8f0; border:none; padding:15px;
+      border-radius:10px; font-size:1.1rem; font-weight:700; cursor:pointer;
+      transition:0.15s;
+    }
+    .calc-btn:hover{ background:#475569; }
+    .calc-btn:active{ transform:scale(0.95); }
+    .calc-btn.operator{ background:#3b82f6; color:white; }
+    .calc-btn.equals{ background:var(--success); color:white; grid-column:span 2; }
+    .calc-btn.clear{ background:var(--error); color:white; }
+    .calc-btn.zero{ grid-column:span 2; }
 
     #item-bank{
       display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
@@ -78,7 +130,7 @@
     .sub-zone h4{ margin:0 0 8px 0; font-size:0.85rem; text-transform:uppercase; color:#166534; }
     .calc-zone{ margin-top:15px; padding-top:10px; border-top:1px solid #eee; text-align:center; font-weight:800; }
 
-    input[type="number"]{
+    input[type="text"]{
       width:110px; max-width:100%;
       padding:8px; border:2px solid #cbd5e1; border-radius:8px; text-align:center; font-weight:900;
       -webkit-tap-highlight-color:transparent; touch-action:manipulation;
@@ -109,7 +161,7 @@
     }
     .status-options label{ white-space:nowrap; }
 
-    @media (max-width: 520px){
+    @media (max-width: 600px){
       body{ padding:10px; }
       header{ padding:16px; border-radius:12px; }
       .context-box{ padding:14px; border-radius:12px; }
@@ -118,7 +170,10 @@
       .budget-container{ grid-template-columns:1fr; }
       .column{ min-height:320px; padding:12px; }
       .btn-valider{ padding:18px; font-size:1.1rem; }
-      input[type="number"]{ width:100%; max-width:180px; }
+      input[type="text"]{ width:100%; max-width:180px; }
+      .calc-toggle{ bottom:15px; right:15px; width:55px; height:55px; font-size:1.6rem; }
+      .calculator{ bottom:80px; right:15px; width:260px; padding:15px; }
+      .calc-btn{ padding:12px; font-size:1rem; }
     }
   </style>
 </head>
@@ -149,33 +204,33 @@
         <h3 style="margin:0 0 12px 0;">Recettes</h3>
         <div class="drop-zone sub-zone" data-category="recette-travail"><h4>Travail</h4></div>
         <div class="drop-zone sub-zone" data-category="recette-social"><h4>Social</h4></div>
-        <div class="calc-zone">Total : <input type="number" step="0.01" id="in-recettes"> €</div>
+        <div class="calc-zone">Total : <input type="text" inputmode="decimal" id="in-recettes" placeholder="1762,45"> €</div>
       </div>
 
       <div class="column" id="col-fixes">
         <h3 style="margin:0 0 12px 0;">Fixes (Incompressibles)</h3>
         <div class="drop-zone" data-category="fixe"></div>
-        <div class="calc-zone">Total : <input type="number" step="0.01" id="in-fixes"> €</div>
+        <div class="calc-zone">Total : <input type="text" inputmode="decimal" id="in-fixes" placeholder="854,70"> €</div>
       </div>
 
       <div class="column" id="col-courantes">
         <h3 style="margin:0 0 12px 0;">Courantes</h3>
         <div class="drop-zone" data-category="courante"></div>
-        <div class="calc-zone">Total : <input type="number" step="0.01" id="in-courantes"> €</div>
+        <div class="calc-zone">Total : <input type="text" inputmode="decimal" id="in-courantes" placeholder="681,45"> €</div>
       </div>
 
       <div class="column" id="col-occas">
         <h3 style="margin:0 0 12px 0;">Occas. (Exceptionnelles)</h3>
         <div class="drop-zone" data-category="occas"></div>
-        <div class="calc-zone">Total : <input type="number" step="0.01" id="in-occas"> €</div>
+        <div class="calc-zone">Total : <input type="text" inputmode="decimal" id="in-occas" placeholder="380,00"> €</div>
       </div>
     </div>
 
     <div class="context-box" style="margin-top: 20px;">
       <span style="font-weight:900;">2. Calcul du Solde et État du budget</span>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:10px;">
-        <span style="font-weight:800;">Quel est le solde final de Michel</span>
-        <input type="number" step="0.01" id="in-solde" style="width:140px; padding:10px; border:2px solid var(--primary); border-radius:10px; max-width:100%; font-weight:900;">
+        <span style="font-weight:800;">Quel est le solde final de Michel ?</span>
+        <input type="text" inputmode="decimal" id="in-solde" style="width:140px; padding:10px; border:2px solid var(--primary); border-radius:10px; max-width:100%; font-weight:900;" placeholder="-153,70">
       </div>
 
       <div class="status-options" role="group" aria-label="État du budget">
@@ -202,9 +257,42 @@
     </div>
   </div>
 
-  <script>
-    window.PSE_CODE_REQUIRED = true;
+  <!-- CALCULATRICE -->
+  <button class="calc-toggle" id="calc-toggle" aria-label="Ouvrir la calculatrice">🧮</button>
+  
+  <div class="calculator" id="calculator">
+    <div class="calc-header">
+      <h3>Calculatrice</h3>
+      <button class="calc-close" id="calc-close" aria-label="Fermer">×</button>
+    </div>
+    <div class="calc-display" id="calc-display">0</div>
+    <div class="calc-buttons">
+      <button class="calc-btn clear" data-action="clear">C</button>
+      <button class="calc-btn operator" data-action="backspace">←</button>
+      <button class="calc-btn operator" data-action="divide">÷</button>
+      <button class="calc-btn operator" data-action="multiply">×</button>
+      
+      <button class="calc-btn" data-number="7">7</button>
+      <button class="calc-btn" data-number="8">8</button>
+      <button class="calc-btn" data-number="9">9</button>
+      <button class="calc-btn operator" data-action="subtract">−</button>
+      
+      <button class="calc-btn" data-number="4">4</button>
+      <button class="calc-btn" data-number="5">5</button>
+      <button class="calc-btn" data-number="6">6</button>
+      <button class="calc-btn operator" data-action="add">+</button>
+      
+      <button class="calc-btn" data-number="1">1</button>
+      <button class="calc-btn" data-number="2">2</button>
+      <button class="calc-btn" data-number="3">3</button>
+      <button class="calc-btn equals" data-action="equals">=</button>
+      
+      <button class="calc-btn zero" data-number="0">0</button>
+      <button class="calc-btn" data-action="decimal">,</button>
+    </div>
+  </div>
 
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
       authDomain: "devoirs-pse.firebaseapp.com",
@@ -235,6 +323,159 @@
       } catch(e) {}
     })();
 
+    // CALCULATRICE
+    const calcToggle = document.getElementById("calc-toggle");
+    const calculator = document.getElementById("calculator");
+    const calcClose = document.getElementById("calc-close");
+    const calcDisplay = document.getElementById("calc-display");
+
+    let calcValue = "0";
+    let calcOperator = null;
+    let calcPrevValue = null;
+    let calcWaitingForOperand = false;
+
+    function updateCalcDisplay(){
+      calcDisplay.textContent = calcValue.replace(".", ",");
+    }
+
+    function calcClear(){
+      calcValue = "0";
+      calcOperator = null;
+      calcPrevValue = null;
+      calcWaitingForOperand = false;
+      updateCalcDisplay();
+    }
+
+    function calcBackspace(){
+      if(calcValue.length > 1){
+        calcValue = calcValue.slice(0, -1);
+      } else {
+        calcValue = "0";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcInputNumber(num){
+      if(calcWaitingForOperand){
+        calcValue = String(num);
+        calcWaitingForOperand = false;
+      } else {
+        calcValue = calcValue === "0" ? String(num) : calcValue + num;
+      }
+      updateCalcDisplay();
+    }
+
+    function calcInputDecimal(){
+      if(calcWaitingForOperand){
+        calcValue = "0.";
+        calcWaitingForOperand = false;
+      } else if(calcValue.indexOf(".") === -1){
+        calcValue += ".";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcPerformOperation(nextOperator){
+      const inputValue = parseFloat(calcValue);
+
+      if(calcPrevValue === null){
+        calcPrevValue = inputValue;
+      } else if(calcOperator){
+        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+        calcValue = String(result);
+        calcPrevValue = result;
+      }
+
+      calcWaitingForOperand = true;
+      calcOperator = nextOperator;
+      updateCalcDisplay();
+    }
+
+    function calcCalculate(prev, current, op){
+      switch(op){
+        case "+": return prev + current;
+        case "-": return prev - current;
+        case "*": return prev * current;
+        case "/": return current !== 0 ? prev / current : 0;
+        default: return current;
+      }
+    }
+
+    function calcEquals(){
+      const inputValue = parseFloat(calcValue);
+      if(calcPrevValue !== null && calcOperator){
+        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+        calcValue = String(Math.round(result * 100) / 100);
+        calcOperator = null;
+        calcPrevValue = null;
+        calcWaitingForOperand = true;
+        updateCalcDisplay();
+      }
+    }
+
+    calcToggle.addEventListener("click", ()=>{
+      calculator.classList.toggle("visible");
+    });
+
+    calcClose.addEventListener("click", ()=>{
+      calculator.classList.remove("visible");
+    });
+
+    document.querySelectorAll(".calc-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const action = btn.dataset.action;
+        const number = btn.dataset.number;
+
+        if(number !== undefined){
+          calcInputNumber(number);
+        } else if(action === "clear"){
+          calcClear();
+        } else if(action === "backspace"){
+          calcBackspace();
+        } else if(action === "decimal"){
+          calcInputDecimal();
+        } else if(action === "add"){
+          calcPerformOperation("+");
+        } else if(action === "subtract"){
+          calcPerformOperation("-");
+        } else if(action === "multiply"){
+          calcPerformOperation("*");
+        } else if(action === "divide"){
+          calcPerformOperation("/");
+        } else if(action === "equals"){
+          calcEquals();
+        }
+      });
+    });
+
+    // Support clavier pour la calculatrice
+    document.addEventListener("keydown", (e)=>{
+      if(!calculator.classList.contains("visible")) return;
+
+      if(e.key >= "0" && e.key <= "9"){
+        calcInputNumber(e.key);
+      } else if(e.key === "," || e.key === "."){
+        calcInputDecimal();
+      } else if(e.key === "+"){
+        calcPerformOperation("+");
+      } else if(e.key === "-"){
+        calcPerformOperation("-");
+      } else if(e.key === "*"){
+        calcPerformOperation("*");
+      } else if(e.key === "/"){
+        e.preventDefault();
+        calcPerformOperation("/");
+      } else if(e.key === "Enter" || e.key === "="){
+        calcEquals();
+      } else if(e.key === "Escape"){
+        calculator.classList.remove("visible");
+      } else if(e.key === "Backspace"){
+        calcBackspace();
+      } else if(e.key === "c" || e.key === "C"){
+        calcClear();
+      }
+    });
+
     function showAlert(msg){
       const a = document.getElementById("alert");
       a.style.display = "block";
@@ -248,19 +489,20 @@
     }
 
     function normalizeToNumber(str){
-      if (str === null || str === undefined) return 0;
-      const s = String(str).replace(/\s/g, "").replace(",", ".");
+      if (str === null || str === undefined || str === "") return null;
+      const s = String(str).replace(/\s/g, "").replace(/€/g, "").replace(",", ".");
       const n = parseFloat(s);
-      return Number.isFinite(n) ? n : 0;
+      return Number.isFinite(n) ? n : null;
     }
 
     function readNumber(id){
       const el = document.getElementById(id);
-      return normalizeToNumber(el ? el.value : 0);
+      return normalizeToNumber(el ? el.value : null);
     }
 
-    function almostEqual(a,b,eps=0.01){
-      return Math.abs(a-b) < eps;
+    function almostEqual(a, b, eps=0.03){
+      if(a === null || b === null) return false;
+      return Math.abs(a - b) < eps;
     }
 
     function getIdentity(){
@@ -320,7 +562,19 @@
 
       const inStatus = document.querySelector('input[name="status"]:checked')?.value;
       if (!inStatus){
-        showAlert("Choisis l’état du budget avant de valider");
+        showAlert("⚠️ Choisis l'état du budget avant de valider");
+        return;
+      }
+
+      // Vérifier que tous les champs sont remplis
+      const inR = readNumber("in-recettes");
+      const inF = readNumber("in-fixes");
+      const inC = readNumber("in-courantes");
+      const inO = readNumber("in-occas");
+      const inSolde = readNumber("in-solde");
+
+      if(inR === null || inF === null || inC === null || inO === null || inSolde === null){
+        showAlert("⚠️ Remplis tous les montants avant de valider");
         return;
       }
 
@@ -342,12 +596,6 @@
           if (info) info.style.display = "block";
         }
       });
-
-      const inR = readNumber("in-recettes");
-      const inF = readNumber("in-fixes");
-      const inC = readNumber("in-courantes");
-      const inO = readNumber("in-occas");
-      const inSolde = readNumber("in-solde");
 
       const totalD = Number((inF + inC + inO).toFixed(2));
 
@@ -401,6 +649,10 @@
       } catch(e) {
         console.error("Erreur lors de l'envoi Firebase : ", e);
       }
+
+      setTimeout(()=>{
+        if(btn) btn.disabled = false;
+      }, 500);
     }
   </script>
 </body>
