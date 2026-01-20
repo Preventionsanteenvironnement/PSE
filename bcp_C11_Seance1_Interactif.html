@@ -418,43 +418,168 @@
         }
         
         /* Mode Zen - Cohérence cardiaque */
+        /* === ZEN MODE - FULLSCREEN AVEC RESPIRATION === */
         .zen-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.05);
+            background: #f4f6f9;
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 100;
-            pointer-events: none;
+            z-index: 1000;
+            pointer-events: auto;
+            flex-direction: column;
+            gap: 60px;
+            opacity: 0;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .zen-overlay.active {
             display: flex;
+            opacity: 1;
+            pointer-events: auto;
         }
         
-        .zen-bubble {
-            background: radial-gradient(circle, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-            border-radius: 50%;
-            width: 80px;
-            height: 80px;
+        /* Conteneur de la bulle */
+        .zen-bubble-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            box-shadow: 0 0 40px rgba(102, 126, 234, 0.2);
-            transition: none;
+            align-items: center;
         }
         
+        /* LA BULLE DE RESPIRATION */
+        .zen-bubble {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.4);
+            position: absolute;
+            z-index: 1;
+            transition: all 0.5s ease-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Halo de la bulle */
+        .zen-bubble::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            border-radius: 50%;
+            background: inherit;
+            opacity: 0.3;
+            z-index: -1;
+            filter: blur(25px);
+        }
+        
+        /* Animation de respiration */
+        @keyframes zenBreathe {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(2.5);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .zen-bubble.breathing {
+            animation: zenBreathe 10s infinite ease-in-out;
+        }
+        
+        /* Texte de respiration */
         .zen-text {
-            font-size: 14px;
-            font-weight: 400;
-            color: rgba(102, 126, 234, 0.7);
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: absolute;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .zen-text.show {
+            opacity: 1;
+        }
+        
+        /* Boutons de contrôle ZEN */
+        .zen-controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .zen-overlay.active .zen-controls {
+            opacity: 1;
+        }
+        
+        .zen-btn-start,
+        .zen-btn-stop {
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            color: #333;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
+        }
+        
+        .zen-btn-start:hover,
+        .zen-btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            color: #3b82f6;
+        }
+        
+        .zen-btn-start {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .zen-btn-stop {
+            display: none;
             opacity: 0.6;
-            margin-top: 5px;
+            color: #999;
+            font-size: 0.9rem;
+        }
+        
+        .zen-overlay.active:not(.breathing-started) .zen-btn-start {
+            display: flex;
+        }
+        
+        .zen-overlay.breathing-started .zen-btn-start {
+            display: none;
+        }
+        
+        .zen-overlay.breathing-started .zen-btn-stop {
+            display: flex;
         }
         
         /* Document boxes */
@@ -706,9 +831,15 @@
 </head>
 <body>
     <!-- Overlay Mode Zen -->
+    <!-- === ZEN MODE - FULLSCREEN === -->
     <div class="zen-overlay" id="zenOverlay">
-        <div class="zen-bubble" id="zenBubble">
-            <div class="zen-text" id="zenText">Inspirer</div>
+        <div class="zen-bubble-container">
+            <div class="zen-bubble" id="zenBubble"></div>
+            <div class="zen-text" id="zenText">PRÊT ?</div>
+        </div>
+        <div class="zen-controls">
+            <button class="zen-btn-start" id="zenBtnStart">Commencer la séance</button>
+            <button class="zen-btn-stop" id="zenBtnStop">Arrêter</button>
         </div>
     </div>
 
@@ -1285,58 +1416,90 @@
         });
 
         // Mode Zen - Cohérence cardiaque (5s inspiration / 5s expiration)
+        // === ZEN MODE - PAGE FULLSCREEN AVEC BOUTONS ===
         let zenActive = false;
-        let zenStartTime = null;
-        let zenAnimationFrame = null;
+        let breathingActive = false;
+        let zenTextInterval = null;
         
-        document.getElementById('zenBtn').addEventListener('click', function() {
-            const overlay = document.getElementById('zenOverlay');
-            if (zenActive) {
-                // Désactiver
-                overlay.classList.remove('active');
-                zenActive = false;
-                if (zenAnimationFrame) {
-                    cancelAnimationFrame(zenAnimationFrame);
-                }
-            } else {
-                // Activer
-                overlay.classList.add('active');
-                zenActive = true;
-                zenStartTime = performance.now();
-                animateZenBreathing();
-            }
+        const zenOverlay = document.getElementById('zenOverlay');
+        const zenBubble = document.getElementById('zenBubble');
+        const zenText = document.getElementById('zenText');
+        const zenBtn = document.getElementById('zenBtn');
+        const zenBtnStart = document.getElementById('zenBtnStart');
+        const zenBtnStop = document.getElementById('zenBtnStop');
+        
+        // Ouvrir le mode Zen
+        zenBtn.addEventListener('click', function() {
+            zenActive = true;
+            zenOverlay.classList.add('active');
+            breathingActive = false;
+            zenOverlay.classList.remove('breathing-started');
+            zenText.textContent = 'PRÊT ?';
+            zenText.classList.remove('show');
         });
-
-        function animateZenBreathing() {
+        
+        // Commencer la respiration
+        zenBtnStart.addEventListener('click', function(e) {
+            e.preventDefault();
+            breathingActive = true;
+            zenOverlay.classList.add('breathing-started');
+            zenText.classList.add('show');
+            zenBubble.classList.add('breathing');
+            
+            // Cycle du texte : INSPIRER (0-5s) → EXPIRER (5-10s)
+            runZenCycle();
+            zenTextInterval = setInterval(() => {
+                runZenCycle();
+            }, 10000);
+        });
+        
+        function runZenCycle() {
+            zenText.textContent = 'INSPIRER';
+            setTimeout(() => {
+                if (breathingActive) {
+                    zenText.textContent = 'EXPIRER';
+                }
+            }, 5000);
+        }
+        
+        // Arrêter la respiration et fermer
+        zenBtnStop.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeZenMode();
+        });
+        
+        // Fermer le mode Zen
+        function closeZenMode() {
             if (!zenActive) return;
             
-            const now = performance.now();
-            const elapsed = (now - zenStartTime) / 1000; // en secondes
-            const cycle = elapsed % 10; // Cycle de 10 secondes (5s inspire + 5s expire)
+            zenActive = false;
+            breathingActive = false;
             
-            const bubble = document.getElementById('zenBubble');
-            const text = document.getElementById('zenText');
-            
-            // Phase inspiration : 0-5s
-            // Phase expiration : 5-10s
-            if (cycle < 5) {
-                // Inspiration (0 à 5 secondes)
-                const progress = cycle / 5; // 0 à 1
-                const scale = 1 + (progress * 2); // Scale de 1 à 3
-                bubble.style.width = (80 + progress * 120) + 'px';
-                bubble.style.height = (80 + progress * 120) + 'px';
-                text.textContent = 'Inspirer';
-            } else {
-                // Expiration (5 à 10 secondes)
-                const progress = (cycle - 5) / 5; // 0 à 1
-                const scale = 3 - (progress * 2); // Scale de 3 à 1
-                bubble.style.width = (200 - progress * 120) + 'px';
-                bubble.style.height = (200 - progress * 120) + 'px';
-                text.textContent = 'Expirer';
+            // Arrêter l'animation
+            zenBubble.classList.remove('breathing');
+            if (zenTextInterval) {
+                clearInterval(zenTextInterval);
             }
             
-            zenAnimationFrame = requestAnimationFrame(animateZenBreathing);
+            // Fermer l'overlay
+            zenOverlay.classList.remove('active');
+            zenOverlay.classList.remove('breathing-started');
+            
+            // Réinitialiser
+            setTimeout(() => {
+                zenText.classList.remove('show');
+                zenText.textContent = 'PRÊT ?';
+                zenBtn.classList.remove('active');
+            }, 300);
         }
+        
+        // Touche Escape = fermer
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && zenActive) {
+                e.preventDefault();
+                closeZenMode();
+            }
+        });
 
         // Toggle Hint
         function toggleHint(hintId) {
