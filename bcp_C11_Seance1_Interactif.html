@@ -417,53 +417,44 @@
             margin-bottom: 10px;
         }
         
-        /* Mode Zen */
+        /* Mode Zen - Cohérence cardiaque */
         .zen-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+            background: rgba(0, 0, 0, 0.05);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
+            z-index: 100;
+            pointer-events: none;
         }
         
         .zen-overlay.active {
             display: flex;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
         
         .zen-bubble {
-            background: white;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
             border-radius: 50%;
-            width: 300px;
-            height: 300px;
+            width: 80px;
+            height: 80px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
-            font-weight: bold;
-            color: #667eea;
-            animation: breathe 4s ease-in-out infinite;
-            cursor: pointer;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.2);
+            transition: none;
         }
         
-        @keyframes breathe {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
+        .zen-text {
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(102, 126, 234, 0.7);
+            opacity: 0.6;
+            margin-top: 5px;
         }
         
         /* Document boxes */
@@ -716,7 +707,9 @@
 <body>
     <!-- Overlay Mode Zen -->
     <div class="zen-overlay" id="zenOverlay">
-        <div class="zen-bubble" id="zenBubble">Inspirer</div>
+        <div class="zen-bubble" id="zenBubble">
+            <div class="zen-text" id="zenText">Inspirer</div>
+        </div>
     </div>
 
     <div class="container">
@@ -941,23 +934,17 @@
             <div class="document-box">
                 <div class="document-header">📄 DOC. 2 Travail prescrit / travail réel</div>
                 
-                <div style="display: flex; gap: 20px; align-items: flex-start;">
-                    <div style="flex: 1;">
-                        <p>Pour chaque situation de travail, il est possible de différencier le travail prescrit par l'entreprise du travail réel effectué par l'opérateur.</p>
-                        
-                        <p style="margin-top: 15px;">Le <span class="underline">travail prescrit</span>, c'est <span class="underline">le travail défini par l'entreprise</span>. Il est donné à l'opérateur sous la forme de <span class="underline">procédures</span> et de <span class="underline">consignes</span> verbales et écrites.</p>
-                        
-                        <p style="margin-top: 15px;">Le <span class="underline">travail réel</span>, c'est le travail tel qu'il se réalise effectivement dans chaque situation. Il correspond à <span class="underline">ce qui est concrètement mis en œuvre</span> par l'opérateur.</p>
-                        
-                        <p style="margin-top: 15px;">Le travail réel se décompose en <span class="underline">tâches</span> et en <span class="underline">activités</span> :</p>
-                        
-                        <p style="margin-top: 10px;"><strong>Tâche réelle</strong> (ce que l'opérateur fait) : tâche réalisée par l'opérateur en fonction des exigences de chaque situation.</p>
-                        
-                        <p style="margin-top: 10px;"><strong>Activité</strong> (comment l'opérateur le fait) : description des <span class="underline">actions physiques, mentales et sensorielles</span> pour accomplir la tâche.</p>
-                    </div>
-                    
-                    <img src="moduleC11/images/travail_reel.jpg" alt="Travail réel" style="width: 150px; height: auto; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
-                </div>
+                <p>Pour chaque situation de travail, il est possible de différencier le travail prescrit par l'entreprise du travail réel effectué par l'opérateur.</p>
+                
+                <p style="margin-top: 15px;">Le <span class="underline">travail prescrit</span>, c'est <span class="underline">le travail défini par l'entreprise</span>. Il est donné à l'opérateur sous la forme de <span class="underline">procédures</span> et de <span class="underline">consignes</span> verbales et écrites.</p>
+                
+                <p style="margin-top: 15px;">Le <span class="underline">travail réel</span>, c'est le travail tel qu'il se réalise effectivement dans chaque situation. Il correspond à <span class="underline">ce qui est concrètement mis en œuvre</span> par l'opérateur.</p>
+                
+                <p style="margin-top: 15px;">Le travail réel se décompose en <span class="underline">tâches</span> et en <span class="underline">activités</span> :</p>
+                
+                <p style="margin-top: 10px;"><strong>Tâche réelle</strong> (ce que l'opérateur fait) : tâche réalisée par l'opérateur en fonction des exigences de chaque situation.</p>
+                
+                <p style="margin-top: 10px;"><strong>Activité</strong> (comment l'opérateur le fait) : description des <span class="underline">actions physiques, mentales et sensorielles</span> pour accomplir la tâche.</p>
             </div>
 
             <!-- QUESTION 3 -->
@@ -1297,46 +1284,58 @@
             this.style.color = document.body.classList.contains('dyslexic-font') ? 'white' : '#667eea';
         });
 
-        // Mode Zen
+        // Mode Zen - Cohérence cardiaque (5s inspiration / 5s expiration)
         let zenActive = false;
-        let zenPhase = 'inhale';
+        let zenStartTime = null;
+        let zenAnimationFrame = null;
         
         document.getElementById('zenBtn').addEventListener('click', function() {
             const overlay = document.getElementById('zenOverlay');
-            overlay.classList.add('active');
-            zenActive = true;
-            startZenBreathing();
+            if (zenActive) {
+                // Désactiver
+                overlay.classList.remove('active');
+                zenActive = false;
+                if (zenAnimationFrame) {
+                    cancelAnimationFrame(zenAnimationFrame);
+                }
+            } else {
+                // Activer
+                overlay.classList.add('active');
+                zenActive = true;
+                zenStartTime = performance.now();
+                animateZenBreathing();
+            }
         });
 
-        document.getElementById('zenBubble').addEventListener('click', function() {
-            const overlay = document.getElementById('zenOverlay');
-            overlay.classList.remove('active');
-            zenActive = false;
-        });
-
-        function startZenBreathing() {
-            const bubble = document.getElementById('zenBubble');
-            let count = 0;
+        function animateZenBreathing() {
+            if (!zenActive) return;
             
-            const breatheInterval = setInterval(() => {
-                if (!zenActive) {
-                    clearInterval(breatheInterval);
-                    return;
-                }
-                
-                if (zenPhase === 'inhale') {
-                    bubble.textContent = 'Inspirer';
-                    zenPhase = 'exhale';
-                } else {
-                    bubble.textContent = 'Expirer';
-                    zenPhase = 'inhale';
-                }
-                
-                count++;
-                if (count >= 10) { // 5 cycles complets
-                    clearInterval(breatheInterval);
-                }
-            }, 4000);
+            const now = performance.now();
+            const elapsed = (now - zenStartTime) / 1000; // en secondes
+            const cycle = elapsed % 10; // Cycle de 10 secondes (5s inspire + 5s expire)
+            
+            const bubble = document.getElementById('zenBubble');
+            const text = document.getElementById('zenText');
+            
+            // Phase inspiration : 0-5s
+            // Phase expiration : 5-10s
+            if (cycle < 5) {
+                // Inspiration (0 à 5 secondes)
+                const progress = cycle / 5; // 0 à 1
+                const scale = 1 + (progress * 2); // Scale de 1 à 3
+                bubble.style.width = (80 + progress * 120) + 'px';
+                bubble.style.height = (80 + progress * 120) + 'px';
+                text.textContent = 'Inspirer';
+            } else {
+                // Expiration (5 à 10 secondes)
+                const progress = (cycle - 5) / 5; // 0 à 1
+                const scale = 3 - (progress * 2); // Scale de 3 à 1
+                bubble.style.width = (200 - progress * 120) + 'px';
+                bubble.style.height = (200 - progress * 120) + 'px';
+                text.textContent = 'Expirer';
+            }
+            
+            zenAnimationFrame = requestAnimationFrame(animateZenBreathing);
         }
 
         // Toggle Hint
