@@ -3,1448 +3,852 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Résultats - PSE</title>
+    <title>📊 Mes Résultats PSE</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; max-width: 1000px; margin: 0 auto; padding: 0; background: #f8f9fa; color: #333; min-height: 100vh; }
-        header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; text-align: center; color: white; }
-        h1 { margin: 0; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* === HEADER === */
+        header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; text-align: center; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-weight: 700; font-size: 1.8em; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1::before { content: "📊 "; }
+        
         main { padding: 20px; }
         
-        /* === LOGIN === */
+        /* === LOGIN SCREEN === */
         .login-screen { background: white; border-radius: 16px; padding: 40px; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
         .login-icon { font-size: 4em; margin-bottom: 20px; }
-        .login-title { font-size: 1.5em; font-weight: 700; margin-bottom: 10px; }
-        .code-input { width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.2em; text-align: center; letter-spacing: 3px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; }
-        .code-input:focus { outline: none; border-color: #f59e0b; }
+        .login-title { font-size: 1.5em; font-weight: 700; margin-bottom: 10px; color: #1e293b; }
+        .login-subtitle { color: #64748b; margin-bottom: 20px; font-size: 0.95em; }
+        .code-input { width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.2em; text-align: center; letter-spacing: 3px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; transition: border 0.2s; }
+        .code-input:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
         .login-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 12px; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: all 0.2s; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
-        .error-message { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; }
+        .login-btn:active { transform: translateY(0); }
+        .error-message { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; border-left: 4px solid #dc2626; }
         .error-message.visible { display: block; }
+        .btn-retour { background: #e2e8f0; color: #475569; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; }
+        .btn-retour:hover { background: #cbd5e1; }
         
-        /* === RESULTS === */
+        /* === RESULTS SCREEN === */
         .results-screen { display: none; }
         .results-screen.active { display: block; }
         
-        .student-banner { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #78350f; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        /* === STUDENT BANNER === */
+        .student-banner { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #78350f; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2); }
+        .student-info { display: flex; align-items: center; gap: 15px; }
         .student-name { font-size: 1.3em; font-weight: 700; }
-        .logout-btn { background: rgba(255,255,255,0.3); border: none; color: #78350f; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .student-class { background: rgba(255,255,255,0.3); padding: 5px 12px; border-radius: 8px; font-weight: 600; }
+        .banner-actions { display: flex; gap: 10px; }
+        .logout-btn, .btn-home { background: rgba(255,255,255,0.3); border: none; color: #78350f; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .logout-btn:hover, .btn-home:hover { background: rgba(255,255,255,0.5); }
         
-        /* === STATS === */
+        /* === STATS GRID === */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .stat-value { font-size: 2em; font-weight: 800; color: #f59e0b; }
-        .stat-label { font-size: 0.85em; color: #64748b; margin-top: 5px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-value { font-size: 2em; font-weight: 800; color: #f59e0b; margin-bottom: 5px; }
+        .stat-label { font-size: 0.85em; color: #64748b; }
         
         /* === TABS === */
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: white; padding: 5px; border-radius: 12px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: white; padding: 5px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .tab { flex: 1; padding: 12px; text-align: center; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-weight: 600; color: #64748b; transition: all 0.2s; }
-        .tab.active { background: #f59e0b; color: white; }
+        .tab.active { background: #f59e0b; color: white; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); }
         .tab:hover:not(.active) { background: #fef3c7; }
         
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        /* === CHARTS === */
-        .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .chart-title { font-weight: 600; margin-bottom: 15px; color: #1e293b; }
-        
-        /* === EVAL LIST === */
-        .eval-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
-        .eval-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .eval-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-        .eval-title { font-weight: 600; color: #1e293b; }
+        /* === EVAL CARD === */
+        .eval-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: all 0.2s; position: relative; overflow: hidden; }
+        .eval-card::before { content: ""; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: #f59e0b; }
+        .eval-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .eval-title { font-weight: 700; font-size: 1.1em; color: #1e293b; }
+        .eval-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .eval-date { font-size: 0.85em; color: #64748b; }
-        .eval-note { font-weight: 700; font-size: 1.3em; padding: 5px 15px; border-radius: 8px; }
-        .note-green { background: #dcfce7; color: #166534; }
-        .note-orange { background: #fef3c7; color: #92400e; }
-        .note-red { background: #fee2e2; color: #991b1b; }
-        .note-pending { background: #e0e7ff; color: #3730a3; }
-        .eval-appreciation { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 10px 15px; margin-top: 10px; border-radius: 0 8px 8px 0; font-size: 0.9em; }
-        
-        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; margin-left: 10px; }
+        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 700; }
         .status-corrected { background: #dcfce7; color: #166534; }
         .status-pending { background: #fef3c7; color: #92400e; }
-        
-        /* === COMPETENCES TABLE === */
-        .comp-table { width: 100%; border-collapse: collapse; }
-        .comp-table th, .comp-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        .comp-table th { background: #f8fafc; font-weight: 600; color: #64748b; }
-        .comp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85em; }
-        .comp-c1 { background: #fee2e2; color: #991b1b; }
-        .comp-c2 { background: #fef3c7; color: #92400e; }
-        .comp-c3 { background: #dcfce7; color: #166534; }
-        .comp-c4 { background: #dbeafe; color: #1e40af; }
-        .comp-c5 { background: #e0e7ff; color: #3730a3; }
-        .comp-c6 { background: #fce7f3; color: #9d174d; }
+        .eval-note { font-weight: 800; font-size: 1.5em; padding: 8px 20px; border-radius: 10px; }
+        .note-excellent { background: #dcfce7; color: #166534; }
+        .note-good { background: #dbeafe; color: #1e40af; }
+        .note-average { background: #fef3c7; color: #92400e; }
+        .note-poor { background: #fee2e2; color: #991b1b; }
+        .note-pending { background: #e0e7ff; color: #3730a3; }
+        .eval-actions { margin-top: 15px; display: flex; gap: 10px; }
+        .btn-view { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-view:hover { background: #2563eb; transform: translateY(-2px); }
+        .btn-view:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
         
         /* === MODAL === */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; border-radius: 16px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        .modal-header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
-        .modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 1.2em; }
-        .modal-body { padding: 20px; }
+        .modal-content { background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .modal-title { font-size: 1.3em; font-weight: 700; }
+        .modal-actions { display: flex; gap: 10px; }
+        .action-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
+        .action-btn:hover { background: rgba(255,255,255,0.3); }
+        .modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 1.3em; font-weight: bold; transition: all 0.2s; }
+        .modal-close:hover { background: rgba(255,255,255,0.4); transform: rotate(90deg); }
+        .modal-body { padding: 25px; }
         
-        /* === DETAIL COPIE === */
-        .question-item { background: #f8fafc; border-radius: 8px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #e2e8f0; }
-        .question-item.correct { border-left-color: #22c55e; }
-        .question-item.partial { border-left-color: #f59e0b; }
-        .question-item.wrong { border-left-color: #ef4444; }
-        .question-num { font-weight: 700; color: #64748b; margin-bottom: 5px; }
-        .question-text { margin-bottom: 10px; }
-        .answer-box { background: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
-        .answer-label { font-size: 0.8em; color: #64748b; margin-bottom: 4px; }
-        .answer-eleve { color: #1e293b; }
-        .answer-correction { color: #16a34a; font-style: italic; }
-        .comment-box { background: #fffbeb; padding: 10px; border-radius: 6px; font-size: 0.9em; }
+        /* === APPRECIATION BLOCK === */
+        .appreciation-block { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 5px solid #f59e0b; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .appreciation-title { font-weight: 700; color: #78350f; margin-bottom: 10px; font-size: 1.1em; }
+        .appreciation-title::before { content: "💬 "; }
+        .appreciation-text { color: #78350f; line-height: 1.6; font-size: 1em; }
         
-        /* === EMPTY === */
-        .empty-state { text-align: center; padding: 40px; color: #64748b; }
-        .empty-icon { font-size: 4em; opacity: 0.5; }
+        /* === COMPETENCES SUMMARY === */
+        .competences-summary { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 25px; }
+        .competences-title { font-weight: 700; color: #1e293b; margin-bottom: 15px; font-size: 1.1em; }
+        .competences-title::before { content: "🎯 "; }
+        .comp-list { display: grid; gap: 12px; }
+        .comp-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #e2e8f0; }
+        .comp-label { font-weight: 600; color: #475569; }
+        .comp-result { display: flex; align-items: center; gap: 10px; }
+        .comp-badge-large { padding: 6px 15px; border-radius: 20px; font-weight: 700; font-size: 0.9em; }
+        .badge-M { background: #dcfce7; color: #166534; border-left-color: #22c55e !important; }
+        .badge-A { background: #dbeafe; color: #1e40af; border-left-color: #3b82f6 !important; }
+        .badge-I { background: #fef3c7; color: #92400e; border-left-color: #f59e0b !important; }
+        .badge-NT { background: #e2e8f0; color: #475569; border-left-color: #94a3b8 !important; }
+        .comp-score { font-weight: 700; color: #64748b; font-size: 0.95em; }
         
-        .loader { text-align: center; padding: 40px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top-color: #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        @media (max-width: 600px) {
-            .charts-row { grid-template-columns: 1fr; }
-            .tabs { flex-wrap: wrap; }
-            .tab { min-width: calc(50% - 5px); }
-        }
-    </style>
-</head>
-<body>
-<header>
-    <h1>📊 Mes Résultats PSE</h1>
-</header>
-<main>
-    <!-- LOGIN -->
-    <div class="login-screen" id="loginScreen">
-        <div class="login-icon">🔐</div>
-        <div class="login-title">Accès à mes résultats</div>
-        <p style="color:#64748b;">Entrez votre code élève (4 caractères)</p>
-        <input type="text" class="code-input" id="codeInput" placeholder="EX: KA47" maxlength="10" autofocus>
-        <button class="login-btn" id="loginBtn" onclick="connecter()">Accéder</button>
-        <div class="error-message" id="errorMessage">❌ Code non trouvé.</div>
-    </div>
-    <!-- RESULTS -->
-    <div class="results-screen" id="resultsScreen">
-        <div class="student-banner">
-            <div>
-                <span class="student-name" id="studentName">--</span>
-                <span id="studentClass" style="opacity:0.8;margin-left:10px;">--</span>
-            </div>
-            <button class="logout-btn" onclick="deconnecter()">🚪 Déconnexion</button>
-        </div>
-        
-        <!-- STATS -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="statMoyenne">--</div>
-                <div class="stat-label">Moyenne générale</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statNbEvals">0</div>
-                <div class="stat-label">Évaluations corrigées</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statPending">0</div>
-                <div class="stat-label">En attente</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statBestComp">--</div>
-                <div class="stat-label">Meilleure compétence</div>
-            </div>
-        </div>
-        
-        <!-- TABS -->
-        <div class="tabs">
-            <button class="tab active" data-tab="evaluations" onclick="showTab('evaluations')">📝 Mes évaluations</button>
-            <button class="tab" data-tab="competences" onclick="showTab('competences')">🎯 Compétences</button>
-            <button class="tab" data-tab="progression" onclick="showTab('progression')">📈 Progression</button>
-        </div>
-        
-        <!-- TAB: EVALUATIONS -->
-        <div class="tab-content active" id="tab-evaluations">
-            <div id="evaluationsList">
-                <div class="loader"><div class="spinner"></div><div>Chargement...</div></div>
-            </div>
-        </div>
-        
-        <!-- TAB: COMPETENCES -->
-        <div class="tab-content" id="tab-competences">
-            <div class="charts-row">
-                <div class="chart-card">
-                    <div class="chart-title">🎯 Radar des compétences</div>
-                    <canvas id="radarChart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-title">📊 Détail par compétence</div>
-                    <table class="comp-table" id="compTable">
-                        <thead>
-                            <tr><th>Compétence</th><th>Niveau moyen</th><th>Évaluations</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- TAB: PROGRESSION -->
-        <div class="tab-content" id="tab-progression">
-            <div class="chart-card">
-                <div class="chart-title">📈 Évolution des notes</div>
-                <canvas id="progressChart"></canvas>
-            </div>
-        </div>
-    </div>
-</main>
-<!-- MODAL DETAIL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <div>
-                <div style="font-weight:700;font-size:1.2em;" id="modalTitle">Détail de l'évaluation</div>
-                <div style="opacity:0.9;font-size:0.9em;" id="modalSubtitle"></div>
-            </div>
-            <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body" id="modalBody">
-            <!-- Contenu dynamique -->
-        </div>
-    </div>
-</div>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-    
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-    
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    
-    console.log("🚀 Page Résultats v5.0 - Lecture copies + evaluations (CORRIGÉ)");
-    
-    let currentCode = null;
-    let allResults = [];
-    let radarChart = null;
-    let progressChart = null;
-    
-    // Exposer les fonctions
-    window.connecter = connecter;
-    window.deconnecter = deconnecter;
-    window.showTab = showTab;
-    window.openDetail = openDetail;
-    window.closeModal = closeModal;
-    
-    document.getElementById('codeInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') connecter();
-    });
-    
-    async function connecter() {
-        const codeInput = document.getElementById('codeInput');
-        const code = codeInput.value.trim().toUpperCase();
-        const errorDiv = document.getElementById('errorMessage');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        errorDiv.classList.remove('visible');
-        
-        if (!code || code.length < 2) {
-            errorDiv.textContent = "⚠️ Entrez votre code élève.";
-            errorDiv.classList.add('visible');
-            return;
-        }
-        
-        loginBtn.disabled = true;
-        loginBtn.textContent = "Chargement...";
-        
-        try {
-            console.log("🔍 Recherche pour le code:", code);
-            
-            // ════════════════════════════════════════════════════════════════
-            // ⭐ CORRECTION v5.0 : LECTURE DEPUIS 2 COLLECTIONS
-            // 1. resultats/{eleveCode}/copies/ → copies brutes
-            // 2. resultats/{eleveCode}/evaluations/ → corrections
-            // ════════════════════════════════════════════════════════════════
-            
-            allResults = [];
-            const copiesMap = new Map(); // Pour fusionner copies + corrections
-            
-            // ─────────────────────────────────────────────────────────────
-            // ÉTAPE 1 : Charger les COPIES BRUTES
-            // ─────────────────────────────────────────────────────────────
-            try {
-                const copiesPath = `resultats/${code}/copies`;
-                console.log("📂 Lecture copies:", copiesPath);
-                
-                const qCopies = query(collection(db, copiesPath), limit(100));
-                const snapCopies = await getDocs(qCopies);
-                
-                snapCopies.forEach(doc => {
-                    const data = doc.data();
-                    copiesMap.set(data.devoirId, {
-                        id: doc.id,
-                        source: 'copies',
-                        ...data
-                    });
-                });
-                
-                console.log("✅ Copies trouvées:", snapCopies.size);
-            } catch(e) {
-                console.log("⚠️ Erreur lecture copies:", e.message);
-            }
-            
-            // ─────────────────────────────────────────────────────────────
-            // ÉTAPE 2 : Charger les CORRECTIONS (EVALUATIONS)
-            // ─────────────────────────────────────────────────────────────
-            try {
-                const evalsPath = `resultats/${code}/evaluations`;
-                console.log("📂 Lecture évaluations:", evalsPath);
-                
-                const qEvals = query(collection(db, evalsPath), limit(100));
-                const snapEvals = await getDocs(qEvals);
-                
-                snapEvals.forEach(doc => {
-                    const evalData = doc.data();
-                    const devoirId = evalData.devoirId;
-                    
-                    if (copiesMap.has(devoirId)) {
-                        // Fusionner correction avec copie existante
-                        const copie = copiesMap.get(devoirId);
-                        copiesMap.set(devoirId, {
-                            ...copie,
-                            // Ajouter données de correction
-                            note_finale: evalData.note_finale,
-                            appreciation: evalData.appreciation,
-                            competences_corrigees: evalData.competences,
-                            questions_corrigees: evalData.questions,
-                            correctedAt: evalData.savedAt,
-                            correctedBy: evalData.savedBy
-                        });
-                    } else {
-                        // Correction sans copie (cas rare)
-                        copiesMap.set(devoirId, {
-                            id: doc.id,
-                            source: 'evaluation_only',
-                            devoirId: devoirId,
-                            titre: evalData.titre,
-                            note_finale: evalData.note_finale,
-                            appreciation: evalData.appreciation,
-                            competences: evalData.competences,
-                            correctedAt: evalData.savedAt
-                        });
-                    }
-                });
-                
-                console.log("✅ Évaluations trouvées:", snapEvals.size);
-            } catch(e) {
-                console.log("⚠️ Erreur lecture évaluations:", e.message);
-            }
-            
-            // ─────────────────────────────────────────────────────────────
-            // ÉTAPE 3 : Convertir Map en tableau
-            // ─────────────────────────────────────────────────────────────
-            allResults = Array.from(copiesMap.values());
-            
-            console.log("📊 Total fusionné:", allResults.length);
-            
-            if (allResults.length === 0) {
-                errorDiv.textContent = "❌ Aucun résultat trouvé pour le code « " + code + " ».\nVérifiez votre code ou contactez votre professeur.";
-                errorDiv.classList.add('visible');
-                loginBtn.disabled = false;
-                loginBtn.textContent = "Accéder";
-                return;
-            }
-            
-            // Trier par date (plus récent en premier)
-            allResults.sort((a, b) => {
-                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : (a.ts ? new Date(a.ts) : new Date(0));
-                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.ts ? new Date(b.ts) : new Date(0));
-                return dateB - dateA;
-            });
-            
-            currentCode = code;
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('resultsScreen').classList.add('active');
-            
-            // Afficher les infos élève
-            const firstItem = allResults[0];
-            const prenom = firstItem?.eleve?.prenom || firstItem?.eleve || code;
-            const nom = firstItem?.eleve?.nom || '';
-            const classe = firstItem?.classe || firstItem?.eleve?.classe || "";
-            
-            document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || code;
-            document.getElementById('studentClass').textContent = classe;
-            
-            renderEvaluations();
-            renderStats();
-            renderCompetences();
-            renderProgression();
-            
-        } catch (error) {
-            console.error("❌ Erreur:", error);
-            errorDiv.textContent = "❌ Erreur de connexion: " + error.message;
-            errorDiv.classList.add('visible');
-        }
-        
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Accéder";
-    }
-    
-    function deconnecter() {
-        currentCode = null;
-        allResults = [];
-        document.getElementById('resultsScreen').classList.remove('active');
-        document.getElementById('loginScreen').style.display = 'block';
-        document.getElementById('codeInput').value = '';
-        document.getElementById('errorMessage').classList.remove('visible');
-        if (radarChart) radarChart.destroy();
-        if (progressChart) progressChart.destroy();
-    }
-    
-    function showTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-        const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
-        if (selectedTab) {
-            selectedTab.classList.add('active');
-        }
-        
-        const tabContent = document.getElementById('tab-' + tabName);
-        if (tabContent) {
-            tabContent.classList.add('active');
-        }
-    }
-    
-    function renderEvaluations() {
-        const container = document.getElementById('evaluationsList');
-        
-        if (allResults.length === 0) {
-            container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aucune évaluation</p></div>`;
-            return;
-        }
-        
-        let html = '';
-        allResults.forEach((item, index) => {
-            const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
-            const dateStr = item.createdAtISO || item.ts;
-            const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "Date inconnue";
-            
-            // ⭐ CORRECTION v5.0 : Utiliser note_finale si disponible
-            const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
-            const note = hasCorrection ? item.note_finale : (item.note_auto || item.score);
-            const isPending = !hasCorrection;
-            
-            let noteDisplay, noteClass, statusBadge;
-            
-            if (isPending) {
-                noteDisplay = note !== undefined && note !== null ? `${parseFloat(note).toFixed(1)}*` : "⏳";
-                noteClass = 'note-pending';
-                statusBadge = '<span class="status-badge status-pending">⏳ En attente</span>';
-            } else {
-                noteDisplay = `${parseFloat(note).toFixed(1)}/20`;
-                noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
-                statusBadge = '<span class="status-badge status-corrected">✅ Corrigé</span>';
-            }
-            
-            html += `
-                <div class="eval-card" onclick="openDetail(${index})">
-                    <div class="eval-header">
-                        <div>
-                            <div class="eval-title">${titre} ${statusBadge}</div>
-                            <div class="eval-date">📅 ${date}</div>
-                        </div>
-                        <div class="eval-note ${noteClass}">${noteDisplay}</div>
-                    </div>
-                    ${item.appreciation ? `<div class="eval-appreciation"><strong>💬</strong> ${item.appreciation}</div>` : ''}
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    function renderStats() {
-        // Moyenne (sur les notes finales corrigées)
-        let totalNotes = 0, nbNotes = 0;
-        let nbPending = 0;
-        
-        allResults.forEach(e => {
-            if (e.note_finale !== undefined && e.note_finale !== null) {
-                totalNotes += parseFloat(e.note_finale);
-                nbNotes++;
-            } else {
-                nbPending++;
-            }
-        });
-        
-        const moyenne = nbNotes > 0 ? (totalNotes / nbNotes).toFixed(1) : '--';
-        document.getElementById('statMoyenne').textContent = moyenne !== '--' ? moyenne + '/20' : '--';
-        document.getElementById('statNbEvals').textContent = nbNotes;
-        document.getElementById('statPending').textContent = nbPending;
-        
-        // ⭐ CORRECTION v5.0 : Utiliser competences OU competences_corrigees
-        const compScores = {};
-        allResults.forEach(e => {
-            const comps = e.competences_corrigees || e.competences || {};
-            Object.entries(comps).forEach(([comp, data]) => {
-                // Gérer format grille (objet avec pts/max) et format copie (nombre)
-                const score = typeof data === 'object' ? (data.pts || 0) : data;
-                if (!compScores[comp]) compScores[comp] = { total: 0, count: 0 };
-                compScores[comp].total += score;
-                compScores[comp].count++;
-            });
-        });
-        
-        let bestComp = '--';
-        let bestAvg = 0;
-        Object.entries(compScores).forEach(([comp, data]) => {
-            const avg = data.total / data.count;
-            if (avg > bestAvg) {
-                bestAvg = avg;
-                bestComp = comp;
-            }
-        });
-        document.getElementById('statBestComp').textContent = bestComp;
-    }
-    
-    function renderCompetences() {
-        const compData = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [] };
-        
-        allResults.forEach(e => {
-            const comps = e.competences_corrigees || e.competences || {};
-            Object.entries(comps).forEach(([comp, data]) => {
-                const score = typeof data === 'object' ? (data.pts || 0) : data;
-                if (compData[comp]) compData[comp].push(score);
-            });
-        });
-        
-        const labels = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
-        const averages = labels.map(c => {
-            const scores = compData[c];
-            return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-        });
-        
-        // Radar Chart
-        const ctx = document.getElementById('radarChart').getContext('2d');
-        if (radarChart) radarChart.destroy();
-        
-        radarChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Niveau moyen',
-                    data: averages,
-                    fill: true,
-                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                    borderColor: '#f59e0b',
-                    pointBackgroundColor: '#f59e0b',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#f59e0b'
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        beginAtZero: true,
-                        max: 4,
-                        ticks: { stepSize: 1 }
-                    }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-        
-        // Table
-        const tbody = document.querySelector('#compTable tbody');
-        tbody.innerHTML = labels.map((c, i) => {
-            const avg = averages[i];
-            const count = compData[c].length;
-            const niveau = avg >= 3 ? 'Maîtrisé' : avg >= 2 ? 'Acceptable' : avg >= 1 ? 'Insuffisant' : 'Non traité';
-            return `
-                <tr>
-                    <td><span class="comp-badge comp-${c.toLowerCase()}">${c}</span></td>
-                    <td>${avg.toFixed(1)} - ${niveau}</td>
-                    <td>${count}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-    
-    function renderProgression() {
-        const sorted = [...allResults]
-            .filter(e => (e.note_finale !== undefined && e.note_finale !== null) || (e.note_auto !== undefined))
-            .sort((a, b) => {
-                const dateA = new Date(a.createdAtISO || a.ts || 0);
-                const dateB = new Date(b.createdAtISO || b.ts || 0);
-                return dateA - dateB;
-            });
-        
-        const labels = sorted.map(e => {
-            const d = new Date(e.createdAtISO || e.ts);
-            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-        });
-        const notes = sorted.map(e => parseFloat(e.note_finale ?? e.note_auto ?? 0));
-        
-        const ctx = document.getElementById('progressChart').getContext('2d');
-        if (progressChart) progressChart.destroy();
-        
-        progressChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Notes /20',
-                    data: notes,
-                    fill: true,
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    borderColor: '#f59e0b',
-                    tension: 0.3,
-                    pointRadius: 6,
-                    pointBackgroundColor: '#f59e0b'
-                }]
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true, max: 20 }
-                },
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
-    }
-    
-    function openDetail(index) {
-        const item = allResults[index];
-        if (!item) return;
-        
-        const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
-        const dateStr = item.createdAtISO || item.ts;
-        const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "";
-        const note = item.note_finale ?? item.note_auto ?? item.score;
-        const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
-        
-        document.getElementById('modalTitle').textContent = titre;
-        document.getElementById('modalSubtitle').textContent = `${date} • Note: ${note ? parseFloat(note).toFixed(1) + '/20' : '--'}${!hasCorrection ? ' (provisoire)' : ''}`;
-        
-        let html = '';
-        
-        // Appréciation
-        if (item.appreciation) {
-            html += `<div style="background:#fffbeb;padding:15px;border-radius:8px;margin-bottom:20px;"><strong>💬 Appréciation :</strong> ${item.appreciation}</div>`;
-        }
-        
-        // Compétences (prioriser competences_corrigees)
-        const comps = item.competences_corrigees || item.competences || {};
-        if (Object.keys(comps).length > 0) {
-            html += `<div style="margin-bottom:20px;"><strong>🎯 Compétences évaluées :</strong><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">`;
-            Object.entries(comps).forEach(([comp, data]) => {
-                // Gérer les 2 formats
-                let niveau = 'NT';
-                if (typeof data === 'object' && data.pts !== undefined) {
-                    // Format grille {pts, max}
-                    const ratio = data.max > 0 ? data.pts / data.max : 0;
-                    niveau = ratio >= 0.85 ? 'M' : ratio >= 0.65 ? 'A' : ratio >= 0.40 ? 'I' : 'NT';
-                } else if (typeof data === 'number') {
-                    // Format copie (nombre)
-                    niveau = data >= 3 ? 'M' : data >= 2 ? 'A' : data >= 1 ? 'I' : 'NT';
-                }
-                html += `<span class="comp-badge comp-${comp.toLowerCase()}">${comp}: ${niveau}</span>`;
-            });
-            html += `</div></div>`;
-        }
-        
-        // Réponses détaillées
-        if (item.reponses && Object.keys(item.reponses).length > 0) {
-            html += `<div><strong>📝 Détail des réponses :</strong></div>`;
-            
-            Object.entries(item.reponses).forEach(([key, value]) => {
-                if (value && value !== '' && !key.includes('match_') && !key.includes('trou_')) {
-                    const displayValue = Array.isArray(value) ? value.join('<br>• ') : value;
-                    html += `
-                        <div class="question-item">
-                            <div class="question-num">${key}</div>
-                            <div class="answer-box">
-                                <div class="answer-eleve">${displayValue}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-        }
-        
-        // Stats collages
-        if (item.pasteStats && (item.pasteStats.total > 0 || item.pasteStats.external > 0)) {
-            html += `
-                <div style="background:#fef2f2;padding:15px;border-radius:8px;margin-top:20px;">
-                    <strong>📋 Statistiques copier-coller :</strong><br>
-                    Total: ${item.pasteStats.total || 0} | 
-                    Externes: ${item.pasteStats.external || 0} | 
-                    Document: ${item.pasteStats.document || 0}
-                </div>
-            `;
-        }
-        
-        if (!html) {
-            html = '<div class="empty-state"><div class="empty-icon">📄</div><p>Aucun détail disponible</p></div>';
-        }
-        
-        document.getElementById('modalBody').innerHTML = html;
-        document.getElementById('modalOverlay').classList.add('active');
-    }
-    
-    function closeModal(event) {
-        if (!event || event.target === document.getElementById('modalOverlay')) {
-            document.getElementById('modalOverlay').classList.remove('active');
-        }
-    }
-    
-    // Fermer avec Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-    });
-    
-    console.log("✅ Page Résultats v5.0 prête - Lecture copies + evaluations");
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Résultats - PSE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Roboto', sans-serif; max-width: 1000px; margin: 0 auto; padding: 0; background: #f8f9fa; color: #333; min-height: 100vh; }
-        header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; text-align: center; color: white; }
-        h1 { margin: 0; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        main { padding: 20px; }
-        
-        /* === LOGIN === */
-        .login-screen { background: white; border-radius: 16px; padding: 40px; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
-        .login-icon { font-size: 4em; margin-bottom: 20px; }
-        .login-title { font-size: 1.5em; font-weight: 700; margin-bottom: 10px; }
-        .code-input { width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.2em; text-align: center; letter-spacing: 3px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; }
-        .code-input:focus { outline: none; border-color: #f59e0b; }
-        .login-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 12px; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
-        .error-message { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; }
-        .error-message.visible { display: block; }
-        
-        /* === RESULTS === */
-        .results-screen { display: none; }
-        .results-screen.active { display: block; }
-        
-        .student-banner { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #78350f; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .student-name { font-size: 1.3em; font-weight: 700; }
-        .logout-btn { background: rgba(255,255,255,0.3); border: none; color: #78350f; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        
-        /* === STATS === */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .stat-value { font-size: 2em; font-weight: 800; color: #f59e0b; }
-        .stat-label { font-size: 0.85em; color: #64748b; margin-top: 5px; }
-        
-        /* === TABS === */
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: white; padding: 5px; border-radius: 12px; }
-        .tab { flex: 1; padding: 12px; text-align: center; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-weight: 600; color: #64748b; transition: all 0.2s; }
-        .tab.active { background: #f59e0b; color: white; }
-        .tab:hover:not(.active) { background: #fef3c7; }
-        
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        /* === QUESTIONS DETAIL === */
+        .questions-section { margin-top: 25px; }
+        .section-title { font-weight: 700; color: #1e293b; margin-bottom: 20px; font-size: 1.2em; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+        .section-title::before { content: "📝 "; }
+        .question-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; transition: all 0.2s; page-break-inside: avoid; }
+        .question-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .question-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
+        .question-number { font-weight: 700; font-size: 1.1em; color: #f59e0b; }
+        .question-competence { background: #f8fafc; padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85em; color: #64748b; }
+        .question-text { color: #1e293b; margin-bottom: 15px; line-height: 1.5; font-weight: 500; }
+        .answer-section { background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+        .answer-label { font-weight: 600; color: #1e40af; margin-bottom: 8px; font-size: 0.9em; }
+        .answer-label::before { content: "✍️ "; }
+        .answer-text { color: #0f172a; line-height: 1.5; white-space: pre-wrap; }
+        .evaluation-section { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+        .evaluation-label { font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 0.9em; }
+        .evaluation-label::before { content: "🎯 "; }
+        .comment-section { background: #fffbeb; border-left: 4px solid #fbbf24; padding: 15px; border-radius: 0 8px 8px 0; }
+        .comment-label { font-weight: 600; color: #78350f; margin-bottom: 8px; font-size: 0.9em; }
+        .comment-label::before { content: "💬 "; }
+        .comment-text { color: #78350f; line-height: 1.5; font-style: italic; }
+        .no-comment { color: #94a3b8; font-style: italic; }
         
         /* === CHARTS === */
         .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .chart-title { font-weight: 600; margin-bottom: 15px; color: #1e293b; }
+        .chart-title { font-weight: 700; margin-bottom: 15px; color: #1e293b; }
+        .chart-container { position: relative; height: 300px; }
         
-        /* === EVAL LIST === */
-        .eval-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
-        .eval-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .eval-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-        .eval-title { font-weight: 600; color: #1e293b; }
-        .eval-date { font-size: 0.85em; color: #64748b; }
-        .eval-note { font-weight: 700; font-size: 1.3em; padding: 5px 15px; border-radius: 8px; }
-        .note-green { background: #dcfce7; color: #166534; }
-        .note-orange { background: #fef3c7; color: #92400e; }
-        .note-red { background: #fee2e2; color: #991b1b; }
-        .note-pending { background: #e0e7ff; color: #3730a3; }
-        .eval-appreciation { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 10px 15px; margin-top: 10px; border-radius: 0 8px 8px 0; font-size: 0.9em; }
-        
-        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; margin-left: 10px; }
-        .status-corrected { background: #dcfce7; color: #166534; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        
-        /* === COMPETENCES TABLE === */
-        .comp-table { width: 100%; border-collapse: collapse; }
-        .comp-table th, .comp-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        .comp-table th { background: #f8fafc; font-weight: 600; color: #64748b; }
-        .comp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85em; }
-        .comp-c1 { background: #fee2e2; color: #991b1b; }
-        .comp-c2 { background: #fef3c7; color: #92400e; }
-        .comp-c3 { background: #dcfce7; color: #166534; }
-        .comp-c4 { background: #dbeafe; color: #1e40af; }
-        .comp-c5 { background: #e0e7ff; color: #3730a3; }
-        .comp-c6 { background: #fce7f3; color: #9d174d; }
-        
-        /* === MODAL === */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: white; border-radius: 16px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        .modal-header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
-        .modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 1.2em; }
-        .modal-body { padding: 20px; }
-        
-        /* === DETAIL COPIE === */
-        .question-item { background: #f8fafc; border-radius: 8px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #e2e8f0; }
-        .question-item.correct { border-left-color: #22c55e; }
-        .question-item.partial { border-left-color: #f59e0b; }
-        .question-item.wrong { border-left-color: #ef4444; }
-        .question-num { font-weight: 700; color: #64748b; margin-bottom: 5px; }
-        .question-text { margin-bottom: 10px; }
-        .answer-box { background: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
-        .answer-label { font-size: 0.8em; color: #64748b; margin-bottom: 4px; }
-        .answer-eleve { color: #1e293b; }
-        .answer-correction { color: #16a34a; font-style: italic; }
-        .comment-box { background: #fffbeb; padding: 10px; border-radius: 6px; font-size: 0.9em; }
-        
-        /* === EMPTY === */
-        .empty-state { text-align: center; padding: 40px; color: #64748b; }
-        .empty-icon { font-size: 4em; opacity: 0.5; }
-        
-        .loader { text-align: center; padding: 40px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top-color: #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        @media (max-width: 600px) {
-            .charts-row { grid-template-columns: 1fr; }
-            .tabs { flex-wrap: wrap; }
-            .tab { min-width: calc(50% - 5px); }
+        /* === PRINT STYLES === */
+        @media print {
+            @page { size: A4; margin: 15mm; }
+            body { background: white; max-width: 100%; }
+            header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .modal-header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .appreciation-block { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .question-card { page-break-inside: avoid; border: 1px solid #e2e8f0; }
+            .comp-badge-large, .badge-M, .badge-A, .badge-I, .badge-NT { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .answer-section { background: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .evaluation-section { background: #fef3c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .comment-section { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .modal-content { max-height: none; box-shadow: none; }
+            .modal-body { padding: 10px; }
         }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            header { padding: 15px; }
+            h1 { font-size: 1.3em; }
+            main { padding: 15px; }
+            .student-banner { flex-direction: column; text-align: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .tabs { flex-wrap: wrap; }
+            .modal-content { max-width: 100%; border-radius: 16px 16px 0 0; max-height: 95vh; }
+            .question-header { flex-direction: column; align-items: flex-start; }
+        }
+        
+        /* === LOADING === */
+        .loading { text-align: center; padding: 40px; }
+        .spinner { border: 4px solid #f3f4f6; border-top: 4px solid #f59e0b; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* === EMPTY STATE === */
+        .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+        .empty-icon { font-size: 4em; margin-bottom: 15px; opacity: 0.5; }
+        .empty-text { font-size: 1.1em; font-weight: 600; }
     </style>
 </head>
 <body>
-<header>
-    <h1>📊 Mes Résultats PSE</h1>
-</header>
-<main>
-    <!-- LOGIN -->
+    <header class="no-print">
+        <h1>Mes Résultats PSE</h1>
+    </header>
+
+    <!-- ÉCRAN DE CONNEXION -->
     <div class="login-screen" id="loginScreen">
         <div class="login-icon">🔐</div>
-        <div class="login-title">Accès à mes résultats</div>
-        <p style="color:#64748b;">Entrez votre code élève (4 caractères)</p>
-        <input type="text" class="code-input" id="codeInput" placeholder="EX: KA47" maxlength="10" autofocus>
-        <button class="login-btn" id="loginBtn" onclick="connecter()">Accéder</button>
-        <div class="error-message" id="errorMessage">❌ Code non trouvé.</div>
+        <div class="login-title">Accès Élève</div>
+        <div class="login-subtitle">Entre ton code personnel</div>
+        <input type="text" id="codeInput" class="code-input" placeholder="Ex: LU83" maxlength="12" autofocus>
+        <button class="login-btn" onclick="connexion()">Se connecter</button>
+        <div class="error-message" id="errorMsg">Code incorrect. Vérifie ton code élève.</div>
+        <button class="btn-retour" onclick="window.location.href='https://preventionsanteenvironnement.github.io/PSE/'">⬅️ Retour au site PSE</button>
     </div>
-    <!-- RESULTS -->
+
+    <!-- ÉCRAN RÉSULTATS -->
     <div class="results-screen" id="resultsScreen">
-        <div class="student-banner">
-            <div>
-                <span class="student-name" id="studentName">--</span>
-                <span id="studentClass" style="opacity:0.8;margin-left:10px;">--</span>
-            </div>
-            <button class="logout-btn" onclick="deconnecter()">🚪 Déconnexion</button>
-        </div>
-        
-        <!-- STATS -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="statMoyenne">--</div>
-                <div class="stat-label">Moyenne générale</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statNbEvals">0</div>
-                <div class="stat-label">Évaluations corrigées</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statPending">0</div>
-                <div class="stat-label">En attente</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statBestComp">--</div>
-                <div class="stat-label">Meilleure compétence</div>
-            </div>
-        </div>
-        
-        <!-- TABS -->
-        <div class="tabs">
-            <button class="tab active" data-tab="evaluations" onclick="showTab('evaluations')">📝 Mes évaluations</button>
-            <button class="tab" data-tab="competences" onclick="showTab('competences')">🎯 Compétences</button>
-            <button class="tab" data-tab="progression" onclick="showTab('progression')">📈 Progression</button>
-        </div>
-        
-        <!-- TAB: EVALUATIONS -->
-        <div class="tab-content active" id="tab-evaluations">
-            <div id="evaluationsList">
-                <div class="loader"><div class="spinner"></div><div>Chargement...</div></div>
-            </div>
-        </div>
-        
-        <!-- TAB: COMPETENCES -->
-        <div class="tab-content" id="tab-competences">
-            <div class="charts-row">
-                <div class="chart-card">
-                    <div class="chart-title">🎯 Radar des compétences</div>
-                    <canvas id="radarChart"></canvas>
+        <main>
+            <!-- Bandeau élève -->
+            <div class="student-banner no-print">
+                <div class="student-info">
+                    <span class="student-name" id="studentName">Élève</span>
+                    <span class="student-class" id="studentClass">Classe</span>
                 </div>
-                <div class="chart-card">
-                    <div class="chart-title">📊 Détail par compétence</div>
-                    <table class="comp-table" id="compTable">
-                        <thead>
-                            <tr><th>Compétence</th><th>Niveau moyen</th><th>Évaluations</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                <div class="banner-actions">
+                    <button class="btn-home" onclick="window.location.href='https://preventionsanteenvironnement.github.io/PSE/'">🏠 Site PSE</button>
+                    <button class="logout-btn" onclick="deconnexion()">🚪 Déconnexion</button>
                 </div>
             </div>
-        </div>
-        
-        <!-- TAB: PROGRESSION -->
-        <div class="tab-content" id="tab-progression">
-            <div class="chart-card">
-                <div class="chart-title">📈 Évolution des notes</div>
-                <canvas id="progressChart"></canvas>
+
+            <!-- Statistiques -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statMoyenne">--</div>
+                    <div class="stat-label">Moyenne générale</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCorriges">0</div>
+                    <div class="stat-label">Évaluations corrigées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statAttente">0</div>
+                    <div class="stat-label">En attente</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statMeilleureComp">--</div>
+                    <div class="stat-label">Meilleure compétence</div>
+                </div>
             </div>
+
+            <!-- Onglets -->
+            <div class="tabs no-print">
+                <button class="tab active" onclick="switchTab('evaluations')">📝 Mes évaluations</button>
+                <button class="tab" onclick="switchTab('competences')">🎯 Compétences</button>
+                <button class="tab" onclick="switchTab('progression')">📈 Progression</button>
+            </div>
+
+            <!-- Contenu Évaluations -->
+            <div class="tab-content active" id="tabEvaluations">
+                <div id="evalList"></div>
+            </div>
+
+            <!-- Contenu Compétences -->
+            <div class="tab-content" id="tabCompetences">
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <div class="chart-title">🎯 Radar des compétences</div>
+                        <div class="chart-container"><canvas id="radarChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">📊 Performance par compétence</div>
+                        <div class="chart-container"><canvas id="barChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu Progression -->
+            <div class="tab-content" id="tabProgression">
+                <div class="chart-card">
+                    <div class="chart-title">📈 Évolution des notes</div>
+                    <div class="chart-container"><canvas id="lineChart"></canvas></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL DÉTAIL COPIE -->
+    <div class="modal-overlay" id="modalDetail">
+        <div class="modal-content" id="printableArea">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Détail de la copie</div>
+                <div class="modal-actions no-print">
+                    <button class="action-btn" onclick="imprimerCopie()">🖨️ Imprimer</button>
+                    <button class="modal-close" onclick="fermerModal()">×</button>
+                </div>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
         </div>
     </div>
-</main>
-<!-- MODAL DETAIL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <div>
-                <div style="font-weight:700;font-size:1.2em;" id="modalTitle">Détail de l'évaluation</div>
-                <div style="opacity:0.9;font-size:0.9em;" id="modalSubtitle"></div>
-            </div>
-            <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body" id="modalBody">
-            <!-- Contenu dynamique -->
-        </div>
-    </div>
-</div>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-    
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-        authDomain: "devoirs-pse.firebaseapp.com",
-        projectId: "devoirs-pse",
-        storageBucket: "devoirs-pse.appspot.com",
-        messagingSenderId: "614730413904",
-        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
-    
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    
-    console.log("🚀 Page Résultats v5.0 - Lecture copies + evaluations (CORRIGÉ)");
-    
-    let currentCode = null;
-    let allResults = [];
-    let radarChart = null;
-    let progressChart = null;
-    
-    // Exposer les fonctions
-    window.connecter = connecter;
-    window.deconnecter = deconnecter;
-    window.showTab = showTab;
-    window.openDetail = openDetail;
-    window.closeModal = closeModal;
-    
-    document.getElementById('codeInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') connecter();
-    });
-    
-    async function connecter() {
-        const codeInput = document.getElementById('codeInput');
-        const code = codeInput.value.trim().toUpperCase();
-        const errorDiv = document.getElementById('errorMessage');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        errorDiv.classList.remove('visible');
-        
-        if (!code || code.length < 2) {
-            errorDiv.textContent = "⚠️ Entrez votre code élève.";
-            errorDiv.classList.add('visible');
-            return;
-        }
-        
-        loginBtn.disabled = true;
-        loginBtn.textContent = "Chargement...";
-        
-        try {
-            console.log("🔍 Recherche pour le code:", code);
-            
-            // ════════════════════════════════════════════════════════════════
-            // ⭐ CORRECTION v5.0 : LECTURE DEPUIS 2 COLLECTIONS
-            // 1. resultats/{eleveCode}/copies/ → copies brutes
-            // 2. resultats/{eleveCode}/evaluations/ → corrections
-            // ════════════════════════════════════════════════════════════════
-            
-            allResults = [];
-            const copiesMap = new Map(); // Pour fusionner copies + corrections
-            
-            // ─────────────────────────────────────────────────────────────
-            // ÉTAPE 1 : Charger les COPIES BRUTES
-            // ─────────────────────────────────────────────────────────────
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc, collectionGroup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.appspot.com",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentUserCode = null;
+        let allEvaluations = [];
+        let radarChart, barChart, lineChart;
+
+        // ═══════════════════════════════════════════════════════
+        // CONNEXION
+        // ═══════════════════════════════════════════════════════
+        window.connexion = async function() {
+            const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            if (!code) return;
+
             try {
-                const copiesPath = `resultats/${code}/copies`;
-                console.log("📂 Lecture copies:", copiesPath);
+                console.log("🔐 Connexion avec code:", code);
                 
-                const qCopies = query(collection(db, copiesPath), limit(100));
+                // Chercher des copies avec ce code élève
+                const qCopies = query(collectionGroup(db, "copies"), where("eleveCode", "==", code));
                 const snapCopies = await getDocs(qCopies);
                 
-                snapCopies.forEach(doc => {
-                    const data = doc.data();
-                    copiesMap.set(data.devoirId, {
-                        id: doc.id,
-                        source: 'copies',
-                        ...data
+                if (snapCopies.empty) {
+                    document.getElementById('errorMsg').classList.add('visible');
+                    return;
+                }
+
+                currentUserCode = code;
+                localStorage.setItem('pse_user_code', code);
+                
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('resultsScreen').classList.add('active');
+                
+                await chargerDonnees();
+                
+            } catch (e) {
+                console.error("❌ Erreur connexion:", e);
+                alert("Erreur: " + e.message);
+            }
+        };
+
+        window.deconnexion = function() {
+            localStorage.removeItem('pse_user_code');
+            location.reload();
+        };
+
+        // ═══════════════════════════════════════════════════════
+        // CHARGEMENT DONNÉES
+        // ═══════════════════════════════════════════════════════
+        async function chargerDonnees() {
+            console.log("📂 Chargement pour:", currentUserCode);
+            
+            try {
+                // ÉTAPE 1 : Charger les COPIES
+                const qCopies = query(
+                    collectionGroup(db, "copies"),
+                    where("eleveCode", "==", currentUserCode)
+                );
+                const snapCopies = await getDocs(qCopies);
+                
+                // ÉTAPE 2 : Charger les ÉVALUATIONS
+                const qEvals = query(
+                    collectionGroup(db, "evaluations"),
+                    where("eleveCode", "==", currentUserCode)
+                );
+                const snapEvals = await getDocs(qEvals);
+                
+                // Créer une Map des évaluations par devoirId
+                const evalsMap = new Map();
+                snapEvals.forEach(doc => {
+                    const evalData = doc.data();
+                    evalsMap.set(evalData.devoirId, evalData);
+                });
+                
+                // ÉTAPE 3 : FUSIONNER copies + évaluations
+                allEvaluations = [];
+                snapCopies.forEach(docSnap => {
+                    const copie = docSnap.data();
+                    const evaluation = evalsMap.get(copie.devoirId);
+                    
+                    allEvaluations.push({
+                        id: docSnap.id,
+                        copie: copie,
+                        evaluation: evaluation,
+                        estCorrige: !!evaluation,
+                        devoirId: copie.devoirId,
+                        titre: copie.titre || "Devoir",
+                        date: copie.createdAtISO || copie.createdAt?.toDate?.() || new Date(),
+                        note: evaluation?.note_finale ?? null,
+                        appreciation: evaluation?.appreciation || "",
+                        competences: evaluation?.competences || {},
+                        questions: evaluation?.questions || {},
+                        reponses: copie.reponses || {}
                     });
                 });
                 
-                console.log("✅ Copies trouvées:", snapCopies.size);
-            } catch(e) {
-                console.log("⚠️ Erreur lecture copies:", e.message);
+                // Trier par date décroissante
+                allEvaluations.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                console.log("✅ Données chargées:", allEvaluations.length, "évaluations");
+                
+                // Mettre à jour l'interface
+                afficherInfosEleve();
+                afficherStatistiques();
+                afficherListeEvaluations();
+                creerGraphiques();
+                
+            } catch (e) {
+                console.error("❌ Erreur chargement:", e);
+                alert("Erreur: " + e.message);
             }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // AFFICHAGE
+        // ═══════════════════════════════════════════════════════
+        function afficherInfosEleve() {
+            if (allEvaluations.length === 0) return;
             
-            // ─────────────────────────────────────────────────────────────
-            // ÉTAPE 2 : Charger les CORRECTIONS (EVALUATIONS)
-            // ─────────────────────────────────────────────────────────────
-            try {
-                const evalsPath = `resultats/${code}/evaluations`;
-                console.log("📂 Lecture évaluations:", evalsPath);
-                
-                const qEvals = query(collection(db, evalsPath), limit(100));
-                const snapEvals = await getDocs(qEvals);
-                
-                snapEvals.forEach(doc => {
-                    const evalData = doc.data();
-                    const devoirId = evalData.devoirId;
-                    
-                    if (copiesMap.has(devoirId)) {
-                        // Fusionner correction avec copie existante
-                        const copie = copiesMap.get(devoirId);
-                        copiesMap.set(devoirId, {
-                            ...copie,
-                            // Ajouter données de correction
-                            note_finale: evalData.note_finale,
-                            appreciation: evalData.appreciation,
-                            competences_corrigees: evalData.competences,
-                            questions_corrigees: evalData.questions,
-                            correctedAt: evalData.savedAt,
-                            correctedBy: evalData.savedBy
-                        });
-                    } else {
-                        // Correction sans copie (cas rare)
-                        copiesMap.set(devoirId, {
-                            id: doc.id,
-                            source: 'evaluation_only',
-                            devoirId: devoirId,
-                            titre: evalData.titre,
-                            note_finale: evalData.note_finale,
-                            appreciation: evalData.appreciation,
-                            competences: evalData.competences,
-                            correctedAt: evalData.savedAt
-                        });
+            const premier = allEvaluations[0];
+            const eleve = premier.copie.eleve;
+            
+            const nom = eleve?.nom || currentUserCode;
+            const prenom = eleve?.prenom || "";
+            const classe = eleve?.classe || "?";
+            
+            document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || currentUserCode;
+            document.getElementById('studentClass').textContent = classe;
+        }
+
+        function afficherStatistiques() {
+            const corriges = allEvaluations.filter(e => e.estCorrige);
+            const attente = allEvaluations.filter(e => !e.estCorrige);
+            
+            // Moyenne
+            const notes = corriges.filter(e => e.note !== null).map(e => e.note);
+            const moyenne = notes.length > 0 ? (notes.reduce((a, b) => a + b, 0) / notes.length).toFixed(1) : "--";
+            
+            // Meilleure compétence
+            const compStats = {};
+            corriges.forEach(e => {
+                for (const [comp, data] of Object.entries(e.competences)) {
+                    if (!compStats[comp]) compStats[comp] = { total: 0, max: 0 };
+                    compStats[comp].total += data.pts || 0;
+                    compStats[comp].max += data.max || 0;
+                }
+            });
+            
+            let meilleureComp = "--";
+            let meilleurPct = 0;
+            for (const [comp, data] of Object.entries(compStats)) {
+                if (data.max > 0) {
+                    const pct = (data.total / data.max) * 100;
+                    if (pct > meilleurPct) {
+                        meilleurPct = pct;
+                        meilleureComp = comp;
                     }
-                });
-                
-                console.log("✅ Évaluations trouvées:", snapEvals.size);
-            } catch(e) {
-                console.log("⚠️ Erreur lecture évaluations:", e.message);
+                }
             }
             
-            // ─────────────────────────────────────────────────────────────
-            // ÉTAPE 3 : Convertir Map en tableau
-            // ─────────────────────────────────────────────────────────────
-            allResults = Array.from(copiesMap.values());
+            document.getElementById('statMoyenne').textContent = moyenne + (moyenne !== "--" ? "/20" : "");
+            document.getElementById('statCorriges').textContent = corriges.length;
+            document.getElementById('statAttente').textContent = attente.length;
+            document.getElementById('statMeilleureComp').textContent = meilleureComp;
+        }
+
+        function afficherListeEvaluations() {
+            const container = document.getElementById('evalList');
             
-            console.log("📊 Total fusionné:", allResults.length);
-            
-            if (allResults.length === 0) {
-                errorDiv.textContent = "❌ Aucun résultat trouvé pour le code « " + code + " ».\nVérifiez votre code ou contactez votre professeur.";
-                errorDiv.classList.add('visible');
-                loginBtn.disabled = false;
-                loginBtn.textContent = "Accéder";
+            if (allEvaluations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-text">Aucune évaluation pour le moment</div>
+                    </div>
+                `;
                 return;
             }
             
-            // Trier par date (plus récent en premier)
-            allResults.sort((a, b) => {
-                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : (a.ts ? new Date(a.ts) : new Date(0));
-                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.ts ? new Date(b.ts) : new Date(0));
-                return dateB - dateA;
-            });
-            
-            currentCode = code;
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('resultsScreen').classList.add('active');
-            
-            // Afficher les infos élève
-            const firstItem = allResults[0];
-            const prenom = firstItem?.eleve?.prenom || firstItem?.eleve || code;
-            const nom = firstItem?.eleve?.nom || '';
-            const classe = firstItem?.classe || firstItem?.eleve?.classe || "";
-            
-            document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || code;
-            document.getElementById('studentClass').textContent = classe;
-            
-            renderEvaluations();
-            renderStats();
-            renderCompetences();
-            renderProgression();
-            
-        } catch (error) {
-            console.error("❌ Erreur:", error);
-            errorDiv.textContent = "❌ Erreur de connexion: " + error.message;
-            errorDiv.classList.add('visible');
-        }
-        
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Accéder";
-    }
-    
-    function deconnecter() {
-        currentCode = null;
-        allResults = [];
-        document.getElementById('resultsScreen').classList.remove('active');
-        document.getElementById('loginScreen').style.display = 'block';
-        document.getElementById('codeInput').value = '';
-        document.getElementById('errorMessage').classList.remove('visible');
-        if (radarChart) radarChart.destroy();
-        if (progressChart) progressChart.destroy();
-    }
-    
-    function showTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-        const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
-        if (selectedTab) {
-            selectedTab.classList.add('active');
-        }
-        
-        const tabContent = document.getElementById('tab-' + tabName);
-        if (tabContent) {
-            tabContent.classList.add('active');
-        }
-    }
-    
-    function renderEvaluations() {
-        const container = document.getElementById('evaluationsList');
-        
-        if (allResults.length === 0) {
-            container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aucune évaluation</p></div>`;
-            return;
-        }
-        
-        let html = '';
-        allResults.forEach((item, index) => {
-            const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
-            const dateStr = item.createdAtISO || item.ts;
-            const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "Date inconnue";
-            
-            // ⭐ CORRECTION v5.0 : Utiliser note_finale si disponible
-            const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
-            const note = hasCorrection ? item.note_finale : (item.note_auto || item.score);
-            const isPending = !hasCorrection;
-            
-            let noteDisplay, noteClass, statusBadge;
-            
-            if (isPending) {
-                noteDisplay = note !== undefined && note !== null ? `${parseFloat(note).toFixed(1)}*` : "⏳";
-                noteClass = 'note-pending';
-                statusBadge = '<span class="status-badge status-pending">⏳ En attente</span>';
-            } else {
-                noteDisplay = `${parseFloat(note).toFixed(1)}/20`;
-                noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
-                statusBadge = '<span class="status-badge status-corrected">✅ Corrigé</span>';
-            }
-            
-            html += `
-                <div class="eval-card" onclick="openDetail(${index})">
-                    <div class="eval-header">
-                        <div>
-                            <div class="eval-title">${titre} ${statusBadge}</div>
-                            <div class="eval-date">📅 ${date}</div>
+            container.innerHTML = allEvaluations.map(eval => {
+                const dateStr = eval.date instanceof Date ? eval.date.toLocaleDateString('fr-FR') : 
+                               typeof eval.date === 'string' ? new Date(eval.date).toLocaleDateString('fr-FR') : '--';
+                
+                const statusBadge = eval.estCorrige ? 
+                    '<span class="status-badge status-corrected">✓ Corrigé</span>' :
+                    '<span class="status-badge status-pending">⏳ En attente</span>';
+                
+                let noteClass = 'note-pending';
+                let noteText = '--';
+                if (eval.note !== null) {
+                    noteText = eval.note.toFixed(1) + '/20';
+                    if (eval.note >= 16) noteClass = 'note-excellent';
+                    else if (eval.note >= 12) noteClass = 'note-good';
+                    else if (eval.note >= 10) noteClass = 'note-average';
+                    else noteClass = 'note-poor';
+                }
+                
+                return `
+                    <div class="eval-card">
+                        <div class="eval-header">
+                            <div>
+                                <div class="eval-title">${eval.titre}</div>
+                                <div class="eval-meta">
+                                    <span class="eval-date">📅 ${dateStr}</span>
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                            <div class="eval-note ${noteClass}">${noteText}</div>
                         </div>
-                        <div class="eval-note ${noteClass}">${noteDisplay}</div>
+                        <div class="eval-actions">
+                            <button class="btn-view" onclick="ouvrirDetail('${eval.id}')" ${!eval.estCorrige ? 'disabled' : ''}>
+                                👁️ ${eval.estCorrige ? 'Voir ma copie corrigée' : 'Correction en cours...'}
+                            </button>
+                        </div>
                     </div>
-                    ${item.appreciation ? `<div class="eval-appreciation"><strong>💬</strong> ${item.appreciation}</div>` : ''}
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    function renderStats() {
-        // Moyenne (sur les notes finales corrigées)
-        let totalNotes = 0, nbNotes = 0;
-        let nbPending = 0;
-        
-        allResults.forEach(e => {
-            if (e.note_finale !== undefined && e.note_finale !== null) {
-                totalNotes += parseFloat(e.note_finale);
-                nbNotes++;
-            } else {
-                nbPending++;
-            }
-        });
-        
-        const moyenne = nbNotes > 0 ? (totalNotes / nbNotes).toFixed(1) : '--';
-        document.getElementById('statMoyenne').textContent = moyenne !== '--' ? moyenne + '/20' : '--';
-        document.getElementById('statNbEvals').textContent = nbNotes;
-        document.getElementById('statPending').textContent = nbPending;
-        
-        // ⭐ CORRECTION v5.0 : Utiliser competences OU competences_corrigees
-        const compScores = {};
-        allResults.forEach(e => {
-            const comps = e.competences_corrigees || e.competences || {};
-            Object.entries(comps).forEach(([comp, data]) => {
-                // Gérer format grille (objet avec pts/max) et format copie (nombre)
-                const score = typeof data === 'object' ? (data.pts || 0) : data;
-                if (!compScores[comp]) compScores[comp] = { total: 0, count: 0 };
-                compScores[comp].total += score;
-                compScores[comp].count++;
-            });
-        });
-        
-        let bestComp = '--';
-        let bestAvg = 0;
-        Object.entries(compScores).forEach(([comp, data]) => {
-            const avg = data.total / data.count;
-            if (avg > bestAvg) {
-                bestAvg = avg;
-                bestComp = comp;
-            }
-        });
-        document.getElementById('statBestComp').textContent = bestComp;
-    }
-    
-    function renderCompetences() {
-        const compData = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [] };
-        
-        allResults.forEach(e => {
-            const comps = e.competences_corrigees || e.competences || {};
-            Object.entries(comps).forEach(([comp, data]) => {
-                const score = typeof data === 'object' ? (data.pts || 0) : data;
-                if (compData[comp]) compData[comp].push(score);
-            });
-        });
-        
-        const labels = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
-        const averages = labels.map(c => {
-            const scores = compData[c];
-            return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-        });
-        
-        // Radar Chart
-        const ctx = document.getElementById('radarChart').getContext('2d');
-        if (radarChart) radarChart.destroy();
-        
-        radarChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Niveau moyen',
-                    data: averages,
-                    fill: true,
-                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                    borderColor: '#f59e0b',
-                    pointBackgroundColor: '#f59e0b',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#f59e0b'
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        beginAtZero: true,
-                        max: 4,
-                        ticks: { stepSize: 1 }
-                    }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-        
-        // Table
-        const tbody = document.querySelector('#compTable tbody');
-        tbody.innerHTML = labels.map((c, i) => {
-            const avg = averages[i];
-            const count = compData[c].length;
-            const niveau = avg >= 3 ? 'Maîtrisé' : avg >= 2 ? 'Acceptable' : avg >= 1 ? 'Insuffisant' : 'Non traité';
-            return `
-                <tr>
-                    <td><span class="comp-badge comp-${c.toLowerCase()}">${c}</span></td>
-                    <td>${avg.toFixed(1)} - ${niveau}</td>
-                    <td>${count}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-    
-    function renderProgression() {
-        const sorted = [...allResults]
-            .filter(e => (e.note_finale !== undefined && e.note_finale !== null) || (e.note_auto !== undefined))
-            .sort((a, b) => {
-                const dateA = new Date(a.createdAtISO || a.ts || 0);
-                const dateB = new Date(b.createdAtISO || b.ts || 0);
-                return dateA - dateB;
-            });
-        
-        const labels = sorted.map(e => {
-            const d = new Date(e.createdAtISO || e.ts);
-            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-        });
-        const notes = sorted.map(e => parseFloat(e.note_finale ?? e.note_auto ?? 0));
-        
-        const ctx = document.getElementById('progressChart').getContext('2d');
-        if (progressChart) progressChart.destroy();
-        
-        progressChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Notes /20',
-                    data: notes,
-                    fill: true,
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    borderColor: '#f59e0b',
-                    tension: 0.3,
-                    pointRadius: 6,
-                    pointBackgroundColor: '#f59e0b'
-                }]
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true, max: 20 }
-                },
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
-    }
-    
-    function openDetail(index) {
-        const item = allResults[index];
-        if (!item) return;
-        
-        const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
-        const dateStr = item.createdAtISO || item.ts;
-        const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "";
-        const note = item.note_finale ?? item.note_auto ?? item.score;
-        const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
-        
-        document.getElementById('modalTitle').textContent = titre;
-        document.getElementById('modalSubtitle').textContent = `${date} • Note: ${note ? parseFloat(note).toFixed(1) + '/20' : '--'}${!hasCorrection ? ' (provisoire)' : ''}`;
-        
-        let html = '';
-        
-        // Appréciation
-        if (item.appreciation) {
-            html += `<div style="background:#fffbeb;padding:15px;border-radius:8px;margin-bottom:20px;"><strong>💬 Appréciation :</strong> ${item.appreciation}</div>`;
+                `;
+            }).join('');
         }
-        
-        // Compétences (prioriser competences_corrigees)
-        const comps = item.competences_corrigees || item.competences || {};
-        if (Object.keys(comps).length > 0) {
-            html += `<div style="margin-bottom:20px;"><strong>🎯 Compétences évaluées :</strong><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">`;
-            Object.entries(comps).forEach(([comp, data]) => {
-                // Gérer les 2 formats
-                let niveau = 'NT';
-                if (typeof data === 'object' && data.pts !== undefined) {
-                    // Format grille {pts, max}
-                    const ratio = data.max > 0 ? data.pts / data.max : 0;
-                    niveau = ratio >= 0.85 ? 'M' : ratio >= 0.65 ? 'A' : ratio >= 0.40 ? 'I' : 'NT';
-                } else if (typeof data === 'number') {
-                    // Format copie (nombre)
-                    niveau = data >= 3 ? 'M' : data >= 2 ? 'A' : data >= 1 ? 'I' : 'NT';
-                }
-                html += `<span class="comp-badge comp-${comp.toLowerCase()}">${comp}: ${niveau}</span>`;
-            });
-            html += `</div></div>`;
-        }
-        
-        // Réponses détaillées
-        if (item.reponses && Object.keys(item.reponses).length > 0) {
-            html += `<div><strong>📝 Détail des réponses :</strong></div>`;
+
+        // ═══════════════════════════════════════════════════════
+        // MODAL DÉTAIL
+        // ═══════════════════════════════════════════════════════
+        window.ouvrirDetail = async function(evalId) {
+            const evaluation = allEvaluations.find(e => e.id === evalId);
+            if (!evaluation || !evaluation.estCorrige) return;
             
-            Object.entries(item.reponses).forEach(([key, value]) => {
-                if (value && value !== '' && !key.includes('match_') && !key.includes('trou_')) {
-                    const displayValue = Array.isArray(value) ? value.join('<br>• ') : value;
+            console.log("📄 Ouverture détail:", evaluation.devoirId);
+            
+            // Charger le blueprint
+            let blueprint = null;
+            try {
+                const resp = await fetch(`${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
+                if (resp.ok) blueprint = await resp.json();
+            } catch (e) {
+                console.warn("⚠️ Blueprint non trouvé:", e);
+            }
+            
+            // Construire le HTML
+            const modalTitle = `${evaluation.titre} - ${evaluation.note.toFixed(1)}/20`;
+            document.getElementById('modalTitle').textContent = modalTitle;
+            
+            let html = '';
+            
+            // Appréciation générale
+            if (evaluation.appreciation) {
+                html += `
+                    <div class="appreciation-block">
+                        <div class="appreciation-title">Appréciation générale du professeur</div>
+                        <div class="appreciation-text">${evaluation.appreciation}</div>
+                    </div>
+                `;
+            }
+            
+            // Compétences
+            if (Object.keys(evaluation.competences).length > 0) {
+                html += `
+                    <div class="competences-summary">
+                        <div class="competences-title">Résumé de tes compétences</div>
+                        <div class="comp-list">
+                `;
+                
+                const compLabels = {
+                    C1: "Mobiliser des connaissances",
+                    C2: "Analyser la situation",
+                    C3: "Identifier les dangers",
+                    C4: "Proposer des mesures de prévention",
+                    C5: "Justifier ses choix",
+                    C6: "Communication professionnelle"
+                };
+                
+                for (const [comp, data] of Object.entries(evaluation.competences)) {
+                    const pts = data.pts || 0;
+                    const max = data.max || 0;
+                    const pct = max > 0 ? Math.round((pts / max) * 100) : 0;
+                    
+                    // Déterminer le niveau global
+                    let niveau = "NT";
+                    if (pct >= 80) niveau = "M";
+                    else if (pct >= 60) niveau = "A";
+                    else if (pct > 0) niveau = "I";
+                    
                     html += `
-                        <div class="question-item">
-                            <div class="question-num">${key}</div>
-                            <div class="answer-box">
-                                <div class="answer-eleve">${displayValue}</div>
+                        <div class="comp-item badge-${niveau}">
+                            <div class="comp-label">${comp} - ${compLabels[comp] || comp}</div>
+                            <div class="comp-result">
+                                <span class="comp-badge-large badge-${niveau}">${niveau}</span>
+                                <span class="comp-score">${pts}/${max}</span>
                             </div>
                         </div>
                     `;
                 }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Questions détaillées
+            html += `
+                <div class="questions-section">
+                    <div class="section-title">Détail de ta copie</div>
+            `;
+            
+            // Extraire les questions du blueprint
+            let questions = [];
+            if (blueprint) {
+                if (Array.isArray(blueprint.questions)) {
+                    questions = blueprint.questions;
+                } else if (Array.isArray(blueprint.content)) {
+                    questions = blueprint.content.filter(item => item.type === "question");
+                }
+            }
+            
+            if (questions.length > 0) {
+                questions.forEach((q, idx) => {
+                    const qid = q.qid || q.id || `q_${idx}`;
+                    const label = q.label || `Q${idx + 1}`;
+                    const questionText = q.questionText || "Question";
+                    const competence = q.competence || "";
+                    
+                    // Chercher la réponse avec plusieurs clés possibles
+                    let reponse = evaluation.reponses[qid] || 
+                                 evaluation.reponses[label] || 
+                                 evaluation.reponses[`Q${label}`] ||
+                                 evaluation.reponses[`q_${idx}`] ||
+                                 "<i>Non répondu</i>";
+                    
+                    if (Array.isArray(reponse)) {
+                        reponse = reponse.join(' • ');
+                    }
+                    
+                    // Récupérer l'évaluation de cette question
+                    const questionEval = evaluation.questions[qid] || evaluation.questions[label] || {};
+                    const niveau = questionEval.level || "NT";
+                    const commentaire = questionEval.comment || "";
+                    
+                    const niveauLabels = {
+                        M: "🟢 Maîtrisé",
+                        A: "🔵 Acceptable",
+                        I: "🟠 Insuffisant",
+                        NT: "⚪ Non Traité"
+                    };
+                    
+                    html += `
+                        <div class="question-card">
+                            <div class="question-header">
+                                <div class="question-number">Question ${idx + 1}</div>
+                                ${competence ? `<div class="question-competence">${competence}</div>` : ''}
+                            </div>
+                            <div class="question-text">${questionText}</div>
+                            
+                            <div class="answer-section">
+                                <div class="answer-label">Ta réponse</div>
+                                <div class="answer-text">${reponse}</div>
+                            </div>
+                            
+                            <div class="evaluation-section">
+                                <div class="evaluation-label">Évaluation</div>
+                                <div class="answer-text"><strong>${niveauLabels[niveau] || niveau}</strong></div>
+                            </div>
+                            
+                            ${commentaire ? `
+                                <div class="comment-section">
+                                    <div class="comment-label">Commentaire du professeur</div>
+                                    <div class="comment-text">${commentaire}</div>
+                                </div>
+                            ` : '<div class="no-comment">Pas de commentaire</div>'}
+                        </div>
+                    `;
+                });
+            } else {
+                html += `<div class="empty-state"><div class="empty-text">Détails non disponibles</div></div>`;
+            }
+            
+            html += `</div>`;
+            
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('modalDetail').classList.add('active');
+        };
+
+        window.fermerModal = function() {
+            document.getElementById('modalDetail').classList.remove('active');
+        };
+
+        window.imprimerCopie = function() {
+            window.print();
+        };
+
+        // ═══════════════════════════════════════════════════════
+        // GRAPHIQUES
+        // ═══════════════════════════════════════════════════════
+        function creerGraphiques() {
+            const corriges = allEvaluations.filter(e => e.estCorrige);
+            if (corriges.length === 0) return;
+            
+            // Données compétences
+            const compData = { C1: 0, C2: 0, C3: 0, C4: 0, C5: 0, C6: 0 };
+            const compMax = { C1: 0, C2: 0, C3: 0, C4: 0, C5: 0, C6: 0 };
+            
+            corriges.forEach(e => {
+                for (const [comp, data] of Object.entries(e.competences)) {
+                    compData[comp] = (compData[comp] || 0) + (data.pts || 0);
+                    compMax[comp] = (compMax[comp] || 0) + (data.max || 0);
+                }
+            });
+            
+            const compPct = {};
+            for (const comp in compData) {
+                compPct[comp] = compMax[comp] > 0 ? Math.round((compData[comp] / compMax[comp]) * 100) : 0;
+            }
+            
+            // Radar Chart
+            const ctxRadar = document.getElementById('radarChart');
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(compPct),
+                    datasets: [{
+                        label: 'Maîtrise (%)',
+                        data: Object.values(compPct),
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        pointBackgroundColor: 'rgba(245, 158, 11, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(245, 158, 11, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+            
+            // Bar Chart
+            const ctxBar = document.getElementById('barChart');
+            if (barChart) barChart.destroy();
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(compPct),
+                    datasets: [{
+                        label: 'Maîtrise (%)',
+                        data: Object.values(compPct),
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(236, 72, 153, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+            
+            // Line Chart (progression)
+            const notes = corriges.map(e => e.note).filter(n => n !== null);
+            const dates = corriges.filter(e => e.note !== null).map(e => {
+                const d = new Date(e.date);
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+            });
+            
+            const ctxLine = document.getElementById('lineChart');
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Note (/20)',
+                        data: notes,
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 20,
+                            ticks: { stepSize: 5 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
             });
         }
-        
-        // Stats collages
-        if (item.pasteStats && (item.pasteStats.total > 0 || item.pasteStats.external > 0)) {
-            html += `
-                <div style="background:#fef2f2;padding:15px;border-radius:8px;margin-top:20px;">
-                    <strong>📋 Statistiques copier-coller :</strong><br>
-                    Total: ${item.pasteStats.total || 0} | 
-                    Externes: ${item.pasteStats.external || 0} | 
-                    Document: ${item.pasteStats.document || 0}
-                </div>
-            `;
-        }
-        
-        if (!html) {
-            html = '<div class="empty-state"><div class="empty-icon">📄</div><p>Aucun détail disponible</p></div>';
-        }
-        
-        document.getElementById('modalBody').innerHTML = html;
-        document.getElementById('modalOverlay').classList.add('active');
-    }
-    
-    function closeModal(event) {
-        if (!event || event.target === document.getElementById('modalOverlay')) {
-            document.getElementById('modalOverlay').classList.remove('active');
-        }
-    }
-    
-    // Fermer avec Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-    });
-    
-    console.log("✅ Page Résultats v5.0 prête - Lecture copies + evaluations");
-</script>
+
+        // ═══════════════════════════════════════════════════════
+        // ONGLETS
+        // ═══════════════════════════════════════════════════════
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
+        };
+
+        // ═══════════════════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════════════════
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCode = localStorage.getItem('pse_user_code');
+            if (savedCode) {
+                document.getElementById('codeInput').value = savedCode;
+                connexion();
+            }
+            
+            document.getElementById('codeInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') connexion();
+            });
+        });
+
+        // Fermer modal en cliquant à l'extérieur
+        document.getElementById('modalDetail').addEventListener('click', (e) => {
+            if (e.target.id === 'modalDetail') fermerModal();
+        });
+    </script>
 </body>
 </html>
