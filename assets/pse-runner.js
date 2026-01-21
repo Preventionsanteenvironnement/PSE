@@ -1,9 +1,11 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 5.0 (ALIGNÉ - Écrit dans copies/ à la racine)
-// Collection : copies/{docId}
+// pse-runner.js - Version 6.0 (CORRIGÉ - Structure alignée)
+// Collection : resultats/{eleveCode}/copies/{docId}
+// Date : 21 janvier 2026
+// Corrections : Écriture dans la bonne structure pour compatibilité totale
 // ════════════════════════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -17,7 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v5.0 - Écrit dans copies/ à la racine");
+console.log("🚀 PSE Runner v6.0 - Structure corrigée : resultats/{eleveCode}/copies/");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
@@ -207,7 +209,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                    || "Devoir PSE";
         
         // ════════════════════════════════════════════════════════════════
-        // ⭐ STRUCTURE DU DOCUMENT (alignée avec les données existantes)
+        // ⭐ STRUCTURE DU DOCUMENT (corrigée v6.0)
         // ════════════════════════════════════════════════════════════════
         const data = {
             // Identifiants
@@ -245,11 +247,15 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         };
         
         // ════════════════════════════════════════════════════════════════
-        // ⭐ ÉCRITURE DANS copies/ À LA RACINE
+        // ⭐ ÉCRITURE DANS resultats/{eleveCode}/copies/{docId}
+        // CORRECTION v6.0 : Structure alignée avec annuaire.js et règles Firestore
         // ════════════════════════════════════════════════════════════════
-        const docRef = await addDoc(collection(db, "copies"), data);
+        const docId = `${devoirId}_${Date.now()}`;
+        const docPath = `resultats/${eleveCode}/copies/${docId}`;
         
-        console.log("✅ Envoyé dans copies/", docRef.id);
+        await setDoc(doc(db, "resultats", eleveCode, "copies", docId), data);
+        
+        console.log("✅ Envoyé dans:", docPath);
         console.log("📦 Data:", data);
         
         alert("✅ COPIE ENVOYÉE !\n\n" + 
@@ -284,4 +290,4 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     }
 };
 
-console.log("✅ window.envoyerCopie prêt (v5.0 - copies/ à la racine)");
+console.log("✅ window.envoyerCopie prêt (v6.0 - resultats/{eleveCode}/copies/)");
