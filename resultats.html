@@ -190,21 +190,18 @@
         <h1>Mes Résultats PSE</h1>
     </header>
 
-    <!-- ÉCRAN DE CONNEXION -->
     <div class="login-screen" id="loginScreen">
         <div class="login-icon">🔐</div>
         <div class="login-title">Accès Élève</div>
         <div class="login-subtitle">Entre ton code personnel</div>
-        <input type="text" id="codeInput" class="code-input" placeholder="CODE ÉLÈVE" maxlength="12" autofocus>
+        <input type="text" id="codeInput" class="code-input" placeholder="Ex: LU83" maxlength="12" autofocus>
         <button class="login-btn" onclick="connexion()">Se connecter</button>
         <div class="error-message" id="errorMsg">Code incorrect. Vérifie ton code élève.</div>
         <button class="btn-retour" onclick="window.location.href='https://preventionsanteenvironnement.github.io/PSE/'">⬅️ Retour au site PSE</button>
     </div>
 
-    <!-- ÉCRAN RÉSULTATS -->
     <div class="results-screen" id="resultsScreen">
         <main>
-            <!-- Bandeau élève -->
             <div class="student-banner no-print">
                 <div class="student-info">
                     <span class="student-name" id="studentName">Élève</span>
@@ -216,7 +213,6 @@
                 </div>
             </div>
 
-            <!-- Statistiques -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="statMoyenne">--</div>
@@ -236,19 +232,16 @@
                 </div>
             </div>
 
-            <!-- Onglets -->
             <div class="tabs no-print">
                 <button class="tab active" onclick="switchTab('evaluations')">📝 Mes évaluations</button>
                 <button class="tab" onclick="switchTab('competences')">🎯 Compétences</button>
                 <button class="tab" onclick="switchTab('progression')">📈 Progression</button>
             </div>
 
-            <!-- Contenu Évaluations -->
             <div class="tab-content active" id="tabEvaluations">
                 <div id="evalList"></div>
             </div>
 
-            <!-- Contenu Compétences -->
             <div class="tab-content" id="tabCompetences">
                 <div class="charts-row">
                     <div class="chart-card">
@@ -262,7 +255,6 @@
                 </div>
             </div>
 
-            <!-- Contenu Progression -->
             <div class="tab-content" id="tabProgression">
                 <div class="chart-card">
                     <div class="chart-title">📈 Évolution des notes</div>
@@ -272,7 +264,6 @@
         </main>
     </div>
 
-    <!-- MODAL DÉTAIL COPIE -->
     <div class="modal-overlay" id="modalDetail">
         <div class="modal-content" id="printableArea">
             <div class="modal-header">
@@ -316,12 +307,12 @@
             try {
                 console.log("🔐 Connexion avec code:", code);
                 
+                // --- MODIFICATION ICI : Utilisation de "eleve" au lieu de "eleveCode" ---
                 // Chercher des copies avec ce code élève
-                const qCopies = query(collectionGroup(db, "copies"), where("eleveCode", "==", code));
+                const qCopies = query(collectionGroup(db, "copies"), where("eleve", "==", code));
                 const snapCopies = await getDocs(qCopies);
                 
                 if (snapCopies.empty) {
-                    document.getElementById('errorMsg').textContent = "Aucune évaluation trouvée pour ce code. Vérifie ton code ou contacte ton professeur.";
                     document.getElementById('errorMsg').classList.add('visible');
                     return;
                 }
@@ -336,7 +327,12 @@
                 
             } catch (e) {
                 console.error("❌ Erreur connexion:", e);
-                alert("Erreur: " + e.message);
+                // Si l'erreur contient un lien pour créer l'index, l'afficher dans l'alerte pour clic facile
+                if(e.message.includes('https://console.firebase')) {
+                    alert("⚠️ PREMIÈRE CONNEXION NÉCESSAIRE ⚠️\n\nFirebase a besoin d'un index pour fonctionner avec le champ 'eleve'.\n\nRegardez la console (F12) et cliquez sur le lien fourni par Firebase, ou demandez à votre professeur.");
+                } else {
+                    alert("Erreur: " + e.message);
+                }
             }
         };
 
@@ -352,17 +348,19 @@
             console.log("📂 Chargement pour:", currentUserCode);
             
             try {
+                // --- MODIFICATION ICI : Utilisation de "eleve" au lieu de "eleveCode" ---
                 // ÉTAPE 1 : Charger les COPIES
                 const qCopies = query(
                     collectionGroup(db, "copies"),
-                    where("eleveCode", "==", currentUserCode)
+                    where("eleve", "==", currentUserCode)
                 );
                 const snapCopies = await getDocs(qCopies);
                 
+                // --- MODIFICATION ICI : Utilisation de "eleve" au lieu de "eleveCode" ---
                 // ÉTAPE 2 : Charger les ÉVALUATIONS
                 const qEvals = query(
                     collectionGroup(db, "evaluations"),
-                    where("eleveCode", "==", currentUserCode)
+                    where("eleve", "==", currentUserCode)
                 );
                 const snapEvals = await getDocs(qEvals);
                 
@@ -478,21 +476,21 @@
                 return;
             }
             
-            container.innerHTML = allEvaluations.map(item => {
-                const dateStr = item.date instanceof Date ? item.date.toLocaleDateString('fr-FR') : 
-                               typeof item.date === 'string' ? new Date(item.date).toLocaleDateString('fr-FR') : '--';
+            container.innerHTML = allEvaluations.map(eval => {
+                const dateStr = eval.date instanceof Date ? eval.date.toLocaleDateString('fr-FR') : 
+                               typeof eval.date === 'string' ? new Date(eval.date).toLocaleDateString('fr-FR') : '--';
                 
-                const statusBadge = item.estCorrige ? 
+                const statusBadge = eval.estCorrige ? 
                     '<span class="status-badge status-corrected">✓ Corrigé</span>' :
                     '<span class="status-badge status-pending">⏳ En attente</span>';
                 
                 let noteClass = 'note-pending';
                 let noteText = '--';
-                if (item.note !== null) {
-                    noteText = item.note.toFixed(1) + '/20';
-                    if (item.note >= 16) noteClass = 'note-excellent';
-                    else if (item.note >= 12) noteClass = 'note-good';
-                    else if (item.note >= 10) noteClass = 'note-average';
+                if (eval.note !== null) {
+                    noteText = eval.note.toFixed(1) + '/20';
+                    if (eval.note >= 16) noteClass = 'note-excellent';
+                    else if (eval.note >= 12) noteClass = 'note-good';
+                    else if (eval.note >= 10) noteClass = 'note-average';
                     else noteClass = 'note-poor';
                 }
                 
@@ -500,7 +498,7 @@
                     <div class="eval-card">
                         <div class="eval-header">
                             <div>
-                                <div class="eval-title">${item.titre}</div>
+                                <div class="eval-title">${eval.titre}</div>
                                 <div class="eval-meta">
                                     <span class="eval-date">📅 ${dateStr}</span>
                                     ${statusBadge}
@@ -509,8 +507,8 @@
                             <div class="eval-note ${noteClass}">${noteText}</div>
                         </div>
                         <div class="eval-actions">
-                            <button class="btn-view" onclick="ouvrirDetail('${item.id}')" ${!item.estCorrige ? 'disabled' : ''}>
-                                👁️ ${item.estCorrige ? 'Voir ma copie corrigée' : 'Correction en cours...'}
+                            <button class="btn-view" onclick="ouvrirDetail('${eval.id}')" ${!eval.estCorrige ? 'disabled' : ''}>
+                                👁️ ${eval.estCorrige ? 'Voir ma copie corrigée' : 'Correction en cours...'}
                             </button>
                         </div>
                     </div>
