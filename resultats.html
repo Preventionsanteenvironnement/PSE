@@ -126,7 +126,7 @@
     <div class="login-screen" id="loginScreen">
         <div class="login-icon">🔐</div>
         <div class="login-title">Accès à mes résultats</div>
-        <p style="color:#64748b;">Entrez votre code élève</p>
+        <p style="color:#64748b;">Entrez votre code élève (4 caractères)</p>
         <input type="text" class="code-input" id="codeInput" placeholder="EX: KA47" maxlength="10" autofocus>
         <button class="login-btn" id="loginBtn" onclick="connecter()">Accéder</button>
         <div class="error-message" id="errorMessage">❌ Code non trouvé.</div>
@@ -220,7 +220,7 @@
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -234,9 +234,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
+    console.log("🚀 Page Résultats v4.0 - Lecture depuis copies/ à la racine");
+    
     let currentCode = null;
-    let evaluationsData = [];
-    let copiesData = [];
     let allResults = [];
     let radarChart = null;
     let progressChart = null;
@@ -272,49 +272,80 @@
         try {
             console.log("🔍 Recherche pour le code:", code);
             
-            // 1. Charger les ÉVALUATIONS (corrigées)
-            const qEval = query(collection(db, "resultats", code, "evaluations"), limit(50));
-            const evalSnapshot = await getDocs(qEval);
+            // ════════════════════════════════════════════════════════════════
+            // ⭐ LECTURE DEPUIS LA COLLECTION "copies" À LA RACINE
+            // On cherche les documents où eleveCode == code OU eleve.userCode == code
+            // ════════════════════════════════════════════════════════════════
             
-            evaluationsData = [];
-            evalSnapshot.forEach(doc => {
-                evaluationsData.push({ id: doc.id, ...doc.data(), type: 'evaluation' });
-            });
-            console.log("✅ Évaluations trouvées:", evaluationsData.length);
+            allResults = [];
             
-            // 2. Charger les COPIES (non corrigées)
-            const qCopies = query(collection(db, "resultats", code, "copies"), limit(50));
-            const copiesSnapshot = await getDocs(qCopies);
+            // Méthode 1: Chercher par eleveCode
+            try {
+                const q1 = query(
+                    collection(db, "copies"),
+                    where("eleveCode", "==", code),
+                    limit(100)
+                );
+                const snap1 = await getDocs(q1);
+                snap1.forEach(doc => {
+                    allResults.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("✅ Trouvé par eleveCode:", snap1.size);
+            } catch(e) {
+                console.log("⚠️ Requête eleveCode échouée:", e.message);
+            }
             
-            copiesData = [];
-            copiesSnapshot.forEach(doc => {
-                const d = doc.data();
-                const devoirId = d.devoirId || doc.id.split('_')[0];
-                const hasEval = evaluationsData.some(e => e.devoirId === devoirId);
-                if (!hasEval) {
-                    copiesData.push({ 
-                        id: doc.id, 
-                        ...d, 
-                        type: 'copy',
-                        isPending: true
+            // Méthode 2: Chercher par eleve.userCode (si différent)
+            try {
+                const q2 = query(
+                    collection(db, "copies"),
+                    where("eleve.userCode", "==", code),
+                    limit(100)
+                );
+                const snap2 = await getDocs(q2);
+                snap2.forEach(doc => {
+                    // Éviter les doublons
+                    if (!allResults.find(r => r.id === doc.id)) {
+                        allResults.push({ id: doc.id, ...doc.data() });
+                    }
+                });
+                console.log("✅ Trouvé par eleve.userCode:", snap2.size);
+            } catch(e) {
+                console.log("⚠️ Requête eleve.userCode échouée:", e.message);
+            }
+            
+            // Méthode 3: Chercher en minuscules aussi
+            const codeLower = code.toLowerCase();
+            if (codeLower !== code) {
+                try {
+                    const q3 = query(
+                        collection(db, "copies"),
+                        where("eleveCode", "==", codeLower),
+                        limit(100)
+                    );
+                    const snap3 = await getDocs(q3);
+                    snap3.forEach(doc => {
+                        if (!allResults.find(r => r.id === doc.id)) {
+                            allResults.push({ id: doc.id, ...doc.data() });
+                        }
                     });
-                }
-            });
-            console.log("✅ Copies en attente:", copiesData.length);
+                } catch(e) {}
+            }
             
-            if (evaluationsData.length === 0 && copiesData.length === 0) {
-                errorDiv.textContent = "❌ Aucun résultat trouvé pour ce code.";
+            console.log("📊 Total résultats trouvés:", allResults.length);
+            
+            if (allResults.length === 0) {
+                errorDiv.textContent = "❌ Aucun résultat trouvé pour le code « " + code + " ».\nVérifiez votre code ou contactez votre professeur.";
                 errorDiv.classList.add('visible');
                 loginBtn.disabled = false;
                 loginBtn.textContent = "Accéder";
                 return;
             }
             
-            // Combiner et trier
-            allResults = [...evaluationsData, ...copiesData];
+            // Trier par date (plus récent en premier)
             allResults.sort((a, b) => {
-                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : (a.savedAt ? new Date(a.savedAt) : new Date(0));
-                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.savedAt ? new Date(b.savedAt) : new Date(0));
+                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : (a.ts ? new Date(a.ts) : new Date(0));
+                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.ts ? new Date(b.ts) : new Date(0));
                 return dateB - dateA;
             });
             
@@ -322,9 +353,14 @@
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('resultsScreen').classList.add('active');
             
+            // Afficher les infos élève
             const firstItem = allResults[0];
-            document.getElementById('studentName').textContent = firstItem?.eleve?.prenom ? `${firstItem.eleve.prenom} ${firstItem.eleve.nom || ''}` : code;
-            document.getElementById('studentClass').textContent = firstItem?.classe || firstItem?.eleve?.classe || "";
+            const prenom = firstItem?.eleve?.prenom || firstItem?.eleve || code;
+            const nom = firstItem?.eleve?.nom || '';
+            const classe = firstItem?.classe || firstItem?.eleve?.classe || "";
+            
+            document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || code;
+            document.getElementById('studentClass').textContent = classe;
             
             renderEvaluations();
             renderStats();
@@ -343,8 +379,6 @@
     
     function deconnecter() {
         currentCode = null;
-        evaluationsData = [];
-        copiesData = [];
         allResults = [];
         document.getElementById('resultsScreen').classList.remove('active');
         document.getElementById('loginScreen').style.display = 'block';
@@ -355,17 +389,14 @@
     }
     
     function showTab(tabName) {
-        // Retirer la classe active de tous les onglets et contenus
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
-        // Ajouter la classe active à l'onglet sélectionné
         const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
         if (selectedTab) {
             selectedTab.classList.add('active');
         }
         
-        // Afficher le contenu correspondant
         const tabContent = document.getElementById('tab-' + tabName);
         if (tabContent) {
             tabContent.classList.add('active');
@@ -382,20 +413,23 @@
         
         let html = '';
         allResults.forEach((item, index) => {
-            const titre = item.titre || item.devoirId || "Évaluation";
-            const dateStr = item.createdAtISO || item.savedAt;
+            const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
+            const dateStr = item.createdAtISO || item.ts;
             const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "Date inconnue";
-            const note = item.note_finale ?? item.note_auto;
-            const isPending = item.isPending || item.type === 'copy';
+            
+            // Déterminer si c'est corrigé ou en attente
+            const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
+            const note = hasCorrection ? item.note_finale : (item.note_auto || item.score);
+            const isPending = !hasCorrection;
             
             let noteDisplay, noteClass, statusBadge;
             
             if (isPending) {
-                noteDisplay = item.note_auto ? `${parseFloat(item.note_auto).toFixed(1)}*` : "⏳";
+                noteDisplay = note !== undefined && note !== null ? `${parseFloat(note).toFixed(1)}*` : "⏳";
                 noteClass = 'note-pending';
                 statusBadge = '<span class="status-badge status-pending">⏳ En attente</span>';
             } else {
-                noteDisplay = note !== undefined && note !== null ? `${parseFloat(note).toFixed(1)}/20` : "--";
+                noteDisplay = `${parseFloat(note).toFixed(1)}/20`;
                 noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
                 statusBadge = '<span class="status-badge status-corrected">✅ Corrigé</span>';
             }
@@ -418,24 +452,27 @@
     }
     
     function renderStats() {
-        // Moyenne
+        // Moyenne (sur les notes finales corrigées)
         let totalNotes = 0, nbNotes = 0;
-        evaluationsData.forEach(e => {
-            const note = e.note_finale;
-            if (note !== undefined && note !== null) {
-                totalNotes += parseFloat(note);
+        let nbPending = 0;
+        
+        allResults.forEach(e => {
+            if (e.note_finale !== undefined && e.note_finale !== null) {
+                totalNotes += parseFloat(e.note_finale);
                 nbNotes++;
+            } else {
+                nbPending++;
             }
         });
         
         const moyenne = nbNotes > 0 ? (totalNotes / nbNotes).toFixed(1) : '--';
         document.getElementById('statMoyenne').textContent = moyenne !== '--' ? moyenne + '/20' : '--';
         document.getElementById('statNbEvals').textContent = nbNotes;
-        document.getElementById('statPending').textContent = copiesData.length;
+        document.getElementById('statPending').textContent = nbPending;
         
         // Meilleure compétence
         const compScores = {};
-        evaluationsData.forEach(e => {
+        allResults.forEach(e => {
             if (e.competences) {
                 Object.entries(e.competences).forEach(([comp, score]) => {
                     if (!compScores[comp]) compScores[comp] = { total: 0, count: 0 };
@@ -458,10 +495,9 @@
     }
     
     function renderCompetences() {
-        // Calculer scores par compétence
         const compData = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [] };
         
-        evaluationsData.forEach(e => {
+        allResults.forEach(e => {
             if (e.competences) {
                 Object.entries(e.competences).forEach(([comp, score]) => {
                     if (compData[comp]) compData[comp].push(score);
@@ -469,7 +505,6 @@
             }
         });
         
-        // Moyennes
         const labels = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
         const averages = labels.map(c => {
             const scores = compData[c];
@@ -525,20 +560,19 @@
     }
     
     function renderProgression() {
-        // Trier par date
-        const sorted = [...evaluationsData]
-            .filter(e => e.note_finale !== undefined && e.note_finale !== null)
+        const sorted = [...allResults]
+            .filter(e => (e.note_finale !== undefined && e.note_finale !== null) || (e.note_auto !== undefined))
             .sort((a, b) => {
-                const dateA = new Date(a.createdAtISO || a.savedAt || 0);
-                const dateB = new Date(b.createdAtISO || b.savedAt || 0);
+                const dateA = new Date(a.createdAtISO || a.ts || 0);
+                const dateB = new Date(b.createdAtISO || b.ts || 0);
                 return dateA - dateB;
             });
         
         const labels = sorted.map(e => {
-            const d = new Date(e.createdAtISO || e.savedAt);
+            const d = new Date(e.createdAtISO || e.ts);
             return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
         });
-        const notes = sorted.map(e => parseFloat(e.note_finale));
+        const notes = sorted.map(e => parseFloat(e.note_finale ?? e.note_auto ?? 0));
         
         const ctx = document.getElementById('progressChart').getContext('2d');
         if (progressChart) progressChart.destroy();
@@ -573,14 +607,14 @@
         const item = allResults[index];
         if (!item) return;
         
-        const titre = item.titre || item.devoirId || "Évaluation";
-        const dateStr = item.createdAtISO || item.savedAt;
+        const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
+        const dateStr = item.createdAtISO || item.ts;
         const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "";
-        const note = item.note_finale ?? item.note_auto;
-        const isPending = item.isPending || item.type === 'copy';
+        const note = item.note_finale ?? item.note_auto ?? item.score;
+        const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
         
         document.getElementById('modalTitle').textContent = titre;
-        document.getElementById('modalSubtitle').textContent = `${date} • Note: ${note ? parseFloat(note).toFixed(1) + '/20' : '--'}${isPending ? ' (provisoire)' : ''}`;
+        document.getElementById('modalSubtitle').textContent = `${date} • Note: ${note ? parseFloat(note).toFixed(1) + '/20' : '--'}${!hasCorrection ? ' (provisoire)' : ''}`;
         
         let html = '';
         
@@ -603,41 +637,19 @@
         if (item.reponses && Object.keys(item.reponses).length > 0) {
             html += `<div><strong>📝 Détail des réponses :</strong></div>`;
             
-            // Récupérer le détail des questions si disponible
-            const details = item.details || item.questionDetails || [];
-            
-            if (details.length > 0) {
-                details.forEach((q, i) => {
-                    const statusClass = q.niveau === 'M' ? 'correct' : q.niveau === 'A' ? 'partial' : 'wrong';
+            Object.entries(item.reponses).forEach(([key, value]) => {
+                if (value && value !== '' && !key.includes('match_') && !key.includes('trou_')) {
+                    const displayValue = Array.isArray(value) ? value.join('<br>• ') : value;
                     html += `
-                        <div class="question-item ${statusClass}">
-                            <div class="question-num">Question ${q.label || (i + 1)} (${q.competence || '?'})</div>
-                            <div class="question-text">${q.questionText || ''}</div>
+                        <div class="question-item">
+                            <div class="question-num">${key}</div>
                             <div class="answer-box">
-                                <div class="answer-label">Votre réponse :</div>
-                                <div class="answer-eleve">${Array.isArray(q.reponseEleve) ? q.reponseEleve.join('<br>') : (q.reponseEleve || '<i>Non répondu</i>')}</div>
+                                <div class="answer-eleve">${displayValue}</div>
                             </div>
-                            ${q.reponseAttendue ? `<div class="answer-box"><div class="answer-label">Correction :</div><div class="answer-correction">${q.reponseAttendue}</div></div>` : ''}
-                            ${q.commentaire ? `<div class="comment-box">💡 ${q.commentaire}</div>` : ''}
                         </div>
                     `;
-                });
-            } else {
-                // Affichage simple des réponses
-                Object.entries(item.reponses).forEach(([key, value]) => {
-                    if (value && value !== '' && !key.includes('match_') && !key.includes('trou_')) {
-                        const displayValue = Array.isArray(value) ? value.join('<br>• ') : value;
-                        html += `
-                            <div class="question-item">
-                                <div class="question-num">${key}</div>
-                                <div class="answer-box">
-                                    <div class="answer-eleve">${displayValue}</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
-            }
+                }
+            });
         }
         
         // Stats collages
@@ -671,7 +683,7 @@
         if (e.key === 'Escape') closeModal();
     });
     
-    console.log("✅ Page Résultats v3.1 - Bug syntaxe corrigé");
+    console.log("✅ Page Résultats v4.0 prête - Lecture depuis collection copies/");
 </script>
 </body>
 </html>
