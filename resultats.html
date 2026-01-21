@@ -723,3 +723,728 @@
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Résultats - PSE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; max-width: 1000px; margin: 0 auto; padding: 0; background: #f8f9fa; color: #333; min-height: 100vh; }
+        header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; text-align: center; color: white; }
+        h1 { margin: 0; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        main { padding: 20px; }
+        
+        /* === LOGIN === */
+        .login-screen { background: white; border-radius: 16px; padding: 40px; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+        .login-icon { font-size: 4em; margin-bottom: 20px; }
+        .login-title { font-size: 1.5em; font-weight: 700; margin-bottom: 10px; }
+        .code-input { width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.2em; text-align: center; letter-spacing: 3px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; }
+        .code-input:focus { outline: none; border-color: #f59e0b; }
+        .login-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 12px; font-size: 1.1em; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
+        .error-message { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; }
+        .error-message.visible { display: block; }
+        
+        /* === RESULTS === */
+        .results-screen { display: none; }
+        .results-screen.active { display: block; }
+        
+        .student-banner { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #78350f; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .student-name { font-size: 1.3em; font-weight: 700; }
+        .logout-btn { background: rgba(255,255,255,0.3); border: none; color: #78350f; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        
+        /* === STATS === */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 2em; font-weight: 800; color: #f59e0b; }
+        .stat-label { font-size: 0.85em; color: #64748b; margin-top: 5px; }
+        
+        /* === TABS === */
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: white; padding: 5px; border-radius: 12px; }
+        .tab { flex: 1; padding: 12px; text-align: center; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-weight: 600; color: #64748b; transition: all 0.2s; }
+        .tab.active { background: #f59e0b; color: white; }
+        .tab:hover:not(.active) { background: #fef3c7; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* === CHARTS === */
+        .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .chart-title { font-weight: 600; margin-bottom: 15px; color: #1e293b; }
+        
+        /* === EVAL LIST === */
+        .eval-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+        .eval-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .eval-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .eval-title { font-weight: 600; color: #1e293b; }
+        .eval-date { font-size: 0.85em; color: #64748b; }
+        .eval-note { font-weight: 700; font-size: 1.3em; padding: 5px 15px; border-radius: 8px; }
+        .note-green { background: #dcfce7; color: #166534; }
+        .note-orange { background: #fef3c7; color: #92400e; }
+        .note-red { background: #fee2e2; color: #991b1b; }
+        .note-pending { background: #e0e7ff; color: #3730a3; }
+        .eval-appreciation { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 10px 15px; margin-top: 10px; border-radius: 0 8px 8px 0; font-size: 0.9em; }
+        
+        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; margin-left: 10px; }
+        .status-corrected { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        
+        /* === COMPETENCES TABLE === */
+        .comp-table { width: 100%; border-collapse: collapse; }
+        .comp-table th, .comp-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .comp-table th { background: #f8fafc; font-weight: 600; color: #64748b; }
+        .comp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85em; }
+        .comp-c1 { background: #fee2e2; color: #991b1b; }
+        .comp-c2 { background: #fef3c7; color: #92400e; }
+        .comp-c3 { background: #dcfce7; color: #166534; }
+        .comp-c4 { background: #dbeafe; color: #1e40af; }
+        .comp-c5 { background: #e0e7ff; color: #3730a3; }
+        .comp-c6 { background: #fce7f3; color: #9d174d; }
+        
+        /* === MODAL === */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
+        .modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 1.2em; }
+        .modal-body { padding: 20px; }
+        
+        /* === DETAIL COPIE === */
+        .question-item { background: #f8fafc; border-radius: 8px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #e2e8f0; }
+        .question-item.correct { border-left-color: #22c55e; }
+        .question-item.partial { border-left-color: #f59e0b; }
+        .question-item.wrong { border-left-color: #ef4444; }
+        .question-num { font-weight: 700; color: #64748b; margin-bottom: 5px; }
+        .question-text { margin-bottom: 10px; }
+        .answer-box { background: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+        .answer-label { font-size: 0.8em; color: #64748b; margin-bottom: 4px; }
+        .answer-eleve { color: #1e293b; }
+        .answer-correction { color: #16a34a; font-style: italic; }
+        .comment-box { background: #fffbeb; padding: 10px; border-radius: 6px; font-size: 0.9em; }
+        
+        /* === EMPTY === */
+        .empty-state { text-align: center; padding: 40px; color: #64748b; }
+        .empty-icon { font-size: 4em; opacity: 0.5; }
+        
+        .loader { text-align: center; padding: 40px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top-color: #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        @media (max-width: 600px) {
+            .charts-row { grid-template-columns: 1fr; }
+            .tabs { flex-wrap: wrap; }
+            .tab { min-width: calc(50% - 5px); }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>📊 Mes Résultats PSE</h1>
+</header>
+<main>
+    <!-- LOGIN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-icon">🔐</div>
+        <div class="login-title">Accès à mes résultats</div>
+        <p style="color:#64748b;">Entrez votre code élève (4 caractères)</p>
+        <input type="text" class="code-input" id="codeInput" placeholder="EX: KA47" maxlength="10" autofocus>
+        <button class="login-btn" id="loginBtn" onclick="connecter()">Accéder</button>
+        <div class="error-message" id="errorMessage">❌ Code non trouvé.</div>
+    </div>
+    <!-- RESULTS -->
+    <div class="results-screen" id="resultsScreen">
+        <div class="student-banner">
+            <div>
+                <span class="student-name" id="studentName">--</span>
+                <span id="studentClass" style="opacity:0.8;margin-left:10px;">--</span>
+            </div>
+            <button class="logout-btn" onclick="deconnecter()">🚪 Déconnexion</button>
+        </div>
+        
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="statMoyenne">--</div>
+                <div class="stat-label">Moyenne générale</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statNbEvals">0</div>
+                <div class="stat-label">Évaluations corrigées</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statPending">0</div>
+                <div class="stat-label">En attente</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statBestComp">--</div>
+                <div class="stat-label">Meilleure compétence</div>
+            </div>
+        </div>
+        
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab active" data-tab="evaluations" onclick="showTab('evaluations')">📝 Mes évaluations</button>
+            <button class="tab" data-tab="competences" onclick="showTab('competences')">🎯 Compétences</button>
+            <button class="tab" data-tab="progression" onclick="showTab('progression')">📈 Progression</button>
+        </div>
+        
+        <!-- TAB: EVALUATIONS -->
+        <div class="tab-content active" id="tab-evaluations">
+            <div id="evaluationsList">
+                <div class="loader"><div class="spinner"></div><div>Chargement...</div></div>
+            </div>
+        </div>
+        
+        <!-- TAB: COMPETENCES -->
+        <div class="tab-content" id="tab-competences">
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-title">🎯 Radar des compétences</div>
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">📊 Détail par compétence</div>
+                    <table class="comp-table" id="compTable">
+                        <thead>
+                            <tr><th>Compétence</th><th>Niveau moyen</th><th>Évaluations</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TAB: PROGRESSION -->
+        <div class="tab-content" id="tab-progression">
+            <div class="chart-card">
+                <div class="chart-title">📈 Évolution des notes</div>
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+    </div>
+</main>
+<!-- MODAL DETAIL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <div style="font-weight:700;font-size:1.2em;" id="modalTitle">Détail de l'évaluation</div>
+                <div style="opacity:0.9;font-size:0.9em;" id="modalSubtitle"></div>
+            </div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Contenu dynamique -->
+        </div>
+    </div>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+        authDomain: "devoirs-pse.firebaseapp.com",
+        projectId: "devoirs-pse",
+        storageBucket: "devoirs-pse.appspot.com",
+        messagingSenderId: "614730413904",
+        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    console.log("🚀 Page Résultats v5.0 - Lecture copies + evaluations (CORRIGÉ)");
+    
+    let currentCode = null;
+    let allResults = [];
+    let radarChart = null;
+    let progressChart = null;
+    
+    // Exposer les fonctions
+    window.connecter = connecter;
+    window.deconnecter = deconnecter;
+    window.showTab = showTab;
+    window.openDetail = openDetail;
+    window.closeModal = closeModal;
+    
+    document.getElementById('codeInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') connecter();
+    });
+    
+    async function connecter() {
+        const codeInput = document.getElementById('codeInput');
+        const code = codeInput.value.trim().toUpperCase();
+        const errorDiv = document.getElementById('errorMessage');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        errorDiv.classList.remove('visible');
+        
+        if (!code || code.length < 2) {
+            errorDiv.textContent = "⚠️ Entrez votre code élève.";
+            errorDiv.classList.add('visible');
+            return;
+        }
+        
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Chargement...";
+        
+        try {
+            console.log("🔍 Recherche pour le code:", code);
+            
+            // ════════════════════════════════════════════════════════════════
+            // ⭐ CORRECTION v5.0 : LECTURE DEPUIS 2 COLLECTIONS
+            // 1. resultats/{eleveCode}/copies/ → copies brutes
+            // 2. resultats/{eleveCode}/evaluations/ → corrections
+            // ════════════════════════════════════════════════════════════════
+            
+            allResults = [];
+            const copiesMap = new Map(); // Pour fusionner copies + corrections
+            
+            // ─────────────────────────────────────────────────────────────
+            // ÉTAPE 1 : Charger les COPIES BRUTES
+            // ─────────────────────────────────────────────────────────────
+            try {
+                const copiesPath = `resultats/${code}/copies`;
+                console.log("📂 Lecture copies:", copiesPath);
+                
+                const qCopies = query(collection(db, copiesPath), limit(100));
+                const snapCopies = await getDocs(qCopies);
+                
+                snapCopies.forEach(doc => {
+                    const data = doc.data();
+                    copiesMap.set(data.devoirId, {
+                        id: doc.id,
+                        source: 'copies',
+                        ...data
+                    });
+                });
+                
+                console.log("✅ Copies trouvées:", snapCopies.size);
+            } catch(e) {
+                console.log("⚠️ Erreur lecture copies:", e.message);
+            }
+            
+            // ─────────────────────────────────────────────────────────────
+            // ÉTAPE 2 : Charger les CORRECTIONS (EVALUATIONS)
+            // ─────────────────────────────────────────────────────────────
+            try {
+                const evalsPath = `resultats/${code}/evaluations`;
+                console.log("📂 Lecture évaluations:", evalsPath);
+                
+                const qEvals = query(collection(db, evalsPath), limit(100));
+                const snapEvals = await getDocs(qEvals);
+                
+                snapEvals.forEach(doc => {
+                    const evalData = doc.data();
+                    const devoirId = evalData.devoirId;
+                    
+                    if (copiesMap.has(devoirId)) {
+                        // Fusionner correction avec copie existante
+                        const copie = copiesMap.get(devoirId);
+                        copiesMap.set(devoirId, {
+                            ...copie,
+                            // Ajouter données de correction
+                            note_finale: evalData.note_finale,
+                            appreciation: evalData.appreciation,
+                            competences_corrigees: evalData.competences,
+                            questions_corrigees: evalData.questions,
+                            correctedAt: evalData.savedAt,
+                            correctedBy: evalData.savedBy
+                        });
+                    } else {
+                        // Correction sans copie (cas rare)
+                        copiesMap.set(devoirId, {
+                            id: doc.id,
+                            source: 'evaluation_only',
+                            devoirId: devoirId,
+                            titre: evalData.titre,
+                            note_finale: evalData.note_finale,
+                            appreciation: evalData.appreciation,
+                            competences: evalData.competences,
+                            correctedAt: evalData.savedAt
+                        });
+                    }
+                });
+                
+                console.log("✅ Évaluations trouvées:", snapEvals.size);
+            } catch(e) {
+                console.log("⚠️ Erreur lecture évaluations:", e.message);
+            }
+            
+            // ─────────────────────────────────────────────────────────────
+            // ÉTAPE 3 : Convertir Map en tableau
+            // ─────────────────────────────────────────────────────────────
+            allResults = Array.from(copiesMap.values());
+            
+            console.log("📊 Total fusionné:", allResults.length);
+            
+            if (allResults.length === 0) {
+                errorDiv.textContent = "❌ Aucun résultat trouvé pour le code « " + code + " ».\nVérifiez votre code ou contactez votre professeur.";
+                errorDiv.classList.add('visible');
+                loginBtn.disabled = false;
+                loginBtn.textContent = "Accéder";
+                return;
+            }
+            
+            // Trier par date (plus récent en premier)
+            allResults.sort((a, b) => {
+                const dateA = a.createdAtISO ? new Date(a.createdAtISO) : (a.ts ? new Date(a.ts) : new Date(0));
+                const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.ts ? new Date(b.ts) : new Date(0));
+                return dateB - dateA;
+            });
+            
+            currentCode = code;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('resultsScreen').classList.add('active');
+            
+            // Afficher les infos élève
+            const firstItem = allResults[0];
+            const prenom = firstItem?.eleve?.prenom || firstItem?.eleve || code;
+            const nom = firstItem?.eleve?.nom || '';
+            const classe = firstItem?.classe || firstItem?.eleve?.classe || "";
+            
+            document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || code;
+            document.getElementById('studentClass').textContent = classe;
+            
+            renderEvaluations();
+            renderStats();
+            renderCompetences();
+            renderProgression();
+            
+        } catch (error) {
+            console.error("❌ Erreur:", error);
+            errorDiv.textContent = "❌ Erreur de connexion: " + error.message;
+            errorDiv.classList.add('visible');
+        }
+        
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Accéder";
+    }
+    
+    function deconnecter() {
+        currentCode = null;
+        allResults = [];
+        document.getElementById('resultsScreen').classList.remove('active');
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('codeInput').value = '';
+        document.getElementById('errorMessage').classList.remove('visible');
+        if (radarChart) radarChart.destroy();
+        if (progressChart) progressChart.destroy();
+    }
+    
+    function showTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+        
+        const tabContent = document.getElementById('tab-' + tabName);
+        if (tabContent) {
+            tabContent.classList.add('active');
+        }
+    }
+    
+    function renderEvaluations() {
+        const container = document.getElementById('evaluationsList');
+        
+        if (allResults.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aucune évaluation</p></div>`;
+            return;
+        }
+        
+        let html = '';
+        allResults.forEach((item, index) => {
+            const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
+            const dateStr = item.createdAtISO || item.ts;
+            const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "Date inconnue";
+            
+            // ⭐ CORRECTION v5.0 : Utiliser note_finale si disponible
+            const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
+            const note = hasCorrection ? item.note_finale : (item.note_auto || item.score);
+            const isPending = !hasCorrection;
+            
+            let noteDisplay, noteClass, statusBadge;
+            
+            if (isPending) {
+                noteDisplay = note !== undefined && note !== null ? `${parseFloat(note).toFixed(1)}*` : "⏳";
+                noteClass = 'note-pending';
+                statusBadge = '<span class="status-badge status-pending">⏳ En attente</span>';
+            } else {
+                noteDisplay = `${parseFloat(note).toFixed(1)}/20`;
+                noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
+                statusBadge = '<span class="status-badge status-corrected">✅ Corrigé</span>';
+            }
+            
+            html += `
+                <div class="eval-card" onclick="openDetail(${index})">
+                    <div class="eval-header">
+                        <div>
+                            <div class="eval-title">${titre} ${statusBadge}</div>
+                            <div class="eval-date">📅 ${date}</div>
+                        </div>
+                        <div class="eval-note ${noteClass}">${noteDisplay}</div>
+                    </div>
+                    ${item.appreciation ? `<div class="eval-appreciation"><strong>💬</strong> ${item.appreciation}</div>` : ''}
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function renderStats() {
+        // Moyenne (sur les notes finales corrigées)
+        let totalNotes = 0, nbNotes = 0;
+        let nbPending = 0;
+        
+        allResults.forEach(e => {
+            if (e.note_finale !== undefined && e.note_finale !== null) {
+                totalNotes += parseFloat(e.note_finale);
+                nbNotes++;
+            } else {
+                nbPending++;
+            }
+        });
+        
+        const moyenne = nbNotes > 0 ? (totalNotes / nbNotes).toFixed(1) : '--';
+        document.getElementById('statMoyenne').textContent = moyenne !== '--' ? moyenne + '/20' : '--';
+        document.getElementById('statNbEvals').textContent = nbNotes;
+        document.getElementById('statPending').textContent = nbPending;
+        
+        // ⭐ CORRECTION v5.0 : Utiliser competences OU competences_corrigees
+        const compScores = {};
+        allResults.forEach(e => {
+            const comps = e.competences_corrigees || e.competences || {};
+            Object.entries(comps).forEach(([comp, data]) => {
+                // Gérer format grille (objet avec pts/max) et format copie (nombre)
+                const score = typeof data === 'object' ? (data.pts || 0) : data;
+                if (!compScores[comp]) compScores[comp] = { total: 0, count: 0 };
+                compScores[comp].total += score;
+                compScores[comp].count++;
+            });
+        });
+        
+        let bestComp = '--';
+        let bestAvg = 0;
+        Object.entries(compScores).forEach(([comp, data]) => {
+            const avg = data.total / data.count;
+            if (avg > bestAvg) {
+                bestAvg = avg;
+                bestComp = comp;
+            }
+        });
+        document.getElementById('statBestComp').textContent = bestComp;
+    }
+    
+    function renderCompetences() {
+        const compData = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [] };
+        
+        allResults.forEach(e => {
+            const comps = e.competences_corrigees || e.competences || {};
+            Object.entries(comps).forEach(([comp, data]) => {
+                const score = typeof data === 'object' ? (data.pts || 0) : data;
+                if (compData[comp]) compData[comp].push(score);
+            });
+        });
+        
+        const labels = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
+        const averages = labels.map(c => {
+            const scores = compData[c];
+            return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        });
+        
+        // Radar Chart
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        if (radarChart) radarChart.destroy();
+        
+        radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Niveau moyen',
+                    data: averages,
+                    fill: true,
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    borderColor: '#f59e0b',
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#f59e0b'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 4,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // Table
+        const tbody = document.querySelector('#compTable tbody');
+        tbody.innerHTML = labels.map((c, i) => {
+            const avg = averages[i];
+            const count = compData[c].length;
+            const niveau = avg >= 3 ? 'Maîtrisé' : avg >= 2 ? 'Acceptable' : avg >= 1 ? 'Insuffisant' : 'Non traité';
+            return `
+                <tr>
+                    <td><span class="comp-badge comp-${c.toLowerCase()}">${c}</span></td>
+                    <td>${avg.toFixed(1)} - ${niveau}</td>
+                    <td>${count}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    function renderProgression() {
+        const sorted = [...allResults]
+            .filter(e => (e.note_finale !== undefined && e.note_finale !== null) || (e.note_auto !== undefined))
+            .sort((a, b) => {
+                const dateA = new Date(a.createdAtISO || a.ts || 0);
+                const dateB = new Date(b.createdAtISO || b.ts || 0);
+                return dateA - dateB;
+            });
+        
+        const labels = sorted.map(e => {
+            const d = new Date(e.createdAtISO || e.ts);
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+        });
+        const notes = sorted.map(e => parseFloat(e.note_finale ?? e.note_auto ?? 0));
+        
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        if (progressChart) progressChart.destroy();
+        
+        progressChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Notes /20',
+                    data: notes,
+                    fill: true,
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderColor: '#f59e0b',
+                    tension: 0.3,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#f59e0b'
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, max: 20 }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+    
+    function openDetail(index) {
+        const item = allResults[index];
+        if (!item) return;
+        
+        const titre = item.titre || item.exercice || item.devoirId || "Évaluation";
+        const dateStr = item.createdAtISO || item.ts;
+        const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "";
+        const note = item.note_finale ?? item.note_auto ?? item.score;
+        const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
+        
+        document.getElementById('modalTitle').textContent = titre;
+        document.getElementById('modalSubtitle').textContent = `${date} • Note: ${note ? parseFloat(note).toFixed(1) + '/20' : '--'}${!hasCorrection ? ' (provisoire)' : ''}`;
+        
+        let html = '';
+        
+        // Appréciation
+        if (item.appreciation) {
+            html += `<div style="background:#fffbeb;padding:15px;border-radius:8px;margin-bottom:20px;"><strong>💬 Appréciation :</strong> ${item.appreciation}</div>`;
+        }
+        
+        // Compétences (prioriser competences_corrigees)
+        const comps = item.competences_corrigees || item.competences || {};
+        if (Object.keys(comps).length > 0) {
+            html += `<div style="margin-bottom:20px;"><strong>🎯 Compétences évaluées :</strong><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">`;
+            Object.entries(comps).forEach(([comp, data]) => {
+                // Gérer les 2 formats
+                let niveau = 'NT';
+                if (typeof data === 'object' && data.pts !== undefined) {
+                    // Format grille {pts, max}
+                    const ratio = data.max > 0 ? data.pts / data.max : 0;
+                    niveau = ratio >= 0.85 ? 'M' : ratio >= 0.65 ? 'A' : ratio >= 0.40 ? 'I' : 'NT';
+                } else if (typeof data === 'number') {
+                    // Format copie (nombre)
+                    niveau = data >= 3 ? 'M' : data >= 2 ? 'A' : data >= 1 ? 'I' : 'NT';
+                }
+                html += `<span class="comp-badge comp-${comp.toLowerCase()}">${comp}: ${niveau}</span>`;
+            });
+            html += `</div></div>`;
+        }
+        
+        // Réponses détaillées
+        if (item.reponses && Object.keys(item.reponses).length > 0) {
+            html += `<div><strong>📝 Détail des réponses :</strong></div>`;
+            
+            Object.entries(item.reponses).forEach(([key, value]) => {
+                if (value && value !== '' && !key.includes('match_') && !key.includes('trou_')) {
+                    const displayValue = Array.isArray(value) ? value.join('<br>• ') : value;
+                    html += `
+                        <div class="question-item">
+                            <div class="question-num">${key}</div>
+                            <div class="answer-box">
+                                <div class="answer-eleve">${displayValue}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        // Stats collages
+        if (item.pasteStats && (item.pasteStats.total > 0 || item.pasteStats.external > 0)) {
+            html += `
+                <div style="background:#fef2f2;padding:15px;border-radius:8px;margin-top:20px;">
+                    <strong>📋 Statistiques copier-coller :</strong><br>
+                    Total: ${item.pasteStats.total || 0} | 
+                    Externes: ${item.pasteStats.external || 0} | 
+                    Document: ${item.pasteStats.document || 0}
+                </div>
+            `;
+        }
+        
+        if (!html) {
+            html = '<div class="empty-state"><div class="empty-icon">📄</div><p>Aucun détail disponible</p></div>';
+        }
+        
+        document.getElementById('modalBody').innerHTML = html;
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+    
+    function closeModal(event) {
+        if (!event || event.target === document.getElementById('modalOverlay')) {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+    }
+    
+    // Fermer avec Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+    
+    console.log("✅ Page Résultats v5.0 prête - Lecture copies + evaluations");
+</script>
+</body>
+</html>
