@@ -1,10 +1,9 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 4.2 (ULTRA-COMPLET - Tous types d'exercices)
-// Écrit dans : resultats/{eleveCode}/copies/{docId}
+// pse-runner.js - Version 5.0 (ALIGNÉ - Écrit dans copies/ à la racine)
+// Collection : copies/{docId}
 // ════════════════════════════════════════════════════════════════════════
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -18,7 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v4.2 - ULTRA-COMPLET - Tous types d'exercices");
+console.log("🚀 PSE Runner v5.0 - Écrit dans copies/ à la racine");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
@@ -32,7 +31,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         }
         
         // ════════════════════════════════════════════════════════════════
-        // ⭐ COLLECTE DES RÉPONSES CORRIGÉE
+        // COLLECTE DES RÉPONSES
         // ════════════════════════════════════════════════════════════════
         const reponses = {};
         
@@ -40,56 +39,45 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         document.querySelectorAll('.reponse-eleve').forEach((el, idx) => {
             const qid = el.dataset.qid;
             
-            // Récupérer la valeur selon le type d'élément
             let value = '';
             if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
                 if (el.type === 'radio') {
-                    // Radio button : ne prendre que si coché
                     if (el.checked) {
                         value = el.value;
                     } else {
-                        return; // Skip si pas coché
+                        return;
                     }
                 } else if (el.type === 'checkbox') {
-                    // Checkbox : ne prendre que si coché
                     if (el.checked) {
                         value = el.value || 'checked';
                     } else {
-                        return; // Skip si pas coché
+                        return;
                     }
                 } else {
-                    // Textarea ou input text
                     value = el.value.trim();
                 }
             }
             
-            // Si pas de valeur, skip
             if (!value) return;
             
             if (qid) {
-                // Si qid existe déjà, concaténer (pour les tableaux avec plusieurs cellules)
                 if (reponses[qid]) {
-                    // Vérifier si c'est déjà un tableau ou une string
                     if (Array.isArray(reponses[qid])) {
                         reponses[qid].push(value);
                     } else {
-                        // Convertir en tableau
                         reponses[qid] = [reponses[qid], value];
                     }
                 } else {
                     reponses[qid] = value;
                 }
             } else {
-                // Pas de qid, utiliser un index
                 const questionBlock = el.closest('.question-block');
-                // Chercher le numéro dans .num-display (span) ou .num-selector (select)
                 const numDisplay = questionBlock?.querySelector('.num-display');
                 const numSelector = questionBlock?.querySelector('.num-selector');
                 let questionNum = numDisplay?.textContent?.trim() 
                                || numSelector?.value 
                                || `Q${idx + 1}`;
                 
-                // Éviter les doublons
                 let key = questionNum;
                 let suffix = 1;
                 while (reponses[key] !== undefined) {
@@ -117,26 +105,25 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             }
         });
         
-        // 3. Matching (reliage) - AVEC qid du bloc parent
+        // 3. Matching (reliage)
         document.querySelectorAll('.save-me-match').forEach((el) => {
             const questionBlock = el.closest('.question-block');
             const qidFromBlock = questionBlock?.querySelector('[data-qid]')?.dataset.qid;
             const id = el.dataset.id || `match_${Math.random().toString(36).substr(2, 9)}`;
             
-            // Stocker avec l'ID du match ET avec le qid du bloc si disponible
             if (el.value) {
                 reponses[id] = el.value;
                 
-                // Aussi stocker groupé par question
                 if (qidFromBlock) {
                     if (!reponses[qidFromBlock]) reponses[qidFromBlock] = [];
                     if (!Array.isArray(reponses[qidFromBlock])) reponses[qidFromBlock] = [reponses[qidFromBlock]];
-                    reponses[qidFromBlock].push(`${el.closest('tr')?.querySelector('.matching-left')?.textContent || ''} → ${el.value}`);
+                    const leftText = el.closest('tr')?.querySelector('.matching-left')?.textContent || '';
+                    reponses[qidFromBlock].push(`${leftText} → ${el.value}`);
                 }
             }
         });
         
-        // 4. Textes à trous - AVEC qid du bloc parent
+        // 4. Textes à trous
         document.querySelectorAll('.trou-eleve').forEach((el, i) => {
             const questionBlock = el.closest('.question-block');
             const qidFromBlock = questionBlock?.querySelector('[data-qid]')?.dataset.qid;
@@ -146,7 +133,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             if (value) {
                 reponses[qid] = value;
                 
-                // Aussi stocker groupé par question
                 if (qidFromBlock && qidFromBlock !== qid) {
                     if (!reponses[qidFromBlock + '_trous']) reponses[qidFromBlock + '_trous'] = [];
                     reponses[qidFromBlock + '_trous'].push(value);
@@ -154,7 +140,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             }
         });
         
-        // 5. Matrice de risque (hidden input)
+        // 5. Matrice de risque
         document.querySelectorAll('.risk-cell-value').forEach((el) => {
             const qid = el.dataset.qid;
             if (qid && el.value) {
@@ -162,7 +148,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             }
         });
         
-        // 6. Radios de décision (réduction risque prioritaire/non prioritaire)
+        // 6. Radios de décision
         document.querySelectorAll('input[type="radio"][name*="decision"]:checked').forEach((el) => {
             const qid = el.dataset.qid;
             if (qid) {
@@ -182,10 +168,11 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         console.log("📊 Nombre de réponses:", Object.keys(reponses).length);
         
         // ════════════════════════════════════════════════════════════════
-        // CALCUL DES COMPÉTENCES (inchangé)
+        // CALCUL DES COMPÉTENCES
         // ════════════════════════════════════════════════════════════════
         const competences = {};
         let totalPoints = 0, maxPoints = 0;
+        
         document.querySelectorAll('.question-block').forEach(block => {
             const compSelector = block.querySelector('.comp-selector');
             const compDisplay = block.querySelector('.comp-display');
@@ -205,6 +192,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 maxPoints += max;
             }
         });
+        
         const noteSur20 = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 20 * 10) / 10 : 0;
         
         // ════════════════════════════════════════════════════════════════
@@ -218,10 +206,17 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                    || document.querySelector('h1')?.textContent.trim()
                    || "Devoir PSE";
         
+        // ════════════════════════════════════════════════════════════════
+        // ⭐ STRUCTURE DU DOCUMENT (alignée avec les données existantes)
+        // ════════════════════════════════════════════════════════════════
         const data = {
+            // Identifiants
             eleveCode: eleveCode,
             devoirId: devoirId,
+            exercice: devoirId,
             titre: titre,
+            
+            // Infos élève
             classe: eleveInfo.classe,
             eleve: { 
                 userCode: eleveCode, 
@@ -229,20 +224,32 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 nom: eleveInfo.nom, 
                 classe: eleveInfo.classe 
             },
+            
+            // Contenu
             reponses: reponses,
             competences: competences,
+            
+            // Notes
             note_auto: noteSur20,
+            score: noteSur20,
+            // note_finale sera ajoutée par le prof lors de la correction
+            
+            // Métadonnées
             temps_secondes: tempsSecondes,
             pasteStats: pasteStats || { total: 0, external: 0, document: 0 },
+            
+            // Timestamps
             createdAt: serverTimestamp(),
-            createdAtISO: new Date().toISOString()
+            createdAtISO: new Date().toISOString(),
+            ts: Date.now()
         };
         
-        // ⭐ CHEMIN SÉCURISÉ
-        const docId = `${devoirId}_${Date.now()}`;
-        await setDoc(doc(db, "resultats", eleveCode, "copies", docId), data);
+        // ════════════════════════════════════════════════════════════════
+        // ⭐ ÉCRITURE DANS copies/ À LA RACINE
+        // ════════════════════════════════════════════════════════════════
+        const docRef = await addDoc(collection(db, "copies"), data);
         
-        console.log("✅ Envoyé:", `resultats/${eleveCode}/copies/${docId}`);
+        console.log("✅ Envoyé dans copies/", docRef.id);
         console.log("📦 Data:", data);
         
         alert("✅ COPIE ENVOYÉE !\n\n" + 
@@ -250,9 +257,11 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
               "📝 " + titre + "\n" +
               "📊 Réponses: " + Object.keys(reponses).length);
         
+        // Nettoyage localStorage
         localStorage.removeItem('paste_log_' + devoirId);
         localStorage.removeItem('devoir_start_time_' + devoirId);
         
+        // Écran de confirmation
         document.body.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
                 <div style="font-size:4rem;">✅</div>
@@ -275,4 +284,4 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     }
 };
 
-console.log("✅ window.envoyerCopie prêt (v4.2 ULTRA-COMPLET)");
+console.log("✅ window.envoyerCopie prêt (v5.0 - copies/ à la racine)");
