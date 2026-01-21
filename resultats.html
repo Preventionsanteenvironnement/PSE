@@ -118,11 +118,9 @@
     </style>
 </head>
 <body>
-
 <header>
     <h1>📊 Mes Résultats PSE</h1>
 </header>
-
 <main>
     <!-- LOGIN -->
     <div class="login-screen" id="loginScreen">
@@ -133,7 +131,6 @@
         <button class="login-btn" id="loginBtn" onclick="connecter()">Accéder</button>
         <div class="error-message" id="errorMessage">❌ Code non trouvé.</div>
     </div>
-
     <!-- RESULTS -->
     <div class="results-screen" id="resultsScreen">
         <div class="student-banner">
@@ -166,9 +163,9 @@
         
         <!-- TABS -->
         <div class="tabs">
-            <button class="tab active" onclick="showTab('evaluations')">📝 Mes évaluations</button>
-            <button class="tab" onclick="showTab('competences')">🎯 Compétences</button>
-            <button class="tab" onclick="showTab('progression')">📈 Progression</button>
+            <button class="tab active" data-tab="evaluations" onclick="showTab('evaluations')">📝 Mes évaluations</button>
+            <button class="tab" data-tab="competences" onclick="showTab('competences')">🎯 Compétences</button>
+            <button class="tab" data-tab="progression" onclick="showTab('progression')">📈 Progression</button>
         </div>
         
         <!-- TAB: EVALUATIONS -->
@@ -206,7 +203,6 @@
         </div>
     </div>
 </main>
-
 <!-- MODAL DETAIL -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
@@ -222,11 +218,10 @@
         </div>
     </div>
 </div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
+    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    
     const firebaseConfig = {
         apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
         authDomain: "devoirs-pse.firebaseapp.com",
@@ -235,46 +230,48 @@
         messagingSenderId: "614730413904",
         appId: "1:614730413904:web:a5dd478af5de30f6bede55"
     };
-
+    
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
+    
     let currentCode = null;
     let evaluationsData = [];
     let copiesData = [];
     let allResults = [];
     let radarChart = null;
     let progressChart = null;
-
+    
     // Exposer les fonctions
     window.connecter = connecter;
     window.deconnecter = deconnecter;
     window.showTab = showTab;
     window.openDetail = openDetail;
     window.closeModal = closeModal;
-
+    
     document.getElementById('codeInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') connecter();
     });
-
+    
     async function connecter() {
         const codeInput = document.getElementById('codeInput');
         const code = codeInput.value.trim().toUpperCase();
         const errorDiv = document.getElementById('errorMessage');
         const loginBtn = document.getElementById('loginBtn');
-
+        
         errorDiv.classList.remove('visible');
-
+        
         if (!code || code.length < 2) {
             errorDiv.textContent = "⚠️ Entrez votre code élève.";
             errorDiv.classList.add('visible');
             return;
         }
-
+        
         loginBtn.disabled = true;
         loginBtn.textContent = "Chargement...";
-
+        
         try {
+            console.log("🔍 Recherche pour le code:", code);
+            
             // 1. Charger les ÉVALUATIONS (corrigées)
             const qEval = query(collection(db, "resultats", code, "evaluations"), limit(50));
             const evalSnapshot = await getDocs(qEval);
@@ -283,7 +280,8 @@
             evalSnapshot.forEach(doc => {
                 evaluationsData.push({ id: doc.id, ...doc.data(), type: 'evaluation' });
             });
-
+            console.log("✅ Évaluations trouvées:", evaluationsData.length);
+            
             // 2. Charger les COPIES (non corrigées)
             const qCopies = query(collection(db, "resultats", code, "copies"), limit(50));
             const copiesSnapshot = await getDocs(qCopies);
@@ -302,7 +300,8 @@
                     });
                 }
             });
-
+            console.log("✅ Copies en attente:", copiesData.length);
+            
             if (evaluationsData.length === 0 && copiesData.length === 0) {
                 errorDiv.textContent = "❌ Aucun résultat trouvé pour ce code.";
                 errorDiv.classList.add('visible');
@@ -310,7 +309,7 @@
                 loginBtn.textContent = "Accéder";
                 return;
             }
-
+            
             // Combiner et trier
             allResults = [...evaluationsData, ...copiesData];
             allResults.sort((a, b) => {
@@ -318,31 +317,30 @@
                 const dateB = b.createdAtISO ? new Date(b.createdAtISO) : (b.savedAt ? new Date(b.savedAt) : new Date(0));
                 return dateB - dateA;
             });
-
+            
             currentCode = code;
-
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('resultsScreen').classList.add('active');
-
+            
             const firstItem = allResults[0];
             document.getElementById('studentName').textContent = firstItem?.eleve?.prenom ? `${firstItem.eleve.prenom} ${firstItem.eleve.nom || ''}` : code;
             document.getElementById('studentClass').textContent = firstItem?.classe || firstItem?.eleve?.classe || "";
-
+            
             renderEvaluations();
             renderStats();
             renderCompetences();
             renderProgression();
-
+            
         } catch (error) {
-            console.error("Erreur:", error);
+            console.error("❌ Erreur:", error);
             errorDiv.textContent = "❌ Erreur de connexion: " + error.message;
             errorDiv.classList.add('visible');
         }
-
+        
         loginBtn.disabled = false;
         loginBtn.textContent = "Accéder";
     }
-
+    
     function deconnecter() {
         currentCode = null;
         evaluationsData = [];
@@ -355,22 +353,33 @@
         if (radarChart) radarChart.destroy();
         if (progressChart) progressChart.destroy();
     }
-
+    
     function showTab(tabName) {
+        // Retirer la classe active de tous les onglets et contenus
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
-        document.getElementById('tab-' + tabName).classList.add('active');
+        
+        // Ajouter la classe active à l'onglet sélectionné
+        const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+        
+        // Afficher le contenu correspondant
+        const tabContent = document.getElementById('tab-' + tabName);
+        if (tabContent) {
+            tabContent.classList.add('active');
+        }
     }
-
+    
     function renderEvaluations() {
         const container = document.getElementById('evaluationsList');
-
+        
         if (allResults.length === 0) {
             container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aucune évaluation</p></div>`;
             return;
         }
-
+        
         let html = '';
         allResults.forEach((item, index) => {
             const titre = item.titre || item.devoirId || "Évaluation";
@@ -390,7 +399,7 @@
                 noteClass = note >= 14 ? 'note-green' : note >= 10 ? 'note-orange' : 'note-red';
                 statusBadge = '<span class="status-badge status-corrected">✅ Corrigé</span>';
             }
-
+            
             html += `
                 <div class="eval-card" onclick="openDetail(${index})">
                     <div class="eval-header">
@@ -404,10 +413,10 @@
                 </div>
             `;
         });
-
+        
         container.innerHTML = html;
     }
-
+    
     function renderStats() {
         // Moyenne
         let totalNotes = 0, nbNotes = 0;
@@ -447,7 +456,7 @@
         });
         document.getElementById('statBestComp').textContent = bestComp;
     }
-
+    
     function renderCompetences() {
         // Calculer scores par compétence
         const compData = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [] };
@@ -514,7 +523,7 @@
             `;
         }).join('');
     }
-
+    
     function renderProgression() {
         // Trier par date
         const sorted = [...evaluationsData]
@@ -559,7 +568,7 @@
             }
         });
     }
-
+    
     function openDetail(index) {
         const item = allResults[index];
         if (!item) return;
@@ -650,20 +659,19 @@
         document.getElementById('modalBody').innerHTML = html;
         document.getElementById('modalOverlay').classList.add('active');
     }
-
+    
     function closeModal(event) {
         if (!event || event.target === document.getElementById('modalOverlay')) {
             document.getElementById('modalOverlay').classList.remove('active');
         }
     }
-
+    
     // Fermer avec Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModal();
     });
-
-    console.log("✅ Page Résultats v3.0 - Complète avec radar et progression");
+    
+    console.log("✅ Page Résultats v3.1 - Bug syntaxe corrigé");
 </script>
-
 </body>
 </html>
