@@ -220,7 +220,7 @@
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     
     const firebaseConfig = {
         apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -234,7 +234,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    console.log("🚀 Page Résultats v4.0 - Lecture depuis copies/ à la racine");
+    console.log("🚀 Page Résultats v5.0 - Lecture copies + evaluations (CORRIGÉ)");
     
     let currentCode = null;
     let allResults = [];
@@ -273,66 +273,91 @@
             console.log("🔍 Recherche pour le code:", code);
             
             // ════════════════════════════════════════════════════════════════
-            // ⭐ LECTURE DEPUIS LA COLLECTION "copies" À LA RACINE
-            // On cherche les documents où eleveCode == code OU eleve.userCode == code
+            // ⭐ CORRECTION v5.0 : LECTURE DEPUIS 2 COLLECTIONS
+            // 1. resultats/{eleveCode}/copies/ → copies brutes
+            // 2. resultats/{eleveCode}/evaluations/ → corrections
             // ════════════════════════════════════════════════════════════════
             
             allResults = [];
+            const copiesMap = new Map(); // Pour fusionner copies + corrections
             
-            // Méthode 1: Chercher par eleveCode
+            // ─────────────────────────────────────────────────────────────
+            // ÉTAPE 1 : Charger les COPIES BRUTES
+            // ─────────────────────────────────────────────────────────────
             try {
-                const q1 = query(
-                    collection(db, "copies"),
-                    where("eleveCode", "==", code),
-                    limit(100)
-                );
-                const snap1 = await getDocs(q1);
-                snap1.forEach(doc => {
-                    allResults.push({ id: doc.id, ...doc.data() });
+                const copiesPath = `resultats/${code}/copies`;
+                console.log("📂 Lecture copies:", copiesPath);
+                
+                const qCopies = query(collection(db, copiesPath), limit(100));
+                const snapCopies = await getDocs(qCopies);
+                
+                snapCopies.forEach(doc => {
+                    const data = doc.data();
+                    copiesMap.set(data.devoirId, {
+                        id: doc.id,
+                        source: 'copies',
+                        ...data
+                    });
                 });
-                console.log("✅ Trouvé par eleveCode:", snap1.size);
+                
+                console.log("✅ Copies trouvées:", snapCopies.size);
             } catch(e) {
-                console.log("⚠️ Requête eleveCode échouée:", e.message);
+                console.log("⚠️ Erreur lecture copies:", e.message);
             }
             
-            // Méthode 2: Chercher par eleve.userCode (si différent)
+            // ─────────────────────────────────────────────────────────────
+            // ÉTAPE 2 : Charger les CORRECTIONS (EVALUATIONS)
+            // ─────────────────────────────────────────────────────────────
             try {
-                const q2 = query(
-                    collection(db, "copies"),
-                    where("eleve.userCode", "==", code),
-                    limit(100)
-                );
-                const snap2 = await getDocs(q2);
-                snap2.forEach(doc => {
-                    // Éviter les doublons
-                    if (!allResults.find(r => r.id === doc.id)) {
-                        allResults.push({ id: doc.id, ...doc.data() });
+                const evalsPath = `resultats/${code}/evaluations`;
+                console.log("📂 Lecture évaluations:", evalsPath);
+                
+                const qEvals = query(collection(db, evalsPath), limit(100));
+                const snapEvals = await getDocs(qEvals);
+                
+                snapEvals.forEach(doc => {
+                    const evalData = doc.data();
+                    const devoirId = evalData.devoirId;
+                    
+                    if (copiesMap.has(devoirId)) {
+                        // Fusionner correction avec copie existante
+                        const copie = copiesMap.get(devoirId);
+                        copiesMap.set(devoirId, {
+                            ...copie,
+                            // Ajouter données de correction
+                            note_finale: evalData.note_finale,
+                            appreciation: evalData.appreciation,
+                            competences_corrigees: evalData.competences,
+                            questions_corrigees: evalData.questions,
+                            correctedAt: evalData.savedAt,
+                            correctedBy: evalData.savedBy
+                        });
+                    } else {
+                        // Correction sans copie (cas rare)
+                        copiesMap.set(devoirId, {
+                            id: doc.id,
+                            source: 'evaluation_only',
+                            devoirId: devoirId,
+                            titre: evalData.titre,
+                            note_finale: evalData.note_finale,
+                            appreciation: evalData.appreciation,
+                            competences: evalData.competences,
+                            correctedAt: evalData.savedAt
+                        });
                     }
                 });
-                console.log("✅ Trouvé par eleve.userCode:", snap2.size);
+                
+                console.log("✅ Évaluations trouvées:", snapEvals.size);
             } catch(e) {
-                console.log("⚠️ Requête eleve.userCode échouée:", e.message);
+                console.log("⚠️ Erreur lecture évaluations:", e.message);
             }
             
-            // Méthode 3: Chercher en minuscules aussi
-            const codeLower = code.toLowerCase();
-            if (codeLower !== code) {
-                try {
-                    const q3 = query(
-                        collection(db, "copies"),
-                        where("eleveCode", "==", codeLower),
-                        limit(100)
-                    );
-                    const snap3 = await getDocs(q3);
-                    snap3.forEach(doc => {
-                        if (!allResults.find(r => r.id === doc.id)) {
-                            allResults.push({ id: doc.id, ...doc.data() });
-                        }
-                    });
-                } catch(e) {}
-            }
+            // ─────────────────────────────────────────────────────────────
+            // ÉTAPE 3 : Convertir Map en tableau
+            // ─────────────────────────────────────────────────────────────
+            allResults = Array.from(copiesMap.values());
             
-            console.log("📊 Total résultats trouvés:", allResults.length);
+            console.log("📊 Total fusionné:", allResults.length);
             
             if (allResults.length === 0) {
                 errorDiv.textContent = "❌ Aucun résultat trouvé pour le code « " + code + " ».\nVérifiez votre code ou contactez votre professeur.";
@@ -417,7 +442,7 @@
             const dateStr = item.createdAtISO || item.ts;
             const date = dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : "Date inconnue";
             
-            // Déterminer si c'est corrigé ou en attente
+            // ⭐ CORRECTION v5.0 : Utiliser note_finale si disponible
             const hasCorrection = item.note_finale !== undefined && item.note_finale !== null;
             const note = hasCorrection ? item.note_finale : (item.note_auto || item.score);
             const isPending = !hasCorrection;
@@ -470,16 +495,17 @@
         document.getElementById('statNbEvals').textContent = nbNotes;
         document.getElementById('statPending').textContent = nbPending;
         
-        // Meilleure compétence
+        // ⭐ CORRECTION v5.0 : Utiliser competences OU competences_corrigees
         const compScores = {};
         allResults.forEach(e => {
-            if (e.competences) {
-                Object.entries(e.competences).forEach(([comp, score]) => {
-                    if (!compScores[comp]) compScores[comp] = { total: 0, count: 0 };
-                    compScores[comp].total += score;
-                    compScores[comp].count++;
-                });
-            }
+            const comps = e.competences_corrigees || e.competences || {};
+            Object.entries(comps).forEach(([comp, data]) => {
+                // Gérer format grille (objet avec pts/max) et format copie (nombre)
+                const score = typeof data === 'object' ? (data.pts || 0) : data;
+                if (!compScores[comp]) compScores[comp] = { total: 0, count: 0 };
+                compScores[comp].total += score;
+                compScores[comp].count++;
+            });
         });
         
         let bestComp = '--';
@@ -498,11 +524,11 @@
         const compData = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [] };
         
         allResults.forEach(e => {
-            if (e.competences) {
-                Object.entries(e.competences).forEach(([comp, score]) => {
-                    if (compData[comp]) compData[comp].push(score);
-                });
-            }
+            const comps = e.competences_corrigees || e.competences || {};
+            Object.entries(comps).forEach(([comp, data]) => {
+                const score = typeof data === 'object' ? (data.pts || 0) : data;
+                if (compData[comp]) compData[comp].push(score);
+            });
         });
         
         const labels = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
@@ -623,11 +649,21 @@
             html += `<div style="background:#fffbeb;padding:15px;border-radius:8px;margin-bottom:20px;"><strong>💬 Appréciation :</strong> ${item.appreciation}</div>`;
         }
         
-        // Compétences
-        if (item.competences && Object.keys(item.competences).length > 0) {
+        // Compétences (prioriser competences_corrigees)
+        const comps = item.competences_corrigees || item.competences || {};
+        if (Object.keys(comps).length > 0) {
             html += `<div style="margin-bottom:20px;"><strong>🎯 Compétences évaluées :</strong><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">`;
-            Object.entries(item.competences).forEach(([comp, score]) => {
-                const niveau = score >= 3 ? 'M' : score >= 2 ? 'A' : score >= 1 ? 'I' : 'NT';
+            Object.entries(comps).forEach(([comp, data]) => {
+                // Gérer les 2 formats
+                let niveau = 'NT';
+                if (typeof data === 'object' && data.pts !== undefined) {
+                    // Format grille {pts, max}
+                    const ratio = data.max > 0 ? data.pts / data.max : 0;
+                    niveau = ratio >= 0.85 ? 'M' : ratio >= 0.65 ? 'A' : ratio >= 0.40 ? 'I' : 'NT';
+                } else if (typeof data === 'number') {
+                    // Format copie (nombre)
+                    niveau = data >= 3 ? 'M' : data >= 2 ? 'A' : data >= 1 ? 'I' : 'NT';
+                }
                 html += `<span class="comp-badge comp-${comp.toLowerCase()}">${comp}: ${niveau}</span>`;
             });
             html += `</div></div>`;
@@ -683,7 +719,7 @@
         if (e.key === 'Escape') closeModal();
     });
     
-    console.log("✅ Page Résultats v4.0 prête - Lecture depuis collection copies/");
+    console.log("✅ Page Résultats v5.0 prête - Lecture copies + evaluations");
 </script>
 </body>
 </html>
