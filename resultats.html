@@ -157,6 +157,7 @@
             body { background: white; max-width: 100%; }
             header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
+            .print-only { display: block !important; }
             .modal-header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .appreciation-block { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .question-card { page-break-inside: avoid; border: 1px solid #e2e8f0; }
@@ -167,6 +168,22 @@
             .correction-section { background: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .modal-content { max-height: none; box-shadow: none; }
             .modal-body { padding: 10px; }
+        }
+        
+        /* === PRINT HEADER === */
+        .print-header { display: none; }
+        @media print {
+            .print-header { 
+                display: block !important; 
+                background: #f59e0b; 
+                color: white; 
+                padding: 20px; 
+                margin: -15mm -15mm 20px -15mm;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+            .print-header-title { font-size: 1.5em; font-weight: 700; margin-bottom: 5px; }
+            .print-header-info { font-size: 0.9em; opacity: 0.9; }
         }
         
         /* === RESPONSIVE === */
@@ -248,6 +265,7 @@
                 <button class="tab active" onclick="switchTab('evaluations')">📝 Mes évaluations</button>
                 <button class="tab" onclick="switchTab('competences')">🎯 Compétences</button>
                 <button class="tab" onclick="switchTab('progression')">📈 Progression</button>
+                <button class="tab" onclick="ouvrirInfoCompetences()" style="margin-left: auto; background: #0ea5e9; color: white;">ℹ️ Comprendre les compétences</button>
             </div>
 
             <!-- Contenu Évaluations -->
@@ -290,6 +308,53 @@
                 </div>
             </div>
             <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- MODAL INFO COMPÉTENCES -->
+    <div class="modal-overlay" id="modalInfo">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <div class="modal-title">ℹ️ Comprendre les compétences</div>
+                <div class="modal-actions no-print">
+                    <button class="modal-close" onclick="fermerInfoModal()">×</button>
+                </div>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div style="background: #fff7ed; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f97316;">
+                    <strong>📚 BAC PRO</strong>
+                    <p style="margin-top: 10px; color: #7c2d12; line-height: 1.6;">
+                        • <strong>C1</strong> - Traiter l'information<br>
+                        • <strong>C2</strong> - Appliquer une démarche d'analyse dans une situation donnée<br>
+                        • <strong>C3</strong> - Expliquer un phénomène physiologique, un enjeu environnemental, une disposition réglementaire, en lien avec la démarche de prévention<br>
+                        • <strong>C4</strong> - Proposer une solution pour résoudre un problème<br>
+                        • <strong>C5</strong> - Argumenter un choix<br>
+                        • <strong>C6</strong> - Communiquer à l'écrit et à l'oral avec une syntaxe claire et un vocabulaire adapté
+                    </p>
+                </div>
+                
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0ea5e9;">
+                    <strong>🎓 CAP</strong>
+                    <p style="margin-top: 10px; color: #075985; line-height: 1.6;">
+                        • <strong>C1</strong> - Traiter une information<br>
+                        • <strong>C2</strong> - Appliquer une méthode d'analyse dans une situation donnée<br>
+                        • <strong>C3</strong> - Mettre en relation un phénomène physiologique, un enjeu environnemental, une disposition réglementaire, avec une mesure de prévention<br>
+                        • <strong>C4</strong> - Proposer une solution pour résoudre un problème lié à la santé, l'environnement ou la consommation<br>
+                        • <strong>C5</strong> - Argumenter un choix<br>
+                        • <strong>C6</strong> - Communiquer à l'écrit et à l'oral avec une syntaxe claire et un vocabulaire adapté
+                    </p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #64748b;">
+                    <strong>🎯 Niveaux d'évaluation</strong>
+                    <p style="margin-top: 10px; color: #475569; line-height: 1.6;">
+                        • <strong style="color: #dc2626;">NT</strong> (Non Traité) - Question non répondue ou réponse totalement erronée<br>
+                        • <strong style="color: #f97316;">I</strong> (Insuffisant) - Compétence en cours d'acquisition<br>
+                        • <strong style="color: #0ea5e9;">A</strong> (Acceptable) - Compétence partiellement maîtrisée<br>
+                        • <strong style="color: #22c55e;">M</strong> (Maîtrisé) - Compétence pleinement maîtrisée
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -428,13 +493,24 @@
             const premier = allEvaluations[0];
             const eleve = premier.copie.eleve;
             
-            const nom = eleve?.nom || currentUserCode;
+            const nom = eleve?.nom || "";
             const prenom = eleve?.prenom || "";
-            // Ne pas afficher la classe pour protéger l'identité (RGPD)
             
-            document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || currentUserCode;
-            // Masquer la classe - afficher seulement le code
-            document.getElementById('studentClass').textContent = currentUserCode;
+            // Afficher le code UNE SEULE FOIS
+            // Si on a nom/prénom : afficher nom/prénom dans student-name, code dans student-class
+            // Sinon : afficher code dans student-name, masquer student-class
+            
+            if (nom && prenom) {
+                document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim();
+                document.getElementById('studentClass').textContent = currentUserCode;
+            } else if (nom) {
+                document.getElementById('studentName').textContent = nom;
+                document.getElementById('studentClass').textContent = currentUserCode;
+            } else {
+                // Pas de nom : juste le code
+                document.getElementById('studentName').textContent = currentUserCode;
+                document.getElementById('studentClass').style.display = 'none';
+            }
         }
 
         function afficherStatistiques() {
@@ -566,9 +642,18 @@
             
             let html = '';
             
-            // Ajouter la date du devoir
+            // En-tête pour l'impression (visible uniquement à l'impression)
             const dateStr = evaluation.date instanceof Date ? evaluation.date.toLocaleDateString('fr-FR') : 
                            typeof evaluation.date === 'string' ? new Date(evaluation.date).toLocaleDateString('fr-FR') : '--';
+            
+            html += `
+                <div class="print-header">
+                    <div class="print-header-title">${evaluation.titre}</div>
+                    <div class="print-header-info">Élève : ${currentUserCode} | Note : ${evaluation.note.toFixed(1)}/20 | Date : ${dateStr}</div>
+                </div>
+            `;
+            
+            // Date du devoir (visible à l'écran)
             html += `
                 <div style="background: #f8fafc; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; color: #64748b; font-size: 0.95em;">
                     📅 Rendu le ${dateStr}
@@ -704,6 +789,13 @@
                                 <div class="answer-text">${reponse}</div>
                             </div>
                             
+                            ${correctionText ? `
+                                <div class="correction-section">
+                                    <div class="correction-label">Correction</div>
+                                    <div class="correction-text">${correctionText}</div>
+                                </div>
+                            ` : ''}
+                            
                             <div class="evaluation-section">
                                 <div class="evaluation-label">Évaluation</div>
                                 <div class="answer-text"><strong>${niveauLabels[niveau] || niveau}</strong></div>
@@ -715,13 +807,6 @@
                                     <div class="comment-text">${commentaire}</div>
                                 </div>
                             ` : '<div class="no-comment">Pas de commentaire</div>'}
-                            
-                            ${correctionText ? `
-                                <div class="correction-section">
-                                    <div class="correction-label">Correction</div>
-                                    <div class="correction-text">${correctionText}</div>
-                                </div>
-                            ` : ''}
                         </div>
                     `;
                 });
@@ -737,6 +822,14 @@
 
         window.fermerModal = function() {
             document.getElementById('modalDetail').classList.remove('active');
+        };
+
+        window.ouvrirInfoCompetences = function() {
+            document.getElementById('modalInfo').classList.add('active');
+        };
+
+        window.fermerInfoModal = function() {
+            document.getElementById('modalInfo').classList.remove('active');
         };
 
         window.imprimerCopie = function() {
