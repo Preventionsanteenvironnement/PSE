@@ -2,15 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Escape Game Finance : Le Coffre de Sophie</title>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="annuaire.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PSE - Module D2 - Escape Game : Le Coffre de Sophie</title>
 
   <style>
     :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#0f172a; --gold:#fbbf24; }
@@ -22,11 +15,93 @@
       overflow-x:hidden;
     }
     .container{ max-width:1100px; width:100%; }
+
+    /* ===== PAGE D'INTRODUCTION ===== */
+    #intro-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      padding: 30px 20px;
+      max-width: 700px;
+    }
+
+    #intro-page h1 {
+      color: var(--gold);
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    #intro-page h2 {
+      color: #94a3b8;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    #intro-page h3 {
+      color: var(--gold);
+      font-size: 1.3rem;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+
+    .objectif-box {
+      background: #1e293b;
+      border-left: 5px solid var(--gold);
+      padding: 20px 25px;
+      margin: 20px 0 40px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+      text-align: left;
+      line-height: 1.7;
+      color: #e2e8f0;
+    }
+
+    .objectif-box strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--gold);
+    }
+
+    #btn-demarrer {
+      background: linear-gradient(135deg, var(--gold), #f59e0b);
+      color: #0f172a;
+      border: none;
+      padding: 16px 40px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 15px rgba(251,191,36,.3);
+    }
+
+    #btn-demarrer:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(251,191,36,.4);
+    }
+
+    #btn-demarrer:active {
+      transform: translateY(0);
+    }
+
+    /* ===== CONTENU EXERCICE ===== */
+    #exercice-content {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+
     header{
       background:linear-gradient(135deg,#1e293b,#334155); color:var(--gold);
       padding:30px; border-radius:15px; text-align:center; margin-bottom:25px;
       border:2px solid var(--gold); box-shadow:0 0 20px rgba(251,191,36,0.2);
-      max-width:100%;
+      max-width:100%; width:100%;
     }
     .obj-box{
       margin-top:10px; padding:10px; border-radius:10px;
@@ -45,7 +120,7 @@
       background:var(--gold); color:#0f172a; border:none;
       width:60px; height:60px; border-radius:50%; font-size:1.8rem;
       cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);
-      transition:transform 0.2s; display:flex; align-items:center; justify-content:center;
+      transition:transform 0.2s; display:none; align-items:center; justify-content:center;
     }
     .calc-toggle:hover{ transform:scale(1.1); }
     .calc-toggle:active{ transform:scale(0.95); }
@@ -102,11 +177,11 @@
       border-radius:10px; cursor:pointer; font-weight:900; color:#1e293b;
       transition:0.15s; user-select:none; text-align:center;
       -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-      max-width:100%;
+      -webkit-touch-callout:none; max-width:100%;
     }
     .draggable-item.selected{ border-color:var(--gold); background:#fef3c7; transform:scale(1.03); }
-    .draggable-item.correct{ border-color:var(--success); }
-    .draggable-item.wrong{ border-color:var(--error); }
+    .draggable-item.correct{ border-color:var(--success); background:#dcfce7; }
+    .draggable-item.wrong{ border-color:var(--error); background:#fee2e2; }
 
     .correct-info{ display:none; font-size:0.85rem; color:#f87171; margin-top:6px; font-weight:900; }
 
@@ -129,8 +204,9 @@
       flex-grow:1; padding:10px; border-radius:10px;
       background:rgba(255,255,255,0.05); min-height:120px;
       cursor:pointer; margin-bottom:10px; overflow:auto;
-      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      transition:background .2s;
     }
+    .drop-zone:hover{ background:rgba(255,255,255,0.08); }
     .sub-zone{
       background:rgba(40,167,69,0.1); border-radius:10px;
       padding:8px; margin-bottom:8px; overflow:auto;
@@ -148,11 +224,12 @@
       text-align:center; border-top:1px solid #334155; padding-top:10px;
       display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;
     }
-    input[type="text"]{
+    input.number-input{
       width:110px; padding:8px; border:2px solid #334155; border-radius:8px;
       text-align:center; background:#0f172a; color:white; font-weight:900;
-      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      -webkit-appearance:none;
     }
+    input.number-input:focus{ outline:none; border-color:var(--gold); }
     .hint{ width:100%; font-size:0.85rem; color:#94a3b8; }
 
     .safe-zone{
@@ -169,9 +246,9 @@
     .btn-unlock{
       background:var(--gold); color:#0f172a; border:none;
       padding:20px 40px; border-radius:14px; font-size:1.25rem;
-      font-weight:1000; cursor:pointer; width:auto;
-      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      font-weight:1000; cursor:pointer; width:auto; transition:background .2s;
     }
+    .btn-unlock:hover{ background:#f59e0b; }
     .btn-disabled{ opacity:0.75; cursor:not-allowed; }
 
     .victory-badge{
@@ -182,8 +259,7 @@
     @keyframes bounce{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
 
     #result-zone{ display:none; margin-top:25px; text-align:center; width:100%; max-width:100%; }
-    .chart-box{ height:300px; margin:20px 0; background:white; border-radius:15px; padding:15px; max-width:100%; }
-    .chart-box canvas{ max-width:100% !important; height:100% !important; display:block; }
+    .chart-box{ height:300px; margin:20px 0; background:#1e293b; border-radius:15px; padding:15px; max-width:100%; }
 
     .score-card{
       max-width:700px; margin:0 auto; background:rgba(255,255,255,0.06);
@@ -199,32 +275,77 @@
     .row .ok{ color:#86efac; font-weight:900; }
     .row .ko{ color:#fca5a5; font-weight:900; }
 
+    .info-box{
+      text-align:left; background:rgba(59,130,246,0.1); border:2px solid #3b82f6;
+      padding:12px; border-radius:10px; margin:15px auto; max-width:700px;
+    }
+
+    /* ===== CONFETTI SIMPLE ===== */
+    .confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      opacity: 0;
+    }
+
     @media (max-width:600px){
       body{ padding:12px; }
       header{ padding:18px; }
       .btn-unlock{ width:100%; padding:16px; font-size:1.05rem; }
       .safe-display{ font-size:1.6rem; }
       .chart-box{ height:260px; padding:12px; }
-      input[type="text"]{ width:140px; }
+      input.number-input{ width:120px; }
       .calc-toggle{ bottom:15px; right:15px; width:55px; height:55px; font-size:1.6rem; }
       .calculator{ bottom:80px; right:15px; width:260px; padding:15px; }
       .calc-btn{ padding:12px; font-size:1rem; }
+      
+      #intro-page { padding: 20px 15px; min-height: 70vh; }
+      #intro-page h1 { font-size: 1.2rem; }
+      #intro-page h2 { font-size: 1rem; }
+      #intro-page h3 { font-size: 1.1rem; }
+      .objectif-box { padding: 15px; font-size: .95rem; }
+      #btn-demarrer { padding: 14px 30px; font-size: 1.1rem; }
+    }
+
+    @supports (-webkit-overflow-scrolling: touch) {
+      body { -webkit-overflow-scrolling: touch; }
     }
   </style>
 </head>
 
 <body>
+
+<!-- ===== PAGE D'INTRODUCTION ===== -->
+<div id="intro-page">
+  <h1>PSE – Thématique D</h1>
+  <h2>L'individu consommateur averti</h2>
+  <h3>Module D2 – Le budget</h3>
+  
+  <div class="objectif-box">
+    <strong>Objectif général :</strong>
+    Je dois être capable de gérer mon budget et de prendre les bonnes décisions face aux propositions de crédit afin d'adopter une attitude responsable et d'éviter le surendettement.
+  </div>
+  
+  <button id="btn-demarrer">🔐 Commencer l'Escape Game</button>
+</div>
+
+<!-- ===== CONTENU DE L'EXERCICE ===== -->
+<div id="exercice-content">
   <div class="container">
     <header>
       <h1 style="margin:0;">🔐 ESCAPE GAME : LE COFFRE DE SOPHIE</h1>
       <div class="obj-box">Mission : classe les flux et trouve le solde exact pour ouvrir le coffre</div>
     </header>
-
-    <script>
-      if(typeof enregistrerVisite === "function") {
-        try { enregistrerVisite("Escape Game - Sophie"); } catch(e) {}
-      }
-    </script>
 
     <div class="mission-box">
       <strong>LE DOSSIER :</strong> le code du coffre est le <strong>Solde Mensuel exact</strong> de Sophie<br><br>
@@ -242,7 +363,7 @@
         <div class="drop-zone sub-zone" data-category="recette-social" role="button" tabindex="0"><h4>SOCIAL</h4></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-recettes" placeholder="1907,62">
+          <input type="text" inputmode="decimal" class="number-input" id="in-recettes" placeholder="1907,62" autocomplete="off">
           €
           <div class="hint">Virgule, point, espaces et € acceptés</div>
         </div>
@@ -253,7 +374,7 @@
         <div class="drop-zone" data-category="fixe" role="button" tabindex="0"></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-fixes" placeholder="729,41">
+          <input type="text" inputmode="decimal" class="number-input" id="in-fixes" placeholder="729,41" autocomplete="off">
           €
         </div>
       </div>
@@ -263,7 +384,7 @@
         <div class="drop-zone" data-category="courante" role="button" tabindex="0"></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-courantes" placeholder="427,65">
+          <input type="text" inputmode="decimal" class="number-input" id="in-courantes" placeholder="427,65" autocomplete="off">
           €
         </div>
       </div>
@@ -273,7 +394,7 @@
         <div class="drop-zone" data-category="occas" role="button" tabindex="0"></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-occas" placeholder="465,50">
+          <input type="text" inputmode="decimal" class="number-input" id="in-occas" placeholder="465,50" autocomplete="off">
           €
         </div>
       </div>
@@ -284,501 +405,557 @@
       <h2 style="margin:0 0 6px 0; color:#fde68a;">CODE DE DÉVERROUILLAGE</h2>
       <div style="color:#94a3b8; font-weight:700; margin-bottom:8px;">Entre le solde mensuel exact (Recettes - Dépenses)</div>
 
-      <input type="text" inputmode="decimal" id="final-code-input" class="safe-display" placeholder="285,06">
+      <input type="text" inputmode="decimal" id="final-code-input" class="safe-display number-input" placeholder="285,06" autocomplete="off">
       <br>
-      <button class="btn-unlock" id="btn-open" type="button">TENTER L'OUVERTURE</button>
+      <button class="btn-unlock" id="btn-open" type="button">🔑 TENTER L'OUVERTURE</button>
       <div class="victory-badge" id="badge">🏆 MAÎTRE DES FINANCES 🏆</div>
     </div>
 
     <div id="result-zone">
-      <h2 id="final-score" style="margin:10px 0 0 0; color:#fde68a;">Score : -- / 20</h2>
+      <h2 id="final-score" style="margin:10px 0 0 0; color:#fde68a; font-size:2.5rem;">Score : -- / 20</h2>
 
       <div class="score-card" id="score-details"></div>
 
+      <div id="corrections-box" class="info-box" style="display:none;">
+        <strong>📝 Valeurs attendues :</strong>
+        <div id="corrections-list"></div>
+      </div>
+
       <div class="chart-box"><canvas id="barChart"></canvas></div>
-      <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(148,163,184,0.35); text-align:left;"></div>
       <button class="btn-unlock" type="button" style="background:#64748b;" onclick="location.reload()">🔄 RECOMMENCER</button>
     </div>
   </div>
+</div>
 
-  <!-- CALCULATRICE -->
-  <button class="calc-toggle" id="calc-toggle" aria-label="Ouvrir la calculatrice">🧮</button>
-  
-  <div class="calculator" id="calculator">
-    <div class="calc-header">
-      <h3>Calculatrice</h3>
-      <button class="calc-close" id="calc-close" aria-label="Fermer">×</button>
-    </div>
-    <div class="calc-display" id="calc-display">0</div>
-    <div class="calc-buttons">
-      <button class="calc-btn clear" data-action="clear">C</button>
-      <button class="calc-btn operator" data-action="backspace">←</button>
-      <button class="calc-btn operator" data-action="divide">÷</button>
-      <button class="calc-btn operator" data-action="multiply">×</button>
-      
-      <button class="calc-btn" data-number="7">7</button>
-      <button class="calc-btn" data-number="8">8</button>
-      <button class="calc-btn" data-number="9">9</button>
-      <button class="calc-btn operator" data-action="subtract">−</button>
-      
-      <button class="calc-btn" data-number="4">4</button>
-      <button class="calc-btn" data-number="5">5</button>
-      <button class="calc-btn" data-number="6">6</button>
-      <button class="calc-btn operator" data-action="add">+</button>
-      
-      <button class="calc-btn" data-number="1">1</button>
-      <button class="calc-btn" data-number="2">2</button>
-      <button class="calc-btn" data-number="3">3</button>
-      <button class="calc-btn equals" data-action="equals">=</button>
-      
-      <button class="calc-btn zero" data-number="0">0</button>
-      <button class="calc-btn" data-action="decimal">,</button>
-    </div>
+<!-- CALCULATRICE -->
+<button class="calc-toggle" id="calc-toggle" aria-label="Ouvrir la calculatrice">🧮</button>
+
+<div class="calculator" id="calculator">
+  <div class="calc-header">
+    <h3>Calculatrice</h3>
+    <button class="calc-close" id="calc-close" aria-label="Fermer">×</button>
   </div>
+  <div class="calc-display" id="calc-display">0</div>
+  <div class="calc-buttons">
+    <button class="calc-btn clear" data-action="clear">C</button>
+    <button class="calc-btn operator" data-action="backspace">←</button>
+    <button class="calc-btn operator" data-action="divide">÷</button>
+    <button class="calc-btn operator" data-action="multiply">×</button>
+    
+    <button class="calc-btn" data-number="7">7</button>
+    <button class="calc-btn" data-number="8">8</button>
+    <button class="calc-btn" data-number="9">9</button>
+    <button class="calc-btn operator" data-action="subtract">−</button>
+    
+    <button class="calc-btn" data-number="4">4</button>
+    <button class="calc-btn" data-number="5">5</button>
+    <button class="calc-btn" data-number="6">6</button>
+    <button class="calc-btn operator" data-action="add">+</button>
+    
+    <button class="calc-btn" data-number="1">1</button>
+    <button class="calc-btn" data-number="2">2</button>
+    <button class="calc-btn" data-number="3">3</button>
+    <button class="calc-btn equals" data-action="equals">=</button>
+    
+    <button class="calc-btn zero" data-number="0">0</button>
+    <button class="calc-btn" data-action="decimal">,</button>
+  </div>
+</div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-      authDomain: "devoirs-pse.firebaseapp.com",
-      projectId: "devoirs-pse",
-      storageBucket: "devoirs-pse.appspot.com",
-      messagingSenderId: "614730413904",
-      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-    };
+<!-- Conteneur pour confetti -->
+<div class="confetti-container" id="confetti-container"></div>
 
-    try {
-      if (typeof firebase !== "undefined" && firebaseConfig && !firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-      }
-      window.db = (typeof firebase !== "undefined") ? firebase.firestore() : null;
-    } catch(e) {
-      window.db = null;
-    }
-  </script>
+<script>
+  // ===== GESTION DE LA PAGE D'INTRODUCTION =====
+  document.getElementById('btn-demarrer').addEventListener('click', function() {
+    document.getElementById('intro-page').style.display = 'none';
+    document.getElementById('exercice-content').style.display = 'flex';
+    document.getElementById('calc-toggle').style.display = 'flex';
+  });
 
-  <script>
-    // CALCULATRICE
-    const calcToggle = document.getElementById("calc-toggle");
-    const calculator = document.getElementById("calculator");
-    const calcClose = document.getElementById("calc-close");
-    const calcDisplay = document.getElementById("calc-display");
+  // ===== CALCULATRICE =====
+  const calcToggle = document.getElementById("calc-toggle");
+  const calculator = document.getElementById("calculator");
+  const calcClose = document.getElementById("calc-close");
+  const calcDisplay = document.getElementById("calc-display");
 
-    let calcValue = "0";
-    let calcOperator = null;
-    let calcPrevValue = null;
-    let calcWaitingForOperand = false;
+  let calcValue = "0";
+  let calcOperator = null;
+  let calcPrevValue = null;
+  let calcWaitingForOperand = false;
 
-    function updateCalcDisplay(){
-      calcDisplay.textContent = calcValue.replace(".", ",");
-    }
+  function updateCalcDisplay(){
+    calcDisplay.textContent = calcValue.replace(".", ",");
+  }
 
-    function calcClear(){
+  function calcClear(){
+    calcValue = "0";
+    calcOperator = null;
+    calcPrevValue = null;
+    calcWaitingForOperand = false;
+    updateCalcDisplay();
+  }
+
+  function calcBackspace(){
+    if(calcValue.length > 1){
+      calcValue = calcValue.slice(0, -1);
+    } else {
       calcValue = "0";
+    }
+    updateCalcDisplay();
+  }
+
+  function calcInputNumber(num){
+    if(calcWaitingForOperand){
+      calcValue = String(num);
+      calcWaitingForOperand = false;
+    } else {
+      calcValue = calcValue === "0" ? String(num) : calcValue + num;
+    }
+    updateCalcDisplay();
+  }
+
+  function calcInputDecimal(){
+    if(calcWaitingForOperand){
+      calcValue = "0.";
+      calcWaitingForOperand = false;
+    } else if(calcValue.indexOf(".") === -1){
+      calcValue += ".";
+    }
+    updateCalcDisplay();
+  }
+
+  function calcPerformOperation(nextOperator){
+    const inputValue = parseFloat(calcValue);
+
+    if(calcPrevValue === null){
+      calcPrevValue = inputValue;
+    } else if(calcOperator){
+      const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+      calcValue = String(result);
+      calcPrevValue = result;
+    }
+
+    calcWaitingForOperand = true;
+    calcOperator = nextOperator;
+    updateCalcDisplay();
+  }
+
+  function calcCalculate(prev, current, op){
+    switch(op){
+      case "+": return prev + current;
+      case "-": return prev - current;
+      case "*": return prev * current;
+      case "/": return current !== 0 ? prev / current : 0;
+      default: return current;
+    }
+  }
+
+  function calcEquals(){
+    const inputValue = parseFloat(calcValue);
+    if(calcPrevValue !== null && calcOperator){
+      const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
+      calcValue = String(Math.round(result * 100) / 100);
       calcOperator = null;
       calcPrevValue = null;
-      calcWaitingForOperand = false;
-      updateCalcDisplay();
-    }
-
-    function calcBackspace(){
-      if(calcValue.length > 1){
-        calcValue = calcValue.slice(0, -1);
-      } else {
-        calcValue = "0";
-      }
-      updateCalcDisplay();
-    }
-
-    function calcInputNumber(num){
-      if(calcWaitingForOperand){
-        calcValue = String(num);
-        calcWaitingForOperand = false;
-      } else {
-        calcValue = calcValue === "0" ? String(num) : calcValue + num;
-      }
-      updateCalcDisplay();
-    }
-
-    function calcInputDecimal(){
-      if(calcWaitingForOperand){
-        calcValue = "0.";
-        calcWaitingForOperand = false;
-      } else if(calcValue.indexOf(".") === -1){
-        calcValue += ".";
-      }
-      updateCalcDisplay();
-    }
-
-    function calcPerformOperation(nextOperator){
-      const inputValue = parseFloat(calcValue);
-
-      if(calcPrevValue === null){
-        calcPrevValue = inputValue;
-      } else if(calcOperator){
-        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
-        calcValue = String(result);
-        calcPrevValue = result;
-      }
-
       calcWaitingForOperand = true;
-      calcOperator = nextOperator;
       updateCalcDisplay();
     }
+  }
 
-    function calcCalculate(prev, current, op){
-      switch(op){
-        case "+": return prev + current;
-        case "-": return prev - current;
-        case "*": return prev * current;
-        case "/": return current !== 0 ? prev / current : 0;
-        default: return current;
-      }
-    }
+  calcToggle.addEventListener("click", ()=>{
+    calculator.classList.toggle("visible");
+  });
 
-    function calcEquals(){
-      const inputValue = parseFloat(calcValue);
-      if(calcPrevValue !== null && calcOperator){
-        const result = calcCalculate(calcPrevValue, inputValue, calcOperator);
-        calcValue = String(Math.round(result * 100) / 100);
-        calcOperator = null;
-        calcPrevValue = null;
-        calcWaitingForOperand = true;
-        updateCalcDisplay();
-      }
-    }
+  calcClose.addEventListener("click", ()=>{
+    calculator.classList.remove("visible");
+  });
 
-    calcToggle.addEventListener("click", ()=>{
-      calculator.classList.toggle("visible");
-    });
+  document.querySelectorAll(".calc-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const action = btn.dataset.action;
+      const number = btn.dataset.number;
 
-    calcClose.addEventListener("click", ()=>{
-      calculator.classList.remove("visible");
-    });
-
-    document.querySelectorAll(".calc-btn").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const action = btn.dataset.action;
-        const number = btn.dataset.number;
-
-        if(number !== undefined){
-          calcInputNumber(number);
-        } else if(action === "clear"){
-          calcClear();
-        } else if(action === "backspace"){
-          calcBackspace();
-        } else if(action === "decimal"){
-          calcInputDecimal();
-        } else if(action === "add"){
-          calcPerformOperation("+");
-        } else if(action === "subtract"){
-          calcPerformOperation("-");
-        } else if(action === "multiply"){
-          calcPerformOperation("*");
-        } else if(action === "divide"){
-          calcPerformOperation("/");
-        } else if(action === "equals"){
-          calcEquals();
-        }
-      });
-    });
-
-    // Support clavier pour la calculatrice
-    document.addEventListener("keydown", (e)=>{
-      if(!calculator.classList.contains("visible")) return;
-
-      if(e.key >= "0" && e.key <= "9"){
-        calcInputNumber(e.key);
-      } else if(e.key === "," || e.key === "."){
-        calcInputDecimal();
-      } else if(e.key === "+"){
-        calcPerformOperation("+");
-      } else if(e.key === "-"){
-        calcPerformOperation("-");
-      } else if(e.key === "*"){
-        calcPerformOperation("*");
-      } else if(e.key === "/"){
-        e.preventDefault();
-        calcPerformOperation("/");
-      } else if(e.key === "Enter" || e.key === "="){
-        calcEquals();
-      } else if(e.key === "Escape"){
-        calculator.classList.remove("visible");
-      } else if(e.key === "Backspace"){
-        calcBackspace();
-      } else if(e.key === "c" || e.key === "C"){
+      if(number !== undefined){
+        calcInputNumber(number);
+      } else if(action === "clear"){
         calcClear();
+      } else if(action === "backspace"){
+        calcBackspace();
+      } else if(action === "decimal"){
+        calcInputDecimal();
+      } else if(action === "add"){
+        calcPerformOperation("+");
+      } else if(action === "subtract"){
+        calcPerformOperation("-");
+      } else if(action === "multiply"){
+        calcPerformOperation("*");
+      } else if(action === "divide"){
+        calcPerformOperation("/");
+      } else if(action === "equals"){
+        calcEquals();
       }
     });
-  </script>
+  });
 
-  <script>
-    const items = [
-      { id: 1, name: "Salaire",       val: 1753.12, cat: "recette-travail", label: "TRAVAIL" },
-      { id: 2, name: "Aide logement", val:  154.50, cat: "recette-social",  label: "SOCIAL" },
-      { id: 3, name: "Loyer",        val:  652.30, cat: "fixe",            label: "FIXES" },
-      { id: 4, name: "Internet",     val:   31.99, cat: "fixe",            label: "FIXES" },
-      { id: 5, name: "Assurance",    val:   45.12, cat: "fixe",            label: "FIXES" },
-      { id: 6, name: "Courses",      val:  342.65, cat: "courante",        label: "COURANTES" },
-      { id: 7, name: "Transport",    val:   85.00, cat: "courante",        label: "COURANTES" },
-      { id: 8, name: "Coiffeur",     val:   45.00, cat: "occas",           label: "OCCASIONNELLES" },
-      { id: 9, name: "Vélo",         val:  420.50, cat: "occas",           label: "OCCASIONNELLES" }
-    ];
+  // Support clavier pour la calculatrice
+  document.addEventListener("keydown", (e)=>{
+    if(!calculator.classList.contains("visible")) return;
 
-    const EXPECT = {
-      recettes: 1907.62,
-      fixes:    729.41,
-      cour:     427.65,
-      occas:    465.50,
-      dep:     1622.56,
-      solde:    285.06
-    };
+    if(e.key >= "0" && e.key <= "9"){
+      calcInputNumber(e.key);
+    } else if(e.key === "," || e.key === "."){
+      calcInputDecimal();
+    } else if(e.key === "+"){
+      calcPerformOperation("+");
+    } else if(e.key === "-"){
+      calcPerformOperation("-");
+    } else if(e.key === "*"){
+      calcPerformOperation("*");
+    } else if(e.key === "/"){
+      e.preventDefault();
+      calcPerformOperation("/");
+    } else if(e.key === "Enter" || e.key === "="){
+      calcEquals();
+    } else if(e.key === "Escape"){
+      calculator.classList.remove("visible");
+    } else if(e.key === "Backspace"){
+      calcBackspace();
+    } else if(e.key === "c" || e.key === "C"){
+      calcClear();
+    }
+  });
 
-    function normalizeNumberInput(str){
-      if(!str) return null;
-      let s = String(str).replace(/\u00A0/g," ").trim();
-      s = s.replace(/\s+/g,"").replace(/€/g,"");
-      s = s.replace(/[^0-9+\-.,]/g,"");
+  // ===== CONFETTI SIMPLE (sans librairie) =====
+  function launchConfetti() {
+    const container = document.getElementById('confetti-container');
+    const colors = ['#fbbf24', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6'];
+    
+    for (let i = 0; i < 100; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + '%';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      container.appendChild(confetti);
+      
+      // Animation
+      const duration = 2000 + Math.random() * 2000;
+      const delay = Math.random() * 500;
+      
+      confetti.animate([
+        { top: '-10px', opacity: 1, transform: `rotate(0deg) translateX(0)` },
+        { top: '100vh', opacity: 0, transform: `rotate(${Math.random() * 720}deg) translateX(${(Math.random() - 0.5) * 200}px)` }
+      ], {
+        duration: duration,
+        delay: delay,
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      }).onfinish = () => confetti.remove();
+    }
+  }
 
-      const lastComma = s.lastIndexOf(",");
-      const lastDot   = s.lastIndexOf(".");
-      const decPos = Math.max(lastComma,lastDot);
+  // ===== DONNÉES DE L'EXERCICE =====
+  const items = [
+    { id: 1, name: "Salaire",       val: 1753.12, cat: "recette-travail", label: "TRAVAIL" },
+    { id: 2, name: "Aide logement", val:  154.50, cat: "recette-social",  label: "SOCIAL" },
+    { id: 3, name: "Loyer",        val:  652.30, cat: "fixe",            label: "FIXES" },
+    { id: 4, name: "Internet",     val:   31.99, cat: "fixe",            label: "FIXES" },
+    { id: 5, name: "Assurance",    val:   45.12, cat: "fixe",            label: "FIXES" },
+    { id: 6, name: "Courses",      val:  342.65, cat: "courante",        label: "COURANTES" },
+    { id: 7, name: "Transport",    val:   85.00, cat: "courante",        label: "COURANTES" },
+    { id: 8, name: "Coiffeur",     val:   45.00, cat: "occas",           label: "OCCASIONNELLES" },
+    { id: 9, name: "Vélo",         val:  420.50, cat: "occas",           label: "OCCASIONNELLES" }
+  ];
 
-      if(decPos !== -1){
-        const intPart = s.slice(0,decPos).replace(/[.,]/g,"");
-        const decPart = s.slice(decPos+1).replace(/[.,]/g,"");
-        s = intPart + "." + decPart;
-      } else {
-        s = s.replace(/[.,]/g,"");
-      }
+  const EXPECT = {
+    recettes: 1907.62,
+    fixes:    729.41,
+    cour:     427.65,
+    occas:    465.50,
+    dep:     1622.56,
+    solde:    285.06
+  };
 
-      if(!s || s==="+" || s==="-" || s==="." || s==="+." || s==="-.") return null;
-      const n = Number(s);
-      return Number.isFinite(n) ? n : null;
+  // ===== NORMALISATION DES SAISIES =====
+  function normalizeNumberInput(str){
+    if(!str) return null;
+    let s = String(str).replace(/\u00A0/g," ").trim();
+    s = s.replace(/[\s\u202F]/g,"").replace(/€/g,"");
+    s = s.replace(/[^0-9+\-.,]/g,"");
+
+    const lastComma = s.lastIndexOf(",");
+    const lastDot   = s.lastIndexOf(".");
+    const decPos = Math.max(lastComma,lastDot);
+
+    if(decPos !== -1){
+      const intPart = s.slice(0,decPos).replace(/[.,]/g,"");
+      const decPart = s.slice(decPos+1).replace(/[.,]/g,"");
+      s = intPart + "." + decPart;
+    } else {
+      s = s.replace(/[.,]/g,"");
     }
 
-    function isClose(n,target,tol){
-      return (typeof n==="number") && Number.isFinite(n) && Math.abs(n-target) <= tol;
+    if(!s || s==="+" || s==="-" || s==="." || s==="+." || s==="-.") return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function isClose(n,target,tol){
+    return (typeof n==="number") && Number.isFinite(n) && Math.abs(n-target) <= tol;
+  }
+
+  function kbActivate(e, fn){
+    if(e.key==="Enter" || e.key===" "){ e.preventDefault(); fn(); }
+  }
+
+  let selectedItem = null;
+  const bank = document.getElementById("item-bank");
+
+  function toggleSelect(el){
+    if(selectedItem === el){
+      el.classList.remove("selected");
+      selectedItem = null;
+      return;
     }
+    if(selectedItem) selectedItem.classList.remove("selected");
+    selectedItem = el;
+    el.classList.add("selected");
+  }
 
-    function kbActivate(e, fn){
-      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); fn(); }
-    }
+  // ===== CRÉATION DES ÉTIQUETTES =====
+  items.slice().sort(()=>Math.random()-0.5).forEach(item=>{
+    const el = document.createElement("div");
+    el.className = "draggable-item";
+    el.id = "i-" + item.id;
+    el.setAttribute("role","button");
+    el.setAttribute("tabindex","0");
+    el.innerHTML = `${item.name}<br>${item.val.toFixed(2)} € <div class="correct-info" id="info-${item.id}">→ ${item.label}</div>`;
+    el.onclick = (e)=>{ e.stopPropagation(); toggleSelect(el); };
+    el.onkeydown = (e)=>kbActivate(e, ()=>toggleSelect(el));
+    bank.appendChild(el);
+  });
 
-    let selectedItem = null;
-    const bank = document.getElementById("item-bank");
-
-    function toggleSelect(el){
-      if(selectedItem === el){
-        el.classList.remove("selected");
+  // ===== ZONES DE DÉPÔT =====
+  document.querySelectorAll(".drop-zone, #item-bank").forEach(zone=>{
+    zone.onclick = ()=>{
+      if(selectedItem){
+        zone.appendChild(selectedItem);
+        selectedItem.classList.remove("selected");
         selectedItem = null;
-        return;
       }
-      if(selectedItem) selectedItem.classList.remove("selected");
-      selectedItem = el;
-      el.classList.add("selected");
-    }
+    };
+    zone.onkeydown = (e)=>kbActivate(e, ()=>zone.click());
+  });
 
-    items.slice().sort(()=>Math.random()-0.5).forEach(item=>{
-      const el = document.createElement("div");
-      el.className = "draggable-item";
-      el.id = "i-" + item.id;
-      el.setAttribute("role","button");
-      el.setAttribute("tabindex","0");
-      el.innerHTML = `${item.name}<br>${item.val.toFixed(2)}€ <div class="correct-info" id="info-${item.id}">Doit être en : ${item.label}</div>`;
-      el.onclick = (e)=>{ e.stopPropagation(); toggleSelect(el); };
-      el.onkeydown = (e)=>kbActivate(e, ()=>toggleSelect(el));
-      bank.appendChild(el);
+  function resetFeedback(){
+    items.forEach(item=>{
+      const el = document.getElementById("i-" + item.id);
+      const info = document.getElementById("info-" + item.id);
+      if(el){ el.classList.remove("correct","wrong"); el.style.borderColor=""; }
+      if(info){ info.style.display="none"; }
+    });
+  }
+
+  let sending = false;
+
+  // ===== OUVERTURE DU COFFRE =====
+  document.getElementById("btn-open").addEventListener("click", ouvrirCoffre);
+
+  function ouvrirCoffre(){
+    const btn = document.getElementById("btn-open");
+    if(sending) return;
+    sending = true;
+    btn.disabled = true;
+    btn.classList.add("btn-disabled");
+
+    resetFeedback();
+
+    let goodPlace = 0;
+    let stats = { rec:0, dep:0 };
+    const totalItems = items.length;
+    const corrections = [];
+
+    // Vérification des placements
+    items.forEach(item=>{
+      const el = document.getElementById("i-" + item.id);
+      const info = document.getElementById("info-" + item.id);
+      const parentCat = (el && el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
+
+      if(parentCat === item.cat){
+        goodPlace++;
+        el.classList.add("correct");
+        if(item.cat.includes("recette")) stats.rec++; else stats.dep++;
+      } else {
+        el.classList.add("wrong");
+        if(info) info.style.display = "block";
+        corrections.push(`<strong>${item.name}</strong> (${item.val.toFixed(2)} €) → ${item.label}`);
+      }
     });
 
-    document.querySelectorAll(".drop-zone, #item-bank").forEach(zone=>{
-      zone.onclick = ()=>{
-        if(selectedItem){
-          zone.appendChild(selectedItem);
-          selectedItem.classList.remove("selected");
-          selectedItem = null;
-        }
-      };
-      zone.onkeydown = (e)=>kbActivate(e, ()=>zone.click());
-    });
+    // Vérification des calculs
+    const vRec = normalizeNumberInput(document.getElementById("in-recettes").value);
+    const vFix = normalizeNumberInput(document.getElementById("in-fixes").value);
+    const vCou = normalizeNumberInput(document.getElementById("in-courantes").value);
+    const vOcc = normalizeNumberInput(document.getElementById("in-occas").value);
+    const vCode = normalizeNumberInput(document.getElementById("final-code-input").value);
 
-    function resetFeedback(){
-      items.forEach(item=>{
-        const el = document.getElementById("i-" + item.id);
-        const info = document.getElementById("info-" + item.id);
-        if(el){ el.classList.remove("correct","wrong"); el.style.borderColor=""; }
-        if(info){ info.style.display="none"; }
-      });
-    }
+    const recOk = isClose(vRec, EXPECT.recettes, 0.03);
+    const fixOk = isClose(vFix, EXPECT.fixes,   0.03);
+    const couOk = isClose(vCou, EXPECT.cour,    0.03);
+    const occOk = isClose(vOcc, EXPECT.occas,   0.03);
+    const codeOk = isClose(vCode, EXPECT.solde, 0.05);
 
-    let chartInstance = null;
-    let sending = false;
+    // Barème /20 : 9 placements + 4 totaux + 7 code
+    let note = 0;
+    note += goodPlace;
+    if(recOk) note += 1;
+    if(fixOk) note += 1;
+    if(couOk) note += 1;
+    if(occOk) note += 1;
+    if(codeOk) note += 7;
+    note = Math.max(0, Math.min(20, Math.round(note)));
 
-    document.getElementById("btn-open").addEventListener("click", ouvrirCoffre);
+    // Coffre
+    const lock = document.getElementById("lock-status");
+    const badge = document.getElementById("badge");
+    const safe = document.getElementById("safe-container");
 
-    async function ouvrirCoffre(){
-      const btn = document.getElementById("btn-open");
-      if(sending) return;
-      sending = true;
-      btn.disabled = true;
-      btn.classList.add("btn-disabled");
-
-      resetFeedback();
-
-      let goodPlace = 0;
-      let stats = { rec:0, dep:0 };
-      const totalItems = items.length;
-
-      items.forEach(item=>{
-        const el = document.getElementById("i-" + item.id);
-        const info = document.getElementById("info-" + item.id);
-        const parentCat = (el && el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
-
-        if(parentCat === item.cat){
-          goodPlace++;
-          el.classList.add("correct");
-          if(item.cat.includes("recette")) stats.rec++; else stats.dep++;
-        } else {
-          el.classList.add("wrong");
-          if(info) info.style.display = "block";
-        }
-      });
-
-      const vRec = normalizeNumberInput(document.getElementById("in-recettes").value);
-      const vFix = normalizeNumberInput(document.getElementById("in-fixes").value);
-      const vCou = normalizeNumberInput(document.getElementById("in-courantes").value);
-      const vOcc = normalizeNumberInput(document.getElementById("in-occas").value);
-      const vCode = normalizeNumberInput(document.getElementById("final-code-input").value);
-
-      const recOk = isClose(vRec, EXPECT.recettes, 0.03);
-      const fixOk = isClose(vFix, EXPECT.fixes,   0.03);
-      const couOk = isClose(vCou, EXPECT.cour,    0.03);
-      const occOk = isClose(vOcc, EXPECT.occas,   0.03);
-      const codeOk = isClose(vCode, EXPECT.solde, 0.05);
-
-      // Barème /20 : 9 placements + 4 totaux + 7 code
-      let note = 0;
-      note += goodPlace;
-      if(recOk) note += 1;
-      if(fixOk) note += 1;
-      if(couOk) note += 1;
-      if(occOk) note += 1;
-      if(codeOk) note += 7;
-      note = Math.max(0, Math.min(20, Math.round(note)));
-
-      // Coffre
-      const lock = document.getElementById("lock-status");
-      const badge = document.getElementById("badge");
-      const safe = document.getElementById("safe-container");
-
-      if(codeOk){
-        lock.innerText = "🔓";
-        lock.style.transform = "scale(1.5)";
-        safe.style.borderColor = "var(--success)";
-        if(codeOk && goodPlace === totalItems && recOk && fixOk && couOk && occOk){
-          badge.style.display = "block";
-          try{ if(typeof confetti !== "undefined") confetti({ particleCount: 160, spread: 70, origin:{ y:0.6 } }); }catch(e){}
-        } else {
-          badge.style.display = "none";
-        }
+    if(codeOk){
+      lock.innerText = "🔓";
+      lock.style.transform = "scale(1.5)";
+      safe.style.borderColor = "var(--success)";
+      if(codeOk && goodPlace === totalItems && recOk && fixOk && couOk && occOk){
+        badge.style.display = "block";
+        launchConfetti();
       } else {
         badge.style.display = "none";
-        lock.innerText = "❌";
-        lock.style.transform = "scale(1)";
-        safe.style.borderColor = "var(--gold)";
-        setTimeout(()=>{ lock.innerText = "🔒"; }, 900);
       }
-
-      // Résultats
-      document.getElementById("result-zone").style.display = "block";
-      document.getElementById("final-score").innerText = `Score : ${note} / 20`;
-
-      const details = document.getElementById("score-details");
-      const ok = (b)=> b ? '<span class="ok">✅</span>' : '<span class="ko">❌</span>';
-      details.innerHTML = `
-        <div class="row"><span><b>Classement</b> (${goodPlace}/${totalItems})</span><span>${ok(goodPlace===totalItems)}</span></div>
-        <div class="row"><span>Total recettes</span><span>${ok(recOk)}</span></div>
-        <div class="row"><span>Total fixes</span><span>${ok(fixOk)}</span></div>
-        <div class="row"><span>Total courantes</span><span>${ok(couOk)}</span></div>
-        <div class="row"><span>Total occasionnelles</span><span>${ok(occOk)}</span></div>
-        <div class="row"><span><b>Code (solde)</b></span><span>${ok(codeOk)}</span></div>
-      `;
-
-      // Graphique
-      const pcRec = ((stats.rec + (recOk ? 1 : 0)) / 3) * 100;
-      const pcDep = ((stats.dep + ((fixOk?1:0)+(couOk?1:0)+(occOk?1:0))) / 10) * 100;
-      const pcCode = codeOk ? 100 : 0;
-
-      const fallback = document.getElementById("chart-fallback");
-      if(fallback) fallback.style.display = "none";
-
-      try{
-        const canvas = document.getElementById("barChart");
-        const canDraw = (typeof Chart !== "undefined") && canvas && canvas.getContext;
-        if(canDraw){
-          if(chartInstance){ chartInstance.destroy(); chartInstance = null; }
-          chartInstance = new Chart(canvas, {
-            type:"bar",
-            data:{
-              labels:["Recettes","Dépenses","Code"],
-              datasets:[{
-                label:"% de réussite",
-                data:[pcRec, pcDep, pcCode],
-                backgroundColor:["#28a745","#ffc107","#fbbf24"],
-                borderRadius:8
-              }]
-            },
-            options:{
-              responsive:true,
-              maintainAspectRatio:false,
-              scales:{ y:{ beginAtZero:true, max:100 } },
-              plugins:{ legend:{ display:false } }
-            }
-          });
-        } else if(fallback){
-          fallback.style.display = "block";
-          fallback.innerHTML = `<b>Résultats</b><br>Recettes : ${Math.round(pcRec)}%<br>Dépenses : ${Math.round(pcDep)}%<br>Code : ${Math.round(pcCode)}%`;
-        }
-      } catch(e){
-        if(fallback){
-          fallback.style.display = "block";
-          fallback.innerHTML = `<b>Résultats</b><br>Recettes : ${Math.round(pcRec)}%<br>Dépenses : ${Math.round(pcDep)}%<br>Code : ${Math.round(pcCode)}%`;
-        }
-      }
-
-      window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior:"smooth" });
-
-      // Envoi Firebase
-      try{
-        const codeEleve = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
-        const classe =
-          localStorage.getItem("userClasse") ||
-          ((typeof ANNUAIRE !== "undefined" && ANNUAIRE && ANNUAIRE[codeEleve]) ? ANNUAIRE[codeEleve] : "AUTRE");
-
-        if(window.db && typeof firebase !== "undefined"){
-          const sentKey = "sent_escape_sophie_" + codeEleve;
-          if(!sessionStorage.getItem(sentKey)){
-            await db.collection("resultats_exercices").add({
-              eleve: codeEleve,
-              classe: classe,
-              exercice: "Escape Game Finance - Sophie",
-              note: note,
-              total: 20,
-              competences: { "C1": note, "C2": note },
-              timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            sessionStorage.setItem(sentKey, "1");
-          }
-        }
-      } catch(e){
-        console.error("Erreur Firebase : ", e);
-      }
-
-      setTimeout(()=>{
-        btn.disabled = false;
-        btn.classList.remove("btn-disabled");
-        sending = false;
-      }, 450);
+    } else {
+      badge.style.display = "none";
+      lock.innerText = "❌";
+      lock.style.transform = "scale(1)";
+      safe.style.borderColor = "var(--gold)";
+      setTimeout(()=>{ lock.innerText = "🔒"; }, 900);
     }
-  </script>
+
+    // Résultats
+    document.getElementById("result-zone").style.display = "block";
+    document.getElementById("final-score").innerText = `Score : ${note} / 20`;
+
+    const details = document.getElementById("score-details");
+    const ok = (b)=> b ? '<span class="ok">✅</span>' : '<span class="ko">❌</span>';
+    details.innerHTML = `
+      <div class="row"><span><b>Classement</b> (${goodPlace}/${totalItems})</span><span>${ok(goodPlace===totalItems)}</span></div>
+      <div class="row"><span>Total recettes</span><span>${ok(recOk)} <small style="color:#94a3b8">(${EXPECT.recettes.toFixed(2)} €)</small></span></div>
+      <div class="row"><span>Total fixes</span><span>${ok(fixOk)} <small style="color:#94a3b8">(${EXPECT.fixes.toFixed(2)} €)</small></span></div>
+      <div class="row"><span>Total courantes</span><span>${ok(couOk)} <small style="color:#94a3b8">(${EXPECT.cour.toFixed(2)} €)</small></span></div>
+      <div class="row"><span>Total occasionnelles</span><span>${ok(occOk)} <small style="color:#94a3b8">(${EXPECT.occas.toFixed(2)} €)</small></span></div>
+      <div class="row"><span><b>Code (solde)</b></span><span>${ok(codeOk)} <small style="color:#94a3b8">(${EXPECT.solde.toFixed(2)} €)</small></span></div>
+    `;
+
+    // Afficher les corrections si nécessaire
+    if(corrections.length > 0){
+      document.getElementById("corrections-box").style.display = "block";
+      document.getElementById("corrections-list").innerHTML = "<ul style='margin:10px 0 0 0;padding-left:20px;color:#e2e8f0;'>" + corrections.map(c => `<li style="margin-bottom:5px;">${c}</li>`).join("") + "</ul>";
+    }
+
+    // Graphique Canvas natif
+    const pcRec = ((stats.rec + (recOk ? 1 : 0)) / 3) * 100;
+    const pcDep = ((stats.dep + ((fixOk?1:0)+(couOk?1:0)+(occOk?1:0))) / 10) * 100;
+    const pcCode = codeOk ? 100 : 0;
+
+    try {
+      const canvas = document.getElementById('barChart');
+      if (canvas && canvas.getContext) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.parentElement.clientWidth - 30;
+        const height = 250;
+        canvas.width = width;
+        canvas.height = height;
+
+        const data = [
+          { label: 'Recettes', value: pcRec, color: '#28a745' },
+          { label: 'Dépenses', value: pcDep, color: '#ffc107' },
+          { label: 'Code', value: pcCode, color: '#fbbf24' }
+        ];
+
+        const barWidth = 70;
+        const gap = (width - data.length * barWidth) / (data.length + 1);
+        const maxHeight = height - 70;
+
+        // Fond
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, width, height);
+
+        // Lignes de grille
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+          const y = 25 + (maxHeight / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(40, y);
+          ctx.lineTo(width - 15, y);
+          ctx.stroke();
+          
+          // Labels Y
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '11px Segoe UI';
+          ctx.textAlign = 'right';
+          ctx.fillText((100 - i * 25) + '%', 35, y + 4);
+        }
+
+        // Barres
+        data.forEach((d, i) => {
+          const x = gap + i * (barWidth + gap);
+          const barHeight = (d.value / 100) * maxHeight;
+          const y = 25 + maxHeight - barHeight;
+
+          // Barre avec dégradé
+          const gradient = ctx.createLinearGradient(x, y, x, y + barHeight);
+          gradient.addColorStop(0, d.color);
+          gradient.addColorStop(1, d.color + '99');
+          ctx.fillStyle = gradient;
+          
+          // Coins arrondis
+          const radius = 6;
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.lineTo(x + barWidth - radius, y);
+          ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+          ctx.lineTo(x + barWidth, y + barHeight);
+          ctx.lineTo(x, y + barHeight);
+          ctx.lineTo(x, y + radius);
+          ctx.quadraticCurveTo(x, y, x + radius, y);
+          ctx.fill();
+
+          // Valeur au-dessus
+          ctx.fillStyle = '#fde68a';
+          ctx.font = 'bold 13px Segoe UI';
+          ctx.textAlign = 'center';
+          ctx.fillText(Math.round(d.value) + '%', x + barWidth / 2, y - 6);
+
+          // Label en dessous
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '12px Segoe UI';
+          ctx.fillText(d.label, x + barWidth / 2, height - 10);
+        });
+      }
+    } catch(e) {
+      console.warn("Erreur graphique :", e);
+    }
+
+    // Scroll vers les résultats
+    setTimeout(() => {
+      document.getElementById("result-zone").scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+
+    setTimeout(()=>{
+      btn.disabled = false;
+      btn.classList.remove("btn-disabled");
+      sending = false;
+    }, 450);
+  }
+</script>
 </body>
 </html>
