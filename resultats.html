@@ -430,10 +430,11 @@
             
             const nom = eleve?.nom || currentUserCode;
             const prenom = eleve?.prenom || "";
-            const classe = eleve?.classe || "?";
+            // Ne pas afficher la classe pour protéger l'identité (RGPD)
             
             document.getElementById('studentName').textContent = `${prenom} ${nom}`.trim() || currentUserCode;
-            document.getElementById('studentClass').textContent = classe;
+            // Masquer la classe - afficher seulement le code
+            document.getElementById('studentClass').textContent = currentUserCode;
         }
 
         function afficherStatistiques() {
@@ -546,10 +547,17 @@
             // Charger le fichier correction depuis CockpitPSE (optionnel)
             let correction = null;
             try {
-                const respCorr = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_correction.json?ts=${Date.now()}`, { cache: "no-store" });
-                if (respCorr.ok) correction = await respCorr.json();
+                const correctionURL = `https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_correction.json?ts=${Date.now()}`;
+                console.log("📥 Tentative chargement correction:", correctionURL);
+                const respCorr = await fetch(correctionURL, { cache: "no-store" });
+                if (respCorr.ok) {
+                    correction = await respCorr.json();
+                    console.log("✅ Fichier correction chargé:", correction);
+                } else {
+                    console.warn(`⚠️ Fichier correction non trouvé (${respCorr.status}):`, correctionURL);
+                }
             } catch (e) {
-                console.warn("⚠️ Fichier correction non trouvé:", e);
+                console.warn("⚠️ Erreur chargement correction:", e);
             }
             
             // Construire le HTML
@@ -557,6 +565,15 @@
             document.getElementById('modalTitle').textContent = modalTitle;
             
             let html = '';
+            
+            // Ajouter la date du devoir
+            const dateStr = evaluation.date instanceof Date ? evaluation.date.toLocaleDateString('fr-FR') : 
+                           typeof evaluation.date === 'string' ? new Date(evaluation.date).toLocaleDateString('fr-FR') : '--';
+            html += `
+                <div style="background: #f8fafc; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; color: #64748b; font-size: 0.95em;">
+                    📅 Rendu le ${dateStr}
+                </div>
+            `;
             
             // Appréciation générale
             if (evaluation.appreciation) {
@@ -662,10 +679,16 @@
                     // Chercher la correction pour cette question
                     let correctionText = "";
                     if (correction && correction.corrections) {
+                        console.log(`🔍 Recherche correction pour question qid="${qid}" label="${label}"`);
                         const corr = correction.corrections.find(c => c.qid === qid || c.label === label);
                         if (corr && corr.correction) {
                             correctionText = corr.correction;
+                            console.log(`✅ Correction trouvée:`, correctionText.substring(0, 50) + "...");
+                        } else {
+                            console.warn(`⚠️ Correction non trouvée pour qid="${qid}" label="${label}"`);
                         }
+                    } else {
+                        console.warn(`⚠️ Fichier correction absent ou vide`);
                     }
                     
                     html += `
