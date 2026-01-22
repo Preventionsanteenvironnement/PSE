@@ -139,6 +139,12 @@
         .comment-text { color: #78350f; line-height: 1.5; font-style: italic; }
         .no-comment { color: #94a3b8; font-style: italic; }
         
+        /* === CORRECTION === */
+        .correction-section { background: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; border-radius: 0 8px 8px 0; margin-top: 12px; }
+        .correction-label { font-weight: 600; color: #166534; margin-bottom: 8px; font-size: 0.9em; }
+        .correction-label::before { content: "✅ "; }
+        .correction-text { color: #166534; line-height: 1.5; white-space: pre-wrap; }
+        
         /* === CHARTS === */
         .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -158,6 +164,7 @@
             .answer-section { background: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .evaluation-section { background: #fef3c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .comment-section { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .correction-section { background: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .modal-content { max-height: none; box-shadow: none; }
             .modal-body { padding: 10px; }
         }
@@ -527,13 +534,22 @@
             
             console.log("📄 Ouverture détail:", evaluation.devoirId);
             
-            // Charger le blueprint
+            // Charger le blueprint depuis CockpitPSE
             let blueprint = null;
             try {
-                const resp = await fetch(`${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
+                const resp = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
                 if (resp.ok) blueprint = await resp.json();
             } catch (e) {
                 console.warn("⚠️ Blueprint non trouvé:", e);
+            }
+            
+            // Charger le fichier correction depuis CockpitPSE (optionnel)
+            let correction = null;
+            try {
+                const respCorr = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_correction.json?ts=${Date.now()}`, { cache: "no-store" });
+                if (respCorr.ok) correction = await respCorr.json();
+            } catch (e) {
+                console.warn("⚠️ Fichier correction non trouvé:", e);
             }
             
             // Construire le HTML
@@ -643,6 +659,15 @@
                         NT: "⚪ Non Traité"
                     };
                     
+                    // Chercher la correction pour cette question
+                    let correctionText = "";
+                    if (correction && correction.corrections) {
+                        const corr = correction.corrections.find(c => c.qid === qid || c.label === label);
+                        if (corr && corr.correction) {
+                            correctionText = corr.correction;
+                        }
+                    }
+                    
                     html += `
                         <div class="question-card">
                             <div class="question-header">
@@ -667,6 +692,13 @@
                                     <div class="comment-text">${commentaire}</div>
                                 </div>
                             ` : '<div class="no-comment">Pas de commentaire</div>'}
+                            
+                            ${correctionText ? `
+                                <div class="correction-section">
+                                    <div class="correction-label">Correction</div>
+                                    <div class="correction-text">${correctionText}</div>
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 });
