@@ -2,14 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Module D2 : Le Budget d'Amira</title>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="annuaire.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PSE - Module D2 - Le Budget d'Amira</title>
 
   <style>
     :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#f1f5f9; }
@@ -21,9 +15,90 @@
       overflow-x:hidden;
     }
     .container{ max-width:1100px; width:100%; overflow-x:hidden; }
+
+    /* ===== PAGE D'INTRODUCTION ===== */
+    #intro-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      padding: 30px 20px;
+      max-width: 700px;
+    }
+
+    #intro-page h1 {
+      color: #2c3e50;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    #intro-page h2 {
+      color: #34495e;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    #intro-page h3 {
+      color: #2563eb;
+      font-size: 1.3rem;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+
+    .objectif-box {
+      background: #fff;
+      border-left: 5px solid #2563eb;
+      padding: 20px 25px;
+      margin: 20px 0 40px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      text-align: left;
+      line-height: 1.7;
+    }
+
+    .objectif-box strong {
+      display: block;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    #btn-demarrer {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      padding: 16px 40px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 15px rgba(37,99,235,.3);
+    }
+
+    #btn-demarrer:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37,99,235,.4);
+    }
+
+    #btn-demarrer:active {
+      transform: translateY(0);
+    }
+
+    /* ===== CONTENU EXERCICE ===== */
+    #exercice-content {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+
     header{
       background:#2563eb; color:#fff; padding:20px; border-radius:15px;
-      text-align:center; margin-bottom:20px;
+      text-align:center; margin-bottom:20px; width:100%; max-width:1100px;
     }
     .obj-box{
       background:rgba(255,255,255,0.15); padding:10px; border-radius:8px;
@@ -46,10 +121,11 @@
       border-radius:8px; cursor:pointer; font-weight:bold; transition:0.2s;
       user-select:none; max-width:100%;
       -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      -webkit-touch-callout:none;
     }
     .draggable-item.selected{ border-color:#2563eb; background:#eff6ff; transform:scale(1.03); }
-    .draggable-item.correct{ border-color:var(--success); }
-    .draggable-item.wrong{ border-color:var(--error); }
+    .draggable-item.correct{ border-color:var(--success); background:#f0fdf4; }
+    .draggable-item.wrong{ border-color:var(--error); background:#fef2f2; }
     .correct-info{
       display:none; font-size:0.85rem; color:#dc3545; margin-top:5px; font-weight:bold;
     }
@@ -69,8 +145,9 @@
 
     .drop-zone{
       flex-grow:1; padding:10px; border-radius:8px; background:#f8fafc;
-      min-height:150px; cursor:pointer; overflow:auto;
+      min-height:150px; cursor:pointer; overflow:auto; transition:background .2s;
     }
+    .drop-zone:hover{ background:#f1f5f9; }
     .sub-zone{
       background:#e2f3e5; margin-bottom:10px; border-radius:8px;
       padding:10px; min-height:80px; overflow:auto;
@@ -84,19 +161,20 @@
       display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
       text-align:center;
     }
-    input[type="text"]{
+    input.number-input{
       width:150px; padding:8px; border:2px solid #cbd5e1; border-radius:6px;
       text-align:center; font-weight:bold; font-size:1rem;
-      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      -webkit-appearance:none;
     }
+    input.number-input:focus{ outline:none; border-color:#2563eb; }
     .hint{ font-size:0.9rem; color:#64748b; width:100%; }
 
     .btn-valider{
       background:#1e293b; color:#fff; border:none; padding:20px;
       border-radius:12px; font-size:1.2rem; font-weight:800; cursor:pointer;
-      margin-top:30px; width:100%;
-      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      margin-top:30px; width:100%; transition:background .2s;
     }
+    .btn-valider:hover{ background:#334155; }
     .btn-disabled{ opacity:0.7; cursor:not-allowed; }
 
     #result-zone{
@@ -113,11 +191,14 @@
       gap:10px; flex-wrap:wrap;
     }
     .chart-box{ height:350px; margin:20px 0; position:relative; width:100%; }
-    .chart-box canvas{ max-width:100% !important; height:100% !important; }
 
     .warn-box{
       text-align:left; background:#fff7ed; border:2px solid #fdba74;
       padding:12px; border-radius:10px; margin:0 0 15px; display:none;
+    }
+    .info-box{
+      text-align:left; background:#eff6ff; border:2px solid #93c5fd;
+      padding:12px; border-radius:10px; margin:0 0 15px;
     }
 
     .solde-row{
@@ -132,34 +213,186 @@
     .locked .draggable-item{ pointer-events:none; }
     .locked input{ pointer-events:none; opacity:0.95; }
 
+    /* ===== CALCULATRICE FLOTTANTE ===== */
+    #calc-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c757d, #495057);
+      color: #fff;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,.25);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: transform .2s;
+    }
+    #calc-toggle:hover { transform: scale(1.1); }
+
+    #calculator {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 220px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.2);
+      z-index: 1001;
+      overflow: hidden;
+    }
+
+    #calculator.open { display: block; }
+
+    #calc-header {
+      background: #495057;
+      color: #fff;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+    #calc-close {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    #calc-display {
+      width: 100%;
+      padding: 15px;
+      font-size: 1.5rem;
+      text-align: right;
+      border: none;
+      border-bottom: 1px solid #eee;
+      background: #f8f9fa;
+      font-family: monospace;
+    }
+
+    #calc-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: #ddd;
+    }
+
+    .calc-btn {
+      padding: 15px;
+      font-size: 1.1rem;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      transition: background .1s;
+    }
+
+    .calc-btn:hover { background: #e9ecef; }
+    .calc-btn:active { background: #dee2e6; }
+
+    .calc-btn.operator { background: #e7f1ff; color: #007bff; font-weight: bold; }
+    .calc-btn.operator:hover { background: #cce0ff; }
+
+    .calc-btn.equals { background: #007bff; color: #fff; font-weight: bold; }
+    .calc-btn.equals:hover { background: #0056b3; }
+
+    .calc-btn.clear { background: #f8d7da; color: #dc3545; }
+    .calc-btn.clear:hover { background: #f1b0b7; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width:768px){
+      .budget-container{ grid-template-columns:1fr 1fr; }
+      .column{ min-height:300px; }
+    }
+
     @media (max-width:600px){
       body{ padding:12px; }
+      
+      .budget-container{ grid-template-columns:1fr; }
+      .column{ min-height:250px; padding:12px; }
+      
       header{ padding:16px; border-radius:12px; }
-      .context-box{ padding:14px; border-radius:12px; }
+      header h1{ font-size:1.3rem; }
+      
+      .context-box{ padding:14px; border-radius:12px; font-size:0.95rem; }
+      
       #item-bank{ padding:12px; }
-      .draggable-item{ padding:10px 12px; }
-      .column{ min-height:320px; padding:12px; }
-      input[type="text"]{ width:170px; }
+      .draggable-item{ padding:10px 12px; font-size:0.9rem; }
+      
+      input.number-input{ width:150px; font-size:0.95rem; }
+      
       .btn-valider{ padding:16px; font-size:1.1rem; border-radius:12px; }
+      
       .chart-box{ height:280px; }
+      
       .solde-row{ flex-direction:column; align-items:flex-start; }
       .solde-row input{ width:100%; max-width:240px; }
+      
+      #calculator {
+        right: 10px;
+        bottom: 75px;
+        width: 200px;
+      }
+      
+      #calc-toggle {
+        bottom: 15px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+      }
+      
+      .calc-btn { padding: 12px; font-size: 1rem; }
+      #calc-display { font-size: 1.3rem; padding: 12px; }
+      
+      #intro-page { padding: 20px 15px; min-height: 70vh; }
+      #intro-page h1 { font-size: 1.2rem; }
+      #intro-page h2 { font-size: 1rem; }
+      #intro-page h3 { font-size: 1.1rem; }
+      .objectif-box { padding: 15px; font-size: .95rem; }
+      #btn-demarrer { padding: 14px 30px; font-size: 1.1rem; }
+    }
+
+    @supports (-webkit-overflow-scrolling: touch) {
+      body { -webkit-overflow-scrolling: touch; }
     }
   </style>
 </head>
 
 <body>
+
+<!-- ===== PAGE D'INTRODUCTION ===== -->
+<div id="intro-page">
+  <h1>PSE – Thématique D</h1>
+  <h2>L'individu consommateur averti</h2>
+  <h3>Module D2 – Le budget</h3>
+  
+  <div class="objectif-box">
+    <strong>Objectif général :</strong>
+    Je dois être capable de gérer mon budget et de prendre les bonnes décisions face aux propositions de crédit afin d'adopter une attitude responsable et d'éviter le surendettement.
+  </div>
+  
+  <button id="btn-demarrer">Démarrer l'exercice</button>
+</div>
+
+<!-- ===== CONTENU DE L'EXERCICE ===== -->
+<div id="exercice-content">
   <div class="container">
     <header>
-      <h1 style="margin:0;">Module D2 : Le Budget</h1>
+      <h1 style="margin:0;">💰 Le Budget d'Amira</h1>
       <div class="obj-box"><strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget.</div>
     </header>
-
-    <script>
-      if(typeof enregistrerVisite === "function") {
-        try { enregistrerVisite("Exercice Amira - Budget"); } catch(e) {}
-      }
-    </script>
 
     <div class="context-box">
       <strong>Situation :</strong> Amira perçoit un <b>salaire de 2 257,14 €</b>. Elle reçoit également une <b>allocation de soutien familial de 113,22 €</b>.<br><br>
@@ -176,7 +409,7 @@
         <div class="drop-zone sub-zone" data-category="recette-social" role="button" tabindex="0"><h4>Social</h4></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-recettes" placeholder="ex 2370,36">
+          <input type="text" inputmode="decimal" class="number-input" id="in-recettes" placeholder="ex : 2370,36" autocomplete="off">
           €
           <div class="hint">Virgule, point, espaces et € acceptés</div>
         </div>
@@ -187,7 +420,7 @@
         <div class="drop-zone" data-category="fixe" role="button" tabindex="0"></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-fixes" placeholder="ex 1257,59">
+          <input type="text" inputmode="decimal" class="number-input" id="in-fixes" placeholder="ex : 1257,59" autocomplete="off">
           €
         </div>
       </div>
@@ -197,7 +430,7 @@
         <div class="drop-zone" data-category="courante" role="button" tabindex="0"></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-courantes" placeholder="ex 454,23">
+          <input type="text" inputmode="decimal" class="number-input" id="in-courantes" placeholder="ex : 454,23" autocomplete="off">
           €
         </div>
       </div>
@@ -207,7 +440,7 @@
         <div class="drop-zone" data-category="occas" role="button" tabindex="0"></div>
         <div class="calc-zone">
           Total :
-          <input type="text" inputmode="decimal" id="in-occas" placeholder="ex 768,00">
+          <input type="text" inputmode="decimal" class="number-input" id="in-occas" placeholder="ex : 768,00" autocomplete="off">
           €
         </div>
       </div>
@@ -217,10 +450,10 @@
       <span style="font-weight: bold;">Calcul final :</span>
       <div class="solde-row">
         <span>Quel est le solde d'Amira ? (Recettes - Dépenses)</span>
-        <input type="text" inputmode="decimal" id="in-solde" placeholder="ex -109,46"
-               style="width: 170px; padding: 12px; border: 2px solid var(--primary); border-radius: 8px; font-weight:bold;">
+        <input type="text" inputmode="decimal" class="number-input" id="in-solde" placeholder="ex : -109,46"
+               style="width: 170px; padding: 12px; border: 2px solid var(--primary); border-radius: 8px; font-weight:bold;" autocomplete="off">
       </div>
-      <div class="hint">Le solde peut être négatif</div>
+      <div class="hint">⚠️ Le solde peut être négatif (budget déficitaire)</div>
     </div>
 
     <div class="warn-box" id="warn-box"></div>
@@ -228,307 +461,510 @@
     <button class="btn-valider" id="btn-analyser" type="button">VOIR MES RÉSULTATS</button>
 
     <div id="result-zone">
-      <h2 id="final-score">Score : -- / 20</h2>
+      <h2 id="final-score" style="font-size: 2.5rem; margin: 0;">Score : -- / 20</h2>
       <div class="synthesis-card">
         <div class="syn-row" id="syn-rec"><span>Total Recettes :</span> <span class="val">--</span></div>
         <div class="syn-row" id="syn-dep"><span>Total Dépenses :</span> <span class="val">--</span></div>
         <hr>
         <div class="syn-row" id="syn-sol" style="color:#2563eb"><span>SOLDE FINAL :</span> <span class="val">--</span></div>
       </div>
+      <div id="corrections-box" class="info-box" style="display:none;">
+        <strong>📝 Résumé des corrections :</strong>
+        <div id="corrections-list"></div>
+      </div>
       <div class="chart-box"><canvas id="barChart"></canvas></div>
-      <div id="chart-fallback" style="display:none; margin: 15px 0; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; text-align:left;"></div>
       <button class="btn-valider" type="button" style="background:#64748b" onclick="location.reload()">🔄 RECOMMENCER</button>
     </div>
   </div>
+</div>
 
-  <script>
-    window.PSE_CODE_REQUIRED = true;
+<!-- ===== CALCULATRICE FLOTTANTE ===== -->
+<button id="calc-toggle" title="Calculatrice">🧮</button>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-      authDomain: "devoirs-pse.firebaseapp.com",
-      projectId: "devoirs-pse",
-      storageBucket: "devoirs-pse.appspot.com",
-      messagingSenderId: "614730413904",
-      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+<div id="calculator">
+  <div id="calc-header">
+    <span>Calculatrice</span>
+    <button id="calc-close" title="Fermer">×</button>
+  </div>
+  <input type="text" id="calc-display" readonly value="0">
+  <div id="calc-buttons">
+    <button class="calc-btn clear" data-action="clear">C</button>
+    <button class="calc-btn" data-action="backspace">⌫</button>
+    <button class="calc-btn operator" data-action="operator" data-value="/">÷</button>
+    <button class="calc-btn operator" data-action="operator" data-value="*">×</button>
+    
+    <button class="calc-btn" data-action="number" data-value="7">7</button>
+    <button class="calc-btn" data-action="number" data-value="8">8</button>
+    <button class="calc-btn" data-action="number" data-value="9">9</button>
+    <button class="calc-btn operator" data-action="operator" data-value="-">−</button>
+    
+    <button class="calc-btn" data-action="number" data-value="4">4</button>
+    <button class="calc-btn" data-action="number" data-value="5">5</button>
+    <button class="calc-btn" data-action="number" data-value="6">6</button>
+    <button class="calc-btn operator" data-action="operator" data-value="+">+</button>
+    
+    <button class="calc-btn" data-action="number" data-value="1">1</button>
+    <button class="calc-btn" data-action="number" data-value="2">2</button>
+    <button class="calc-btn" data-action="number" data-value="3">3</button>
+    <button class="calc-btn equals" data-action="equals" style="grid-row:span 2">=</button>
+    
+    <button class="calc-btn" data-action="number" data-value="0" style="grid-column:span 2">0</button>
+    <button class="calc-btn" data-action="decimal">,</button>
+  </div>
+</div>
+
+<script>
+  // ===== GESTION DE LA PAGE D'INTRODUCTION =====
+  document.getElementById('btn-demarrer').addEventListener('click', function() {
+    document.getElementById('intro-page').style.display = 'none';
+    document.getElementById('exercice-content').style.display = 'flex';
+    document.getElementById('calc-toggle').style.display = 'flex';
+  });
+
+  // ===== CALCULATRICE =====
+  const calcToggle = document.getElementById('calc-toggle');
+  const calculator = document.getElementById('calculator');
+  const calcClose = document.getElementById('calc-close');
+  const calcDisplay = document.getElementById('calc-display');
+  const calcButtons = document.getElementById('calc-buttons');
+
+  let calcCurrentValue = '0';
+  let calcPreviousValue = '';
+  let calcOperator = null;
+  let calcWaitingForOperand = false;
+
+  calcToggle.addEventListener('click', () => {
+    calculator.classList.toggle('open');
+  });
+
+  calcClose.addEventListener('click', () => {
+    calculator.classList.remove('open');
+  });
+
+  calcButtons.addEventListener('click', (e) => {
+    const btn = e.target.closest('.calc-btn');
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const value = btn.dataset.value;
+
+    switch(action) {
+      case 'number':
+        inputNumber(value);
+        break;
+      case 'operator':
+        inputOperator(value);
+        break;
+      case 'decimal':
+        inputDecimal();
+        break;
+      case 'equals':
+        performCalculation();
+        break;
+      case 'clear':
+        clearCalculator();
+        break;
+      case 'backspace':
+        backspace();
+        break;
+    }
+    updateCalcDisplay();
+  });
+
+  function inputNumber(num) {
+    if (calcWaitingForOperand) {
+      calcCurrentValue = num;
+      calcWaitingForOperand = false;
+    } else {
+      calcCurrentValue = calcCurrentValue === '0' ? num : calcCurrentValue + num;
+    }
+  }
+
+  function inputDecimal() {
+    if (calcWaitingForOperand) {
+      calcCurrentValue = '0.';
+      calcWaitingForOperand = false;
+      return;
+    }
+    if (!calcCurrentValue.includes('.')) {
+      calcCurrentValue += '.';
+    }
+  }
+
+  function inputOperator(op) {
+    const inputValue = parseFloat(calcCurrentValue);
+
+    if (calcPreviousValue === '') {
+      calcPreviousValue = inputValue;
+    } else if (calcOperator) {
+      const result = calculate(calcPreviousValue, inputValue, calcOperator);
+      calcCurrentValue = String(result);
+      calcPreviousValue = result;
+    }
+
+    calcWaitingForOperand = true;
+    calcOperator = op;
+  }
+
+  function calculate(prev, current, op) {
+    switch(op) {
+      case '+': return prev + current;
+      case '-': return prev - current;
+      case '*': return prev * current;
+      case '/': return current !== 0 ? prev / current : 'Erreur';
+      default: return current;
+    }
+  }
+
+  function performCalculation() {
+    if (calcOperator === null || calcWaitingForOperand) return;
+
+    const inputValue = parseFloat(calcCurrentValue);
+    const result = calculate(calcPreviousValue, inputValue, calcOperator);
+
+    calcCurrentValue = String(result);
+    calcPreviousValue = '';
+    calcOperator = null;
+    calcWaitingForOperand = true;
+  }
+
+  function clearCalculator() {
+    calcCurrentValue = '0';
+    calcPreviousValue = '';
+    calcOperator = null;
+    calcWaitingForOperand = false;
+  }
+
+  function backspace() {
+    if (calcWaitingForOperand) return;
+    calcCurrentValue = calcCurrentValue.length > 1 ? calcCurrentValue.slice(0, -1) : '0';
+  }
+
+  function updateCalcDisplay() {
+    let displayValue = calcCurrentValue;
+    if (typeof displayValue === 'string') {
+      displayValue = displayValue.replace('.', ',');
+    }
+    if (displayValue.length > 12) {
+      displayValue = parseFloat(calcCurrentValue).toExponential(6);
+    }
+    calcDisplay.value = displayValue;
+  }
+
+  // ===== DONNÉES DE L'EXERCICE =====
+  const items = [
+    { id: 1,  name: "Salaire",                    val: 2257.14, cat: "recette-travail", label: "Recettes (Travail)" },
+    { id: 2,  name: "Allocation soutien familial", val:  113.22, cat: "recette-social",  label: "Recettes (Social)" },
+    { id: 3,  name: "Loyer",                      val: 1027.13, cat: "fixe",           label: "Dépenses Fixes" },
+    { id: 4,  name: "Taxe habitation",            val:   60.00, cat: "fixe",           label: "Dépenses Fixes" },
+    { id: 5,  name: "Mutuelle",                   val:   57.13, cat: "fixe",           label: "Dépenses Fixes" },
+    { id: 6,  name: "Facture électricité",        val:  113.33, cat: "fixe",           label: "Dépenses Fixes" },
+    { id: 7,  name: "Courses alimentaires",       val:  297.23, cat: "courante",       label: "Dépenses Courantes" },
+    { id: 8,  name: "Transport",                  val:  100.00, cat: "courante",       label: "Dépenses Courantes" },
+    { id: 9,  name: "Abonnement transport",       val:   30.00, cat: "courante",       label: "Dépenses Courantes" },
+    { id: 10, name: "Hygiène",                    val:   27.00, cat: "courante",       label: "Dépenses Courantes" },
+    { id: 11, name: "Coiffeur",                   val:   35.00, cat: "occas",          label: "Dépenses Occasionnelles" },
+    { id: 12, name: "Ordinateur",                 val:  650.00, cat: "occas",          label: "Dépenses Occasionnelles" },
+    { id: 13, name: "Habillement",                val:   83.00, cat: "occas",          label: "Dépenses Occasionnelles" }
+  ];
+
+  const EXPECT = {
+    R: 2370.36,
+    F: 1257.59,
+    C: 454.23,
+    O: 768.00,
+    D: 2479.82,
+    S: -109.46
+  };
+
+  let selectedItem = null;
+  const bank = document.getElementById("item-bank");
+  const warnBox = document.getElementById("warn-box");
+  const btnAnalyser = document.getElementById("btn-analyser");
+
+  // ===== FONCTION DE NORMALISATION DES SAISIES =====
+  function normalizeNumberInput(str) {
+    if (!str) return null;
+    let s = String(str);
+
+    // Supprimer espaces insécables et normaux
+    s = s.replace(/\u00A0/g, " ").trim();
+    s = s.replace(/[\s\u202F]/g, "");
+    // Supprimer le symbole €
+    s = s.replace(/€/g, "");
+    // Garder uniquement chiffres, signes et séparateurs décimaux
+    s = s.replace(/[^0-9+\-.,]/g, "");
+
+    // Gérer virgule/point comme séparateur décimal
+    const lastComma = s.lastIndexOf(",");
+    const lastDot = s.lastIndexOf(".");
+    const decPos = Math.max(lastComma, lastDot);
+
+    if (decPos !== -1) {
+      const intPart = s.slice(0, decPos).replace(/[.,]/g, "");
+      const decPart = s.slice(decPos + 1).replace(/[.,]/g, "");
+      s = intPart + "." + decPart;
+    } else {
+      s = s.replace(/[.,]/g, "");
+    }
+
+    if (!s || s === "+" || s === "-" || s === "." || s === "+." || s === "-.") return null;
+
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function isClose(n, target, tol = 0.02) {
+    return (typeof n === "number") && Number.isFinite(n) && Math.abs(n - target) <= tol;
+  }
+
+  function setWarn(html) {
+    warnBox.innerHTML = html;
+    warnBox.style.display = html ? "block" : "none";
+  }
+
+  function kbActivate(e, fn) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); }
+  }
+
+  function toggleSelect(el) {
+    if (selectedItem === el) {
+      el.classList.remove("selected");
+      selectedItem = null;
+      return;
+    }
+    if (selectedItem) selectedItem.classList.remove("selected");
+    selectedItem = el;
+    el.classList.add("selected");
+  }
+
+  function lockAll() {
+    document.body.classList.add("locked");
+  }
+
+  function countUnplaced() {
+    let unplaced = 0;
+    items.forEach(item => {
+      const el = document.getElementById("i-" + item.id);
+      if (el && el.parentElement && el.parentElement.id === "item-bank") unplaced++;
+    });
+    return unplaced;
+  }
+
+  // ===== CRÉATION DES ÉTIQUETTES =====
+  items.slice().sort(() => Math.random() - 0.5).forEach(item => {
+    const el = document.createElement("div");
+    el.className = "draggable-item";
+    el.id = "i-" + item.id;
+    el.setAttribute("role","button");
+    el.setAttribute("tabindex","0");
+    el.innerHTML = `${item.name} (${item.val.toFixed(2)} €) <div class="correct-info" id="info-${item.id}">→ ${item.label}</div>`;
+    el.onclick = (e) => { e.stopPropagation(); toggleSelect(el); };
+    el.onkeydown = (e) => kbActivate(e, () => toggleSelect(el));
+    bank.appendChild(el);
+  });
+
+  // ===== ZONES DE DÉPÔT =====
+  document.querySelectorAll(".drop-zone, #item-bank").forEach(zone => {
+    zone.onclick = () => {
+      if (selectedItem) {
+        zone.appendChild(selectedItem);
+        selectedItem.classList.remove("selected");
+        selectedItem = null;
+      }
     };
+    zone.onkeydown = (e) => kbActivate(e, () => zone.click());
+  });
+
+  let alreadySubmitted = false;
+
+  // ===== ANALYSE DES RÉSULTATS =====
+  btnAnalyser.addEventListener("click", analyser);
+
+  function analyser() {
+    if (alreadySubmitted) return;
+    alreadySubmitted = true;
+
+    btnAnalyser.disabled = true;
+    btnAnalyser.classList.add("btn-disabled");
+
+    const unplaced = countUnplaced();
+    if (unplaced > 0) {
+      setWarn(`⚠️ Il reste ${unplaced} étiquette${unplaced > 1 ? "s" : ""} non classée${unplaced > 1 ? "s" : ""}. Tu peux quand même voir tes résultats, mais ton score sera plus bas.`);
+    } else {
+      setWarn("");
+    }
+
+    let score = 0;
+    let placementRecettes = 0;
+    let placementDepenses = 0;
+    const corrections = [];
+
+    // Vérification des placements
+    items.forEach(item => {
+      const el = document.getElementById("i-" + item.id);
+      const info = document.getElementById("info-" + item.id);
+      const parentCat = (el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
+
+      el.classList.remove("correct","wrong");
+      if (info) info.style.display = "none";
+
+      if (parentCat === item.cat) {
+        score += 1; // 13 étiquettes = 13 points
+        el.classList.add("correct");
+        if (item.cat.includes("recette")) placementRecettes++; else placementDepenses++;
+      } else {
+        el.classList.add("wrong");
+        if (info) info.style.display = "block";
+        corrections.push(`<strong>${item.name}</strong> (${item.val.toFixed(2)} €) → ${item.label}`);
+      }
+    });
+
+    // Vérification des calculs
+    const inR = normalizeNumberInput(document.getElementById("in-recettes").value);
+    const inF = normalizeNumberInput(document.getElementById("in-fixes").value);
+    const inC = normalizeNumberInput(document.getElementById("in-courantes").value);
+    const inO = normalizeNumberInput(document.getElementById("in-occas").value);
+    const inS = normalizeNumberInput(document.getElementById("in-solde").value);
+
+    const vR = (inR === null) ? NaN : inR;
+    const vF = (inF === null) ? NaN : inF;
+    const vC = (inC === null) ? NaN : inC;
+    const vO = (inO === null) ? NaN : inO;
+    const vS = (inS === null) ? NaN : inS;
+
+    const totalD = (Number.isFinite(vF) ? vF : 0) + (Number.isFinite(vC) ? vC : 0) + (Number.isFinite(vO) ? vO : 0);
+
+    const recOk = isClose(vR, EXPECT.R, 0.03);
+    const fixOk = isClose(vF, EXPECT.F, 0.03);
+    const couOk = isClose(vC, EXPECT.C, 0.03);
+    const occOk = isClose(vO, EXPECT.O, 0.03);
+
+    const depOk = isClose(totalD, EXPECT.D, 0.05);
+    const soldeOk = isClose(vS, EXPECT.S, 0.05) || (Number.isFinite(vS) && Math.abs(vS - EXPECT.S) <= 0.5);
+
+    // 7 points de calculs pour arriver à /20
+    if (recOk) score += 2;
+    if (fixOk) score += 1.5;
+    if (couOk) score += 1.5;
+    if (occOk) score += 1.5;
+    if (soldeOk) score += 0.5;
+
+    const finalScore = Math.max(0, Math.min(20, Math.round(score)));
+
+    // Affichage des résultats
+    document.getElementById("result-zone").style.display = "block";
+    document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
+
+    // Synthèse avec valeurs attendues
+    document.querySelector("#syn-rec .val").innerHTML = `${Number.isFinite(vR) ? (Math.round(vR*100)/100).toFixed(2) : "--"} € ${recOk ? "✅" : "❌"} <small style="color:#64748b">(attendu : ${EXPECT.R.toFixed(2)} €)</small>`;
+    document.querySelector("#syn-dep .val").innerHTML = `${(Math.round(totalD*100)/100).toFixed(2)} € ${depOk ? "✅" : "❌"} <small style="color:#64748b">(attendu : ${EXPECT.D.toFixed(2)} €)</small>`;
+    document.querySelector("#syn-sol .val").innerHTML = `${Number.isFinite(vS) ? (Math.round(vS*100)/100).toFixed(2) : "--"} € ${soldeOk ? "✅" : "❌"} <small style="color:#64748b">(attendu : ${EXPECT.S.toFixed(2)} €)</small>`;
+
+    // Afficher les corrections si nécessaire
+    if (corrections.length > 0) {
+      document.getElementById("corrections-box").style.display = "block";
+      document.getElementById("corrections-list").innerHTML = "<ul style='margin:10px 0 0 0;padding-left:20px;'>" + corrections.map(c => `<li style="margin-bottom:5px;">${c}</li>`).join("") + "</ul>";
+    }
+
+    // Graphique Canvas natif
+    const pcRec = ((placementRecettes + (recOk ? 1 : 0)) / 3) * 100;
+    const pcDep = ((placementDepenses + (depOk ? 1 : 0)) / 12) * 100;
+    const pcSolde = soldeOk ? 100 : 0;
 
     try {
-      if (typeof firebase !== "undefined" && firebaseConfig && !firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+      const canvas = document.getElementById('barChart');
+      if (canvas && canvas.getContext) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.parentElement.clientWidth;
+        const height = 300;
+        canvas.width = width;
+        canvas.height = height;
+
+        const data = [
+          { label: 'Recettes', value: pcRec, color: '#28a745' },
+          { label: 'Dépenses', value: pcDep, color: '#007bff' },
+          { label: 'Solde', value: pcSolde, color: '#2563eb' }
+        ];
+
+        const barWidth = 80;
+        const gap = (width - data.length * barWidth) / (data.length + 1);
+        const maxHeight = height - 80;
+
+        // Fond
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, width, height);
+
+        // Lignes de grille
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+          const y = 30 + (maxHeight / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(40, y);
+          ctx.lineTo(width - 20, y);
+          ctx.stroke();
+          
+          // Labels Y
+          ctx.fillStyle = '#64748b';
+          ctx.font = '12px Segoe UI';
+          ctx.textAlign = 'right';
+          ctx.fillText((100 - i * 25) + '%', 35, y + 4);
+        }
+
+        // Barres
+        data.forEach((d, i) => {
+          const x = gap + i * (barWidth + gap);
+          const barHeight = (d.value / 100) * maxHeight;
+          const y = 30 + maxHeight - barHeight;
+
+          // Barre avec dégradé
+          const gradient = ctx.createLinearGradient(x, y, x, y + barHeight);
+          gradient.addColorStop(0, d.color);
+          gradient.addColorStop(1, d.color + '99');
+          ctx.fillStyle = gradient;
+          
+          // Coins arrondis
+          const radius = 8;
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.lineTo(x + barWidth - radius, y);
+          ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+          ctx.lineTo(x + barWidth, y + barHeight);
+          ctx.lineTo(x, y + barHeight);
+          ctx.lineTo(x, y + radius);
+          ctx.quadraticCurveTo(x, y, x + radius, y);
+          ctx.fill();
+
+          // Valeur au-dessus
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 14px Segoe UI';
+          ctx.textAlign = 'center';
+          ctx.fillText(Math.round(d.value) + '%', x + barWidth / 2, y - 8);
+
+          // Label en dessous
+          ctx.fillStyle = '#475569';
+          ctx.font = '13px Segoe UI';
+          ctx.fillText(d.label, x + barWidth / 2, height - 15);
+        });
+
+        // Titre
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 16px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText('Taux de réussite par catégorie', width / 2, height - 0);
       }
-      window.db = (typeof firebase !== "undefined") ? firebase.firestore() : null;
     } catch(e) {
-      window.db = null;
-    }
-  </script>
-
-  <script>
-    const items = [
-      { id: 1,  name: "Salaire",                    val: 2257.14, cat: "recette-travail", label: "Recettes (Travail)" },
-      { id: 2,  name: "Allocation soutien familial", val:  113.22, cat: "recette-social",  label: "Recettes (Social)" },
-      { id: 3,  name: "Loyer",                      val: 1027.13, cat: "fixe",           label: "Dépenses Fixes" },
-      { id: 4,  name: "Taxe habitation",            val:   60.00, cat: "fixe",           label: "Dépenses Fixes" },
-      { id: 5,  name: "Mutuelle",                   val:   57.13, cat: "fixe",           label: "Dépenses Fixes" },
-      { id: 6,  name: "Facture électricité",        val:  113.33, cat: "fixe",           label: "Dépenses Fixes" },
-      { id: 7,  name: "Courses alimentaires",       val:  297.23, cat: "courante",       label: "Dépenses Courantes" },
-      { id: 8,  name: "Transport",                  val:  100.00, cat: "courante",       label: "Dépenses Courantes" },
-      { id: 9,  name: "Abonnement transport",       val:   30.00, cat: "courante",       label: "Dépenses Courantes" },
-      { id: 10, name: "Hygiène",                    val:   27.00, cat: "courante",       label: "Dépenses Courantes" },
-      { id: 11, name: "Coiffeur",                   val:   35.00, cat: "occas",          label: "Dépenses Occasionnelles" },
-      { id: 12, name: "Ordinateur",                 val:  650.00, cat: "occas",          label: "Dépenses Occasionnelles" },
-      { id: 13, name: "Habillement",                val:   83.00, cat: "occas",          label: "Dépenses Occasionnelles" }
-    ];
-
-    const EXPECT = {
-      R: 2370.36,
-      F: 1257.59,
-      C: 454.23,
-      O: 768.00,
-      D: 2479.82,
-      S: -109.46
-    };
-
-    let selectedItem = null;
-    const bank = document.getElementById("item-bank");
-    const warnBox = document.getElementById("warn-box");
-    const btnAnalyser = document.getElementById("btn-analyser");
-
-    function normalizeNumberInput(str) {
-      if (!str) return null;
-      let s = String(str);
-
-      s = s.replace(/\u00A0/g, " ").trim();
-      s = s.replace(/\s+/g, "");
-      s = s.replace(/€/g, "");
-      s = s.replace(/[^0-9+\-.,]/g, "");
-
-      const lastComma = s.lastIndexOf(",");
-      const lastDot = s.lastIndexOf(".");
-      const decPos = Math.max(lastComma, lastDot);
-
-      if (decPos !== -1) {
-        const intPart = s.slice(0, decPos).replace(/[.,]/g, "");
-        const decPart = s.slice(decPos + 1).replace(/[.,]/g, "");
-        s = intPart + "." + decPart;
-      } else {
-        s = s.replace(/[.,]/g, "");
-      }
-
-      if (!s || s === "+" || s === "-" || s === "." || s === "+." || s === "-.") return null;
-
-      const n = Number(s);
-      return Number.isFinite(n) ? n : null;
+      console.warn("Erreur graphique :", e);
     }
 
-    function isClose(n, target, tol = 0.02) {
-      return (typeof n === "number") && Number.isFinite(n) && Math.abs(n - target) <= tol;
-    }
+    lockAll();
 
-    function setWarn(html) {
-      warnBox.innerHTML = html;
-      warnBox.style.display = html ? "block" : "none";
-    }
-
-    function kbActivate(e, fn) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); }
-    }
-
-    function toggleSelect(el) {
-      if (selectedItem === el) {
-        el.classList.remove("selected");
-        selectedItem = null;
-        return;
-      }
-      if (selectedItem) selectedItem.classList.remove("selected");
-      selectedItem = el;
-      el.classList.add("selected");
-    }
-
-    function lockAll() {
-      document.body.classList.add("locked");
-    }
-
-    function countUnplaced() {
-      let unplaced = 0;
-      items.forEach(item => {
-        const el = document.getElementById("i-" + item.id);
-        if (el && el.parentElement && el.parentElement.id === "item-bank") unplaced++;
-      });
-      return unplaced;
-    }
-
-    items.slice().sort(() => Math.random() - 0.5).forEach(item => {
-      const el = document.createElement("div");
-      el.className = "draggable-item";
-      el.id = "i-" + item.id;
-      el.setAttribute("role","button");
-      el.setAttribute("tabindex","0");
-      el.innerHTML = `${item.name} (${item.val.toFixed(2)}€) <div class="correct-info" id="info-${item.id}">Doit être dans : ${item.label}</div>`;
-      el.onclick = (e) => { e.stopPropagation(); toggleSelect(el); };
-      el.onkeydown = (e) => kbActivate(e, () => toggleSelect(el));
-      bank.appendChild(el);
-    });
-
-    document.querySelectorAll(".drop-zone, #item-bank").forEach(zone => {
-      zone.onclick = () => {
-        if (selectedItem) {
-          zone.appendChild(selectedItem);
-          selectedItem.classList.remove("selected");
-          selectedItem = null;
-        }
-      };
-      zone.onkeydown = (e) => kbActivate(e, () => zone.click());
-    });
-
-    let chartInstance = null;
-    let alreadySubmitted = false;
-
-    btnAnalyser.addEventListener("click", analyser);
-
-    async function analyser() {
-      if (alreadySubmitted) return;
-      alreadySubmitted = true;
-
-      btnAnalyser.disabled = true;
-      btnAnalyser.classList.add("btn-disabled");
-
-      const unplaced = countUnplaced();
-      if (unplaced > 0) {
-        setWarn(`Il reste ${unplaced} étiquette${unplaced > 1 ? "s" : ""} non classée${unplaced > 1 ? "s" : ""}. Tu peux quand même voir tes résultats, mais ton score sera plus bas.`);
-      } else {
-        setWarn("");
-      }
-
-      let score = 0;
-      let placementRecettes = 0;
-      let placementDepenses = 0;
-
-      items.forEach(item => {
-        const el = document.getElementById("i-" + item.id);
-        const info = document.getElementById("info-" + item.id);
-        const parentCat = (el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : undefined;
-
-        el.classList.remove("correct","wrong");
-        if (info) info.style.display = "none";
-
-        if (parentCat === item.cat) {
-          score += 1; // 13 étiquettes = 13 points
-          el.classList.add("correct");
-          if (item.cat.includes("recette")) placementRecettes++; else placementDepenses++;
-        } else {
-          el.classList.add("wrong");
-          if (info) info.style.display = "block";
-        }
-      });
-
-      const inR = normalizeNumberInput(document.getElementById("in-recettes").value);
-      const inF = normalizeNumberInput(document.getElementById("in-fixes").value);
-      const inC = normalizeNumberInput(document.getElementById("in-courantes").value);
-      const inO = normalizeNumberInput(document.getElementById("in-occas").value);
-      const inS = normalizeNumberInput(document.getElementById("in-solde").value);
-
-      const vR = (inR === null) ? NaN : inR;
-      const vF = (inF === null) ? NaN : inF;
-      const vC = (inC === null) ? NaN : inC;
-      const vO = (inO === null) ? NaN : inO;
-      const vS = (inS === null) ? NaN : inS;
-
-      const totalD = (Number.isFinite(vF) ? vF : 0) + (Number.isFinite(vC) ? vC : 0) + (Number.isFinite(vO) ? vO : 0);
-
-      const recOk = isClose(vR, EXPECT.R, 0.03);
-      const fixOk = isClose(vF, EXPECT.F, 0.03);
-      const couOk = isClose(vC, EXPECT.C, 0.03);
-      const occOk = isClose(vO, EXPECT.O, 0.03);
-
-      const depOk = isClose(totalD, EXPECT.D, 0.05);
-      const soldeOk = isClose(vS, EXPECT.S, 0.05) || (Number.isFinite(vS) && Math.abs(vS - EXPECT.S) <= 0.5);
-
-      // 7 points de calculs pour arriver à /20
-      if (recOk) score += 2;
-      if (fixOk) score += 1.5;
-      if (couOk) score += 1.5;
-      if (occOk) score += 1.5;
-      if (soldeOk) score += 0.5;
-
-      const finalScore = Math.max(0, Math.min(20, Math.round(score)));
-
-      document.getElementById("result-zone").style.display = "block";
-      document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
-
-      document.querySelector("#syn-rec .val").innerHTML = `${Number.isFinite(vR) ? (Math.round(vR*100)/100).toFixed(2) : "--"}€ ${recOk ? "✅" : "❌"}`;
-      document.querySelector("#syn-dep .val").innerHTML = `${(Math.round(totalD*100)/100).toFixed(2)}€ ${depOk ? "✅" : "❌"}`;
-      document.querySelector("#syn-sol .val").innerHTML = `${Number.isFinite(vS) ? (Math.round(vS*100)/100).toFixed(2) : "--"}€ ${soldeOk ? "✅" : "❌"}`;
-
-      const pcRec = ((placementRecettes + (recOk ? 1 : 0)) / 3) * 100;             // 2 placements + total recettes
-      const pcDep = ((placementDepenses + (depOk ? 1 : 0)) / 12) * 100;            // 11 placements + total dépenses
-      const pcSolde = soldeOk ? 100 : 0;
-
-      const fallback = document.getElementById("chart-fallback");
-      if (fallback) fallback.style.display = "none";
-
-      try {
-        const canvas = document.getElementById("barChart");
-        const canDraw = (typeof Chart !== "undefined") && canvas && canvas.getContext;
-
-        if (canDraw) {
-          if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-          chartInstance = new Chart(canvas, {
-            type: "bar",
-            data: {
-              labels: ["Recettes", "Dépenses", "Solde"],
-              datasets: [{
-                label: "% de réussite",
-                data: [pcRec, pcDep, pcSolde],
-                borderRadius: 8
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: { y: { beginAtZero: true, max: 100 } },
-              plugins: { legend: { display: false } }
-            }
-          });
-        } else if (fallback) {
-          fallback.style.display = "block";
-          fallback.innerHTML = `<b>Résultats</b><br>Recettes : ${Math.round(pcRec)}%<br>Dépenses : ${Math.round(pcDep)}%<br>Solde : ${Math.round(pcSolde)}%`;
-        }
-      } catch(e) {
-        if (fallback) {
-          fallback.style.display = "block";
-          fallback.innerHTML = `<b>Résultats</b><br>Recettes : ${Math.round(pcRec)}%<br>Dépenses : ${Math.round(pcDep)}%<br>Solde : ${Math.round(pcSolde)}%`;
-        }
-      }
-
-      lockAll();
-      window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: "smooth" });
-
-      try {
-        const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
-        const classe =
-          localStorage.getItem("userClasse") ||
-          ((typeof ANNUAIRE !== "undefined" && ANNUAIRE && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE");
-
-        if (window.db && typeof firebase !== "undefined") {
-          const sentKey = "sent_budget_amira_" + code;
-          if (!sessionStorage.getItem(sentKey)) {
-            await db.collection("resultats_exercices").add({
-              eleve: code,
-              classe: classe,
-              exercice: "Module D2 - Budget Amira",
-              note: finalScore,
-              total: 20,
-              competences: { "C1": finalScore, "C2": finalScore },
-              timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            sessionStorage.setItem(sentKey, "1");
-          }
-        }
-      } catch(e) {
-        console.error("Erreur lors de l'envoi Firebase : ", e);
-      }
-    }
-  </script>
+    // Scroll vers les résultats
+    setTimeout(() => {
+      document.getElementById("result-zone").scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }
+</script>
 </body>
 </html>
