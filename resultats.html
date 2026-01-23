@@ -71,12 +71,14 @@
         .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 700; }
         .status-corrected { background: #dcfce7; color: #166534; }
         .status-pending { background: #fef3c7; color: #92400e; }
+        .status-nn { background: #fed7aa; color: #c2410c; }
         .eval-note { font-weight: 800; font-size: 1.5em; padding: 8px 20px; border-radius: 10px; }
         .note-excellent { background: #dcfce7; color: #166534; }
         .note-good { background: #dbeafe; color: #1e40af; }
         .note-average { background: #fef3c7; color: #92400e; }
         .note-poor { background: #fee2e2; color: #991b1b; }
         .note-pending { background: #e0e7ff; color: #3730a3; }
+        .note-nn { background: #fef3c7; color: #b45309; font-weight: bold; }
         .eval-actions { margin-top: 15px; display: flex; gap: 10px; }
         .btn-view { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn-view:hover { background: #2563eb; transform: translateY(-2px); }
@@ -501,6 +503,7 @@
                         titre: copie.titre || "Devoir",
                         date: copie.createdAtISO || copie.createdAt?.toDate?.() || new Date(),
                         note: evaluation?.note_finale ?? null,
+                        nonNote: evaluation?.nonNote || false,  // ⭐ Récupérer le flag "Non noté"
                         appreciation: evaluation?.appreciation || "",
                         competences: evaluation?.competences || {},
                         questions: evaluation?.questions || {},
@@ -558,8 +561,10 @@
             const corriges = allEvaluations.filter(e => e.estCorrige);
             const attente = allEvaluations.filter(e => !e.estCorrige);
             
-            // Moyenne
-            const notes = corriges.filter(e => e.note !== null).map(e => e.note);
+            // Moyenne (exclure les "NN" - non notés)
+            const notes = corriges
+                .filter(e => e.note !== null && e.note !== "NN" && !e.nonNote && !isNaN(e.note))
+                .map(e => parseFloat(e.note));
             const moyenne = notes.length > 0 ? (notes.reduce((a, b) => a + b, 0) / notes.length).toFixed(1) : "--";
             
             // Meilleure compétence
@@ -607,14 +612,24 @@
                 const dateStr = item.date instanceof Date ? item.date.toLocaleDateString('fr-FR') : 
                                typeof item.date === 'string' ? new Date(item.date).toLocaleDateString('fr-FR') : '--';
                 
-                const statusBadge = item.estCorrige ? 
-                    '<span class="status-badge status-corrected">✓ Corrigé</span>' :
-                    '<span class="status-badge status-pending">⏳ En attente</span>';
+                // ⭐ Badge de statut adapté
+                let statusBadge;
+                if (item.note === "NN" || item.nonNote) {
+                    statusBadge = '<span class="status-badge status-nn">⚠️ Non noté</span>';
+                } else if (item.estCorrige) {
+                    statusBadge = '<span class="status-badge status-corrected">✓ Corrigé</span>';
+                } else {
+                    statusBadge = '<span class="status-badge status-pending">⏳ En attente</span>';
+                }
                 
                 let noteClass = 'note-pending';
                 let noteText = '--';
-                if (item.note !== null) {
-                    noteText = item.note.toFixed(1) + '/20';
+                // ⭐ Gérer le cas "Non noté"
+                if (item.note === "NN" || item.nonNote) {
+                    noteText = 'NN';
+                    noteClass = 'note-nn';
+                } else if (item.note !== null && !isNaN(item.note)) {
+                    noteText = parseFloat(item.note).toFixed(1) + '/20';
                     if (item.note >= 16) noteClass = 'note-excellent';
                     else if (item.note >= 12) noteClass = 'note-good';
                     else if (item.note >= 10) noteClass = 'note-average';
@@ -678,7 +693,10 @@
             }
             
             // Construire le HTML - NOUVEAU DESIGN GRILLE
-            const modalTitle = `${evaluation.titre} - ${evaluation.note.toFixed(1)}/20`;
+            // ⭐ Gérer le cas "Non noté"
+            const noteDisplay = (evaluation.note === "NN" || evaluation.nonNote) ? "Non noté" : 
+                               (evaluation.note !== null && !isNaN(evaluation.note)) ? parseFloat(evaluation.note).toFixed(1) + "/20" : "--";
+            const modalTitle = `${evaluation.titre} - ${noteDisplay}`;
             document.getElementById('modalTitle').textContent = modalTitle;
             
             let html = '';
@@ -691,7 +709,7 @@
             html += `
                 <div class="print-header">
                     <div class="print-header-title">${evaluation.titre}</div>
-                    <div class="print-header-info">Code : ${currentUserCode} | Note : ${evaluation.note.toFixed(1)}/20 | Date : ${dateStr}</div>
+                    <div class="print-header-info">Code : ${currentUserCode} | Note : ${noteDisplay} | Date : ${dateStr}</div>
                 </div>
             `;
             
@@ -703,7 +721,7 @@
                         <strong>Date :</strong> ${dateStr}
                     </div>
                     <div class="info-right">
-                        <strong class="note-finale">${evaluation.note.toFixed(1)}/20</strong>
+                        <strong class="note-finale">${noteDisplay}</strong>
                     </div>
                 </div>
             `;
@@ -823,7 +841,7 @@
                         </tbody>
                     </table>
                     <div class="note-finale-row">
-                        <strong>NOTE :</strong> <span style="color: #27ae60; font-size: 1.3em; font-weight: bold;">${evaluation.note.toFixed(1)} / 20</span>
+                        <strong>NOTE :</strong> <span style="color: ${(evaluation.note === "NN" || evaluation.nonNote) ? '#b45309' : '#27ae60'}; font-size: 1.3em; font-weight: bold;">${noteDisplay}</span>
                     </div>
                 </div>
             `;
