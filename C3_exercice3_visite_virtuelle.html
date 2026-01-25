@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module C3 – Visite Virtuelle de l'Atelier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0891b2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1e293b;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        .source-banner {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .source-banner a { color: rgba(255,255,255,0.9); font-size: 11px; text-decoration: none; }
+        
+        .screen { display: none; }
+        .screen.active { display: block; }
+        
+        /* Intro */
+        .intro-card {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 700px;
+            margin: 30px auto;
+            text-align: center;
+        }
+        
+        .intro-card h2 { font-size: 28px; margin-bottom: 15px; }
+        .intro-card > p { color: #64748b; margin-bottom: 20px; }
+        
+        .objectif-box {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            border-radius: 0 12px 12px 0;
+            text-align: left;
+            margin-bottom: 25px;
+        }
+        
+        .objectif-box strong { color: var(--primary); font-size: 11px; }
+        .objectif-box p { font-size: 13px; margin-top: 5px; }
+        
+        .workplace-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .workplace-option {
+            background: #f8fafc;
+            border: 3px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .workplace-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+        
+        .workplace-option.selected {
+            border-color: var(--primary);
+            background: #e0f2fe;
+        }
+        
+        .workplace-option .icon { font-size: 40px; margin-bottom: 10px; }
+        .workplace-option .name { font-size: 14px; font-weight: 700; color: var(--dark); }
+        .workplace-option .desc { font-size: 11px; color: #64748b; margin-top: 5px; }
+        
+        .btn-start {
+            padding: 18px 50px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--primary), #0e7490);
+            color: white;
+            font-family: inherit;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-start:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(8, 145, 178, 0.4); }
+        .btn-start:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        /* Game */
+        .game-header {
+            background: white;
+            border-radius: 20px;
+            padding: 15px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .game-header h2 { font-size: 18px; color: var(--dark); }
+        .game-header h2 span { color: var(--primary); }
+        
+        .header-stats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .header-stat {
+            background: #f8fafc;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .header-stat.score { color: #92400e; background: #fef3c7; }
+        .header-stat.progress-stat { color: #1e40af; background: #dbeafe; }
+        
+        .game-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+        
+        .workplace-scene {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 500px;
+        }
+        
+        .scene-title {
+            font-size: 14px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .scene-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            height: 400px;
+        }
+        
+        .scene-zone {
+            background: #f1f5f9;
+            border: 3px dashed #cbd5e1;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .scene-zone:hover { border-color: var(--primary); background: #e0f2fe; }
+        
+        .scene-zone.drag-over { border-color: var(--primary); background: #cffafe; transform: scale(1.02); }
+        
+        .scene-zone.filled { border-style: solid; cursor: default; }
+        .scene-zone.filled.correct { border-color: var(--success); background: #dcfce7; }
+        .scene-zone.filled.wrong { border-color: var(--danger); background: #fee2e2; }
+        
+        .scene-zone .zone-icon { font-size: 30px; margin-bottom: 5px; }
+        .scene-zone .zone-name { font-size: 10px; font-weight: 600; color: #64748b; text-align: center; }
+        
+        .scene-zone .placed-picto {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        
+        .scene-zone .zone-label {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            font-size: 8px;
+            color: #475569;
+            text-align: center;
+            background: rgba(255,255,255,0.8);
+            padding: 2px 5px;
+            border-radius: 5px;
+        }
+        
+        .picto-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .picto-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .picto-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+        
+        .picto-item:hover { border-color: var(--primary); transform: translateX(5px); }
+        .picto-item.dragging { opacity: 0.5; cursor: grabbing; }
+        .picto-item.used { opacity: 0.4; cursor: not-allowed; }
+        
+        .picto-item img { width: 45px; height: 45px; object-fit: contain; }
+        .picto-item .name { font-size: 11px; font-weight: 600; color: var(--dark); }
+        
+        .btn-validate {
+            width: 100%;
+            margin-top: 15px;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-validate:hover { transform: translateY(-2px); }
+        .btn-validate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        /* Results */
+        .results-card {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 600px;
+            margin: 30px auto;
+            text-align: center;
+        }
+        
+        .results-card .trophy { font-size: 80px; margin-bottom: 20px; }
+        .results-card h2 { font-size: 26px; margin-bottom: 10px; }
+        .results-card > p { color: #64748b; margin-bottom: 25px; }
+        
+        .results-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .results-stats .stat { text-align: center; }
+        .results-stats .stat .val { font-size: 36px; font-weight: 800; color: var(--primary); }
+        .results-stats .stat .lbl { font-size: 12px; color: #64748b; }
+        
+        @media (max-width: 900px) {
+            .game-content { grid-template-columns: 1fr; }
+            .workplace-selector { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        
+        <div class="source-banner">
+            <a href="https://www.inrs.fr" target="_blank">📚 Source : INRS – Institut National de Recherche et de Sécurité – www.inrs.fr</a>
+        </div>
+        
+        <!-- Intro -->
+        <div class="screen active" id="intro-screen">
+            <div class="intro-card">
+                <h2>🏭 Visite Virtuelle de l'Atelier</h2>
+                <p>Place les bons pictogrammes aux bons endroits dans l'entreprise !</p>
+                
+                <div class="objectif-box">
+                    <strong>🎯 OBJECTIF</strong>
+                    <p>Être capable de <strong>positionner</strong> les pictogrammes de sécurité adaptés aux différentes zones d'un lieu de travail.</p>
+                </div>
+                
+                <p><strong>Choisis ton lieu de travail :</strong></p>
+                
+                <div class="workplace-selector">
+                    <div class="workplace-option" onclick="selectWorkplace('cuisine')" data-wp="cuisine">
+                        <div class="icon">👨‍🍳</div>
+                        <div class="name">Cuisine professionnelle</div>
+                        <div class="desc">Restaurant / Cantine</div>
+                    </div>
+                    <div class="workplace-option" onclick="selectWorkplace('atelier')" data-wp="atelier">
+                        <div class="icon">🔧</div>
+                        <div class="name">Atelier mécanique</div>
+                        <div class="desc">Garage / Maintenance</div>
+                    </div>
+                    <div class="workplace-option" onclick="selectWorkplace('labo')" data-wp="labo">
+                        <div class="icon">🔬</div>
+                        <div class="name">Laboratoire</div>
+                        <div class="desc">Chimie / Biologie</div>
+                    </div>
+                </div>
+                
+                <button class="btn-start" id="btn-start-visit" onclick="startVisit()" disabled>
+                    Commencer la visite 🚀
+                </button>
+            </div>
+        </div>
+        
+        <!-- Game -->
+        <div class="screen" id="game-screen">
+            <div class="game-header">
+                <h2>🏭 <span id="workplace-name">Cuisine professionnelle</span></h2>
+                <div class="header-stats">
+                    <div class="header-stat score">⭐ <span id="score">0</span> pts</div>
+                    <div class="header-stat progress-stat">📍 <span id="placed">0</span>/6 placés</div>
+                </div>
+            </div>
+            
+            <div class="game-content">
+                <div class="workplace-scene">
+                    <div class="scene-title">📍 Glisse les pictogrammes vers les zones appropriées</div>
+                    <div class="scene-grid" id="scene-grid"></div>
+                </div>
+                
+                <div class="picto-panel">
+                    <div class="panel-title">🛡️ Pictogrammes à placer</div>
+                    <div class="picto-list" id="picto-list"></div>
+                    <button class="btn-validate" id="btn-validate" onclick="validatePlacement()" disabled>
+                        ✅ Valider mon placement
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results -->
+        <div class="screen" id="results-screen">
+            <div class="results-card">
+                <div class="trophy" id="trophy">🏆</div>
+                <h2 id="results-title">Excellent !</h2>
+                <p id="results-msg">Tu as bien sécurisé le lieu de travail !</p>
+                
+                <div class="results-stats">
+                    <div class="stat">
+                        <div class="val" id="final-score">0</div>
+                        <div class="lbl">Points</div>
+                    </div>
+                    <div class="stat">
+                        <div class="val" id="final-correct">0/6</div>
+                        <div class="lbl">Bien placés</div>
+                    </div>
+                </div>
+                
+                <button class="btn-start" onclick="restartGame()">🔄 Nouveau lieu</button>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script>
+        const workplaces = {
+            cuisine: {
+                name: "Cuisine professionnelle",
+                zones: [
+                    { id: "entree", name: "Entrée", icon: "🚪", correctPicto: "obligation-combinaison" },
+                    { id: "cuisson", name: "Zone cuisson", icon: "🔥", correctPicto: "avertissement-chaleur" },
+                    { id: "chambre-froide", name: "Chambre froide", icon: "❄️", correctPicto: "avertissement-froid" },
+                    { id: "plonge", name: "Plonge", icon: "🧼", correctPicto: "obligation-gants" },
+                    { id: "stockage", name: "Stockage produits", icon: "🧴", correctPicto: "interdiction-fumer" },
+                    { id: "sortie", name: "Issue de secours", icon: "🚨", correctPicto: "secours-sortie" },
+                    { id: "extincteur", name: "Point feu", icon: "🧯", correctPicto: "incendie-extincteur" },
+                    { id: "tranchage", name: "Zone tranchage", icon: "🔪", correctPicto: "obligation-gants-coupe" },
+                    { id: "rassemblement", name: "Parking", icon: "🅿️", correctPicto: "secours-rassemblement" }
+                ],
+                pictos: [
+                    { id: "obligation-gants", name: "Port des gants", image: "pictogrammes/images/OBLIGATION-gants.jpg" },
+                    { id: "obligation-combinaison", name: "Tenue obligatoire", image: "pictogrammes/images/OBLIGATION-combinaison.jpg" },
+                    { id: "interdiction-fumer", name: "Interdiction de fumer", image: "pictogrammes/images/INTERDIT-fumer.jpg" },
+                    { id: "incendie-extincteur", name: "Extincteur", image: "pictogrammes/images/INCENDIE-extincteur.jpg" },
+                    { id: "secours-sortie", name: "Sortie de secours", image: "pictogrammes/images/SECOURS-sortie-vers-droite.jpg" },
+                    { id: "secours-rassemblement", name: "Point rassemblement", image: "pictogrammes/images/SECOURS-point-rassemblement.jpg" }
+                ]
+            },
+            atelier: {
+                name: "Atelier mécanique",
+                zones: [
+                    { id: "entree", name: "Entrée atelier", icon: "🚪", correctPicto: "obligation-chaussures" },
+                    { id: "pont", name: "Pont élévateur", icon: "🚗", correctPicto: "avertissement-ecrasement" },
+                    { id: "soudure", name: "Poste soudure", icon: "⚡", correctPicto: "obligation-lunettes" },
+                    { id: "compresseur", name: "Compresseur", icon: "💨", correctPicto: "obligation-antibruit" },
+                    { id: "stockage", name: "Huiles/Solvants", icon: "🛢️", correctPicto: "interdiction-flamme" },
+                    { id: "sortie", name: "Issue de secours", icon: "🚨", correctPicto: "secours-sortie" },
+                    { id: "electrique", name: "Armoire élec.", icon: "⚡", correctPicto: "avertissement-elec" },
+                    { id: "extincteur", name: "Extincteur", icon: "🧯", correctPicto: "incendie-extincteur" },
+                    { id: "vestiaire", name: "Vestiaires", icon: "🚿", correctPicto: "obligation-casque" }
+                ],
+                pictos: [
+                    { id: "obligation-chaussures", name: "Chaussures sécurité", image: "pictogrammes/images/OBLIGATION-chaussures.jpg" },
+                    { id: "obligation-lunettes", name: "Lunettes protection", image: "pictogrammes/images/OBLIGATION-lunettes.jpg" },
+                    { id: "obligation-antibruit", name: "Protection auditive", image: "pictogrammes/images/OBLIGATION-casque-antibruit.jpg" },
+                    { id: "interdiction-flamme", name: "Flamme interdite", image: "pictogrammes/images/INTERDIT-flamme.jpg" },
+                    { id: "avertissement-elec", name: "Danger électrique", image: "pictogrammes/images/DANGER-electricite.jpg" },
+                    { id: "incendie-extincteur", name: "Extincteur", image: "pictogrammes/images/INCENDIE-extincteur.jpg" },
+                    { id: "secours-sortie", name: "Sortie de secours", image: "pictogrammes/images/SECOURS-sortie-vers-droite.jpg" }
+                ]
+            },
+            labo: {
+                name: "Laboratoire",
+                zones: [
+                    { id: "entree", name: "Entrée labo", icon: "🚪", correctPicto: "obligation-blouse" },
+                    { id: "paillasse", name: "Paillasse chimie", icon: "🧪", correctPicto: "obligation-lunettes" },
+                    { id: "hotte", name: "Hotte aspirante", icon: "🌬️", correctPicto: "obligation-masque" },
+                    { id: "stockage", name: "Armoire produits", icon: "🗄️", correctPicto: "avertissement-toxique" },
+                    { id: "bio", name: "Zone biologique", icon: "🦠", correctPicto: "avertissement-bio" },
+                    { id: "douche", name: "Douche sécurité", icon: "🚿", correctPicto: "secours-douche" },
+                    { id: "extincteur", name: "Extincteur", icon: "🧯", correctPicto: "incendie-extincteur" },
+                    { id: "sortie", name: "Issue de secours", icon: "🚨", correctPicto: "secours-sortie" },
+                    { id: "dechets", name: "Déchets DASRI", icon: "🗑️", correctPicto: "interdiction-toucher" }
+                ],
+                pictos: [
+                    { id: "obligation-blouse", name: "Tenue obligatoire", image: "pictogrammes/images/OBLIGATION-combinaison.jpg" },
+                    { id: "obligation-lunettes", name: "Lunettes protection", image: "pictogrammes/images/OBLIGATION-lunettes.jpg" },
+                    { id: "obligation-masque", name: "Protection respiratoire", image: "pictogrammes/images/OBLIGATION-protection-voies-espiratoires.jpg" },
+                    { id: "avertissement-toxique", name: "Produit toxique", image: "pictogrammes/images/DANGER-produit-toxique.jpg" },
+                    { id: "avertissement-bio", name: "Risque biologique", image: "pictogrammes/images/DANGER-risque-biologique.jpg" },
+                    { id: "incendie-extincteur", name: "Extincteur", image: "pictogrammes/images/INCENDIE-extincteur.jpg" },
+                    { id: "secours-sortie", name: "Sortie de secours", image: "pictogrammes/images/SECOURS-sortie-vers-droite.jpg" }
+                ]
+            }
+        };
+        
+        let selectedWorkplace = null;
+        let placements = {};
+        let draggedPicto = null;
+        
+        function selectWorkplace(wp) {
+            selectedWorkplace = wp;
+            document.querySelectorAll('.workplace-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.wp === wp);
+            });
+            document.getElementById('btn-start-visit').disabled = false;
+        }
+        
+        function startVisit() {
+            document.getElementById('intro-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            const wp = workplaces[selectedWorkplace];
+            placements = {};
+            
+            document.getElementById('workplace-name').textContent = wp.name;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('placed').textContent = '0';
+            
+            // Render zones
+            const grid = document.getElementById('scene-grid');
+            grid.innerHTML = '';
+            
+            wp.zones.slice(0, 9).forEach(zone => {
+                const zoneEl = document.createElement('div');
+                zoneEl.className = 'scene-zone';
+                zoneEl.dataset.zone = zone.id;
+                zoneEl.dataset.correct = zone.correctPicto;
+                zoneEl.innerHTML = `
+                    <span class="zone-icon">${zone.icon}</span>
+                    <span class="zone-name">${zone.name}</span>
+                `;
+                
+                zoneEl.ondragover = e => { e.preventDefault(); zoneEl.classList.add('drag-over'); };
+                zoneEl.ondragleave = () => zoneEl.classList.remove('drag-over');
+                zoneEl.ondrop = e => dropOnZone(e, zoneEl);
+                
+                grid.appendChild(zoneEl);
+            });
+            
+            // Render pictos
+            const list = document.getElementById('picto-list');
+            list.innerHTML = '';
+            
+            const shuffled = [...wp.pictos].sort(() => Math.random() - 0.5);
+            shuffled.forEach(picto => {
+                const item = document.createElement('div');
+                item.className = 'picto-item';
+                item.draggable = true;
+                item.dataset.picto = picto.id;
+                item.innerHTML = `
+                    <img src="${picto.image}" alt="${picto.name}">
+                    <span class="name">${picto.name}</span>
+                `;
+                
+                item.ondragstart = e => {
+                    if (item.classList.contains('used')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    draggedPicto = picto;
+                    item.classList.add('dragging');
+                };
+                item.ondragend = () => item.classList.remove('dragging');
+                
+                list.appendChild(item);
+            });
+            
+            document.getElementById('btn-validate').disabled = true;
+        }
+        
+        function dropOnZone(e, zoneEl) {
+            e.preventDefault();
+            zoneEl.classList.remove('drag-over');
+            
+            if (!draggedPicto || zoneEl.classList.contains('filled')) return;
+            
+            const zoneId = zoneEl.dataset.zone;
+            placements[zoneId] = draggedPicto.id;
+            
+            // Mark picto as used
+            document.querySelector(`.picto-item[data-picto="${draggedPicto.id}"]`).classList.add('used');
+            
+            // Place image in zone
+            zoneEl.classList.add('filled');
+            const img = document.createElement('img');
+            img.className = 'placed-picto';
+            img.src = draggedPicto.image;
+            zoneEl.appendChild(img);
+            
+            const label = document.createElement('div');
+            label.className = 'zone-label';
+            label.textContent = draggedPicto.name;
+            zoneEl.appendChild(label);
+            
+            draggedPicto = null;
+            
+            updateStats();
+        }
+        
+        function updateStats() {
+            const placed = Object.keys(placements).length;
+            document.getElementById('placed').textContent = placed;
+            
+            const wp = workplaces[selectedWorkplace];
+            const totalRequired = wp.pictos.length;
+            
+            document.getElementById('btn-validate').disabled = placed < totalRequired;
+        }
+        
+        function validatePlacement() {
+            const wp = workplaces[selectedWorkplace];
+            let correct = 0;
+            let score = 0;
+            
+            document.querySelectorAll('.scene-zone.filled').forEach(zone => {
+                const zoneId = zone.dataset.zone;
+                const correctPicto = zone.dataset.correct;
+                const placedPicto = placements[zoneId];
+                
+                if (placedPicto === correctPicto) {
+                    zone.classList.add('correct');
+                    correct++;
+                    score += 15;
+                } else {
+                    zone.classList.add('wrong');
+                }
+            });
+            
+            document.getElementById('score').textContent = score;
+            
+            setTimeout(() => {
+                showResults(score, correct, wp.pictos.length);
+            }, 1500);
+        }
+        
+        function showResults(score, correct, total) {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('results-screen').classList.add('active');
+            
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-correct').textContent = correct + '/' + total;
+            
+            const pct = (correct / total) * 100;
+            
+            if (pct >= 85) {
+                document.getElementById('trophy').textContent = '🏆';
+                document.getElementById('results-title').textContent = 'Excellent !';
+                document.getElementById('results-msg').textContent = 'Tu maîtrises la signalisation de sécurité !';
+            } else if (pct >= 50) {
+                document.getElementById('trophy').textContent = '👍';
+                document.getElementById('results-title').textContent = 'Bien joué !';
+                document.getElementById('results-msg').textContent = 'Continue à t\'entraîner pour perfectionner.';
+            } else {
+                document.getElementById('trophy').textContent = '💪';
+                document.getElementById('results-title').textContent = 'Continue !';
+                document.getElementById('results-msg').textContent = 'Révise les pictogrammes et réessaie.';
+            }
+        }
+        
+        function restartGame() {
+            document.getElementById('results-screen').classList.remove('active');
+            document.getElementById('intro-screen').classList.add('active');
+            selectedWorkplace = null;
+            document.querySelectorAll('.workplace-option').forEach(opt => opt.classList.remove('selected'));
+            document.getElementById('btn-start-visit').disabled = true;
+        }
+    </script>
+    
+</body>
+</html>
