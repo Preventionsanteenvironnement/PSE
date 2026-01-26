@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 6.0 (CORRIGÉ - Structure alignée)
+// pse-runner.js - Version 7.0 (RGPD COMPLIANT)
 // Collection : resultats/{eleveCode}/copies/{docId}
-// Date : 21 janvier 2026
-// Corrections : Écriture dans la bonne structure pour compatibilité totale
+// Date : 26 janvier 2026
+// RGPD : Aucun nom/prénom stocké - uniquement code + classe
 // ════════════════════════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -19,13 +19,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v6.0 - Structure corrigée : resultats/{eleveCode}/copies/");
+console.log("🚀 PSE Runner v7.0 RGPD - Structure : resultats/{eleveCode}/copies/");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
     
     try {
-        const eleveInfo = eleveData || { code: code, prenom: "Élève", nom: "", classe: "?" };
+        const eleveInfo = eleveData || { code: code, classe: "?" };
         const eleveCode = (eleveInfo.code || code).toUpperCase().trim();
         
         if (!eleveCode || eleveCode.length < 2) {
@@ -209,7 +209,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                    || "Devoir PSE";
         
         // ════════════════════════════════════════════════════════════════
-        // ⭐ STRUCTURE DU DOCUMENT (corrigée v6.0)
+        // ⭐ STRUCTURE DU DOCUMENT (v7.0 RGPD - sans nom/prénom)
         // ════════════════════════════════════════════════════════════════
         const data = {
             // Identifiants
@@ -218,12 +218,10 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             exercice: devoirId,
             titre: titre,
             
-            // Infos élève
+            // Infos élève (RGPD : uniquement code + classe)
             classe: eleveInfo.classe,
             eleve: { 
                 userCode: eleveCode, 
-                prenom: eleveInfo.prenom, 
-                nom: eleveInfo.nom, 
                 classe: eleveInfo.classe 
             },
             
@@ -248,7 +246,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         
         // ════════════════════════════════════════════════════════════════
         // ⭐ ÉCRITURE DANS resultats/{eleveCode}/copies/{docId}
-        // CORRECTION v6.0 : Structure alignée avec annuaire.js et règles Firestore
         // ════════════════════════════════════════════════════════════════
         const docId = `${devoirId}_${Date.now()}`;
         const docPath = `resultats/${eleveCode}/copies/${docId}`;
@@ -259,7 +256,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         console.log("📦 Data:", data);
         
         alert("✅ COPIE ENVOYÉE !\n\n" + 
-              "👤 " + eleveInfo.prenom + " " + eleveInfo.nom + "\n" + 
+              "👤 Code : " + eleveCode + "\n" + 
               "📝 " + titre + "\n" +
               "📊 Réponses: " + Object.keys(reponses).length);
         
@@ -273,7 +270,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 <div style="font-size:4rem;">✅</div>
                 <h1 style="color:#16a34a;">Copie envoyée !</h1>
                 <p style="color:#64748b;margin-top:10px;">
-                    ${eleveInfo.prenom} ${eleveInfo.nom}<br>
+                    Code : ${eleveCode}<br>
                     ${titre}<br>
                     ${Object.keys(reponses).length} réponses enregistrées
                 </p>
@@ -290,4 +287,4 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     }
 };
 
-console.log("✅ window.envoyerCopie prêt (v6.0 - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.0 RGPD - resultats/{eleveCode}/copies/)");
