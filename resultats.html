@@ -875,11 +875,49 @@
                 
                 await chargerDonnees();
                 
+                // 👁️ TRACKING : Enregistrer la consultation
+                await enregistrerConsultation(code, eleveInfo.classe);
+                
             } catch (e) {
                 console.error("❌ Erreur connexion:", e);
                 alert("Erreur: " + e.message);
             }
         };
+        
+        // 👁️ Fonction pour enregistrer la consultation de l'élève
+        async function enregistrerConsultation(code, classe) {
+            try {
+                const now = new Date();
+                const consultationRef = doc(db, "consultations", code);
+                
+                await setDoc(consultationRef, {
+                    eleveCode: code,
+                    classe: classe,
+                    derniereConsultation: now.toISOString(),
+                    timestamp: serverTimestamp(),
+                    nombreVisites: (await getConsultationCount(code)) + 1
+                }, { merge: true });
+                
+                console.log("👁️ Consultation enregistrée pour", code);
+            } catch (error) {
+                console.error("❌ Erreur enregistrement consultation:", error);
+                // Ne pas bloquer l'utilisateur si ça échoue
+            }
+        }
+        
+        // Compter le nombre de visites précédentes
+        async function getConsultationCount(code) {
+            try {
+                const consultationRef = doc(db, "consultations", code);
+                const docSnap = await getDoc(consultationRef);
+                if (docSnap.exists()) {
+                    return docSnap.data().nombreVisites || 0;
+                }
+                return 0;
+            } catch (error) {
+                return 0;
+            }
+        }
         
         let currentEleveInfo = null;
 
