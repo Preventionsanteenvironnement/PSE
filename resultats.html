@@ -686,13 +686,21 @@
                 // Chercher des copies avec ce code élève
                 const qCopies = query(collectionGroup(db, "copies"), where("eleveCode", "==", code));
                 const snapCopies = await getDocs(qCopies);
+                console.log("📋 Copies trouvées:", snapCopies.size);
                 
                 // Chercher aussi du suivi pour ce code
-                const suiviRef = collection(db, "resultats", code, "suivi");
-                const snapSuivi = await getDocs(suiviRef);
+                let suiviCount = 0;
+                try {
+                    const suiviRef = collection(db, "resultats", code, "suivi");
+                    const snapSuivi = await getDocs(suiviRef);
+                    suiviCount = snapSuivi.size;
+                    console.log("📊 Suivis trouvés:", suiviCount);
+                } catch (err) {
+                    console.log("⚠️ Erreur suivi (normal si pas de données):", err.message);
+                }
                 
                 // Si ni copies ni suivi, refuser la connexion
-                if (snapCopies.empty && snapSuivi.empty) {
+                if (snapCopies.empty && suiviCount === 0) {
                     document.getElementById('errorMsg').textContent = "Aucune évaluation trouvée pour ce code. Vérifie ton code ou contacte ton professeur.";
                     document.getElementById('errorMsg').classList.add('visible');
                     return;
