@@ -6,6 +6,8 @@
     <title>📊 Mes Résultats PSE</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Charger la liste des élèves -->
+    <script src="data_eleves.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; max-width: 1000px; margin: 0 auto; padding: 0; background: #f8f9fa; color: #333; min-height: 100vh; }
@@ -686,33 +688,41 @@
             try {
                 console.log("🔐 Connexion avec code:", code);
                 
-                // Chercher des copies avec ce code élève (évaluations Master)
-                const qCopies = query(collectionGroup(db, "copies"), where("eleveCode", "==", code));
-                const snapCopies = await getDocs(qCopies);
-                const nbCopies = snapCopies.size;
-                console.log("📋 Copies (devoirs) trouvées:", nbCopies);
+                // Vérifier si le code existe dans data_eleves.js
+                let eleveExiste = false;
+                let eleveInfo = null;
                 
-                // Chercher du suivi pour ce code
-                const suiviRef = collection(db, "resultats", code, "suivi");
-                const snapSuivi = await getDocs(suiviRef);
-                const nbSuivis = snapSuivi.size;
-                console.log("📊 Suivis trouvés:", nbSuivis);
+                if (typeof window.dataEleves !== 'undefined') {
+                    // Chercher dans toutes les classes
+                    for (const [classe, eleves] of Object.entries(window.dataEleves)) {
+                        const eleve = eleves.find(e => e.code === code);
+                        if (eleve) {
+                            eleveExiste = true;
+                            eleveInfo = { ...eleve, classe: classe };
+                            break;
+                        }
+                    }
+                }
                 
-                // Si ni copies ni suivi, refuser la connexion
-                if (nbCopies === 0 && nbSuivis === 0) {
-                    console.log("❌ Aucune donnée pour ce code");
-                    document.getElementById('errorMsg').textContent = "Aucune évaluation trouvée pour ce code. Vérifie ton code ou contacte ton professeur.";
+                if (!eleveExiste) {
+                    console.log("❌ Code non trouvé dans data_eleves.js");
+                    document.getElementById('errorMsg').textContent = "Code inconnu. Vérifie ton code ou contacte ton professeur.";
                     document.getElementById('errorMsg').classList.add('visible');
                     return;
                 }
-
-                console.log("✅ Connexion autorisée - Copies:", nbCopies, "Suivis:", nbSuivis);
                 
+                console.log("✅ Élève trouvé:", eleveInfo);
+
                 currentUserCode = code;
+                currentEleveInfo = eleveInfo;
                 localStorage.setItem('pse_user_code', code);
                 
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('resultsScreen').classList.add('active');
+                
+                // Afficher les infos élève
+                document.getElementById('studentName').textContent = code;
+                document.getElementById('studentClass').textContent = eleveInfo.classe || "";
                 
                 await chargerDonnees();
                 
@@ -721,6 +731,8 @@
                 alert("Erreur: " + e.message);
             }
         };
+        
+        let currentEleveInfo = null;
 
         window.deconnexion = function() {
             localStorage.removeItem('pse_user_code');
