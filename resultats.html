@@ -398,6 +398,88 @@
         .empty-suivi-icon { font-size: 3em; margin-bottom: 15px; }
         .tab.tab-suivi { background: #8b5cf6; color: white; }
         .tab.tab-suivi:hover { background: #7c3aed; }
+        
+        /* === ONGLET MES COURS === */
+        .cours-module-card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .cours-module-header {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 700;
+        }
+        .cours-module-header .module-code {
+            font-size: 1.1em;
+        }
+        .cours-module-header .module-titre {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+        .cours-seances-list {
+            padding: 10px 0;
+        }
+        .cours-seance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .cours-seance-row:last-child {
+            border-bottom: none;
+        }
+        .cours-seance-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .cours-seance-icon {
+            font-size: 1.2em;
+        }
+        .cours-seance-nom {
+            font-weight: 600;
+        }
+        .cours-seance-date {
+            font-size: 0.85em;
+            color: #64748b;
+        }
+        .cours-seance-status {
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+        .cours-seance-status.recu {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .cours-seance-status.manquant {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .cours-alerte {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .cours-alerte-icon {
+            font-size: 1.5em;
+        }
+        .cours-alerte-text {
+            font-weight: 600;
+            color: #92400e;
+        }
     </style>
 </head>
 <body>
@@ -455,6 +537,7 @@
             <div class="tabs no-print">
                 <button class="tab active" onclick="switchTab('evaluations')">📝 Évaluations</button>
                 <button class="tab" onclick="switchTab('suivi')">📋 Mon suivi</button>
+                <button class="tab" onclick="switchTab('cours')">📄 Mes cours</button>
                 <button class="tab" onclick="switchTab('competences')">🎯 Compétences</button>
                 <button class="tab" onclick="switchTab('progression')">📈 Progression</button>
                 <button class="tab" onclick="ouvrirInfoCompetences()" style="margin-left: auto; background: #0ea5e9; color: white;">ℹ️ Info</button>
@@ -471,6 +554,16 @@
                     <div class="empty-suivi">
                         <div class="empty-suivi-icon">📋</div>
                         <p>Chargement du suivi...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenu Mes Cours -->
+            <div class="tab-content" id="tabCours">
+                <div id="coursContent">
+                    <div class="empty-suivi">
+                        <div class="empty-suivi-icon">📄</div>
+                        <p>Chargement des cours...</p>
                     </div>
                 </div>
             </div>
@@ -1254,6 +1347,11 @@
             
             event.target.classList.add('active');
             document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
+            
+            // Charger les cours si on clique sur l'onglet Cours
+            if (tabName === 'cours') {
+                afficherCours();
+            }
         };
 
         // ═══════════════════════════════════════════════════════
@@ -1463,14 +1561,22 @@
                 html += `<div class="detail-row"><span class="detail-label">🎯 Compétences</span><span class="detail-value">${s.competences.join(', ')}</span></div>`;
             }
             
-            // Infos (non évaluées)
-            const infosLabels = [];
-            if (s.coursRemis) infosLabels.push('📄 Cours remis');
-            if (s.menace1) infosLabels.push('⚠️ Menace 1');
-            if (s.menace2) infosLabels.push('⚠️ Menace 2');
-            if (s.menace3) infosLabels.push('🚨 Menace 3');
-            if (infosLabels.length > 0) {
-                html += `<div class="detail-row"><span class="detail-label">📌 Infos</span><span class="detail-value">${infosLabels.join(' • ')}</span></div>`;
+            // Distribution cours
+            if (s.coursDistrib && s.coursDistrib !== 'aucun') {
+                const coursLabels = {
+                    'seance1': 'Séance 1',
+                    'seance2': 'Séance 2',
+                    'seance3': 'Séance 3',
+                    'seance4': 'Séance 4',
+                    'complet': '📚 Cours complet'
+                };
+                const coursLabel = coursLabels[s.coursDistrib] || s.coursDistrib;
+                
+                if (s.absent && s.coursRecu === false) {
+                    html += `<div class="detail-row"><span class="detail-label">📄 Cours</span><span class="detail-value" style="color: #dc2626;">❌ ${coursLabel} - Non reçu (absent)</span></div>`;
+                } else {
+                    html += `<div class="detail-row"><span class="detail-label">📄 Cours</span><span class="detail-value" style="color: #16a34a;">✅ ${coursLabel} - Reçu</span></div>`;
+                }
             }
             
             if (s.commentaire) {
@@ -1483,6 +1589,118 @@
             const el = document.getElementById('seanceDetail' + idx);
             el.classList.toggle('open');
         };
+        
+        // ═══════════════════════════════════════════════════════════════
+        // ONGLET MES COURS
+        // ═══════════════════════════════════════════════════════════════
+        function afficherCours() {
+            const container = document.getElementById('coursContent');
+            
+            // Filtrer les suivis qui ont une distribution de cours
+            const suivisAvecCours = allSuivis.filter(s => s.coursDistrib && s.coursDistrib !== 'aucun');
+            
+            if (suivisAvecCours.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-suivi">
+                        <div class="empty-suivi-icon">📄</div>
+                        <p>Pas encore de cours distribué</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Les cours que tu recevras apparaîtront ici.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Regrouper par module
+            const parModule = {};
+            suivisAvecCours.forEach(s => {
+                const moduleKey = s.module || 'Inconnu';
+                if (!parModule[moduleKey]) {
+                    parModule[moduleKey] = {
+                        module: s.module,
+                        moduleTitre: s.moduleTitre,
+                        seances: []
+                    };
+                }
+                parModule[moduleKey].seances.push({
+                    type: s.coursDistrib,
+                    date: s.date,
+                    recu: !(s.absent && s.coursRecu === false)
+                });
+            });
+            
+            // Compter les cours manquants
+            let coursManquants = 0;
+            Object.values(parModule).forEach(m => {
+                m.seances.forEach(s => {
+                    if (!s.recu) coursManquants++;
+                });
+            });
+            
+            // Construire le HTML
+            let html = '';
+            
+            // Alerte si cours manquants
+            if (coursManquants > 0) {
+                html += `
+                    <div class="cours-alerte">
+                        <span class="cours-alerte-icon">⚠️</span>
+                        <span class="cours-alerte-text">${coursManquants} cours à récupérer (absence)</span>
+                    </div>
+                `;
+            }
+            
+            // Labels pour les types de cours
+            const coursLabels = {
+                'seance1': 'Séance 1',
+                'seance2': 'Séance 2',
+                'seance3': 'Séance 3',
+                'seance4': 'Séance 4',
+                'complet': 'Cours complet'
+            };
+            
+            // Afficher chaque module
+            Object.values(parModule).forEach(m => {
+                html += `
+                    <div class="cours-module-card">
+                        <div class="cours-module-header">
+                            <div class="module-code">${m.module || 'Module'}</div>
+                            <div class="module-titre">${m.moduleTitre || ''}</div>
+                        </div>
+                        <div class="cours-seances-list">
+                `;
+                
+                // Trier les séances par date
+                m.seances.sort((a, b) => a.date.localeCompare(b.date));
+                
+                m.seances.forEach(s => {
+                    const label = coursLabels[s.type] || s.type;
+                    const icon = s.type === 'complet' ? '📚' : '📄';
+                    const dateFormatted = formatDateSuivi(s.date);
+                    
+                    html += `
+                        <div class="cours-seance-row">
+                            <div class="cours-seance-info">
+                                <span class="cours-seance-icon">${icon}</span>
+                                <div>
+                                    <div class="cours-seance-nom">${label}</div>
+                                    <div class="cours-seance-date">${dateFormatted}</div>
+                                </div>
+                            </div>
+                            <span class="cours-seance-status ${s.recu ? 'recu' : 'manquant'}">
+                                ${s.recu ? '✅ Reçu' : '❌ À récupérer'}
+                            </span>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
         
         function calculerMoyenneSuivi() {
             // Exclure les absences du calcul de la moyenne
