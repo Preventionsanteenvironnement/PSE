@@ -1887,9 +1887,37 @@
                 const info = getAttentionInfo(s.attention);
                 html += `<div class="detail-row"><span class="detail-label">🧠 Attention</span><span class="detail-value ${info.cls}">${info.label}</span></div>`;
             }
-            if (s.porteVue) {
+            if (s.porteVue && s.porteVue !== 'ne') {
                 const info = getPorteVueInfo(s.porteVue);
                 html += `<div class="detail-row"><span class="detail-label">📁 Porte-vue</span><span class="detail-value ${info.cls}">${info.label}</span></div>`;
+            }
+            
+            // COURS À JOUR
+            if (s.coursAJour && s.coursAJour !== 'ne') {
+                const map = { 'a_jour': { label: '✅ À jour', cls: 'good' }, 'incomplet': { label: '⚠️ Incomplet', cls: 'medium' }, 'pas_a_jour': { label: '❌ Pas à jour', cls: 'bad' } };
+                const info = map[s.coursAJour] || { label: s.coursAJour, cls: '' };
+                html += `<div class="detail-row"><span class="detail-label">📋 Cours à jour</span><span class="detail-value ${info.cls}">${info.label}</span></div>`;
+            }
+            
+            // AUTONOMIE
+            if (s.autonomie && s.autonomie !== 'ne') {
+                const map = { 'bonne': { label: '😊 Bonne', cls: 'good' }, 'moyenne': { label: '😐 Moyenne', cls: 'medium' }, 'insuffisante': { label: '😕 Insuffisante', cls: 'bad' } };
+                const info = map[s.autonomie] || { label: s.autonomie, cls: '' };
+                html += `<div class="detail-row"><span class="detail-label">🎯 Autonomie</span><span class="detail-value ${info.cls}">${info.label}</span></div>`;
+            }
+            
+            // INITIATIVE
+            if (s.initiative && s.initiative !== 'ne') {
+                const map = { 'oui': { label: '😊 Oui', cls: 'good' }, 'parfois': { label: '😐 Parfois', cls: 'medium' }, 'non': { label: '😕 Non', cls: 'bad' } };
+                const info = map[s.initiative] || { label: s.initiative, cls: '' };
+                html += `<div class="detail-row"><span class="detail-label">💡 Initiative</span><span class="detail-value ${info.cls}">${info.label}</span></div>`;
+            }
+            
+            // SÉCURITÉ
+            if (s.securite && s.securite !== 'ne') {
+                const map = { 'oui': { label: '✅ Oui', cls: 'good' }, 'partiel': { label: '⚠️ Partiel', cls: 'medium' }, 'non': { label: '❌ Non', cls: 'bad' } };
+                const info = map[s.securite] || { label: s.securite, cls: '' };
+                html += `<div class="detail-row"><span class="detail-label">⚠️ Sécurité</span><span class="detail-value ${info.cls}">${info.label}</span></div>`;
             }
             
             // BAVARDAGE
@@ -1912,25 +1940,34 @@
                 html += `<div class="detail-row"><span class="detail-label">📱 Malus téléphone</span><span class="detail-value bad">-${s.malus} pts</span></div>`;
             }
             
+            // Bonus objectif
+            if (s.bonusObjectif && s.bonusObjectif > 0) {
+                html += `<div class="detail-row"><span class="detail-label">🎯 Bonus objectif</span><span class="detail-value good">+${s.bonusObjectif} pt</span></div>`;
+            }
+            
             if (s.competences && s.competences.length > 0) {
                 html += `<div class="detail-row"><span class="detail-label">🎯 Compétences</span><span class="detail-value">${s.competences.join(', ')}</span></div>`;
             }
             
-            // Distribution cours
-            if (s.coursDistrib && s.coursDistrib !== 'aucun') {
+            // Distribution cours (maintenant array)
+            if (s.coursDistrib) {
                 const coursLabels = {
-                    'seance1': 'Séance 1',
-                    'seance2': 'Séance 2',
-                    'seance3': 'Séance 3',
-                    'seance4': 'Séance 4',
-                    'complet': '📚 Cours complet'
+                    'seance1': 'Séance 1', 'seance2': 'Séance 2', 'seance3': 'Séance 3', 'seance4': 'Séance 4',
+                    'complet': '📚 Cours complet', 'correction': '✏️ Correction', 'evaluation': '📝 Évaluation'
                 };
-                const coursLabel = coursLabels[s.coursDistrib] || s.coursDistrib;
-                
-                if (s.absent && s.coursRecu === false) {
-                    html += `<div class="detail-row"><span class="detail-label">📄 Cours</span><span class="detail-value" style="color: #dc2626;">❌ ${coursLabel} - Non reçu (absent)</span></div>`;
-                } else {
-                    html += `<div class="detail-row"><span class="detail-label">📄 Cours</span><span class="detail-value" style="color: #16a34a;">✅ ${coursLabel} - Reçu</span></div>`;
+                let coursItems = [];
+                if (Array.isArray(s.coursDistrib)) {
+                    coursItems = s.coursDistrib.map(c => coursLabels[c] || c);
+                } else if (s.coursDistrib !== 'aucun') {
+                    coursItems = [coursLabels[s.coursDistrib] || s.coursDistrib];
+                }
+                if (coursItems.length > 0) {
+                    const coursLabel = coursItems.join(', ');
+                    if (s.absent && s.coursRecu === false) {
+                        html += `<div class="detail-row"><span class="detail-label">📄 Cours</span><span class="detail-value" style="color: #dc2626;">❌ ${coursLabel} - Non reçu (absent)</span></div>`;
+                    } else {
+                        html += `<div class="detail-row"><span class="detail-label">📄 Cours</span><span class="detail-value" style="color: #16a34a;">✅ ${coursLabel} - Reçu</span></div>`;
+                    }
                 }
             }
             
@@ -2033,7 +2070,9 @@
                 'seance2': 'Séance 2',
                 'seance3': 'Séance 3',
                 'seance4': 'Séance 4',
-                'complet': 'Cours complet'
+                'complet': 'Cours complet',
+                'correction': 'Correction',
+                'evaluation': 'Évaluation'
             };
             
             // Afficher chaque module
@@ -2051,8 +2090,15 @@
                 m.seances.sort((a, b) => a.date.localeCompare(b.date));
                 
                 m.seances.forEach(s => {
-                    const label = coursLabels[s.type] || s.type;
-                    const icon = s.type === 'complet' ? '📚' : '📄';
+                    // Gérer le type qui peut être array ou string
+                    let labels = [];
+                    if (Array.isArray(s.type)) {
+                        labels = s.type.map(t => coursLabels[t] || t);
+                    } else {
+                        labels = [coursLabels[s.type] || s.type];
+                    }
+                    const label = labels.join(', ');
+                    const icon = (Array.isArray(s.type) && s.type.includes('complet')) || s.type === 'complet' ? '📚' : '📄';
                     const dateFormatted = formatDateSuivi(s.date);
                     
                     html += `
@@ -2175,8 +2221,10 @@
         
         function getOralInfo(val) {
             const map = {
-                2: { label: '2 - Très bien', cls: 'good' },
-                1: { label: '1 - Bien', cls: 'medium' },
+                4: { label: '4 - Excellente', cls: 'good' },
+                3: { label: '3 - Bonne', cls: 'good' },
+                2: { label: '2 - Correcte', cls: 'medium' },
+                1: { label: '1 - Faible', cls: 'medium' },
                 0: { label: '0 - Aucune', cls: 'bad' }
             };
             return map[val] || { label: val, cls: '' };
@@ -2193,6 +2241,7 @@
         
         function getPorteVueInfo(val) {
             const map = {
+                'ne': { label: 'NE*', cls: 'ne' },
                 'ok': { label: '✅ OK', cls: 'good' },
                 'oubli': { label: '❌ Oublié', cls: 'bad' }
             };
