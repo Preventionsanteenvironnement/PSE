@@ -452,6 +452,122 @@
         .tendance-arrow.up { color: #16a34a; }
         .tendance-arrow.down { color: #dc2626; }
         .tendance-arrow.stable { color: #64748b; }
+        
+        /* === GRAPHIQUES ÉLÈVE === */
+        .eleve-stats-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .eleve-stats-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #1e293b;
+        }
+        .progress-item {
+            margin-bottom: 18px;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .progress-label {
+            font-weight: 600;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .progress-value {
+            font-weight: 700;
+            font-size: 1em;
+        }
+        .progress-bar {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+        .progress-fill.excellent { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .progress-fill.good { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .progress-fill.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .progress-fill.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        
+        .comportement-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .comportement-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .comportement-card.good {
+            background: #f0fdf4;
+            border: 2px solid #22c55e;
+        }
+        .comportement-card.warning {
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+        }
+        .comportement-card.danger {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+        }
+        .comportement-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        .comportement-label {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+        .comportement-value {
+            font-size: 1.3em;
+            font-weight: 800;
+        }
+        .comportement-card.good .comportement-value { color: #16a34a; }
+        .comportement-card.warning .comportement-value { color: #d97706; }
+        .comportement-card.danger .comportement-value { color: #dc2626; }
+        
+        .conseil-box {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-left: 5px solid #3b82f6;
+        }
+        .conseil-title {
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .conseil-text {
+            color: #1e3a5f;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        
         .seance-card {
             background: white;
             border-radius: 12px;
@@ -2147,6 +2263,47 @@
             if (tauxPresence < 70) presenceColor = '#dc2626'; // rouge
             else if (tauxPresence < 85) presenceColor = '#f59e0b'; // orange
             
+            // Calculer les stats de comportement
+            let bavardageCount = 0, telephoneCount = 0;
+            seancesPresent.forEach(s => {
+                if (s.bavardage && s.bavardage !== 'aucun' && s.bavardage !== 'ne') bavardageCount++;
+                if (s.telephone && s.telephone !== 'ok' && s.telephone !== 'ne') telephoneCount++;
+            });
+            
+            // Déterminer les classes CSS pour les barres
+            const getBarClass = (pct) => {
+                if (pct >= 80) return 'excellent';
+                if (pct >= 60) return 'good';
+                if (pct >= 40) return 'warning';
+                return 'danger';
+            };
+            
+            // Déterminer la classe pour comportement
+            const getBehaviorClass = (count, total) => {
+                const pct = total > 0 ? (count / total) * 100 : 0;
+                if (pct === 0) return 'good';
+                if (pct <= 20) return 'warning';
+                return 'danger';
+            };
+            
+            // Générer un conseil personnalisé
+            let conseil = '';
+            if (tendances.travail.pct < 50) {
+                conseil = "💡 Essaie de bien finir chaque activité avant de passer à autre chose. Tu peux y arriver !";
+            } else if (tendances.oral.pct < 30) {
+                conseil = "💡 N'hésite pas à participer à l'oral, même pour poser des questions. Ta voix compte !";
+            } else if (tendances.attention.pct < 50) {
+                conseil = "💡 Essaie de rester concentré pendant les explications. Une bonne attention t'aidera à progresser.";
+            } else if (bavardageCount > nbPresent * 0.3) {
+                conseil = "💡 Le bavardage peut te faire perdre des points. Essaie de te concentrer sur le cours.";
+            } else if (moyenne >= 15) {
+                conseil = "🌟 Excellent travail ! Continue comme ça, tu es sur la bonne voie !";
+            } else if (moyenne >= 12) {
+                conseil = "👍 Bon travail ! Avec un peu plus d'effort, tu peux viser encore plus haut !";
+            } else {
+                conseil = "💪 Chaque séance est une nouvelle chance de progresser. Tu peux le faire !";
+            }
+            
             let html = `
                 <div class="suivi-header">
                     <div class="suivi-stats-row">
@@ -2164,26 +2321,68 @@
                     ` : ''}
                 </div>
                 
-                <div class="tendances-grid">
-                    <div class="tendance-card">
-                        <div class="tendance-icon">📝</div>
-                        <div class="tendance-label">Travail</div>
-                        <div class="tendance-value">${tendances.travail.pct}%<span class="tendance-arrow ${tendances.travail.dir}">${tendances.travail.arrow}</span></div>
+                <!-- GRAPHIQUES VISUELS -->
+                <div class="eleve-stats-section">
+                    <div class="eleve-stats-title">📊 Mes performances</div>
+                    
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">📝 Travail</span>
+                            <span class="progress-value">${tendances.travail.pct}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${getBarClass(tendances.travail.pct)}" style="width: ${tendances.travail.pct}%"></div>
+                        </div>
                     </div>
-                    <div class="tendance-card">
-                        <div class="tendance-icon">🗣️</div>
-                        <div class="tendance-label">Oral</div>
-                        <div class="tendance-value">${tendances.oral.pct}%<span class="tendance-arrow ${tendances.oral.dir}">${tendances.oral.arrow}</span></div>
+                    
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">🗣️ Participation orale</span>
+                            <span class="progress-value">${tendances.oral.pct}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${getBarClass(tendances.oral.pct)}" style="width: ${tendances.oral.pct}%"></div>
+                        </div>
                     </div>
-                    <div class="tendance-card">
-                        <div class="tendance-icon">👁️</div>
-                        <div class="tendance-label">Attention</div>
-                        <div class="tendance-value">${tendances.attention.pct}%<span class="tendance-arrow ${tendances.attention.dir}">${tendances.attention.arrow}</span></div>
+                    
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">👁️ Attention</span>
+                            <span class="progress-value">${tendances.attention.pct}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${getBarClass(tendances.attention.pct)}" style="width: ${tendances.attention.pct}%"></div>
+                        </div>
                     </div>
-                    <div class="tendance-card">
-                        <div class="tendance-icon">📁</div>
-                        <div class="tendance-label">Matériel</div>
-                        <div class="tendance-value">${tendances.porteVue.pct}%<span class="tendance-arrow ${tendances.porteVue.dir}">${tendances.porteVue.arrow}</span></div>
+                    
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">📁 Matériel</span>
+                            <span class="progress-value">${tendances.porteVue.pct}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${getBarClass(tendances.porteVue.pct)}" style="width: ${tendances.porteVue.pct}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- COMPORTEMENT -->
+                    <div class="comportement-grid">
+                        <div class="comportement-card ${getBehaviorClass(bavardageCount, nbPresent)}">
+                            <div class="comportement-icon">💬</div>
+                            <div class="comportement-label">Bavardage</div>
+                            <div class="comportement-value">${bavardageCount === 0 ? '✅ 0' : bavardageCount + ' rappel' + (bavardageCount > 1 ? 's' : '')}</div>
+                        </div>
+                        <div class="comportement-card ${getBehaviorClass(telephoneCount, nbPresent)}">
+                            <div class="comportement-icon">📱</div>
+                            <div class="comportement-label">Téléphone</div>
+                            <div class="comportement-value">${telephoneCount === 0 ? '✅ 0' : telephoneCount + ' rappel' + (telephoneCount > 1 ? 's' : '')}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- CONSEIL PERSONNALISÉ -->
+                    <div class="conseil-box">
+                        <div class="conseil-title">💡 Conseil</div>
+                        <div class="conseil-text">${conseil}</div>
                     </div>
                 </div>
                 
