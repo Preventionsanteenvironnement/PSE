@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PSE - L'analyse d'une situation de travail (Module C11)</title>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://preventionsanteenvironnement.github.io">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -132,7 +135,7 @@
         }
     </style>
 </head>
-<body>
+<body data-id-exercice="devoir_qcm_analyse_travail_c11_2026_02_v1">
 <div class="container">
     <div class="header">
         <h1>L'analyse d'une situation de travail</h1>
@@ -466,7 +469,8 @@
 
     <!-- ENVOI -->
     <div class="submit-section">
-        <button class="submit-btn" id="btn-envoyer" onclick="lancerEnvoi()">Envoyer au prof</button>
+        <button class="submit-btn" id="btn-envoyer" onclick="window.tenterEnvoi()" disabled style="opacity:0.5;cursor:wait;">Chargement...</button>
+        <p id="envoi-status" style="text-align:center;font-size:0.85em;color:#94a3b8;margin-top:8px;">Le systeme d'envoi est en cours de chargement...</p>
     </div>
     <div class="paste-alert" id="paste-alert">Attention : le copier-coller depuis un document source a ete detecte.</div>
 
@@ -478,30 +482,117 @@
     const DEVOIR_ID = "devoir_qcm_analyse_travail_c11_2026_02_v1";
     localStorage.setItem('devoir_start_time_' + DEVOIR_ID, Date.now());
 
-    function lancerEnvoi() {
-        if (typeof window.tenterEnvoi === 'function') {
-            window.tenterEnvoi();
-        } else {
-            alert("Le systeme d'envoi est en cours de chargement. Veuillez patienter quelques secondes puis reessayer.");
+    /* ====================================================
+       tenterEnvoi() — wrapper autour de envoyerCopie()
+       Le runner (pse-runner.js) expose window.envoyerCopie
+       C'est ici qu'on definit tenterEnvoi.
+    ==================================================== */
+    window.tenterEnvoi = function() {
+        var btn = document.getElementById('btn-envoyer');
+        var codeInput = document.getElementById('code-eleve');
+        var code = (codeInput.value || '').trim().toUpperCase();
+
+        /* 1. Validation du code eleve */
+        if (!code || code.length < 2) {
+            alert("Veuillez d'abord saisir votre code eleve.");
+            codeInput.focus();
+            return;
         }
+
+        /* 2. Anti-doublon : verrou localStorage */
+        var lockKey = 'copie_envoyee_' + DEVOIR_ID + '_' + code;
+        if (localStorage.getItem(lockKey)) {
+            alert("Vous avez deja envoye votre copie pour ce devoir.");
+            return;
+        }
+
+        /* 3. Verifier que envoyerCopie est disponible */
+        if (typeof window.envoyerCopie !== 'function') {
+            alert("Le systeme d'envoi n'est pas pret. Rechargez la page et reessayez.");
+            return;
+        }
+
+        executerEnvoi(code, lockKey, btn);
+    };
+
+    function executerEnvoi(code, lockKey, btn) {
+        /* Desactiver le bouton immediatement */
+        btn.disabled = true;
+        btn.textContent = "Envoi en cours...";
+        btn.style.opacity = "0.6";
+
+        /* Collecter les pasteStats */
+        var pasteStats = { total: 0, external: 0, document: 0 };
+        try {
+            var stored = localStorage.getItem('paste_log_' + DEVOIR_ID);
+            if (stored) pasteStats = JSON.parse(stored);
+        } catch(e) {}
+
+        /* Recuperer les donnees eleve */
+        var eleveData = window.eleveData || { code: code, classe: "?" };
+
+        /* Appeler envoyerCopie du runner */
+        window.envoyerCopie(code, pasteStats, eleveData)
+            .then(function() {
+                localStorage.setItem(lockKey, Date.now().toString());
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = "Envoyer au prof";
+                btn.style.opacity = "1";
+                console.error("Erreur envoi:", err);
+            });
     }
-</script>
-<script type="module">
-    import("https://preventionsanteenvironnement.github.io/PSE/annuaire.js")
-        .then(async () => {
-            if(typeof window.demanderCode === 'function') {
-                const user = await window.demanderCode("L'analyse d'une situation de travail");
-                if(user && user.code) {
-                    document.getElementById('code-eleve').value = user.code;
-                    window.eleveData = user;
+
+    /* ====================================================
+       Deblocage du bouton quand le runner est pret
+       Verifie toutes les 300ms pendant 30 secondes max
+    ==================================================== */
+    (function activerBoutonQuandPret() {
+        var tentatives = 0;
+        var timer = setInterval(function() {
+            tentatives++;
+            if (typeof window.envoyerCopie === 'function') {
+                clearInterval(timer);
+                var btn = document.getElementById('btn-envoyer');
+                var status = document.getElementById('envoi-status');
+                btn.disabled = false;
+                btn.textContent = "Envoyer au prof";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                if (status) status.textContent = "";
+                console.log("Bouton Envoyer active (runner pret)");
+            } else if (tentatives > 100) {
+                clearInterval(timer);
+                var status = document.getElementById('envoi-status');
+                if (status) {
+                    status.textContent = "Le systeme d'envoi n'a pas pu se charger. Rechargez la page.";
+                    status.style.color = "#e53e3e";
                 }
+                console.warn("Runner non charge apres 30s");
             }
-        })
-        .catch(err => console.warn("Annuaire non disponible :", err));
+        }, 300);
+    })();
 </script>
+
 <script type="module">
-    import("https://preventionsanteenvironnement.github.io/PSE/assets/pse-runner.js")
-        .catch(err => console.warn("pse-runner non disponible :", err));
+    /* --- Annuaire : identification eleve --- */
+    try {
+        await import("https://preventionsanteenvironnement.github.io/PSE/annuaire.js");
+        if (typeof window.demanderCode === 'function') {
+            const user = await window.demanderCode("L'analyse d'une situation de travail");
+            if (user && user.code) {
+                document.getElementById('code-eleve').value = user.code;
+                window.eleveData = user;
+            }
+        }
+    } catch(err) { console.warn("Annuaire non disponible :", err); }
+
+    /* --- Runner : systeme d'envoi --- */
+    try {
+        await import("https://preventionsanteenvironnement.github.io/PSE/assets/pse-runner.js");
+        console.log("pse-runner charge — envoyerCopie disponible :", typeof window.envoyerCopie === 'function');
+    } catch(err) { console.warn("pse-runner non disponible :", err); }
 </script>
 </body>
 </html>
