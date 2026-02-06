@@ -4,6 +4,8 @@
 // Date : 26 janvier 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
 // ════════════════════════════════════════════════════════════════════════
+window.PSE_BASE = new URL(".", import.meta.url).href;
+console.log("PSE_BASE =", window.PSE_BASE);
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
