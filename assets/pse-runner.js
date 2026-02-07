@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.1 (RGPD COMPLIANT)
+// pse-runner.js - Version 7.2 (RGPD COMPLIANT)
 // Collection : resultats/{eleveCode}/copies/{docId}
 // Date : 07 février 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
@@ -17,7 +17,7 @@ const firebaseConfig = {
   appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
 
-const RUNNER_VERSION = "7.1";
+const RUNNER_VERSION = "7.2";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -25,7 +25,10 @@ const db = getFirestore(app);
 // exposition pour annuaire.js / cockpit
 window.db = db;
 window.PSE_DB = db;
-window.dispatchEvent(new Event("pse-db-ready"));
+window.__PSE_DB_READY = true;
+// double signal (immédiat + async) pour éviter le cas où annuaire.js est déjà chargé
+try { window.dispatchEvent(new Event("pse-db-ready")); } catch {}
+setTimeout(() => { try { window.dispatchEvent(new Event("pse-db-ready")); } catch {} }, 0);
 
 let _visibilityChanges = 0;
 let _blurCount = 0;
@@ -98,6 +101,22 @@ function showStartWarningOnce() {
   card.querySelector("#pseStartOk").addEventListener("click", () => overlay.remove());
 }
 
+function ensurePasteBanner() {
+  let box = document.getElementById("paste-alert");
+  if (box) return box;
+
+  box = document.createElement("div");
+  box.id = "paste-alert";
+  box.textContent = "Attention : le copier-coller est surveillé.";
+  box.style.cssText =
+    "display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:999998;" +
+    "padding:10px 14px;border-radius:12px;border:2px solid #ff9800;" +
+    "background:#fff3e0;color:#7a3e00;font-family:Arial;font-weight:700;text-align:center;" +
+    "box-shadow:0 10px 30px rgba(0,0,0,.15);";
+  document.body.appendChild(box);
+  return box;
+}
+
 function installExternalPasteWarningIfMissing() {
   // si le master gère déjà le collage + stats, ne rien modifier
   if (typeof window.getPasteStats === "function" || window.__PSE_PASTE_GUARD_INSTALLED) return;
@@ -138,11 +157,9 @@ function installExternalPasteWarningIfMissing() {
     bumpExternalPaste(e.target);
     e.preventDefault();
 
-    const box = document.getElementById("paste-alert");
-    if (box) {
-      box.style.display = "block";
-      box.textContent = "Attention : le copier-coller est surveillé (collage externe détecté).";
-    }
+    const box = ensurePasteBanner();
+    box.style.display = "block";
+    box.textContent = "Attention : le copier-coller est surveillé (collage externe détecté).";
 
     alert(msg);
   }, true);
@@ -155,12 +172,23 @@ function readPasteStatsFallback() {
   try { return JSON.parse(raw); } catch { return { total: 0, external: 0, document: 0 }; }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  ensureStartTime();
-  showStartWarningOnce();
-  installExternalPasteWarningIfMissing();
-  await ensureEleveCode();
-});
+async function initRunner() {
+  try {
+    ensureStartTime();
+    showStartWarningOnce();
+    installExternalPasteWarningIfMissing();
+    await ensureEleveCode();
+  } catch (e) {
+    console.warn("Init runner: ", e);
+  }
+}
+
+// IMPORTANT : si le module se charge après DOMContentLoaded, on initialise quand même
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initRunner, { once: true });
+} else {
+  initRunner();
+}
 
 console.log(`🚀 PSE Runner v${RUNNER_VERSION} RGPD - Structure : resultats/{eleveCode}/copies/`);
 
@@ -178,12 +206,8 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       eleveInfo.code = recovered;
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // COLLECTE DES RÉPONSES
-    // ════════════════════════════════════════════════════════════════
     const reponses = {};
 
-    // 1. Textarea et inputs avec data-qid
     document.querySelectorAll(".reponse-eleve").forEach((el, idx) => {
       const qid = el.dataset.qid;
 
@@ -198,6 +222,8 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         } else {
           value = (el.value || "").trim();
         }
+      } else if (el.tagName === "SELECT") {
+        value = (el.value || "").trim();
       }
 
       if (!value) return;
@@ -227,7 +253,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       }
     });
 
-    // 2. QCM checkboxes (ancienne classe)
     document.querySelectorAll(".save-me-qcm:checked").forEach((el) => {
       const qid = el.dataset.qid;
       const label = el.closest("label")?.textContent?.trim() || el.value;
@@ -240,7 +265,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       }
     });
 
-    // 3. Matching (reliage)
     document.querySelectorAll(".save-me-match").forEach((el) => {
       const questionBlock = el.closest(".question-block");
       const qidFromBlock = questionBlock?.querySelector("[data-qid]")?.dataset.qid;
@@ -258,7 +282,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       }
     });
 
-    // 4. Textes à trous
     document.querySelectorAll(".trou-eleve").forEach((el, i) => {
       const questionBlock = el.closest(".question-block");
       const qidFromBlock = questionBlock?.querySelector("[data-qid]")?.dataset.qid;
@@ -275,30 +298,21 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       }
     });
 
-    // 5. Matrice de risque
     document.querySelectorAll(".risk-cell-value").forEach((el) => {
       const qid = el.dataset.qid;
       if (qid && el.value) reponses[qid + "_matrice"] = el.value;
     });
 
-    // 6. Radios de décision
     document.querySelectorAll('input[type="radio"][name*="decision"]:checked').forEach((el) => {
       const qid = el.dataset.qid;
       if (qid) reponses[qid + "_decision"] = el.value;
     });
 
-    // 7. Radios de gravité
     document.querySelectorAll('input[type="radio"][name*="grav"]:checked').forEach((el) => {
       const qid = el.dataset.qid;
       if (qid && !reponses[qid + "_gravite"]) reponses[qid + "_gravite"] = el.value;
     });
 
-    console.log("📋 Réponses collectées:", reponses);
-    console.log("📊 Nombre de réponses:", Object.keys(reponses).length);
-
-    // ════════════════════════════════════════════════════════════════
-    // CALCUL DES COMPÉTENCES (si barèmes présents)
-    // ════════════════════════════════════════════════════════════════
     const competences = {};
     let totalPoints = 0, maxPoints = 0;
 
@@ -324,9 +338,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
 
     const noteSur20 = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 20 * 10) / 10 : 0;
 
-    // ════════════════════════════════════════════════════════════════
-    // TEMPS ET MÉTADONNÉES
-    // ════════════════════════════════════════════════════════════════
     const devoirId = getDevoirId();
     const startKey = "devoir_start_time_" + devoirId;
     const startTime = parseInt(localStorage.getItem(startKey) || "") || Date.now();
@@ -334,9 +345,6 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
 
     const titre = getTitre();
 
-    // ════════════════════════════════════════════════════════════════
-    // DATA RGPD
-    // ════════════════════════════════════════════════════════════════
     const usedPasteStats = pasteStats
       || (typeof window.getPasteStats === "function" ? window.getPasteStats() : readPasteStatsFallback());
 
@@ -378,14 +386,8 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       ts: Date.now()
     };
 
-    // ════════════════════════════════════════════════════════════════
-    // ÉCRITURE FIRESTORE
-    // ════════════════════════════════════════════════════════════════
     const docId = `${devoirId}_${Date.now()}`;
     await setDoc(doc(db, "resultats", finalCode, "copies", docId), data);
-
-    console.log("✅ Envoyé dans: ", `resultats/${finalCode}/copies/${docId}`);
-    console.log("📦 Data:", data);
 
     alert(
       "✅ COPIE ENVOYÉE !\n\n" +
@@ -394,11 +396,9 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
       "📊 Réponses: " + Object.keys(reponses).length
     );
 
-    // Nettoyage localStorage
     localStorage.removeItem("paste_log_" + devoirId);
     localStorage.removeItem(startKey);
 
-    // Écran de confirmation
     document.body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
         <div style="font-size:4rem;">✅</div>
