@@ -4,8 +4,6 @@
 // Date : 26 janvier 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
 // ════════════════════════════════════════════════════════════════════════
-window.PSE_BASE = new URL(".", import.meta.url).href;
-console.log("PSE_BASE =", window.PSE_BASE);
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -21,6 +19,136 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const RUNNER_VERSION = "7.1";
+let _visibilityChanges = 0;
+let _blurCount = 0;
+
+document.addEventListener("visibilitychange", () => { _visibilityChanges++; }, true);
+window.addEventListener("blur", () => { _blurCount++; }, true);
+
+function getDevoirId() {
+  return document.body?.dataset?.idExercice || "unknown";
+}
+
+function getTitre() {
+  return document.querySelector(".main-title-editable")?.textContent?.trim()
+    || document.querySelector("h1")?.textContent?.trim()
+    || document.title?.trim()
+    || "Devoir PSE";
+}
+
+async function ensureEleveCode() {
+  const inp = document.getElementById("code-eleve");
+  const existing = (inp?.value || "").trim();
+  if (existing && existing.length >= 2) return existing.toUpperCase();
+
+  if (typeof window.demanderCode === "function") {
+    // évite les boucles infinies si l'élève ferme la modale
+    if (window.__PSE_CODE_PROMPT_DONE) return null;
+    window.__PSE_CODE_PROMPT_DONE = true;
+
+    const user = await window.demanderCode(getTitre());
+    const code = (user?.code || "").trim();
+    if (code && code.length >= 2) {
+      if (inp) inp.value = code.toUpperCase();
+      window.eleveData = user;
+      return code.toUpperCase();
+    }
+  }
+  return null;
+}
+
+function showStartWarningOnce() {
+  if (window.__PSE_START_WARNING_SHOWN) return;
+  window.__PSE_START_WARNING_SHOWN = true;
+
+  if (document.body?.dataset?.pseStartWarning === "off") return;
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  const card = document.createElement("div");
+  card.style.cssText = "background:#fff;border-radius:14px;max-width:560px;width:100%;padding:18px 18px 14px;font-family:Arial;box-shadow:0 10px 40px rgba(0,0,0,.35);";
+  card.innerHTML = `
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">Avant de commencer</div>
+    <div style="font-size:.95rem;line-height:1.4;color:#111827;">
+      Travail personnel. Le collage externe n’est pas autorisé.
+      <br><br>
+      En cas de collage externe, un avertissement s’affiche et c’est comptabilisé.
+      <div style="margin-top:10px;color:#6b7280;font-size:.9rem;">Clique sur Continuer pour démarrer.</div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">
+      <button id="pseStartOk" style="background:#111827;color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;">Continuer</button>
+    </div>
+  `;
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  card.querySelector("#pseStartOk").addEventListener("click", () => overlay.remove());
+}
+
+function installExternalPasteWarningIfMissing() {
+  // si le master gère déjà le collage + stats, on ne touche pas
+  if (typeof window.getPasteStats === "function" || window.__PSE_PASTE_GUARD_INSTALLED) return;
+  window.__PSE_PASTE_GUARD_INSTALLED = true;
+
+  const devoirId = getDevoirId();
+  const KEY = "paste_log_" + devoirId;
+  const msg = "Collage externe détecté : ce n’est pas autorisé. Tape ta réponse.";
+
+  function isExternalPaste(e) {
+    try {
+      const dt = e.clipboardData;
+      if (!dt) return true;
+      const html = dt.getData("text/html") || "";
+      // convention : le master peut marquer les copies internes
+      return !html.includes('data-origin="pse-document"');
+    } catch {
+      return true;
+    }
+  }
+
+  function bumpExternalPaste(target) {
+    const raw = localStorage.getItem(KEY);
+    const st = raw ? JSON.parse(raw) : { total: 0, external: 0, document: 0, details: [] };
+    st.total++;
+    st.external++;
+    st.details = st.details || [];
+    st.details.push({
+      ts: Date.now(),
+      id: target?.id || null,
+      qid: target?.dataset?.qid || null
+    });
+    localStorage.setItem(KEY, JSON.stringify(st));
+  }
+
+  document.addEventListener("paste", (e) => {
+    if (!isExternalPaste(e)) return;
+    bumpExternalPaste(e.target);
+    e.preventDefault();
+    alert(msg);
+  }, true);
+}
+
+function readPasteStatsFallback() {
+  const devoirId = getDevoirId();
+  const raw = localStorage.getItem("paste_log_" + devoirId);
+  if (!raw) return { total: 0, external: 0, document: 0 };
+  try { return JSON.parse(raw); } catch { return { total: 0, external: 0, document: 0 }; }
+}
+
+function ensureStartTime() {
+  const devoirId = getDevoirId();
+  const key = "devoir_start_time_" + devoirId;
+  if (!localStorage.getItem(key)) localStorage.setItem(key, String(Date.now()));
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  ensureStartTime();
+  showStartWarningOnce();
+  installExternalPasteWarningIfMissing();
+  await ensureEleveCode();
+});
+
+
 console.log("🚀 PSE Runner v7.0 RGPD - Structure : resultats/{eleveCode}/copies/");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
@@ -31,7 +159,8 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
         const eleveCode = (eleveInfo.code || code).toUpperCase().trim();
         
         if (!eleveCode || eleveCode.length < 2) {
-            throw new Error("Code élève invalide");
+            const recovered = await ensureEleveCode();
+            if (!recovered) throw new Error("Code élève invalide");
         }
         
         // ════════════════════════════════════════════════════════════════
@@ -238,7 +367,19 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             
             // Métadonnées
             temps_secondes: tempsSecondes,
-            pasteStats: pasteStats || { total: 0, external: 0, document: 0 },
+            pasteStats: pasteStats || (typeof window.getPasteStats === "function" ? window.getPasteStats() : readPasteStatsFallback()),
+
+            meta: {
+              runnerVersion: RUNNER_VERSION,
+              masterVersion: document.body?.dataset?.masterVersion || "unknown",
+              startedAtISO: new Date(parseInt(localStorage.getItem('devoir_start_time_' + devoirId)) || Date.now()).toISOString(),
+              durationSec: tempsSecondes,
+              visibilityChanges: _visibilityChanges,
+              blurCount: _blurCount,
+              sendAttempts: (window.__PSE_SEND_ATTEMPTS = (window.__PSE_SEND_ATTEMPTS || 0) + 1),
+              answeredCount: Object.keys(reponses).length,
+              totalQuestions: document.querySelectorAll(".question-block").length
+            },
             
             // Timestamps
             createdAt: serverTimestamp(),
