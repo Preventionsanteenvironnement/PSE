@@ -18,6 +18,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+window.db = db;
+window.PSE_DB = db;
 
 const RUNNER_VERSION = "7.1";
 let _visibilityChanges = 0;
