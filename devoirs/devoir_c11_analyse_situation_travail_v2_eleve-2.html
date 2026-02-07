@@ -412,7 +412,7 @@
 
     // ═══ ENVOI AVEC ANTI-DOUBLON ═══
     window.tenterEnvoi = async function() {
-      const btn = document.getElementById("btnSend");
+      const btn = document.getElementById("btn-envoi");
       const data = validateBeforeSend();
       if (!data) return;
 
@@ -479,7 +479,7 @@
       if (codeField && codeField.value) {
         const envoyeKey = "copie_envoyee_" + DEVOIR_ID + "_" + codeField.value.trim().toUpperCase();
         if (localStorage.getItem(envoyeKey)) {
-          const btn = document.getElementById("btnSend");
+          const btn = document.getElementById("btn-envoi");
           if (btn) { btn.disabled = true; btn.textContent = "✅ Déjà envoyé"; }
           setStatus("✅ Copie déjà envoyée.");
         }
@@ -489,38 +489,6 @@
         setStatus("Ouvre ce devoir depuis une URL https (GitHub Pages), pas depuis un fichier local.");
       }
     });
-  </script>
-
-  <!-- Charger l'annuaire -->
-  <script type="module">
-    import("............/annuaire.js")
-      .then(async () => {
-        if (typeof window.demanderCode === "function") {
-          const user = await window.demanderCode("Évaluation PSE – Module C11 – Analyse d’une situation de travail");
-          if (user && user.code) {
-            const codeField = document.getElementById("code-eleve");
-            if (codeField) codeField.value = user.code;
-            window.eleveData = user;
-          }
-        }
-      })
-      .catch(() => {
-        // annuaire optionnel
-      });
-  </script>
-
-  <!-- Charger le runner -->
-  <script type="module">
-    import("../assets/pse-runner.js")
-      .then(() => {
-        // runner chargé, rien à afficher
-      })
-      .catch(() => {
-        const btn = document.getElementById("btnSend");
-        if (btn) btn.disabled = true;
-        const el = document.getElementById("statusMsg");
-        if (el) el.textContent = "Envoi indisponible : script runner non chargé.";
-      });
   </script>
 </head>
 
@@ -747,11 +715,54 @@
 
         <div class="submit-zone">
           <div class="status" id="statusMsg"></div>
-          <button class="submit-btn" id="btnSend" onclick="window.tenterEnvoi()">Envoyer au prof</button>
+          <button class="submit-btn" id="btn-envoi" type="button">Envoyer au prof</button>
         </div>
 
       </div>
     </section>
   </div>
+
+<script type="module">
+    // VERSION FIXÉE : Anti-cache + chemins corrects
+    const V = "20260207_1200_FIX_C11_V2";
+    const BASE = new URL(".", import.meta.url);
+
+    try {
+        console.log("1. Chargement du MOTEUR (Runner + Firebase)...");
+        // Chargement runner
+        await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
+
+        console.log("2. Chargement de l'ANNUAIRE...");
+        // Chargement annuaire
+        await import(new URL("../annuaire.js?v=" + V, BASE));
+
+        // Initialisation Annuaire si dispo
+        if (typeof window.demanderCode === 'function') {
+            const user = await window.demanderCode("Évaluation PSE – Module C11 – Analyse d’une situation de travail");
+            if (user && user.code) {
+                const codeField = document.getElementById("code-eleve");
+                if (codeField) codeField.value = user.code;
+                window.eleveData = user;
+            }
+        }
+
+        // Raccorder le bouton Envoyer au listener
+        const btn = document.getElementById("btn-envoi");
+        if (btn) {
+            btn.addEventListener("click", () => {
+                if (typeof window.tenterEnvoi === "function") {
+                    window.tenterEnvoi();
+                } else {
+                    alert("Le système d'envoi n'est pas prêt. Rechargez la page.");
+                }
+            });
+        }
+
+    } catch (e) {
+        console.error("Erreur critique de chargement :", e);
+        const status = document.getElementById("statusMsg");
+        if(status) status.textContent = "Erreur de chargement système (Imports).";
+    }
+</script>
 </body>
 </html>
