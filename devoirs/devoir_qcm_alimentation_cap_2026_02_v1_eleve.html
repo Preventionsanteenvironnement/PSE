@@ -208,55 +208,75 @@
     if (d && !d.value) d.valueAsDate = new Date();
   </script>
 
-  <script type="module">
-    const V = "20260207_0945";
+ <script type="module">
+    // VERSION MANUELLE (A incrémenter si tu modifies les JS)
+    const V = "20260207_1030_FIX"; 
+    
+    // Détection base URL (suppose que ce fichier est dans /devoirs/)
     const BASE = new URL(".", import.meta.url);
 
-    function hardFail(msg){
-      alert(msg);
+    // Fonction d'affichage d'erreur critique
+    function hardFail(msg, err) {
+      console.error("[Boot Error] " + msg, err || "");
+      alert("⚠️ " + msg);
       const box = document.getElementById("paste-alert");
       if (box) {
         box.textContent = msg;
         box.style.display = "block";
-        box.style.background = "#fff0f0";
-        box.style.borderColor = "#ffb4b4";
-        box.style.color = "#7a1a1a";
+        box.style.background = "#fee2e2";
+        box.style.borderColor = "#ef4444";
+        box.style.color = "#991b1b";
       }
-      console.error(msg);
     }
 
-    // IMPORTANT: runner d’abord (Firebase prêt), annuaire ensuite (mouchard OK)
-    await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
-    await import(new URL("../annuaire.js?v=" + V, BASE));
-
-    // compat: au cas où un ancien HTML appelle encore tenterEnvoi()
-    window.tenterEnvoi = async () => {
-      const code = (document.getElementById("code-eleve")?.value || "").trim();
-      return window.envoyerCopie(code, null, window.eleveData);
-    };
-
-    // demande code si dispo (annuaire chargé)
-    if (typeof window.demanderCode === "function" && typeof window.PSE_ensureEleveCode === "function") {
-      await window.PSE_ensureEleveCode();
-    }
-
-    const btn = document.getElementById("btn-envoi");
-    btn.addEventListener("click", async () => {
+    async function boot() {
       try {
+        console.log("1. Chargement Annuaire...");
+        // On charge l'annuaire D'ABORD pour que demanderCode soit dispo
+        await import(new URL("../annuaire.js?v=" + V, BASE));
+
+        console.log("2. Chargement Runner v7.4.1...");
+        await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
+
+        // Vérification de sécurité
         if (typeof window.envoyerCopie !== "function") {
-          return hardFail("Erreur : pse-runner.js n’est pas chargé (envoyerCopie manquant). Vérifie /assets/pse-runner.js");
+          throw new Error("Le moteur d'envoi (pse-runner.js) ne s'est pas initialisé correctement.");
         }
-        btn.disabled = true;
-        btn.textContent = "Envoi…";
-        await window.tenterEnvoi();
+
+        console.log("✅ Système PSE prêt.");
+
+        // Gestion du Bouton
+        const btn = document.getElementById("btn-envoi");
+        if (btn) {
+          // On nettoie tout comportement précédent
+          btn.removeAttribute("onclick");
+          btn.type = "button";
+          
+          btn.addEventListener("click", async () => {
+            try {
+              btn.disabled = true;
+              btn.textContent = "Envoi en cours...";
+              
+              // On appelle la fonction du runner
+              await window.envoyerCopie();
+              
+              // Note: Si succès, le runner remplace le body, donc pas besoin de réactiver le btn
+            } catch (e) {
+              console.error(e);
+              alert("❌ Erreur lors de l'envoi : " + (e.message || e));
+              btn.disabled = false;
+              btn.textContent = "Réessayer l'envoi";
+            }
+          });
+        }
+
       } catch (e) {
-        console.error(e);
-        hardFail("Erreur d’envoi : " + (e?.message || e));
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Envoyer au prof";
+        hardFail("Erreur technique : Le système ne peut pas démarrer.\nVérifiez votre connexion internet.", e);
       }
-    });
+    }
+
+    // Démarrage
+    boot();
   </script>
 </body>
 </html>
