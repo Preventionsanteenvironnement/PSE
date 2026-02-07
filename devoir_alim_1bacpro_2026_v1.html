@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évaluation PSE - Alimentation et Santé - 1ère Bac Pro</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --light: #ecf0f1;
+            --success: #27ae60;
+            --danger: #e74c3c;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f7f6;
+        }
+        .header-eval {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 4px solid var(--accent);
+        }
+        .student-info {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        input[type="text"], select {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        #code-eleve {
+            border: 2px solid var(--accent);
+            font-weight: bold;
+            text-align: center;
+            width: 150px;
+        }
+        
+        /* DOCUMENTS */
+        .doc-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .document {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.95rem;
+        }
+        .doc-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            display: block;
+        }
+        .plate-schema {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 50%;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            position: relative;
+            border: 3px solid #ddd;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        .plate-half { position: absolute; top: 0; left: 0; width: 100%; height: 50%; border-bottom: 2px dashed #999; display: flex; align-items: center; justify-content: center; background: #e8f8f5; border-radius: 100px 100px 0 0; }
+        .plate-quarter-1 { position: absolute; bottom: 0; left: 0; width: 50%; height: 50%; border-right: 2px dashed #999; display: flex; align-items: center; justify-content: center; background: #fef9e7; border-radius: 0 0 0 100px; }
+        .plate-quarter-2 { position: absolute; bottom: 0; right: 0; width: 50%; height: 50%; display: flex; align-items: center; justify-content: center; background: #fdedec; border-radius: 0 0 100px 0; }
+
+        /* QUESTIONS */
+        .question-block {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .question-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .q-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .q-label {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .q-comp {
+            background: var(--light);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .q-points {
+            margin-left: auto;
+            font-weight: bold;
+            color: var(--accent);
+        }
+        .q-text {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .q-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .q-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .q-option:hover { background: #e9ecef; }
+        .q-option input { margin-top: 4px; }
+        
+        .comp-display { display: none; } /* Caché mais requis par runner */
+
+        .submit-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+        .submit-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .submit-btn:hover {
+            transform: scale(1.05);
+            background: #219150;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .doc-container { grid-template-columns: 1fr; }
+            .container { padding: 10px; }
+            .question-block { padding: 15px; margin-bottom: 15px; }
+            .q-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+            .q-points { margin-left: 0; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 5px; }
+            input[type="checkbox"], input[type="radio"] { transform: scale(1.3); }
+            .plate-schema { width: 150px; height: 150px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-eval">
+        <h1>Évaluation Alimentation & Santé</h1>
+        <p><strong>Module :</strong> Prévention Santé Environnement</p>
+        <p><strong>Niveau :</strong> 1ère Bac Pro</p>
+        <div class="student-info">
+            <input type="text" id="code-eleve" placeholder="Votre CODE" autocomplete="off">
+            <input type="text" placeholder="Votre Nom (facultatif)" readonly style="background:#f0f0f0; color:#999;">
+        </div>
+    </div>
+
+    <div class="doc-container">
+        <div class="document">
+            <span class="doc-title">Document 1 : Les principes nutritionnels</span>
+            <p><strong>Les besoins de l'organisme :</strong><br>
+            Notre corps a besoin de manger pour satisfaire trois types de besoins :
+            <ul>
+                <li>Besoins fonctionnels</li>
+                <li>Besoins bâtisseurs</li>
+                <li>Besoins énergétiques</li>
+            </ul>
+            Ces besoins varient selon : l'âge, le sexe, l'activité physique et l'état physiologique (ex: grossesse).</p>
+            <hr>
+            <p><strong>Les 3 règles d'or :</strong>
+            <ol>
+                <li>Manger 5 fruits et légumes par jour</li>
+                <li>Limiter : sel, sucre, ultra-transformés, viande rouge</li>
+                <li>Privilégier le "fait maison"</li>
+            </ol>
+            </p>
+        </div>
+
+        <div class="document">
+            <span class="doc-title">Document 2 : Composition idéale du repas</span>
+            <div class="plate-schema">
+                <div class="plate-half">LÉGUMES<br>(1/2)</div>
+                <div class="plate-quarter-1">FÉCULENTS<br>(1/4)</div>
+                <div class="plate-quarter-2">VIANDE<br>POISSON<br>OEUFS<br>(1/4)</div>
+            </div>
+            <p style="text-align:center; font-size:0.9rem; margin-top:10px;">
+                + Eau, Produit laitier et Fruit
+            </p>
+        </div>
+        
+        <div class="document" style="grid-column: 1 / -1;">
+            <span class="doc-title">Document 3 : Conséquences des erreurs alimentaires</span>
+            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                <tr style="background:#eee;">
+                    <th style="border:1px solid #ddd; padding:8px;">Erreurs</th>
+                    <th style="border:1px solid #ddd; padding:8px;">Conséquences Santé</th>
+                    <th style="border:1px solid #ddd; padding:8px;">Conséquences Travail</th>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ddd; padding:8px;">Pas de petit-déjeuner</td>
+                    <td style="border:1px solid #ddd; padding:8px;">Hypoglycémie, carences</td>
+                    <td style="border:1px solid #ddd; padding:8px;">Fatigue, baisse rendement</td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ddd; padding:8px;">Grignotage / Trop gras / Trop sucré</td>
+                    <td style="border:1px solid #ddd; padding:8px;">Surpoids, maladies cardiovasculaires, diabète</td>
+                    <td style="border:1px solid #ddd; padding:8px;">Baisse de vigilance, risque d'accident</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q1_besoins">
+        <div class="q-header">
+            <span class="q-label">1</span>
+            <span class="q-comp">C1</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C1</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Repérer</strong> les trois catégories de besoins nutritionnels cités dans le document 1 en cochant les bonnes réponses.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="fonctionnels" data-qid="q1_besoins"> Besoins fonctionnels</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="financiers" data-qid="q1_besoins"> Besoins financiers</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="batisseurs" data-qid="q1_besoins"> Besoins bâtisseurs</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="energetiques" data-qid="q1_besoins"> Besoins énergétiques</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="sociaux" data-qid="q1_besoins"> Besoins sociaux</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q2_facteurs">
+        <div class="q-header">
+            <span class="q-label">2</span>
+            <span class="q-comp">C1</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C1</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Identifier</strong> les facteurs faisant varier les besoins nutritionnels (Document 1) en cochant les 3 bonnes réponses.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="age" data-qid="q2_facteurs"> L'âge</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="meteo" data-qid="q2_facteurs"> La météo</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="sexe" data-qid="q2_facteurs"> Le sexe</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="activite" data-qid="q2_facteurs"> L'activité physique</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q3_assiette_legumes">
+        <div class="q-header">
+            <span class="q-label">3</span>
+            <span class="q-comp">C1</span>
+            <span class="q-points">1 pt</span>
+        </div>
+        <span class="comp-display">C1</span>
+        <input type="hidden" class="point-input" value="1">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Relever</strong> la proportion exacte de légumes recommandée dans l'assiette idéale (Document 2) en cochant la bonne réponse.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q3" class="reponse-eleve" value="quart" data-qid="q3_assiette_legumes"> 1/4 de l'assiette</label>
+            <label class="q-option"><input type="radio" name="q3" class="reponse-eleve" value="demi" data-qid="q3_assiette_legumes"> 1/2 de l'assiette</label>
+            <label class="q-option"><input type="radio" name="q3" class="reponse-eleve" value="tiers" data-qid="q3_assiette_legumes"> 1/3 de l'assiette</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q4_limiter">
+        <div class="q-header">
+            <span class="q-label">4</span>
+            <span class="q-comp">C1</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C1</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Identifier</strong> les aliments ou comportements à limiter selon le document 1 en cochant les 3 bonnes réponses.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="sel_sucre" data-qid="q4_limiter"> Les aliments salés et sucrés</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="eau" data-qid="q4_limiter"> La consommation d'eau</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="ultra" data-qid="q4_limiter"> Les produits ultra-transformés</label>
+            <label class="q-option"><input type="checkbox" class="reponse-eleve" value="charcuterie" data-qid="q4_limiter"> La charcuterie</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q5_analyse_menu">
+        <div class="q-header">
+            <span class="q-label">5</span>
+            <span class="q-comp">C2</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C2</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Analyser</strong> le menu suivant : <em>Steak haché (150g) + Pâtes au beurre + Yaourt nature</em>. <br><strong>Identifier</strong> l'élément manquant principal par rapport à l'assiette idéale (Document 2).</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q5" class="reponse-eleve" value="proteines" data-qid="q5_analyse_menu"> Il manque des protéines</label>
+            <label class="q-option"><input type="radio" name="q5" class="reponse-eleve" value="feculents" data-qid="q5_analyse_menu"> Il manque des féculents</label>
+            <label class="q-option"><input type="radio" name="q5" class="reponse-eleve" value="legumes" data-qid="q5_analyse_menu"> Il manque des légumes</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q6_grignotage">
+        <div class="q-header">
+            <span class="q-label">6</span>
+            <span class="q-comp">C2</span>
+            <span class="q-points">1 pt</span>
+        </div>
+        <span class="comp-display">C2</span>
+        <input type="hidden" class="point-input" value="1">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text">Situation : Lucas mange une barre chocolatée à 10h et un paquet de chips à 16h tous les jours.<br><strong>Identifier</strong> l'erreur alimentaire commise (Document 3).</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q6" class="reponse-eleve" value="saut_repas" data-qid="q6_grignotage"> Saut de repas</label>
+            <label class="q-option"><input type="radio" name="q6" class="reponse-eleve" value="grignotage" data-qid="q6_grignotage"> Grignotage entre les repas</label>
+            <label class="q-option"><input type="radio" name="q6" class="reponse-eleve" value="exces_legumes" data-qid="q6_grignotage"> Excès de légumes</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q7_consequences_travail">
+        <div class="q-header">
+            <span class="q-label">7</span>
+            <span class="q-comp">C3</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C3</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Relier</strong> l'erreur "Manger trop gras/sucré" à sa conséquence directe sur l'activité professionnelle (Document 3) en sélectionnant la bonne réponse.</div>
+        <div class="q-options">
+            <select class="reponse-eleve" data-qid="q7_consequences_travail">
+                <option value="">Choisir...</option>
+                <option value="forme">Augmentation de la forme</option>
+                <option value="accident">Baisse de vigilance et risque d'accident</option>
+                <option value="carences">Carences en vitamines</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q8_consequences_sante">
+        <div class="q-header">
+            <span class="q-label">8</span>
+            <span class="q-comp">C3</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C3</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Expliquer</strong> le risque santé à long terme lié à une surconsommation de produits sucrés et gras (Document 3).</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q8" class="reponse-eleve" value="cvd" data-qid="q8_consequences_sante"> Développement de maladies cardiovasculaires et diabète</label>
+            <label class="q-option"><input type="radio" name="q8" class="reponse-eleve" value="hypo" data-qid="q8_consequences_sante"> Risque d'hypoglycémie sévère</label>
+            <label class="q-option"><input type="radio" name="q8" class="reponse-eleve" value="maigreur" data-qid="q8_consequences_sante"> Perte de poids excessive</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q9_proportion_feculent">
+        <div class="q-header">
+            <span class="q-label">9</span>
+            <span class="q-comp">C2</span>
+            <span class="q-points">1 pt</span>
+        </div>
+        <span class="comp-display">C2</span>
+        <input type="hidden" class="point-input" value="1">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text">En observant votre assiette, vous constatez que la viande occupe la moitié (1/2) de l'espace.<br><strong>Estimer</strong> si cette proportion est correcte par rapport au Document 2.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q9" class="reponse-eleve" value="oui" data-qid="q9_proportion_feculent"> Oui, c'est correct</label>
+            <label class="q-option"><input type="radio" name="q9" class="reponse-eleve" value="non" data-qid="q9_proportion_feculent"> Non, cela devrait être 1/4</label>
+            <label class="q-option"><input type="radio" name="q9" class="reponse-eleve" value="non_plus" data-qid="q9_proportion_feculent"> Non, cela devrait être 3/4</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q10_petit_dej">
+        <div class="q-header">
+            <span class="q-label">10</span>
+            <span class="q-comp">C4</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C4</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text">Votre collègue est fatigué dès 10h du matin car il ne déjeune pas.<br><strong>Conseiller</strong> la conduite à tenir pour éviter cette fatigue (Document 3).</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q10" class="reponse-eleve" value="cafe" data-qid="q10_petit_dej"> Boire beaucoup de café</label>
+            <label class="q-option"><input type="radio" name="q10" class="reponse-eleve" value="manger" data-qid="q10_petit_dej"> Prendre un petit-déjeuner complet avant de partir</label>
+            <label class="q-option"><input type="radio" name="q10" class="reponse-eleve" value="sucre" data-qid="q10_petit_dej"> Manger des bonbons pour l'énergie rapide</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q11_solution_encas">
+        <div class="q-header">
+            <span class="q-label">11</span>
+            <span class="q-comp">C4</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C4</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text">Pour éviter les produits ultra-transformés au goûter (Document 1),<br><strong>Proposer</strong> la meilleure alternative.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q11" class="reponse-eleve" value="biscuit" data-qid="q11_solution_encas"> Un paquet de biscuits industriels</label>
+            <label class="q-option"><input type="radio" name="q11" class="reponse-eleve" value="fruit" data-qid="q11_solution_encas"> Un fruit frais ou une poignée de fruits à coque</label>
+            <label class="q-option"><input type="radio" name="q11" class="reponse-eleve" value="soda" data-qid="q11_solution_encas"> Une canette de soda</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q12_solution_diner">
+        <div class="q-header">
+            <span class="q-label">12</span>
+            <span class="q-comp">C4</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C4</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text">Si vous avez mangé de la viande rouge à midi,<br><strong>Suggérer</strong> le choix de protéines le plus adapté pour le soir (Document 1).</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q12" class="reponse-eleve" value="charcuterie" data-qid="q12_solution_diner"> De la charcuterie</label>
+            <label class="q-option"><input type="radio" name="q12" class="reponse-eleve" value="viande" data-qid="q12_solution_diner"> Encore de la viande rouge</label>
+            <label class="q-option"><input type="radio" name="q12" class="reponse-eleve" value="vegetal" data-qid="q12_solution_diner"> Des légumineuses ou du poisson</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q13_justification_maison">
+        <div class="q-header">
+            <span class="q-label">13</span>
+            <span class="q-comp">C5</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C5</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Justifier</strong> l'intérêt de privilégier le "fait maison" (Document 1) en choisissant l'argument principal.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q13" class="reponse-eleve" value="temps" data-qid="q13_justification_maison"> C'est plus rapide à préparer</label>
+            <label class="q-option"><input type="radio" name="q13" class="reponse-eleve" value="controle" data-qid="q13_justification_maison"> Cela permet de contrôler les ingrédients et limiter les additifs</label>
+            <label class="q-option"><input type="radio" name="q13" class="reponse-eleve" value="cher" data-qid="q13_justification_maison"> C'est toujours plus cher</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q14_argument_eau">
+        <div class="q-header">
+            <span class="q-label">14</span>
+            <span class="q-comp">C5</span>
+            <span class="q-points">1.5 pts</span>
+        </div>
+        <span class="comp-display">C5</span>
+        <input type="hidden" class="point-input" value="1.5">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text">Le Document 2 indique "+ eau".<br><strong>Argumenter</strong> pourquoi l'eau est la seule boisson indispensable.</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q14" class="reponse-eleve" value="gout" data-qid="q14_argument_eau"> Parce qu'elle a meilleur goût que le soda</label>
+            <label class="q-option"><input type="radio" name="q14" class="reponse-eleve" value="hydratation" data-qid="q14_argument_eau"> Parce qu'elle hydrate l'organisme sans apporter de sucres ajoutés ni calories</label>
+            <label class="q-option"><input type="radio" name="q14" class="reponse-eleve" value="prix" data-qid="q14_argument_eau"> Parce qu'elle est gratuite au restaurant</label>
+        </div>
+    </div>
+
+    <div class="question-block" data-qid="q15_intruder">
+        <div class="q-header">
+            <span class="q-label">15</span>
+            <span class="q-comp">C2</span>
+            <span class="q-points">1 pt</span>
+        </div>
+        <span class="comp-display">C2</span>
+        <input type="hidden" class="point-input" value="1">
+        <input type="hidden" class="student-score" value="0">
+        
+        <div class="q-text"><strong>Identifier</strong> l'intrus parmi cette liste de féculents (Document 2 - composition repas).</div>
+        <div class="q-options">
+            <label class="q-option"><input type="radio" name="q15" class="reponse-eleve" value="pates" data-qid="q15_intruder"> Pâtes</label>
+            <label class="q-option"><input type="radio" name="q15" class="reponse-eleve" value="riz" data-qid="q15_intruder"> Riz</label>
+            <label class="q-option"><input type="radio" name="q15" class="reponse-eleve" value="haricots_verts" data-qid="q15_intruder"> Haricots verts</label>
+            <label class="q-option"><input type="radio" name="q15" class="reponse-eleve" value="pomme_terre" data-qid="q15_intruder"> Pommes de terre</label>
+        </div>
+    </div>
+
+    <div class="submit-section">
+        <button class="submit-btn" onclick="autocorrectionAvantEnvoi()">
+            Envoyer au prof
+        </button>
+        <div id="submit-status"></div>
+    </div>
+
+    <script type="application/json" id="blueprint">
+    {
+        "autocorrect": true,
+        "devoirId": "devoir_alim_1bacpro_2026_v1",
+        "titre": "Alimentation et Santé - 1ère Bac Pro",
+        "bareme": 20,
+        "content": [
+            {
+                "qid": "q1_besoins",
+                "inputType": "checkbox",
+                "bareme": 1.5,
+                "reponseCorrecte": ["fonctionnels", "batisseurs", "energetiques"],
+                "competence": "C1"
+            },
+            {
+                "qid": "q2_facteurs",
+                "inputType": "checkbox",
+                "bareme": 1.5,
+                "reponseCorrecte": ["age", "sexe", "activite"],
+                "competence": "C1"
+            },
+            {
+                "qid": "q3_assiette_legumes",
+                "inputType": "radio",
+                "bareme": 1,
+                "reponseCorrecte": "demi",
+                "competence": "C1"
+            },
+            {
+                "qid": "q4_limiter",
+                "inputType": "checkbox",
+                "bareme": 1.5,
+                "reponseCorrecte": ["sel_sucre", "ultra", "charcuterie"],
+                "competence": "C1"
+            },
+            {
+                "qid": "q5_analyse_menu",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "legumes",
+                "competence": "C2"
+            },
+            {
+                "qid": "q6_grignotage",
+                "inputType": "radio",
+                "bareme": 1,
+                "reponseCorrecte": "grignotage",
+                "competence": "C2"
+            },
+            {
+                "qid": "q7_consequences_travail",
+                "inputType": "select",
+                "bareme": 1.5,
+                "reponseCorrecte": "accident",
+                "competence": "C3"
+            },
+            {
+                "qid": "q8_consequences_sante",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "cvd",
+                "competence": "C3"
+            },
+            {
+                "qid": "q9_proportion_feculent",
+                "inputType": "radio",
+                "bareme": 1,
+                "reponseCorrecte": "non",
+                "competence": "C2"
+            },
+            {
+                "qid": "q10_petit_dej",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "manger",
+                "competence": "C4"
+            },
+            {
+                "qid": "q11_solution_encas",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "fruit",
+                "competence": "C4"
+            },
+            {
+                "qid": "q12_solution_diner",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "vegetal",
+                "competence": "C4"
+            },
+            {
+                "qid": "q13_justification_maison",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "controle",
+                "competence": "C5"
+            },
+            {
+                "qid": "q14_argument_eau",
+                "inputType": "radio",
+                "bareme": 1.5,
+                "reponseCorrecte": "hydratation",
+                "competence": "C5"
+            },
+            {
+                "qid": "q15_intruder",
+                "inputType": "radio",
+                "bareme": 1,
+                "reponseCorrecte": "haricots_verts",
+                "competence": "C2"
+            }
+        ]
+    }
+    </script>
+
+    <script>
+        // IDENTIFICATION
+        const DEVOIR_ID = "devoir_alim_1bacpro_2026_v1";
+        document.body.dataset.idExercice = DEVOIR_ID;
+        localStorage.setItem('devoir_start_time_' + DEVOIR_ID, Date.now());
+    </script>
+
+    <script type="module">
+        /* CHARGEMENT ANNUAIRE */
+        try {
+            await import("../annuaire.js");
+            if(typeof window.demanderCode === 'function') {
+                const user = await window.demanderCode("PSE Alimentation");
+                if(user && user.code) {
+                    document.getElementById('code-eleve').value = user.code;
+                    window.eleveData = user;
+                }
+            }
+        } catch(err) {
+            console.warn("Annuaire non disponible - mode autonome");
+        }
+    </script>
+
+    <script type="module">
+        /* CHARGEMENT RUNNER */
+        try {
+            await import("../assets/pse-runner.js");
+            console.log("pse-runner chargé");
+        } catch(err) {
+            console.warn("pse-runner non disponible");
+        }
+    </script>
+    
+    <script>
+    async function autocorrectionAvantEnvoi() {
+        try {
+            // 1. CHARGER LE BLUEPRINT INTÉGRÉ
+            const blueprintScript = document.getElementById('blueprint');
+            if (!blueprintScript) {
+                throw new Error("Blueprint intégré manquant");
+            }
+            const blueprint = JSON.parse(blueprintScript.textContent);
+            
+            // 2. Pour chaque question
+            document.querySelectorAll('.question-block[data-qid]').forEach(block => {
+                const qid = block.dataset.qid;
+                const question = blueprint.content.find(q => q.qid === qid);
+                if (!question) return;
+                
+                // 3. Collecter réponse élève
+                let reponseEleve;
+                
+                switch(question.inputType) {
+                    case 'radio':
+                    case 'vrai_faux':
+                        const checked = block.querySelector('.reponse-eleve:checked');
+                        reponseEleve = checked ? checked.value : null;
+                        break;
+                        
+                    case 'checkbox':
+                        const checkedBoxes = block.querySelectorAll('.reponse-eleve:checked');
+                        reponseEleve = Array.from(checkedBoxes).map(cb => cb.value);
+                        break;
+                        
+                    case 'select':
+                        const select = block.querySelector('.reponse-eleve');
+                        reponseEleve = select ? select.value : null;
+                        break;
+                }
+                
+                // 4. Calculer score
+                let score = 0;
+                const bareme = question.bareme;
+                
+                switch(question.inputType) {
+                    case 'radio':
+                    case 'select':
+                        score = (reponseEleve === question.reponseCorrecte) ? bareme : 0;
+                        break;
+                        
+                    case 'checkbox':
+                        if (Array.isArray(question.reponseCorrecte) && Array.isArray(reponseEleve)) {
+                            const bonnesCochees = reponseEleve.filter(r => question.reponseCorrecte.includes(r)).length;
+                            const totalBonnes = question.reponseCorrecte.length;
+                            // Proportionnel strict SANS pénalité
+                            score = (bonnesCochees / totalBonnes) * bareme;
+                        }
+                        break;
+                }
+                
+                // 5. Mettre à jour student-score
+                const studentScoreInput = block.querySelector('.student-score');
+                if (studentScoreInput) {
+                    studentScoreInput.value = Math.round(score * 100) / 100;
+                }
+            });
+            
+            // 6. Calculer score total pour affichage debug (optionnel)
+            const totalScore = Array.from(document.querySelectorAll('.student-score'))
+                .reduce((sum, input) => sum + parseFloat(input.value || 0), 0);
+            
+            console.log("Score calculé:", totalScore + "/20");
+
+            // 7. Envoyer SEULEMENT après auto-correction
+            if (typeof window.tenterEnvoi === 'function') {
+                window.tenterEnvoi();
+            } else {
+                alert(`Score calculé : ${Math.round(totalScore*10)/10}/20\n(Mode autonome sans serveur)`);
+            }
+            
+        } catch(err) {
+            console.error("Erreur auto-correction:", err);
+            alert("Erreur auto-correction : " + err.message);
+        }
+    }
+    </script>
+
+    <script>
+        window.addEventListener('load', function() {
+            console.log("=== VÉRIFICATION DEVOIR ===");
+            console.log("Code élève:", document.getElementById('code-eleve') ? "✅" : "❌");
+            console.log("Bouton envoi:", document.querySelector('.submit-btn') ? "✅" : "❌");
+            console.log("Questions:", document.querySelectorAll('.question-block').length);
+            console.log("C1:", document.querySelectorAll('.q-comp').length);
+        });
+    </script>
+</body>
+</html>
