@@ -26,6 +26,7 @@ const db = getFirestore(app);
 window.db = db;
 window.PSE_DB = db;
 window.__PSE_DB_READY = true;
+
 // double signal (immédiat + async) pour éviter le cas où annuaire.js est déjà chargé
 try { window.dispatchEvent(new Event("pse-db-ready")); } catch {}
 setTimeout(() => { try { window.dispatchEvent(new Event("pse-db-ready")); } catch {} }, 0);
@@ -390,7 +391,9 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     await setDoc(doc(db, "resultats", finalCode, "copies", docId), data);
 
     alert(
-      "✅ COPIE ENVOYÉE !\n\n" +
+      "✅ COPIE ENVOYÉE !
+
+" +
       "👤 Code : " + finalCode + "\n" +
       "📝 " + titre + "\n" +
       "📊 Réponses: " + Object.keys(reponses).length
@@ -400,7 +403,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     localStorage.removeItem(startKey);
 
     document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:flex-start;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
         <div style="font-size:4rem;">✅</div>
         <h1 style="color:#16a34a;">Copie envoyée !</h1>
         <p style="color:#64748b;margin-top:10px;">
