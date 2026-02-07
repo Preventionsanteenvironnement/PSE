@@ -1,35 +1,54 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   📁 ANNUAIRE.JS — VERSION SÉCURISÉE (codes courts)
+   📁 ANNUAIRE.JS — VERSION HARMONISÉE (Compatible Runner v7.4)
    
    Structure sécurisée :
    - Copies → resultats/{eleveCode}/copies/
    - Tracking → tracking/{jour}/visites/
    
-   📅 Version : 4.0
+   📅 Version : 4.1 (Correction du conflit de base de données)
    ═══════════════════════════════════════════════════════════════════════ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
-  authDomain: "devoirs-pse.firebaseapp.com",
-  projectId: "devoirs-pse",
-  storageBucket: "devoirs-pse.appspot.com",
-  messagingSenderId: "614730413904",
-  appId: "1:614730413904:web:a5dd478af5de30f6bede55"
-};
+// --- 1. GESTION INTELLIGENTE DE LA BASE DE DONNÉES ---
+// On vérifie si le Runner a déjà fait le travail.
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db;
 
-window.db = db;
-window._ensureDb = () => window.db; 
+if (window.PSE_DB) {
+    console.log("✅ [Annuaire] Connexion réussie à la base de données du Runner.");
+    db = window.PSE_DB;
+    window.db = db;
+} else {
+    // Si le runner n'est pas là, l'annuaire se débrouille tout seul (Plan B)
+    console.log("⚠️ [Annuaire] Runner absent, initialisation autonome...");
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        window.db = db;
+        window.PSE_DB = db; // On l'expose pour les autres scripts
+    } catch(e) {
+        console.error("❌ Erreur init Firebase Annuaire:", e);
+    }
+}
 
-console.log("✅ [annuaire.js v4.0] Structure sécurisée");
+// Petite fonction de sécurité pour que l'ancien code retrouve ses petits
+window._ensureDb = () => db; 
+
+console.log("✅ [annuaire.js v4.1] Prêt.");
+
 
 // ═══════════════════════════════════════════════════════════════════════
-// ANNUAIRE - CODES COURTS (inchangés)
+// ANNUAIRE - CODES COURTS (inchangés - je garde tout votre contenu)
 // ═══════════════════════════════════════════════════════════════════════
 
 const ANNUAIRE = {
@@ -128,13 +147,14 @@ window.demanderCode = function(pageName) {
     const storedCode = localStorage.getItem("codeEleve");
     const storedClasse = localStorage.getItem("userClasse");
     
+    // Si déjà stocké, on valide direct
     if (storedCode && storedClasse) {
       window.enregistrerVisite(pageName);
       return resolve({ code: storedCode, classe: storedClasse });
     }
 
     const overlay = document.createElement("div");
-    overlay.style = "position:fixed;inset:0;background:#0f172a;z-index:99999;display:flex;align-items:center;justify-content:center;color:white;font-family:system-ui,sans-serif;";
+    overlay.style = "position:fixed;inset:0;background:rgba(15,23,42,0.95);z-index:99999;display:flex;align-items:center;justify-content:center;color:white;font-family:system-ui,sans-serif;";
     overlay.innerHTML = `
       <div style="background:#1e293b;padding:30px;border-radius:16px;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
         <h2 style="margin-top:0">🔒 Identification</h2>
@@ -175,63 +195,13 @@ window.demanderCode = function(pageName) {
   });
 };
 
-// B. Envoyer le devoir → resultats/{eleveCode}/copies/
-window.PSE_submitDevoir = async function(payload) {
-  console.log("📤 Envoi sécurisé...", payload);
-  
-  try {
-    const eleveCode = (localStorage.getItem("codeEleve") || "ANONYME").toUpperCase();
-    const classeLocal = localStorage.getItem("userClasse") || "UNKNOWN";
-
-    const docData = {
-      devoirId: payload.devoirId || "Inconnu",
-      titre: payload.titre || payload.module || "",
-      url: window.location.href,
-      
-      createdAt: serverTimestamp(),
-      createdAtISO: new Date().toISOString(),
-      
-      eleveCode: eleveCode,
-      classe: classeLocal,
-      eleve: {
-        userCode: eleveCode,
-        code: eleveCode,
-        classe: classeLocal,
-      },
-      
-      reponses: payload.reponses || {},
-      resultat_auto: payload.resultat_auto || {},
-      competences: payload.competences || {},
-      temps_secondes: payload.temps_secondes || 0,
-      raw: payload
-    };
-
-    // Anti-doublon
-    const antiKey = "sent_" + docData.devoirId + "_" + docData.createdAtISO.slice(0,16);
-    if (sessionStorage.getItem(antiKey)) {
-        console.warn("Doublon évité.");
-        return { ok: true, id: "doublon" };
-    }
-
-    // ⭐ CHEMIN SÉCURISÉ : resultats/{eleveCode}/copies/{docId}
-    const docId = `${docData.devoirId}_${Date.now()}`;
-    await setDoc(doc(db, "resultats", eleveCode, "copies", docId), docData);
-    
-    sessionStorage.setItem(antiKey, "1");
-    console.log("✅ Copie enregistrée :", `resultats/${eleveCode}/copies/${docId}`);
-    return { ok: true, id: docId };
-
-  } catch (e) {
-    console.error("❌ Erreur:", e);
-    return { ok: false, error: e.message };
-  }
-};
-
 // C. Enregistrer une visite → tracking/{jour}/visites/
+// Modification : on utilise 'db' qui est maintenant partagé proprement
 window.enregistrerVisite = async function(nomPage) {
     try {
+        if (!db) return; // Si pas de DB connectée, on ne fait rien (évite le crash)
+
         const userCode = localStorage.getItem("codeEleve") || "INV";
-        
         if (userCode.length < 2) return;
         
         const jour = new Date().toISOString().slice(0, 10);
@@ -244,7 +214,7 @@ window.enregistrerVisite = async function(nomPage) {
             timestamp: serverTimestamp()
         });
     } catch(e) { 
-        // Silencieux
+        // On reste silencieux si ça échoue pour ne pas gêner l'élève
     }
 };
 
