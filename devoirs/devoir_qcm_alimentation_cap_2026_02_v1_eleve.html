@@ -209,74 +209,60 @@
   </script>
 
  <script type="module">
-    // VERSION MANUELLE (A incrémenter si tu modifies les JS)
-    const V = "20260207_1030_FIX"; 
-    
-    // Détection base URL (suppose que ce fichier est dans /devoirs/)
+    // VERSION FIXÉE : CHARGEMENT DANS L'ORDRE (RUNNER D'ABORD)
+    const V = "20260207_1050_FIX_ORDER";
     const BASE = new URL(".", import.meta.url);
 
-    // Fonction d'affichage d'erreur critique
-    function hardFail(msg, err) {
-      console.error("[Boot Error] " + msg, err || "");
+    function hardFail(msg){
+      console.error(msg);
       alert("⚠️ " + msg);
       const box = document.getElementById("paste-alert");
-      if (box) {
-        box.textContent = msg;
-        box.style.display = "block";
-        box.style.background = "#fee2e2";
-        box.style.borderColor = "#ef4444";
-        box.style.color = "#991b1b";
+      if(box) {
+          box.textContent = msg;
+          box.style.display = 'block';
       }
     }
 
-    async function boot() {
-      try {
-        console.log("1. Chargement Annuaire...");
-        // On charge l'annuaire D'ABORD pour que demanderCode soit dispo
-        await import(new URL("../annuaire.js?v=" + V, BASE));
-
-        console.log("2. Chargement Runner v7.4.1...");
+    try {
+        console.log("1. Chargement du MOTEUR (Runner + Firebase)...");
+        // PRIORITÉ ABSOLUE : Charger le runner pour créer window.PSE_DB
         await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
+
+        console.log("2. Chargement de l'ANNUAIRE (Besoin de la DB)...");
+        // MAINTENANT l'annuaire peut charger son mouchard sans planter
+        await import(new URL("../annuaire.js?v=" + V, BASE));
 
         // Vérification de sécurité
         if (typeof window.envoyerCopie !== "function") {
-          throw new Error("Le moteur d'envoi (pse-runner.js) ne s'est pas initialisé correctement.");
+             throw new Error("Le Runner est chargé mais 'envoyerCopie' est introuvable.");
         }
 
-        console.log("✅ Système PSE prêt.");
+        console.log("✅ Système PSE prêt (Ordre correct).");
 
-        // Gestion du Bouton
+        // Raccordement du bouton Envoyer
         const btn = document.getElementById("btn-envoi");
         if (btn) {
-          // On nettoie tout comportement précédent
-          btn.removeAttribute("onclick");
-          btn.type = "button";
-          
-          btn.addEventListener("click", async () => {
-            try {
-              btn.disabled = true;
-              btn.textContent = "Envoi en cours...";
-              
-              // On appelle la fonction du runner
-              await window.envoyerCopie();
-              
-              // Note: Si succès, le runner remplace le body, donc pas besoin de réactiver le btn
-            } catch (e) {
-              console.error(e);
-              alert("❌ Erreur lors de l'envoi : " + (e.message || e));
-              btn.disabled = false;
-              btn.textContent = "Réessayer l'envoi";
-            }
-          });
+            // Nettoyage préventif
+            btn.removeAttribute("onclick");
+            btn.type = "button";
+            
+            // Nouveau listener propre
+            btn.addEventListener("click", async () => {
+                btn.disabled = true;
+                btn.textContent = "Envoi en cours...";
+                try {
+                    await window.envoyerCopie();
+                    // Si succès, le runner remplace le contenu de la page
+                } catch(e) {
+                    console.error(e);
+                    alert("Erreur: " + (e.message || e));
+                    btn.disabled = false;
+                    btn.textContent = "Réessayer l'envoi";
+                }
+            });
         }
 
-      } catch (e) {
-        hardFail("Erreur technique : Le système ne peut pas démarrer.\nVérifiez votre connexion internet.", e);
-      }
+    } catch (e) {
+        hardFail("Erreur critique de chargement : " + e.message);
     }
-
-    // Démarrage
-    boot();
-  </script>
-</body>
-</html>
+</script>
