@@ -25,8 +25,28 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
     
     try {
+        // Gestion robuste des paramètres d'entrée
         const eleveInfo = eleveData || { code: code, classe: "?" };
-        const eleveCode = (eleveInfo.code || code).toUpperCase().trim();
+        
+        // Récupération sécurisée du code élève
+        let eleveCode = null;
+        if (eleveInfo && eleveInfo.code) {
+            eleveCode = eleveInfo.code;
+        } else if (code) {
+            eleveCode = code;
+        } else {
+            // Dernière tentative : récupérer depuis le champ du formulaire
+            const codeField = document.getElementById("code-eleve");
+            if (codeField && codeField.value) {
+                eleveCode = codeField.value;
+            }
+        }
+        
+        if (!eleveCode) {
+            throw new Error("Code élève introuvable - vérifiez le champ 'Code élève'");
+        }
+        
+        eleveCode = eleveCode.toString().toUpperCase().trim();
         
         if (!eleveCode || eleveCode.length < 2) {
             throw new Error("Code élève invalide");
@@ -289,10 +309,11 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
 
 console.log("✅ window.envoyerCopie prêt (v7.0 RGPD - resultats/{eleveCode}/copies/)");
 
-// ⭐ AJOUT COMPATIBILITÉ : window.tenterEnvoi pour les devoirs du master
-window.tenterEnvoi = window.envoyerCopie;
-console.log("✅ window.tenterEnvoi prêt (alias de envoyerCopie)");
-
-// ⭐ AJOUT SIMPLE : window.tenterEnvoi pour compatibilité avec les devoirs
-window.tenterEnvoi = window.envoyerCopie;
-console.log("✅ window.tenterEnvoi prêt (alias de envoyerCopie)");
+// ⭐ AJOUT CONDITONNEL : window.tenterEnvoi SEULEMENT si elle n'existe pas déjà
+// Cela évite d'écraser la vraie fonction tenterEnvoi des devoirs existants
+if (typeof window.tenterEnvoi !== "function") {
+    window.tenterEnvoi = window.envoyerCopie;
+    console.log("✅ window.tenterEnvoi ajouté (alias de envoyerCopie)");
+} else {
+    console.log("⚠️ window.tenterEnvoi existe déjà - pas d'écrasement");
+}
