@@ -469,125 +469,168 @@
 </div>
 
 <script>
-    const DEVOIR_ID = "devoir_qcm_analyse_travail_c11_2026_02_v1";
-    localStorage.setItem('devoir_start_time_' + DEVOIR_ID, Date.now());
+    const DEVOIR_ID = "devoir_qcm_analyse_travail_c11_2026_02_v1";
+    localStorage.setItem('devoir_start_time_' + DEVOIR_ID, Date.now());
 
-    /* ====================================================
-       tenterEnvoi() — wrapper autour de envoyerCopie()
-       Le runner (pse-runner.js) expose window.envoyerCopie
-       C'est ici qu'on definit tenterEnvoi.
-    ==================================================== */
-    window.tenterEnvoi = function() {
-        var btn = document.getElementById('btn-envoyer');
-        var codeInput = document.getElementById('code-eleve');
-        var code = (codeInput.value || '').trim().toUpperCase();
+    /* ====================================================
+       tenterEnvoi() — wrapper autour de envoyerCopie()
+       Le runner (pse-runner.js) expose window.envoyerCopie
+       C'est ici qu'on definit tenterEnvoi.
+    ==================================================== */
+    window.tenterEnvoi = function() {
+        var btn = document.getElementById('btn-envoyer');
+        var codeInput = document.getElementById('code-eleve');
+        var code = (codeInput.value || '').trim().toUpperCase();
 
-        /* 1. Validation du code eleve */
-        if (!code || code.length < 2) {
-            alert("Veuillez d'abord saisir votre code eleve.");
-            codeInput.focus();
-            return;
-        }
+        /* 1. Validation du code eleve */
+        if (!code || code.length < 2) {
+            alert("Veuillez d'abord saisir votre code eleve.");
+            codeInput.focus();
+            return;
+        }
 
-        /* 2. Anti-doublon : verrou localStorage */
-        var lockKey = 'copie_envoyee_' + DEVOIR_ID + '_' + code;
-        if (localStorage.getItem(lockKey)) {
-            alert("Vous avez deja envoye votre copie pour ce devoir.");
-            return;
-        }
+        /* 2. Anti-doublon : verrou localStorage */
+        var lockKey = 'copie_envoyee_' + DEVOIR_ID + '_' + code;
+        if (localStorage.getItem(lockKey)) {
+            alert("Vous avez deja envoye votre copie pour ce devoir.");
+            return;
+        }
 
-        /* 3. Verifier que envoyerCopie est disponible */
-        if (typeof window.envoyerCopie !== 'function') {
-            alert("Le systeme d'envoi n'est pas pret. Rechargez la page et reessayez.");
-            return;
-        }
+        /* 3. Verifier que envoyerCopie est disponible */
+        if (typeof window.envoyerCopie !== 'function') {
+            alert("Le systeme d'envoi n'est pas pret. Rechargez la page et reessayez.");
+            return;
+        }
 
-        executerEnvoi(code, lockKey, btn);
-    };
+        executerEnvoi(code, lockKey, btn);
+    };
 
-    function executerEnvoi(code, lockKey, btn) {
-        /* Desactiver le bouton immediatement */
-        btn.disabled = true;
-        btn.textContent = "Envoi en cours...";
-        btn.style.opacity = "0.6";
+    function executerEnvoi(code, lockKey, btn) {
+        /* Desactiver le bouton immediatement */
+        btn.disabled = true;
+        btn.textContent = "Envoi en cours...";
+        btn.style.opacity = "0.6";
 
-        /* Collecter les pasteStats */
-        var pasteStats = { total: 0, external: 0, document: 0 };
-        try {
-            var stored = localStorage.getItem('paste_log_' + DEVOIR_ID);
-            if (stored) pasteStats = JSON.parse(stored);
-        } catch(e) {}
+        /* Collecter les pasteStats */
+        var pasteStats = { total: 0, external: 0, document: 0 };
+        try {
+            var stored = localStorage.getItem('paste_log_' + DEVOIR_ID);
+            if (stored) pasteStats = JSON.parse(stored);
+        } catch(e) {}
 
-        /* Recuperer les donnees eleve */
-        var eleveData = window.eleveData || { code: code, classe: "?" };
+        /* Recuperer les donnees eleve */
+        var eleveData = window.eleveData || { code: code, classe: "?" };
 
-        /* Appeler envoyerCopie du runner */
-        window.envoyerCopie(code, pasteStats, eleveData)
-            .then(function() {
-                localStorage.setItem(lockKey, Date.now().toString());
-            })
-            .catch(function(err) {
-                btn.disabled = false;
-                btn.textContent = "Envoyer au prof";
-                btn.style.opacity = "1";
-                console.error("Erreur envoi:", err);
-            });
-    }
+        /* Appeler envoyerCopie du runner */
+        window.envoyerCopie(code, pasteStats, eleveData)
+            .then(function() {
+                localStorage.setItem(lockKey, Date.now().toString());
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = "Envoyer au prof";
+                btn.style.opacity = "1";
+                console.error("Erreur envoi:", err);
+            });
+    }
 
-    /* ====================================================
-       Deblocage du bouton quand le runner est pret
-       Verifie toutes les 300ms pendant 30 secondes max
-    ==================================================== */
-    (function activerBoutonQuandPret() {
-        var tentatives = 0;
-        var timer = setInterval(function() {
-            tentatives++;
-            if (typeof window.envoyerCopie === 'function') {
-                clearInterval(timer);
-                var btn = document.getElementById('btn-envoyer');
-                var status = document.getElementById('envoi-status');
-                btn.disabled = false;
-                btn.textContent = "Envoyer au prof";
-                btn.style.opacity = "1";
-                btn.style.cursor = "pointer";
-                if (status) status.textContent = "";
-                console.log("Bouton Envoyer active (runner pret)");
-            } else if (tentatives > 100) {
-                clearInterval(timer);
-                var status = document.getElementById('envoi-status');
-                if (status) {
-                    status.textContent = "Le systeme d'envoi n'a pas pu se charger. Rechargez la page.";
-                    status.style.color = "#e53e3e";
-                }
-                console.warn("Runner non charge apres 30s");
-            }
-        }, 300);
-    })();
+    /* ====================================================
+       Deblocage du bouton quand le runner est pret
+       Verifie toutes les 300ms pendant 30 secondes max
+    ==================================================== */
+    (function activerBoutonQuandPret() {
+        var tentatives = 0;
+        var timer = setInterval(function() {
+            tentatives++;
+            if (typeof window.envoyerCopie === 'function') {
+                clearInterval(timer);
+                var btn = document.getElementById('btn-envoyer');
+                var status = document.getElementById('envoi-status');
+                btn.disabled = false;
+                btn.textContent = "Envoyer au prof";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                if (status) status.textContent = "";
+                console.log("Bouton Envoyer active (runner pret)");
+            } else if (tentatives > 100) {
+                clearInterval(timer);
+                var status = document.getElementById('envoi-status');
+                if (status) {
+                    status.textContent = "Le systeme d'envoi n'a pas pu se charger. Rechargez la page.";
+                    status.style.color = "#e53e3e";
+                }
+                console.warn("Runner non charge apres 30s");
+            }
+        }, 300);
+    })();
 </script>
 
 <script type="module">
-    const V = "20260207_1200_FIX";
+    // VERSION FIXÉE : Anti-cache + chemins corrects
+    const V = "20260207_1200_FIX_ANALYSE_C11";
     const BASE = new URL(".", import.meta.url);
 
-    /* --- Runner : systeme d'envoi (Priorité 1) --- */
-    try {
-        await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
-        console.log("✅ pse-runner chargé");
-    } catch(err) { console.error("❌ pse-runner non disponible :", err); }
+    function hardFail(msg) {
+        console.error(msg);
+        alert("⚠️ " + msg);
+        const status = document.getElementById('paste-alert') || document.body;
+        if (status) {
+            status.textContent = msg;
+            if (status.style) status.style.display = 'block';
+        }
+    }
 
-    /* --- Annuaire : identification eleve (Priorité 2) --- */
     try {
+        console.log("1. Chargement du MOTEUR (Runner + Firebase)...");
+        // PRIORITÉ ABSOLUE : Charger le runner pour créer window.PSE_DB
+        await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
+
+        console.log("2. Chargement de l'ANNUAIRE (Besoin de la DB)...");
+        // MAINTENANT l'annuaire peut charger son mouchard sans planter
         await import(new URL("../annuaire.js?v=" + V, BASE));
-        
+
+        // Vérification de sécurité
+        if (typeof window.envoyerCopie !== "function") {
+             throw new Error("Le Runner est chargé mais 'envoyerCopie' est introuvable.");
+        }
+
+        console.log("✅ Système PSE prêt (Ordre correct).");
+
+        // 3. Demander le code élève
         if (typeof window.demanderCode === 'function') {
             const user = await window.demanderCode("L'analyse d'une situation de travail");
             if (user && user.code) {
-                const inp = document.getElementById('code-eleve');
-                if (inp) inp.value = user.code;
+                document.getElementById('code-eleve').value = user.code;
                 window.eleveData = user;
             }
         }
-    } catch(err) { console.warn("⚠️ Annuaire non disponible :", err); }
+
+        // 4. Raccorder le bouton Envoyer
+        const btn = document.getElementById("btn-envoi");
+        if (btn) {
+            // Nettoyage préventif
+            btn.removeAttribute("onclick");
+            btn.type = "button";
+            
+            // Nouveau listener propre
+            btn.addEventListener("click", async () => {
+                btn.disabled = true;
+                btn.textContent = "Envoi en cours...";
+                try {
+                    await window.envoyerCopie();
+                    // Si succès, le runner remplace le contenu de la page
+                } catch(e) {
+                    console.error(e);
+                    alert("Erreur: " + (e.message || e));
+                    btn.disabled = false;
+                    btn.textContent = "Réessayer l'envoi";
+                }
+            });
+        }
+
+    } catch (e) {
+        hardFail("Erreur critique de chargement : " + e.message);
+    }
 </script>
 </body>
 </html>
