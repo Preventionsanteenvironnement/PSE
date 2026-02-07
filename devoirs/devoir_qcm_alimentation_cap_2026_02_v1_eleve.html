@@ -95,6 +95,7 @@
     .checkbox-group label:hover { background: #f3f0ff; border-color: #a29bfe; }
     .checkbox-group input[type="radio"],
     .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #6c5ce7; }
+
     .table-wrapper { overflow-x: auto; margin-top: 10px; }
     .eval-table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
     .eval-table th { background: #6c5ce7; color: #fff; padding: 10px 8px; text-align: center; }
@@ -102,11 +103,13 @@
     .eval-table td:first-child { text-align: left; font-weight: 500; }
     .eval-table tr:nth-child(even) { background: #f8f8ff; }
     .eval-table input[type="radio"] { width: 18px; height: 18px; accent-color: #6c5ce7; }
+
     .answer-input {
       padding: 8px 14px; border: 2px solid #d1c4e9; border-radius: 6px;
       font-size: 0.95em; width: 180px; transition: border 0.2s;
     }
     .answer-input:focus { border-color: #6c5ce7; outline: none; box-shadow: 0 0 0 3px rgba(108,92,231,0.15); }
+
     .submit-section { text-align: center; margin: 30px 0; }
     .submit-btn {
       background: linear-gradient(135deg, #6c5ce7, #a29bfe);
@@ -117,15 +120,14 @@
     .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,92,231,0.35); }
     .submit-btn:disabled { background: #bbb; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    /* bannière copier-coller */
     .paste-alert{
-      display:none;
+      display:block;
       margin-top:12px;
       padding:10px 12px;
       border-radius:10px;
-      background:#fff0f0;
-      border:1px solid #ffb4b4;
-      color:#7a1a1a;
+      background:#f3f4f6;
+      border:1px solid #d1d5db;
+      color:#111827;
       font-weight:600;
       font-size:0.95em;
       text-align:left;
@@ -189,7 +191,7 @@
 
       <div class="submit-section">
         <button class="submit-btn" id="btn-envoi" type="button">Envoyer au prof</button>
-        <div class="paste-alert" id="paste-alert">Attention : le copier-coller est surveillé.</div>
+        <div class="paste-alert" id="paste-alert">Copier-coller surveillé. Collage externe interdit.</div>
       </div>
     </div>
 
@@ -199,69 +201,62 @@
   <script>
     const DEVOIR_ID = "devoir_qcm_alimentation_cap2_2026_02_v1";
 
-    // start time (si absent)
     const k = "devoir_start_time_" + DEVOIR_ID;
-    if (!localStorage.getItem(k)) localStorage.setItem(k, String(Date.now())) ;
+    if (!localStorage.getItem(k)) localStorage.setItem(k, String(Date.now()));
 
-    // date auto
     const d = document.getElementById("date-jour");
     if (d && !d.value) d.valueAsDate = new Date();
   </script>
 
   <script type="module">
-    // IMPORTANT : devoir dans /devoirs/  -> ../annuaire.js et ../assets/pse-runner.js
-    // + paramètre anti-cache pour éviter GitHub Pages / navigateur qui garde l’ancienne version
-    const V = "20260207_0930";
+    const V = "20260207_0945";
     const BASE = new URL(".", import.meta.url);
 
-    // charge annuaire + runner (depuis mapse.fr)
-    await import(new URL("../annuaire.js?v=" + V, BASE));
-    await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
-
-    // si le runner ne définit pas le handler, on affiche une erreur claire
     function hardFail(msg){
       alert(msg);
       const box = document.getElementById("paste-alert");
-      if(box){
-        box.style.display = "block";
+      if (box) {
         box.textContent = msg;
+        box.style.display = "block";
+        box.style.background = "#fff0f0";
+        box.style.borderColor = "#ffb4b4";
+        box.style.color = "#7a1a1a";
       }
       console.error(msg);
     }
 
-    // branchement bouton ENVOI
+    // IMPORTANT: runner d’abord (Firebase prêt), annuaire ensuite (mouchard OK)
+    await import(new URL("../assets/pse-runner.js?v=" + V, BASE));
+    await import(new URL("../annuaire.js?v=" + V, BASE));
+
+    // compat: au cas où un ancien HTML appelle encore tenterEnvoi()
+    window.tenterEnvoi = async () => {
+      const code = (document.getElementById("code-eleve")?.value || "").trim();
+      return window.envoyerCopie(code, null, window.eleveData);
+    };
+
+    // demande code si dispo (annuaire chargé)
+    if (typeof window.demanderCode === "function" && typeof window.PSE_ensureEleveCode === "function") {
+      await window.PSE_ensureEleveCode();
+    }
+
     const btn = document.getElementById("btn-envoi");
     btn.addEventListener("click", async () => {
       try {
         if (typeof window.envoyerCopie !== "function") {
-          return hardFail("Erreur : pse-runner.js n’est pas chargé. Vérifie /assets/pse-runner.js");
+          return hardFail("Erreur : pse-runner.js n’est pas chargé (envoyerCopie manquant). Vérifie /assets/pse-runner.js");
         }
         btn.disabled = true;
         btn.textContent = "Envoi…";
-
-        const code = (document.getElementById("code-eleve")?.value || "").trim();
-        await window.envoyerCopie(code, null, window.eleveData);
-
+        await window.tenterEnvoi();
       } catch (e) {
         console.error(e);
-        alert("Erreur d’envoi : " + (e?.message || e));
+        hardFail("Erreur d’envoi : " + (e?.message || e));
       } finally {
         btn.disabled = false;
         btn.textContent = "Envoyer au prof";
       }
     });
-
-    // le bandeau reste caché tant qu’il n’y a pas de collage externe
-    const box = document.getElementById("paste-alert");
-    if (box) box.style.display = "none";
-
-    // sécurité : au cas où le runner n’allume pas le bandeau, on le gère ici aussi
-    document.addEventListener("paste", (e) => {
-      // le runner fait déjà le vrai contrôle; ici on ne fait qu’afficher un visuel si un collage arrive
-      if (!box) return;
-      box.style.display = "block";
-      box.textContent = "Attention : le copier-coller est surveillé.";
-    }, true);
   </script>
 </body>
 </html>
