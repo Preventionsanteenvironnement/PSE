@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Objectif Budget CCF - Étape 4 : Le Taux d'Endettement</title>
+    <style>
+        :root { --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --error: #ef4444; --helped: #8b5cf6; --text: #1e293b; --text-light: #64748b; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 15px; padding-bottom: 80px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .parcours-header { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 20px; margin-bottom: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .parcours-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; }
+        .parcours-title { font-size: 1.8rem; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+        .etapes-nav { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+        .etape-dot { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; text-decoration: none; }
+        .etape-dot.done { background: var(--success); color: white; }
+        .etape-dot.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .etape-dot.locked { background: #e2e8f0; color: #94a3b8; }
+        .main-card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .objectifs-box { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 2px solid #3b82f6; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .objectifs-box h2 { color: #1d4ed8; font-size: 1.1rem; margin-bottom: 12px; }
+        .objectifs-list { list-style: none; }
+        .objectifs-list li { padding: 6px 0 6px 20px; position: relative; font-size: 0.95rem; }
+        .objectifs-list li::before { content: "✓"; position: absolute; left: 0; color: #3b82f6; font-weight: bold; }
+        .objectifs-list .verbe { color: #dc2626; font-weight: 700; text-decoration: underline; }
+        .competences-tags { display: flex; gap: 8px; margin-top: 12px; }
+        .comp-tag { background: #3b82f6; color: white; padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 700; }
+        .progress-section { background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .progress-bar { background: #e2e8f0; height: 10px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { background: linear-gradient(90deg, var(--success), #34d399); height: 100%; transition: width 0.5s; }
+        .exercice { display: none; animation: fadeIn 0.4s; }
+        .exercice.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; } }
+        .exercice-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; }
+        .exercice-num { background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .exercice-title h3 { font-size: 1.15rem; color: var(--text); margin-bottom: 3px; }
+        .exercice-title p { color: var(--text-light); font-size: 0.85rem; }
+        .situation-box { background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 12px 12px 0; margin: 15px 0; }
+        .rappel-box { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid var(--success); border-radius: 12px; padding: 15px; margin: 15px 0; }
+        .rappel-box h4 { color: #166534; font-size: 0.95rem; margin-bottom: 10px; }
+        .rappel-box ul { margin-left: 18px; }
+        .rappel-box li { margin-bottom: 5px; font-size: 0.9rem; }
+        .formule-box { background: #1e293b; color: white; padding: 20px; border-radius: 12px; margin: 15px 0; text-align: center; }
+        .formule-box .formule { font-size: 1.2rem; font-weight: 700; color: #4ade80; margin: 10px 0; }
+        .seuils-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        .seuil { padding: 15px; border-radius: 10px; text-align: center; }
+        .seuil.ok { background: #f0fdf4; border: 2px solid var(--success); }
+        .seuil.ok .val { color: var(--success); }
+        .seuil.prudence { background: #fef3c7; border: 2px solid var(--warning); }
+        .seuil.prudence .val { color: var(--warning); }
+        .seuil.danger { background: #fef2f2; border: 2px solid var(--error); }
+        .seuil.danger .val { color: var(--error); }
+        .seuil .val { font-size: 1.3rem; font-weight: 800; }
+        .seuil .label { font-size: 0.75rem; margin-top: 5px; }
+        .profil-card { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 15px 0; }
+        .profil-card h4 { color: var(--primary); margin-bottom: 15px; }
+        .profil-data { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .profil-data div { padding: 10px; background: white; border-radius: 8px; }
+        .profil-data .label { font-size: 0.8rem; color: var(--text-light); }
+        .profil-data .value { font-weight: 700; font-size: 1.1rem; }
+        .question { background: #f8fafc; padding: 15px; border-radius: 12px; margin: 15px 0; border-left: 4px solid var(--primary); }
+        .question-label { font-weight: 700; margin-bottom: 12px; font-size: 0.95rem; }
+        .question label { display: flex; align-items: center; padding: 10px 12px; margin: 6px 0; background: white; border-radius: 8px; cursor: pointer; border: 2px solid transparent; font-size: 0.9rem; }
+        .question label:hover { border-color: var(--primary); }
+        .question input[type="radio"] { margin-right: 10px; width: 18px; height: 18px; }
+        .question input[type="text"] { width: 100%; max-width: 150px; padding: 10px 12px; margin: 8px 0; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1rem; font-weight: 700; }
+        .question input[type="text"]:focus { outline: none; border-color: var(--primary); }
+        .checkbox-group label { display: flex; align-items: center; padding: 10px; margin: 5px 0; background: white; border-radius: 8px; cursor: pointer; }
+        .checkbox-group input[type="checkbox"] { margin-right: 10px; width: 18px; height: 18px; }
+        .feedback { display: none; padding: 15px; margin: 15px 0; border-radius: 12px; }
+        .feedback.success { background: #f0fdf4; border: 2px solid var(--success); color: #166534; }
+        .feedback.error { background: #fef2f2; border: 2px solid var(--error); color: #991b1b; }
+        .feedback.helped { background: #f5f3ff; border: 2px solid var(--helped); color: #5b21b6; }
+        .feedback .title { font-weight: 800; font-size: 1.05rem; margin-bottom: 10px; }
+        .explication { background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; line-height: 1.7; }
+        .retenir { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 0.9rem; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .btn-secondary { background: #94a3b8; color: white; }
+        .btn-help { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+        .btn-continue { background: linear-gradient(135deg, #10b981, #059669); color: white; display: none; }
+        .btn-continue.show { display: inline-flex; }
+        .final-result { display: none; text-align: center; padding: 30px 20px; }
+        .final-result.show { display: block; }
+        .celebration { font-size: 3rem; margin-bottom: 15px; }
+        .score-display { font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; }
+        .next-step { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 30px; border-radius: 15px; font-size: 1.1rem; font-weight: 800; border: none; cursor: pointer; }
+        .calc-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; width: 55px; height: 55px; border-radius: 50%; font-size: 1.6rem; cursor: pointer; }
+        .calculator { position: fixed; bottom: 85px; right: 20px; z-index: 999; background: #1e293b; border: 3px solid #8b5cf6; border-radius: 20px; padding: 15px; display: none; width: 260px; }
+        .calculator.visible { display: block; }
+        .calc-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .calc-header h4 { color: #a78bfa; margin: 0; }
+        .calc-close { background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; }
+        .calc-display { background: #0f172a; color: #4ade80; font-family: monospace; padding: 12px; border-radius: 10px; font-size: 1.5rem; text-align: right; margin-bottom: 12px; }
+        .calc-display.error { color: #ef4444; }
+        .calc-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .calc-btn { background: #334155; color: #e2e8f0; border: none; padding: 12px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+        .calc-btn.op { background: #3b82f6; }
+        .calc-btn.eq { background: #10b981; grid-column: span 2; }
+        .calc-btn.clr { background: #ef4444; }
+        .calc-btn.zero { grid-column: span 2; }
+        @media (max-width: 600px) { .seuils-box { grid-template-columns: 1fr; } .profil-data { grid-template-columns: 1fr; } .calc-toggle { width: 50px; height: 50px; } .calculator { width: 240px; right: 10px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="parcours-header">
+            <div class="parcours-badge">🎯 PARCOURS CCF</div>
+            <h1 class="parcours-title">Objectif Budget</h1>
+            <div class="etapes-nav">
+                <a href="PSE_CCF_01_Budget.html" class="etape-dot done">✓</a>
+                <a href="PSE_CCF_02_Epargne.html" class="etape-dot done">✓</a>
+                <a href="PSE_CCF_03_Credit.html" class="etape-dot done">✓</a>
+                <div class="etape-dot active">4</div>
+                <a href="PSE_CCF_05_Bilan.html" class="etape-dot locked">5</a>
+            </div>
+        </div>
+        <div class="main-card">
+            <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">📊 Étape 4/5 : Le Taux d'Endettement</h2>
+            <div class="objectifs-box">
+                <h2>🎯 Objectifs</h2>
+                <ul class="objectifs-list">
+                    <li><span class="verbe">Calculer</span> le taux d'endettement</li>
+                    <li><span class="verbe">Interpréter</span> le résultat</li>
+                    <li><span class="verbe">Proposer</span> des solutions pour réduire le taux</li>
+                </ul>
+                <div class="competences-tags"><span class="comp-tag">C2</span><span class="comp-tag">C5</span></div>
+            </div>
+            <div class="progress-section">
+                <div class="progress-header"><strong>📊 Progression</strong><span id="progress-text">0/4</span></div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%;"></div></div>
+            </div>
+
+            <!-- EX1 -->
+            <div class="exercice active" id="ex1">
+                <div class="exercice-header"><div class="exercice-num">1</div><div class="exercice-title"><h3>Comprendre le Taux</h3></div></div>
+                <div class="formule-box"><div style="font-size: 0.9rem;">📐 FORMULE</div><div class="formule">Taux = (Charges ÷ Revenus) × 100</div></div>
+                <div class="seuils-box">
+                    <div class="seuil ok"><div class="val">&lt; 35%</div><div class="label">✅ OK</div></div>
+                    <div class="seuil prudence"><div class="val">35-40%</div><div class="label">⚠️ Prudence</div></div>
+                    <div class="seuil danger"><div class="val">&gt; 40%</div><div class="label">❌ Danger</div></div>
+                </div>
+                <div class="question"><div class="question-label">Le taux ne doit PAS dépasser :</div>
+                    <label><input type="radio" name="q1" value="a"><span>25%</span></label>
+                    <label><input type="radio" name="q1" value="b"><span>35%</span></label>
+                    <label><input type="radio" name="q1" value="c"><span>50%</span></label>
+                </div>
+                <div class="feedback" id="fb1"></div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="verifier(1)">✅ Vérifier</button>
+                    <button class="btn btn-help" onclick="voirCorrection(1)">💡 Correction</button>
+                    <button class="btn btn-continue" id="continue1" onclick="goTo(2)">Continuer →</button>
+                </div>
+            </div>
+
+            <!-- EX2 -->
+            <div class="exercice" id="ex2">
+                <div class="exercice-header"><div class="exercice-num">2</div><div class="exercice-title"><h3>Calcul Juliette</h3></div></div>
+                <div class="profil-card"><h4>👩 Juliette</h4>
+                    <div class="profil-data">
+                        <div><div class="label">Salaire</div><div class="value">1 687,50 €</div></div>
+                        <div><div class="label">Loyer</div><div class="value">453,80 €</div></div>
+                        <div><div class="label">Crédit</div><div class="value">68,45 €</div></div>
+                        <div><div class="label">Total charges</div><div class="value">522,25 €</div></div>
+                    </div>
+                </div>
+                <div class="question"><div class="question-label">Calcule le taux : (522,25 ÷ 1687,50) × 100 = ?</div>
+                    <input type="text" inputmode="decimal" id="taux2" placeholder="Ex: 30,95" autocomplete="off"><span> %</span>
+                </div>
+                <div class="feedback" id="fb2"></div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goTo(1)">← Précédent</button>
+                    <button class="btn btn-primary" onclick="verifier(2)">✅ Vérifier</button>
+                    <button class="btn btn-help" onclick="voirCorrection(2)">💡 Correction</button>
+                    <button class="btn btn-continue" id="continue2" onclick="goTo(3)">Continuer →</button>
+                </div>
+            </div>
+
+            <!-- EX3 -->
+            <div class="exercice" id="ex3">
+                <div class="exercice-header"><div class="exercice-num">3</div><div class="exercice-title"><h3>Nouveau crédit scooter</h3></div></div>
+                <div class="situation-box"><strong>🛵</strong> Juliette veut un crédit scooter de <strong>73,45 €/mois</strong>.<br>Nouvelles charges = 522,25 + 73,45 = <strong>595,70 €</strong></div>
+                <div class="question"><div class="question-label">Nouveau taux : (595,70 ÷ 1687,50) × 100 = ?</div>
+                    <input type="text" inputmode="decimal" id="taux3" placeholder="Ex: 35,3" autocomplete="off"><span> %</span>
+                </div>
+                <div class="question"><div class="question-label">Peut-elle emprunter ?</div>
+                    <label><input type="radio" name="dec3" value="oui"><span>Oui, sans problème</span></label>
+                    <label><input type="radio" name="dec3" value="prudence"><span>Oui, avec prudence</span></label>
+                    <label><input type="radio" name="dec3" value="non"><span>Non</span></label>
+                </div>
+                <div class="feedback" id="fb3"></div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goTo(2)">← Précédent</button>
+                    <button class="btn btn-primary" onclick="verifier(3)">✅ Vérifier</button>
+                    <button class="btn btn-help" onclick="voirCorrection(3)">💡 Correction</button>
+                    <button class="btn btn-continue" id="continue3" onclick="goTo(4)">Continuer →</button>
+                </div>
+            </div>
+
+            <!-- EX4 -->
+            <div class="exercice" id="ex4">
+                <div class="exercice-header"><div class="exercice-num">4</div><div class="exercice-title"><h3>Quentin et sa voiture</h3></div></div>
+                <div class="profil-card"><h4>👨 Quentin</h4>
+                    <div class="profil-data">
+                        <div><div class="label">Salaire</div><div class="value">1 623,40 €</div></div>
+                        <div><div class="label">Loyer</div><div class="value">412,50 €</div></div>
+                        <div><div class="label">Crédit actuel</div><div class="value">67,80 €</div></div>
+                        <div><div class="label">Crédit voiture souhaité</div><div class="value">98,50 €</div></div>
+                    </div>
+                </div>
+                <div class="question"><div class="question-label">Total charges = 412,50 + 67,80 + 98,50 = ?</div>
+                    <input type="text" inputmode="decimal" id="charges4" placeholder="578,80" autocomplete="off"><span> €</span>
+                </div>
+                <div class="question"><div class="question-label">Taux = (charges ÷ 1623,40) × 100 = ?</div>
+                    <input type="text" inputmode="decimal" id="taux4" placeholder="35,65" autocomplete="off"><span> %</span>
+                </div>
+                <div class="question"><div class="question-label">Peut-il emprunter ?</div>
+                    <label><input type="radio" name="dec4" value="oui"><span>Oui</span></label>
+                    <label><input type="radio" name="dec4" value="non"><span>Non (taux > 35%)</span></label>
+                </div>
+                <div class="feedback" id="fb4"></div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="goTo(3)">← Précédent</button>
+                    <button class="btn btn-success" onclick="verifier(4)">✅ Terminer</button>
+                    <button class="btn btn-help" onclick="voirCorrection(4)">💡 Correction</button>
+                </div>
+            </div>
+
+            <!-- FINAL -->
+            <div class="final-result" id="final-result">
+                <div class="celebration">🎉📊🎉</div>
+                <h2>ÉTAPE 4 TERMINÉE !</h2>
+                <div class="score-display" id="score-display">4/4</div>
+                <p id="encouragement">Tu maîtrises le taux d'endettement !</p>
+                <div id="bilan-details" style="background: #f8fafc; border-radius: 12px; padding: 15px; margin: 20px 0; text-align: left;"></div>
+                <button class="next-step" onclick="location.href='PSE_CCF_05_Bilan.html'">Étape 5 : Bilan final →</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="calc-toggle" id="calc-toggle">🧮</button>
+    <div class="calculator" id="calculator">
+        <div class="calc-header"><h4>🧮 Calculatrice</h4><button class="calc-close" id="calc-close">×</button></div>
+        <div class="calc-display" id="calc-display">0</div>
+        <div class="calc-buttons">
+            <button class="calc-btn clr" data-action="clear">C</button>
+            <button class="calc-btn op" data-action="backspace">←</button>
+            <button class="calc-btn op" data-action="divide">÷</button>
+            <button class="calc-btn op" data-action="multiply">×</button>
+            <button class="calc-btn" data-num="7">7</button>
+            <button class="calc-btn" data-num="8">8</button>
+            <button class="calc-btn" data-num="9">9</button>
+            <button class="calc-btn op" data-action="subtract">−</button>
+            <button class="calc-btn" data-num="4">4</button>
+            <button class="calc-btn" data-num="5">5</button>
+            <button class="calc-btn" data-num="6">6</button>
+            <button class="calc-btn op" data-action="add">+</button>
+            <button class="calc-btn" data-num="1">1</button>
+            <button class="calc-btn" data-num="2">2</button>
+            <button class="calc-btn" data-num="3">3</button>
+            <button class="calc-btn eq" data-action="equals">=</button>
+            <button class="calc-btn zero" data-num="0">0</button>
+            <button class="calc-btn" data-action="decimal">,</button>
+        </div>
+    </div>
+
+    <script>
+        let results = { 1: null, 2: null, 3: null, 4: null };
+        function parseNombre(s) { if (!s) return null; let n = parseFloat(String(s).replace(/\s/g,"").replace(/[€%]/g,"").replace(",",".")); return isFinite(n) ? n : null; }
+        function goTo(n) { document.querySelectorAll(".exercice").forEach(e => e.classList.remove("active")); document.getElementById("ex"+n).classList.add("active"); scrollTo({top:0,behavior:"smooth"}); }
+        function updateProgress() { let d = Object.values(results).filter(v=>v!==null).length; document.getElementById("progress-fill").style.width = (d/4)*100+"%"; document.getElementById("progress-text").textContent = d+"/4"; }
+        
+        function verifier(n) {
+            const fb = document.getElementById("fb"+n); fb.style.display = "none";
+            if (n === 1) {
+                const v = document.querySelector('input[name="q1"]:checked')?.value;
+                if (v === "b") { fb.className = "feedback success"; fb.innerHTML = '<div class="title">✅ Correct !</div><div class="explication">35% = seuil maximum recommandé.</div>'; results[1] = "reussi"; updateProgress(); document.getElementById("continue1").classList.add("show"); }
+                else { fb.className = "feedback error"; fb.innerHTML = '<div class="title">❌ Le seuil est 35%</div>'; }
+            } else if (n === 2) {
+                const t = parseNombre(document.getElementById("taux2").value);
+                if (t !== null && Math.abs(t - 30.95) < 1) { fb.className = "feedback success"; fb.innerHTML = '<div class="title">✅ Exact : 30,95%</div><div class="explication">< 35% → Juliette peut emprunter.</div>'; results[2] = "reussi"; updateProgress(); document.getElementById("continue2").classList.add("show"); }
+                else { fb.className = "feedback error"; fb.innerHTML = '<div class="title">❌ Calcul : (522,25 ÷ 1687,50) × 100 = 30,95%</div>'; }
+            } else if (n === 3) {
+                const t = parseNombre(document.getElementById("taux3").value);
+                const d = document.querySelector('input[name="dec3"]:checked')?.value;
+                if (t !== null && Math.abs(t - 35.30) < 1 && d === "prudence") { fb.className = "feedback success"; fb.innerHTML = '<div class="title">✅ Exact : 35,30% → Avec prudence</div>'; results[3] = "reussi"; updateProgress(); document.getElementById("continue3").classList.add("show"); }
+                else { fb.className = "feedback error"; fb.innerHTML = '<div class="title">❌ Taux = 35,30% (entre 35 et 40% → prudence)</div>'; }
+            } else if (n === 4) {
+                const c = parseNombre(document.getElementById("charges4").value);
+                const t = parseNombre(document.getElementById("taux4").value);
+                const d = document.querySelector('input[name="dec4"]:checked')?.value;
+                if (c !== null && Math.abs(c - 578.80) < 5 && t !== null && Math.abs(t - 35.65) < 1 && d === "non") {
+                    fb.className = "feedback success"; fb.innerHTML = '<div class="title">✅ Correct !</div><div class="explication">578,80 € / 35,65% / Non (> 35%)</div>'; results[4] = "reussi"; updateProgress(); setTimeout(afficherFinal, 1500);
+                } else { fb.className = "feedback error"; fb.innerHTML = '<div class="title">❌ Charges=578,80€ / Taux=35,65% / Non</div>'; }
+            }
+            fb.style.display = "block";
+        }
+        
+        function voirCorrection(n) {
+            const fb = document.getElementById("fb"+n);
+            if (n === 1) { document.querySelector('input[name="q1"][value="b"]').checked = true; fb.className = "feedback helped"; fb.innerHTML = '<div class="title">💡 35%</div>'; if (!results[1]) results[1] = "aide"; document.getElementById("continue1").classList.add("show"); }
+            else if (n === 2) { document.getElementById("taux2").value = "30,95"; fb.className = "feedback helped"; fb.innerHTML = '<div class="title">💡 30,95%</div>'; if (!results[2]) results[2] = "aide"; document.getElementById("continue2").classList.add("show"); }
+            else if (n === 3) { document.getElementById("taux3").value = "35,30"; document.querySelector('input[name="dec3"][value="prudence"]').checked = true; fb.className = "feedback helped"; fb.innerHTML = '<div class="title">💡 35,30% / Prudence</div>'; if (!results[3]) results[3] = "aide"; document.getElementById("continue3").classList.add("show"); }
+            else if (n === 4) { document.getElementById("charges4").value = "578,80"; document.getElementById("taux4").value = "35,65"; document.querySelector('input[name="dec4"][value="non"]').checked = true; fb.className = "feedback helped"; fb.innerHTML = '<div class="title">💡 578,80€ / 35,65% / Non</div>'; if (!results[4]) results[4] = "aide"; setTimeout(afficherFinal, 1500); }
+            fb.style.display = "block"; updateProgress();
+        }
+        
+        function afficherFinal() {
+            document.querySelectorAll(".exercice").forEach(e => e.classList.remove("active"));
+            document.getElementById("final-result").classList.add("show");
+            const r = Object.values(results).filter(v=>v==="reussi").length;
+            document.getElementById("score-display").textContent = r+"/4 réussi seul";
+            let b = "<ul>";
+            ["Comprendre","Juliette","Nouveau crédit","Quentin"].forEach((l,i) => {
+                const s = results[i+1];
+                b += s==="reussi" ? '<li style="color:#166534">✅ '+l+' : Réussi</li>' : '<li style="color:#5b21b6">💡 '+l+' : Avec aide</li>';
+            });
+            document.getElementById("bilan-details").innerHTML = b+"</ul>";
+            document.getElementById("encouragement").textContent = r===4 ? "Excellent ! Tout réussi seul ! 🌟" : "Bien joué ! Continue !";
+            scrollTo({top:0,behavior:"smooth"});
+        }
+
+        // Calculatrice
+        const calcToggle = document.getElementById("calc-toggle"), calculator = document.getElementById("calculator"), calcClose = document.getElementById("calc-close"), calcDisplay = document.getElementById("calc-display");
+        let calcVal = "0", calcOp = null, calcPrev = null, calcWait = false, calcError = false;
+        function updateCalc() { calcDisplay.textContent = calcVal.replace(".",","); calcDisplay.classList.toggle("error", calcError); }
+        function calcClear() { calcVal = "0"; calcOp = null; calcPrev = null; calcWait = false; calcError = false; updateCalc(); }
+        function calcNum(n) { if (calcError) calcClear(); calcVal = calcWait ? String(n) : (calcVal==="0" ? String(n) : calcVal+n); calcWait = false; updateCalc(); }
+        function calcDec() { if (calcError) calcClear(); if (calcWait) { calcVal = "0."; calcWait = false; } else if (!calcVal.includes(".")) calcVal += "."; updateCalc(); }
+        function calcDoOp(op) { if (calcError) return; const v = parseFloat(calcVal); if (calcPrev === null) calcPrev = v; else if (calcOp) { const r = calcCompute(calcPrev, v, calcOp); if (r === "Erreur") { calcError = true; calcVal = "Erreur"; updateCalc(); return; } calcVal = String(r); calcPrev = parseFloat(calcVal); } calcWait = true; calcOp = op; updateCalc(); }
+        function calcCompute(a, b, o) { if (o === "+") return a+b; if (o === "-") return a-b; if (o === "*") return a*b; if (o === "/") return b === 0 ? "Erreur" : a/b; return b; }
+        function calcEq() { if (calcError) return; if (calcPrev !== null && calcOp) { const r = calcCompute(calcPrev, parseFloat(calcVal), calcOp); if (r === "Erreur") { calcError = true; calcVal = "Erreur"; updateCalc(); return; } calcVal = String(Math.round(r*100)/100); calcOp = null; calcPrev = null; calcWait = true; updateCalc(); } }
+        calcToggle.onclick = () => calculator.classList.toggle("visible");
+        calcClose.onclick = () => calculator.classList.remove("visible");
+        document.querySelectorAll(".calc-btn").forEach(btn => {
+            btn.onclick = () => {
+                const a = btn.dataset.action, n = btn.dataset.num;
+                if (n !== undefined) calcNum(n);
+                else if (a === "clear") calcClear();
+                else if (a === "backspace") { if (calcError) calcClear(); else { calcVal = calcVal.length > 1 ? calcVal.slice(0,-1) : "0"; updateCalc(); } }
+                else if (a === "decimal") calcDec();
+                else if (a === "add") calcDoOp("+");
+                else if (a === "subtract") calcDoOp("-");
+                else if (a === "multiply") calcDoOp("*");
+                else if (a === "divide") calcDoOp("/");
+                else if (a === "equals") calcEq();
+            };
+        });
+        updateProgress();
+    </script>
+</body>
+</html>
