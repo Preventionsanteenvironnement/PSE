@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>PAD – Risque Mécanique (Sabine)</title>
+
+<style>
+:root{
+  --bg:#0f172a; --text:#f1f5f9; --muted:#94a3b8;
+  --line:rgba(255,255,255,.12);
+  --c1:#3b82f6; --c2:#60a5fa; --c3:#ef4444; --c4:#10b981;
+  --font:system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:var(--font); color:var(--text);
+  background:var(--bg);
+  padding:16px 14px calc(120px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:800px;margin:auto;display:none;gap:18px}
+.card{background:rgba(30,41,59,.9);border:1px solid var(--line);border-radius:18px;padding:16px}
+.hero{background:rgba(30,41,59,.85);border-radius:16px;border:1px solid var(--line);padding:16px}
+.pedago-box{margin-top:10px;padding:14px;border-left:4px solid var(--c1);background:rgba(255,255,255,.05);border-radius:12px}
+.definition-zone{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);border-radius:12px;padding:14px;margin-bottom:14px}
+.def-label{font-weight:900;font-size:.8rem;text-transform:uppercase}
+.img-container{height:200px;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.img-container img{max-width:100%;max-height:100%}
+.prompt{font-weight:800;margin-bottom:10px}
+.items-list{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+.item-label{background:var(--c2);color:#0f172a;padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer}
+.item-label.selected{outline:2px solid #fff}
+.item-label.placed{opacity:.3;pointer-events:none}
+.drop-slot{border:2px dashed var(--muted);border-radius:12px;padding:14px;text-align:center;min-height:60px;font-weight:800;color:var(--muted)}
+.drop-slot.filled{border-style:solid;border-color:var(--c1);color:#fff;background:rgba(59,130,246,.15)}
+.btn{width:100%;padding:14px;border-radius:14px;border:none;font-weight:900;font-size:1rem;background:var(--c1);color:#fff;margin-top:14px}
+.panel{display:none;margin-top:14px;padding:14px;border-radius:12px;font-weight:900;text-align:center}
+.panel.ok{background:rgba(16,185,129,.2);color:#6ee7b7}
+.panel.bad{background:rgba(239,68,68,.2);color:#fca5a5}
+.hud{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.progress{flex:1;height:8px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--c1),var(--c2))}
+.top-nav{display:flex;justify-content:space-between;margin-bottom:12px}
+.nav-btn{background:rgba(15,23,42,.8);border:1px solid var(--line);color:#fff;padding:8px 12px;border-radius:12px;font-weight:900}
+#intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.97);z-index:1000}
+.intro-card{background:rgba(30,41,59,.95);border:1px solid var(--line);border-radius:22px;padding:22px;max-width:520px;width:100%;text-align:center}
+.badge{margin-top:10px;display:inline-block;padding:6px 12px;border-radius:999px;border:1px solid rgba(96,165,250,.5)}
+@media(max-width:420px){
+  body{padding:12px}
+}
+</style>
+</head>
+
+<body>
+
+<div id="intro">
+  <div class="intro-card">
+    <div><strong>PSE</strong></div>
+    <h2>PAD – Risque Mécanique (Sabine)</h2>
+    <div class="badge">compétence 2</div>
+    <p style="margin-top:12px">
+      <strong>Objectif :</strong><br>
+      être capable d’identifier un danger, une situation dangereuse, un événement déclencheur et un dommage.
+    </p>
+    <button class="btn" onclick="start()">Démarrer</button>
+  </div>
+</div>
+
+<div class="wrap" id="app">
+
+  <div class="top-nav">
+    <button class="nav-btn" onclick="history.back()">Retour</button>
+  </div>
+
+  <div class="hero">
+    <h3>Situation : Risque mécanique</h3>
+    <div class="pedago-box">
+      Sabine est fleuriste. Elle utilise un sécateur, un cutter et des ciseaux pour confectionner des bouquets.
+    </div>
+  </div>
+
+  <div class="hud">
+    <span>Compétence C2</span>
+    <span id="stepTxt">1 / 5</span>
+    <div class="progress"><div id="bar"></div></div>
+    <span>Score <span id="score">0</span></span>
+  </div>
+
+  <div class="card">
+    <div class="definition-zone">
+      <span class="def-label">Définition</span>
+      <span id="def"></span>
+    </div>
+
+    <div class="img-container">
+      <img id="img" alt="">
+    </div>
+
+    <div class="prompt" id="prompt"></div>
+
+    <div id="slot" class="drop-slot">Touche une réponse puis ici</div>
+    <div id="items" class="items-list"></div>
+
+    <button class="btn" onclick="validate()">Valider</button>
+    <div id="fb" class="panel"></div>
+  </div>
+
+</div>
+
+<script>
+const DATA=[
+{t:"LE DANGER",d:"Cause capable de provoquer une lésion.",i:"meca-danger.jpg",p:"Quels sont les éléments dangereux ?",o:["Les outils de coupe","Les fleurs","Le papier"],s:0},
+{t:"LA SITUATION DANGEREUSE",d:"Opérateur exposé au danger.",i:"meca-situation.jpg",p:"Quelle situation expose Sabine ?",o:["Elle utilise les outils de coupe","Elle accueille un client","Elle arrose"],s:0},
+{t:"L'ÉVÉNEMENT DÉCLENCHEUR",d:"Événement provoquant le dommage.",i:"meca-evenement.jpg",p:"Quel événement déclenche la blessure ?",o:["La main dérape","Un outil cassé","Une épine"],s:0},
+{t:"LE DOMMAGE",d:"Atteinte à la santé.",i:"meca-dommage.jpg",p:"Quel est le dommage ?",o:["Coupure","Brûlure","Entorse"],s:0},
+];
+
+let idx=0,score=0,choice=null;
+
+function start(){
+  document.getElementById("intro").style.display="none";
+  document.getElementById("app").style.display="grid";
+  load();
+}
+function load(){
+  const d=DATA[idx];
+  document.getElementById("def").textContent=d.d;
+  document.getElementById("prompt").textContent=d.p;
+  document.getElementById("img").src=d.i;
+  document.getElementById("stepTxt").textContent=`${idx+1} / ${DATA.length}`;
+  document.getElementById("bar").style.width=((idx)/(DATA.length-1))*100+"%";
+  document.getElementById("fb").style.display="none";
+  const items=document.getElementById("items");
+  items.innerHTML="";
+  d.o.forEach((t,i)=>{
+    const b=document.createElement("div");
+    b.className="item-label";
+    b.textContent=t;
+    b.onclick=()=>{choice=i;document.querySelectorAll(".item-label").forEach(x=>x.classList.remove("selected"));b.classList.add("selected")};
+    items.appendChild(b);
+  });
+}
+document.getElementById("slot").onclick=()=>{};
+function validate(){
+  const fb=document.getElementById("fb");
+  if(choice===null)return;
+  if(choice===DATA[idx].s){
+    score++;fb.textContent="Bravo !";fb.className="panel ok";
+  }else{
+    fb.textContent="Erreur.";fb.className="panel bad";
+  }
+  fb.style.display="block";
+  document.getElementById("score").textContent=score;
+  setTimeout(()=>{
+    idx++;
+    if(idx<DATA.length)load();
+  },1200);
+}
+</script>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import{getFirestore,collection,addDoc,updateDoc,doc,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",authDomain:"devoirs-pse.firebaseapp.com",projectId:"devoirs-pse"});
+const db=getFirestore(app);
+</script>
+
+</body>
+</html>

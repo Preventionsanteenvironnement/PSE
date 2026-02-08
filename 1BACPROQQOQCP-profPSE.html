@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>QQOQCP – Entraînement Bac Pro (Version Finale)</title>
+<style>
+  :root{
+    --bg:#0f172a; --text:#f1f5f9; --muted:#94a3b8; 
+    --line:rgba(255,255,255,.12);
+    --c1:#8b5cf6; --c2:#3b82f6; --c3:#06b6d4; --c4:#10b981; --c5:#f59e0b; --err:#ef4444;
+    --shadow:0 12px 30px rgba(0,0,0,.45); --radius:20px;
+    --font-ui: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--font-ui); color:var(--text);
+    background:var(--bg); padding:16px; padding-bottom:100px;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(139,92,246,0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(59,130,246,0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(16,185,129,0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+    overflow-x:hidden;
+  }
+  
+  .wrap{max-width:1200px; margin:0 auto; display:grid; gap:20px}
+  
+  .header{ display:flex; flex-wrap:wrap; gap:16px; align-items:stretch; }
+  .hero{
+    flex:2 1 500px; border:1px solid var(--line); border-radius:var(--radius);
+    background:rgba(255,255,255,.03); backdrop-filter:blur(10px);
+    padding:20px; box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .hero h1{margin:0 0 8px 0; font-size:1.5rem; background:linear-gradient(90deg, #fff, #cbd5e1); -webkit-background-clip:text; -webkit-text-fill-color: transparent;}
+  
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+  .chip{
+    padding:6px 12px; border-radius:99px; font-size:0.8rem; font-weight:700;
+    border:1px solid var(--line); background:rgba(255,255,255,.05); display:flex; align-items:center; gap:6px;
+  }
+  
+  .hud{
+    flex:1 1 300px; border:1px solid var(--line); border-radius:var(--radius);
+    background:rgba(15,23,42,.6); padding:16px; display:flex; flex-direction:column; gap:12px;
+    justify-content:center;
+  }
+  .hud-row{display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:0.9rem}
+  .progress-track{ height:8px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; }
+  .progress-fill{
+    height:100%; width:0%; background:linear-gradient(90deg, var(--c1), var(--c3));
+    transition:width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .main-grid{ display:grid; grid-template-columns:1fr; gap:20px; }
+  @media(min-width: 900px){
+    .main-grid{ grid-template-columns: 1fr 380px; align-items:start; }
+    #ProfPSEPanel{ position:sticky; top:20px; }
+  }
+
+  .card{
+    border:1px solid var(--line); border-radius:var(--radius);
+    background:rgba(30,41,59,.6); padding:20px; box-shadow:var(--shadow);
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  
+  /* Inputs */
+  .login-area{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input[type="text"], textarea{
+    background:rgba(0,0,0,.3); border:1px solid var(--line); color:white;
+    padding:12px 16px; border-radius:12px; outline:none; font-family:inherit; font-weight:500;
+    flex:1; min-width:200px; transition:0.2s;
+  }
+  input[type="text"]:focus, textarea:focus{ border-color:var(--c3); box-shadow:0 0 0 3px rgba(6,182,212,.2); }
+  
+  /* Textarea spécifique pour la réponse */
+  textarea {
+    width: 100%; min-height: 100px; resize: vertical; font-size: 1rem; line-height: 1.5;
+  }
+
+  .btn{
+    border:none; padding:12px 20px; border-radius:12px; font-weight:700; cursor:pointer;
+    font-family:inherit; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+  }
+  .btn-primary{ background:linear-gradient(135deg, var(--c2), var(--c1)); color:white; }
+  .btn-primary:hover{ filter:brightness(1.1); transform:translateY(-1px); }
+  
+  .btn-success{ background:linear-gradient(135deg, var(--c4), #059669); color:#022c22; }
+  .btn-danger{ background:rgba(239,68,68,0.2); border:1px solid var(--err); color:#fca5a5; }
+
+  .stepper{display:flex; gap:6px; margin-bottom:16px}
+  .step{ width:30px; height:6px; border-radius:4px; background:rgba(255,255,255,.1); transition:0.3s; }
+  .step.active{ background:var(--c3); box-shadow:0 0 10px var(--c3); }
+  .step.done{ background:var(--c4); }
+
+  .q-tag{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 12px;
+    border-radius:99px; background:rgba(6,182,212,.1); color:var(--c3);
+    font-weight:800; font-size:0.8rem; margin-bottom:12px; border:1px solid rgba(6,182,212,.2);
+  }
+
+  .situation-box{
+    background:rgba(0,0,0,.2); border-radius:16px; padding:16px; border:1px solid var(--line);
+    margin-bottom:16px; display:grid; gap:16px;
+  }
+  @media(min-width:600px){ .situation-box{grid-template-columns: 2fr 1fr;} }
+  
+  /* --- CORRECTION ICI : Meilleur affichage du texte --- */
+  .sit-text{ 
+    line-height:1.6; 
+    font-size:0.95rem; 
+    white-space: pre-line; /* Conserve les paragraphes mais remplit les lignes */
+    text-align: justify;   /* Aligne le texte proprement */
+  }
+  
+  .sit-img{
+    width:100%; height:200px; object-fit:cover; border-radius:12px; 
+    border:1px solid var(--line); background:#000;
+  }
+
+  .prompt{
+    font-size:1.1rem; font-weight:700; margin-bottom:16px; display:flex; gap:12px; align-items:start;
+    background:rgba(255,255,255,.03); padding:16px; border-radius:16px; border-left:4px solid var(--c5);
+  }
+
+  /* Correction Panel */
+  .correction-box {
+    margin-top:20px; padding:20px; border-radius:16px; background:rgba(16,185,129,0.05);
+    border:1px solid rgba(16,185,129,0.3); display:none; animation: slideDown 0.4s ease;
+  }
+  .model-answer { font-weight:700; color:#6ee7b7; margin-bottom:10px; font-size:1.05rem; }
+  .keywords-list { font-size:0.9rem; color:var(--muted); margin-bottom:16px; }
+  .redac-tip { 
+    background:rgba(245,158,11,0.1); border-left:3px solid var(--c5); padding:10px; 
+    font-size:0.85rem; color:#fcd34d; margin-bottom:20px; border-radius:4px;
+  }
+  .eval-buttons { display:flex; gap:12px; flex-wrap:wrap; }
+
+  .ProfPSE-card{ display:flex; flex-direction:column; gap:16px; }
+  .ProfPSE-visual{
+    position:relative; width:100%; aspect-ratio:1/1; 
+    border-radius:24px; overflow:hidden; border:1px solid var(--line);
+    background:linear-gradient(135deg, rgba(255,255,255,.1), rgba(0,0,0,.2));
+    margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .ProfPSE-img{ width:100%; height:100%; object-fit:cover; transition:transform 0.5s ease; }
+  .ProfPSE-bubble{
+    background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:16px;
+    padding:16px; position:relative;
+  }
+  .ProfPSE-bubble::before{
+    content:""; position:absolute; top:-8px; left:50%; transform:translateX(-50%) rotate(45deg);
+    width:16px; height:16px; background:inherit; border-top:1px solid var(--line); border-left:1px solid var(--line);
+  }
+  .ProfPSE-name{ font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px; font-weight:900; }
+  .ProfPSE-msg{ font-weight:600; line-height:1.5; color:#fff; }
+
+  /* Mémo */
+  .memo-card {
+    background: rgba(15, 23, 42, 0.8); border:1px solid var(--line); border-radius:16px;
+    padding:16px; margin-bottom:20px;
+  }
+  .memo-title {
+    margin:0 0 12px 0; font-size:1.1rem; color:var(--text); text-align:center; 
+    border-bottom:1px solid var(--line); padding-bottom:8px;
+  }
+  .memo-list { display:grid; gap:8px; }
+  .memo-row {
+    display:flex; align-items:baseline; gap:10px; font-size:0.9rem;
+    padding:8px; background:rgba(255,255,255,0.03); border-radius:8px;
+  }
+  .tag-q {
+    padding:4px 8px; border-radius:6px; font-weight:800; color:white; font-size:0.8rem;
+    min-width:70px; text-align:center; display:inline-block; box-shadow:0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  @keyframes slideDown{ from{opacity:0; transform:translateY(-10px)} to{opacity:1; transform:translateY(0)} }
+  .pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  @keyframes pop { 0%{transform:scale(0.9)} 50%{transform:scale(1.02)} 100%{transform:scale(1)} }
+
+  #confetti{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+  #finalScreen{ text-align:center; padding:40px 20px; display:none; }
+  .big-score{ font-size:3rem; font-weight:900; margin:10px 0; background:linear-gradient(to right, var(--c4), var(--c3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  
+</style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div class="wrap">
+  
+  <div class="header">
+    <div class="hero">
+      <h1>QQOQCP – Entraînement Bac Pro</h1>
+      <p style="color:var(--muted); margin:0">Analyse & Rédaction : Construire ses réponses</p>
+      <div class="chips">
+        <span class="chip" style="color:var(--c1)">● Méthodologie</span>
+        <span class="chip" style="color:var(--c2)">● Compétence C2</span>
+        <span class="chip" style="color:var(--c4)">● Auto-Évaluation</span>
+      </div>
+    </div>
+    
+    <div class="hud">
+      <div class="hud-row">
+        <span>Progression</span>
+        <span id="txtProg">0 / 7</span>
+      </div>
+      <div class="progress-track"><div id="bar" class="progress-fill"></div></div>
+      <div class="hud-row" style="margin-top:10px">
+        <span style="color:var(--muted)">Score</span>
+        <span id="txtScore" style="color:#fff; font-size:1.2rem">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="loginCard">
+    <h3 style="margin-top:0">Qui s'entraîne ?</h3>
+    <div class="login-area">
+      <input type="text" id="prenom" placeholder="Ton prénom..." autocomplete="off">
+      <button class="btn btn-primary" id="startBtn">Démarrer</button>
+    </div>
+  </div>
+
+  <div class="main-grid" id="gameGrid" style="display:none">
+    
+    <div>
+      <div class="card" id="qCard">
+        <div class="stepper" id="stepper"></div>
+        
+        <div id="gameContent">
+          <div class="q-tag" id="qTag">Tag</div>
+          <h2 id="qTitle" style="margin:0 0 16px 0; font-size:1.4rem">Titre Question</h2>
+          
+          <div class="situation-box">
+            <div class="sit-text" id="qText">Texte situation...</div>
+            <img id="qImg" class="sit-img" src="" alt="Situation" onerror="this.style.display='none'">
+          </div>
+
+          <div class="prompt">
+            <span style="color:var(--c5)">?</span>
+            <span id="qPrompt">La question...</span>
+          </div>
+
+          <div id="inputZone">
+            <textarea id="userAnswer" placeholder="Rédige ta réponse ici... (Fais une phrase complète)"></textarea>
+            <div style="margin-top:16px; display:flex; justify-content:flex-end">
+              <button class="btn btn-primary" id="btnCheck">Vérifier ma réponse</button>
+            </div>
+          </div>
+
+          <div id="correctionZone" class="correction-box">
+            <div style="font-size:0.8rem; text-transform:uppercase; color:var(--muted); margin-bottom:4px">Réponse attendue (Modèle)</div>
+            <div class="model-answer" id="modelAns">...</div>
+            
+            <div class="keywords-list" id="keywords">...</div>
+            
+            <div class="redac-tip" id="redacTip">...</div>
+
+            <div style="border-top:1px solid rgba(255,255,255,0.1); margin-top:16px; padding-top:16px">
+              <p style="margin:0 0 10px 0; font-weight:700">Ta réponse correspond-elle (sens et mots-clés) ?</p>
+              <div class="eval-buttons">
+                <button class="btn btn-success" id="btnYes">Oui, c'est bon</button>
+                <button class="btn btn-danger" id="btnNo">Non, c'est incomplet</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="finalScreen">
+          <h2>Session terminée !</h2>
+          <div class="big-score" id="finalScoreVal">0/7</div>
+          <p id="finalMsg" style="color:var(--muted); margin-bottom:30px">Analyse...</p>
+          <button class="btn btn-primary" onclick="location.reload()">Rejouer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ProfPSEPanel">
+      
+      <div class="memo-card">
+        <h3 class="memo-title">Mémo QQOQCP</h3>
+        <div class="memo-list">
+          <div class="memo-row">
+            <span class="tag-q" style="background:#dc2626">Quoi ?</span>
+            <span>Nature du problème</span>
+          </div>
+          <div class="memo-row">
+            <span class="tag-q" style="background:#ea580c">Qui ?</span>
+            <span>Personnes concernées</span>
+          </div>
+          <div class="memo-row">
+            <span class="tag-q" style="background:#b91c1c">Où ?</span>
+            <span>Lieu du problème</span>
+          </div>
+          <div class="memo-row">
+            <span class="tag-q" style="background:#7c3aed">Quand ?</span>
+            <span>Moment / Durée</span>
+          </div>
+          <div class="memo-row">
+            <span class="tag-q" style="background:#2563eb">Comment ?</span>
+            <span>Cause / Manière</span>
+          </div>
+          <div class="memo-row">
+            <span class="tag-q" style="background:#16a34a">Pourquoi ?</span>
+            <span>Conséquence / Enjeu</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card ProfPSE-card">
+        <div class="ProfPSE-visual">
+          <img id="ProfPSEAvatar" class="ProfPSE-img" src="avatar-neutral.png" alt="Julie">
+        </div>
+        <div class="ProfPSE-bubble">
+          <div class="ProfPSE-name">Coach Prof PSE</div>
+          <div class="ProfPSE-msg" id="ProfPSEText">Bonjour ! Ici on ne coche plus, on rédige. Prêt ?</div>
+        </div>
+      </div>
+      
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* --- CONFIG & DATA --- */
+const AVATARS = {
+  neutral: "avatar-neutral.png",
+  happy: "avatar-bravo.png",    
+  think: "avatar-reflechir.png",
+  warn: "avatar-attention.png"
+};
+
+const QUESTIONS = [
+  /* --- DOCUMENT 1 : LÉA --- */
+  {
+    title: "Situation 1 : Accident de Léa",
+    tag: "Le Problème",
+    text: `Léa, titulaire d’un bac pro Métiers du commerce et de la vente, travaille dans un hypermarché employant 135 salariés. À 10 heures, le 4 novembre, elle se rend en salle de pause. Cette salle est située au sous-sol et accessible par un escalier interne en colimaçon. Lorsque Léa descend l’escalier, elle heurte des cartons stockés sur les deux dernières marches, perd l’équilibre et chute. Avant l’arrivée des secours, Léa est prise en charge par le SST. Suite à cet accident du travail, elle présente une double fracture du tibia qui nécessite un arrêt de travail de 40 jours.`,
+    img: "situation-lea.jpg",
+    prompt: "Formulez le problème posé dans la situation.",
+    model: "C'est un accident du travail suite à une double fracture du tibia.",
+    keys: "Mots-clés : Accident du travail, fracture.",
+    tip: "Conseil : Commence ta phrase par un groupe nominal (ex: 'Un accident...')."
+  },
+  {
+    title: "Situation 1 : Accident de Léa",
+    tag: "Comment ?",
+    text: `Léa, titulaire d’un bac pro Métiers du commerce et de la vente, travaille dans un hypermarché employant 135 salariés. À 10 heures, le 4 novembre, elle se rend en salle de pause. Cette salle est située au sous-sol et accessible par un escalier interne en colimaçon. Lorsque Léa descend l’escalier, elle heurte des cartons stockés sur les deux dernières marches, perd l’équilibre et chute. Avant l’arrivée des secours, Léa est prise en charge par le SST. Suite à cet accident du travail, elle présente une double fracture du tibia qui nécessite un arrêt de travail de 40 jours.`,
+    img: "situation-lea.jpg",
+    prompt: "De quelle manière cela s'est-il passé ?",
+    model: "En descendant l'escalier, elle heurte des cartons stockés sur les deux dernières marches.",
+    keys: "Mots-clés : Descendant, heurte, cartons stockés.",
+    tip: "Conseil : Décris l'action précise qui a causé la chute."
+  },
+  {
+    title: "Situation 1 : Accident de Léa",
+    tag: "Quand ?",
+    text: `Léa, titulaire d’un bac pro Métiers du commerce et de la vente, travaille dans un hypermarché employant 135 salariés. À 10 heures, le 4 novembre, elle se rend en salle de pause. Cette salle est située au sous-sol et accessible par un escalier interne en colimaçon. Lorsque Léa descend l’escalier, elle heurte des cartons stockés sur les deux dernières marches, perd l’équilibre et chute. Avant l’arrivée des secours, Léa est prise en charge par le SST. Suite à cet accident du travail, elle présente une double fracture du tibia qui nécessite un arrêt de travail de 40 jours.`,
+    img: "situation-lea.jpg",
+    prompt: "Quand cela s'est-il passé (Date et Heure) ?",
+    model: "Cela s'est passé à 10 heures, le 4 novembre.",
+    keys: "Mots-clés : 10 heures, 4 novembre.",
+    tip: "Conseil : Cherche bien l'horaire précis et la date dans le texte."
+  },
+
+  /* --- DOCUMENT 2 : LE STRESS --- */
+  {
+    title: "Situation 2 : Le Stress",
+    tag: "Qui ?",
+    text: `Selon une étude [...], plus de la moitié des Français (60 %) ont éprouvé une augmentation de leur niveau de stress au cours des six derniers mois. Un chiffre qui est encore plus important chez les femmes (68 %), mais aussi chez les jeunes de moins de 35 ans (66 %). Parmi ces derniers, la tranche d’âge des 18-24 ans est d’ailleurs la plus exposée au stress (70 %). La situation sanitaire, mais aussi leur inquiétude face à leur avenir et celui de leurs enfants, ont été les principaux facteurs de ce sentiment d’anxiété. Une anxiété qui va souvent de pair avec une baisse de la qualité du sommeil.`,
+    img: "situation-stress.jpg",
+    prompt: "Quelles sont les personnes concernées par le problème (en général) ?",
+    model: "Ce sont plus de la moitié des Français (60 %) qui sont concernés.",
+    keys: "Mots-clés : Plus de la moitié, Français, 60%.",
+    tip: "Conseil : N'oublie pas de citer le pourcentage global donné au début du texte."
+  },
+  {
+    title: "Situation 2 : Le Stress",
+    tag: "Quoi / Causes",
+    text: `Selon une étude [...], plus de la moitié des Français (60 %) ont éprouvé une augmentation de leur niveau de stress au cours des six derniers mois. Un chiffre qui est encore plus important chez les femmes (68 %), mais aussi chez les jeunes de moins de 35 ans (66 %). Parmi ces derniers, la tranche d’âge des 18-24 ans est d’ailleurs la plus exposée au stress (70 %). La situation sanitaire, mais aussi leur inquiétude face à leur avenir et celui de leurs enfants, ont été les principaux facteurs de ce sentiment d’anxiété. Une anxiété qui va souvent de pair avec une baisse de la qualité du sommeil.`,
+    img: "situation-stress.jpg",
+    prompt: "Quelles sont les causes du problème ?",
+    model: "Les causes sont la situation sanitaire et l'inquiétude des Français face à leur avenir.",
+    keys: "Mots-clés : Situation sanitaire, inquiétude, avenir.",
+    tip: "Conseil : Relève les deux causes principales citées à la fin du texte."
+  },
+
+  /* --- DOCUMENT 3 : LE BRUIT --- */
+  {
+    title: "Situation 3 : Le Bruit",
+    tag: "Où ?",
+    text: `Près de 70 % des Français se déclarent gênés par le bruit, en particulier dans les villes où il constitue l’une des principales sources de plaintes des habitants. De simple désagrément, il peut devenir une réelle source de stress constituant alors un problème de santé portant atteinte à la qualité de vie.
+Le coût social du bruit en France a même été évalué par l’ADEME à près de 147 milliards d’euros par an !
+L’organisme humain ne s’habitue pas au bruit. Si nous connaissons depuis longtemps les effets des niveaux sonores élevés sur le système auditif, nous savons maintenant que même des bruits de faible intensité peuvent nuire au bien-être des individus et avoir des répercussions sur leur santé.`,
+    img: "situation-bruit.jpg",
+    prompt: "Où le problème se pose-t-il principalement ?",
+    model: "Le problème se pose en particulier dans les villes.",
+    keys: "Mots-clés : Villes.",
+    tip: "Conseil : Repère le lieu géographique cité dès la première phrase."
+  },
+  {
+    title: "Situation 3 : Le Bruit",
+    tag: "Pourquoi / Conséquences",
+    text: `Près de 70 % des Français se déclarent gênés par le bruit, en particulier dans les villes où il constitue l’une des principales sources de plaintes des habitants. De simple désagrément, il peut devenir une réelle source de stress constituant alors un problème de santé portant atteinte à la qualité de vie.
+Le coût social du bruit en France a même été évalué par l’ADEME à près de 147 milliards d’euros par an !
+L’organisme humain ne s’habitue pas au bruit. Si nous connaissons depuis longtemps les effets des niveaux sonores élevés sur le système auditif, nous savons maintenant que même des bruits de faible intensité peuvent nuire au bien-être des individus et avoir des répercussions sur leur santé.`,
+    img: "situation-bruit.jpg",
+    prompt: "Quelles sont les conséquences du problème (Pourquoi faut-il le régler) ?",
+    model: "Le bruit est source de stress, nuit à la santé et au bien-être, et engendre un coût social élevé.",
+    keys: "Mots-clés : Stress, santé, bien-être, coût social.",
+    tip: "Conseil : Cherche les impacts sur la santé et l'économie (coût)."
+  },
+
+  /* --- DOCUMENT 4 : PANNEAUX --- */
+  {
+    title: "Situation 4 : Les Panneaux",
+    tag: "Où ?",
+    text: `Avec 564 000 accidents de travail et 89 000 maladies professionnelles, tous les employeurs sont contraints par le Code du travail d’afficher un certain nombre d’informations pour assurer la sécurité des salariés afin de prévenir tous risques professionnels (Consignes de sécurité sur un chantier ) (Consignes de sécurité pour
+l’utilisation d’une scie circulaire)`,
+    img: "situation-panneaux.jpg",
+    prompt: "Où ces consignes doivent-elles être mises en place ?",
+    model: "Elles doivent être affichées en entreprise (ou établissement de formation) car c'est une obligation de l'employeur.",
+    keys: "Mots-clés : Entreprise, employeur, Code du travail.",
+    tip: "Conseil : Justifie ta réponse en citant le cadre légal (Code du travail)."
+  }
+];
+
+/* --- STATE --- */
+let state = { idx: 0, score: 0, name: "" };
+
+/* --- UI HELPERS --- */
+const $ = (id) => document.getElementById(id);
+const setAvatar = (mood) => {
+  const img = $("ProfPSEAvatar");
+  if(AVATARS[mood]) img.src = AVATARS[mood];
+};
+
+const speak = (msg, mood="neutral") => {
+  $("ProfPSEText").textContent = msg;
+  setAvatar(mood);
+};
+
+/* --- GAME LOGIC --- */
+function init(){
+  $("loginCard").style.display = "block";
+  $("gameGrid").style.display = "none";
+  $("prenom").focus();
+}
+
+function startGame(){
+  const n = $("prenom").value.trim();
+  if(!n) { alert("Entre ton prénom !"); return; }
+  state.name = n;
+  $("loginCard").style.display = "none";
+  $("gameGrid").style.display = "grid"; 
+  loadQuestion();
+}
+
+function loadQuestion(){
+  if(state.idx >= QUESTIONS.length){ showFinal(); return; }
+  const q = QUESTIONS[state.idx];
+  
+  // UI Reset
+  $("qTitle").textContent = q.title; $("qTag").textContent = q.tag;
+  $("qText").textContent = q.text; $("qImg").src = q.img; $("qPrompt").textContent = q.prompt;
+  
+  // Reset Inputs & Panels
+  $("userAnswer").value = "";
+  $("userAnswer").disabled = false;
+  $("inputZone").style.display = "block";
+  $("correctionZone").style.display = "none";
+  $("qImg").style.display = "block";
+  
+  updateHUD();
+  if(state.idx === 0) speak(`Salut ${state.name} ! Lis bien TOUT le texte pour répondre.`, "neutral");
+  else speak("À toi de chercher dans le texte !", "neutral");
+}
+
+/* Étape 1 : L'élève clique sur "Vérifier" */
+function checkAnswer(){
+  const userTxt = $("userAnswer").value.trim();
+  if(userTxt.length < 5){
+    speak("Ta réponse est trop courte ! Fais une phrase.", "warn");
+    return;
+  }
+
+  // Affichage de la correction
+  const q = QUESTIONS[state.idx];
+  $("userAnswer").disabled = true; // On bloque la zone
+  $("btnCheck").style.display = "none"; // On cache le bouton vérifier
+  
+  $("modelAns").textContent = q.model;
+  $("keywords").textContent = q.keys;
+  $("redacTip").textContent = q.tip;
+  
+  $("correctionZone").style.display = "block"; // Affiche le panneau vert
+  
+  speak("Compare ta réponse avec la mienne. As-tu trouvé les éléments dans le texte ?", "think");
+}
+
+/* Étape 2 : L'élève s'auto-évalue */
+function selfEval(isCorrect){
+  if(isCorrect){
+    state.score++;
+    speak("Super ! L'honnêteté paie.", "happy");
+    $("qCard").classList.add("pop"); setTimeout(()=>$("qCard").classList.remove("pop"), 500);
+  } else {
+    speak("Pas grave, relis bien le texte la prochaine fois.", "neutral");
+  }
+  
+  // Reset bouton check pour la prochaine
+  $("btnCheck").style.display = "inline-block";
+  nextQ();
+}
+
+function nextQ(){ state.idx++; loadQuestion(); }
+
+function updateHUD(){
+  $("txtScore").textContent = state.score; $("txtProg").textContent = `${state.idx}/${QUESTIONS.length}`;
+  $("bar").style.width = `${(state.idx / QUESTIONS.length)*100}%`;
+  const st = $("stepper"); st.innerHTML = "";
+  for(let i=0; i<QUESTIONS.length; i++){ st.innerHTML += `<div class="step ${i===state.idx ? "active" : (i<state.idx ? "done" : "")}"></div>`; }
+}
+
+function showFinal(){
+  $("gameContent").style.display = "none"; $("finalScreen").style.display = "block";
+  $("finalScoreVal").textContent = `${state.score} / ${QUESTIONS.length}`;
+  const pct = state.score / QUESTIONS.length;
+  let msg = "";
+  if(pct > 0.8) { msg = "Excellent ! Tu es prêt pour le Bac Pro."; speak("Super analyse de texte ! Tu gères !", "happy"); launchConfetti(); }
+  else { msg = "Bon entraînement. Essaie d'être plus précis avec les infos du texte."; speak("Bien joué !", "happy"); }
+  $("finalMsg").textContent = msg;
+}
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const pieces = [];
+  for(let i=0; i<100; i++){ pieces.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height - canvas.height, color: `hsl(${Math.random()*360}, 100%, 50%)`, size: Math.random()*8+4, speed: Math.random()*3+2 }); }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); p.y += p.speed; if(p.y > canvas.height) p.y = -10; });
+    requestAnimationFrame(draw);
+  }
+  draw(); setTimeout(()=>cancelAnimationFrame(draw), 5000);
+}
+
+$("startBtn").addEventListener("click", startGame);
+$("prenom").addEventListener("keydown", (e)=>{ if(e.key==="Enter") startGame() });
+$("btnCheck").addEventListener("click", checkAnswer);
+$("btnYes").addEventListener("click", ()=>selfEval(true));
+$("btnNo").addEventListener("click", ()=>selfEval(false));
+
+init();
+</script>
+</body>
+</html>
