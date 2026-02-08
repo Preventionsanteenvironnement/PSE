@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Prévention : Le Jeu Ultime</title>
+    <style>
+        :root {
+            --primary: #6200ea;
+            --accent: #00e5ff;
+            --success: #00c853;
+            --error: #ff1744;
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #ffffff;
+            --modal-bg: rgba(0, 0, 0, 0.9);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 16px; /* Taille de base */
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 10px;
+            background: linear-gradient(135deg, var(--primary), #3700b3);
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+            position: relative;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+        .score-display { font-size: 0.9rem; margin-top: 5px; opacity: 0.9; }
+        .combo { color: var(--accent); font-weight: bold; margin-left: 10px; display:none; }
+
+        /* BOUTONS ACCESSIBILITÉ (A+ A-) */
+        .accessibility-controls {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        .btn-size {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            border-radius: 5px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- ZONE DE JEU --- */
+        #game-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* --- STYLES CARTES & QUIZ --- */
+        .flashcard-container {
+            width: 100%; max-width: 320px; height: 100%; max-height: 500px;
+            aspect-ratio: 2/3; perspective: 1000px; cursor: pointer;
+        }
+        .flashcard-inner {
+            position: relative; width: 100%; height: 100%;
+            transition: transform 0.6s; transform-style: preserve-3d;
+        }
+        .flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 20px; overflow: hidden;
+            background: var(--card-bg); border: 2px solid #333;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+        }
+        .flashcard-back { transform: rotateY(180deg); border-color: var(--accent); }
+        img { width: 100%; height: 100%; object-fit: contain; background: white; }
+
+        .btn-next {
+            margin-top: 15px; padding: 12px 25px; background: var(--accent);
+            color: var(--dark-bg); border: none; border-radius: 50px;
+            font-weight: bold; font-size: 1rem; box-shadow: 0 0 15px var(--accent); cursor: pointer;
+        }
+
+        .sort-container, .quiz-container { width: 100%; max-width: 400px; text-align: center; display: flex; flex-direction: column; height: 100%; }
+        .actor-preview { flex: 1; margin-bottom: 10px; border-radius: 15px; overflow: hidden; border: 3px solid white; min-height: 0; }
+        .sort-buttons { display: flex; gap: 15px; justify-content: center; margin-top: auto; padding-bottom: 10px; }
+        
+        .btn-sort {
+            flex: 1; padding: 15px; border: none; border-radius: 15px;
+            font-weight: bold; font-size: 1rem; color: white; cursor: pointer; transition: transform 0.1s;
+        }
+        .btn-interne { background: #ff9800; }
+        .btn-externe { background: #2979ff; }
+        .btn-sort:active { transform: scale(0.95); }
+
+        .quiz-options { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: auto; }
+        .btn-option {
+            padding: 12px; background: var(--card-bg); color: white;
+            border: 1px solid #444; border-radius: 10px; text-align: left;
+            cursor: pointer; font-size: 0.95rem; transition: background 0.2s;
+        }
+        .btn-option:hover { background: #333; }
+        .btn-option.correct { background: var(--success) !important; border-color: var(--success); }
+        .btn-option.wrong { background: var(--error) !important; border-color: var(--error); opacity: 0.6; }
+
+        /* --- MODAL DE CORRECTION (Remédiation) --- */
+        #correction-modal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-bg); z-index: 100;
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box; text-align: center;
+        }
+        .correction-content {
+            background: #222; padding: 25px; border-radius: 20px;
+            border: 2px solid var(--accent); max-width: 400px; width: 100%;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
+        }
+        .correction-title { font-size: 1.5rem; margin-bottom: 15px; font-weight: bold; }
+        .correction-text { margin-bottom: 20px; line-height: 1.5; font-size: 1.1rem;}
+        .correction-tag { 
+            display: inline-block; padding: 5px 10px; border-radius: 5px; 
+            font-weight: bold; font-size: 0.9rem; margin-bottom: 15px;
+        }
+        .tag-interne { background: #ff9800; color: white; }
+        .tag-externe { background: #2979ff; color: white; }
+
+        /* --- NAVIGATION --- */
+        nav {
+            background: var(--card-bg); display: flex; justify-content: space-around;
+            padding: 10px 0; border-top: 1px solid #333; flex-shrink: 0;
+        }
+        .nav-item {
+            background: none; border: none; color: #888; font-size: 0.8rem;
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
+        .nav-item.active { color: var(--accent); }
+        .nav-icon { font-size: 1.5rem; margin-bottom: 3px; }
+
+        /* --- FEEDBACK VISUEL RAPIDE --- */
+        .feedback-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 5rem; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.5s;
+            z-index: 50; text-shadow: 0 0 20px black;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="mode-title">Révision</h1>
+        <div class="score-display">Score : <span id="score">0</span> <span class="combo" id="combo-display">🔥 x2</span></div>
+        <div class="accessibility-controls">
+            <button class="btn-size" onclick="changeSize(-2)">A-</button>
+            <button class="btn-size" onclick="changeSize(2)">A+</button>
+        </div>
+    </header>
+
+    <div id="game-area"></div>
+
+    <div class="feedback-overlay" id="feedback"></div>
+
+    <div id="correction-modal">
+        <div class="correction-content">
+            <div id="correction-emoji" style="font-size: 3rem; margin-bottom:10px;">❌</div>
+            <div id="correction-title" class="correction-title">Oups !</div>
+            <div id="correction-tag-container"></div>
+            <div id="correction-message" class="correction-text"></div>
+            <button class="btn-next" onclick="closeCorrection()">Compris, suivant ➔</button>
+        </div>
+    </div>
+
+    <nav>
+        <button class="nav-item active" onclick="switchMode('flash')">
+            <span class="nav-icon">🧠</span><span>Apprendre</span>
+        </button>
+        <button class="nav-item" onclick="switchMode('sort')">
+            <span class="nav-icon">🏭</span><span>Interne/Exter.</span>
+        </button>
+        <button class="nav-item" onclick="switchMode('quiz')">
+            <span class="nav-icon">🏆</span><span>Le Quiz</span>
+        </button>
+    </nav>
+
+    <script>
+        // --- CONFIGURATION CHEMIN IMAGES ---
+        const IMAGE_PATH = "flashcard_acteur_prevention/images/";
+
+        // DONNÉES PÉDAGOGIQUES (Avec détails pour la correction)
+        const data = [
+            { name: "Dirigeante", type: "interne", mission: "Pilote l'entreprise, décide", imgActor: "dirigeante.jpg", imgMission: "dirigeante_pilote_lentreprise_decide.jpg", details: "C'est l'employeur. Elle est responsable pénalement de la sécurité." },
+            { name: "Salarié", type: "interne", mission: "Réalise le travail", imgActor: "le_salarie.jpg", imgMission: "le_salarie_realise_le_travail.jpg", details: "Il est aussi acteur de sa propre prévention." },
+            { name: "Manager", type: "interne", mission: "Organise le travail", imgActor: "manager.jpg", imgMission: "manager_organise_le_travail.jpg", details: "Il fait le lien entre la direction et le terrain." },
+            { name: "DRH", type: "interne", mission: "Accueille les nouveaux salariés", imgActor: "DRH.jpg", imgMission: "DRH_accueil_nouveaux_salaries_.jpg", details: "Gère le recrutement et la formation." },
+            { name: "Préventeur", type: "interne", mission: "Coordonne la prévention", imgActor: "preventeur_dentreprise.jpg", imgMission: "preventeur_dentreprise_coordonne_prevention.jpg", details: "C'est le spécialiste technique interne." },
+            { name: "SST", type: "interne", mission: "Apporte les premiers soins", imgActor: "sauveteur_secouriste_travail.jpg", imgMission: "sauveteur_secouriste_travail_apporte_soins.jpg", details: "C'est un salarié formé pour agir en cas d'accident." },
+            { name: "Élue CSE", type: "interne", mission: "Représente les salariés", imgActor: "elue_du_cse.jpg", imgMission: "elue_du_cse_represente_salaries.jpg", details: "Le CSE est obligatoire dès 11 salariés." },
+            { name: "Inspectrice du Travail", type: "externe", mission: "Contrôle la réglementation", imgActor: "inspecteur_du_travail.jpg", imgMission: "inspecteur_du_travail_controle_application_travail.jpg", details: "Elle a un pouvoir de contrôle et de sanction." },
+            { name: "Carsat", type: "externe", mission: "Conseille, assure, contrôle", imgActor: "controleur_de_la_carsat.jpg", imgMission: "controleur_de_la_carsat_conseil_controle_entreprise.jpg", details: "C'est l'assureur des risques professionnels." },
+            { name: "Médecin du Travail", type: "externe", mission: "Surveille l'état de santé", imgActor: "medecin_travail.jpg", imgMission: "medecin_travail_surveille_sante.jpg", details: "Il vérifie l'aptitude médicale du salarié." },
+            { name: "INRS", type: "externe", mission: "Recherche, forme, informe", imgActor: "INRS.jpg", imgMission: "INRS_recherche_informe_forme.jpg", details: "Institut national de recherche et de sécurité." },
+            { name: "Prestataire", type: "externe", mission: "Accompagne, forme, vérifie", imgActor: "prestataire_en_prevention.jpg", imgMission: "prestataire_en_prevention_accompagne_forment_conseil_veridie.jpg", details: "Ex: Organisme de contrôle technique ou IPRP." }
+        ];
+
+        let currentMode = 'flash';
+        let currentIndex = 0;
+        let score = 0;
+        let combo = 0;
+        let shuffledData = [];
+        let mistakes = []; // Pour stocker les erreurs
+
+        function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+        
+        function updateScore(points) {
+            if (points > 0) {
+                combo++;
+                score += (points * (1 + (combo > 2 ? 0.5 : 0)));
+                document.getElementById('combo-display').style.display = combo > 1 ? 'inline' : 'none';
+                document.getElementById('combo-display').innerHTML = `🔥 x${combo}`;
+            } else {
+                combo = 0;
+                document.getElementById('combo-display').style.display = 'none';
+            }
+            document.getElementById('score').innerText = Math.floor(score);
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            score = 0;
+            combo = 0;
+            mistakes = []; 
+            updateScore(0);
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            const titles = { 'flash': 'Mode Apprentissage', 'sort': 'Interne ou Externe ?', 'quiz': 'Le Grand Quiz' };
+            document.getElementById('mode-title').innerText = titles[mode];
+            shuffledData = shuffle([...data]); 
+            currentIndex = 0;
+            renderGame();
+        }
+
+        // --- FONCTION DE REMÉDIATION (Pop-up) ---
+        function showCorrection(isCorrect, item) {
+            const modal = document.getElementById('correction-modal');
+            const title = document.getElementById('correction-title');
+            const msg = document.getElementById('correction-message');
+            const emoji = document.getElementById('correction-emoji');
+            const tags = document.getElementById('correction-tag-container');
+
+            modal.style.display = 'flex';
+
+            if (isCorrect) {
+                emoji.innerHTML = "🎉";
+                title.innerText = "Bravo !";
+                title.style.color = "var(--success)";
+                msg.innerHTML = "C'est la bonne réponse.";
+                tags.innerHTML = "";
+                // Auto-fermeture si juste
+                setTimeout(() => { modal.style.display = 'none'; nextCard(); }, 1000);
+            } else {
+                mistakes.push(item);
+                emoji.innerHTML = "🤔";
+                title.innerText = "Pas tout à fait...";
+                title.style.color = "var(--error)";
+                
+                let tagClass = item.type === 'interne' ? 'tag-interne' : 'tag-externe';
+                let typeLabel = item.type === 'interne' ? '🏢 INTERNE' : '🌍 EXTERNE';
+                tags.innerHTML = `<span class="correction-tag ${tagClass}">${typeLabel}</span>`;
+
+                msg.innerHTML = `
+                    <strong>${item.name}</strong> a pour mission de :<br>
+                    <em style="color:var(--accent); font-size:1.2em">"${item.mission}"</em><br><br>
+                    <small>${item.details}</small>
+                `;
+            }
+        }
+
+        function closeCorrection() {
+            document.getElementById('correction-modal').style.display = 'none';
+            nextCard();
+        }
+
+        function renderGame() {
+            const area = document.getElementById('game-area');
+            area.innerHTML = '';
+            
+            // --- ÉCRAN DE FIN ---
+            if (currentIndex >= shuffledData.length) {
+                let revisionHTML = "";
+                if (mistakes.length > 0) {
+                    let uniqueMistakes = [...new Set(mistakes)];
+                    revisionHTML = `
+                        <div style="background:#330000; padding:15px; border-radius:10px; margin-top:20px; border:1px solid red; text-align:left; width:90%">
+                            <h3 style="color:#ff5252; margin-top:0">⚠️ À réviser :</h3>
+                            <ul style="padding-left:20px; color:#ffcccc;">
+                                ${uniqueMistakes.map(m => `<li><strong>${m.name}</strong> (${m.type})</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    revisionHTML = `<p style="color:var(--success); margin-top:20px">🌟 C'est un sans faute !</p>`;
+                }
+
+                area.innerHTML = `
+                    <div style="text-align:center; width:100%">
+                        <h2>🎉 Terminé !</h2>
+                        <p>Ton score final : <strong style="color:var(--accent); font-size:1.5em">${Math.floor(score)}</strong></p>
+                        ${revisionHTML}
+                        <button class="btn-next" onclick="switchMode('${currentMode}')">Recommencer</button>
+                    </div>`;
+                return;
+            }
+
+            const item = shuffledData[currentIndex];
+
+            if (currentMode === 'flash') {
+                area.innerHTML = `
+                    <div class="flashcard-container" onclick="this.classList.toggle('flipped')">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front"><img src="${IMAGE_PATH + item.imgActor}" alt="?"></div>
+                            <div class="flashcard-back"><img src="${IMAGE_PATH + item.imgMission}" alt="Reponse"></div>
+                        </div>
+                    </div>
+                    <button class="btn-next" onclick="nextCard()">Suivant ➔</button>
+                `;
+            } else if (currentMode === 'sort') {
+                area.innerHTML = `
+                    <div class="sort-container">
+                        <div class="actor-preview"><img src="${IMAGE_PATH + item.imgActor}"></div>
+                        <h3>Où travaille cet acteur ?</h3>
+                        <div class="sort-buttons">
+                            <button class="btn-sort btn-interne" onclick="checkSort('interne')">🏢 Interne</button>
+                            <button class="btn-sort btn-externe" onclick="checkSort('externe')">🌍 Externe</button>
+                        </div>
+                    </div>
+                `;
+            } else if (currentMode === 'quiz') {
+                let options = [item];
+                let others = data.filter(d => d.name !== item.name);
+                options.push(...shuffle(others).slice(0, 2));
+                options = shuffle(options);
+                let buttonsHTML = options.map(opt => 
+                    `<button class="btn-option" onclick="checkQuiz(this, '${opt.name === item.name}')">${opt.mission}</button>`
+                ).join('');
+
+                area.innerHTML = `
+                    <div class="quiz-container">
+                        <div class="actor-preview" style="height:200px"><img src="${IMAGE_PATH + item.imgActor}"></div>
+                        <h3>Quelle est sa mission ?</h3>
+                        <div class="quiz-options">${buttonsHTML}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function nextCard() { currentIndex++; renderGame(); }
+
+        function checkSort(choice) {
+            const item = shuffledData[currentIndex];
+            if (item.type === choice) {
+                updateScore(100);
+                showCorrection(true, item);
+            } else {
+                updateScore(-50);
+                showCorrection(false, item);
+            }
+        }
+
+        function checkQuiz(btn, isCorrect) {
+            const item = shuffledData[currentIndex];
+            const allBtns = document.querySelectorAll('.btn-option');
+            allBtns.forEach(b => b.disabled = true);
+            
+            if (isCorrect === 'true') {
+                btn.classList.add('correct');
+                updateScore(200);
+                showCorrection(true, item);
+            } else {
+                btn.classList.add('wrong');
+                updateScore(0);
+                // Montrer la bonne réponse visuellement
+                allBtns.forEach(b => {
+                    if(b.innerText.includes(item.mission)) b.classList.add('correct');
+                });
+                showCorrection(false, item);
+            }
+        }
+
+        window.onload = () => { shuffledData = shuffle([...data]); renderGame(); };
+    </script>
+
+    <script>
+        let currentSize = 16;
+        function changeSize(delta) {
+            currentSize += delta;
+            if (currentSize < 12) currentSize = 12;
+            if (currentSize > 24) currentSize = 24;
+            document.documentElement.style.fontSize = currentSize + 'px';
+            const h1 = document.querySelector('h1');
+            if(h1) h1.style.fontSize = (2 * (currentSize/16)) + 'rem';
+        }
+    </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+      import { getFirestore, collection, addDoc, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+        authDomain: "devoirs-pse.firebaseapp.com",
+        projectId: "devoirs-pse",
+        storageBucket: "devoirs-pse.appspot.com",
+        messagingSenderId: "614730413904",
+        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      let currentDocId = null;
+      let startTime = Date.now();
+
+      function getIdentity() { return localStorage.getItem("cockpit_student_id"); }
+
+      async function demarrerVisite() {
+        try {
+          let userCode = getIdentity() || "ANONYME";
+          let userClass = localStorage.getItem("cockpit_student_class") || "VISITEUR";
+          const pageName = document.title || window.location.pathname.split("/").pop();
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+
+          const ref = await addDoc(collection(db, "statistiques_usage"), {
+            page: pageName, userCode: userCode, classe: userClass,
+            device: isMobile ? "Mobile" : "Desktop", action: "Consultation", duree: 0,
+            timestamp: serverTimestamp(), date: new Date().toISOString()
+          });
+          currentDocId = ref.id;
+          
+          setInterval(async () => {
+            if (currentDocId && document.visibilityState === 'visible') {
+              try { await updateDoc(doc(db, "statistiques_usage", currentDocId), { duree: Math.floor((Date.now() - startTime) / 1000) }); } catch (e) {}
+            }
+          }, 10000);
+        } catch (e) { console.warn("Erreur Tracker", e); }
+      }
+      demarrerVisite();
+    </script>
+</body>
+</html>

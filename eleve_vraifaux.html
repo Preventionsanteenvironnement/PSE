@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrai / Faux - PSE</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; text-align: center; padding: 20px; display: flex; flex-direction: column; height: 90vh; user-select: none; }
+        
+        #question-box {
+            background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px; border-left: 6px solid #3498db; text-align: left; min-height: 80px; display: flex; align-items: center;
+        }
+        #prof-question { font-size: 1.3rem; font-weight: bold; color: #2c3e50; margin: 0; width: 100%; }
+        #waiting-msg { color: #7f8c8d; font-style: italic; width: 100%; text-align: center;}
+
+        .btn-container { display: flex; flex-direction: column; gap: 20px; flex-grow: 1; justify-content: center; position: relative; }
+        
+        .btn-vote {
+            border: none; border-radius: 15px; padding: 30px; font-size: 2.5rem; font-weight: 800; color: white;
+            cursor: pointer; transition: transform 0.1s, opacity 0.3s; box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        .btn-vote:active { transform: translateY(6px); box-shadow: none; }
+        
+        #btn-vrai { background: #27ae60; }
+        #btn-faux { background: #c0392b; }
+
+        .selected { border: 5px solid #fff; box-shadow: 0 0 0 5px #333 !important; transform: scale(0.98); }
+        .locked { filter: grayscale(1); opacity: 0.5; pointer-events: none; }
+        
+        #lock-msg { display: none; margin-top: 20px; font-weight: bold; color: #e74c3c; font-size: 1.2rem; }
+        #status-msg { margin-top: 10px; height: 20px; color: #34495e; font-weight: 500; }
+
+        /* ÉCRAN DE RÉSULTAT (Feedback) */
+        #result-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); z-index: 10;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            border-radius: 15px; animation: popIn 0.5s;
+        }
+        .res-icon { font-size: 5rem; margin-bottom: 20px; }
+        .res-title { font-size: 2.5rem; font-weight: 900; margin: 0; }
+        .res-subtitle { font-size: 1.2rem; color: #555; margin-top: 10px; }
+        
+        .win { color: #27ae60; }
+        .lose { color: #c0392b; }
+        
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="question-box">
+        <p id="prof-question" style="display:none;"></p>
+        <div id="waiting-msg">En attente de la question...</div>
+    </div>
+
+    <div id="buttons-area" class="btn-container">
+        <button id="btn-vrai" class="btn-vote" onclick="voter('VRAI')">VRAI</button>
+        <button id="btn-faux" class="btn-vote" onclick="voter('FAUX')">FAUX</button>
+        
+        <div id="result-overlay">
+            <div id="res-icon" class="res-icon"></div>
+            <div id="res-title" class="res-title"></div>
+            <div id="res-sub" class="res-subtitle"></div>
+        </div>
+    </div>
+
+    <div id="lock-msg">🛑 Votes terminés</div>
+    <div id="status-msg"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let studentId = localStorage.getItem("pse_student_id");
+        if(!studentId) {
+            studentId = "eleve_" + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem("pse_student_id", studentId);
+        }
+
+        let myVote = null;
+
+        // 1. ECOUTE CONFIG
+        onSnapshot(doc(db, "vraifaux_etat", "config"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const area = document.getElementById("buttons-area");
+                const overlay = document.getElementById("result-overlay");
+
+                // Question
+                if(data.question) {
+                    document.getElementById("prof-question").innerText = data.question;
+                    document.getElementById("prof-question").style.display = "block";
+                    document.getElementById("waiting-msg").style.display = "none";
+                } else {
+                    // Reset total si pas de question
+                    myVote = null;
+                    resetVisuals();
+                }
+
+                // Verrouillage
+                if(data.isOpen) {
+                    area.classList.remove("locked");
+                    document.getElementById("lock-msg").style.display = "none";
+                } else {
+                    area.classList.add("locked");
+                    document.getElementById("lock-msg").style.display = "block";
+                }
+
+                // RÉVÉLATION DU RÉSULTAT
+                if(data.showResult && data.correctAnswer && myVote) {
+                    showMyResult(data.correctAnswer);
+                } else {
+                    overlay.style.display = "none";
+                }
+            }
+        });
+
+        // 2. VOTE
+        window.voter = async (choix) => {
+            myVote = choix;
+            document.querySelectorAll('.btn-vote').forEach(b => b.classList.remove('selected'));
+            const btn = document.getElementById(choix === 'VRAI' ? 'btn-vrai' : 'btn-faux');
+            btn.classList.add('selected');
+            document.getElementById('status-msg').innerText = "Réponse envoyée : " + choix;
+
+            try {
+                await setDoc(doc(db, "vraifaux_reponses", studentId), {
+                    vote: choix,
+                    timestamp: Date.now()
+                });
+            } catch(e) {}
+        };
+
+        function showMyResult(correct) {
+            const overlay = document.getElementById("result-overlay");
+            const icon = document.getElementById("res-icon");
+            const title = document.getElementById("res-title");
+            const sub = document.getElementById("res-sub");
+
+            overlay.style.display = "flex";
+
+            if(myVote === correct) {
+                icon.innerText = "🎉";
+                title.innerText = "BRAVO !";
+                title.className = "res-title win";
+                sub.innerText = "Bonne réponse.";
+            } else {
+                icon.innerText = "🫠";
+                title.innerText = "OUPS...";
+                title.className = "res-title lose";
+                sub.innerText = "La réponse était " + correct;
+            }
+        }
+
+        function resetVisuals() {
+            document.querySelectorAll('.btn-vote').forEach(b => b.classList.remove('selected'));
+            document.getElementById('status-msg').innerText = "";
+            document.getElementById("prof-question").style.display = "none";
+            document.getElementById("waiting-msg").style.display = "block";
+            document.getElementById("result-overlay").style.display = "none";
+            myVote = null;
+        }
+
+    </script>
+</body>
+</html>

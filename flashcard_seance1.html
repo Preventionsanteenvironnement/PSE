@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards : Muscle & Mouvement</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Palette Couleurs "Gaming/Ados" */
+            --primary: #6C63FF;       /* Violet principal */
+            --accent: #FF6584;        /* Rose/Rouge pop */
+            --success: #00D2D3;       /* Cyan vif */
+            --bg-color: #F0F3F8;
+            --text-color: #2D3436;
+            --card-front: #ffffff;
+            --card-back: #2D3436;     /* Fond sombre pour la réponse */
+            --text-back: #ffffff;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+            overflow-x: hidden; /* Évite le scroll horizontal sur mobile */
+        }
+
+        /* --- HEADER --- */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin: 0;
+            text-transform: uppercase;
+            font-size: 1.8em;
+            letter-spacing: 1px;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            color: #636e72;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        /* --- SCÈNE 3D POUR LA CARTE --- */
+        .scene {
+            width: 100%;
+            max-width: 380px; /* Taille idéale mobile */
+            height: 520px;    /* Hauteur fixe pour éviter les sauts */
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Pour Safari */
+            backface-visibility: hidden;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            box-sizing: border-box;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(108, 99, 255, 0.15);
+        }
+
+        /* --- DESIGN FACE AVANT (QUESTION) --- */
+        .card-face-front {
+            background-color: var(--card-front);
+            border: 4px solid white;
+        }
+
+        .card-face-front::after {
+            content: "TAP TO FLIP 👆"; /* Indication tactile */
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.8em;
+            color: #b2bec3;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        /* --- DESIGN FACE ARRIÈRE (RÉPONSE) --- */
+        .card-face-back {
+            background: linear-gradient(135deg, var(--primary) 0%, #8e44ad 100%);
+            color: var(--text-back);
+            transform: rotateY(180deg);
+            border: 4px solid rgba(255,255,255,0.2);
+        }
+
+        /* --- CONTENU DE LA CARTE --- */
+        .category {
+            position: absolute;
+            top: 25px;
+            background: rgba(0,0,0,0.05);
+            padding: 5px 12px;
+            border-radius: 15px;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--primary);
+        }
+
+        .card-face-back .category {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .question-text {
+            font-size: 1.4em;
+            font-weight: 700;
+            line-height: 1.4;
+            margin: 10px 0;
+        }
+
+        .answer-text {
+            font-size: 1.3em;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .card-img {
+            max-width: 100%;
+            max-height: 160px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 2px solid rgba(0,0,0,0.1);
+            object-fit: contain;
+            display: block;
+        }
+
+        .card-face-back .card-img {
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        /* --- BOUTONS --- */
+        .controls {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-prev {
+            background-color: white;
+            color: var(--primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .btn-next {
+            background-color: var(--accent);
+            color: white;
+            box-shadow: 0 8px 20px rgba(255, 101, 132, 0.4);
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        /* --- PROGRESSION --- */
+        .progress-container {
+            width: 100%;
+            max-width: 380px;
+            margin-top: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #dfe6e9;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .counter {
+            font-weight: 800;
+            color: #b2bec3;
+            font-size: 0.9em;
+            width: 60px;
+            text-align: right;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⚡ Flash Cards</h1>
+        <div class="subtitle">Muscle & Mouvement</div>
+    </header>
+
+    <div class="scene">
+        <div class="card" id="flashcard" onclick="flipCard()">
+            <div class="card-face card-face-front">
+                <span class="category" id="cat-front">Catégorie</span>
+                <img id="img-front" class="card-img" style="display:none;">
+                <div class="question-text" id="q-text">Chargement...</div>
+            </div>
+
+            <div class="card-face card-face-back">
+                <span class="category">RÉPONSE</span>
+                <img id="img-back" class="card-img" style="display:none;">
+                <div class="answer-text" id="a-text">...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-prev" onclick="prevCard()">↩ Retour</button>
+        <button class="btn btn-next" onclick="nextCard()">Suivant ➔</button>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="counter" id="counter">1 / 15</div>
+    </div>
+
+<script>
+    // --- DONNÉES (Questions basées sur vos docs) ---
+    // Les images doivent être dans le même dossier
+    const cardsData = [
+        {
+            q: "Quel est l'organe de COMMANDE du mouvement ?",
+            a: "Le Cerveau 🧠",
+            cat: "Anatomie",
+            img: "schema_mouvement.jpg", 
+            imgSide: "front" // L'image s'affiche sur la question pour aider
+        },
+        {
+            q: "Quel est l'organe MOTEUR qui effectue le mouvement ?",
+            a: "Le Muscle strié squelettique 💪",
+            cat: "Anatomie"
+        },
+        {
+            q: "Quel conducteur transporte le message nerveux ?",
+            a: "Le Nerf moteur ⚡",
+            cat: "Système Nerveux"
+        },
+        {
+            q: "Qu'est-ce qui attache le muscle à l'os ?",
+            a: "Le Tendon",
+            cat: "Structure",
+            img: "schema_muscle.jpg",
+            imgSide: "back" // L'image s'affiche avec la réponse pour vérifier
+        },
+        {
+            q: "CONTRACTILITÉ",
+            a: "Le muscle se raccourcit et s'épaissit.",
+            cat: "Définition",
+            img: "schema_proprietes.jpg",
+            imgSide: "back"
+        },
+        {
+            q: "EXCITABILITÉ",
+            a: "Le muscle reçoit un signal et y répond.",
+            cat: "Définition",
+            img: "schema_proprietes.jpg",
+            imgSide: "back"
+        },
+        {
+            q: "ÉLASTICITÉ",
+            a: "Le muscle reprend sa forme initiale après étirement.",
+            cat: "Définition",
+            img: "schema_proprietes.jpg",
+            imgSide: "back"
+        },
+        {
+            q: "TONICITÉ",
+            a: "Légère tension au repos. Sert à la posture (tenir debout).",
+            cat: "Définition",
+            img: "schema_proprietes.jpg",
+            imgSide: "back"
+        },
+        {
+            q: "De quoi est composé un 'Faisceau' ?",
+            a: "De plusieurs Fibres musculaires.",
+            cat: "Structure",
+            img: "schema_muscle.jpg",
+            imgSide: "back"
+        },
+        {
+            q: "Je retire ma main du feu : Quel type de mouvement ?",
+            a: "Un Réflexe (Automatique).",
+            cat: "Mouvement"
+        },
+        {
+            q: "Je tire un penalty : Quel type de mouvement ?",
+            a: "Un Mouvement Volontaire (Décidé).",
+            cat: "Mouvement",
+            img: "schema_mouvement.jpg",
+            imgSide: "front"
+        },
+        {
+            q: "Quel est l'ordre du trajet nerveux ?",
+            a: "1. Cerveau ➔ 2. Nerf ➔ 3. Muscle",
+            cat: "Mécanisme"
+        },
+        {
+            q: "Qu'est-ce qui apporte l'énergie au muscle ?",
+            a: "Le Sang (via les vaisseaux sanguins).",
+            cat: "Physiologie",
+            img: "schema_muscle.jpg",
+            imgSide: "back"
+        },
+        {
+            q: "Pourquoi dit-on que le muscle est 'strié' ?",
+            a: "Car il a des bandes (rayures) visibles au microscope.",
+            cat: "Observation"
+        },
+        {
+            q: "Rôle de la moelle épinière (Mvt Volontaire) ?",
+            a: "Elle fait passer le message du cerveau vers les nerfs.",
+            cat: "Système Nerveux"
+        }
+    ];
+
+    // --- LOGIQUE DU JEU ---
+    let currentIndex = 0;
+    const cardEl = document.getElementById('flashcard');
+    const qText = document.getElementById('q-text');
+    const aText = document.getElementById('a-text');
+    const catFront = document.getElementById('cat-front');
+    const imgFront = document.getElementById('img-front');
+    const imgBack = document.getElementById('img-back');
+    const progressFill = document.getElementById('progress');
+    const counter = document.getElementById('counter');
+
+    function loadCard(index) {
+        const data = cardsData[index];
+        
+        // Remet la carte face avant si elle était retournée
+        cardEl.classList.remove('is-flipped');
+
+        // Petit délai pour que le texte change quand la carte est de face
+        setTimeout(() => {
+            qText.innerText = data.q;
+            aText.innerText = data.a;
+            catFront.innerText = data.cat;
+
+            // Gestion des images
+            imgFront.style.display = 'none';
+            imgBack.style.display = 'none';
+
+            if(data.img) {
+                if(data.imgSide === 'front') {
+                    imgFront.src = data.img;
+                    imgFront.style.display = 'block';
+                } else {
+                    imgBack.src = data.img;
+                    imgBack.style.display = 'block';
+                }
+            }
+
+            // Mise à jour de la barre
+            const percent = ((index + 1) / cardsData.length) * 100;
+            progressFill.style.width = percent + "%";
+            counter.innerText = (index + 1) + " / " + cardsData.length;
+        }, 250); // Attend la moitié de l'animation de retour
+    }
+
+    function flipCard() {
+        cardEl.classList.toggle('is-flipped');
+    }
+
+    function nextCard() {
+        if (currentIndex < cardsData.length - 1) {
+            currentIndex++;
+            loadCard(currentIndex);
+        } else {
+            // Effet de fin de pile
+            if(confirm("Tu as terminé la série ! Recommencer ?")) {
+                currentIndex = 0;
+                loadCard(0);
+            }
+        }
+    }
+
+    function prevCard() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadCard(currentIndex);
+        }
+    }
+
+    // Initialisation
+    loadCard(0);
+
+</script>
+
+</body>
+</html>

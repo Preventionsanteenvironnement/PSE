@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Participation Live</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* STYLE MOBILE */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #f0f4f8; color: #333; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* LOGIN */
+        #login-screen { position: fixed; inset: 0; background: #f0f4f8; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
+        /* APP */
+        #app-screen { display: none; flex-direction: column; height: 100%; }
+        .header { flex-shrink: 0; text-align: center; margin-bottom: 20px; }
+        .label { text-transform: uppercase; font-size: 0.7rem; font-weight: 900; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; }
+        .question-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; min-height: 80px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #0f172a; text-align: center; }
+        .input-wrapper { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        
+        input[type="text"] { width: 100%; padding: 18px; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 1.1rem; text-align: center; font-weight: bold; outline: none; transition: 0.3s; background: white; -webkit-appearance: none; margin-bottom: 15px; }
+        input[type="text"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        
+        button { width: 100%; padding: 18px; border: none; border-radius: 12px; background: #3b82f6; color: white; font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #2563eb; transition: 0.1s; }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        
+        .footer { height: 40px; text-align: center; margin-top: 20px; font-size: 0.8rem; color: #94a3b8; }
+        .status { font-weight: bold; font-size: 0.9rem; opacity: 0; transition: 0.3s; margin-top: 10px; text-align: center; }
+        .success { color: #10b981; } .error { color: #ef4444; }
+
+        /* OVERLAYS */
+        #lock-overlay { position: absolute; inset: 0; background: rgba(240, 244, 248, 0.95); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        #alert-overlay { position: absolute; inset: 0; background: #ef4444; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; animation: flash 0.5s infinite; }
+        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <h1 style="color:#0f172a; margin-bottom:30px;">👋 Bonjour !</h1>
+        <input type="text" id="username" placeholder="Ton Prénom ?" autocomplete="off">
+        <button onclick="joinSession()">REJOINDRE LE COURS</button>
+    </div>
+
+    <div id="app-screen">
+        <div class="header">
+            <div class="label">Question en cours</div>
+            <div id="display-question" class="question-card">...</div>
+        </div>
+        <div class="input-wrapper">
+            <input type="text" id="word-input" placeholder="Ta réponse..." autocomplete="off">
+            <button id="btn-send" onclick="sendWord()">ENVOYER 🚀</button>
+            <div id="status-msg" class="status">Message envoyé !</div>
+        </div>
+        <div class="footer">Connecté en tant que <b id="display-name">...</b></div>
+        
+        <div id="lock-overlay"><div style="font-size:4rem;">🔒</div><div style="font-size:1.5rem; font-weight:900; color:#ef4444;">VOTES CLOS</div></div>
+        <div id="alert-overlay"><div style="font-size:4rem;">📢</div><div style="font-size:2rem; font-weight:900;">LE PROF T'APPELLE !</div></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let myName = "";
+
+        // LOGIN
+        window.joinSession = async () => {
+            const val = document.getElementById('username').value.trim();
+            if(!val) return;
+            myName = val;
+            document.getElementById('display-name').innerText = myName;
+            await addDoc(collection(db, "nuage_presence"), { name: myName, timestamp: Date.now() });
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+        };
+
+        // LISTENERS
+        onSnapshot(doc(db, "nuage_etat", "config"), (snap) => {
+            if(snap.exists()){
+                const d = snap.data();
+                document.getElementById('display-question').innerText = d.question || "En attente...";
+                const lock = document.getElementById('lock-overlay');
+                const inp = document.getElementById('word-input');
+                if(d.isOpen === false) { lock.style.display = "flex"; inp.blur(); } else { lock.style.display = "none"; }
+                
+                const alrt = document.getElementById('alert-overlay');
+                if(d.solicitedStudent && d.solicitedStudent.toLowerCase() === myName.toLowerCase()) {
+                    alrt.style.display = "flex"; if(navigator.vibrate) navigator.vibrate([500,200,500]);
+                } else { alrt.style.display = "none"; }
+            }
+        });
+
+        // SEND (VERS SALLE D'ATTENTE)
+        window.sendWord = async () => {
+            const inp = document.getElementById('word-input');
+            const txt = inp.value.trim();
+            if(!txt) return;
+            // Envoi dans 'nuage_attente' (Salle d'attente)
+            try {
+                await addDoc(collection(db, "nuage_attente"), { text: txt, student: myName, timestamp: Date.now() });
+                inp.value = "";
+                showStatus("Envoyé au prof ! (Attente validation)", "success");
+            } catch(e) { showStatus("Erreur (fermé ?)", "error"); }
+        };
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status-msg');
+            el.innerText = msg; el.className = "status " + type; el.style.opacity = 1;
+            setTimeout(() => el.style.opacity = 0, 2000);
+        }
+
+        document.getElementById('word-input').addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendWord(); });
+        document.getElementById('username').addEventListener('keypress', (e)=>{ if(e.key==='Enter') joinSession(); });
+    </script>
+</body>
+</html>
