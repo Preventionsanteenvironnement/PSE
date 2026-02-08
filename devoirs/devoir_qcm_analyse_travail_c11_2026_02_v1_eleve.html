@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSE - L'analyse d'une situation de travail (Module C11)</title>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://preventionsanteenvironnement.github.io">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5; color: #1a1a2e; line-height: 1.6; padding: 10px;
+        }
+        .container {
+            max-width: 900px; margin: 0 auto; background: #fff;
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff; padding: 28px 30px; text-align: center;
+        }
+        .header h1 { font-size: 1.5em; margin-bottom: 4px; }
+        .header .subtitle { font-size: 1em; opacity: 0.9; }
+        .header .module-tag {
+            display: inline-block; background: rgba(255,255,255,0.25);
+            padding: 4px 14px; border-radius: 20px; font-size: 0.85em; margin-top: 8px;
+        }
+        .competences-box {
+            background: #f8f9ff; border-left: 4px solid #6c5ce7;
+            margin: 20px 24px; padding: 16px 20px; border-radius: 0 8px 8px 0;
+        }
+        .competences-box h3 { color: #6c5ce7; margin-bottom: 8px; font-size: 0.95em; }
+        .competences-box ul { list-style: none; padding: 0; }
+        .competences-box li { padding: 4px 0; font-size: 0.9em; border-bottom: 1px solid #e8e8f0; }
+        .competences-box li:last-child { border-bottom: none; }
+        .comp-tag {
+            display: inline-block; background: #6c5ce7; color: #fff;
+            padding: 1px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; margin-right: 6px;
+        }
+        .body-content { padding: 0 24px 24px; }
+        .identification {
+            background: #fff3e0; border: 2px solid #ff9800;
+            border-radius: 10px; padding: 16px 20px; margin: 20px 0;
+        }
+        .identification h3 { color: #e65100; margin-bottom: 10px; }
+        .identification .field-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+        .identification label { font-weight: 600; font-size: 0.9em; }
+        .identification input {
+            padding: 8px 12px; border: 2px solid #ffcc80; border-radius: 6px;
+            font-size: 0.95em; background: #fff;
+        }
+        .identification input:focus { border-color: #ff9800; outline: none; }
+        .situation-box {
+            background: #e8f5e9; border: 2px solid #4caf50;
+            border-radius: 10px; padding: 18px 20px; margin: 20px 0;
+        }
+        .situation-box h3 { color: #2e7d32; margin-bottom: 10px; font-size: 1.05em; }
+        .situation-box p { font-size: 0.93em; margin-bottom: 8px; text-align: justify; }
+        .document-box {
+            background: #fff8e1; border: 1px solid #ffc107;
+            border-radius: 8px; padding: 14px 18px; margin: 14px 0;
+        }
+        .document-box h4 { color: #f57f17; margin-bottom: 8px; font-size: 0.95em; }
+        .document-box p, .document-box li { font-size: 0.88em; }
+        .document-box ul { padding-left: 18px; margin-top: 6px; }
+        .section-title {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff; padding: 10px 18px; border-radius: 8px; margin: 28px 0 16px; font-size: 1em;
+        }
+        .question-block {
+            background: #fafbff; border: 1px solid #e0e0e0;
+            border-radius: 8px; padding: 16px 18px; margin: 14px 0;
+        }
+        .question-block .q-label {
+            display: inline-block; background: #6c5ce7; color: #fff;
+            width: 28px; height: 28px; line-height: 28px; text-align: center;
+            border-radius: 50%; font-size: 0.8em; font-weight: bold; margin-right: 8px;
+        }
+        .question-block .q-comp {
+            display: inline-block; background: #e8eaf6; color: #3949ab;
+            padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; margin-left: 6px;
+        }
+        .question-block .q-points {
+            float: right; background: #e0f7fa; color: #006064;
+            padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: bold;
+        }
+        .question-block .q-text { margin: 10px 0; font-size: 0.93em; }
+        .question-block .q-text strong { color: #6c5ce7; }
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .checkbox-group label {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 14px; background: #fff; border: 1px solid #e0e0e0;
+            border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: background 0.2s;
+        }
+        .checkbox-group label:hover { background: #f3f0ff; border-color: #a29bfe; }
+        .checkbox-group input[type="radio"],
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #6c5ce7; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; }
+        .eval-table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+        .eval-table th { background: #6c5ce7; color: #fff; padding: 10px 8px; text-align: center; }
+        .eval-table td { padding: 10px 8px; border: 1px solid #e0e0e0; text-align: center; }
+        .eval-table td:first-child { text-align: left; font-weight: 500; }
+        .eval-table tr:nth-child(even) { background: #f8f8ff; }
+        .eval-table input[type="radio"] { width: 18px; height: 18px; accent-color: #6c5ce7; }
+        .answer-input {
+            padding: 8px 14px; border: 2px solid #d1c4e9; border-radius: 6px;
+            font-size: 0.95em; width: 180px; transition: border 0.2s;
+        }
+        .answer-input:focus { border-color: #6c5ce7; outline: none; box-shadow: 0 0 0 3px rgba(108,92,231,0.15); }
+        .answer-select {
+            padding: 8px 14px; border: 2px solid #d1c4e9; border-radius: 6px;
+            font-size: 0.95em; background: #fff; min-width: 200px;
+        }
+        .answer-select:focus { border-color: #6c5ce7; outline: none; }
+        .submit-section { text-align: center; margin: 30px 0; }
+        .submit-btn {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff; border: none; padding: 14px 40px;
+            font-size: 1.1em; font-weight: bold; border-radius: 30px;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,92,231,0.35); }
+        .submit-btn:disabled { background: #bbb; cursor: not-allowed; transform: none; box-shadow: none; }
+        @media (max-width: 768px) {
+            body { padding: 4px; } .header { padding: 18px 16px; } .header h1 { font-size: 1.2em; }
+            .body-content { padding: 0 14px 14px; } .identification .field-row { flex-direction: column; }
+            .question-block { padding: 12px 14px; } .eval-table { font-size: 0.8em; } .answer-input { width: 100%; }
+        }
+        @media (max-width: 480px) { .header h1 { font-size: 1em; } .checkbox-group label { padding: 6px 10px; font-size: 0.85em; } }
+        .paste-alert {
+            display: none; background: #ffebee; border: 2px solid #f44336; color: #c62828;
+            padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85em; font-weight: bold;
+        }
+    </style>
+</head>
+<body data-id-exercice="devoir_qcm_analyse_travail_c11_2026_02_v1">
+<div class="container">
+    <div class="header">
+        <h1>L'analyse d'une situation de travail</h1>
+        <div class="subtitle">Prevention Sante Environnement - Bac Pro</div>
+        <div class="module-tag">Module C11 - Thematique C</div>
+    </div>
+    <div class="competences-box">
+        <h3>Competences evaluees (referentiel Bac Pro)</h3>
+        <ul>
+            <li><span class="comp-tag">C1</span> Traiter une information</li>
+            <li><span class="comp-tag">C2</span> Appliquer une demarche d'analyse dans une situation donnee</li>
+            <li><span class="comp-tag">C3</span> Expliquer un phenomene physiologique, un enjeu environnemental, une disposition reglementaire, en lien avec une mesure de prevention</li>
+            <li><span class="comp-tag">C4</span> Proposer une solution pour resoudre un probleme</li>
+        </ul>
+    </div>
+    <div class="body-content">
+
+    <!-- IDENTIFICATION : code eleve + date UNIQUEMENT (RGPD) -->
+    <div class="identification">
+        <h3>Identification</h3>
+        <div class="field-row">
+            <div>
+                <label for="code-eleve">Code eleve :</label>
+                <input type="text" id="code-eleve" class="reponse-eleve" data-qid="code_eleve" placeholder="Votre code">
+            </div>
+            <div>
+                <label for="date-eval">Date :</label>
+                <input type="date" id="date-eval" class="reponse-eleve" data-qid="date_eval">
+            </div>
+        </div>
+    </div>
+
+    <!-- SITUATION-PROBLEME -->
+    <div class="situation-box" data-source="document">
+        <h3>Situation-probleme : Le poste de poinconnage de Clement</h3>
+        <p>L'entreprise G. emploie 80 salaries et fabrique des armoires metalliques d'energie. Le comite social et economique (CSE) mene une etude sur les conditions de travail au <strong>poste de poinconnage</strong>, qui concerne <strong>10 operateurs</strong> organises en <strong>travail poste (3 x 8)</strong>, du lundi au vendredi.</p>
+        <p><strong>Clement</strong>, 43 ans, mesure 1,65 m et est droitier. Il travaille dans l'entreprise depuis 4 ans et occupe le poste de poinconnage depuis 8 mois. Chaque jour, pendant <strong>7 heures</strong>, il poinconnne des plaques metalliques dont la superficie est comprise entre 1 m<sup>2</sup> et 1,5 m<sup>2</sup>, pesant de <strong>8 a 10 kg</strong> la plaque.</p>
+        <p>Son travail consiste a : saisir une plaque sur une palette (bras et jambes tendus, dos courbe), se redresser en pivotant avec torsion du buste, se deplacer de 5 m en portant la plaque <strong>bras tendus et leves au-dessus des epaules</strong>, deposer la plaque sur la poinconneuse, actionner la pedale, puis activer le programme de poinconnage a l'aide de la main droite. Le fonctionnement de la machine genere des <strong>sons impulsionnels</strong>.</p>
+        <p>Le niveau sonore au poste oscille entre <strong>78 dB(A) et 86 dB(A)</strong> lors du fonctionnement de la poinconneuse.</p>
+        <p>En fin de journee, Clement ressent parfois des <strong>douleurs aux epaules</strong> et au <strong>dos</strong>, ainsi que des <strong>bourdonnements d'oreilles</strong>. Il reconnait ne pas toujours porter ses bouchons d'oreilles ou le casque antibruit. L'entreprise met a disposition : chaussures de securite, tenue de travail, bouchons d'oreilles, casque antibruit et gants.</p>
+        <p>Clement est satisfait de son travail et souhaite evoluer dans l'entreprise.</p>
+    </div>
+
+    <!-- ======== PARTIE 1 : Questions directes sur la situation (C1) ======== -->
+    <div class="section-title">Partie 1 - Analyser la situation</div>
+
+    <div class="question-block">
+        <span class="q-label">1</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text"><strong>Identifier</strong> le poste etudie dans l'entreprise G. en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_1_poste" value="poste_soudure" class="reponse-eleve" data-qid="q_1_poste"> Poste de soudure</label>
+            <label><input type="radio" name="q_1_poste" value="poste_poinconnage" class="reponse-eleve" data-qid="q_1_poste"> Poste de poinconnage</label>
+            <label><input type="radio" name="q_1_poste" value="poste_peinture" class="reponse-eleve" data-qid="q_1_poste"> Poste de peinture</label>
+            <label><input type="radio" name="q_1_poste" value="poste_assemblage" class="reponse-eleve" data-qid="q_1_poste"> Poste d'assemblage</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">2</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text"><strong>Indiquer</strong> le nombre d'operateurs travaillant au poste de poinconnage en completant le champ ci-dessous.</div>
+        <div><input type="number" class="reponse-eleve answer-input" data-qid="q_2_nb_operateurs" min="0" step="1" placeholder="Nombre"> operateurs</div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">3</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text"><strong>Identifier</strong> l'organisation du travail au poste de poinconnage en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_3_organisation" value="jour_uniquement" class="reponse-eleve" data-qid="q_3_organisation"> Travail de jour uniquement (8 h - 17 h)</label>
+            <label><input type="radio" name="q_3_organisation" value="travail_poste_3x8" class="reponse-eleve" data-qid="q_3_organisation"> Travail poste en 3 x 8</label>
+            <label><input type="radio" name="q_3_organisation" value="nuit_uniquement" class="reponse-eleve" data-qid="q_3_organisation"> Travail de nuit uniquement</label>
+            <label><input type="radio" name="q_3_organisation" value="weekend" class="reponse-eleve" data-qid="q_3_organisation"> Travail le week-end uniquement</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">4</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">Le niveau sonore au poste de poinconnage peut depasser le seuil de danger de 85 dB(A) pour l'oreille.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_4_vf_bruit" value="vrai" class="reponse-eleve" data-qid="q_4_vf_bruit"> Vrai</label>
+            <label><input type="radio" name="q_4_vf_bruit" value="faux" class="reponse-eleve" data-qid="q_4_vf_bruit"> Faux</label>
+        </div>
+    </div>
+
+    <!-- ======== PARTIE 2 : Document A + questions ergonomie (C1) ======== -->
+    <div class="section-title">Partie 2 - L'ergonomie et ses acteurs</div>
+
+    <div class="document-box" data-source="document">
+        <h4>Document A - L'ergonomie et ses acteurs</h4>
+        <p>L'ergonomie est une <strong>discipline scientifique qui analyse le fonctionnement de l'homme en activite professionnelle</strong>. Elle vise a adapter les conditions de travail aux capacites de l'operateur, avec des objectifs de sante et d'efficacite.</p>
+        <p>Un <strong>acteur ergonomique</strong> est toute personne qui, dans le cadre de son travail, contribue a ameliorer une situation de travail. <strong>Tout salarie peut etre acteur en ergonomie</strong> (operateur, chef d'atelier, medecin du travail, etc.).</p>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">5</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document A, <strong>identifier</strong> la bonne definition de l'ergonomie en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_5_def_ergonomie" value="finances_entreprise" class="reponse-eleve" data-qid="q_5_def_ergonomie"> Discipline qui etudie les finances de l'entreprise</label>
+            <label><input type="radio" name="q_5_def_ergonomie" value="analyse_homme_travail" class="reponse-eleve" data-qid="q_5_def_ergonomie"> Discipline scientifique qui analyse le fonctionnement de l'homme en activite professionnelle</label>
+            <label><input type="radio" name="q_5_def_ergonomie" value="reparation_machines" class="reponse-eleve" data-qid="q_5_def_ergonomie"> Technique de reparation et de maintenance des machines</label>
+            <label><input type="radio" name="q_5_def_ergonomie" value="gestion_stocks" class="reponse-eleve" data-qid="q_5_def_ergonomie"> Methode de gestion des stocks et des approvisionnements</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">6</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document A : seul le medecin du travail peut etre acteur en ergonomie.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_6_vf_acteur_ergo" value="vrai" class="reponse-eleve" data-qid="q_6_vf_acteur_ergo"> Vrai</label>
+            <label><input type="radio" name="q_6_vf_acteur_ergo" value="faux" class="reponse-eleve" data-qid="q_6_vf_acteur_ergo"> Faux</label>
+        </div>
+    </div>
+
+    <!-- ======== PARTIE 3 : Document B + questions tache/activite (C1) ======== -->
+    <div class="section-title">Partie 3 - Travail prescrit, travail reel, tache et activite</div>
+
+    <div class="document-box" data-source="document">
+        <h4>Document B - Travail prescrit, travail reel, tache et activite</h4>
+        <p><strong>Le travail prescrit</strong> correspond a ce que l'entreprise demande a l'operateur.</p>
+        <p><strong>Le travail reel</strong> est l'ensemble des taches reelles et des activites reelles.</p>
+        <p><strong>La tache</strong> correspond a ce que fait l'operateur (les etapes du travail). Exemples : il charge la palette, il nettoie les plans de travail.</p>
+        <p><strong>L'activite</strong> designe comment l'operateur realise la tache : postures, gestes, deplacements. Exemples : il est a genoux, bras en hauteur, dos courbe.</p>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">7</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document B et de la situation, <strong>identifier</strong> le travail prescrit de Clement en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_7_travail_prescrit" value="porter_plaques_vite" class="reponse-eleve" data-qid="q_7_travail_prescrit"> Porter des plaques metalliques le plus vite possible</label>
+            <label><input type="radio" name="q_7_travail_prescrit" value="poinconner_plaques_7h" class="reponse-eleve" data-qid="q_7_travail_prescrit"> Poinconner des plaques metalliques pendant 7 heures</label>
+            <label><input type="radio" name="q_7_travail_prescrit" value="nettoyer_poinconneuse" class="reponse-eleve" data-qid="q_7_travail_prescrit"> Nettoyer la poinconneuse a commande numerique</label>
+            <label><input type="radio" name="q_7_travail_prescrit" value="surveiller_operateurs" class="reponse-eleve" data-qid="q_7_travail_prescrit"> Surveiller les autres operateurs du poste</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">8</span><span class="q-comp">C1</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document B, <strong>identifier</strong> la bonne definition du travail reel en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_8_def_travail_reel" value="demande_entreprise" class="reponse-eleve" data-qid="q_8_def_travail_reel"> Ce que l'entreprise demande a l'operateur</label>
+            <label><input type="radio" name="q_8_def_travail_reel" value="realise_operateur" class="reponse-eleve" data-qid="q_8_def_travail_reel"> L'ensemble des taches et activites que l'operateur realise effectivement</label>
+            <label><input type="radio" name="q_8_def_travail_reel" value="horaires_travail" class="reponse-eleve" data-qid="q_8_def_travail_reel"> Les horaires de travail imposes par l'entreprise</label>
+            <label><input type="radio" name="q_8_def_travail_reel" value="salaire_operateur" class="reponse-eleve" data-qid="q_8_def_travail_reel"> Le salaire et les avantages de l'operateur</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">9</span><span class="q-comp">C1</span><span class="q-points">2 pts (0.5 x 4)</span>
+        <div class="q-text">A partir du document B, <strong>indiquer</strong> pour chaque observation s'il s'agit d'une <strong>tache</strong> ou d'une <strong>activite</strong> en cochant la bonne reponse.</div>
+        <div class="table-wrapper">
+            <table class="eval-table">
+                <thead><tr><th style="text-align:left;">Observation du travail reel</th><th>Tache</th><th>Activite</th></tr></thead>
+                <tbody>
+                    <tr><td>9a. Fanny nettoie les plans de travail.</td>
+                        <td><input type="radio" name="q_9a_fanny" value="tache" class="reponse-eleve" data-qid="q_9a_fanny"></td>
+                        <td><input type="radio" name="q_9a_fanny" value="activite" class="reponse-eleve" data-qid="q_9a_fanny"></td></tr>
+                    <tr><td>9b. Victor est couche sous la voiture, les deux bras en hauteur.</td>
+                        <td><input type="radio" name="q_9b_victor" value="tache" class="reponse-eleve" data-qid="q_9b_victor"></td>
+                        <td><input type="radio" name="q_9b_victor" value="activite" class="reponse-eleve" data-qid="q_9b_victor"></td></tr>
+                    <tr><td>9c. Martin charge le camion de sacs de ciment.</td>
+                        <td><input type="radio" name="q_9c_martin" value="tache" class="reponse-eleve" data-qid="q_9c_martin"></td>
+                        <td><input type="radio" name="q_9c_martin" value="activite" class="reponse-eleve" data-qid="q_9c_martin"></td></tr>
+                    <tr><td>9d. Chloe effectue des mouvements circulaires avec son poignet, son coude et son epaule.</td>
+                        <td><input type="radio" name="q_9d_chloe" value="tache" class="reponse-eleve" data-qid="q_9d_chloe"></td>
+                        <td><input type="radio" name="q_9d_chloe" value="activite" class="reponse-eleve" data-qid="q_9d_chloe"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ======== PARTIE 4 : Document C + determinants/effets (C2) ======== -->
+    <div class="section-title">Partie 4 - Le schema de comprehension : determinants et effets</div>
+
+    <div class="document-box" data-source="document">
+        <h4>Document C - Les composantes d'une situation de travail</h4>
+        <p><strong>Les determinants "operateur"</strong> = ce qui caracterise l'operateur : age, taille, sexe, qualification, anciennete, lateralite (droitier/gaucher).</p>
+        <p><strong>Les determinants "entreprise"</strong> = ce que l'entreprise met a disposition : machines, materiaux, horaires, EPI, ambiances physiques (bruit, temperature, etc.).</p>
+        <p><strong>Les effets sur l'operateur</strong> = consequences du travail reel sur sa sante, securite, satisfaction (positives ou negatives).</p>
+        <p><strong>Les effets sur l'entreprise</strong> = consequences sur la qualite, la productivite, les arrets de travail, l'image (positifs ou negatifs).</p>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">10</span><span class="q-comp">C2</span><span class="q-points">3 pts</span>
+        <div class="q-text">A partir du document C et de la situation, <strong>identifier</strong> les determinants "operateur" de Clement en cochant les reponses correctes.</div>
+        <div class="checkbox-group">
+            <label><input type="checkbox" value="age_43_ans" class="reponse-eleve" data-qid="q_10_det_operateur"> Age : 43 ans</label>
+            <label><input type="checkbox" value="poinconneuse_numerique" class="reponse-eleve" data-qid="q_10_det_operateur"> Poinconneuse a commande numerique</label>
+            <label><input type="checkbox" value="taille_1m65" class="reponse-eleve" data-qid="q_10_det_operateur"> Taille : 1,65 m</label>
+            <label><input type="checkbox" value="droitier" class="reponse-eleve" data-qid="q_10_det_operateur"> Droitier</label>
+            <label><input type="checkbox" value="niveau_sonore_78_86db" class="reponse-eleve" data-qid="q_10_det_operateur"> Niveau sonore entre 78 et 86 dB(A)</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">11</span><span class="q-comp">C2</span><span class="q-points">3 pts</span>
+        <div class="q-text">A partir du document C et de la situation, <strong>identifier</strong> les determinants "entreprise" en cochant les reponses correctes.</div>
+        <div class="checkbox-group">
+            <label><input type="checkbox" value="plaques_8_10kg" class="reponse-eleve" data-qid="q_11_det_entreprise"> Plaques metalliques de 8 a 10 kg</label>
+            <label><input type="checkbox" value="clement_43_ans" class="reponse-eleve" data-qid="q_11_det_entreprise"> Clement, 43 ans</label>
+            <label><input type="checkbox" value="horaires_3x8" class="reponse-eleve" data-qid="q_11_det_entreprise"> Horaires en 3 x 8</label>
+            <label><input type="checkbox" value="droitier" class="reponse-eleve" data-qid="q_11_det_entreprise"> Droitier</label>
+            <label><input type="checkbox" value="poinconneuse_numerique" class="reponse-eleve" data-qid="q_11_det_entreprise"> Poinconneuse a commande numerique</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">12</span><span class="q-comp">C2</span><span class="q-points">3 pts</span>
+        <div class="q-text">A partir du document C et de la situation, <strong>identifier</strong> les effets negatifs du travail reel sur Clement en cochant les reponses correctes.</div>
+        <div class="checkbox-group">
+            <label><input type="checkbox" value="douleurs_epaules" class="reponse-eleve" data-qid="q_12_effets_operateur"> Douleurs aux epaules</label>
+            <label><input type="checkbox" value="augmentation_salaire" class="reponse-eleve" data-qid="q_12_effets_operateur"> Augmentation de salaire</label>
+            <label><input type="checkbox" value="douleurs_dos" class="reponse-eleve" data-qid="q_12_effets_operateur"> Douleurs au dos</label>
+            <label><input type="checkbox" value="bourdonnements_oreilles" class="reponse-eleve" data-qid="q_12_effets_operateur"> Bourdonnements d'oreilles</label>
+            <label><input type="checkbox" value="promotion" class="reponse-eleve" data-qid="q_12_effets_operateur"> Promotion professionnelle</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">13</span><span class="q-comp">C2</span><span class="q-points">1 pt</span>
+        <div class="q-text">A partir du document C et de la situation, <strong>identifier</strong> les effets negatifs du travail reel sur l'entreprise en cochant les reponses correctes.</div>
+        <div class="checkbox-group">
+            <label><input type="checkbox" value="risque_augmentation_arrets" class="reponse-eleve" data-qid="q_13_effets_entreprise"> Risque d'augmentation des arrets de travail</label>
+            <label><input type="checkbox" value="amelioration_qualite" class="reponse-eleve" data-qid="q_13_effets_entreprise"> Amelioration de la qualite des produits</label>
+            <label><input type="checkbox" value="baisse_rendement" class="reponse-eleve" data-qid="q_13_effets_entreprise"> Baisse du rendement</label>
+            <label><input type="checkbox" value="augmentation_benefices" class="reponse-eleve" data-qid="q_13_effets_entreprise"> Augmentation des benefices</label>
+        </div>
+    </div>
+
+    <!-- ======== PARTIE 5 : Document D + liens de causalite (C3) ======== -->
+    <div class="section-title">Partie 5 - La relation entre un effet et ses causes</div>
+
+    <div class="document-box" data-source="document">
+        <h4>Document D - La relation entre les effets et les facteurs de causes</h4>
+        <p>L'analyse consiste a etablir des <strong>relations de causalite</strong> entre chaque effet pris separement et les determinants, en passant par le travail reel.</p>
+        <p><strong>Question 1 :</strong> Existe-t-il un lien entre cet effet et la facon de travailler de l'operateur (travail reel) ?</p>
+        <p><strong>Question 2 :</strong> Existe-t-il un lien entre la facon de travailler et ce que l'entreprise met a disposition (determinants entreprise) et/ou les caracteristiques personnelles (determinants operateur) ?</p>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">14</span><span class="q-comp">C3</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document D, <strong>identifier</strong> l'activite reelle de Clement qui est la cause principale de ses douleurs aux epaules en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_14_cause_epaules" value="active_programme" class="reponse-eleve" data-qid="q_14_cause_epaules"> Il active le programme de poinconnage</label>
+            <label><input type="radio" name="q_14_cause_epaules" value="porte_plaques_bras_epaules" class="reponse-eleve" data-qid="q_14_cause_epaules"> Il porte les plaques bras tendus au-dessus des epaules</label>
+            <label><input type="radio" name="q_14_cause_epaules" value="deplace_commande" class="reponse-eleve" data-qid="q_14_cause_epaules"> Il se deplace vers la commande</label>
+            <label><input type="radio" name="q_14_cause_epaules" value="appuie_pedale" class="reponse-eleve" data-qid="q_14_cause_epaules"> Il appuie sur la pedale avec le pied</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">15</span><span class="q-comp">C3</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document D, <strong>identifier</strong> le determinant entreprise qui est la cause principale des bourdonnements d'oreilles de Clement en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_15_cause_oreilles" value="plaques_8_10kg" class="reponse-eleve" data-qid="q_15_cause_oreilles"> Les plaques metalliques de 8 a 10 kg</label>
+            <label><input type="radio" name="q_15_cause_oreilles" value="niveau_sonore_78_86db" class="reponse-eleve" data-qid="q_15_cause_oreilles"> Le niveau sonore entre 78 et 86 dB(A)</label>
+            <label><input type="radio" name="q_15_cause_oreilles" value="horaires_3x8" class="reponse-eleve" data-qid="q_15_cause_oreilles"> Les horaires en 3 x 8</label>
+            <label><input type="radio" name="q_15_cause_oreilles" value="environnement_thermique" class="reponse-eleve" data-qid="q_15_cause_oreilles"> L'environnement thermique adapte</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">16</span><span class="q-comp">C3</span><span class="q-points">0.5 pt</span>
+        <div class="q-text"><strong>Identifier</strong> le type de risque professionnel auquel Clement est expose en raison du port repetitif de charges lourdes en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_20_type_risque" value="risque_chimique" class="reponse-eleve" data-qid="q_20_type_risque"> Risque chimique</label>
+            <label><input type="radio" name="q_20_type_risque" value="risque_electrique" class="reponse-eleve" data-qid="q_20_type_risque"> Risque electrique</label>
+            <label><input type="radio" name="q_20_type_risque" value="risque_activite_physique" class="reponse-eleve" data-qid="q_20_type_risque"> Risque lie a l'activite physique</label>
+            <label><input type="radio" name="q_20_type_risque" value="risque_biologique" class="reponse-eleve" data-qid="q_20_type_risque"> Risque biologique</label>
+        </div>
+    </div>
+
+    <!-- ======== PARTIE 6 : Document E + mesures de prevention (C4) ======== -->
+    <div class="section-title">Partie 6 - Proposer des mesures de prevention</div>
+
+    <div class="document-box" data-source="document">
+        <h4>Document E - Les mesures de prevention (du plus efficace au moins efficace)</h4>
+        <ul>
+            <li><strong>Prevention visant a supprimer le risque</strong> (ex. : automatiser une tache dangereuse)</li>
+            <li><strong>Prevention visant a reduire le risque</strong> (ex. : limiter la duree d'exposition, rotation des postes)</li>
+            <li><strong>Protection collective</strong> (ex. : encoffrement acoustique d'une machine, ventouse de prehension)</li>
+            <li><strong>Protection individuelle</strong> (ex. : bouchons d'oreilles, casque antibruit, gants)</li>
+            <li><strong>Formation et information</strong> (ex. : formation PRAP, affiche de sensibilisation)</li>
+        </ul>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">17</span><span class="q-comp">C4</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document E, <strong>selectionner</strong> la mesure de prevention visant a <strong>supprimer</strong> le risque de douleurs aux epaules en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_16_supprimer_epaules" value="porter_gants" class="reponse-eleve" data-qid="q_16_supprimer_epaules"> Porter des gants renforces</label>
+            <label><input type="radio" name="q_16_supprimer_epaules" value="automatiser_port_plaques" class="reponse-eleve" data-qid="q_16_supprimer_epaules"> Automatiser le port de plaques (suppression de la manutention manuelle)</label>
+            <label><input type="radio" name="q_16_supprimer_epaules" value="limiter_pauses" class="reponse-eleve" data-qid="q_16_supprimer_epaules"> Limiter le nombre de pauses</label>
+            <label><input type="radio" name="q_16_supprimer_epaules" value="augmenter_salaire" class="reponse-eleve" data-qid="q_16_supprimer_epaules"> Augmenter le salaire de Clement</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">18</span><span class="q-comp">C4</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document E, <strong>selectionner</strong> la mesure de protection collective adaptee pour reduire le bruit de la poinconneuse en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_17_protection_bruit" value="bouchons_oreilles" class="reponse-eleve" data-qid="q_17_protection_bruit"> Port de bouchons d'oreilles</label>
+            <label><input type="radio" name="q_17_protection_bruit" value="encoffrement_acoustique" class="reponse-eleve" data-qid="q_17_protection_bruit"> Encoffrement acoustique de la poinconneuse</label>
+            <label><input type="radio" name="q_17_protection_bruit" value="formation_prap" class="reponse-eleve" data-qid="q_17_protection_bruit"> Formation a la PRAP</label>
+            <label><input type="radio" name="q_17_protection_bruit" value="changement_horaires" class="reponse-eleve" data-qid="q_17_protection_bruit"> Changement des horaires de travail</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">19</span><span class="q-comp">C4</span><span class="q-points">1 pt</span>
+        <div class="q-text">A partir du document E, <strong>selectionner</strong> la mesure visant a <strong>reduire</strong> le risque de douleurs aux epaules en cochant la bonne reponse.</div>
+        <div class="checkbox-group">
+            <label><input type="radio" name="q_19_reduire_epaules" value="rotation_postes" class="reponse-eleve" data-qid="q_19_reduire_epaules"> Rotation des postes pour reduire le port de charges</label>
+            <label><input type="radio" name="q_19_reduire_epaules" value="casque_antibruit" class="reponse-eleve" data-qid="q_19_reduire_epaules"> Port du casque antibruit</label>
+            <label><input type="radio" name="q_19_reduire_epaules" value="affiche_sensibilisation" class="reponse-eleve" data-qid="q_19_reduire_epaules"> Affiche de sensibilisation dans l'atelier</label>
+            <label><input type="radio" name="q_19_reduire_epaules" value="chaussures_securite" class="reponse-eleve" data-qid="q_19_reduire_epaules"> Port de chaussures de securite</label>
+        </div>
+    </div>
+
+    <div class="question-block">
+        <span class="q-label">20</span><span class="q-comp">C4</span><span class="q-points">0.5 pt</span>
+        <div class="q-text">A partir du document E, <strong>selectionner</strong> le niveau de prevention le plus efficace en selectionnant dans la liste deroulante.</div>
+        <div>
+            <select class="reponse-eleve answer-select" data-qid="q_18_niveau_prevention">
+                <option value="">-- Choisir --</option>
+                <option value="formation_information">Formation et information</option>
+                <option value="protection_individuelle">Protection individuelle</option>
+                <option value="protection_collective">Protection collective</option>
+                <option value="suppression_risque">Suppression du risque</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ENVOI -->
+    <div class="submit-section">
+        <button class="submit-btn" id="btn-envoyer" onclick="window.tenterEnvoi()" disabled style="opacity:0.5;cursor:wait;">Chargement...</button>
+        <p id="envoi-status" style="text-align:center;font-size:0.85em;color:#94a3b8;margin-top:8px;">Le systeme d'envoi est en cours de chargement...</p>
+    </div>
+    <div class="paste-alert" id="paste-alert">Attention : le copier-coller depuis un document source a ete detecte.</div>
+
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+    const DEVOIR_ID = "devoir_qcm_analyse_travail_c11_2026_02_v1";
+    localStorage.setItem('devoir_start_time_' + DEVOIR_ID, Date.now());
+
+    /* ====================================================
+       tenterEnvoi() — wrapper autour de envoyerCopie()
+       Le runner (pse-runner.js) expose window.envoyerCopie
+       C'est ici qu'on definit tenterEnvoi.
+    ==================================================== */
+    window.tenterEnvoi = function() {
+        var btn = document.getElementById('btn-envoyer');
+        var codeInput = document.getElementById('code-eleve');
+        var code = (codeInput.value || '').trim().toUpperCase();
+
+        /* 1. Validation du code eleve */
+        if (!code || code.length < 2) {
+            alert("Veuillez d'abord saisir votre code eleve.");
+            codeInput.focus();
+            return;
+        }
+
+        /* 2. Anti-doublon : verrou localStorage */
+        var lockKey = 'copie_envoyee_' + DEVOIR_ID + '_' + code;
+        if (localStorage.getItem(lockKey)) {
+            alert("Vous avez deja envoye votre copie pour ce devoir.");
+            return;
+        }
+
+        /* 3. Verifier que envoyerCopie est disponible */
+        if (typeof window.envoyerCopie !== 'function') {
+            alert("Le systeme d'envoi n'est pas pret. Rechargez la page et reessayez.");
+            return;
+        }
+
+        executerEnvoi(code, lockKey, btn);
+    };
+
+    function executerEnvoi(code, lockKey, btn) {
+        /* Desactiver le bouton immediatement */
+        btn.disabled = true;
+        btn.textContent = "Envoi en cours...";
+        btn.style.opacity = "0.6";
+
+        /* Collecter les pasteStats */
+        var pasteStats = { total: 0, external: 0, document: 0 };
+        try {
+            var stored = localStorage.getItem('paste_log_' + DEVOIR_ID);
+            if (stored) pasteStats = JSON.parse(stored);
+        } catch(e) {}
+
+        /* Recuperer les donnees eleve */
+        var eleveData = window.eleveData || { code: code, classe: "?" };
+
+        /* Appeler envoyerCopie du runner */
+        window.envoyerCopie(code, pasteStats, eleveData)
+            .then(function() {
+                localStorage.setItem(lockKey, Date.now().toString());
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = "Envoyer au prof";
+                btn.style.opacity = "1";
+                console.error("Erreur envoi:", err);
+            });
+    }
+
+    /* ====================================================
+       Deblocage du bouton quand le runner est pret
+       Verifie toutes les 300ms pendant 30 secondes max
+    ==================================================== */
+    (function activerBoutonQuandPret() {
+        var tentatives = 0;
+        var timer = setInterval(function() {
+            tentatives++;
+            if (typeof window.envoyerCopie === 'function') {
+                clearInterval(timer);
+                var btn = document.getElementById('btn-envoyer');
+                var status = document.getElementById('envoi-status');
+                btn.disabled = false;
+                btn.textContent = "Envoyer au prof";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                if (status) status.textContent = "";
+                console.log("Bouton Envoyer active (runner pret)");
+            } else if (tentatives > 100) {
+                clearInterval(timer);
+                var status = document.getElementById('envoi-status');
+                if (status) {
+                    status.textContent = "Le systeme d'envoi n'a pas pu se charger. Rechargez la page.";
+                    status.style.color = "#e53e3e";
+                }
+                console.warn("Runner non charge apres 30s");
+            }
+        }, 300);
+    })();
+</script>
+
+<script type="module">
+    /* --- Annuaire : identification eleve --- */
+    try {
+        await import("https://preventionsanteenvironnement.github.io/PSE/annuaire.js");
+        if (typeof window.demanderCode === 'function') {
+            const user = await window.demanderCode("L'analyse d'une situation de travail");
+            if (user && user.code) {
+                document.getElementById('code-eleve').value = user.code;
+                window.eleveData = user;
+            }
+        }
+    } catch(err) { console.warn("Annuaire non disponible :", err); }
+
+    /* --- Runner : systeme d'envoi --- */
+    try {
+        await import("https://preventionsanteenvironnement.github.io/PSE/assets/pse-runner.js");
+        console.log("pse-runner charge — envoyerCopie disponible :", typeof window.envoyerCopie === 'function');
+    } catch(err) { console.warn("pse-runner non disponible :", err); }
+</script>
+</body>
+</html>
