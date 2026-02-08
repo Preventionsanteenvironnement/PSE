@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Module D2 : Le Budget</title> 
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="annuaire.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script> 
+  
+  <style> 
+    :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f8fafc; } 
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 12px; }
+    @media (min-width: 640px){ body{ padding: 18px; } } 
+    .container { max-width: 650px; margin: 0 auto; } 
+    header { background: var(--primary); color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); } 
+    .obj-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; font-size: 0.95rem; margin-top: 10px; }
+    header h1 { font-size: clamp(1.4rem, 3.6vw, 2rem); line-height: 1.15; } 
+    .cours-section { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--primary); } 
+    .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } 
+    .q-text { font-weight: 700; margin-bottom: 12px; display: block; font-size: 1.1rem; } 
+    .options { display: grid; gap: 10px; grid-template-columns: 1fr; }
+    @media (min-width: 640px) { .options { grid-template-columns: repeat(2, 1fr); } }
+    .opt-btn:focus-visible, .btn-valider:focus-visible, input:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.35); outline-offset: 2px; }
+    .locked .opt-btn { pointer-events: none; opacity: 0.95; }
+    .locked #solde-val { pointer-events: none; opacity: 0.95; }
+    canvas { max-width: 100%; } 
+    .opt-btn { padding: 18px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; cursor: pointer; font-size: 1rem; font-weight: 600; text-align: center; transition: 0.2s; user-select:none; } 
+    .opt-btn.selected { border-color: var(--primary); background: #eff6ff; } 
+    .opt-btn.is-correct { background: #dcfce7 !important; border-color: var(--success) !important; color: #166534; } 
+    .opt-btn.is-wrong { background: #fee2e2 !important; border-color: var(--error) !important; color: #991b1b; } 
+    .btn-valider { width: 100%; padding: 22px; background: #1e293b; color: white; border: none; border-radius: 15px; font-size: 1.2rem; font-weight: 800; margin: 25px 0; cursor: pointer; transition: transform 0.1s; } 
+    .btn-valider:active { transform: scale(0.98); } 
+    .btn-disabled { opacity: 0.6; cursor: not-allowed; }
+    #result-zone { display: none; background: white; padding: 25px; border-radius: 15px; border: 3px solid var(--primary); text-align: center; } 
+    .chart-box { height: 280px; margin: 20px 0; }
+    @media (max-width: 380px){ .chart-box{ height: 240px; } } 
+    .remed-box { text-align: left; background: #f1f5f9; padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 0.95rem; } 
+    .aide-calcul { font-size: 0.85rem; color: #64748b; background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 5px; display: block; } 
+    .warn-box { text-align:left; background:#fff7ed; border:2px solid #fdba74; padding:12px; border-radius:10px; margin: 10px 0 0; font-size:0.95rem; display:none; }
+    .small-muted { font-size:0.9rem; color:#64748b; margin-top:6px; }
+  </style>
+</head>
+<body> 
+  <div class="container"> 
+    <header> 
+      <h1 style="margin:0;">Module D2 : Le Budget</h1> 
+      <div class="obj-box"> 
+        <strong>Objectif :</strong> Adopter une attitude responsable face à la gestion de son budget et au choix d'une épargne. 
+      </div> 
+    </header> 
+    
+    <script>
+      if(typeof enregistrerVisite === "function") {
+        enregistrerVisite("Exercice Budget D2");
+      }
+    </script>
+
+    <div class="cours-section"> 
+      <h3 style="margin-top:0;">Les Recettes (Revenus)</h3> 
+      <p>• <strong>Revenus du travail :</strong> Salaire, primes (ex: 1453 € brut). <br> • <strong>Revenus sociaux :</strong> Aides de l'État (CAF, APL, Bourses). </p> 
+    </div> 
+    <div class="cours-section"> 
+      <h3>Les Dépenses</h3> 
+      <p>• <strong>Fixes :</strong> On ne peut pas les réduire (Loyer, Impôts). <br> • <strong>Courantes :</strong> Indispensables mais varient (Alimentation, Carburant). <br> • <strong>Exceptionnelles :</strong> Peuvent être reportées (Loisirs, Cadeaux). </p> 
+    </div> 
+    
+    <div id="quiz-container"></div> 
+    
+    <div class="card"> 
+      <span class="q-text">Calcul du Solde Mensuel :</span> 
+      <p>Revenus totaux : 1257,45 € | Dépenses totales : 853,70 €</p> 
+      <span class="aide-calcul">💡 Aide : Le Solde = Recettes (ce que je gagne) - Dépenses (ce que je paye). </span> 
+
+      <input
+        type="text"
+        inputmode="decimal"
+        id="solde-val"
+        placeholder="Ex : 403,75 (la virgule ou le point sont acceptés)"
+        style="width:100%; padding:15px; border-radius:10px; border:2px solid #cbd5e1; font-size:1.1rem; margin-top:10px;"
+        aria-label="Saisie du solde"
+      >
+
+      <div class="small-muted">Tu peux écrire 403,75 ou 403.75 ou même 403,75 €.</div>
+
+      <div id="fb-solde" style="margin-top:15px; display:none; font-weight:bold;"></div> 
+    </div> 
+
+    <div class="warn-box" id="warn-missing"></div>
+    
+    <button class="btn-valider" id="submit-btn" type="button">TERMINER ET VOIR MON ANALYSE</button> 
+    
+    <div id="result-zone"> 
+      <h2 style="margin-top:0;">Ton Score : <span id="score-final">00</span> / 20</h2> 
+      <div class="chart-box"><canvas id="barChart"></canvas></div> 
+      <div id="remed-list"></div> 
+      <button class="btn-valider" type="button" style="background:#64748b" onclick="location.reload()">🔄 RECOMMENCER</button> 
+    </div>
+  </div> 
+
+<script> 
+  const questions = [ 
+    { q: "Salaire de Killian (1453,00 €)", cat: "Revenus", type: "travail", opts: ["Revenu lié au travail", "Revenu social (Aide)"] }, 
+    { q: "Allocation de rentrée scolaire (400,00 €)", cat: "Revenus", type: "social", opts: ["Revenu lié au travail", "Revenu social (Aide)"] }, 
+    { q: "Loyer de l'appartement (510,45 €)", cat: "Dépenses", type: "fixe", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+    { q: "Courses alimentaires (250,00 €)", cat: "Dépenses", type: "courante", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+    { q: "Achat d'une console de jeux (399,00 €)", cat: "Dépenses", type: "exceptionnelle", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+    { q: "Assurance du véhicule (45,00 €)", cat: "Dépenses", type: "fixe", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+    { q: "Facture de carburant (85,20 €)", cat: "Dépenses", type: "courante", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] }, 
+    { q: "Cadeau de Noël (120,00 €)", cat: "Dépenses", type: "exceptionnelle", opts: ["Dépense Fixe", "Dépense Courante", "Dépense Exceptionnelle"] } 
+  ]; 
+  
+  const container = document.getElementById('quiz-container'); 
+  const submitBtn = document.getElementById('submit-btn');
+  const warnBox = document.getElementById('warn-missing');
+
+  let chartInstance = null;
+  let alreadySubmitted = false;
+
+  function deriveVal(optText){
+    const t = (optText || "").toLowerCase();
+    if (t.includes("travail")) return "travail";
+    if (t.includes("social")) return "social";
+    if (t.includes("fixe")) return "fixe";
+    if (t.includes("courante")) return "courante";
+    return "exceptionnelle";
+  }
+
+  questions.forEach((item, i) => { 
+    let html = `<div class="card" id="q${i}"> <span class="q-text">${item.q} :</span> <div class="options">`; 
+    item.opts.forEach(opt => { 
+      const val = deriveVal(opt);
+      html += `<div class="opt-btn" role="button" tabindex="0" onclick="select(this, ${i})" onkeydown="kbSelect(event, this, ${i})" data-val="${val}">${opt}</div>`; 
+    }); 
+    html += `</div></div>`; 
+    container.innerHTML += html; 
+  }); 
+
+  function kbSelect(e, el, qIdx){
+    const k = e.key;
+    if (k === "Enter" || k === " ") {
+      e.preventDefault();
+      select(el, qIdx);
+    }
+  }
+
+  function select(btn, qIdx) { 
+    const parent = btn.parentElement; 
+    parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); 
+    btn.classList.add('selected'); 
+  } 
+
+  function normalizeNumberInput(str){
+    if (!str) return null;
+
+    let s = String(str);
+
+    // remplace espaces insécables et espaces
+    s = s.replace(/\u00A0/g, " ").trim();
+    s = s.replace(/\s+/g, "");
+
+    // retire symbole euro et tout ce qui n'est pas chiffre, signe, séparateur
+    // autorise + - , . uniquement
+    s = s.replace(/€/g, "");
+    s = s.replace(/[^0-9+\-.,]/g, "");
+
+    // si plusieurs séparateurs, on garde le dernier comme décimal, les autres = milliers
+    const lastComma = s.lastIndexOf(",");
+    const lastDot = s.lastIndexOf(".");
+    const decPos = Math.max(lastComma, lastDot);
+
+    if (decPos !== -1) {
+      const intPart = s.slice(0, decPos).replace(/[.,]/g, "");
+      const decPart = s.slice(decPos + 1).replace(/[.,]/g, "");
+      s = intPart + "." + decPart;
+    } else {
+      s = s.replace(/[.,]/g, "");
+    }
+
+    if (!s || s === "+" || s === "-" || s === "." || s === "+." || s === "-.") return null;
+
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function countMissingAnswers(){
+    let missing = 0;
+    questions.forEach((_, i) => {
+      const card = document.getElementById(`q${i}`);
+      const sel = card.querySelector('.selected');
+      if (!sel) missing++;
+    });
+    return missing;
+  }
+
+  function lockAll(){
+    document.body.classList.add("locked");
+  }
+
+  submitBtn.addEventListener("click", calculer);
+
+  async function calculer() { 
+    if (alreadySubmitted) return;
+    alreadySubmitted = true;
+
+    submitBtn.classList.add("btn-disabled");
+    submitBtn.disabled = true;
+
+    // avertit si des réponses manquent (mais laisse valider)
+    const missing = countMissingAnswers();
+    if (missing > 0) {
+      warnBox.style.display = "block";
+      warnBox.innerHTML = `Il manque ${missing} réponse${missing > 1 ? "s" : ""}. Tu peux quand même terminer, mais ton score sera plus bas.`;
+    } else {
+      warnBox.style.display = "none";
+    }
+
+    let score = 0; 
+    let stats = { "Revenus": 0, "Dépenses": 0 }; 
+    
+    questions.forEach((item, i) => { 
+      const card = document.getElementById(`q${i}`); 
+      const sel = card.querySelector('.selected'); 
+      const btns = card.querySelectorAll('.opt-btn'); 
+      btns.forEach(b => { 
+        if(b.dataset.val === item.type) b.classList.add('is-correct'); 
+        if(sel && sel === b && b.dataset.val !== item.type) b.classList.add('is-wrong'); 
+      }); 
+      if(sel && sel.dataset.val === item.type) { 
+        score += 2; 
+        stats[item.cat]++; 
+      } 
+    }); 
+
+    const fbS = document.getElementById('fb-solde'); 
+    fbS.style.display = 'block'; 
+
+    const soldeSaisi = normalizeNumberInput(document.getElementById('solde-val').value);
+
+    // tolérance calculatrice : accepte 403,75 exact, mais aussi arrondi au dixième ou à l'unité
+    const attendu = 403.75;
+    const diff = (soldeSaisi === null) ? null : Math.abs(soldeSaisi - attendu);
+
+    if (soldeSaisi === null) {
+      fbS.innerHTML = "❌ Entre un nombre valide (ex : 403,75)";
+      fbS.style.color = "var(--error)";
+    } else if (diff <= 0.01 || diff <= 0.05) { 
+      // 0.05 permet 403.70-403.80 typique d’arrondis/lecture
+      score += 4; 
+      fbS.innerHTML = "✅ Correct : 1257,45 - 853,70 = 403,75 €"; 
+      fbS.style.color = "var(--success)"; 
+    } else if (diff <= 0.5) {
+      // proche mais pas exact : encourage, sans bloquer trop
+      fbS.innerHTML = "⚠️ Presque : le bon résultat est 403,75 € (attention aux centimes)."; 
+      fbS.style.color = "#b45309";
+    } else { 
+      fbS.innerHTML = "❌ Erreur : Le bon résultat est 403,75 €"; 
+      fbS.style.color = "var(--error)"; 
+    } 
+
+    document.getElementById('result-zone').style.display = 'block'; 
+    document.getElementById('score-final').innerText = score; 
+    submitBtn.style.display = 'none';
+
+    // verrouille l'activité après correction
+    lockAll();
+
+    // Chart sécurisé : n’empêche jamais la remédiation
+    try {
+      const ctx = document.getElementById('barChart');
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+      if (window.Chart && ctx) {
+        chartInstance = new Chart(ctx, { 
+          type: 'bar', 
+          data: { 
+            labels: Object.keys(stats), 
+            datasets: [{ 
+              label: '% de réussite', 
+              data: [ (stats["Revenus"]/2)*100, (stats["Dépenses"]/6)*100 ]
+            }] 
+          }, 
+          options: { 
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 100 } }
+          } 
+        }); 
+      }
+    } catch(e) {
+      console.warn("Chart indisponible :", e);
+    }
+
+    let remed = "<h3>Analyse de tes résultats :</h3>"; 
+    if((stats["Revenus"]/2) < 1) remed += `<div class="remed-box">⚠️ Révise la différence entre <b>revenu lié au travail</b> et <b>revenu social</b>.</div>`; 
+    if((stats["Dépenses"]/6) < 0.7) remed += `<div class="remed-box">⚠️ Retravaille la classification des dépenses (Fixes, Courantes, Exceptionnelles).</div>`; 
+    if (soldeSaisi === null || Math.abs(soldeSaisi - 403.75) > 0.05) remed += `<div class="remed-box">⚠️ Attention au calcul du <b>Solde</b> (Recettes - Dépenses).</div>`; 
+    if (missing > 0) remed += `<div class="remed-box">ℹ️ Tu n’as pas répondu à ${missing} question${missing>1?"s":""}. Recommence pour viser le score maximum.</div>`;
+    document.getElementById('remed-list').innerHTML = remed; 
+    
+    window.scrollTo({ top: document.getElementById('result-zone').offsetTop, behavior: 'smooth' });
+
+    // Envoi Firebase : jamais bloquant, et évite les doublons
+    try {
+      if (typeof firebase === "undefined") return;
+      if (typeof firebaseConfig === "undefined" || !firebaseConfig) return;
+
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      const code = localStorage.getItem("codeEleve") || "ANONYME";
+      const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+      const payload = {
+        eleve: code,
+        classe: classe,
+        exercice: "Module D2 - Budget",
+        note: score,
+        total: 20,
+        competences: { "C1": score, "C2": score },
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      // anti-double envoi local
+      const sentKey = "sent_D2_budget_" + code;
+      if (!sessionStorage.getItem(sentKey)) {
+        await db.collection("resultats_exercices").add(payload);
+        sessionStorage.setItem(sentKey, "1");
+      }
+    } catch (e) {
+      console.error("Erreur lors de l'envoi Firebase : ", e);
+    }
+  }
+</script>
+</body>
+</html>

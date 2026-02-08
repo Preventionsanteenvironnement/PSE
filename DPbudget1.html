@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Lucas - Version Guidée (TSA)</title>
+  <style>
+    :root{
+      --recette-bg:#d4edda; --recette-border:#28a745;
+      --fixe-bg:#cce5ff;    --fixe-border:#007bff;
+      --courant-bg:#fff3cd; --courant-border:#ffc107;
+      --occas-bg:#f8d7da;   --occas-border:#dc3545;
+      --text-main:#2c3e50;
+    }
+
+    body{
+      font-family: Verdana, sans-serif;
+      background-color:#f4f6f8;
+      color:var(--text-main);
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      overflow-x:hidden;
+    }
+
+    h1{ text-align:center; color:#333; margin:0 0 10px 0; }
+
+    /* BARRE OUTILS */
+    .toolbar{
+      width:100%;
+      max-width:1100px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:center;
+      margin:10px 0 15px 0;
+    }
+    .tool-btn{
+      padding:10px 14px;
+      font-size:1rem;
+      cursor:pointer;
+      background:#fff;
+      border:2px solid #cbd5e1;
+      border-radius:999px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.06);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .tool-btn:active{ transform:translateY(1px); }
+    .tool-btn.primary{
+      background:#2c3e50;
+      color:#fff;
+      border-color:#2c3e50;
+    }
+
+    /* LEGENDE */
+    .legend-box{
+      display:flex;
+      flex-wrap:wrap;
+      gap:15px;
+      background:white;
+      padding:15px;
+      border-radius:12px;
+      border:2px solid #ccc;
+      margin-bottom:14px;
+      justify-content:center;
+      box-shadow:0 4px 6px rgba(0,0,0,0.05);
+      width:100%;
+      max-width:1100px;
+    }
+    .legend-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:bold;
+      font-size:1rem;
+      padding:5px 10px;
+      border-radius:8px;
+    }
+    .leg-r{  background:var(--recette-bg); border:2px solid var(--recette-border); }
+    .leg-df{ background:var(--fixe-bg);    border:2px solid var(--fixe-border); }
+    .leg-dc{ background:var(--courant-bg); border:2px solid var(--courant-border); }
+    .leg-do{ background:var(--occas-bg);   border:2px solid var(--occas-border); }
+
+    /* AIDE SELECTION (FIABLE MOBILE) */
+    .selection-panel{
+      width:100%;
+      max-width:1100px;
+      background:#fff;
+      border:2px solid #d1d5db;
+      border-radius:12px;
+      padding:12px 14px;
+      margin-bottom:12px;
+      box-shadow:0 4px 6px rgba(0,0,0,0.04);
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .selection-left{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:240px;
+    }
+    .selection-title{
+      font-weight:bold;
+      font-size:1.02rem;
+    }
+    .selection-current{
+      font-size:1rem;
+      padding:8px 10px;
+      border-radius:10px;
+      background:#f1f5f9;
+      border:2px solid #cbd5e1;
+      min-height:42px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .selection-current .pill{
+      font-weight:bold;
+      padding:3px 8px;
+      border-radius:8px;
+      border:2px solid #111827;
+      background:#fff;
+      font-size:0.95rem;
+      white-space:nowrap;
+    }
+    .selection-hint{
+      font-size:0.95rem;
+      opacity:0.85;
+    }
+    .selection-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+    }
+    .selection-actions select{
+      padding:10px 12px;
+      font-size:1.05rem;
+      border-radius:10px;
+      border:2px solid #999;
+      font-weight:bold;
+      background:#fff;
+    }
+
+    /* BANQUE */
+    #item-bank{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      justify-content:center;
+      background:#fff;
+      padding:20px;
+      border-radius:12px;
+      min-height:100px;
+      width:100%;
+      max-width:1100px;
+      margin-bottom:22px;
+      border:3px dashed #888;
+    }
+
+    .draggable-item{
+      padding:10px 15px;
+      background:white;
+      border:2px solid #555;
+      border-radius:10px;
+      cursor:grab;
+      font-weight:bold;
+      font-size:1rem;
+      box-shadow:0 3px 5px rgba(0,0,0,0.1);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      transition:transform 0.1s, box-shadow 0.1s, border-color 0.1s;
+      user-select:none;
+      touch-action:manipulation;
+    }
+    .draggable-item:active{ transform:scale(1.03); cursor:grabbing; }
+    .draggable-item.selected{
+      border-color:#111827;
+      box-shadow:0 6px 14px rgba(0,0,0,0.18);
+      transform:scale(1.03);
+    }
+
+    .tag-indicator{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:8px;
+      font-size:0.9em;
+      border:2px solid;
+      white-space:nowrap;
+    }
+
+    /* GRILLE BUDGET */
+    .budget-grid{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:15px;
+      width:100%;
+      max-width:1200px;
+    }
+
+    .column{
+      background:white;
+      border-radius:12px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      border-top:8px solid #ccc;
+      min-height:450px;
+    }
+
+    #col-recettes{ border-color:var(--recette-border); background:#f0fff4; }
+    #col-fixes{ border-color:var(--fixe-border); background:#f0f7ff; }
+    #col-courantes{ border-color:var(--courant-border); background:#fffbf0; }
+    #col-occas{ border-color:var(--occas-border); background:#fff5f5; }
+
+    .column h3{
+      text-align:center;
+      margin:0 0 10px 0;
+      padding:10px;
+      background:rgba(255,255,255,0.7);
+      border-radius:10px;
+    }
+
+    .drop-zone{
+      flex-grow:1;
+      padding:10px;
+      border:2px dashed rgba(0,0,0,0.12);
+      border-radius:10px;
+      background:rgba(255,255,255,0.55);
+      margin-bottom:10px;
+      min-height:90px;
+      transition:background 0.12s, outline 0.12s;
+    }
+    .drop-zone.active{
+      background:rgba(0,0,0,0.06);
+      outline:3px solid rgba(17,24,39,0.15);
+    }
+
+    .sub-zone-container{ display:flex; flex-direction:column; gap:6px; flex-grow:1; }
+    .sub-zone{
+      min-height:70px;
+      border:1px dashed #28a745;
+      border-radius:10px;
+      padding:6px;
+      background:rgba(255,255,255,0.4);
+    }
+    .sub-label{
+      font-size:0.8rem;
+      text-transform:uppercase;
+      color:#28a745;
+      text-align:center;
+      margin-top:2px;
+    }
+
+    .calc-zone{
+      background:white;
+      padding:10px;
+      border-radius:10px;
+      text-align:center;
+      border:1px solid #ddd;
+    }
+
+    input[type="number"]{
+      width:110px;
+      padding:8px;
+      font-size:1.2rem;
+      text-align:right;
+      border:2px solid #ccc;
+      border-radius:8px;
+    }
+
+    button.small{
+      margin-top:8px;
+      padding:8px 16px;
+      font-size:1rem;
+      cursor:pointer;
+      background:#eee;
+      border:1px solid #999;
+      border-radius:10px;
+    }
+    button.small:hover{ background:#ddd; }
+
+    .feedback{
+      font-weight:bold;
+      margin-top:8px;
+      display:block;
+      min-height:1.2em;
+    }
+    .correct{ color:#28a745; }
+    .incorrect{ color:#dc3545; }
+
+    /* BILAN */
+    .final-section{
+      margin-top:40px;
+      width:100%;
+      max-width:800px;
+      background:white;
+      padding:20px;
+      border-radius:15px;
+      border-left:10px solid #2c3e50;
+      box-shadow:0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:15px;
+      font-size:1.2rem;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 900px){
+      .budget-grid{ grid-template-columns:1fr 1fr; }
+      #col-recettes{ grid-column:span 2; }
+      .row{ justify-content:center; }
+      input[type="number"]{ width:130px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>💰 Le Budget de Lucas</h1>
+
+  <div class="toolbar">
+    <button class="tool-btn" id="btn-sound" onclick="toggleSound()">🔈 Son : ON</button>
+    <button class="tool-btn" onclick="clearSelection()">✋ Annuler la sélection</button>
+    <button class="tool-btn primary" onclick="location.reload()">🔄 Recommencer</button>
+  </div>
+
+  <div class="legend-box">
+    <span style="font-weight:bold;">Aide mémoire :</span>
+    <div class="legend-item leg-r">R = Recette (Argent qui rentre)</div>
+    <div class="legend-item leg-df">DF = Dépense Fixe (Obligatoire)</div>
+    <div class="legend-item leg-dc">DC = Dépense Courante (Variable)</div>
+    <div class="legend-item leg-do">DO = Dépense Occasionnelle (Rare)</div>
+  </div>
+
+  <div class="selection-panel" id="selection-panel">
+    <div class="selection-left">
+      <div class="selection-title">Mode téléphone : je sélectionne une étiquette puis je clique une zone</div>
+      <div class="selection-current" id="selection-current">
+        <span class="pill">Aucune</span>
+        <span>Étiquette sélectionnée</span>
+      </div>
+      <div class="selection-hint" id="mode-hint">Sur ordinateur, tu peux glisser-déposer. Sur téléphone, utilise surtout les clics.</div>
+    </div>
+    <div class="selection-actions">
+      <label for="mobile-target" style="font-weight:bold;">Zone cible :</label>
+      <select id="mobile-target">
+        <option value="item-bank">🏦 Banque (retour)</option>
+        <option value="recette-travail">🟢 Recettes — Travail</option>
+        <option value="recette-social">🟢 Recettes — Aides (CAF)</option>
+        <option value="recette-autre">🟢 Recettes — Autres</option>
+        <option value="fixe">🔵 Fixes (DF)</option>
+        <option value="courante">🟡 Courantes (DC)</option>
+        <option value="occas">🔴 Occasionnelles (DO)</option>
+      </select>
+    </div>
+  </div>
+
+  <p style="text-align:center; font-size:1.1rem; max-width:900px; margin:0 0 16px 0;">
+    <strong>Consigne :</strong> Prends les étiquettes et range-les dans la bonne colonne en t'aidant du code (R, DF, DC, DO).<br>
+    Ensuite, fais les calculs.
+  </p>
+
+  <div id="item-bank" aria-label="Banque d'étiquettes"></div>
+
+  <div class="budget-grid">
+
+    <div class="column" id="col-recettes">
+      <h3>🟢 Recettes (R)</h3>
+      <div class="sub-zone-container">
+        <div class="sub-label">Travail</div>
+        <div class="sub-zone drop-zone" data-cat="recette-travail" aria-label="Zone recettes travail"></div>
+
+        <div class="sub-label">Aides (CAF)</div>
+        <div class="sub-zone drop-zone" data-cat="recette-social" aria-label="Zone recettes aides"></div>
+
+        <div class="sub-label">Autres</div>
+        <div class="sub-zone drop-zone" data-cat="recette-autre" aria-label="Zone recettes autres"></div>
+      </div>
+      <div class="calc-zone">
+        Total Recettes :<br>
+        <input type="number" id="input-recettes" inputmode="numeric"> €
+        <button class="small" onclick="checkRecettes()">Vérifier</button>
+        <span id="msg-recettes" class="feedback"></span>
+      </div>
+    </div>
+
+    <div class="column" id="col-fixes">
+      <h3>🔵 Fixes (DF)</h3>
+      <div class="drop-zone" data-cat="fixe" aria-label="Zone dépenses fixes"></div>
+      <div class="calc-zone">
+        Total Fixes :<br>
+        <input type="number" id="input-fixes" inputmode="numeric"> €
+        <button class="small" onclick="checkDepense('fixe','input-fixes','msg-fixes')">Vérifier</button>
+        <span id="msg-fixes" class="feedback"></span>
+      </div>
+    </div>
+
+    <div class="column" id="col-courantes">
+      <h3>🟡 Courantes (DC)</h3>
+      <div class="drop-zone" data-cat="courante" aria-label="Zone dépenses courantes"></div>
+      <div class="calc-zone">
+        Total Courantes :<br>
+        <input type="number" id="input-courantes" inputmode="numeric"> €
+        <button class="small" onclick="checkDepense('courante','input-courantes','msg-courantes')">Vérifier</button>
+        <span id="msg-courantes" class="feedback"></span>
+      </div>
+    </div>
+
+    <div class="column" id="col-occas">
+      <h3>🔴 Occasionnelles (DO)</h3>
+      <div class="drop-zone" data-cat="occas" aria-label="Zone dépenses occasionnelles"></div>
+      <div class="calc-zone">
+        Total Occas. :<br>
+        <input type="number" id="input-occas" inputmode="numeric"> €
+        <button class="small" onclick="checkDepense('occas','input-occas','msg-occas')">Vérifier</button>
+        <span id="msg-occas" class="feedback"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="final-section">
+    <h2 style="margin:0 0 16px 0;">📊 Le Bilan</h2>
+    <div class="row">
+      <span>Total Recettes (+) :</span>
+      <input type="number" id="final-recettes" readonly style="background:#eee"> €
+    </div>
+    <div class="row">
+      <span>Total Dépenses (-) :</span>
+      <input type="number" id="final-depenses" placeholder="?" inputmode="numeric"> €
+    </div>
+    <hr>
+    <div class="row">
+      <strong>SOLDE RESTANT :</strong>
+      <input type="number" id="final-solde" placeholder="?" inputmode="numeric"> €
+    </div>
+    <button class="small" onclick="checkBilan()" style="font-size:1.2rem; background:#2c3e50; color:white; border:none;">
+      Vérifier le Solde
+    </button>
+    <span id="msg-bilan" class="feedback" style="font-size:1.2rem; margin-top:10px;"></span>
+  </div>
+
+  <script>
+    const items = [
+      { id: 1,  name: "Salaire",            val: 1600, cat: "recette-travail", global: "recette", code: "R",  colorClass: "leg-r"  },
+      { id: 2,  name: "Prime",              val: 150,  cat: "recette-travail", global: "recette", code: "R",  colorClass: "leg-r"  },
+      { id: 3,  name: "APL (Logement)",      val: 280,  cat: "recette-social",  global: "recette", code: "R",  colorClass: "leg-r"  },
+      { id: 4,  name: "Alloc. Familiales",   val: 130,  cat: "recette-social",  global: "recette", code: "R",  colorClass: "leg-r"  },
+      { id: 5,  name: "Vente Jeu Vidéo",     val: 100,  cat: "recette-autre",   global: "recette", code: "R",  colorClass: "leg-r"  },
+
+      { id: 6,  name: "Loyer",              val: 650,  cat: "fixe",            global: "depense", code: "DF", colorClass: "leg-df" },
+      { id: 7,  name: "Prêt Étudiant",       val: 85,   cat: "fixe",            global: "depense", code: "DF", colorClass: "leg-df" },
+      { id: 8,  name: "Assurance Auto",      val: 40,   cat: "fixe",            global: "depense", code: "DF", colorClass: "leg-df" },
+      { id: 9,  name: "Abonnement TV",       val: 35,   cat: "fixe",            global: "depense", code: "DF", colorClass: "leg-df" },
+
+      { id: 10, name: "Courses (Manger)",    val: 300,  cat: "courante",        global: "depense", code: "DC", colorClass: "leg-dc" },
+      { id: 11, name: "Essence",             val: 120,  cat: "courante",        global: "depense", code: "DC", colorClass: "leg-dc" },
+      { id: 12, name: "Électricité",         val: 100,  cat: "courante",        global: "depense", code: "DC", colorClass: "leg-dc" },
+      { id: 13, name: "Téléphone",           val: 15,   cat: "courante",        global: "depense", code: "DC", colorClass: "leg-dc" },
+
+      { id: 14, name: "Siège Bébé",          val: 150,  cat: "occas",           global: "depense", code: "DO", colorClass: "leg-do" },
+      { id: 15, name: "Restaurant",          val: 80,   cat: "occas",           global: "depense", code: "DO", colorClass: "leg-do" },
+      { id: 16, name: "Dentiste",            val: 45,   cat: "occas",           global: "depense", code: "DO", colorClass: "leg-do" }
+    ];
+
+    const bank = document.getElementById("item-bank");
+    items.sort(() => Math.random() - 0.5);
+
+    let selectedItem = null;
+    let soundEnabled = true;
+
+    function isMobileLayout(){
+      return window.matchMedia("(max-width: 900px)").matches;
+    }
+
+    function toggleSound(){
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById("btn-sound");
+      btn.textContent = soundEnabled ? "🔈 Son : ON" : "🔇 Son : OFF";
+      try { if (!soundEnabled && window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e){}
+    }
+
+    function speak(text){
+      if (!soundEnabled) return;
+      try{
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "fr-FR";
+        window.speechSynthesis.speak(u);
+      }catch(e){}
+    }
+
+    function updateSelectionPanel(){
+      const box = document.getElementById("selection-current");
+      if (!selectedItem){
+        box.innerHTML = '<span class="pill">Aucune</span><span>Étiquette sélectionnée</span>';
+        return;
+      }
+      const code = selectedItem.dataset.code || "?";
+      const name = selectedItem.dataset.name || "Étiquette";
+      const val = selectedItem.dataset.val || "";
+      box.innerHTML = `<span class="pill">${code}</span><span>${name} — ${val} €</span>`;
+    }
+
+    function clearSelection(){
+      if (selectedItem){
+        selectedItem.classList.remove("selected");
+      }
+      selectedItem = null;
+      updateSelectionPanel();
+    }
+
+    function setSelected(el){
+      document.querySelectorAll(".draggable-item.selected").forEach(x => x.classList.remove("selected"));
+      selectedItem = el;
+      el.classList.add("selected");
+      updateSelectionPanel();
+    }
+
+    function setDragMode(){
+      const enableDrag = !isMobileLayout();
+      document.querySelectorAll(".draggable-item").forEach(el => {
+        el.draggable = enableDrag;
+        el.style.cursor = enableDrag ? "grab" : "pointer";
+      });
+      const hint = document.getElementById("mode-hint");
+      hint.textContent = enableDrag
+        ? "Ordinateur : tu peux glisser-déposer. Téléphone : utilise surtout les clics."
+        : "Téléphone : utilise le mode clic (sélection + clic sur zone).";
+    }
+
+    function findTargetZoneByMobileSelect(){
+      const v = document.getElementById("mobile-target").value;
+      if (v === "item-bank") return bank;
+      return document.querySelector(`.drop-zone[data-cat="${v}"]`);
+    }
+
+    function moveSelectedToTarget(target){
+      if (!selectedItem || !target) return;
+      target.appendChild(selectedItem);
+      selectedItem.classList.remove("selected");
+      selectedItem.style.borderColor = "#555";
+      selectedItem = null;
+      updateSelectionPanel();
+    }
+
+    items.forEach(item => {
+      const el = document.createElement("div");
+      el.className = "draggable-item";
+      el.id = "item-" + item.id;
+
+      el.dataset.val = item.val;
+      el.dataset.cat = item.cat;
+      el.dataset.global = item.global;
+      el.dataset.code = item.code;
+      el.dataset.name = item.name;
+
+      el.innerHTML = `
+        <span class="tag-indicator ${item.colorClass}">${item.code}</span>
+        <span>${item.name} <br><strong>${item.val} €</strong></span>
+      `;
+
+      el.addEventListener("dragstart", (e) => {
+        if (isMobileLayout()) { e.preventDefault(); return; }
+        e.dataTransfer.setData("text", el.id);
+        setSelected(el);
+      });
+
+      el.addEventListener("click", () => {
+        setSelected(el);
+        speak(item.name + " " + item.val + " euros");
+        if (isMobileLayout()){
+          const target = findTargetZoneByMobileSelect();
+          moveSelectedToTarget(target);
+        }
+      });
+
+      bank.appendChild(el);
+    });
+
+    function activateZone(zone, on){
+      if (!zone.classList) return;
+      if (on) zone.classList.add("active");
+      else zone.classList.remove("active");
+    }
+
+    // Zones cliquables + dragdrop desktop
+    document.querySelectorAll(".drop-zone, #item-bank").forEach(zone => {
+      zone.addEventListener("dragover", e => {
+        if (isMobileLayout()) return;
+        e.preventDefault();
+        activateZone(zone, true);
+      });
+
+      zone.addEventListener("dragleave", e => {
+        if (isMobileLayout()) return;
+        activateZone(zone, false);
+      });
+
+      zone.addEventListener("drop", e => {
+        if (isMobileLayout()) return;
+        e.preventDefault();
+        activateZone(zone, false);
+        const id = e.dataTransfer.getData("text");
+        const el = document.getElementById(id);
+        if (el) zone.appendChild(el);
+        clearSelection();
+      });
+
+      zone.addEventListener("click", () => {
+        if (!selectedItem) return;
+        zone.appendChild(selectedItem);
+        clearSelection();
+      });
+    });
+
+    // Ajustements mode mobile/desktop
+    setDragMode();
+    updateSelectionPanel();
+    window.addEventListener("resize", () => {
+      setDragMode();
+      clearSelection();
+    });
+
+    function setMsg(id, text, isOk){
+      const el = document.getElementById(id);
+      el.innerText = text;
+      el.className = "feedback " + (isOk ? "correct" : "incorrect");
+    }
+
+    function isEmptyNumberInput(id){
+      const v = document.getElementById(id).value;
+      return v === "" || v === null || typeof v === "undefined";
+    }
+
+    function checkRecettes(){
+      if (isEmptyNumberInput("input-recettes")){
+        setMsg("msg-recettes", "⚠️ Écris un total avant de vérifier.", false);
+        speak("Écris un total avant de vérifier.");
+        return;
+      }
+
+      const zones = document.querySelectorAll('#col-recettes .sub-zone');
+      let total = 0;
+      let allCorrect = true;
+      let anyItem = false;
+
+      zones.forEach(z => {
+        const expectedCat = z.dataset.cat;
+        [...z.children].forEach(child => {
+          anyItem = true;
+          total += parseInt(child.dataset.val, 10) || 0;
+          if (child.dataset.cat !== expectedCat) allCorrect = false;
+        });
+      });
+
+      if (!anyItem){
+        setMsg("msg-recettes", "⚠️ La colonne Recettes est vide. Range d'abord les étiquettes.", false);
+        speak("Range d'abord les étiquettes dans les recettes.");
+        return;
+      }
+
+      const userInput = parseInt(document.getElementById("input-recettes").value, 10);
+
+      if (!allCorrect){
+        setMsg("msg-recettes", "⚠️ Certaines étiquettes sont mal placées (regarde les codes).", false);
+        speak("Certaines étiquettes sont mal placées.");
+      } else if (userInput === total){
+        setMsg("msg-recettes", "✅ Bravo ! C'est juste.", true);
+        document.getElementById("final-recettes").value = total;
+        speak("Bravo. Total recettes correct.");
+      } else {
+        setMsg("msg-recettes", "❌ Le placement est bon, mais recompte le total.", false);
+        speak("Le placement est bon, mais recompte le total.");
+      }
+    }
+
+    function checkDepense(catName, inputId, msgId){
+      if (isEmptyNumberInput(inputId)){
+        setMsg(msgId, "⚠️ Écris un total avant de vérifier.", false);
+        speak("Écris un total avant de vérifier.");
+        return;
+      }
+
+      const zone = document.querySelector(`.drop-zone[data-cat="${catName}"]`);
+      let total = 0;
+      let allCorrect = true;
+      let anyItem = false;
+
+      const codeMap = { "fixe": "DF", "courante": "DC", "occas": "DO" };
+
+      [...zone.children].forEach(child => {
+        anyItem = true;
+        total += parseInt(child.dataset.val, 10) || 0;
+        if (child.dataset.code !== codeMap[catName]) allCorrect = false;
+      });
+
+      if (!anyItem){
+        setMsg(msgId, "⚠️ La colonne est vide. Range d'abord les étiquettes.", false);
+        speak("La colonne est vide.");
+        return;
+      }
+
+      const userInput = parseInt(document.getElementById(inputId).value, 10);
+
+      if (!allCorrect){
+        setMsg(msgId, "⚠️ Une étiquette n'a pas le bon code (DF, DC ou DO).", false);
+        speak("Une étiquette n'a pas le bon code.");
+      } else if (userInput === total){
+        setMsg(msgId, "✅ Excellent !", true);
+        speak("Excellent. Total correct.");
+        checkAllDepensesFilled();
+      } else {
+        setMsg(msgId, "❌ Erreur de calcul.", false);
+        speak("Erreur de calcul.");
+      }
+    }
+
+    function checkAllDepensesFilled(){
+      const f = document.getElementById("input-fixes").value;
+      const c = document.getElementById("input-courantes").value;
+      const o = document.getElementById("input-occas").value;
+
+      const hasF = f !== "" && f !== null && typeof f !== "undefined";
+      const hasC = c !== "" && c !== null && typeof c !== "undefined";
+      const hasO = o !== "" && o !== null && typeof o !== "undefined";
+
+      if (hasF && hasC && hasO){
+        const sum = (parseInt(f,10)||0) + (parseInt(c,10)||0) + (parseInt(o,10)||0);
+        document.getElementById("final-depenses").value = sum;
+      }
+    }
+
+    function checkBilan(){
+      const r = parseInt(document.getElementById("final-recettes").value, 10);
+      const d = parseInt(document.getElementById("final-depenses").value, 10);
+      const s = parseInt(document.getElementById("final-solde").value, 10);
+
+      if (isNaN(r) || document.getElementById("final-recettes").value === ""){
+        setMsg("msg-bilan", "⚠️ D'abord, vérifie le total des Recettes.", false);
+        speak("Vérifie d'abord le total des recettes.");
+        return;
+      }
+      if (isNaN(d) || document.getElementById("final-depenses").value === ""){
+        setMsg("msg-bilan", "⚠️ Écris le total des Dépenses.", false);
+        speak("Écris le total des dépenses.");
+        return;
+      }
+      if (isNaN(s) || document.getElementById("final-solde").value === ""){
+        setMsg("msg-bilan", "⚠️ Écris le Solde restant.", false);
+        speak("Écris le solde restant.");
+        return;
+      }
+
+      if (s === (r - d)){
+        setMsg("msg-bilan", "🎉 BRAVO ! Exercice terminé.", true);
+        speak("Bravo. Exercice terminé.");
+      } else {
+        setMsg("msg-bilan", "❌ Vérifie : Recettes - Dépenses.", false);
+        speak("Vérifie. Recettes moins dépenses.");
+      }
+    }
+  </script>
+</body>
+</html>

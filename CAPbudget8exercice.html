@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module D2 : Le Budget de Michel</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="annuaire.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root { --primary:#2563eb; --success:#16a34a; --error:#dc2626; --bg:#f1f5f9; --gold:#fbbf24; }
+    * { box-sizing:border-box; }
+    html, body { width:100%; max-width:100%; overflow-x:hidden; margin:0; padding:0; }
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: #333;
+      padding: 15px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    .container{ max-width:1100px; width:100%; position: relative; }
+    
+    /* Bouton retour */
+    .btn-retour {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: white;
+      border: 2px solid #cbd5e1;
+      padding: 8px 15px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.2s;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+      z-index: 10;
+    }
+    .btn-retour:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: #eff6ff;
+    }
+
+    /* Page d'introduction */
+    #page-intro {
+      background: white;
+      padding: 40px 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    #page-intro h1 {
+      color: var(--primary);
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    #page-intro h2 {
+      color: #475569;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 15px 0;
+    }
+    #page-intro .objectif {
+      background: #eff6ff;
+      border-left: 5px solid var(--primary);
+      padding: 20px;
+      border-radius: 8px;
+      margin: 30px 0;
+      text-align: left;
+    }
+    #page-intro .objectif strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+    #btn-demarrer {
+      margin-top: 30px;
+      padding: 18px 40px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      transition: 0.2s;
+    }
+    #btn-demarrer:hover {
+      background: #1d4ed8;
+    }
+
+    /* Contenu de l'exercice */
+    #contenu-exercice {
+      display: none;
+      width: 100%;
+    }
+
+    header{ background:#2563eb; color:#fff; padding:20px; border-radius:15px; text-align:center; margin-bottom:20px; }
+    .obj-box{ background:rgba(255,255,255,0.15); padding:10px; border-radius:8px; font-size:0.95rem; margin-top:10px; font-weight:700; }
+    .context-box{ background:#fff; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.1); margin-bottom:20px; line-height:1.6; overflow-wrap:anywhere; }
+    #alert{
+      display:none;
+      margin: 0 0 14px 0;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background:#fff7ed;
+      border:1px solid #fed7aa;
+      color:#9a3412;
+      font-weight:900;
+      overflow-wrap:anywhere;
+    }
+
+    /* CALCULATRICE */
+    .calc-toggle{
+      position:fixed; bottom:20px; right:20px; z-index:1000;
+      background:var(--gold); color:#0f172a; border:none;
+      width:60px; height:60px; border-radius:50%; font-size:1.8rem;
+      cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+      transition:transform 0.2s; display:none; align-items:center; justify-content:center;
+    }
+    .calc-toggle:hover{ transform:scale(1.1); }
+    .calc-toggle:active{ transform:scale(0.95); }
+
+    .calculator{
+      position:fixed; bottom:90px; right:20px; z-index:999;
+      background:#1e293b; border:3px solid var(--gold); border-radius:20px;
+      padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+      display:none; width:280px;
+    }
+    .calculator.visible{ display:block; animation:slideIn 0.3s; }
+    @keyframes slideIn{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
+
+    .calc-header{
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;
+    }
+    .calc-header h3{ margin:0; color:var(--gold); font-size:1.1rem; }
+    .calc-close{
+      background:transparent; border:none; color:#94a3b8; font-size:1.5rem;
+      cursor:pointer; padding:0; width:30px; height:30px;
+    }
+    .calc-close:hover{ color:var(--error); }
+
+    .calc-display{
+      background:#0f172a; color:#0f0; font-family:'Courier New',monospace;
+      padding:15px; border-radius:10px; font-size:1.5rem; text-align:right;
+      margin-bottom:15px; border:2px solid #334155; min-height:50px;
+      word-break:break-all;
+    }
+
+    .calc-buttons{
+      display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;
+    }
+    .calc-btn{
+      background:#334155; color:#e2e8f0; border:none; padding:15px;
+      border-radius:10px; font-size:1.1rem; font-weight:700; cursor:pointer;
+      transition:0.15s;
+    }
+    .calc-btn:hover{ background:#475569; }
+    .calc-btn:active{ transform:scale(0.95); }
+    .calc-btn.operator{ background:#3b82f6; color:white; }
+    .calc-btn.equals{ background:var(--success); color:white; grid-column:span 2; }
+    .calc-btn.clear{ background:var(--error); color:white; }
+    .calc-btn.zero{ grid-column:span 2; }
+
+    #item-bank{
+      display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+      background:#fff; padding:15px; border-radius:12px; border:2px dashed #cbd5e1;
+      margin-bottom:20px; min-height:80px; width:100%;
+    }
+    .draggable-item{
+      padding:12px 15px; background:#fff; border:2px solid #64748b; border-radius:10px;
+      cursor:pointer; font-weight:900; transition:0.2s; user-select:none;
+      max-width:100%; overflow-wrap:anywhere; word-break:break-word;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    }
+    .draggable-item.selected{ border-color:#2563eb; background:#eff6ff; transform:scale(1.03); }
+    .correct-info{ display:none; margin-top:6px; font-size:0.85rem; font-weight:900; color:var(--error); }
+
+    .budget-container{
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:15px; width:100%;
+    }
+    .column{
+      background:#fff; border-radius:12px; padding:15px;
+      display:flex; flex-direction:column; min-height:400px;
+      border-top:8px solid #ccc; width:100%; min-width:0;
+    }
+    #col-recettes{ border-top-color:#28a745; }
+    #col-fixes{ border-top-color:#007bff; }
+    #col-courantes{ border-top-color:#ffc107; }
+    #col-occas{ border-top-color:#dc3545; }
+
+    .drop-zone{
+      flex-grow:1; padding:10px; border-radius:8px; background:#f8fafc;
+      min-height:150px; cursor:pointer; width:100%; min-width:0; overflow:auto;
+    }
+    .sub-zone{
+      background:#e2f3e5; margin-bottom:10px; border-radius:8px; padding:10px; min-height:80px;
+    }
+    .sub-zone h4{ margin:0 0 8px 0; font-size:0.85rem; text-transform:uppercase; color:#166534; }
+    .calc-zone{ margin-top:15px; padding-top:10px; border-top:1px solid #eee; text-align:center; font-weight:800; }
+
+    input[type="text"]{
+      width:110px; max-width:100%;
+      padding:8px; border:2px solid #cbd5e1; border-radius:8px; text-align:center; font-weight:900;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    }
+
+    .btn-valider{
+      background:#1e293b; color:#fff; border:none; padding:20px; border-radius:12px;
+      font-size:1.2rem; font-weight:900; cursor:pointer; margin-top:18px; width:100%;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    }
+    .btn-valider[disabled]{ opacity:0.75; cursor:not-allowed; }
+
+    #result-zone{
+      display:none; width:100%; background:#fff; padding:25px; border-radius:20px;
+      border:4px solid #2563eb; margin-top:30px; text-align:center;
+    }
+    .synthesis-card{
+      background:#eff6ff; border:2px solid #2563eb; padding:15px; border-radius:12px;
+      margin:20px 0; text-align:left; width:100%;
+    }
+    .syn-row{ display:flex; justify-content:space-between; gap:10px; margin-bottom:8px; font-weight:900; flex-wrap:wrap; }
+    .syn-row .val{ overflow-wrap:anywhere; }
+
+    .status-options{
+      display:flex; justify-content:space-around; margin-top:15px; padding:10px;
+      background:#fff; border-radius:10px; border:1px solid #cbd5e1; gap:10px; flex-wrap:wrap;
+      font-weight:900;
+    }
+    .status-options label{ white-space:nowrap; }
+
+    @media (max-width: 600px){
+      body{ padding:10px; }
+      .btn-retour { top: 10px; left: 10px; font-size: 0.85rem; padding: 6px 12px; }
+      #page-intro { padding: 30px 15px 15px 15px; }
+      #page-intro h1 { font-size: 1.5rem; }
+      #page-intro h2 { font-size: 1.1rem; }
+      header{ padding:16px; border-radius:12px; }
+      .context-box{ padding:14px; border-radius:12px; }
+      #item-bank{ padding:12px; }
+      .draggable-item{ padding:12px 12px; width:100%; }
+      .budget-container{ grid-template-columns:1fr; }
+      .column{ min-height:320px; padding:12px; }
+      .btn-valider{ padding:18px; font-size:1.1rem; }
+      input[type="text"]{ width:100%; max-width:180px; }
+      .calc-toggle{ bottom:15px; right:15px; width:55px; height:55px; font-size:1.6rem; }
+      .calculator{ bottom:80px; right:15px; width:260px; padding:15px; }
+      .calc-btn{ padding:12px; font-size:1rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Bouton retour (toujours visible) -->
+    <a href="javascript:history.back()" class="btn-retour">
+      <span>←</span>
+      <span>Retour aux exercices</span>
+    </a>
+
+    <!-- Page d'introduction -->
+    <div id="page-intro">
+      <h1>PSE – Thématique D</h1>
+      <h2>L'individu consommateur averti</h2>
+      <h2>Module D2 – Le budget</h2>
+      
+      <div class="objectif">
+        <strong>Objectif général</strong>
+        <p>Je dois être capable de gérer mon budget et de prendre les bonnes décisions face aux propositions de crédit afin d'adopter une attitude responsable et d'éviter le surendettement.</p>
+      </div>
+
+      <button id="btn-demarrer" type="button">Démarrer l'exercice</button>
+    </div>
+
+    <!-- Contenu de l'exercice (masqué initialement) -->
+    <div id="contenu-exercice">
+      <header>
+        <h1 style="margin:0;">Module D2 : Le Budget de Michel</h1>
+        <div class="obj-box">Objectif : Identifier un budget déficitaire après calcul du solde</div>
+      </header>
+
+      <div id="alert"></div>
+
+      <div class="context-box">
+        <strong>Situation :</strong> Michel est artisan peintre. Ce mois-ci, son activité lui rapporte <b>1 650,00 €</b>.
+        Il perçoit aussi une <b>prime d'activité de 112,45 €</b>.
+        <br><br>
+        Ses opérations : Loyer et charges atelier (725,50 €), Assurance professionnelle (94,20 €), Abonnement téléphone (35,00 €),
+        Courses alimentaires (430,45 €), Carburant utilitaire (215,00 €), Hygiène (36,00 €),
+        Réparation outillage (180,00 €), Blouson de travail (200,00 €).
+        <br><br>
+        <b>Consigne :</b> Clique sur une opération, puis sur la colonne où la placer. Ensuite, calcule les totaux et le solde.
+      </div>
+
+      <div id="item-bank"></div>
+
+      <div class="budget-container">
+        <div class="column" id="col-recettes">
+          <h3 style="margin:0 0 12px 0; color:#28a745; font-size:1.05rem;">💰 RECETTES</h3>
+          <div class="sub-zone" data-category="recette-travail">
+            <h4>Travail</h4>
+            <div class="drop-zone"></div>
+          </div>
+          <div class="sub-zone" data-category="recette-social">
+            <h4>Aides sociales</h4>
+            <div class="drop-zone"></div>
+          </div>
+          <div class="calc-zone">
+            <label>TOTAL RECETTES (€) :</label><br>
+            <input type="text" id="in-recettes" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="column" id="col-fixes">
+          <h3 style="margin:0 0 12px 0; color:#007bff; font-size:1.05rem;">🏠 DÉPENSES FIXES</h3>
+          <div class="drop-zone" data-category="fixe"></div>
+          <div class="calc-zone">
+            <label>TOTAL FIXES (€) :</label><br>
+            <input type="text" id="in-fixes" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="column" id="col-courantes">
+          <h3 style="margin:0 0 12px 0; color:#ffc107; font-size:1.05rem;">🛒 DÉPENSES COURANTES</h3>
+          <div class="drop-zone" data-category="courante"></div>
+          <div class="calc-zone">
+            <label>TOTAL COURANTES (€) :</label><br>
+            <input type="text" id="in-courantes" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="column" id="col-occas">
+          <h3 style="margin:0 0 12px 0; color:#dc3545; font-size:1.05rem;">🎯 DÉPENSES OCCASIONNELLES</h3>
+          <div class="drop-zone" data-category="occas"></div>
+          <div class="calc-zone">
+            <label>TOTAL OCCASIONNELLES (€) :</label><br>
+            <input type="text" id="in-occas" placeholder="0,00">
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:20px; border-radius:15px; margin-top:20px; border:3px solid #1e293b;">
+        <h3 style="text-align:center; margin-top:0; color:#1e293b;">⚖️ SOLDE DU BUDGET</h3>
+        <div style="text-align:center; margin:15px 0;">
+          <label style="font-weight:900;">SOLDE (Recettes - Dépenses) en € :</label><br>
+          <input type="text" id="in-solde" placeholder="0,00" style="width:140px; font-size:1.1rem;">
+        </div>
+        <div class="status-options">
+          <label><input type="radio" name="status" value="excedentaire"> Excédentaire</label>
+          <label><input type="radio" name="status" value="equilibre"> Équilibré</label>
+          <label><input type="radio" name="status" value="deficitaire"> Déficitaire</label>
+        </div>
+      </div>
+
+      <button class="btn-valider" id="btn-analyser" onclick="analyser()">ANALYSER LE BUDGET</button>
+
+      <div id="result-zone">
+        <h2 style="margin-top:0; color:#2563eb;">📊 RÉSULTATS</h2>
+        <p id="final-score" style="font-size:1.4rem; font-weight:900; color:#1e293b; margin:20px 0;"></p>
+
+        <div class="synthesis-card">
+          <h3 style="margin-top:0; color:#2563eb;">Synthèse</h3>
+          <div class="syn-row" id="syn-rec"><span>Recettes :</span> <span class="val"></span></div>
+          <div class="syn-row" id="syn-dep"><span>Dépenses :</span> <span class="val"></span></div>
+          <div class="syn-row" id="syn-sol"><span>Solde :</span> <span class="val"></span></div>
+          <div class="syn-row" id="syn-status"><span>État :</span> <span class="val"></span></div>
+        </div>
+
+        <p style="font-size:0.9rem; color:#64748b;">
+          Score détail : Classement (10 pts) + Calculs (10 pts)
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton calculatrice -->
+  <button class="calc-toggle" id="calc-toggle">🔢</button>
+
+  <!-- Calculatrice -->
+  <div class="calculator" id="calculator">
+    <div class="calc-header">
+      <h3>Calculatrice</h3>
+      <button class="calc-close" id="calc-close">×</button>
+    </div>
+    <div class="calc-display" id="calc-display">0</div>
+    <div class="calc-buttons">
+      <button class="calc-btn" onclick="calcAppend('7')">7</button>
+      <button class="calc-btn" onclick="calcAppend('8')">8</button>
+      <button class="calc-btn" onclick="calcAppend('9')">9</button>
+      <button class="calc-btn operator" onclick="calcPerformOperation('/')">÷</button>
+      
+      <button class="calc-btn" onclick="calcAppend('4')">4</button>
+      <button class="calc-btn" onclick="calcAppend('5')">5</button>
+      <button class="calc-btn" onclick="calcAppend('6')">6</button>
+      <button class="calc-btn operator" onclick="calcPerformOperation('*')">×</button>
+      
+      <button class="calc-btn" onclick="calcAppend('1')">1</button>
+      <button class="calc-btn" onclick="calcAppend('2')">2</button>
+      <button class="calc-btn" onclick="calcAppend('3')">3</button>
+      <button class="calc-btn operator" onclick="calcPerformOperation('-')">−</button>
+      
+      <button class="calc-btn zero" onclick="calcAppend('0')">0</button>
+      <button class="calc-btn" onclick="calcAppend(',')">,</button>
+      <button class="calc-btn operator" onclick="calcPerformOperation('+')">+</button>
+      
+      <button class="calc-btn clear" onclick="calcClear()">C</button>
+      <button class="calc-btn equals" onclick="calcEquals()">=</button>
+    </div>
+  </div>
+
+  <script>
+    window.PSE_CODE_REQUIRED = true;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+      authDomain: "devoirs-pse.firebaseapp.com",
+      projectId: "devoirs-pse",
+      storageBucket: "devoirs-pse.appspot.com",
+      messagingSenderId: "614730413904",
+      appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+
+    (function initFirebaseOnce(){
+      try {
+        if (typeof firebase !== "undefined" && firebaseConfig) {
+          if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+          window.db = firebase.firestore();
+        } else {
+          window.db = null;
+        }
+      } catch(e) {
+        window.db = null;
+      }
+    })();
+
+    // TRACKER DE VISITE RETIRÉ conformément aux instructions
+
+    // Gestion page d'intro
+    document.getElementById("btn-demarrer").addEventListener("click", function() {
+      document.getElementById("page-intro").style.display = "none";
+      document.getElementById("contenu-exercice").style.display = "block";
+      document.querySelector(".calc-toggle").style.display = "flex";
+    });
+
+    // ========== CALCULATRICE ==========
+    let calcMemory = 0;
+    let calcPendingValue = 0;
+    let calcPendingOperator = "";
+    let calcWaitingNewValue = false;
+
+    const calculator = document.getElementById("calculator");
+    const calcDisplay = document.getElementById("calc-display");
+    const calcToggle = document.getElementById("calc-toggle");
+    const calcClose = document.getElementById("calc-close");
+
+    calcToggle.addEventListener("click", () => {
+      calculator.classList.toggle("visible");
+    });
+
+    calcClose.addEventListener("click", () => {
+      calculator.classList.remove("visible");
+    });
+
+    function calcAppend(digit){
+      if(calcWaitingNewValue){
+        calcDisplay.textContent = digit;
+        calcWaitingNewValue = false;
+      } else {
+        calcDisplay.textContent = calcDisplay.textContent === "0" ? digit : calcDisplay.textContent + digit;
+      }
+    }
+
+    function calcClear(){
+      calcDisplay.textContent = "0";
+      calcMemory = 0;
+      calcPendingValue = 0;
+      calcPendingOperator = "";
+      calcWaitingNewValue = false;
+    }
+
+    function calcBackspace(){
+      if(calcDisplay.textContent.length > 1){
+        calcDisplay.textContent = calcDisplay.textContent.slice(0, -1);
+      } else {
+        calcDisplay.textContent = "0";
+      }
+    }
+
+    function calcPerformOperation(op){
+      const current = parseFloat(calcDisplay.textContent.replace(",", "."));
+      
+      if(calcPendingOperator && !calcWaitingNewValue){
+        calcExecute();
+      } else {
+        calcPendingValue = current;
+      }
+      
+      calcPendingOperator = op;
+      calcWaitingNewValue = true;
+    }
+
+    function calcEquals(){
+      if(calcPendingOperator && !calcWaitingNewValue){
+        calcExecute();
+        calcPendingOperator = "";
+      }
+    }
+
+    function calcExecute(){
+      const current = parseFloat(calcDisplay.textContent.replace(",", "."));
+      let result = 0;
+
+      switch(calcPendingOperator){
+        case "+": result = calcPendingValue + current; break;
+        case "-": result = calcPendingValue - current; break;
+        case "*": result = calcPendingValue * current; break;
+        case "/": result = current !== 0 ? calcPendingValue / current : 0; break;
+        default: result = current;
+      }
+
+      calcDisplay.textContent = result.toString().replace(".", ",");
+      calcPendingValue = result;
+      calcWaitingNewValue = true;
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if(!calculator.classList.contains("visible")) return;
+
+      if(e.key >= "0" && e.key <= "9"){
+        calcAppend(e.key);
+      } else if(e.key === "," || e.key === "."){
+        if(!calcDisplay.textContent.includes(",")) calcAppend(",");
+      } else if(e.key === "+"){
+        calcPerformOperation("+");
+      } else if(e.key === "-"){
+        e.preventDefault();
+        calcPerformOperation("-");
+      } else if(e.key === "*"){
+        calcPerformOperation("*");
+      } else if(e.key === "/"){
+        e.preventDefault();
+        calcPerformOperation("/");
+      } else if(e.key === "Enter" || e.key === "="){
+        calcEquals();
+      } else if(e.key === "Escape"){
+        calculator.classList.remove("visible");
+      } else if(e.key === "Backspace"){
+        calcBackspace();
+      } else if(e.key === "c" || e.key === "C"){
+        calcClear();
+      }
+    });
+
+    function showAlert(msg){
+      const a = document.getElementById("alert");
+      a.style.display = "block";
+      a.textContent = msg;
+      a.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+    function hideAlert(){
+      const a = document.getElementById("alert");
+      a.style.display = "none";
+      a.textContent = "";
+    }
+
+    function normalizeToNumber(str){
+      if (str === null || str === undefined || str === "") return null;
+      const s = String(str).replace(/\s/g, "").replace(/€/g, "").replace(",", ".");
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function readNumber(id){
+      const el = document.getElementById(id);
+      return normalizeToNumber(el ? el.value : null);
+    }
+
+    function almostEqual(a, b, eps=0.03){
+      if(a === null || b === null) return false;
+      return Math.abs(a - b) < eps;
+    }
+
+    function getIdentity(){
+      const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
+      const classe =
+        localStorage.getItem("userClasse") ||
+        ((typeof ANNUAIRE !== "undefined" && ANNUAIRE && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE");
+      return { code, classe };
+    }
+
+    const items = [
+      { id: 1, name: "Revenu artisan", val: 1650.00, cat: "recette-travail", label: "Recettes (Travail)" },
+      { id: 2, name: "Prime d'activité", val: 112.45, cat: "recette-social", label: "Recettes (Social)" },
+      { id: 3, name: "Loyer + charges atelier", val: 725.50, cat: "fixe", label: "Dépenses Fixes" },
+      { id: 4, name: "Assurance professionnelle", val: 94.20, cat: "fixe", label: "Dépenses Fixes" },
+      { id: 5, name: "Abonnement téléphone", val: 35.00, cat: "fixe", label: "Dépenses Fixes" },
+      { id: 6, name: "Courses alimentaires", val: 430.45, cat: "courante", label: "Dépenses Courantes" },
+      { id: 7, name: "Carburant utilitaire", val: 215.00, cat: "courante", label: "Dépenses Courantes" },
+      { id: 8, name: "Hygiène", val: 36.00, cat: "courante", label: "Dépenses Courantes" },
+      { id: 9, name: "Réparation outillage", val: 180.00, cat: "occas", label: "Dépenses Occasionnelles" },
+      { id: 10, name: "Blouson de travail", val: 200.00, cat: "occas", label: "Dépenses Occasionnelles" }
+    ];
+
+    let selectedItem = null;
+    const bank = document.getElementById("item-bank");
+
+    items.sort(() => Math.random() - 0.5).forEach(item => {
+      const el = document.createElement("div");
+      el.className = "draggable-item";
+      el.id = "i-" + item.id;
+      el.innerHTML = `${item.name} (${item.val.toFixed(2)}€)
+        <div class="correct-info" id="info-${item.id}">Doit être dans : ${item.label}</div>`;
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (selectedItem) selectedItem.classList.remove("selected");
+        selectedItem = el;
+        el.classList.add("selected");
+      });
+      bank.appendChild(el);
+    });
+
+    document.querySelectorAll(".drop-zone, #item-bank").forEach(zone => {
+      zone.addEventListener("click", () => {
+        if (selectedItem) {
+          zone.appendChild(selectedItem);
+          selectedItem.classList.remove("selected");
+          selectedItem = null;
+        }
+      });
+    });
+
+    async function analyser(){
+      hideAlert();
+
+      const btn = document.getElementById("btn-analyser");
+      if (btn && btn.disabled) return;
+
+      const inStatus = document.querySelector('input[name="status"]:checked')?.value;
+      if (!inStatus){
+        showAlert("⚠️ Choisis l'état du budget avant de valider");
+        return;
+      }
+
+      // Vérifier que tous les champs sont remplis
+      const inR = readNumber("in-recettes");
+      const inF = readNumber("in-fixes");
+      const inC = readNumber("in-courantes");
+      const inO = readNumber("in-occas");
+      const inSolde = readNumber("in-solde");
+
+      if(inR === null || inF === null || inC === null || inO === null || inSolde === null){
+        showAlert("⚠️ Remplis tous les montants avant de valider");
+        return;
+      }
+
+      if (btn) { btn.disabled = true; }
+
+      let score = 0;
+
+      // 10 points : classement (1 point par étiquette)
+      items.forEach(item => {
+        const el = document.getElementById("i-" + item.id);
+        const info = document.getElementById("info-" + item.id);
+        const parentCat = (el && el.parentElement && el.parentElement.dataset) ? el.parentElement.dataset.category : "";
+        if (parentCat === item.cat) {
+          score += 1;
+          el.style.borderColor = "#28a745";
+          if (info) info.style.display = "none";
+        } else {
+          el.style.borderColor = "#dc3545";
+          if (info) info.style.display = "block";
+        }
+      });
+
+      const totalD = Number((inF + inC + inO).toFixed(2));
+
+      // Valeurs attendues
+      const R_OK = 1762.45;
+      const F_OK = 854.70;
+      const C_OK = 681.45;
+      const O_OK = 380.00;
+      const D_OK = 1916.15;
+      const SOLDE_OK = -153.70;
+      const STATUS_OK = "deficitaire";
+
+      // 10 points : calculs (2+2+2+2+1+1)
+      if (almostEqual(inR, R_OK)) score += 2;
+      if (almostEqual(inF, F_OK)) score += 2;
+      if (almostEqual(inC, C_OK)) score += 2;
+      if (almostEqual(inO, O_OK)) score += 2;
+      if (almostEqual(inSolde, SOLDE_OK)) score += 1;
+      if (inStatus === STATUS_OK) score += 1;
+
+      const finalScore = Math.max(0, Math.min(20, Math.round(score)));
+
+      document.getElementById("result-zone").style.display = "block";
+      document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
+
+      document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${almostEqual(inR, R_OK) ? "✅" : "❌"}`;
+      document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${almostEqual(totalD, D_OK) ? "✅" : "❌"}`;
+      document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${almostEqual(inSolde, SOLDE_OK) ? "✅" : "❌"}`;
+      document.querySelector("#syn-status .val").innerHTML = `${inStatus === STATUS_OK ? "Déficitaire ✅" : "Erreur ❌"}`;
+
+      window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: "smooth" });
+
+      // Envoi Firebase
+      try {
+        const { code, classe } = getIdentity();
+        if (window.db && typeof firebase !== "undefined") {
+          const sentKey = "sent_budget_michel_" + code;
+          if (!sessionStorage.getItem(sentKey)) {
+            await db.collection("resultats_exercices").add({
+              eleve: code,
+              classe: classe,
+              exercice: "Module D2 - Budget Michel",
+              note: finalScore,
+              total: 20,
+              competences: { C1: finalScore, C2: finalScore },
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            sessionStorage.setItem(sentKey, "1");
+          }
+        }
+      } catch(e) {
+        console.error("Erreur lors de l'envoi Firebase : ", e);
+      }
+
+      setTimeout(()=>{
+        if(btn) btn.disabled = false;
+      }, 500);
+    }
+  </script>
+</body>
+</html>
