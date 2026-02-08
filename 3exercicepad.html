@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>PAD - Risque Incendie (Lucia)</title>
+<style>
+  :root{
+    --bg:#0f172a; --text:#f1f5f9; --muted:#94a3b8;
+    --line:rgba(255,255,255,.12);
+    --c1:#f59e0b; --c2:#fbbf24; --c3:#ef4444; --c4:#10b981; --c5:#f97316; --err:#dc2626;
+    --font-ui: system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body{
+    margin:0; font-family:var(--font-ui); color:var(--text);
+    background:var(--bg);
+    padding: max(14px, env(safe-area-inset-top)) 14px calc(140px + env(safe-area-inset-bottom)) 14px;
+    background-image: radial-gradient(at 0% 0%, rgba(239,68,68,0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  img{max-width:100%; height:auto}
+
+  .wrap{max-width:800px; margin:0 auto; display:grid; gap:18px}
+
+  /* Page 0 (intro) */
+  #introOverlay{
+    position:fixed; inset:0;
+    background:rgba(15,23,42,0.985);
+    z-index:2000;
+    display:flex; align-items:center; justify-content:center;
+    padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)) 16px;
+    overflow:auto;
+  }
+  .intro-card{
+    width:100%; max-width:520px;
+    background:rgba(30,41,59,0.92);
+    border:1px solid var(--line);
+    border-radius:22px;
+    padding:22px;
+    text-align:center;
+  }
+  .intro-kicker{
+    font-weight:950;
+    letter-spacing:0.2px;
+    color:#fff;
+    font-size:0.95rem;
+  }
+  .intro-title{
+    margin:10px 0 12px;
+    font-size:1.25rem;
+    font-weight:1000;
+    color:#fff;
+    line-height:1.25;
+  }
+  .intro-box{
+    text-align:left;
+    font-size:0.95rem;
+    color:#cbd5e1;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.10);
+    padding:14px;
+    border-radius:14px;
+    line-height:1.5;
+  }
+  .intro-box b{ color:#fff; }
+  .badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid rgba(251,191,36,0.35);
+    background: rgba(251,191,36,0.10);
+    color:#e2e8f0;
+    font-weight:950;
+    font-size:0.85rem;
+    margin-top:10px;
+  }
+
+  /* Navigation (discrète) */
+  .top-nav{
+    position:sticky;
+    top: calc(env(safe-area-inset-top) + 6px);
+    z-index:150;
+    display:flex; gap:10px; align-items:center; justify-content:space-between;
+    backdrop-filter: blur(6px);
+  }
+  .nav-left, .nav-right{ display:flex; gap:10px; align-items:center; }
+  .nav-btn{
+    appearance:none; border:none;
+    background: rgba(15,23,42,0.8);
+    border:1px solid var(--line);
+    color:#e2e8f0;
+    padding:10px 12px;
+    border-radius:14px;
+    font-weight:950;
+    font-size:0.9rem;
+    cursor:pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    white-space:nowrap;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .nav-btn:active{ transform:scale(0.99); }
+
+  .hero{ background:rgba(30,41,59,0.86); padding:18px; border-radius:16px; border:1px solid var(--line); position: relative; }
+  .pedago-box {
+    background:rgba(255,255,255,0.05); padding:14px; border-radius:12px; margin-top:10px; font-size:0.95rem;
+    border-left: 4px solid var(--c3);
+    line-height:1.45;
+  }
+  .pedago-title { color:var(--c3); font-weight:950; text-transform:uppercase; font-size:0.82rem; margin-bottom:6px; display:block; letter-spacing:0.2px; }
+  .copyright { font-size: 0.7rem; color: var(--muted); opacity: 0.75; margin-top: 8px; display: block; text-align: right; font-style: italic; }
+
+  .card { background:rgba(30,41,59,0.92); padding:18px; border-radius:18px; border:1px solid var(--line); }
+
+  .definition-zone {
+    background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+    border: 1px solid rgba(245,158,11,0.3);
+    color: #fcd34d; padding: 14px; border-radius: 12px;
+    margin-bottom: 16px; font-size: 0.98rem; line-height: 1.5;
+  }
+  .def-label { font-weight:950; text-transform:uppercase; display:block; margin-bottom:6px; font-size:0.82rem; opacity:0.9; letter-spacing:0.2px; }
+
+  .img-container {
+    width:100%; height: clamp(160px, 24vh, 260px);
+    background:#000; border-radius:12px; overflow:hidden;
+    border:1px solid var(--line); margin-bottom:16px; display:flex; align-items:center; justify-content:center;
+  }
+  .sit-img { width:100%; height:100%; object-fit:contain; }
+
+  .prompt { font-weight:950; margin-bottom:10px; display:block; color:white; line-height:1.35; }
+
+  .help-box{
+    display:none;
+    background: rgba(251,191,36,0.10);
+    border: 1px solid rgba(251,191,36,0.35);
+    color:#e2e8f0;
+    padding:12px 14px;
+    border-radius:14px;
+    margin-bottom:14px;
+    font-weight:950;
+    line-height:1.35;
+  }
+
+  .drop-slot {
+    background:rgba(255,255,255,0.05); border:2px dashed var(--muted); border-radius:12px;
+    padding:14px; min-height:70px; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-weight:950; color:var(--muted); transition:0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    word-break: break-word;
+    cursor:pointer;
+  }
+  .drop-slot.filled { border-style:solid; border-color:var(--c3); background:rgba(239,68,68,0.15); color:white; }
+  .drop-slot.active-target { border-color:var(--c5); background:rgba(249,115,22,0.1); animation:pulse 1s infinite; }
+
+  .items-list { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding-top:18px; margin-top:18px; border-top:1px solid var(--line); }
+  .item-label {
+    background:var(--c2); color:#0f172a; padding:11px 14px; border-radius:12px; font-weight:950; cursor:pointer;
+    border:2px solid transparent; transition:0.15s; user-select:none; font-size:0.95rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    text-align:center;
+    max-width:100%;
+  }
+  .item-label.selected { background:var(--c1); border-color:white; transform:scale(1.03); color:#0f172a; }
+  .item-label.placed { opacity:0.25; pointer-events:none; filter:grayscale(1); }
+
+  .btn { background:var(--c3); color:white; padding:13px 18px; border-radius:14px; font-weight:950; border:none; cursor:pointer; font-size:1rem; width:100%; margin-top:14px; touch-action: manipulation; }
+  .btn:disabled { opacity:0.5; filter:grayscale(1); cursor:not-allowed; }
+
+  .panel { margin-top:14px; padding:14px; border-radius:14px; display:none; text-align:center; font-weight:950; line-height:1.35; }
+  .panel.ok { background:rgba(16,185,129,0.18); color:#6ee7b7; border:1px solid rgba(16,185,129,0.55); }
+  .panel.bad { background:rgba(239,68,68,0.18); color:#fca5a5; border:1px solid rgba(220,38,38,0.55); }
+
+  .hud-strip {
+    display:flex; justify-content: space-between; align-items: center;
+    gap:10px;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid var(--line);
+    padding: 10px 16px;
+    border-radius: 16px;
+    font-weight: 950; font-size: 0.92rem;
+    backdrop-filter: blur(5px);
+    flex-wrap:wrap;
+  }
+  .progress-track{ flex:1; min-width:140px; height:8px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--c1), var(--c3)); transition:width 0.5s ease; }
+  .schema-row { display:grid; grid-template-columns: 1fr 2fr; align-items:center; gap:10px; text-align:right; font-size:0.85rem; font-weight:950; color:var(--c1); margin-bottom:10px; }
+
+  @keyframes pulse { 0%{opacity:1} 50%{opacity:0.6} 100%{opacity:1} }
+  #confetti{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+  #finalScreen { text-align:center; padding:34px 12px; display:none; }
+  .big-score { font-size:3rem; font-weight:1000; margin:10px 0; background:linear-gradient(to right, var(--c4), var(--c3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  @media (max-width: 420px){
+    body{ padding-left:12px; padding-right:12px; }
+    .hero, .card{ padding:16px; border-radius:16px; }
+    .hud-strip{ padding:10px 14px; }
+    .schema-row{ grid-template-columns: 1fr; text-align:left; gap:6px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div id="introOverlay">
+  <div class="intro-card">
+    <div class="intro-kicker">PSE</div>
+    <div class="intro-title">PAD - Risque Incendie (Lucia)</div>
+    <div class="badge">compétence 2</div>
+    <div class="intro-box" style="margin-top:12px;">
+      <b>Objectif :</b> être capable d’identifier un danger, la situation dangereuse, l’événement déclencheur et le dommage.
+    </div>
+    <button class="btn" onclick="startGame()" style="margin-top:16px;">Démarrer</button>
+  </div>
+</div>
+
+<div class="wrap" id="gameWrap" style="display:none">
+
+  <div class="top-nav">
+    <div class="nav-left">
+      <button class="nav-btn" type="button" onclick="goBack()">Retour</button>
+      <a class="nav-btn" id="btnSommaire" href="#" style="display:none;">Sommaire</a>
+    </div>
+    <div class="nav-right">
+      <button class="nav-btn" type="button" onclick="scrollTopSmooth()">Haut</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h3 style="margin:0">Situation : Le Risque Incendie</h3>
+    <div class="pedago-box">
+      <span class="pedago-title">Contexte</span>
+      Lucia est agent d'accueil. Elle souhaite brancher un appareil supplémentaire sur une multiprise déjà encombrée.
+    </div>
+    <span class="copyright">(Éditions Foucher)</span>
+  </div>
+
+  <div class="hud-strip">
+    <span>Compétence C2</span>
+    <span>Étape <span id="txtProg" style="color:var(--c1)">1 / 5</span></span>
+    <div class="progress-track"><div id="bar" class="progress-fill"></div></div>
+    <span>Score <span id="txtScore" style="color:#fff">0</span></span>
+  </div>
+
+  <div class="card" id="gameCard">
+    <div id="gameContent">
+
+      <div id="helpBox" class="help-box"></div>
+
+      <div style="display:flex; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+        <span style="font-weight:950; color:var(--c1)" id="stepTitle">ÉTAPE 1</span>
+      </div>
+
+      <div class="definition-zone">
+        <span class="def-label">Définition :</span>
+        <span id="defText">...</span>
+      </div>
+
+      <div class="img-container">
+        <img id="qImg" class="sit-img" src="" alt="Illustration manquante">
+      </div>
+
+      <span class="prompt" id="promptText">...</span>
+
+      <div id="dragZone"></div>
+      <div id="itemsZone" class="items-list"></div>
+
+      <button class="btn" id="btnVal" onclick="validate()">Valider</button>
+      <div id="feedback" class="panel"></div>
+    </div>
+
+    <div id="finalScreen">
+      <h2>Analyse Terminée !</h2>
+      <div class="big-score" id="finalScoreVal">0/5</div>
+      <p style="font-size:1.15rem; margin-bottom:26px; color:#e2e8f0;">Tu as complété le schéma du processus d'apparition du dommage.</p>
+      <button class="btn" onclick="location.reload()">Recommencer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const HOME_URL = ""; // si vide, on cache le bouton Sommaire
+
+const DATA = [
+  {
+    title: "LE DANGER",
+    def: "C'est la cause capable de provoquer une lésion.",
+    img: "feu-danger.jpg",
+    prompt: "Quel est l'élément dangereux ici ?",
+    items: [
+      {id:"ok", txt:"La multiprise électrique (surcharge possible)"},
+      {id:"no1", txt:"Le bureau"},
+      {id:"no2", txt:"Le téléphone"}
+    ],
+    sol: "ok",
+    coach: "Repère ce qui peut chauffer si on branche trop d'appareils."
+  },
+  {
+    title: "LA SITUATION DANGEREUSE",
+    def: "Situation où l'opérateur est exposé au danger.",
+    img: "feu-situation.jpg",
+    prompt: "Quelle phrase décrit la situation dangereuse ?",
+    items: [
+      {id:"ok", txt:"Lucia branche un appareil supplémentaire sur la multiprise"},
+      {id:"no1", txt:"Lucia classe des documents"},
+      {id:"no2", txt:"Lucia sort en pause"}
+    ],
+    sol: "ok",
+    coach: "La SD = opérateur + action + danger."
+  },
+  {
+    title: "L'ÉVÉNEMENT DÉCLENCHEUR",
+    def: "L'événement qui va causer le dommage.",
+    img: "feu-evenement.jpg",
+    prompt: "Quel événement provoque l'incendie ?",
+    items: [
+      {id:"ok", txt:"Surcharge électrique"},
+      {id:"no1", txt:"Fuite d'eau"},
+      {id:"no2", txt:"Chute d'objet"}
+    ],
+    sol: "ok",
+    coach: "Quand trop d'appareils sont branchés, l'intensité augmente."
+  },
+  {
+    title: "LE DOMMAGE",
+    def: "La lésion ou l'atteinte à la santé / sécurité.",
+    img: "feu-dommage.jpg",
+    prompt: "Quel est le dommage final ?",
+    items: [
+      {id:"ok", txt:"Incendie"},
+      {id:"no1", txt:"Coupure"},
+      {id:"no2", txt:"Entorse"}
+    ],
+    sol: "ok",
+    coach: "Conséquence grave liée au feu."
+  },
+  {
+    title: "SYNTHÈSE DU PAD",
+    def: "Reconstruisons le schéma complet de la situation.",
+    img: "feu-situation.jpg",
+    prompt: "Place tous les éléments au bon endroit.",
+    isFinal: true,
+    slots: [
+      {id:"f1", label:"DANGER"},
+      {id:"f2", label:"SITUATION DANGEREUSE"},
+      {id:"f3", label:"ÉVÉNEMENT DÉCLENCHEUR"},
+      {id:"f4", label:"DOMMAGE"}
+    ],
+    items: [
+      {id:"i1", txt:"Multiprise électrique"},
+      {id:"i2", txt:"Lucia branche un appareil sur la multiprise"},
+      {id:"i3", txt:"Surcharge électrique"},
+      {id:"i4", txt:"Incendie"}
+    ],
+    sol: {"f1":"i1", "f2":"i2", "f3":"i3", "f4":"i4"},
+    coach: "Danger -> Situation -> Événement -> Dommage."
+  }
+];
+
+let idx = 0;
+let score = 0;
+let selectedItem = null;
+let placedItems = {};
+
+const $=(id)=>document.getElementById(id);
+
+function setHelp(text){
+  const hb = $("helpBox");
+  hb.textContent = text || "";
+  hb.style.display = text ? "block" : "none";
+}
+
+function initNav(){
+  const btn = $("btnSommaire");
+  if(HOME_URL && HOME_URL.trim()){
+    btn.href = HOME_URL.trim();
+    btn.style.display = "inline-flex";
+  } else {
+    btn.style.display = "none";
+  }
+}
+
+function goBack(){
+  if (history.length > 1) history.back();
+  else scrollTopSmooth();
+}
+
+function scrollTopSmooth(){
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function startGame(){
+  $("introOverlay").style.display = "none";
+  $("gameWrap").style.display = "grid";
+  initNav();
+  setHelp("Objectif : appliquer une démarche d'analyse (compétence 2).");
+  loadStep();
+  scrollTopSmooth();
+}
+
+function loadStep(){
+  const d = DATA[idx];
+  selectedItem = null;
+  placedItems = {};
+
+  $("stepTitle").textContent = d.title;
+  $("defText").textContent = d.def;
+  $("promptText").textContent = d.prompt;
+  $("qImg").src = d.img;
+
+  $("btnVal").disabled = false;
+  $("feedback").style.display = "none";
+  setHelp(d.coach);
+
+  const dragZone = $("dragZone");
+  dragZone.innerHTML = "";
+
+  if(d.isFinal){
+    d.slots.forEach(s => {
+      const row = document.createElement("div");
+      row.className = "schema-row";
+      row.innerHTML = `<span>${s.label} :</span>`;
+      const slot = document.createElement("div");
+      slot.className = "drop-slot";
+      slot.id = s.id;
+      slot.textContent = "Placer ici";
+      slot.onclick = () => handleSlotClick(slot, s.id);
+      row.appendChild(slot);
+      dragZone.appendChild(row);
+    });
+  } else {
+    const slot = document.createElement("div");
+    slot.className = "drop-slot";
+    slot.id = "singleSlot";
+    slot.textContent = "Touche une étiquette puis touche ici";
+    slot.onclick = () => handleSlotClick(slot, "singleSlot");
+    dragZone.appendChild(slot);
+  }
+
+  const itemZone = $("itemsZone");
+  itemZone.innerHTML = "";
+
+  const itemsMixed = [...d.items].sort(() => Math.random() - 0.5);
+  itemsMixed.forEach(i => {
+    const btn = document.createElement("div");
+    btn.className = "item-label";
+    btn.textContent = i.txt;
+    btn.id = "item_" + i.id;
+    btn.onclick = () => handleItemClick(i, btn);
+    itemZone.appendChild(btn);
+  });
+
+  updateHud();
+}
+
+function handleItemClick(itemData, domElement){
+  if(domElement.classList.contains("placed")) return;
+  document.querySelectorAll(".item-label").forEach(el => el.classList.remove("selected"));
+  domElement.classList.add("selected");
+  selectedItem = { data: itemData, dom: domElement };
+  document.querySelectorAll(".drop-slot:not(.filled)").forEach(s => s.classList.add("active-target"));
+}
+
+function clearSlot(slotDom, slotId){
+  if(!placedItems[slotId]) return;
+  const oldId = placedItems[slotId];
+  const oldBtn = document.getElementById("item_" + oldId);
+  if(oldBtn) oldBtn.classList.remove("placed");
+  delete placedItems[slotId];
+  slotDom.classList.remove("filled");
+  slotDom.textContent = (slotId === "singleSlot") ? "Touche une étiquette puis touche ici" : "Placer ici";
+}
+
+function handleSlotClick(slotDom, slotId){
+  if(placedItems[slotId] && !selectedItem){
+    clearSlot(slotDom, slotId);
+    return;
+  }
+
+  if(placedItems[slotId] && selectedItem){
+    clearSlot(slotDom, slotId);
+  }
+
+  if(selectedItem){
+    slotDom.textContent = selectedItem.data.txt;
+    slotDom.classList.add("filled");
+    slotDom.classList.remove("active-target");
+    selectedItem.dom.classList.add("placed");
+    selectedItem.dom.classList.remove("selected");
+    placedItems[slotId] = selectedItem.data.id;
+    selectedItem = null;
+    document.querySelectorAll(".drop-slot").forEach(s => s.classList.remove("active-target"));
+  }
+}
+
+function validate(){
+  const d = DATA[idx];
+  let isCorrect = false;
+
+  if(d.isFinal){
+    if(Object.keys(placedItems).length < 4){
+      setHelp("Il manque des éléments.");
+      return;
+    }
+    isCorrect = true;
+    for(const key in d.sol){
+      if(placedItems[key] !== d.sol[key]) isCorrect = false;
+    }
+  } else {
+    if(!placedItems["singleSlot"]){
+      setHelp("Tu n'as rien mis dans la case.");
+      return;
+    }
+    if(placedItems["singleSlot"] === d.sol) isCorrect = true;
+  }
+
+  const fb = $("feedback");
+  fb.style.display = "block";
+  $("btnVal").disabled = true;
+
+  if(isCorrect){
+    score++;
+    fb.textContent = "Bravo ! C'est exact.";
+    fb.className = "panel ok";
+    setHelp("Bien joué.");
+    updateHud();
+
+    if(idx === DATA.length - 1){
+      setTimeout(() => {
+        $("gameContent").style.display = "none";
+        $("finalScreen").style.display = "block";
+        $("finalScoreVal").textContent = score + "/" + DATA.length;
+        launchConfetti();
+        scrollTopSmooth();
+      }, 900);
+    } else {
+      setTimeout(() => { idx++; loadStep(); scrollTopSmooth(); }, 900);
+    }
+  } else {
+    fb.textContent = "Erreur. Regarde bien la définition.";
+    fb.className = "panel bad";
+    setHelp("Essaye de retenir la correction.");
+    if(idx < DATA.length - 1){
+      setTimeout(() => { idx++; loadStep(); scrollTopSmooth(); }, 1600);
+    }
+  }
+}
+
+function updateHud(){
+  $("txtProg").textContent=`${Math.min(idx+1, DATA.length)} / ${DATA.length}`;
+  const denom = Math.max(1, DATA.length - 1);
+  $("bar").style.width=`${(idx/denom)*100}%`;
+  $("txtScore").textContent=score;
+}
+
+let confettiRafId = null;
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d', { alpha:true });
+  const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+  resize();
+  window.addEventListener('resize', resize, { passive:true });
+
+  const pieces = [];
+  for(let i=0; i<120; i++){
+    pieces.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height - canvas.height,
+      color: `hsl(${Math.random()*360}, 100%, 50%)`,
+      size: Math.random()*8+4,
+      speed: Math.random()*3+2,
+      drift: (Math.random()-0.5)*1.5
+    });
+  }
+
+  const start = Date.now();
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+      p.y += p.speed;
+      p.x += p.drift;
+      if(p.y > canvas.height + 10) p.y = -10;
+      if(p.x < -10) p.x = canvas.width + 10;
+      if(p.x > canvas.width + 10) p.x = -10;
+    });
+    if(Date.now() - start < 5000){
+      confettiRafId = requestAnimationFrame(draw);
+    } else {
+      if(confettiRafId) cancelAnimationFrame(confettiRafId);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      window.removeEventListener('resize', resize);
+    }
+  }
+  draw();
+}
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+    authDomain: "devoirs-pse.firebaseapp.com",
+    projectId: "devoirs-pse",
+    storageBucket: "devoirs-pse.appspot.com",
+    messagingSenderId: "614730413904",
+    appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let currentDocId = null;
+  let startTime = Date.now();
+
+  function getIdentity() { return localStorage.getItem("cockpit_student_id"); }
+
+  async function demarrerVisite() {
+    try {
+      const userCode = getIdentity() || "ANONYME";
+      const userClass = localStorage.getItem("cockpit_student_class") || "VISITEUR";
+      const pageName = document.title || window.location.pathname.split("/").pop();
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      const ref = await addDoc(collection(db, "statistiques_usage"), {
+        page: pageName,
+        userCode: userCode,
+        classe: userClass,
+        device: isMobile ? "Mobile" : "Desktop",
+        action: "Consultation",
+        duree: 0,
+        timestamp: serverTimestamp(),
+        date: new Date().toISOString()
+      });
+
+      currentDocId = ref.id;
+
+      setInterval(async () => {
+        if (currentDocId && document.visibilityState === 'visible') {
+          try {
+            await updateDoc(doc(db, "statistiques_usage", currentDocId), {
+              duree: Math.floor((Date.now() - startTime) / 1000)
+            });
+          } catch (e) {}
+        }
+      }, 10000);
+
+    } catch (e) {
+      console.warn("Erreur Tracker", e);
+    }
+  }
+
+  demarrerVisite();
+</script>
+
+</body>
+</html>
