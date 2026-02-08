@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Module C9 – Flashcards RPS</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-soft: #eef2ff;
+      --bg: #f3f4f6;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --card-bg: #ffffff;
+      --success: #22c55e;
+      --success-bg: #dcfce7;
+      --danger: #ef4444;
+      --danger-bg: #fee2e2;
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 50%, #fdf4ff 100%);
+      color: var(--text);
+      margin: 0;
+      padding: 15px;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* === HEADER === */
+    .header-box {
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      color: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 15px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+    .header-box h1 {
+      margin: 0 0 5px;
+      font-size: 1.4rem;
+    }
+    .header-box .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .header-box p {
+      margin: 10px 0 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    /* === SCREENS === */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* === PAGE 0 : OBJECTIFS === */
+    .objectif-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border-left: 5px solid var(--primary);
+    }
+    .objectif-card h3 {
+      color: var(--primary);
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+    .objectif-card ul {
+      margin: 10px 0 0 20px;
+      padding: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .objectif-card li { margin: 6px 0; }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+    .pill-warn {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    /* === CHOIX MODE === */
+    .choice-section {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .choice-section h3 {
+      margin: 0 0 15px;
+      text-align: center;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .choice-card {
+      background: #f9fafb;
+      border-radius: 16px;
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+      border: 3px solid transparent;
+    }
+    .choice-card:hover {
+      transform: translateY(-2px);
+      background: var(--primary-soft);
+    }
+    .choice-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+    .icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+    .label { font-weight: 800; font-size: 1rem; color: var(--text); display: block; }
+    .sub { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+
+    /* === BOUTON === */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      margin-top: 15px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      border: 2px solid #e5e7eb;
+    }
+    .btn-secondary:hover {
+      background: #f3f4f6;
+      box-shadow: none;
+    }
+
+    /* === PROGRESS === */
+    .progress-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .progress-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #8b5cf6);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-text {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* === FLASHCARD === */
+    .flashcard-container {
+      perspective: 1000px;
+      height: 340px;
+      margin-bottom: 15px;
+      cursor: pointer;
+    }
+    .flashcard {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: var(--radius);
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 25px;
+      background: white;
+      border-radius: var(--radius);
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .card-front {
+      border: 3px solid var(--primary-soft);
+    }
+    .card-back {
+      transform: rotateY(180deg);
+      border: 3px solid var(--primary);
+      background: linear-gradient(135deg, #fafbff, #f0f4ff);
+    }
+    .card-front h2 {
+      color: var(--primary);
+      font-size: 1.3rem;
+      margin: 0 0 10px;
+      line-height: 1.4;
+    }
+    .card-comp {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: var(--primary);
+      color: white;
+      margin-bottom: 15px;
+    }
+    .card-hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 15px;
+    }
+    .card-back p {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text);
+      margin: 0;
+    }
+
+    /* === EVAL BUTTONS === */
+    .eval-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .eval-btns.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .btn-fail {
+      background: var(--danger-bg);
+      color: #991b1b;
+      box-shadow: none;
+      border: 2px solid #fca5a5;
+    }
+    .btn-fail:hover {
+      background: #fecaca;
+      box-shadow: none;
+    }
+    .btn-success {
+      background: var(--success-bg);
+      color: #166534;
+      box-shadow: none;
+      border: 2px solid #86efac;
+    }
+    .btn-success:hover {
+      background: #bbf7d0;
+      box-shadow: none;
+    }
+
+    /* === RESULT === */
+    .result-card {
+      background: white;
+      padding: 30px;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .result-card h2 {
+      margin: 0 0 20px;
+      color: var(--text);
+    }
+    .score-circle {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-soft), #faf5ff);
+      color: var(--primary);
+      font-size: 2rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 4px solid var(--primary);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);
+    }
+    .score-msg {
+      font-size: 1.1rem;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .comp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0;
+      text-align: left;
+    }
+    .comp-item {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+    .comp-item .label {
+      font-weight: 700;
+      color: var(--primary-dark);
+      font-size: 0.8rem;
+    }
+    .comp-item .score {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+    .comp-item .score.good { color: var(--success); }
+    .comp-item .score.mid { color: #f59e0b; }
+    .comp-item .score.bad { color: var(--danger); }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 400px) {
+      .header-box { padding: 15px; }
+      .header-box h1 { font-size: 1.2rem; }
+      .flashcard-container { height: 300px; }
+      .card-front h2 { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- === ÉCRAN ACCUEIL === -->
+  <div id="screen-welcome" class="screen active">
+    
+    <div class="header-box">
+      <h1>🗂️ Flashcards RPS</h1>
+      <span class="badge">Module C9 • Terminale Bac Pro</span>
+      <p>Mémorise les notions clés sur les Risques Psychosociaux</p>
+    </div>
+
+    <div class="objectif-card">
+      <h3>🎯 Compétence & Objectif</h3>
+      <p style="margin:0 0 10px;"><b>Module C9 :</b> Prévenir les risques psychosociaux au travail.</p>
+      <p style="margin:0;"><b>Être capable de :</b></p>
+      <ul>
+        <li>Définir les types de RPS (stress, violences internes/externes)</li>
+        <li>Reconnaître les 6 facteurs de risques (Gollac)</li>
+        <li>Connaître les conséquences et les acteurs de prévention</li>
+      </ul>
+      <div class="badge-row">
+        <span class="pill">C1 Connaissances</span>
+        <span class="pill">C2 Analyser</span>
+        <span class="pill">C3 Expliquer</span>
+        <span class="pill">C4 Proposer</span>
+        <span class="pill pill-warn">20 cartes</span>
+      </div>
+    </div>
+
+    <div class="choice-section">
+      <h3>🚀 Prêt à réviser ?</h3>
+      <button class="btn" onclick="startGame()">Commencer les flashcards</button>
+    </div>
+
+  </div>
+
+  <!-- === ÉCRAN JEU === -->
+  <div id="screen-game" class="screen">
+    
+    <div class="progress-section">
+      <div class="progress-bar-bg">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+      <div class="progress-text" id="progress-text">1/20</div>
+    </div>
+
+    <div class="flashcard-container" id="flashcard-container">
+      <div class="flashcard" id="active-card">
+        <div class="card-face card-front">
+          <div class="card-comp" id="card-comp">C1</div>
+          <h2 id="q-text">Question...</h2>
+          <div class="card-hint">👆 Tape pour voir la réponse</div>
+        </div>
+        <div class="card-face card-back">
+          <p id="a-text">Réponse...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="eval-btns" id="eval-btns">
+      <button class="btn btn-fail" id="btn-fail">❌ Pas su</button>
+      <button class="btn btn-success" id="btn-success">✅ Su</button>
+    </div>
+
+  </div>
+
+  <!-- === ÉCRAN RÉSULTAT === -->
+  <div id="screen-result" class="screen">
+    <div class="result-card">
+      <h2>🏁 Révision terminée !</h2>
+      
+      <div class="score-circle" id="score-display">--</div>
+      <div class="score-msg" id="score-msg">Calcul en cours...</div>
+
+      <div class="comp-grid" id="comp-grid"></div>
+
+      <button class="btn" onclick="location.reload()">🔄 Recommencer</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // === DONNÉES DES CARTES (enrichies + sigles explicités) ===
+  const cardsData = [
+    // C1 - Connaissances de base
+    { q: "Qu'est-ce qu'un RPS ?", a: "RPS = Risque Psycho-Social : risque pour la santé mentale et physique des travailleurs, lié à l'organisation du travail.", comp: "C1" },
+    { q: "Qu'est-ce que le Burn-out ?", a: "Épuisement professionnel par SURCHARGE de travail et stress chronique. Le salarié « se consume ».", comp: "C1" },
+    { q: "Qu'est-ce que le Bore-out ?", a: "Épuisement professionnel par ENNUI et manque de travail. Le salarié n'a rien à faire.", comp: "C1" },
+    { q: "Qui est responsable de la santé des salariés ?", a: "L'EMPLOYEUR. Il a une obligation de sécurité (Code du travail art. L4121-1).", comp: "C1" },
+    { q: "Qu'est-ce que le CSE ?", a: "CSE = Comité Social et Économique : représentants du personnel qui peuvent alerter sur les RPS.", comp: "C1" },
+    { q: "Qu'est-ce que le DUERP ?", a: "DUERP = Document Unique d'Évaluation des Risques Professionnels : liste TOUS les risques de l'entreprise.", comp: "C1" },
+    { q: "Rôle du médecin du travail ?", a: "Surveille la santé des salariés, conseille l'employeur, peut déclarer une inaptitude.", comp: "C1" },
+    
+    // C2 - Analyser (types de RPS + facteurs)
+    { q: "Définition du STRESS au travail ?", a: "Déséquilibre entre les CONTRAINTES (ce qu'on me demande) et les RESSOURCES (ce que je peux faire).", comp: "C2" },
+    { q: "Violence INTERNE : définition ?", a: "Violence ENTRE membres de l'entreprise : harcèlement, conflits, humiliations (collègues ou hiérarchie).", comp: "C2" },
+    { q: "Violence EXTERNE : définition ?", a: "Violence par des personnes EXTÉRIEURES à l'entreprise : clients, usagers, patients qui agressent.", comp: "C2" },
+    { q: "Facteur Gollac n°1 : Intensité du travail ?", a: "Surcharge, délais trop courts, objectifs irréalistes, horaires imprévisibles.", comp: "C2" },
+    { q: "Facteur Gollac n°2 : Exigences émotionnelles ?", a: "Devoir cacher ses émotions, sourire forcé, contact avec la souffrance des autres.", comp: "C2" },
+    { q: "Facteur Gollac n°3 : Manque d'autonomie ?", a: "Ne pas pouvoir décider de son travail, être « cadenassé », pas de marge de manœuvre.", comp: "C2" },
+    { q: "Facteur Gollac n°4 : Rapports sociaux dégradés ?", a: "Mauvaise ambiance, pas de soutien des collègues, conflits, manque de reconnaissance.", comp: "C2" },
+    { q: "Facteur Gollac n°5 : Conflits de valeurs ?", a: "Faire quelque chose qu'on DÉSAPPROUVE moralement (vendre un produit qu'on sait mauvais).", comp: "C2" },
+    { q: "Facteur Gollac n°6 : Insécurité de l'emploi ?", a: "Peur de perdre son poste, contrat précaire, avenir incertain.", comp: "C2" },
+    
+    // C3 - Expliquer (conséquences)
+    { q: "Harcèlement MORAL : définition ?", a: "Actes RÉPÉTÉS qui dégradent les conditions de travail et portent atteinte à la dignité du salarié.", comp: "C3" },
+    { q: "Harcèlement SEXUEL : définition ?", a: "Propos ou comportements à connotation sexuelle RÉPÉTÉS, ou pression grave même non répétée.", comp: "C3" },
+    { q: "Lien entre TMS et RPS ?", a: "TMS = Troubles Musculo-Squelettiques. Le STRESS contracte les muscles → douleurs, tendinites.", comp: "C3" },
+    
+    // C4 - Proposer (prévention)
+    { q: "3 types de mesures de prévention ?", a: "1) INFORMATION (affiches, dépliants)\n2) FORMATION (managers)\n3) ORGANISATION (réduire charge, cellule d'écoute)", comp: "C4" }
+  ];
+
+  // === VARIABLES ===
+  let currentIndex = 0;
+  let score = 0;
+  let isFlipped = false;
+  let shuffledCards = [];
+  let competencesScores = {
+    C1: { total: 0, reussi: 0 },
+    C2: { total: 0, reussi: 0 },
+    C3: { total: 0, reussi: 0 },
+    C4: { total: 0, reussi: 0 }
+  };
+
+  // === FISHER-YATES SHUFFLE (fiable) ===
+  function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // === NAVIGATION ÉCRANS ===
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // === DÉMARRER LE JEU ===
+  function startGame() {
+    shuffledCards = shuffleArray(cardsData);
+    currentIndex = 0;
+    score = 0;
+    isFlipped = false;
+    
+    // Reset compétences
+    for (const key in competencesScores) {
+      competencesScores[key] = { total: 0, reussi: 0 };
+    }
+    
+    showScreen('screen-game');
+    loadCard(0);
+  }
+  window.startGame = startGame;
+
+  // === CHARGER UNE CARTE ===
+  function loadCard(index) {
+    const card = shuffledCards[index];
+    const cardEl = document.getElementById('active-card');
+    
+    // Reset flip
+    cardEl.classList.remove('flipped');
+    isFlipped = false;
+    document.getElementById('eval-btns').classList.remove('visible');
+    
+    // Petit délai pour l'animation
+    setTimeout(() => {
+      document.getElementById('q-text').innerText = card.q;
+      document.getElementById('a-text').innerText = card.a;
+      document.getElementById('card-comp').innerText = card.comp;
+      
+      // Progress bar (corrigé : atteint 100%)
+      const progress = ((index + 1) / shuffledCards.length) * 100;
+      document.getElementById('progress-fill').style.width = progress + '%';
+      document.getElementById('progress-text').innerText = `${index + 1}/${shuffledCards.length}`;
+    }, 150);
+  }
+
+  // === RETOURNER LA CARTE ===
+  function flipCard() {
+    if (isFlipped) return;
+    document.getElementById('active-card').classList.add('flipped');
+    isFlipped = true;
+    setTimeout(() => {
+      document.getElementById('eval-btns').classList.add('visible');
+    }, 300);
+  }
+
+  // === NOTER LA CARTE ===
+  function rateCard(points) {
+    const card = shuffledCards[currentIndex];
+    const comp = card.comp;
+    
+    // Enregistrer score
+    score += points;
+    if (competencesScores[comp]) {
+      competencesScores[comp].total++;
+      if (points === 1) competencesScores[comp].reussi++;
+    }
+    
+    // Carte suivante
+    currentIndex++;
+    if (currentIndex < shuffledCards.length) {
+      loadCard(currentIndex);
+    } else {
+      showResults();
+    }
+  }
+
+  // === AFFICHER RÉSULTATS ===
+  function showResults() {
+    showScreen('screen-result');
+    
+    // Score global
+    document.getElementById('score-display').innerText = `${score}/${shuffledCards.length}`;
+    
+    // Message
+    let msg = "";
+    const ratio = score / shuffledCards.length;
+    if (ratio >= 0.85) msg = "🌟 Excellent ! Tu maîtrises les RPS.";
+    else if (ratio >= 0.7) msg = "👍 Bien joué ! Quelques notions à revoir.";
+    else if (ratio >= 0.5) msg = "📚 Résultat moyen. Révise les facteurs Gollac.";
+    else msg = "⚠️ À retravailler. Reprends le cours C9.";
+    document.getElementById('score-msg').innerText = msg;
+    
+    // Bilan par compétence
+    const grid = document.getElementById('comp-grid');
+    grid.innerHTML = '';
+    
+    const compLabels = {
+      C1: "Connaissances",
+      C2: "Analyser",
+      C3: "Expliquer",
+      C4: "Proposer"
+    };
+    
+    for (const [key, data] of Object.entries(competencesScores)) {
+      if (data.total > 0) {
+        const pct = Math.round((data.reussi / data.total) * 100);
+        let colorClass = pct >= 75 ? 'good' : (pct >= 50 ? 'mid' : 'bad');
+        
+        grid.innerHTML += `
+          <div class="comp-item">
+            <div class="label">${key} – ${compLabels[key]}</div>
+            <div class="score ${colorClass}">${data.reussi}/${data.total} (${pct}%)</div>
+          </div>
+        `;
+      }
+    }
+  }
+
+  // === EVENT LISTENERS ===
+  document.addEventListener('DOMContentLoaded', function() {
+    // Flip card (sur le container)
+    document.getElementById('flashcard-container').addEventListener('click', function(e) {
+      // Empêcher le flip si on clique sur les boutons
+      if (e.target.closest('.eval-btns')) return;
+      flipCard();
+    });
+    
+    // Boutons évaluation (avec stopPropagation pour éviter le bubbling)
+    document.getElementById('btn-fail').addEventListener('click', function(e) {
+      e.stopPropagation();
+      rateCard(0);
+    });
+    
+    document.getElementById('btn-success').addEventListener('click', function(e) {
+      e.stopPropagation();
+      rateCard(1);
+    });
+  });
+</script>
+
+</body>
+</html>
