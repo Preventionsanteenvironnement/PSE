@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧹 Nettoyage Doublons - Cockpit PSE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="data_eleves.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: #1e293b; margin-bottom: 10px; }
+        .subtitle { color: #64748b; margin-bottom: 30px; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .card-title { font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-size: 0.95em; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+        .btn-success { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status { padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .status.info { background: #dbeafe; color: #1e40af; }
+        .status.success { background: #dcfce7; color: #166534; }
+        .status.warning { background: #fef3c7; color: #92400e; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .doublon-item { border: 2px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .doublon-item.selected { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+        .doublon-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .doublon-eleve { font-weight: 700; color: #6366f1; }
+        .doublon-date { color: #64748b; font-size: 0.9em; }
+        .doublon-notes { display: flex; flex-direction: column; gap: 8px; }
+        .note-option { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; cursor: pointer; }
+        .note-option:hover { background: #f1f5f9; }
+        .note-option input { width: 18px; height: 18px; }
+        .note-option .docid { font-family: monospace; font-size: 0.85em; color: #64748b; }
+        .note-option .note { font-weight: 700; }
+        .note-option .note.good { color: #16a34a; }
+        .note-option .note.bad { color: #dc2626; }
+        .note-option .details { font-size: 0.85em; color: #64748b; }
+        .actions { display: flex; gap: 10px; margin-top: 10px; }
+        .log { background: #1e293b; color: #94a3b8; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85em; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+        .log .success { color: #4ade80; }
+        .log .error { color: #f87171; }
+        .log .warning { color: #fbbf24; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 2em; font-weight: 800; color: #6366f1; }
+        .stat-value.warning { color: #f59e0b; }
+        .stat-value.danger { color: #dc2626; }
+        .stat-label { font-size: 0.8em; color: #64748b; margin-top: 5px; }
+        .empty { text-align: center; padding: 40px; color: #64748b; }
+        .empty .icon { font-size: 4em; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Nettoyage des doublons Firebase</h1>
+        <p class="subtitle">Détecte et supprime les notes en double pour un même élève/date/module</p>
+        
+        <div class="card">
+            <div class="card-title">⚙️ Connexion</div>
+            <div id="authStatus" class="status info">⏳ Connexion en cours...</div>
+            <button class="btn btn-primary" id="btnAnalyse" onclick="analyser()" disabled>🔍 Analyser les doublons</button>
+        </div>
+        
+        <div class="stats" id="statsContainer" style="display:none">
+            <div class="stat"><div class="stat-value" id="statEleves">0</div><div class="stat-label">Élèves analysés</div></div>
+            <div class="stat"><div class="stat-value" id="statNotes">0</div><div class="stat-label">Notes totales</div></div>
+            <div class="stat"><div class="stat-value warning" id="statDoublons">0</div><div class="stat-label">Doublons détectés</div></div>
+        </div>
+        
+        <div class="card" id="doublonsContainer" style="display:none">
+            <div class="card-title">⚠️ Doublons trouvés</div>
+            <p style="color:#64748b;margin-bottom:15px;">Pour chaque groupe, sélectionnez la note à <strong>conserver</strong>. Les autres seront supprimées.</p>
+            <div id="doublonsList"></div>
+            <div style="margin-top:20px;display:flex;gap:10px;">
+                <button class="btn btn-danger" onclick="supprimerDoublons()">🗑️ Supprimer les doublons sélectionnés</button>
+                <button class="btn btn-secondary" onclick="exporterRapport()">📄 Exporter rapport</button>
+            </div>
+        </div>
+        
+        <div class="card" id="logContainer" style="display:none">
+            <div class="card-title">📋 Journal</div>
+            <div class="log" id="logContent"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDocs, deleteDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.appspot.com",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let user = null;
+        let doublonsData = [];
+        
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (u) {
+                document.getElementById('authStatus').className = 'status success';
+                document.getElementById('authStatus').innerHTML = '✅ Connecté : ' + u.email;
+                document.getElementById('btnAnalyse').disabled = false;
+            } else {
+                document.getElementById('authStatus').className = 'status warning';
+                document.getElementById('authStatus').innerHTML = '🔐 Non connecté - <button onclick="connexion()" style="background:none;border:none;color:#1e40af;text-decoration:underline;cursor:pointer;">Se connecter</button>';
+            }
+        });
+        
+        window.connexion = () => signInWithPopup(auth, new GoogleAuthProvider());
+        
+        function log(msg, type = '') {
+            const logEl = document.getElementById('logContent');
+            const time = new Date().toLocaleTimeString('fr-FR');
+            logEl.innerHTML += `<span class="${type}">[${time}] ${msg}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        window.analyser = async function() {
+            document.getElementById('btnAnalyse').disabled = true;
+            document.getElementById('logContainer').style.display = 'block';
+            document.getElementById('logContent').innerHTML = '';
+            
+            log('🚀 Démarrage de l\'analyse...');
+            
+            const eleves = window.BDD_ELEVES || [];
+            if (!eleves.length) {
+                log('❌ Aucun élève trouvé dans BDD_ELEVES', 'error');
+                document.getElementById('btnAnalyse').disabled = false;
+                return;
+            }
+            
+            log(`📋 ${eleves.length} élèves à analyser`);
+            
+            let totalNotes = 0;
+            let doublonsCount = 0;
+            doublonsData = [];
+            
+            for (const eleve of eleves) {
+                try {
+                    const suiviSnap = await getDocs(collection(db, "resultats", eleve.userCode, "suivi"));
+                    const notes = [];
+                    
+                    suiviSnap.forEach(docSnap => {
+                        notes.push({
+                            id: docSnap.id,
+                            ...docSnap.data(),
+                            eleveCode: eleve.userCode
+                        });
+                    });
+                    
+                    totalNotes += notes.length;
+                    
+                    // Grouper par date + module de base (sans le titre)
+                    const groupes = {};
+                    notes.forEach(note => {
+                        // Extraire la date et le module de base
+                        const date = note.date || note.id.split('_')[0];
+                        let moduleBase = note.module || '';
+                        
+                        // Normaliser le module (prendre juste le code, ex: "C11" de "C11 - Titre")
+                        const moduleMatch = moduleBase.match(/^([A-Z]+\d+)/i);
+                        if (moduleMatch) moduleBase = moduleMatch[1].toUpperCase();
+                        
+                        const key = `${date}_${moduleBase}`;
+                        
+                        if (!groupes[key]) groupes[key] = [];
+                        groupes[key].push(note);
+                    });
+                    
+                    // Détecter les doublons (groupes avec plus d'1 note)
+                    Object.entries(groupes).forEach(([key, group]) => {
+                        if (group.length > 1) {
+                            doublonsCount++;
+                            doublonsData.push({
+                                eleveCode: eleve.userCode,
+                                key: key,
+                                notes: group
+                            });
+                            log(`⚠️ Doublon trouvé : ${eleve.userCode} - ${key} (${group.length} notes)`, 'warning');
+                        }
+                    });
+                    
+                } catch (error) {
+                    log(`❌ Erreur pour ${eleve.userCode}: ${error.message}`, 'error');
+                }
+            }
+            
+            // Stats
+            document.getElementById('statsContainer').style.display = 'grid';
+            document.getElementById('statEleves').textContent = eleves.length;
+            document.getElementById('statNotes').textContent = totalNotes;
+            document.getElementById('statDoublons').textContent = doublonsCount;
+            
+            log(`✅ Analyse terminée : ${doublonsCount} doublons trouvés sur ${totalNotes} notes`, doublonsCount > 0 ? 'warning' : 'success');
+            
+            // Afficher les doublons
+            if (doublonsData.length > 0) {
+                document.getElementById('doublonsContainer').style.display = 'block';
+                renderDoublons();
+            } else {
+                document.getElementById('doublonsList').innerHTML = '<div class="empty"><div class="icon">✅</div><h3>Aucun doublon !</h3><p>Votre base de données est propre.</p></div>';
+                document.getElementById('doublonsContainer').style.display = 'block';
+            }
+            
+            document.getElementById('btnAnalyse').disabled = false;
+        };
+        
+        function renderDoublons() {
+            const container = document.getElementById('doublonsList');
+            container.innerHTML = doublonsData.map((d, idx) => {
+                const notesHtml = d.notes.map((n, nIdx) => {
+                    const noteVal = n.noteSur20 !== null && n.noteSur20 !== undefined ? n.noteSur20 : (n.absent ? 'Absent' : '--');
+                    const noteClass = typeof noteVal === 'number' ? (noteVal >= 10 ? 'good' : 'bad') : '';
+                    const heure = n.heure || '--';
+                    const createdAt = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('fr-FR') : '--';
+                    
+                    return `
+                        <label class="note-option">
+                            <input type="radio" name="doublon_${idx}" value="${nIdx}" ${nIdx === 0 ? 'checked' : ''}>
+                            <span class="docid">${n.id}</span>
+                            <span class="note ${noteClass}">${noteVal}${typeof noteVal === 'number' ? '/20' : ''}</span>
+                            <span class="details">📅 ${heure} | Module: ${n.module || '--'}</span>
+                        </label>
+                    `;
+                }).join('');
+                
+                return `
+                    <div class="doublon-item">
+                        <div class="doublon-header">
+                            <span class="doublon-eleve">👤 ${d.eleveCode}</span>
+                            <span class="doublon-date">📅 ${d.key}</span>
+                        </div>
+                        <div class="doublon-notes">${notesHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        window.supprimerDoublons = async function() {
+            if (!confirm('⚠️ Êtes-vous sûr de vouloir supprimer les doublons non sélectionnés ?\n\nCette action est IRRÉVERSIBLE !')) return;
+            
+            log('🗑️ Suppression des doublons en cours...');
+            
+            let supprimés = 0;
+            let erreurs = 0;
+            
+            for (let idx = 0; idx < doublonsData.length; idx++) {
+                const d = doublonsData[idx];
+                const selectedIdx = parseInt(document.querySelector(`input[name="doublon_${idx}"]:checked`)?.value || '0');
+                
+                for (let nIdx = 0; nIdx < d.notes.length; nIdx++) {
+                    if (nIdx === selectedIdx) continue; // Garder celui sélectionné
+                    
+                    const note = d.notes[nIdx];
+                    try {
+                        await deleteDoc(doc(db, "resultats", d.eleveCode, "suivi", note.id));
+                        log(`✅ Supprimé : ${d.eleveCode}/${note.id}`, 'success');
+                        supprimés++;
+                    } catch (error) {
+                        log(`❌ Erreur suppression ${d.eleveCode}/${note.id}: ${error.message}`, 'error');
+                        erreurs++;
+                    }
+                }
+            }
+            
+            log(`🏁 Terminé : ${supprimés} supprimés, ${erreurs} erreurs`, supprimés > 0 ? 'success' : 'warning');
+            
+            // Rafraîchir
+            alert(`✅ ${supprimés} doublons supprimés !\n\nRelancez l'analyse pour vérifier.`);
+            document.getElementById('doublonsContainer').style.display = 'none';
+            doublonsData = [];
+        };
+        
+        window.exporterRapport = function() {
+            let rapport = "RAPPORT DOUBLONS - " + new Date().toLocaleString('fr-FR') + "\n";
+            rapport += "=".repeat(50) + "\n\n";
+            
+            doublonsData.forEach(d => {
+                rapport += `Élève: ${d.eleveCode} | Clé: ${d.key}\n`;
+                d.notes.forEach(n => {
+                    rapport += `  - ID: ${n.id} | Note: ${n.noteSur20 || 'Absent'} | Module: ${n.module}\n`;
+                });
+                rapport += "\n";
+            });
+            
+            const blob = new Blob([rapport], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `rapport_doublons_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+        };
+        
+        console.log("🧹 Nettoyage doublons chargé");
+    </script>
+</body>
+</html>
