@@ -301,7 +301,6 @@
     const DEVOIR_ID = "devoir_c11_analyse_situation_travail_v2";
     localStorage.setItem("devoir_start_time_" + DEVOIR_ID, Date.now());
 
-    // ═══ PASTE STATS — UNIQUEMENT external ═══
     let externalPastes = 0;
     const pasteByField = {};
 
@@ -314,7 +313,6 @@
       if (el) el.textContent = msg || "";
     }
 
-    // ═══ AUTO-RESIZE — load + input + paste ═══
     function autoResize(el) {
       if (!el || el.tagName !== "TEXTAREA") return;
       el.style.height = "auto";
@@ -329,7 +327,6 @@
       });
     }
 
-    // ═══ COPIER-COLLER — interne=RIEN, externe=alerte+comptage ═══
     function setupPasteControl() {
       let lastCopySource = null;
       let lastCopyTime = 0;
@@ -368,12 +365,10 @@
         const isRecent = (now - lastCopyTime) < COPY_WINDOW_MS;
         const isInternal = (lastCopySource === "document" && isRecent);
 
-        lastCopySource = null; // reset
+        lastCopySource = null;
 
-        // INTERNE = RIEN (aucune alerte, aucun comptage, on laisse passer)
         if (isInternal) return;
 
-        // EXTERNE = alerte + comptage (on ne bloque PAS le collage)
         externalPastes++;
         try {
           const el = e.target;
@@ -387,7 +382,6 @@
       }, true);
     }
 
-    // ═══ VALIDATION AVANT ENVOI ═══
     function validateBeforeSend() {
       const codeField = document.getElementById("code-eleve");
       const dateField = document.getElementById("date-eleve");
@@ -410,7 +404,6 @@
       return { code, date };
     }
 
-    // ═══ ENVOI AVEC ANTI-DOUBLON ═══
     window.tenterEnvoi = async function() {
       const btn = document.getElementById("btnSend");
       const data = validateBeforeSend();
@@ -419,7 +412,6 @@
       const code = data.code;
       const envoyeKey = "copie_envoyee_" + DEVOIR_ID + "_" + code;
 
-      // Anti-doublon : vérifier localStorage
       if (localStorage.getItem(envoyeKey)) {
         setStatus("✅ Copie déjà envoyée.");
         alert("✅ Votre copie a déjà été envoyée.\nContactez votre enseignant si erreur.");
@@ -427,10 +419,8 @@
         return;
       }
 
-      // Désactiver bouton immédiatement
       if (btn) { btn.disabled = true; btn.textContent = "⏳ Envoi en cours..."; }
 
-      // Vérifier l’annuaire si dispo
       let eleveData = window.eleveData || null;
       if (typeof ANNUAIRE !== "undefined") {
         const classe = ANNUAIRE[code];
@@ -443,14 +433,12 @@
         }
       }
 
-      // Vérifier que le runner est bien chargé
       if (typeof window.envoyerCopie !== "function") {
         setStatus("Envoi indisponible : script runner non chargé.");
         if (btn) { btn.disabled = false; btn.textContent = "Envoyer au prof"; }
         return;
       }
 
-      // Envoi avec pasteStats via getPasteStats()
       const pasteStats = window.getPasteStats();
       try {
         setStatus("Envoi en cours...");
@@ -474,7 +462,6 @@
       initAutoResize();
       setupPasteControl();
 
-      // Vérifier anti-doublon au chargement
       const codeField = document.getElementById("code-eleve");
       if (codeField && codeField.value) {
         const envoyeKey = "copie_envoyee_" + DEVOIR_ID + "_" + codeField.value.trim().toUpperCase();
@@ -491,37 +478,32 @@
     });
   </script>
 
-  <!-- Charger l'annuaire -->
+  <!-- Charger l'annuaire (CHEMIN RELATIF) -->
   <script type="module">
-    import("https://preventionsanteenvironnement.github.io/PSE/annuaire.js")
-      .then(async () => {
-        if (typeof window.demanderCode === "function") {
-          const user = await window.demanderCode("Évaluation PSE – Module C11 – Analyse d’une situation de travail");
-          if (user && user.code) {
-            const codeField = document.getElementById("code-eleve");
-            if (codeField) codeField.value = user.code;
-            window.eleveData = user;
-          }
+  import("./annuaire.js")
+    .then(async () => {
+      if (typeof window.demanderCode === "function") {
+        const user = await window.demanderCode("Évaluation PSE – Module C11 – Analyse d’une situation de travail");
+        if (user && user.code) {
+          const codeField = document.getElementById("code-eleve");
+          if (codeField) codeField.value = user.code;
+          window.eleveData = user;
         }
-      })
-      .catch(() => {
-        // annuaire optionnel
-      });
-  </script>
+      }
+    })
+    .catch(() => {});
+</script>
 
-  <!-- Charger le runner -->
-  <script type="module">
-    import("https://preventionsanteenvironnement.github.io/PSE/assets/pse-runner.js")
-      .then(() => {
-        // runner chargé, rien à afficher
-      })
-      .catch(() => {
-        const btn = document.getElementById("btnSend");
-        if (btn) btn.disabled = true;
-        const el = document.getElementById("statusMsg");
-        if (el) el.textContent = "Envoi indisponible : script runner non chargé.";
-      });
-  </script>
+<script type="module">
+  import("../assets/pse-runner.js")
+    .then(() => {})
+    .catch(() => {
+      const btn = document.getElementById("btnSend");
+      if (btn) btn.disabled = true;
+      const el = document.getElementById("statusMsg");
+      if (el) el.textContent = "Envoi indisponible : script runner non chargé.";
+    });
+</script>
 </head>
 
 <body data-id-exercice="devoir_c11_analyse_situation_travail_v2">
