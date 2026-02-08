@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module A.3 - Activité 3 (Modifications & Thermorégulation)</title>
+    <style>
+        /* --- DESIGN --- */
+        :root {
+            --primary-color: #6c757d;
+            --accent-color: #e67e22;
+            --success-color: #28a745;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --tooltip-bg: #2c3e50;
+            --font-standard: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-dys: 'Comic Sans MS', 'Verdana', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-standard);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            padding-top: 130px;
+        }
+
+        /* BARRES FIXES */
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        #score-board { background-color: #2c3e50; color: white; padding: 10px 40px; display: flex; justify-content: space-between; align-items: center; height: 50px; }
+        #tools-board { background-color: #e9ecef; padding: 10px 40px; display: flex; justify-content: flex-end; gap: 10px; align-items: center; border-bottom: 1px solid #ccc; }
+        .btn-tool { padding: 5px 10px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 4px; font-size: 0.9em; display: flex; align-items: center; gap: 5px; }
+        .btn-tool:hover { background-color: #ddd; }
+        .btn-print { background-color: #007bff; color: white; border-color: #007bff; font-weight: bold;}
+        #score-display { font-size: 1.3em; font-weight: bold; color: #f1c40f; padding: 2px 10px; border-radius: 10px; transition: transform 0.3s; }
+        .score-anim { transform: scale(1.4); color: #27ae60 !important; }
+
+        .container { max-width: 900px; margin: 0 auto; background: var(--card-bg); padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-height: 80vh; }
+
+        /* HEADER */
+        header { border-bottom: 2px solid #ddd; padding-bottom: 20px; margin-bottom: 30px; position: relative; }
+        h1 { font-size: 2.5em; color: var(--primary-color); margin: 0; text-transform: uppercase; line-height: 1.1; }
+        .module-tag { position: absolute; top: 0; right: 0; background: #999; color: white; padding: 10px 20px; font-size: 1.5em; font-weight: bold; border-radius: 0 0 0 15px; }
+        .objective { background-color: #eee; padding: 10px 15px; border-radius: 8px; margin-top: 15px; display: inline-block; font-weight: 500; }
+        .activity-title { font-size: 1.5em; color: var(--accent-color); font-weight: bold; margin-top: 40px; text-transform: uppercase; border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+
+        /* DOCS & QUESTIONS */
+        .doc-box { border: 2px solid #ddd; padding: 20px; border-radius: 10px; background-color: #fff; margin-bottom: 30px; }
+        .doc-box h3 { margin-top: 0; color: #555; background-color: #e2e6ea; padding: 8px 15px; border-radius: 5px; display: inline-block; }
+        .doc-content { display: flex; flex-direction: column; gap: 15px; }
+        
+        /* Styles spécifiques pour le Doc 8 pour reproduire la mise en page */
+        .doc-split { display: flex; flex-wrap: wrap; gap: 20px; }
+        .doc-left { flex: 1; min-width: 300px; }
+        .doc-right { flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .doc-text-highlight { background-color: #e9ecef; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
+        .doc-definition-box { background-color: #eee; padding: 10px; margin: 5px 0; border-left: 3px solid #666; font-size: 0.9em; }
+
+        /* Tableau Doc 8 */
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .info-table th, .info-table td { border: 1px solid #999; padding: 8px; text-align: center; }
+        .info-table th { background-color: #ddd; }
+
+        .doc-image img { max-width: 100%; border-radius: 8px; border: 1px solid #eee; display: block; margin: 10px auto; }
+
+        .question-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 20px; margin-bottom: 20px; transition: transform 0.2s; }
+        .question-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .question-title { display: flex; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .label-tag { display: inline-block; padding: 5px 10px; border-radius: 5px; color: white; font-weight: bold; min-width: 80px; text-align: center; margin-right: 10px; }
+        .tag-doc { background-color: #6c757d; }
+
+        /* BADGES COMPÉTENCES */
+        .comp-badge { display: inline-block; background-color: #007bff; color: white; font-size: 0.75em; font-weight: bold; padding: 4px 8px; border-radius: 12px; margin-left: 10px; cursor: help; position: relative; vertical-align: middle; text-transform: uppercase; }
+        .comp-c1 { background-color: #17a2b8; }
+        .comp-c2 { background-color: #6610f2; }
+        .comp-c3 { background-color: #fd7e14; }
+        .comp-badge:hover::after { content: attr(data-desc); position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); background-color: var(--tooltip-bg); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; width: 280px; text-align: center; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-weight: normal; text-transform: none; }
+        .comp-badge:hover::before { content: ''; position: absolute; top: -5px; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: var(--tooltip-bg) transparent transparent transparent; bottom: 110%; }
+
+        /* INPUTS & INTERACTION */
+        input[type="text"], select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em; box-sizing: border-box; background: white;}
+        .choice-group { display: flex; gap: 20px; margin-top: 10px; align-items: center; }
+        .choice-option { background: #f1f1f1; padding: 10px 15px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+        .choice-option:hover { background: #e2e6ea; }
+        input[type="radio"] { margin-right: 8px; transform: scale(1.2); }
+        
+        .gap-fill-text { font-size: 1.1em; line-height: 2.5; background: #fafafa; padding: 20px; border-radius: 10px; border-left: 5px solid var(--accent-color); }
+        .gap-input { width: 140px; display: inline-block; padding: 5px; border: none; border-bottom: 2px solid #333; background: transparent; text-align: center; font-weight: bold; font-size: 1em; color: var(--accent-color); }
+        
+        .matching-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .matching-table th, .matching-table td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
+        .matching-table th { background-color: #f1f1f1; }
+        .img-cell { width: 100px; text-align: center; }
+        .img-cell img { width: 80px; border-radius: 5px; }
+
+        /* CHECKBOXES */
+        .checkbox-container { display: block; position: relative; padding-left: 35px; margin-bottom: 12px; cursor: pointer; user-select: none; }
+        .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+        .checkmark { position: absolute; top: 0; left: 0; height: 25px; width: 25px; background-color: #eee; border-radius: 4px; }
+        .checkbox-container:hover input ~ .checkmark { background-color: #ccc; }
+        .checkbox-container input:checked ~ .checkmark { background-color: var(--success-color); }
+        .checkmark:after { content: ""; position: absolute; display: none; }
+        .checkbox-container input:checked ~ .checkmark:after { display: block; }
+        .checkbox-container .checkmark:after { left: 9px; top: 5px; width: 5px; height: 10px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+
+        .actions { margin-top: 15px; display: flex; gap: 10px; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .btn-check { background-color: #333; color: white; } .btn-check:hover { background-color: #555; }
+        .btn-solve { background-color: transparent; color: #999; text-decoration: underline; font-size: 0.9em;} .btn-solve:hover { color: #666; }
+
+        .feedback { margin-top: 10px; font-weight: bold; padding: 10px; border-radius: 5px; display: none; }
+        .feedback.correct { background-color: #d4edda; color: #155724; display: block;}
+        .feedback.incorrect { background-color: #f8d7da; color: #721c24; display: block;}
+
+        .section-divider { margin: 50px 0; border-top: 4px dashed #ddd; position: relative; text-align: center; }
+        .section-divider span { background: var(--card-bg); padding: 0 20px; font-size: 1.2em; color: #999; position: relative; top: -15px; font-weight: bold; text-transform: uppercase; }
+
+        footer { margin-top: 50px; text-align: center; font-size: 0.8em; color: #777; border-top: 1px solid #ddd; padding-top: 10px; }
+
+        /* ACCESSIBILITÉ CLASSES */
+        body.mode-dyslexic { font-family: var(--font-dys); letter-spacing: 0.05em; line-height: 2; }
+        body.mode-contrast { --bg-color: #000; --card-bg: #000; --text-color: #ff0; background-color: #000; color: #ff0; }
+        body.mode-contrast .container { border: 2px solid #ff0; box-shadow: none; }
+        body.mode-contrast .question-card, body.mode-contrast .doc-box { background: #111; border: 1px solid #ff0; color: #fff; }
+        body.mode-contrast input, body.mode-contrast select { background: #333; color: #fff; border-color: #ff0; }
+        body.mode-large { font-size: 1.3em; }
+
+        @media print {
+            #top-bar { display: none !important; }
+            body { padding-top: 0; background-color: white; }
+            .container { box-shadow: none; border: none; width: 100%; max-width: 100%; padding: 0; }
+            .actions, .btn-solve, .btn-check { display: none !important; }
+            .doc-box { break-inside: avoid; }
+            footer { display: block; position: fixed; bottom: 0; width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="top-bar">
+    <div id="score-board">
+        <span>Module A.3 (Activité 3)</span>
+        <span id="score-display">🏆 Score : 0</span>
+    </div>
+    <div id="tools-board">
+        <span>Accessibilité :</span>
+        <button class="btn-tool" onclick="toggleDyslexic()">🧠 Dys</button>
+        <button class="btn-tool" onclick="toggleContrast()">👁️ Contraste</button>
+        <button class="btn-tool" onclick="toggleSize()">🔍 A+</button>
+        <div style="width: 20px;"></div>
+        <button class="btn-tool btn-print" onclick="window.print()">🖨️ Imprimer</button>
+    </div>
+</div>
+
+<div class="container">
+    <header>
+        <div class="module-tag">Module A.3</div>
+        <h1>L'activité physique (Suite)</h1>
+        <div class="objective">
+            <strong>Objectif :</strong> Repérer les modifications physiologiques lors d'un travail musculaire.
+        </div>
+    </header>
+
+    <div class="activity-title">ACTIVITÉ 3 : Les modifications physiologiques</div>
+
+    <p>À l'aide des documents 6 et 7 :</p>
+
+    <div class="doc-box">
+        <h3>Doc 6 : Les adaptations du cœur à l'effort physique</h3>
+        <div class="doc-image">
+            <img src="doc6_coeur.jpg" alt="Graphique rythme cardiaque">
+        </div>
+    </div>
+
+    <div class="doc-box">
+        <h3>Doc 7 : Les adaptations des poumons à l'effort physique</h3>
+        <div class="doc-image">
+            <img src="doc7_poumons.jpg" alt="Graphique volume respiratoire">
+        </div>
+    </div>
+
+    <div class="question-card" id="q1">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 1</span>
+            <strong>Indiquer l'évolution des paramètres physiologiques au cours d'une activité physique en entourant la bonne réponse.</strong>
+            <span class="comp-badge comp-c1" data-desc="C1 : Traiter l'information (Lire un graphique).">C1</span>
+        </div>
+        
+        <p>1. Le Rythme cardiaque :</p>
+        <div class="choice-group">
+            <label class="choice-option"><input type="radio" name="evo-coeur" value="augmente"> Augmente</label>
+            <label class="choice-option"><input type="radio" name="evo-coeur" value="diminue"> Diminue</label>
+        </div>
+
+        <p>2. Le Rythme respiratoire :</p>
+        <div class="choice-group">
+            <label class="choice-option"><input type="radio" name="evo-resp" value="augmente"> Augmente</label>
+            <label class="choice-option"><input type="radio" name="evo-resp" value="diminue"> Diminue</label>
+        </div>
+
+        <div class="feedback" id="feedback-1"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ1()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ1()">Réponse</button></div>
+    </div>
+
+    <div class="question-card" id="q2">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 2</span>
+            <strong>Expliquer l'intérêt de ces modifications en complétant le texte suivant.</strong>
+            <span class="comp-badge comp-c3" data-desc="C3 : Expliquer un phénomène physiologique.">C3</span>
+        </div>
+        
+        <div class="gap-fill-text">
+            L'augmentation des rythmes <input type="text" class="gap-input" id="gap-1" placeholder="..."> 
+            et <input type="text" class="gap-input" id="gap-2" placeholder="..."> 
+            permet d'apporter une quantité plus importante de <input type="text" class="gap-input" id="gap-3" placeholder="..."> 
+            et de <input type="text" class="gap-input" id="gap-4" placeholder="..."> 
+            au muscle, dont les besoins augmentent lors de l'activité physique.
+        </div>
+
+        <div class="feedback" id="feedback-2"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ2()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ2()">Réponse</button></div>
+    </div>
+
+    <div class="section-divider">
+        <span>Suite de l'activité</span>
+    </div>
+
+    <div class="activity-title">ACTIVITÉ 3 (Suite) : La thermorégulation</div>
+
+    <p>À l'aide du document 8 ci-dessous :</p>
+
+    <div class="doc-box">
+        <h3>Doc 8 : Les adaptations du corps à l'effort : la thermorégulation</h3>
+        <div class="doc-split">
+            <div class="doc-left">
+                <div class="doc-text-highlight">
+                    La thermorégulation (régulation de la température du corps) permet au corps de maintenir sa température.
+                </div>
+                <p>Ainsi, lors d'un effort physique, le corps évacue le surplus de chaleur produite pour ensuite revenir à la température au repos.</p>
+                
+                <table class="info-table">
+                    <tr>
+                        <th>Type d'effort</th>
+                        <th>Température du corps en °C</th>
+                    </tr>
+                    <tr>
+                        <td>Au repos</td>
+                        <td>36,8</td>
+                    </tr>
+                    <tr>
+                        <td>Effort modéré</td>
+                        <td>37,5 - 38</td>
+                    </tr>
+                    <tr>
+                        <td>Intense</td>
+                        <td>38 - 38,5</td>
+                    </tr>
+                    <tr>
+                        <td>Très intense</td>
+                        <td>> 39</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="doc-right">
+                <div class="doc-image">
+                    <img src="doc8_schema_fille.jpg" alt="Schéma d'une femme qui court montrant la thermorégulation">
+                </div>
+                
+                <div style="width: 100%;">
+                    <div class="doc-definition-box">
+                        <strong>Vasodilatation :</strong> augmentation de la taille des vaisseaux sanguins (la peau devient rouge).
+                    </div>
+                    <div class="doc-definition-box">
+                        <strong>Transpiration :</strong> élimine la chaleur par l'évacuation d'eau.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="question-card" id="q3">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 3</span>
+            <strong>Définir la thermorégulation en surlignant (ici, en recopiant) la définition dans le document 8.</strong>
+            <span class="comp-badge comp-c1" data-desc="C1 : Repérer une information explicite.">C1</span>
+        </div>
+        <input type="text" id="input-q3" placeholder="Recopie la définition ici...">
+        
+        <div class="feedback" id="feedback-3"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ3()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ3()">Réponse</button></div>
+    </div>
+
+    <div class="question-card" id="q4">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 4</span>
+            <strong>Identifier les deux mécanismes mis en place durant une activité physique pour assurer la thermorégulation du corps en les soulignant sur le schéma du document 8.</strong>
+            <span class="comp-badge comp-c1" data-desc="C1 : Repérer une information.">C1</span>
+        </div>
+        <p>1. <input type="text" id="input-q4a" placeholder="Mécanisme 1"></p>
+        <p>2. <input type="text" id="input-q4b" placeholder="Mécanisme 2"></p>
+        
+        <div class="feedback" id="feedback-4"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ4()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ4()">Réponse</button></div>
+    </div>
+
+    <div class="question-card" id="q5">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 5</span>
+            <strong>Présenter le rôle de ces mécanismes en les associant à leur définition.</strong>
+            <span class="comp-badge comp-c3" data-desc="C3 : Expliquer un phénomène.">C3</span>
+        </div>
+        <table class="matching-table">
+            <tr>
+                <th>Définition</th>
+                <th>Mécanisme</th>
+            </tr>
+            <tr>
+                <td>Mécanisme engendrant l'augmentation du diamètre des vaisseaux sanguins.</td>
+                <td>
+                    <select id="select-q5a">
+                        <option value="">-- Choisir --</option>
+                        <option value="vasodilatation">Vasodilatation</option>
+                        <option value="transpiration">Transpiration</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Mécanisme permettant d'évacuer l'eau et la chaleur à travers la peau.</td>
+                <td>
+                    <select id="select-q5b">
+                        <option value="">-- Choisir --</option>
+                        <option value="vasodilatation">Vasodilatation</option>
+                        <option value="transpiration">Transpiration</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="feedback" id="feedback-5"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ5()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ5()">Réponse</button></div>
+    </div>
+
+    <div class="question-card" id="q6">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 6</span>
+            <strong>Indiquer le mécanisme mis en jeu dans chaque situation.</strong>
+            <span class="comp-badge comp-c2" data-desc="C2 : Analyser une situation.">C2</span>
+        </div>
+        <table class="matching-table">
+            <tr>
+                <th>Situations</th>
+                <th>Mécanisme</th>
+            </tr>
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="img-cell"><img src="liam_boxe.jpg" alt="Liam rouge"></div>
+                        <div>Liam est tout rouge pendant son entraînement de boxe.</div>
+                    </div>
+                </td>
+                <td>
+                    <select id="select-q6a">
+                        <option value="">-- Choisir --</option>
+                        <option value="vasodilatation">Vasodilatation</option>
+                        <option value="transpiration">Transpiration</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="img-cell"><img src="julie_athle.jpg" alt="Julie sueur"></div>
+                        <div>Julie est en sueur après son entraînement d'athlétisme.</div>
+                    </div>
+                </td>
+                <td>
+                    <select id="select-q6b">
+                        <option value="">-- Choisir --</option>
+                        <option value="vasodilatation">Vasodilatation</option>
+                        <option value="transpiration">Transpiration</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="feedback" id="feedback-6"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ6()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ6()">Réponse</button></div>
+    </div>
+
+    <div class="question-card" id="q7">
+        <div class="question-title">
+            <span class="label-tag tag-doc">Question 7</span>
+            <strong>Présenter le rôle des modifications physiologiques lors d'une activité physique en cochant la (ou les) bonnes(s) réponse(s).</strong>
+            <span class="comp-badge comp-c3" data-desc="C3 : Synthétiser.">C3</span>
+        </div>
+        
+        <label class="checkbox-container">
+            L'augmentation des rythmes cardiaque et respiratoire permet d'amener plus de glucose et de dioxygène aux muscles.
+            <input type="checkbox" id="check-q7a">
+            <span class="checkmark"></span>
+        </label>
+        
+        <label class="checkbox-container">
+            La diminution des rythmes cardiaque et respiratoire permet d'amener plus de dioxyde de carbone aux muscles.
+            <input type="checkbox" id="check-q7b">
+            <span class="checkmark"></span>
+        </label>
+
+        <label class="checkbox-container">
+            La thermorégulation permet de produire de la chaleur.
+            <input type="checkbox" id="check-q7c">
+            <span class="checkmark"></span>
+        </label>
+
+        <label class="checkbox-container">
+            La thermorégulation permet d'évacuer le surplus de chaleur produite.
+            <input type="checkbox" id="check-q7d">
+            <span class="checkmark"></span>
+        </label>
+
+        <div class="feedback" id="feedback-7"></div>
+        <div class="actions"><button class="btn-check" onclick="checkQ7()">Vérifier</button><button class="btn-solve" onclick="showSolutionQ7()">Réponse</button></div>
+    </div>
+
+    <footer><p>Éditions Delagrave</p></footer>
+</div>
+
+<script>
+    // --- UTILS ---
+    function normalize(text) { return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); }
+
+    // --- SCORE ---
+    let score = 0;
+    const answeredQuestions = new Set();
+    function updateScoreDisplay() {
+        const display = document.getElementById('score-display');
+        display.innerHTML = `🏆 Score : ${score}`;
+        display.classList.add('score-anim');
+        setTimeout(() => { display.classList.remove('score-anim'); }, 500);
+    }
+    function addPoint(id) {
+        if (!answeredQuestions.has(id)) {
+            score++;
+            answeredQuestions.add(id);
+            updateScoreDisplay();
+        }
+    }
+
+    // --- CHECKERS PARTIE PHYSIO (Q1-Q2) ---
+
+    // Q1 : Evolution
+    function checkQ1() {
+        const coeur = document.querySelector('input[name="evo-coeur"]:checked')?.value;
+        const resp = document.querySelector('input[name="evo-resp"]:checked')?.value;
+
+        if (coeur === "augmente" && resp === "augmente") {
+            document.getElementById('feedback-1').innerHTML = "✅ Correct ! Les graphiques montent pendant la phase d'effort. +1 Point";
+            document.getElementById('feedback-1').className = "feedback correct";
+            addPoint("q1");
+        } else {
+            document.getElementById('feedback-1').innerHTML = "❌ Regarde bien la zone 'Effort' sur les graphiques.";
+            document.getElementById('feedback-1').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ1() {
+        document.querySelector('input[name="evo-coeur"][value="augmente"]').checked = true;
+        document.querySelector('input[name="evo-resp"][value="augmente"]').checked = true;
+        answeredQuestions.add("q1");
+    }
+
+    // Q2 : Texte à trous
+    function checkQ2() {
+        const g1 = normalize(document.getElementById('gap-1').value); 
+        const g2 = normalize(document.getElementById('gap-2').value); 
+        const g3 = normalize(document.getElementById('gap-3').value); 
+        const g4 = normalize(document.getElementById('gap-4').value); 
+
+        let ok = true;
+        if (!(g1.includes("cardiaque") || g1.includes("respiratoire"))) ok = false;
+        if (!(g2.includes("cardiaque") || g2.includes("respiratoire"))) ok = false;
+        if (!(g3.includes("glucose") || g3.includes("dioxygene") || g3.includes("o2"))) ok = false;
+        if (!(g4.includes("glucose") || g4.includes("dioxygene") || g4.includes("o2"))) ok = false;
+
+        if (ok) {
+            document.getElementById('feedback-2').innerHTML = "✅ Excellent ! +1 Point";
+            document.getElementById('feedback-2').className = "feedback correct";
+            addPoint("q2");
+        } else {
+            document.getElementById('feedback-2').innerHTML = "❌ Incomplet. Les rythmes augmentent pour apporter quoi aux muscles ?";
+            document.getElementById('feedback-2').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ2() {
+        document.getElementById('gap-1').value = "cardiaque";
+        document.getElementById('gap-2').value = "respiratoire";
+        document.getElementById('gap-3').value = "glucose";
+        document.getElementById('gap-4').value = "dioxygène";
+        answeredQuestions.add("q2");
+    }
+
+
+    // --- CHECKERS PARTIE THERMO (Q3-Q7) ---
+
+    // Q3 : Définition
+    function checkQ3() {
+        const val = normalize(document.getElementById('input-q3').value);
+        // On vérifie les mots clés importants de la définition transcrite
+        if (val.includes("regulation") && val.includes("temperature") && val.includes("corps")) {
+            document.getElementById('feedback-3').innerHTML = "✅ Correct ! Tu as bien repéré la définition. +1 Point";
+            document.getElementById('feedback-3').className = "feedback correct";
+            addPoint("q3");
+        } else {
+            document.getElementById('feedback-3').innerHTML = "❌ Cherche la phrase surlignée en gris dans le texte du Doc 8.";
+            document.getElementById('feedback-3').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ3() {
+        document.getElementById('input-q3').value = "Régulation de la température du corps (permet au corps de maintenir sa température).";
+        answeredQuestions.add("q3");
+    }
+
+    // Q4 : Identifier
+    function checkQ4() {
+        const v1 = normalize(document.getElementById('input-q4a').value);
+        const v2 = normalize(document.getElementById('input-q4b').value);
+        
+        let ok = false;
+        if ((v1.includes("vasodilatation") && v2.includes("transpiration")) || 
+            (v1.includes("transpiration") && v2.includes("vasodilatation"))) {
+            ok = true;
+        }
+
+        if (ok) {
+            document.getElementById('feedback-4').innerHTML = "✅ Correct ! +1 Point";
+            document.getElementById('feedback-4').className = "feedback correct";
+            addPoint("q4");
+        } else {
+            document.getElementById('feedback-4').innerHTML = "❌ Regarde les définitions encadrées dans le schéma du Doc 8.";
+            document.getElementById('feedback-4').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ4() {
+        document.getElementById('input-q4a').value = "Vasodilatation";
+        document.getElementById('input-q4b').value = "Transpiration";
+        answeredQuestions.add("q4");
+    }
+
+    // Q5 : Association
+    function checkQ5() {
+        const a = document.getElementById('select-q5a').value; // Vasodilatation (diamètre)
+        const b = document.getElementById('select-q5b').value; // Transpiration (eau)
+
+        if (a === "vasodilatation" && b === "transpiration") {
+            document.getElementById('feedback-5').innerHTML = "✅ Correct ! +1 Point";
+            document.getElementById('feedback-5').className = "feedback correct";
+            addPoint("q5");
+        } else {
+            document.getElementById('feedback-5').innerHTML = "❌ Erreur. Relis les définitions du document 8.";
+            document.getElementById('feedback-5').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ5() {
+        document.getElementById('select-q5a').value = "vasodilatation";
+        document.getElementById('select-q5b').value = "transpiration";
+        answeredQuestions.add("q5");
+    }
+
+    // Q6 : Situations
+    function checkQ6() {
+        const a = document.getElementById('select-q6a').value; // Liam (rouge) -> Vaso
+        const b = document.getElementById('select-q6b').value; // Julie (sueur) -> Transpi
+
+        if (a === "vasodilatation" && b === "transpiration") {
+            document.getElementById('feedback-6').innerHTML = "✅ Excellent ! +1 Point";
+            document.getElementById('feedback-6').className = "feedback correct";
+            addPoint("q6");
+        } else {
+            document.getElementById('feedback-6').innerHTML = "❌ Si la peau devient rouge, c'est la vasodilatation. Si on sue, c'est la transpiration.";
+            document.getElementById('feedback-6').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ6() {
+        document.getElementById('select-q6a').value = "vasodilatation";
+        document.getElementById('select-q6b').value = "transpiration";
+        answeredQuestions.add("q6");
+    }
+
+    // Q7 : Bilan Checkbox
+    function checkQ7() {
+        const c1 = document.getElementById('check-q7a').checked; // Vrai
+        const c2 = document.getElementById('check-q7b').checked; // Faux
+        const c3 = document.getElementById('check-q7c').checked; // Faux
+        const c4 = document.getElementById('check-q7d').checked; // Vrai
+
+        if (c1 && !c2 && !c3 && c4) {
+            document.getElementById('feedback-7').innerHTML = "✅ Bravo ! Tu as tout compris sur l'adaptation du corps. +1 Point";
+            document.getElementById('feedback-7').className = "feedback correct";
+            addPoint("q7");
+        } else {
+            document.getElementById('feedback-7').innerHTML = "❌ Il y a 2 bonnes réponses. Attention : le but est d'évacuer la chaleur, pas d'en produire.";
+            document.getElementById('feedback-7').className = "feedback incorrect";
+        }
+    }
+    function showSolutionQ7() {
+        document.getElementById('check-q7a').checked = true;
+        document.getElementById('check-q7b').checked = false;
+        document.getElementById('check-q7c').checked = false;
+        document.getElementById('check-q7d').checked = true;
+        answeredQuestions.add("q7");
+    }
+
+    // --- ACCESSIBILITÉ ---
+    function toggleDyslexic() { document.body.classList.toggle('mode-dyslexic'); }
+    function toggleContrast() { document.body.classList.toggle('mode-contrast'); }
+    function toggleSize() { document.body.classList.toggle('mode-large'); }
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Sommeil</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f9; text-align: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+        h2 { color: #333; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        button { padding: 15px; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; color: white; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        
+        .btn-1 { background-color: #3498db; } /* Bleu */
+        .btn-2 { background-color: #9b59b6; } /* Violet */
+        .btn-3 { background-color: #e67e22; } /* Orange */
+        .btn-4 { background-color: #2ecc71; } /* Vert */
+
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 25px; }
+        .correct { color: green; }
+        .wrong { color: red; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>😴 Quiz Sommeil</h1>
+        <div id="question-text">Chargement...</div>
+        
+        <div class="btn-grid" id="options-container">
+            </div>
+
+        <div id="feedback"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const collectionName = "tetris_sommeil";
+
+        // --- LES QUESTIONS DU COURS ---
+        const questions = [
+            {
+                q: "Quelle phase correspond à l'endormissement ?",
+                opts: ["Sommeil Paradoxal", "Sommeil Lent Léger", "Sommeil Profond", "Réveil"],
+                ok: 1 // L'index de la bonne réponse (0, 1, 2 ou 3)
+            },
+            {
+                q: "Quelle phase permet la récupération physique ?",
+                opts: ["Sommeil Lent Léger", "Rêves", "Sommeil Lent Profond", "Somnolence"],
+                ok: 2
+            },
+            {
+                q: "Combien de temps dure un cycle de sommeil environ ?",
+                opts: ["30 min", "90 min", "4 heures", "10 min"],
+                ok: 1
+            },
+            {
+                q: "Pendant quelle phase rêve-t-on le plus ?",
+                opts: ["Sommeil Paradoxal", "Sommeil Lent", "Sieste", "Insomnie"],
+                ok: 0
+            },
+            {
+                q: "Qu'est-ce qui perturbe le sommeil le soir ?",
+                opts: ["Lire un livre", "Boire de l'eau", "La lumière bleue", "Le silence"],
+                ok: 2
+            }
+        ];
+
+        let currentQ = 0;
+
+        function showQuestion() {
+            if (currentQ >= questions.length) {
+                document.querySelector(".card").innerHTML = "<h2>Bravo ! 🎉</h2><p>Vous avez aidé à construire la tour !</p>";
+                return;
+            }
+
+            const qData = questions[currentQ];
+            document.getElementById("question-text").innerText = (currentQ + 1) + ". " + qData.q;
+            
+            const container = document.getElementById("options-container");
+            container.innerHTML = ""; // Vider les anciens boutons
+
+            qData.opts.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.innerText = opt;
+                btn.className = `btn-${index + 1}`; // Couleurs différentes
+                btn.onclick = () => checkAnswer(index);
+                container.appendChild(btn);
+            });
+        }
+
+        async function checkAnswer(selectedIndex) {
+            const feedback = document.getElementById("feedback");
+            if (selectedIndex === questions[currentQ].ok) {
+                // BONNE RÉPONSE
+                feedback.innerHTML = "<span class='correct'>✅ Bonne réponse ! Un bloc tombe !</span>";
+                
+                // On envoie le bloc à Firebase pour le prof
+                const colors = ['#3498db', '#9b59b6', '#e67e22', '#2ecc71', '#f1c40f'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                await addDoc(collection(db, collectionName), {
+                    color: randomColor,
+                    timestamp: Date.now()
+                });
+
+                // Question suivante après 1 seconde
+                setTimeout(() => {
+                    currentQ++;
+                    feedback.innerText = "";
+                    showQuestion();
+                }, 1000);
+
+            } else {
+                // MAUVAISE RÉPONSE
+                feedback.innerHTML = "<span class='wrong'>❌ Oups... Réessaie !</span>";
+            }
+        }
+
+        // Lancer le jeu
+        showQuestion();
+    </script>
+</body>
+</html>
