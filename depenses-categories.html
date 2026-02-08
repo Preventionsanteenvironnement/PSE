@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PSE D2 - Depenses : incompressibles, courantes, exceptionnelles</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#1f2937;
+      --muted:#6b7280;
+      --accent:#7c2d12;
+      --accent2:#0f766e;
+      --line:#e5e7eb;
+      --ok:#16a34a;
+      --bad:#dc2626;
+      --warn:#b45309;
+      --shadow:0 10px 25px rgba(0,0,0,.06);
+      --radius:18px;
+      --pad:18px;
+      --max:980px;
+      --focus:0 0 0 3px rgba(15,118,110,.22);
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --fontDys: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --fs: 16.5px;
+      --lh: 1.45;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      font-size:var(--fs);
+      line-height:var(--lh);
+      color:var(--ink);
+      background:linear-gradient(180deg, #fff, var(--bg));
+    }
+    .wrap{max-width:var(--max); margin:0 auto; padding:22px 16px 36px}
+    header{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
+      padding:18px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:999px; border:1px solid var(--line);
+      color:var(--muted); background:#fff;
+      font-size:13px; font-weight:800;
+    }
+    h1{margin:10px 0 4px; font-size:22px; line-height:1.2}
+    .sub{color:var(--muted); margin:0}
+    .h-right{display:flex; flex-direction:column; gap:10px; align-items:flex-end}
+    .toggles{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    .btn{
+      border:1px solid var(--line); background:#fff; color:var(--ink);
+      padding:10px 12px; border-radius:12px; cursor:pointer;
+      font-weight:800; font-size:14px;
+      display:inline-flex; align-items:center; gap:8px;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
+      user-select:none;
+    }
+    .btn:hover{border-color:#d1d5db}
+    .btn:focus{outline:none; box-shadow:var(--focus)}
+    .btn.primary{background:linear-gradient(180deg, #0f766e, #0b5f58); color:#fff; border-color:#0b5f58}
+    .btn.primary:hover{filter:brightness(1.03)}
+    .pill{
+      font-family:var(--mono);
+      padding:6px 10px; border-radius:999px; border:1px solid var(--line);
+      background:#fff; color:var(--muted); font-size:13px; font-weight:900;
+    }
+    .grid{display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px}
+    @media (min-width: 900px){ .grid{grid-template-columns: 1.05fr .95fr;} }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:var(--pad);
+      min-width:0;
+    }
+    .card h2{margin:0 0 10px; font-size:18px}
+    .card h3{margin:14px 0 8px; font-size:16px}
+    .muted{color:var(--muted)}
+    .note{
+      border-left:5px solid var(--accent2);
+      background:linear-gradient(180deg, rgba(15,118,110,.08), rgba(15,118,110,.03));
+      padding:10px 12px; border-radius:14px;
+    }
+    .twoCol{display:grid; grid-template-columns:1fr; gap:10px}
+    @media (min-width: 700px){ .twoCol{grid-template-columns:1fr 1fr} }
+    .mini{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .mini b{display:block; margin-bottom:6px}
+    .klist{margin:10px 0 0; padding-left:18px}
+    .klist li{margin:6px 0}
+    .hr{height:1px; background:var(--line); margin:14px 0}
+    .q{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+      background:linear-gradient(180deg, rgba(17,24,39,.02), rgba(17,24,39,.00));
+    }
+    .qhead{
+      display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+    .qtitle{font-weight:950}
+    .scoreTag{
+      font-family:var(--mono);
+      font-size:13px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--muted);
+      font-weight:950;
+    }
+    .rows{display:grid; gap:10px; margin-top:10px}
+    .row{
+      display:grid; grid-template-columns: 1fr; gap:10px;
+      padding:10px; border:1px solid var(--line); border-radius:16px; background:#fff;
+    }
+    @media (min-width: 720px){ .row{grid-template-columns: 1.2fr .8fr;} }
+
+    select, input[type="text"], textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:15px;
+    }
+    select:focus, input:focus, textarea:focus{outline:none; box-shadow:var(--focus)}
+    textarea{min-height:92px; resize:vertical}
+
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px; border:1px solid var(--line);
+      background:#fff; font-weight:950; font-size:13px; color:var(--muted);
+    }
+    .ok{color:var(--ok); border-color:rgba(22,163,74,.3); background:rgba(22,163,74,.06)}
+    .bad{color:var(--bad); border-color:rgba(220,38,38,.3); background:rgba(220,38,38,.06)}
+    .warnTag{color:var(--warn); border-color:rgba(180,83,9,.3); background:rgba(180,83,9,.06)}
+    .feedback{margin-top:10px}
+    .fbLine{margin:6px 0; padding:8px 10px; border-radius:14px; border:1px solid var(--line); background:#fff}
+
+    .progress{
+      width:100%; height:12px; border-radius:999px;
+      background:#eef2f7; overflow:hidden; border:1px solid var(--line);
+    }
+    .bar{height:100%; width:0%; background:linear-gradient(90deg, #0f766e, #7c2d12)}
+    .footer{
+      margin-top:14px;
+      display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .small{font-size:13px; color:var(--muted)}
+    .mono{font-family:var(--mono)}
+    body.dyslexie{
+      font-family:var(--fontDys);
+      letter-spacing:.35px;
+      word-spacing:.1em;
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      background:#fff;
+    }
+    th, td{
+      padding:10px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+    }
+    th{background:rgba(17,24,39,.04); text-align:left}
+    tr:last-child td{border-bottom:none}
+    .right{ text-align:right }
+    .calcGrid{
+      display:grid; grid-template-columns:1fr; gap:10px;
+      margin-top:10px;
+    }
+    @media (min-width: 720px){ .calcGrid{grid-template-columns:1fr 1fr 1fr} }
+    .calcCell{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:linear-gradient(180deg, rgba(17,24,39,.02), rgba(17,24,39,0));
+    }
+    .calcCell b{display:block; margin-bottom:6px}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="h-left">
+        <div class="badge">PSE THEMATIQUE D2 • CAP • Seance 1 • Partie 2</div>
+        <h1>Les depenses : incompressibles, courantes, exceptionnelles</h1>
+        <p class="sub">
+          Objectif : etre capable de classer des depenses dans la bonne categorie et d’exploiter un budget previsionnel.
+        </p>
+      </div>
+
+      <div class="h-right">
+        <div class="pill" id="saveState">Sauvegarde : active</div>
+        <div class="toggles">
+          <button class="btn" id="btnDys" type="button" aria-pressed="false">Mode lecture</button>
+          <button class="btn" id="btnReset" type="button">Reinitialiser</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Cours express</h2>
+
+        <div class="note">
+          <b>A retenir</b>
+          Les depenses se classent en 3 categories : incompressibles, courantes, exceptionnelles.
+        </div>
+
+        <div class="twoCol" style="margin-top:12px">
+          <div class="mini">
+            <b>Depenses incompressibles</b>
+            <div class="muted">Verbe : Identifier</div>
+            Depenses obligatoires, a payer a echeance reguliere. Souvent un montant assez stable.
+            <ul class="klist">
+              <li>Loyer</li>
+              <li>Electricite / eau</li>
+              <li>Assurances</li>
+              <li>Impots</li>
+              <li>Telephone / internet (abonnement)</li>
+            </ul>
+          </div>
+
+          <div class="mini">
+            <b>Depenses courantes</b>
+            <div class="muted">Verbe : Distinguer</div>
+            Depenses frequentes du quotidien. Elles sont souvent necessaires, mais on peut parfois ajuster le montant.
+            <ul class="klist">
+              <li>Courses / alimentation</li>
+              <li>Carburant / transport</li>
+              <li>Pharmacie / hygiene</li>
+              <li>Entretien / petits achats</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mini" style="margin-top:10px">
+          <b>Depenses exceptionnelles</b>
+          <div class="muted">Verbe : Expliquer</div>
+          Depenses non obligatoires ou peu frequentes, dont le montant peut varier. On peut souvent les reporter ou les limiter.
+          <ul class="klist">
+            <li>Cadeau, cinema, sortie</li>
+            <li>Vetement / shopping</li>
+            <li>Reparation imprévue (ex : panne de voiture)</li>
+            <li>Equipement (ex : petit electromenager)</li>
+          </ul>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="footer">
+          <div style="min-width:220px; flex:1">
+            <div class="small">Progression</div>
+            <div class="progress" aria-label="progression">
+              <div class="bar" id="bar"></div>
+            </div>
+          </div>
+          <div class="pill mono" id="globalScore">Score : 0 / 18</div>
+        </div>
+
+        <div class="small" style="margin-top:10px">
+          Note finale sur 20 : score auto /18 + points C6 (0 a 2) ajoutes par l’enseignant.
+        </div>
+      </section>
+
+      <section class="card" id="devoir">
+        <h2>Devoir en autonomie</h2>
+        <p class="muted" style="margin-top:-2px">Bareme : 18 points auto + 2 points C6 (enseignant).</p>
+
+        <!-- Ex 1 -->
+        <div class="q" id="q1">
+          <div class="qhead">
+            <div class="qtitle">Exercice 1 – Associer chaque definition</div>
+            <div class="scoreTag">C2 • 3 pts</div>
+          </div>
+          <div class="muted">Verbes : Associer, Identifier.</div>
+
+          <div class="rows" id="q1rows"></div>
+
+          <div class="actions">
+            <button class="btn" type="button" data-correct="q1">Corriger</button>
+            <span class="tag warnTag" id="q1tag">A faire</span>
+          </div>
+          <div class="feedback" id="q1fb"></div>
+        </div>
+
+        <!-- Ex 2 -->
+        <div class="q" id="q2">
+          <div class="qhead">
+            <div class="qtitle">Exercice 2 – Classer des exemples</div>
+            <div class="scoreTag">C2 • 6 pts</div>
+          </div>
+          <div class="muted">Verbes : Classer, Distinguer.</div>
+
+          <div class="rows" id="q2rows"></div>
+
+          <div class="actions">
+            <button class="btn" type="button" data-correct="q2">Corriger</button>
+            <span class="tag warnTag" id="q2tag">A faire</span>
+          </div>
+          <div class="feedback" id="q2fb"></div>
+        </div>
+
+        <!-- Ex 3 -->
+        <div class="q" id="q3">
+          <div class="qhead">
+            <div class="qtitle">Exercice 3 – Exploiter un budget previsionnel (Carla)</div>
+            <div class="scoreTag">C2 • 9 pts</div>
+          </div>
+          <div class="muted">Verbes : Classer, Calculer, Determiner.</div>
+
+          <div class="mini">
+            <b>Situation</b>
+            Carla prepare son budget mensuel. Ses recettes sont de <b>1375</b> euros.
+            <div class="small muted" style="margin-top:6px">1) Classer chaque depense. 2) Calculer les totaux et l’epargne.</div>
+          </div>
+
+          <div style="margin-top:10px">
+            <table aria-label="budget carla">
+              <thead>
+                <tr>
+                  <th>Depense</th>
+                  <th class="right">Montant</th>
+                  <th>Categorie</th>
+                </tr>
+              </thead>
+              <tbody id="q3tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="calcGrid">
+            <div class="calcCell">
+              <b>Total incompressibles</b>
+              <input id="q3_ti" type="text" inputmode="decimal" placeholder="ex : 593,27" />
+            </div>
+            <div class="calcCell">
+              <b>Total courantes</b>
+              <input id="q3_tc" type="text" inputmode="decimal" placeholder="ex : 508,50" />
+            </div>
+            <div class="calcCell">
+              <b>Total exceptionnelles</b>
+              <input id="q3_te" type="text" inputmode="decimal" placeholder="ex : 172,50" />
+            </div>
+            <div class="calcCell">
+              <b>Total depenses</b>
+              <input id="q3_td" type="text" inputmode="decimal" placeholder="ex : 1274,27" />
+            </div>
+            <div class="calcCell">
+              <b>Epargne (recettes - depenses)</b>
+              <input id="q3_ep" type="text" inputmode="decimal" placeholder="ex : 100,73" />
+            </div>
+            <div class="calcCell">
+              <b>Type de budget</b>
+              <select id="q3_type">
+                <option value="">Selectionner</option>
+                <option value="exc">Excedentaire (epargne positive)</option>
+                <option value="eq">Equilibre (epargne nulle)</option>
+                <option value="def">Deficitaire (epargne negative)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn" type="button" data-correct="q3">Corriger</button>
+            <span class="tag warnTag" id="q3tag">A faire</span>
+          </div>
+          <div class="feedback" id="q3fb"></div>
+        </div>
+
+        <!-- C6 -->
+        <div class="q" id="q4">
+          <div class="qhead">
+            <div class="qtitle">Exercice 4 – Reponse ecrite</div>
+            <div class="scoreTag">C6 • +0 a +2 (enseignant)</div>
+          </div>
+          <div class="muted">Verbes : Justifier, Illustrer.</div>
+
+          <label for="q4txt" class="small">
+            Justifier : pourquoi le loyer est une depense incompressible, et pourquoi le cinema est plutot une depense exceptionnelle ?
+          </label>
+          <textarea id="q4txt" placeholder="Ecrire 6 a 8 lignes..."></textarea>
+
+          <div class="actions">
+            <button class="btn" type="button" id="btnHelp">Verifier (aide)</button>
+            <span class="tag warnTag" id="q4tag">A rendre</span>
+          </div>
+          <div class="feedback" id="q4fb"></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="actions">
+          <button class="btn primary" type="button" id="btnFinal">Calculer le score auto</button>
+          <button class="btn" type="button" id="btnExport">Exporter la copie</button>
+        </div>
+
+        <div class="feedback" id="finalFb"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORE_KEY = "pse_d2_depenses_categories_v1";
+
+    const state = {
+      dys: false,
+      q1: {},
+      q2: {},
+      q3: { cats:{}, ti:"", tc:"", te:"", td:"", ep:"", type:"" },
+      q4: { text:"" }
+    };
+
+    const CATS = [
+      {v:"inc", t:"Incompressible"},
+      {v:"cou", t:"Courante"},
+      {v:"exc", t:"Exceptionnelle"}
+    ];
+
+    // Ex 1
+    const q1Defs = [
+      { id:"d1", text:"Depenses obligatoires a payer a echeance reguliere (charges fixes).", answer:"inc" },
+      { id:"d2", text:"Depenses frequentes du quotidien (alimentation, transport...), montant variable.", answer:"cou" },
+      { id:"d3", text:"Depenses non obligatoires ou peu frequentes, souvent reportables (cadeau, cinema, vetement...).", answer:"exc" }
+    ];
+
+    // Ex 2
+    const q2Items = [
+      { id:"e1", label:"Loyer", answer:"inc" },
+      { id:"e2", label:"Facture d’electricite", answer:"inc" },
+      { id:"e3", label:"Impots", answer:"inc" },
+      { id:"e4", label:"Assurance voiture", answer:"inc" },
+      { id:"e5", label:"Courses alimentaires", answer:"cou" },
+      { id:"e6", label:"Carburant", answer:"cou" },
+      { id:"e7", label:"Pharmacie", answer:"cou" },
+      { id:"e8", label:"Produits d’hygiene", answer:"cou" },
+      { id:"e9", label:"Cinema", answer:"exc" },
+      { id:"e10", label:"Cadeau", answer:"exc" },
+      { id:"e11", label:"Vetement (shopping)", answer:"exc" },
+      { id:"e12", label:"Reparation voiture imprévue", answer:"exc" }
+    ];
+
+    // Ex 3 - Carla (montants)
+    const carla = {
+      recettes: 1375.00,
+      depenses: [
+        // incompressibles
+        { id:"c1", label:"Loyer", amount:315.20, answer:"inc" },
+        { id:"c2", label:"EDF", amount:29.79, answer:"inc" },
+        { id:"c3", label:"Taxe audiovisuelle", amount:9.50, answer:"inc" },
+        { id:"c4", label:"Impot sur le revenu", amount:125.00, answer:"inc" },
+        { id:"c5", label:"Eau", amount:6.33, answer:"inc" },
+        { id:"c6", label:"Telephone", amount:31.50, answer:"inc" },
+        { id:"c7", label:"Assurance voiture", amount:48.00, answer:"inc" },
+        { id:"c8", label:"Taxe d’habitation", amount:27.95, answer:"inc" },
+
+        // courantes
+        { id:"c9", label:"Alimentation", amount:275.00, answer:"cou" },
+        { id:"c10", label:"Loisirs", amount:74.00, answer:"cou" },
+        { id:"c11", label:"Hygiene-sante", amount:40.00, answer:"cou" },
+        { id:"c12", label:"Entretien / divers", amount:30.50, answer:"cou" },
+        { id:"c13", label:"Carburant", amount:89.00, answer:"cou" },
+
+        // exceptionnelles
+        { id:"c14", label:"Habillement", amount:124.00, answer:"exc" },
+        { id:"c15", label:"Equipement menager", amount:30.50, answer:"exc" },
+        { id:"c16", label:"Cadeaux", amount:18.00, answer:"exc" }
+      ]
+    };
+
+    // expected totals (for correction)
+    const EXP = {
+      ti: 593.27,
+      tc: 508.50,
+      te: 172.50,
+      td: 1274.27,
+      ep: 100.73,
+      type: "exc"
+    };
+
+    function $(sel, root=document){ return root.querySelector(sel); }
+    function $all(sel, root=document){ return [...root.querySelectorAll(sel)]; }
+
+    function fmtEuro(n){
+      const s = n.toFixed(2).replace(".", ",");
+      return s;
+    }
+
+    function parseNum(x){
+      const s = (x || "").toString().trim()
+        .replace(/\s/g,"")
+        .replace(",", ".");
+      const v = parseFloat(s);
+      return Number.isFinite(v) ? v : NaN;
+    }
+
+    function approx(a,b){
+      if(!Number.isFinite(a) || !Number.isFinite(b)) return false;
+      return Math.abs(a-b) < 0.01;
+    }
+
+    function save(){
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      $("#saveState").textContent = "Sauvegarde : active";
+    }
+
+    function load(){
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return;
+      try{
+        const payload = JSON.parse(raw);
+        if(payload && typeof payload === "object"){
+          Object.assign(state, payload);
+          state.q1 = payload.q1 || state.q1;
+          state.q2 = payload.q2 || state.q2;
+          state.q3 = payload.q3 || state.q3;
+          state.q4 = payload.q4 || state.q4;
+        }
+      }catch(e){}
+    }
+
+    function setDys(on){
+      state.dys = on;
+      document.body.classList.toggle("dyslexie", on);
+      const btn = $("#btnDys");
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.textContent = on ? "Mode lecture : active" : "Mode lecture";
+      save();
+    }
+
+    function resetAll(){
+      localStorage.removeItem(STORE_KEY);
+      location.reload();
+    }
+
+    function tag(el, kind, text){
+      el.className = "tag " + (kind || "");
+      el.textContent = text;
+    }
+
+    function buildQ1(){
+      const host = $("#q1rows");
+      host.innerHTML = "";
+      q1Defs.forEach(d=>{
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `
+          <div>
+            <b>${d.text}</b>
+          </div>
+          <div>
+            <label class="small" for="q1_${d.id}">Categorie</label>
+            <select id="q1_${d.id}">
+              <option value="">Selectionner</option>
+              ${CATS.map(c=>`<option value="${c.v}">${c.t}</option>`).join("")}
+            </select>
+          </div>
+        `;
+        host.appendChild(row);
+      });
+    }
+
+    function bindQ1(){
+      q1Defs.forEach(d=>{
+        const sel = $(`#q1_${d.id}`);
+        sel.addEventListener("change", ()=>{
+          state.q1[d.id] = sel.value;
+          save();
+        });
+      });
+    }
+
+    function buildQ2(){
+      const host = $("#q2rows");
+      host.innerHTML = "";
+      q2Items.forEach(it=>{
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `
+          <div>
+            <b>${it.label}</b>
+            <div class="small muted">Choisir la bonne categorie</div>
+          </div>
+          <div>
+            <label class="small" for="q2_${it.id}">Categorie</label>
+            <select id="q2_${it.id}">
+              <option value="">Selectionner</option>
+              ${CATS.map(c=>`<option value="${c.v}">${c.t}</option>`).join("")}
+            </select>
+          </div>
+        `;
+        host.appendChild(row);
+      });
+    }
+
+    function bindQ2(){
+      q2Items.forEach(it=>{
+        const sel = $(`#q2_${it.id}`);
+        sel.addEventListener("change", ()=>{
+          state.q2[it.id] = sel.value;
+          save();
+        });
+      });
+    }
+
+    function buildQ3(){
+      const body = $("#q3tbody");
+      body.innerHTML = "";
+      carla.depenses.forEach(it=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><b>${it.label}</b></td>
+          <td class="right"><span class="mono">${fmtEuro(it.amount)}</span></td>
+          <td>
+            <select id="q3_${it.id}">
+              <option value="">Selectionner</option>
+              ${CATS.map(c=>`<option value="${c.v}">${c.t}</option>`).join("")}
+            </select>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function bindQ3Cats(){
+      carla.depenses.forEach(it=>{
+        const sel = $(`#q3_${it.id}`);
+        sel.addEventListener("change", ()=>{
+          state.q3.cats[it.id] = sel.value;
+          save();
+        });
+      });
+    }
+
+    function bindQ3Calcs(){
+      const ids = ["q3_ti","q3_tc","q3_te","q3_td","q3_ep"];
+      ids.forEach(id=>{
+        const el = $("#"+id);
+        el.addEventListener("input", ()=>{
+          state.q3[id.replace("q3_","")] = el.value;
+          save();
+        });
+      });
+      $("#q3_type").addEventListener("change", ()=>{
+        state.q3.type = $("#q3_type").value;
+        save();
+      });
+    }
+
+    function bindQ4(){
+      $("#q4txt").addEventListener("input", ()=>{
+        state.q4.text = $("#q4txt").value;
+        save();
+      });
+      $("#btnHelp").addEventListener("click", helpQ4);
+    }
+
+    function helpQ4(){
+      const t = ($("#q4txt").value || "").trim();
+      const fb = $("#q4fb");
+      fb.innerHTML = "";
+
+      const hasInc = /(incompress|oblig|echeance|fixe|loyer)/i.test(t);
+      const hasExc = /(exception|non oblig|report|cinema|sortie|loisir)/i.test(t);
+      const hasWhy = /(parce que|car|donc|c’est|ce n’est pas)/i.test(t);
+      const lenOk = t.length >= 220;
+
+      const mk = (ok, good, bad)=>{
+        const d = document.createElement("div");
+        d.className = "fbLine";
+        d.textContent = ok ? good : bad;
+        d.style.borderColor = ok ? "rgba(22,163,74,.28)" : "rgba(180,83,9,.28)";
+        d.style.background = ok ? "rgba(22,163,74,.06)" : "rgba(180,83,9,.06)";
+        fb.appendChild(d);
+      };
+
+      mk(lenOk, "Longueur : suffisante", "Longueur : ecrire un peu plus");
+      mk(hasInc, "Loyer : idee d’obligation / echeance reperee", "Loyer : expliquer le cote obligatoire / echeance");
+      mk(hasExc, "Cinema : idee de depense reportable reperee", "Cinema : expliquer que ce n’est pas obligatoire et reportable");
+      mk(hasWhy, "Justification : connecteurs logiques reperes", "Justification : ajouter parce que / car / donc");
+
+      tag($("#q4tag"), (lenOk && hasInc && hasExc && hasWhy) ? "ok" : "warnTag", "A rendre (enseignant)");
+      computeProgress();
+    }
+
+    function correctQ1(){
+      const fb = $("#q1fb");
+      fb.innerHTML = "";
+      let good = 0;
+
+      q1Defs.forEach(d=>{
+        const val = state.q1[d.id] || "";
+        const isOk = val === d.answer;
+        if(isOk) good++;
+        const line = document.createElement("div");
+        line.className = "fbLine";
+        line.textContent = isOk ? "Correct" : "A revoir";
+        line.style.borderColor = isOk ? "rgba(22,163,74,.28)" : "rgba(220,38,38,.28)";
+        line.style.background = isOk ? "rgba(22,163,74,.06)" : "rgba(220,38,38,.06)";
+        fb.appendChild(line);
+      });
+
+      const pts = Math.round((good / q1Defs.length) * 3);
+      tag($("#q1tag"), good===q1Defs.length ? "ok" : (good>=2 ? "warnTag" : "bad"), `Score : ${pts} / 3`);
+      return pts;
+    }
+
+    function correctQ2(){
+      const fb = $("#q2fb");
+      fb.innerHTML = "";
+      let good = 0;
+
+      q2Items.forEach(it=>{
+        const val = state.q2[it.id] || "";
+        const isOk = val === it.answer;
+        if(isOk) good++;
+        const line = document.createElement("div");
+        line.className = "fbLine";
+        line.textContent = `${it.label} : ${isOk ? "correct" : "a revoir"}`;
+        line.style.borderColor = isOk ? "rgba(22,163,74,.28)" : "rgba(220,38,38,.28)";
+        line.style.background = isOk ? "rgba(22,163,74,.06)" : "rgba(220,38,38,.06)";
+        fb.appendChild(line);
+      });
+
+      const pts = Math.round((good / q2Items.length) * 6);
+      tag($("#q2tag"), good===q2Items.length ? "ok" : (good>=8 ? "warnTag" : "bad"), `Score : ${pts} / 6`);
+      return pts;
+    }
+
+    function correctQ3(){
+      const fb = $("#q3fb");
+      fb.innerHTML = "";
+
+      // Part A: classification (6 pts)
+      let goodCat = 0;
+      carla.depenses.forEach(it=>{
+        const v = (state.q3.cats || {})[it.id] || "";
+        if(v === it.answer) goodCat++;
+      });
+      const ptsCat = Math.round((goodCat / carla.depenses.length) * 6);
+
+      // Part B: calculations (3 pts) - check 6 fields, convert to 3 points proportionally
+      const ti = parseNum($("#q3_ti").value);
+      const tc = parseNum($("#q3_tc").value);
+      const te = parseNum($("#q3_te").value);
+      const td = parseNum($("#q3_td").value);
+      const ep = parseNum($("#q3_ep").value);
+      const typ = $("#q3_type").value;
+
+      const checks = [
+        approx(ti, EXP.ti),
+        approx(tc, EXP.tc),
+        approx(te, EXP.te),
+        approx(td, EXP.td),
+        approx(ep, EXP.ep),
+        typ === EXP.type
+      ];
+      const got = checks.filter(Boolean).length;
+      const ptsCalc = Math.round((got / checks.length) * 3);
+
+      const line1 = document.createElement("div");
+      line1.className = "fbLine";
+      line1.style.borderColor = "rgba(15,118,110,.28)";
+      line1.style.background = "rgba(15,118,110,.06)";
+      line1.innerHTML = `<b>Classement</b> : ${goodCat}/${carla.depenses.length} correct • <b>Calculs</b> : ${got}/${checks.length} correct`;
+      fb.appendChild(line1);
+
+      const pts = ptsCat + ptsCalc; // /9
+      tag($("#q3tag"), pts===9 ? "ok" : (pts>=6 ? "warnTag" : "bad"), `Score : ${pts} / 9`);
+      return pts;
+    }
+
+    function computeProgress(){
+      const q1Done = q1Defs.every(d => (state.q1[d.id] || "") !== "");
+      const q2Done = q2Items.every(it => (state.q2[it.id] || "") !== "");
+      const q3CatsDone = carla.depenses.every(it => ((state.q3.cats||{})[it.id] || "") !== "");
+      const q3CalcDone = ["q3_ti","q3_tc","q3_te","q3_td","q3_ep"].every(id => ($("#"+id).value || "").trim() !== "") && ($("#q3_type").value || "") !== "";
+      const q4Done = ($("#q4txt").value || "").trim().length > 0;
+
+      const done = [q1Done,q2Done,(q3CatsDone && q3CalcDone),q4Done].filter(Boolean).length;
+      const pct = Math.round((done/4)*100);
+      $("#bar").style.width = pct + "%";
+    }
+
+    function updateGlobalScore(){
+      const p1 = correctQ1();
+      const p2 = correctQ2();
+      const p3 = correctQ3();
+      const total = p1+p2+p3; // /18
+      $("#globalScore").textContent = `Score : ${total} / 18`;
+      return total;
+    }
+
+    function finalScore(){
+      const total = updateGlobalScore();
+      computeProgress();
+
+      const fb = $("#finalFb");
+      fb.innerHTML = "";
+      const line = document.createElement("div");
+      line.className = "fbLine";
+      line.style.borderColor = "rgba(15,118,110,.28)";
+      line.style.background = "rgba(15,118,110,.06)";
+      line.innerHTML = `<b>Score auto</b> : <span class="mono">${total} / 18</span> • Note finale : <span class="mono">${total} / 18</span> + points C6 (0 a 2) par l’enseignant`;
+      fb.appendChild(line);
+    }
+
+    function exportCopy(){
+      const p1 = correctQ1();
+      const p2 = correctQ2();
+      const p3 = correctQ3();
+      const total18 = p1+p2+p3;
+
+      const lines = [];
+      lines.push("PSE D2 - Depenses : incompressibles, courantes, exceptionnelles");
+      lines.push("Nom : ____________________   Prenom : ____________________   Classe : __________");
+      lines.push("");
+
+      lines.push("Exercice 1 - Associer definitions");
+      q1Defs.forEach(d=>{
+        lines.push(`- ${d.text} -> ${state.q1[d.id] || ""}`);
+      });
+      lines.push(`Score auto : ${p1}/3`);
+      lines.push("");
+
+      lines.push("Exercice 2 - Classer des exemples");
+      q2Items.forEach(it=>{
+        lines.push(`- ${it.label} -> ${state.q2[it.id] || ""}`);
+      });
+      lines.push(`Score auto : ${p2}/6`);
+      lines.push("");
+
+      lines.push("Exercice 3 - Budget de Carla");
+      carla.depenses.forEach(it=>{
+        lines.push(`- ${it.label} (${fmtEuro(it.amount)}) -> ${((state.q3.cats||{})[it.id] || "")}`);
+      });
+      lines.push(`Total incompressibles : ${$("#q3_ti").value || ""}`);
+      lines.push(`Total courantes : ${$("#q3_tc").value || ""}`);
+      lines.push(`Total exceptionnelles : ${$("#q3_te").value || ""}`);
+      lines.push(`Total depenses : ${$("#q3_td").value || ""}`);
+      lines.push(`Epargne : ${$("#q3_ep").value || ""}`);
+      lines.push(`Type : ${$("#q3_type").value || ""}`);
+      lines.push(`Score auto : ${p3}/9`);
+      lines.push("");
+
+      lines.push("Exercice 4 - Reponse ecrite (C6)");
+      lines.push($("#q4txt").value || "");
+      lines.push("Points C6 : +0 a +2 (enseignant)");
+      lines.push("");
+
+      lines.push(`Total auto : ${total18}/18`);
+      lines.push("Fin");
+
+      const blob = new Blob([lines.join("\\n")], {type:"text/plain;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "copie_pse_depenses_categories.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function applyLoaded(){
+      setDys(!!state.dys);
+
+      // q1
+      q1Defs.forEach(d=>{
+        $(`#q1_${d.id}`).value = state.q1[d.id] || "";
+      });
+
+      // q2
+      q2Items.forEach(it=>{
+        $(`#q2_${it.id}`).value = state.q2[it.id] || "";
+      });
+
+      // q3 cats
+      carla.depenses.forEach(it=>{
+        $(`#q3_${it.id}`).value = ((state.q3.cats||{})[it.id] || "");
+      });
+
+      // q3 calcs
+      $("#q3_ti").value = state.q3.ti || "";
+      $("#q3_tc").value = state.q3.tc || "";
+      $("#q3_te").value = state.q3.te || "";
+      $("#q3_td").value = state.q3.td || "";
+      $("#q3_ep").value = state.q3.ep || "";
+      $("#q3_type").value = state.q3.type || "";
+
+      // q4
+      $("#q4txt").value = (state.q4.text || "");
+    }
+
+    function bindCorrectors(){
+      $all("[data-correct]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const id = btn.dataset.correct;
+          if(id==="q1") correctQ1();
+          if(id==="q2") correctQ2();
+          if(id==="q3") correctQ3();
+          $("#globalScore").textContent = `Score : ${correctQ1()+correctQ2()+correctQ3()} / 18`;
+          computeProgress();
+        });
+      });
+    }
+
+    function init(){
+      load();
+
+      buildQ1();
+      buildQ2();
+      buildQ3();
+
+      bindQ1();
+      bindQ2();
+      bindQ3Cats();
+      bindQ3Calcs();
+      bindQ4();
+
+      applyLoaded();
+      bindCorrectors();
+
+      $("#btnDys").addEventListener("click", ()=> setDys(!state.dys));
+      $("#btnReset").addEventListener("click", resetAll);
+      $("#btnFinal").addEventListener("click", finalScore);
+      $("#btnExport").addEventListener("click", exportCopy);
+
+      window.addEventListener("click", computeProgress);
+      window.addEventListener("keyup", computeProgress);
+
+      computeProgress();
+      $("#globalScore").textContent = `Score : ${correctQ1()+correctQ2()+correctQ3()} / 18`;
+    }
+
+    init();
+  </script>
+</body>
+</html>

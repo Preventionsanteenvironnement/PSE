@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget de Sarah - Maths & Tri</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
+    <style>
+        :root {
+            --recette: #4caf50;
+            --fixe: #ff9800;
+            --courant: #2196f3;
+            --occas: #9c27b0;
+            --bg: #f3e5f5;
+            --error: #dc2626;
+            --success: #16a34a;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        h1 { margin-bottom: 10px; text-align: center; font-size: 1.5rem; }
+
+        /* BOUTONS */
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        button:active { transform: translateY(3px); box-shadow: none; }
+
+        .audio-btn { background: #e91e63; }
+        .mute-btn { background: #111827; }
+        .check-btn { background: #4caf50; font-weight: bold; }
+        .sol-btn { background: #ffeb3b; color: #333; border: 2px solid #fbc02d; }
+        .reset-btn { background: #607d8b; }
+
+        /* ZONE DE JEU */
+        .game-area {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 1200px;
+            justify-content: space-between;
+        }
+
+        /* COLONNES */
+        .column {
+            background: white;
+            border-radius: 15px;
+            padding: 10px;
+            width: 24%;
+            min-height: 300px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-top: 8px solid #ccc;
+            padding-bottom: 15px;
+        }
+
+        .col-recettes { border-color: var(--recette); }
+        .col-fixes { border-color: var(--fixe); }
+        .col-courantes { border-color: var(--courant); }
+        .col-occas { border-color: var(--occas); }
+
+        .col-header {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        /* INPUTS POUR CALCUL */
+        .calc-area {
+            margin-top: auto;
+            width: 95%;
+            text-align: center;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .calc-area label { font-size: 0.9rem; font-weight: 600; }
+
+        input[type="text"], input[type="number"] {
+            width: 85%;
+            padding: 10px;
+            font-size: 1.1rem;
+            text-align: center;
+            border: 2px solid #bbb;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        input:focus { border-color: var(--courant); outline: none; }
+
+        /* SECTION BILAN FINAL */
+        .bilan-section {
+            margin-top: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 850px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 3px solid #333;
+        }
+        .bilan-section h2 { margin: 0 0 15px 0; font-size: 1.2rem; }
+
+        .operation-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.3rem;
+            flex-wrap: wrap;
+        }
+        .operation-row > div { text-align: center; }
+        .operation-row span { display: block; font-size: 0.85rem; margin-bottom: 5px; }
+        .operation-row input { width: 90px; }
+
+        /* ITEMS */
+        .item {
+            background: #fff;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+            width: 95%;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: bold;
+            touch-action: manipulation;
+            user-select: none;
+            transition: border-color 0.2s;
+        }
+        .item:hover { border-color: #888; }
+        .icon { font-size: 1.3rem; margin-right: 5px; }
+        .price { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; }
+
+        /* BANQUE */
+        .bank-container {
+            margin-top: 15px;
+            width: 100%;
+            max-width: 1200px;
+            background: #fff;
+            padding: 12px;
+            border-radius: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            min-height: 80px;
+            border: 3px dashed #ccc;
+        }
+        .bank-container:empty::after {
+            content: "🏦 Banque vide - Toutes les étiquettes sont rangées !";
+            color: #888;
+            font-style: italic;
+        }
+
+        /* RESULTAT MESSAGE */
+        #resultat {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+        .success { background: #dcfce7; color: #166534; border: 2px solid var(--success); }
+        .error { background: #fee2e2; color: #991b1b; border: 2px solid var(--error); }
+        .warning { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+
+        /* AIDE MOBILE */
+        .mobile-helper {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+        }
+        .mobile-helper .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .mobile-helper select {
+            padding: 10px 12px;
+            font-size: 1rem;
+            border-radius: 10px;
+            border: 2px solid #999;
+            font-weight: bold;
+        }
+        .hint {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* RESPONSIVE MOBILE */
+        @media (max-width: 900px) {
+            h1 { font-size: 1.3rem; }
+            .game-area {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .column {
+                width: 100%;
+                min-height: 180px;
+            }
+            .col-header { font-size: 1rem; }
+            .bank-container { max-width: 100%; }
+            #resultat { width: 95%; font-size: 1.1rem; }
+            .mobile-helper { display: block; }
+            .controls { gap: 8px; }
+            button { padding: 10px 12px; font-size: 0.9rem; }
+            .operation-row { gap: 8px; font-size: 1.1rem; }
+            .operation-row input { width: 75px; padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<h1>🎨 Le Budget de Sarah</h1>
+
+<div class="controls">
+    <button class="audio-btn" onclick="lireConsigne()">🔊 Consigne</button>
+    <button class="mute-btn" id="btn-mute" onclick="toggleSon()">🔈 Son</button>
+    <button class="check-btn" onclick="verifierTout()">✅ VÉRIFIER</button>
+    <button class="sol-btn" onclick="montrerSolution()">🔑 Solution</button>
+    <button class="reset-btn" onclick="location.reload()">🔄 Refaire</button>
+</div>
+
+<div class="mobile-helper" id="mobile-helper">
+    <div class="row">
+        <strong>📱 Mobile :</strong>
+        <select id="mobile-target">
+            <option value="recettes">📥 Rentrées</option>
+            <option value="fixes">🔒 Fixes</option>
+            <option value="courantes">🛒 Courantes</option>
+            <option value="occas">🎉 Plaisirs</option>
+            <option value="banque">🏦 Banque</option>
+        </select>
+        <span>puis clique une étiquette</span>
+    </div>
+    <div class="hint">💻 Sur ordinateur : glisse-dépose les étiquettes.</div>
+</div>
+
+<div class="game-area">
+    <div class="column col-recettes" ondrop="drop(event)" ondragover="allowDrop(event)" id="recettes">
+        <div class="col-header">📥 RENTRÉES</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="text" inputmode="numeric" id="input-recettes" placeholder="?"> €
+        </div>
+    </div>
+
+    <div class="column col-fixes" ondrop="drop(event)" ondragover="allowDrop(event)" id="fixes">
+        <div class="col-header">🔒 FIXES</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="text" inputmode="numeric" id="input-fixes" placeholder="?"> €
+        </div>
+    </div>
+
+    <div class="column col-courantes" ondrop="drop(event)" ondragover="allowDrop(event)" id="courantes">
+        <div class="col-header">🛒 COURANTES</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="text" inputmode="numeric" id="input-courantes" placeholder="?"> €
+        </div>
+    </div>
+
+    <div class="column col-occas" ondrop="drop(event)" ondragover="allowDrop(event)" id="occas">
+        <div class="col-header">🎉 PLAISIRS</div>
+        <div class="calc-area">
+            <label>Total ?</label><br>
+            <input type="text" inputmode="numeric" id="input-occas" placeholder="?"> €
+        </div>
+    </div>
+</div>
+
+<div class="bank-container" id="banque" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+<div class="bilan-section">
+    <h2>🧮 BILAN FINAL</h2>
+    <div class="operation-row">
+        <div>
+            <span>Total Recettes</span>
+            <input type="text" inputmode="numeric" id="final-recettes" placeholder="?" style="border-color:var(--recette);">
+        </div>
+        <span>➖</span>
+        <div>
+            <span>Total Dépenses</span>
+            <input type="text" inputmode="numeric" id="final-depenses" placeholder="?" style="border-color:var(--error);">
+        </div>
+        <span>🟰</span>
+        <div>
+            <span>Solde (reste)</span>
+            <input type="text" inputmode="numeric" id="final-solde" placeholder="?" style="border-color:var(--courant);">
+        </div>
+    </div>
+</div>
+
+<div id="resultat"></div>
+
+<script>
+    // --- DONNÉES POUR SARAH ---
+    const itemsData = [
+        { id: 'i1', name: 'Bourse scolaire', icon: '🎓', price: 450, cat: 'recettes' },
+        { id: 'i2', name: 'Vente Tableaux', icon: '🎨', price: 150, cat: 'recettes' },
+        { id: 'i3', name: 'Abo Musique', icon: '🎵', price: 10, cat: 'fixes' },
+        { id: 'i4', name: 'Assurance Scooter', icon: '🛵', price: 40, cat: 'fixes' },
+        { id: 'i5', name: 'Courses Manger', icon: '🥗', price: 150, cat: 'courantes' },
+        { id: 'i6', name: 'Tubes Peinture', icon: '🖌️', price: 50, cat: 'courantes' },
+        { id: 'i7', name: 'Ticket Concert', icon: '🎟️', price: 45, cat: 'occas' },
+        { id: 'i8', name: 'Cadeau Maman', icon: '💐', price: 25, cat: 'occas' }
+    ];
+
+    // SOLUTIONS
+    const solutions = {
+        'recettes': 600,      // 450 + 150
+        'fixes': 50,          // 10 + 40
+        'courantes': 200,     // 150 + 50
+        'occas': 70,          // 45 + 25
+        'total_depenses': 320, // 50 + 200 + 70
+        'solde': 280          // 600 - 320
+    };
+
+    let soundEnabled = true;
+    let exerciceValide = false;
+
+    // === NORMALISER NOMBRE ===
+    function normaliserNombre(valeur) {
+        if (!valeur || String(valeur).trim() === '') return NaN;
+        const normalise = String(valeur).replace(/\s/g, '').replace(',', '.');
+        return parseFloat(normalise);
+    }
+
+    function isMobileLayout() {
+        return window.matchMedia("(max-width: 900px)").matches;
+    }
+
+    function toggleSon() {
+        soundEnabled = !soundEnabled;
+        const btn = document.getElementById('btn-mute');
+        btn.textContent = soundEnabled ? "🔈 Son" : "🔇 Muet";
+        if (!soundEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function setDraggableMode() {
+        const items = document.querySelectorAll('.item');
+        const enableDrag = !isMobileLayout();
+        items.forEach(it => {
+            it.draggable = enableDrag;
+            it.style.cursor = enableDrag ? 'grab' : 'pointer';
+        });
+    }
+
+    function init() {
+        const banque = document.getElementById('banque');
+        itemsData.sort(() => Math.random() - 0.5);
+
+        itemsData.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.id = item.id;
+            div.dataset.cat = item.cat;
+            div.dataset.price = item.price;
+
+            div.onclick = () => {
+                speak(item.name + ", " + item.price + " euros");
+                if (isMobileLayout()) {
+                    moveItemToSelectedTarget(div);
+                }
+            };
+
+            div.ondragstart = drag;
+
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <span class="icon">${item.icon}</span>
+                    <span>${item.name}</span>
+                </div>
+                <span class="price">${item.price} €</span>
+            `;
+            banque.appendChild(div);
+        });
+
+        setDraggableMode();
+        window.addEventListener('resize', setDraggableMode);
+        
+        if (typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Sarah - Budget Tri");
+        }
+    }
+
+    function moveItemToSelectedTarget(itemEl) {
+        const targetId = document.getElementById('mobile-target').value;
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        const calcArea = target.querySelector('.calc-area');
+        if (calcArea) target.insertBefore(itemEl, calcArea);
+        else target.appendChild(itemEl);
+
+        itemEl.style.border = "2px solid #ccc";
+        document.getElementById('resultat').style.display = 'none';
+    }
+
+    function allowDrop(ev) { ev.preventDefault(); }
+
+    function drag(ev) {
+        if (isMobileLayout()) return;
+        ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function drop(ev) {
+        if (isMobileLayout()) return;
+        ev.preventDefault();
+        const data = ev.dataTransfer.getData("text");
+        let target = ev.target;
+
+        while (target && !target.classList.contains('column') && !target.classList.contains('bank-container')) {
+            target = target.parentElement;
+        }
+        if (!target) return;
+
+        const el = document.getElementById(data);
+        const calcArea = target.querySelector('.calc-area');
+        if (calcArea) target.insertBefore(el, calcArea);
+        else target.appendChild(el);
+
+        el.style.border = "2px solid #ccc";
+        document.getElementById('resultat').style.display = 'none';
+    }
+
+    function speak(txt) {
+        if (!soundEnabled) return;
+        try {
+            const msg = new SpeechSynthesisUtterance(txt);
+            msg.lang = 'fr-FR';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(msg);
+        } catch (e) {}
+    }
+
+    function lireConsigne() {
+        speak("Voici Sarah, étudiante en art. Elle a une bourse et vend des tableaux. Range les étiquettes dans les bonnes colonnes, puis calcule les totaux avec ta calculatrice.");
+    }
+
+    function resetInputStyle(id) {
+        const el = document.getElementById(id);
+        el.style.border = "2px solid #bbb";
+        el.style.backgroundColor = "#fff";
+    }
+
+    async function verifierTout() {
+        if (exerciceValide) return;
+        
+        const cols = ['recettes', 'fixes', 'courantes', 'occas'];
+        const resDiv = document.getElementById('resultat');
+
+        // Reset styles
+        const allInputs = ['input-recettes', 'input-fixes', 'input-courantes', 'input-occas', 'final-recettes', 'final-depenses', 'final-solde'];
+        allInputs.forEach(resetInputStyle);
+        document.querySelectorAll('.item').forEach(it => it.style.border = "2px solid #ccc");
+
+        // Vérifier champs vides
+        const vides = allInputs.filter(id => {
+            const el = document.getElementById(id);
+            return !el.value || String(el.value).trim() === '';
+        });
+        
+        if (vides.length > 0) {
+            resDiv.style.display = 'block';
+            resDiv.className = 'warning';
+            resDiv.innerHTML = "⚠️ Remplis toutes les cases de total avant de vérifier.";
+            vides.forEach(id => {
+                const el = document.getElementById(id);
+                el.style.border = "3px solid #f59e0b";
+                el.style.backgroundColor = "#fef3c7";
+            });
+            speak("Remplis d'abord toutes les cases.");
+            return;
+        }
+
+        let erreursTri = 0;
+        let erreursCalcul = 0;
+
+        // Vérifier tri et calculs colonnes
+        cols.forEach(colId => {
+            const container = document.getElementById(colId);
+            const items = container.getElementsByClassName('item');
+
+            for (let item of items) {
+                if (item.dataset.cat !== colId) {
+                    item.style.border = "4px solid var(--error)";
+                    erreursTri++;
+                } else {
+                    item.style.border = "4px solid var(--success)";
+                }
+            }
+
+            const input = document.getElementById('input-' + colId);
+            const val = normaliserNombre(input.value);
+            
+            if (isNaN(val) || val !== solutions[colId]) {
+                input.style.border = "3px solid var(--error)";
+                input.style.backgroundColor = "#fee2e2";
+                erreursCalcul++;
+            } else {
+                input.style.border = "3px solid var(--success)";
+                input.style.backgroundColor = "#dcfce7";
+            }
+        });
+
+        // Vérifier bilan final
+        const fRec = normaliserNombre(document.getElementById('final-recettes').value);
+        const fDep = normaliserNombre(document.getElementById('final-depenses').value);
+        const fSolde = normaliserNombre(document.getElementById('final-solde').value);
+
+        let erreursBilan = 0;
+        
+        const elFRec = document.getElementById('final-recettes');
+        const elFDep = document.getElementById('final-depenses');
+        const elFSolde = document.getElementById('final-solde');
+
+        if (isNaN(fRec) || fRec !== solutions['recettes']) {
+            erreursBilan++;
+            elFRec.style.border = "3px solid var(--error)";
+            elFRec.style.backgroundColor = "#fee2e2";
+        } else {
+            elFRec.style.border = "3px solid var(--success)";
+            elFRec.style.backgroundColor = "#dcfce7";
+        }
+
+        if (isNaN(fDep) || fDep !== solutions['total_depenses']) {
+            erreursBilan++;
+            elFDep.style.border = "3px solid var(--error)";
+            elFDep.style.backgroundColor = "#fee2e2";
+        } else {
+            elFDep.style.border = "3px solid var(--success)";
+            elFDep.style.backgroundColor = "#dcfce7";
+        }
+
+        if (isNaN(fSolde) || fSolde !== solutions['solde']) {
+            erreursBilan++;
+            elFSolde.style.border = "3px solid var(--error)";
+            elFSolde.style.backgroundColor = "#fee2e2";
+        } else {
+            elFSolde.style.border = "3px solid var(--success)";
+            elFSolde.style.backgroundColor = "#dcfce7";
+        }
+
+        // Afficher résultat
+        resDiv.style.display = 'block';
+
+        if (erreursTri > 0) {
+            resDiv.className = 'error';
+            resDiv.innerHTML = "❌ Des étiquettes sont mal rangées (en rouge). Corrige le tri d'abord !";
+            speak("Attention, des étiquettes sont mal rangées.");
+        } else if (erreursCalcul > 0) {
+            resDiv.className = 'error';
+            resDiv.innerHTML = "❌ Le tri est bon ! Mais il y a une erreur de calcul dans les colonnes.";
+            speak("Le tri est bon, mais vérifie tes calculs.");
+        } else if (erreursBilan > 0) {
+            resDiv.className = 'error';
+            resDiv.innerHTML = "❌ Les colonnes sont justes ! Mais le bilan final est faux.";
+            speak("Presque fini ! Vérifie le calcul final.");
+        } else {
+            resDiv.className = 'success';
+            resDiv.innerHTML = "🎉 BRAVO ! Sarah gère parfaitement son budget d'étudiante artiste !";
+            speak("Bravo ! Sarah gère très bien son budget !");
+            exerciceValide = true;
+            envoyerResultatFinal(20);
+        }
+
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function montrerSolution() {
+        itemsData.forEach(itemData => {
+            const itemElement = document.getElementById(itemData.id);
+            const bonneColonne = document.getElementById(itemData.cat);
+            const calcArea = bonneColonne.querySelector('.calc-area');
+            bonneColonne.insertBefore(itemElement, calcArea);
+            itemElement.style.border = "4px solid var(--success)";
+        });
+
+        document.getElementById('input-recettes').value = solutions['recettes'];
+        document.getElementById('input-fixes').value = solutions['fixes'];
+        document.getElementById('input-courantes').value = solutions['courantes'];
+        document.getElementById('input-occas').value = solutions['occas'];
+
+        document.getElementById('final-recettes').value = solutions['recettes'];
+        document.getElementById('final-depenses').value = solutions['total_depenses'];
+        document.getElementById('final-solde').value = solutions['solde'];
+
+        document.querySelectorAll('input').forEach(i => {
+            i.style.border = "3px solid var(--success)";
+            i.style.backgroundColor = "#dcfce7";
+        });
+
+        const resDiv = document.getElementById('resultat');
+        resDiv.style.display = 'block';
+        resDiv.className = 'success';
+        resDiv.innerHTML = "✅ Voici la solution complète pour le budget de Sarah.";
+        speak("Voici la solution pour le budget de Sarah.");
+
+        if (!exerciceValide) {
+            envoyerResultatFinal(10);
+            exerciceValide = true;
+        }
+    }
+
+    // === ENVOI FIREBASE ===
+    async function envoyerResultatFinal(note) {
+        try {
+            if (typeof firebase === 'undefined' || !firebase.apps) {
+                console.log("Firebase non disponible - Mode hors ligne");
+                return;
+            }
+            
+            if (!firebase.apps.length && typeof firebaseConfig !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+            }
+            
+            if (!firebase.apps.length) {
+                console.log("Configuration Firebase manquante");
+                return;
+            }
+            
+            const db = firebase.firestore();
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Sarah Budget Tri",
+                note: note,
+                total: 20,
+                competences: {
+                    "C1": note, 
+                    "C2": note,
+                    "C4": note
+                },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("✅ Résultats envoyés (" + note + "/20) pour " + code);
+
+        } catch (e) {
+            console.error("Erreur lors de l'envoi Firebase : ", e);
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>

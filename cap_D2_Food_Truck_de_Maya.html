@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚚 Food Truck de Maya - Gestion Budget</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="annuaire.js"></script>
+
+    <style>
+        :root {
+            --c-vente: #dcfce7; --b-vente: #16a34a;
+            --c-achat: #fee2e2; --b-achat: #dc2626;
+            --c-frais: #dbeafe; --b-frais: #2563eb;
+            --bg-app: #fef3c7;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #333;
+            padding: 15px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* EN-TÊTE */
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        header h1 {
+            margin: 0;
+            color: #b45309;
+            font-size: 1.8rem;
+        }
+        header .subtitle {
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        /* TOOLBAR */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tool-btn {
+            padding: 10px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: #fff;
+            border: 2px solid #d1d5db;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            transition: transform 0.1s;
+        }
+        .tool-btn:active { transform: translateY(2px); }
+        .tool-btn.primary { background: #1e293b; color: white; border-color: #1e293b; }
+        .tool-btn.calc-btn { background: #7c3aed; color: white; border-color: #7c3aed; font-weight: bold; }
+
+        /* PANNEAU MOBILE */
+        .mobile-panel {
+            display: none;
+            background: #fff;
+            border: 2px solid #d1d5db;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .mobile-panel.show { display: block; }
+        .mobile-panel-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-panel select {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 2px solid #999;
+            font-weight: bold;
+        }
+        .selected-item {
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        /* LÉGENDE */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 2px solid #e5e7eb;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .leg-v { background: var(--c-vente); color: #166534; }
+        .leg-a { background: var(--c-achat); color: #991b1b; }
+        .leg-f { background: var(--c-frais); color: #1e40af; }
+
+        /* BANQUE */
+        .bank {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            background: #fff;
+            padding: 15px;
+            border: 3px dashed #9ca3af;
+            border-radius: 12px;
+            min-height: 100px;
+            margin-bottom: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .bank:empty::after {
+            content: "✅ Toutes les étiquettes sont triées !";
+            color: #16a34a;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* GRILLE COLONNES */
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+        }
+
+        .column {
+            background: white;
+            border-radius: 12px;
+            border-top: 6px solid #9ca3af;
+            padding: 12px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .col-v { border-color: var(--b-vente); background: linear-gradient(to bottom, #f0fdf4, white); }
+        .col-a { border-color: var(--b-achat); background: linear-gradient(to bottom, #fef2f2, white); }
+        .col-f { border-color: var(--b-frais); background: linear-gradient(to bottom, #eff6ff, white); }
+
+        .col-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .drop-zone {
+            flex: 1;
+            border: 2px dashed rgba(0,0,0,0.15);
+            border-radius: 8px;
+            padding: 8px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+            transition: background 0.2s;
+        }
+        .drop-zone.drag-over {
+            background: rgba(0,0,0,0.05);
+            border-color: #1e293b;
+        }
+
+        .calc-box {
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .calc-box input {
+            width: 100px;
+            padding: 8px;
+            font-size: 1.1rem;
+            text-align: right;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .calc-box button {
+            padding: 8px 15px;
+            margin-top: 8px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background: #1e293b;
+            color: white;
+            font-weight: bold;
+        }
+        .feedback {
+            display: block;
+            margin-top: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            min-height: 1.2em;
+        }
+        .feedback.ok { color: var(--b-vente); }
+        .feedback.ko { color: var(--b-achat); }
+
+        /* ÉTIQUETTES */
+        .item {
+            background: white;
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            user-select: none;
+            touch-action: manipulation;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .item:hover { transform: scale(1.02); }
+        .item:active { cursor: grabbing; }
+        .item.selected {
+            border-color: #1e293b;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: scale(1.03);
+        }
+        .item .tag {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .tag-v { background: var(--c-vente); color: #166534; }
+        .tag-a { background: var(--c-achat); color: #991b1b; }
+        .tag-f { background: var(--c-frais); color: #1e40af; }
+        .item .montant {
+            margin-left: auto;
+            font-weight: bold;
+            padding-left: 10px;
+            border-left: 1px solid #e5e7eb;
+        }
+
+        /* BILAN */
+        .bilan {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-left: 8px solid #b45309;
+        }
+        .bilan h2 { margin-top: 0; color: #b45309; }
+        .bilan-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            font-size: 1.1rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .bilan-row.total {
+            border-top: 3px solid #e5e7eb;
+            margin-top: 15px;
+            padding-top: 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        .bilan input {
+            width: 120px;
+            padding: 10px;
+            font-size: 1.2rem;
+            text-align: right;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .bilan .final-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 20px auto 0 auto;
+            padding: 15px;
+            font-size: 1.2rem;
+            background: #b45309;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .bilan .final-btn:hover { background: #92400e; }
+        #msg-final {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-top: 15px;
+        }
+
+        /* ========== CALCULATRICE ========== */
+        .calc-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            background: white;
+            border: 3px solid #7c3aed;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 280px;
+            max-width: 95vw;
+            overflow: hidden;
+            /* Position par défaut (sera modifiée par JS) */
+            bottom: 20px;
+            right: 20px;
+        }
+        .calc-modal.show { display: block; }
+
+        .calc-header {
+            background: #7c3aed;
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+        .calc-header h3 { margin: 0; font-size: 1.1rem; }
+        .calc-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calc-close:hover { background: rgba(255,255,255,0.3); }
+
+        .calc-body { padding: 15px; }
+
+        .calc-screen {
+            background: #1e293b;
+            color: #22d3ee;
+            font-family: 'Courier New', monospace;
+            font-size: 2rem;
+            text-align: right;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            min-height: 60px;
+            word-break: break-all;
+            overflow: hidden;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .calc-btn {
+            padding: 15px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+        .calc-btn:active { transform: scale(0.95); }
+        .calc-btn.num { background: #f1f5f9; color: #1e293b; }
+        .calc-btn.num:hover { background: #e2e8f0; }
+        .calc-btn.op { background: #7c3aed; color: white; }
+        .calc-btn.op:hover { background: #6d28d9; }
+        .calc-btn.eq { background: #16a34a; color: white; grid-column: span 2; }
+        .calc-btn.eq:hover { background: #15803d; }
+        .calc-btn.clear { background: #dc2626; color: white; }
+        .calc-btn.clear:hover { background: #b91c1c; }
+
+        /* Position mobile */
+        @media (max-width: 600px) {
+            .calc-modal {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+            }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .column { min-height: 250px; }
+            .mobile-panel { display: block; }
+            .legend { border-radius: 15px; padding: 10px 15px; }
+            header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🚚 Food Truck de Maya</h1>
+    <p class="subtitle">Aide Maya à faire le bilan de sa journée au marché !</p>
+</header>
+
+<div class="toolbar">
+    <button class="tool-btn" id="btn-sound" onclick="toggleSound()">🔈 Son</button>
+    <button class="tool-btn" onclick="lireConsigne()">🔊 Consigne</button>
+    <button class="tool-btn calc-btn" onclick="toggleCalculatrice()">🧮 Calculatrice</button>
+    <button class="tool-btn" onclick="clearSelection()">✋ Annuler</button>
+    <button class="tool-btn primary" onclick="location.reload()">🔄 Refaire</button>
+</div>
+
+<div class="mobile-panel" id="mobile-panel">
+    <div class="mobile-panel-row">
+        <span>📱 Sélection :</span>
+        <div class="selected-item" id="selected-display">Aucune</div>
+        <span>→</span>
+        <select id="mobile-target">
+            <option value="bank">🏦 Banque</option>
+            <option value="V">💰 Ventes</option>
+            <option value="A">🛒 Achats</option>
+            <option value="F">📋 Frais</option>
+        </select>
+    </div>
+</div>
+
+<div class="legend">
+    <div class="leg-item leg-v">💰 V = VENTES (ce qu'on gagne)</div>
+    <div class="leg-item leg-a">🛒 A = ACHATS (ingrédients)</div>
+    <div class="leg-item leg-f">📋 F = FRAIS FIXES (factures)</div>
+</div>
+
+<div class="bank" id="bank"></div>
+
+<div class="main-grid">
+    <!-- VENTES -->
+    <div class="column col-v">
+        <div class="col-header">💰 VENTES (V)</div>
+        <div class="drop-zone" id="zone-V" data-cat="V"></div>
+        <div class="calc-box">
+            <label>Total Ventes :</label><br>
+            <input type="number" id="inp-V" placeholder="?"> €
+            <br><button onclick="verifierColonne('V')">Vérifier</button>
+            <span class="feedback" id="fb-V"></span>
+        </div>
+    </div>
+
+    <!-- ACHATS -->
+    <div class="column col-a">
+        <div class="col-header">🛒 ACHATS (A)</div>
+        <div class="drop-zone" id="zone-A" data-cat="A"></div>
+        <div class="calc-box">
+            <label>Total Achats :</label><br>
+            <input type="number" id="inp-A" placeholder="?"> €
+            <br><button onclick="verifierColonne('A')">Vérifier</button>
+            <span class="feedback" id="fb-A"></span>
+        </div>
+    </div>
+
+    <!-- FRAIS -->
+    <div class="column col-f">
+        <div class="col-header">📋 FRAIS FIXES (F)</div>
+        <div class="drop-zone" id="zone-F" data-cat="F"></div>
+        <div class="calc-box">
+            <label>Total Frais :</label><br>
+            <input type="number" id="inp-F" placeholder="?"> €
+            <br><button onclick="verifierColonne('F')">Vérifier</button>
+            <span class="feedback" id="fb-F"></span>
+        </div>
+    </div>
+</div>
+
+<!-- BILAN -->
+<div class="bilan">
+    <h2>📊 Calcul du Bénéfice de Maya</h2>
+    <p>Le bénéfice = ce qui reste après avoir payé tous les frais.</p>
+    
+    <div class="bilan-row" style="color: var(--b-vente);">
+        <span>(+) Total des Ventes :</span>
+        <span id="res-V">...</span>
+    </div>
+    <div class="bilan-row" style="color: var(--b-achat);">
+        <span>(−) Total des Achats :</span>
+        <span id="res-A">...</span>
+    </div>
+    <div class="bilan-row" style="color: var(--b-frais);">
+        <span>(−) Total des Frais :</span>
+        <span id="res-F">...</span>
+    </div>
+    
+    <div class="bilan-row total">
+        <span>= BÉNÉFICE :</span>
+        <div>
+            <input type="number" id="inp-benefice" placeholder="?"> €
+        </div>
+    </div>
+    
+    <button class="final-btn" onclick="verifierFinal()">✅ Vérifier le Bénéfice</button>
+    <div id="msg-final" class="feedback"></div>
+</div>
+
+<!-- CALCULATRICE FLOTTANTE -->
+<div class="calc-modal" id="calculatrice">
+    <div class="calc-header" id="calc-header">
+        <h3>🧮 Calculatrice</h3>
+        <button class="calc-close" onclick="toggleCalculatrice()">×</button>
+    </div>
+    <div class="calc-body">
+        <div class="calc-screen" id="calc-screen">0</div>
+        <div class="calc-buttons">
+            <button class="calc-btn clear" onclick="calcClear()">C</button>
+            <button class="calc-btn op" onclick="calcOp('/')">&divide;</button>
+            <button class="calc-btn op" onclick="calcOp('*')">&times;</button>
+            <button class="calc-btn op" onclick="calcBackspace()">⌫</button>
+            
+            <button class="calc-btn num" onclick="calcNum('7')">7</button>
+            <button class="calc-btn num" onclick="calcNum('8')">8</button>
+            <button class="calc-btn num" onclick="calcNum('9')">9</button>
+            <button class="calc-btn op" onclick="calcOp('-')">−</button>
+            
+            <button class="calc-btn num" onclick="calcNum('4')">4</button>
+            <button class="calc-btn num" onclick="calcNum('5')">5</button>
+            <button class="calc-btn num" onclick="calcNum('6')">6</button>
+            <button class="calc-btn op" onclick="calcOp('+')">+</button>
+            
+            <button class="calc-btn num" onclick="calcNum('1')">1</button>
+            <button class="calc-btn num" onclick="calcNum('2')">2</button>
+            <button class="calc-btn num" onclick="calcNum('3')">3</button>
+            <button class="calc-btn eq" onclick="calcEqual()" style="grid-row: span 2;">=</button>
+            
+            <button class="calc-btn num" onclick="calcNum('0')" style="grid-column: span 2;">0</button>
+            <button class="calc-btn num" onclick="calcNum('.')">.</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === DONNÉES ===
+    const itemsData = [
+        // VENTES (V) - Total = 580
+        { nom: "Tacos Poulet", val: 120, cat: "V" },
+        { nom: "Tacos Bœuf", val: 100, cat: "V" },
+        { nom: "Burgers", val: 150, cat: "V" },
+        { nom: "Frites", val: 80, cat: "V" },
+        { nom: "Boissons", val: 70, cat: "V" },
+        { nom: "Desserts", val: 40, cat: "V" },
+        { nom: "Pourboires", val: 20, cat: "V" },
+        
+        // ACHATS (A) - Total = 185
+        { nom: "Viande hachée", val: 60, cat: "A" },
+        { nom: "Poulet", val: 45, cat: "A" },
+        { nom: "Pain/Tortillas", val: 25, cat: "A" },
+        { nom: "Légumes frais", val: 30, cat: "A" },
+        { nom: "Sauces", val: 15, cat: "A" },
+        { nom: "Emballages", val: 10, cat: "A" },
+        
+        // FRAIS FIXES (F) - Total = 145
+        { nom: "Emplacement marché", val: 50, cat: "F" },
+        { nom: "Essence camion", val: 40, cat: "F" },
+        { nom: "Électricité génér.", val: 25, cat: "F" },
+        { nom: "Assurance", val: 20, cat: "F" },
+        { nom: "Publicité flyers", val: 10, cat: "F" }
+    ];
+
+    // Solutions : V=580, A=185, F=145, Bénéfice = 580 - 185 - 145 = 250
+    const solutions = { V: 580, A: 185, F: 145, benefice: 250 };
+
+    let selectedItem = null;
+    let soundEnabled = true;
+    let exerciceTermine = false;
+
+    // === INITIALISATION ===
+    function init() {
+        const bank = document.getElementById('bank');
+        const shuffled = [...itemsData].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach((item, i) => {
+            const el = document.createElement('div');
+            el.className = 'item';
+            el.id = 'item-' + i;
+            el.dataset.cat = item.cat;
+            el.dataset.val = item.val;
+            el.dataset.nom = item.nom;
+            el.draggable = true;
+            
+            const tagClass = item.cat === 'V' ? 'tag-v' : (item.cat === 'A' ? 'tag-a' : 'tag-f');
+            el.innerHTML = `
+                <span class="tag ${tagClass}">${item.cat}</span>
+                <span>${item.nom}</span>
+                <span class="montant">${item.val} €</span>
+            `;
+            
+            // Événements
+            el.addEventListener('dragstart', onDragStart);
+            el.addEventListener('click', () => onItemClick(el, item));
+            
+            bank.appendChild(el);
+        });
+        
+        // Drop zones
+        document.querySelectorAll('.drop-zone, #bank').forEach(zone => {
+            zone.addEventListener('dragover', onDragOver);
+            zone.addEventListener('dragleave', onDragLeave);
+            zone.addEventListener('drop', onDrop);
+            zone.addEventListener('click', () => onZoneClick(zone));
+        });
+        
+        // Enregistrer visite
+        if (typeof enregistrerVisite === "function") {
+            enregistrerVisite("Exercice Maya - Food Truck");
+        }
+        
+        // Rendre la calculatrice déplaçable
+        initDraggableCalc();
+    }
+
+    // === DRAG & DROP ===
+    function onDragStart(e) {
+        if (isMobile()) { e.preventDefault(); return; }
+        e.dataTransfer.setData('text', e.target.id);
+        selectItem(e.target);
+    }
+
+    function onDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    function onDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    function onDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text');
+        const el = document.getElementById(id);
+        if (el) {
+            e.currentTarget.appendChild(el);
+            clearSelection();
+        }
+    }
+
+    // === SÉLECTION MOBILE ===
+    function isMobile() {
+        return window.matchMedia("(max-width: 900px)").matches;
+    }
+
+    function onItemClick(el, item) {
+        selectItem(el);
+        speak(item.nom + ", " + item.val + " euros");
+        
+        if (isMobile()) {
+            const targetId = document.getElementById('mobile-target').value;
+            const target = targetId === 'bank' ? document.getElementById('bank') : document.getElementById('zone-' + targetId);
+            if (target) {
+                target.appendChild(el);
+                clearSelection();
+            }
+        }
+    }
+
+    function onZoneClick(zone) {
+        if (!selectedItem) return;
+        zone.appendChild(selectedItem);
+        clearSelection();
+    }
+
+    function selectItem(el) {
+        document.querySelectorAll('.item.selected').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedItem = el;
+        document.getElementById('selected-display').textContent = el.dataset.nom + ' (' + el.dataset.val + '€)';
+    }
+
+    function clearSelection() {
+        document.querySelectorAll('.item.selected').forEach(x => x.classList.remove('selected'));
+        selectedItem = null;
+        document.getElementById('selected-display').textContent = 'Aucune';
+    }
+
+    // === AUDIO ===
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        document.getElementById('btn-sound').textContent = soundEnabled ? '🔈 Son' : '🔇 Muet';
+        if (!soundEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function speak(txt) {
+        if (!soundEnabled) return;
+        try {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(txt);
+            msg.lang = 'fr-FR';
+            window.speechSynthesis.speak(msg);
+        } catch (e) {}
+    }
+
+    function lireConsigne() {
+        speak("Aide Maya à trier ses tickets. Les ventes en vert, c'est l'argent gagné. Les achats en rouge, c'est les ingrédients. Les frais en bleu, c'est les factures. Utilise la calculatrice pour additionner.");
+    }
+
+    // === VÉRIFICATION COLONNES ===
+    function verifierColonne(cat) {
+        const zone = document.getElementById('zone-' + cat);
+        const input = document.getElementById('inp-' + cat);
+        const fb = document.getElementById('fb-' + cat);
+        
+        const items = zone.querySelectorAll('.item');
+        
+        if (items.length === 0) {
+            fb.textContent = "⚠️ La colonne est vide !";
+            fb.className = "feedback ko";
+            return;
+        }
+        
+        let total = 0;
+        let erreurTri = false;
+        
+        items.forEach(item => {
+            total += parseInt(item.dataset.val);
+            if (item.dataset.cat !== cat) erreurTri = true;
+        });
+        
+        const userVal = parseInt(input.value);
+        
+        if (erreurTri) {
+            fb.textContent = "⚠️ Une étiquette est mal placée !";
+            fb.className = "feedback ko";
+            speak("Attention, une étiquette est mal placée.");
+        } else if (isNaN(userVal)) {
+            fb.textContent = "Écris le total dans la case.";
+            fb.className = "feedback ko";
+        } else if (userVal !== solutions[cat]) {
+            fb.textContent = "❌ Calcul incorrect.";
+            fb.className = "feedback ko";
+            speak("Erreur de calcul. Utilise la calculatrice.");
+        } else {
+            fb.textContent = "✅ Correct !";
+            fb.className = "feedback ok";
+            input.disabled = true;
+            input.style.borderColor = 'var(--b-vente)';
+            input.style.backgroundColor = 'var(--c-vente)';
+            speak("Bravo, c'est correct !");
+            updateBilan();
+        }
+    }
+
+    function updateBilan() {
+        const vOk = document.getElementById('inp-V').disabled;
+        const aOk = document.getElementById('inp-A').disabled;
+        const fOk = document.getElementById('inp-F').disabled;
+        
+        if (vOk) document.getElementById('res-V').textContent = document.getElementById('inp-V').value + ' €';
+        if (aOk) document.getElementById('res-A').textContent = document.getElementById('inp-A').value + ' €';
+        if (fOk) document.getElementById('res-F').textContent = document.getElementById('inp-F').value + ' €';
+    }
+
+    // === VÉRIFICATION FINALE ===
+    async function verifierFinal() {
+        if (exerciceTermine) return;
+        
+        const v = parseInt(document.getElementById('inp-V').value);
+        const a = parseInt(document.getElementById('inp-A').value);
+        const f = parseInt(document.getElementById('inp-F').value);
+        const userBenefice = parseInt(document.getElementById('inp-benefice').value);
+        const fb = document.getElementById('msg-final');
+        
+        if (isNaN(v) || isNaN(a) || isNaN(f) || !document.getElementById('inp-V').disabled) {
+            fb.textContent = "⚠️ Valide d'abord les 3 colonnes !";
+            fb.className = "feedback ko";
+            speak("Valide d'abord les 3 colonnes.");
+            return;
+        }
+        
+        if (isNaN(userBenefice)) {
+            fb.textContent = "Écris le bénéfice dans la case.";
+            fb.className = "feedback ko";
+            return;
+        }
+        
+        if (userBenefice === solutions.benefice) {
+            fb.innerHTML = "🎉 BRAVO ! Maya a gagné " + solutions.benefice + " € aujourd'hui !";
+            fb.className = "feedback ok";
+            document.body.style.background = "linear-gradient(135deg, #dcfce7, #bbf7d0)";
+            speak("Bravo ! Maya a gagné " + solutions.benefice + " euros de bénéfice !");
+            exerciceTermine = true;
+            envoyerResultat(20);
+        } else {
+            fb.textContent = "❌ Incorrect. Calcul : Ventes - Achats - Frais";
+            fb.className = "feedback ko";
+            speak("Erreur. Le bénéfice c'est Ventes moins Achats moins Frais.");
+        }
+    }
+
+    // === CALCULATRICE ===
+    let calcDisplay = '0';
+    let calcNewNumber = true;
+
+    function toggleCalculatrice() {
+        const calc = document.getElementById('calculatrice');
+        calc.classList.toggle('show');
+    }
+
+    function updateCalcScreen() {
+        document.getElementById('calc-screen').textContent = calcDisplay;
+    }
+
+    function calcNum(n) {
+        if (calcNewNumber) {
+            calcDisplay = n;
+            calcNewNumber = false;
+        } else {
+            if (calcDisplay.length < 15) {
+                calcDisplay += n;
+            }
+        }
+        updateCalcScreen();
+    }
+
+    function calcOp(op) {
+        calcDisplay += ' ' + op + ' ';
+        calcNewNumber = false;
+        updateCalcScreen();
+    }
+
+    function calcClear() {
+        calcDisplay = '0';
+        calcNewNumber = true;
+        updateCalcScreen();
+    }
+
+    function calcBackspace() {
+        if (calcDisplay.length > 1) {
+            calcDisplay = calcDisplay.slice(0, -1).trim();
+        } else {
+            calcDisplay = '0';
+            calcNewNumber = true;
+        }
+        updateCalcScreen();
+    }
+
+    function calcEqual() {
+        try {
+            // Remplacer les symboles d'affichage par les vrais opérateurs
+            let expr = calcDisplay.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+            let result = eval(expr);
+            if (!isFinite(result)) {
+                calcDisplay = 'Erreur';
+            } else {
+                // Arrondir à 2 décimales max
+                calcDisplay = Math.round(result * 100) / 100 + '';
+            }
+            calcNewNumber = true;
+        } catch (e) {
+            calcDisplay = 'Erreur';
+            calcNewNumber = true;
+        }
+        updateCalcScreen();
+    }
+
+    // === CALCULATRICE DÉPLAÇABLE ===
+    function initDraggableCalc() {
+        const calc = document.getElementById('calculatrice');
+        const header = document.getElementById('calc-header');
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        header.addEventListener('mousedown', startDrag);
+        header.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+            if (e.target.classList.contains('calc-close')) return;
+            isDragging = true;
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const rect = calc.getBoundingClientRect();
+            offsetX = clientX - rect.left;
+            offsetY = clientY - rect.top;
+            
+            // Passer en position absolute pour le drag
+            calc.style.position = 'fixed';
+            calc.style.bottom = 'auto';
+            calc.style.right = 'auto';
+            calc.style.left = rect.left + 'px';
+            calc.style.top = rect.top + 'px';
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchmove', drag, { passive: false });
+            document.addEventListener('touchend', stopDrag);
+            
+            e.preventDefault();
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            let newX = clientX - offsetX;
+            let newY = clientY - offsetY;
+            
+            // Limiter aux bords de l'écran
+            newX = Math.max(0, Math.min(window.innerWidth - calc.offsetWidth, newX));
+            newY = Math.max(0, Math.min(window.innerHeight - calc.offsetHeight, newY));
+            
+            calc.style.left = newX + 'px';
+            calc.style.top = newY + 'px';
+            
+            e.preventDefault();
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('touchend', stopDrag);
+        }
+    }
+
+    // === FIREBASE ===
+    async function envoyerResultat(note) {
+        try {
+            if (typeof firebase === 'undefined' || !firebase.apps) return;
+            if (!firebase.apps.length && typeof firebaseConfig !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+            }
+            if (!firebase.apps.length) return;
+            
+            const db = firebase.firestore();
+            const code = localStorage.getItem("codeEleve") || "ANONYME";
+            const classe = (typeof ANNUAIRE !== 'undefined' && ANNUAIRE[code]) ? ANNUAIRE[code] : "AUTRE";
+
+            await db.collection("resultats_exercices").add({
+                eleve: code,
+                classe: classe,
+                exercice: "Module D2 - Maya Food Truck",
+                note: note,
+                total: 20,
+                competences: { "C1": note, "C2": note, "C4": note },
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("✅ Résultat envoyé");
+        } catch (e) {
+            console.error("Erreur Firebase:", e);
+        }
+    }
+
+    // Démarrage
+    init();
+</script>
+
+</body>
+</html>

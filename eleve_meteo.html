@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Météo CPS</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; text-align: center; padding: 20px; color: #333; max-width: 500px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h3 { margin: 0 0 15px 0; color: #444; font-size: 1.1rem; text-align: left; }
+
+        /* INPUTS */
+        #pseudo { width: 100%; padding: 12px; border: 2px solid #dfe6e9; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+        
+        /* BATTERIE */
+        input[type=range] { width: 100%; height: 8px; border-radius: 5px; background: #ddd; outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #2ecc71; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        #energie-val { float: right; font-weight: bold; color: #2ecc71; }
+
+        /* MÉTÉO AVEC TEXTE */
+        .emoji-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .emoji-btn { background: #f8f9fa; border: 2px solid transparent; border-radius: 10px; padding: 10px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; }
+        .emoji-btn.selected { border-color: #3498db; background: #e3f2fd; transform: scale(1.05); }
+        .emo-icon { font-size: 2rem; }
+        .emo-text { font-size: 0.8rem; margin-top: 5px; color: #555; font-weight: 500; }
+
+        /* BESOINS & DÉFIS */
+        .choice-btn { background: #fff; border: 1px solid #dfe6e9; padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; transition: 0.2s; }
+        .choice-btn:hover { background: #f1f2f6; }
+        .choice-btn.selected { background: #dff9fb; border-color: #00cec9; border-width: 2px; }
+        .icon-l { margin-right: 10px; font-size: 1.2rem; }
+        .subtext { display: block; font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+        /* BOUTON ENVOI */
+        #send-btn { background: #2d3436; color: white; width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="form-screen">
+        <div class="card">
+            <h3>👤 Qui es-tu ?</h3>
+            <input type="text" id="pseudo" placeholder="Prénom">
+        </div>
+
+        <div class="card">
+            <h3>🔋 Ton Énergie <span id="energie-val">70%</span></h3>
+            <input type="range" id="range-energie" min="0" max="100" value="70" oninput="updateEnergie(this.value)">
+        </div>
+
+        <div class="card">
+            <h3>⛅ Ta Météo</h3>
+            <div class="emoji-grid">
+                <div class="emoji-btn" onclick="selectEmoji(this, 'Joie', '🤩')"><span class="emo-icon">🤩</span><span class="emo-text">Joie</span></div>
+                <div class="emoji-btn" onclick="selectEmoji(this, 'Calme', '😎')"><span class="emo-icon">😎</span><span class="emo-text">Calme</span></div>
+                <div class="emoji-btn" onclick="selectEmoji(this, 'Fatigue', '😴')"><span class="emo-icon">😴</span><span class="emo-text">Fatigue</span></div>
+                <div class="emoji-btn" onclick="selectEmoji(this, 'Colère', '😡')"><span class="emo-icon">😡</span><span class="emo-text">Colère</span></div>
+                <div class="emoji-btn" onclick="selectEmoji(this, 'Stress', '😰')"><span class="emo-icon">😰</span><span class="emo-text">Stress</span></div>
+                <div class="emoji-btn" onclick="selectEmoji(this, 'Concentré', '🤔')"><span class="emo-icon">🤔</span><span class="emo-text">Concentré</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🎯 Ton Besoin (Posture)</h3>
+            <div class="choice-btn" id="soc-solo" onclick="selectSocial('solo')"><span class="icon-l">🎧</span><div>Solo<span class="subtext">Je veux du calme</span></div></div>
+            <div class="choice-btn" id="soc-help" onclick="selectSocial('help')"><span class="icon-l">🤝</span><div>Entraide<span class="subtext">Je veux aider ou être aidé</span></div></div>
+            <div class="choice-btn" id="soc-oral" onclick="selectSocial('oral')"><span class="icon-l">🗣️</span><div>Oral<span class="subtext">Je veux participer</span></div></div>
+        </div>
+
+        <div class="card">
+            <h3>🚀 Ton Défi du cours</h3>
+            <div class="choice-btn defi-opt" onclick="selectDefi(this, 'Aide')"><span class="icon-l">✋</span>Je lève la main pour demander de l'aide</div>
+            <div class="choice-btn defi-opt" onclick="selectDefi(this, 'Vite')"><span class="icon-l">🚀</span>Je me mets au travail sans attendre</div>
+            <div class="choice-btn defi-opt" onclick="selectDefi(this, 'Ecoute')"><span class="icon-l">👂</span>J'écoute la consigne jusqu'au bout</div>
+            <div class="choice-btn defi-opt" onclick="selectDefi(this, 'Focus')"><span class="icon-l">🎯</span>Je reste concentré(e) sur mon exercice</div>
+            <div class="choice-btn defi-opt" onclick="selectDefi(this, 'Attitude')"><span class="icon-l">⚡</span>Je corrige mon attitude (1ère remarque)</div>
+            <div class="choice-btn defi-opt" onclick="selectDefi(this, 'Zen')"><span class="icon-l">🧘</span>Je reste zen et positif(ve)</div>
+        </div>
+
+        <button id="send-btn" onclick="envoyer()">Valider ma Météo</button>
+    </div>
+
+    <div id="success-screen" class="hidden" style="margin-top: 50px;">
+        <span style="font-size: 4rem;">✅</span>
+        <h1>Bien reçu !</h1>
+        <p>Regarde le tableau pour voir la classe.</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // TA CLÉ VALIDÉE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+            authDomain: "devoirs-pse.firebaseapp.com",
+            projectId: "devoirs-pse",
+            storageBucket: "devoirs-pse.firebasestorage.app",
+            messagingSenderId: "614730413904",
+            appId: "1:614730413904:web:a5dd478af5de30f6bede55",
+            measurementId: "G-7R9N0JL6GG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let myMood = null, myEmoji = null, mySoc = null, myDefi = null;
+
+        window.updateEnergie = (val) => {
+            document.getElementById("energie-val").innerText = val + "%";
+            const color = val < 30 ? "#e74c3c" : (val < 60 ? "#f1c40f" : "#2ecc71");
+            document.getElementById("energie-val").style.color = color;
+        }
+
+        window.selectEmoji = (el, mood, emoji) => {
+            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            myMood = mood; myEmoji = emoji;
+        }
+
+        window.selectSocial = (type) => {
+            document.querySelectorAll('.choice-btn[id^="soc-"]').forEach(b => b.classList.remove('selected'));
+            document.getElementById('soc-'+type).classList.add('selected');
+            mySoc = type;
+        }
+
+        window.selectDefi = (el, val) => {
+            document.querySelectorAll('.defi-opt').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            myDefi = el.innerText;
+        }
+
+        window.envoyer = async () => {
+            const pseudo = document.getElementById('pseudo').value;
+            if(!pseudo || !myMood || !mySoc || !myDefi) return alert("Remplis tout (Prénom, Météo, Besoin, Défi) !");
+
+            const btn = document.getElementById('send-btn');
+            btn.innerText = "Envoi...";
+            btn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "meteo_finale_v2"), {
+                    pseudo: pseudo,
+                    energie: document.getElementById('range-energie').value,
+                    emotion: myMood,
+                    emoji: myEmoji,
+                    social: mySoc,
+                    defi: myDefi,
+                    timestamp: Date.now()
+                });
+                document.getElementById('form-screen').classList.add('hidden');
+                document.getElementById('success-screen').classList.remove('hidden');
+            } catch (e) {
+                alert("Erreur : " + e.message);
+                btn.disabled = false;
+                btn.innerText = "Réessayer";
+            }
+        }
+    </script>
+</body>
+</html>
