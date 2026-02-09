@@ -1,11 +1,15 @@
 /* 📁 ANNUAIRE CENTRAL & CONFIGURATION — Dépôt PSE
-   Version corrigée :
-   - Compatible Firebase v8 (firebase.initializeApp / firebase.firestore)
+   Version harmonisée (Firebase v10 compat, API style v8 conservé) :
+   - Compatible avec pse-runner.js (Firebase 10.8.1)
    - Codes insensibles à la casse (maj/min)
    - Ne bloque PAS les pages libres
    - Bloque uniquement si window.PSE_CODE_REQUIRED === true
-   - Traçage compatible Cockpit (champs attendus)
+   - Traçage compatible Cockpit (statistiques_usage)
+   - Envoi copies aligné grille : resultats/{eleveCode}/copies/{docId}
 */
+
+import firebase from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
+import "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
 
 // 1) CONFIG FIREBASE (officielle)
 const firebaseConfig = {
@@ -87,12 +91,9 @@ function _periodeInfo(now) {
 }
 function _ensureDb() {
   try {
-    if (typeof firebase === "undefined") return null;
-
     if (!firebase.apps || !firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
-
     if (!window.db) window.db = firebase.firestore();
     return window.db;
   } catch (e) {
@@ -154,10 +155,7 @@ function demanderCode(_pageName) {
 async function enregistrerVisite(nomPage) {
   try {
     const db = _ensureDb();
-    if (!db) {
-      console.warn("Mouchard: db indisponible (Firebase non chargé ?).");
-      return;
-    }
+    if (!db) return;
 
     const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
     const codeUpper = _normCode(raw);
@@ -204,14 +202,13 @@ function resetCodeEleve() {
   localStorage.removeItem("userClasse");
 }
 
-
 // 7) ENVOI DEVOIRS (centralisé) — appelé depuis tes pages : PSE_submitDevoir(payload)
+// Aligné avec ta grille/runner : resultats/{eleveCode}/copies/{docId}
 async function PSE_submitDevoir(payload) {
   try {
     const db = _ensureDb();
     if (!db) throw new Error("db indisponible (Firebase non chargé ?)");
 
-    // Identification (si exigée)
     const raw = localStorage.getItem("codeEleve") || localStorage.getItem("userCode") || "";
     const codeUpper = _normCode(raw);
     const codeRequired = (window.PSE_CODE_REQUIRED === true);
@@ -222,51 +219,44 @@ async function PSE_submitDevoir(payload) {
     }
 
     const finalCode = (_isValidCode(codeUpper) ? codeUpper : "ANONYME");
-    const finalClasseCode = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
+    const finalClasse = (finalCode === "ANONYME") ? "VISITEUR" : _classeFromCode(finalCode);
 
     const nowISO = new Date().toISOString();
+    const docId = `${(payload?.devoirId || payload?.meta?.devoirId || document.title || "devoir")}_${Date.now()}`;
 
-    const doc = {
-      // Champs faciles pour Cockpit
+    const docData = {
       devoirId: payload?.devoirId || payload?.meta?.devoirId || payload?.meta?.module || document.title || "devoir",
       titre: payload?.devoirTitre || payload?.titre || payload?.exercice_titre || document.title || "",
       url: payload?.url || location.href,
-      niveau: payload?.niveau || payload?.meta?.niveau || "",
-      thematique: payload?.thematique || payload?.meta?.thematique || "",
-      module: payload?.module || payload?.meta?.module || "",
+
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdAtISO: nowISO,
 
+      eleveCode: finalCode,
+      classe: finalClasse,
       eleve: {
+        userCode: finalCode,
         code: finalCode,
-        classeCode: finalClasseCode,
-        classe: payload?.classe || payload?.meta?.classe || "",
-        nom: payload?.nom || payload?.meta?.nom || "",
-        prenom: payload?.prenom || payload?.meta?.prenom || ""
+        classe: finalClasse
       },
 
-      // Données devoir
       reponses: payload?.reponses || {},
-      resultat_auto: {
-        score: payload?.meta?.score,
-        maxScore: payload?.meta?.maxScore,
-        bareme: payload?.meta?.bareme,
-        details: payload?.meta?.details
-      },
+      resultat_auto: payload?.resultat_auto || payload?.meta || {},
+      competences: payload?.competences || {},
+      temps_secondes: payload?.temps_secondes || 0,
 
-      // Copie brute (pour ne rien perdre)
       raw: payload || null
     };
 
-    // Anti double-envoi (session)
-    const antiKey = "devoir_sent_" + doc.devoirId + "_" + doc.url;
+    const antiKey = "devoir_sent_" + docData.devoirId + "_" + docData.url;
     if (sessionStorage.getItem(antiKey)) {
-      throw new Error("Déjà envoyé (session)");
+      return { ok: true, id: "doublon" };
     }
 
-    const ref = await db.collection("devoirs_rendus").add(doc);
+    await db.collection("resultats").doc(finalCode).collection("copies").doc(docId).set(docData);
+
     sessionStorage.setItem(antiKey, "1");
-    return { ok: true, id: ref.id };
+    return { ok: true, id: docId };
   } catch (e) {
     console.error("PSE_submitDevoir error:", e);
     return { ok: false, error: (e && e.message) ? e.message : String(e) };
@@ -274,10 +264,13 @@ async function PSE_submitDevoir(payload) {
 }
 
 // Expose
+window.db = window.db || null;
+window._ensureDb = _ensureDb;
+
 window.ANNUAIRE = ANNUAIRE;
 window.enregistrerVisite = enregistrerVisite;
 window.demanderCode = demanderCode;
 window.resetCodeEleve = resetCodeEleve;
 window.PSE_submitDevoir = PSE_submitDevoir;
 
-console.log("✅ annuaire.js chargé (v8 + casse OK + pages libres OK).");
+console.log("✅ annuaire.js chargé (Firebase v10 compat + logique pages libres/code requis).");
