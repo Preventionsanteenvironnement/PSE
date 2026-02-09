@@ -395,6 +395,41 @@
             transform: scale(1.1);
         }
 
+        /* AUDIO DISCRET PAR QUESTION/CORRIGÉ */
+        .audio-btn {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: var(--primary-pse);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.6em;
+            margin-left: 6px;
+            vertical-align: middle;
+            transition: all 0.2s ease;
+            opacity: 0.5;
+            line-height: 1;
+        }
+
+        .audio-btn:hover {
+            opacity: 1;
+            background: var(--secondary-pse);
+            transform: scale(1.2);
+        }
+
+        .audio-btn.playing {
+            background: var(--success-pse);
+            opacity: 1;
+            animation: pulse 0.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .dashboard {
@@ -526,6 +561,19 @@
         <div class="corriges-explicatifs" id="corriges">
             <h3>🎯 Explications détaillées des 20 situations</h3>
             <div id="corriges-content"></div>
+        </div>
+
+        <!-- BOUTONS ACTIONS BAS DE PAGE -->
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+            <h4 style="color: var(--dark-pse); margin-bottom: 20px;">🎯 Actions rapides</h4>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="corriger()" style="min-width: 150px;">✅ Corriger tout</button>
+                <button class="btn btn-success" onclick="afficherCorriges()" id="btn-corriges-bas" style="display: none; min-width: 150px;">📖 Voir explications</button>
+                <button class="btn btn-warning" onclick="recommencer()" style="min-width: 150px;">🔄 Recommencer</button>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">
+                💡 <strong>Astuce :</strong> Répondez à toutes les situations avant de corriger pour un diagnostic complet !
+            </p>
         </div>
 
         <!-- RGPD FOOTER -->
@@ -876,7 +924,9 @@
                 
                 card.innerHTML = `
                     <div class="situation-header">
-                        <div class="situation-numero">Situation ${situation.id}</div>
+                        <div class="situation-numero">Situation ${situation.id}
+                        <button class="audio-btn" onclick="lireSituation(${situation.id})" title="Écouter cette situation">🔊</button>
+                        </div>
                         <div class="situation-type">${situation.type}</div>
                     </div>
                     
@@ -983,8 +1033,9 @@
             // Afficher les résultats
             afficherResultats();
             
-            // Afficher le bouton des corrigés
+            // Afficher les boutons des corrigés
             document.getElementById('btn-corriges').style.display = 'block';
+            document.getElementById('btn-corriges-bas').style.display = 'block';
         }
 
         // AFFICHER LES RÉSULTATS
@@ -1062,6 +1113,7 @@
                 correctionDiv.innerHTML = `
                     <h4 style="color: ${couleur}; margin-bottom: 10px;">
                         ${icone} Situation ${situation.id} : ${situation.type}
+                        <button class="audio-btn" onclick="lireCorrige(${situation.id})" title="Écouter ce corrigé">🔊</button>
                     </h4>
                     <p><strong>Bonne réponse :</strong> ${situation.options[situation.correct]}</p>
                     <div style="background: rgba(255,255,255,0.3); padding: 10px; border-radius: 5px; margin: 10px 0;">
@@ -1152,6 +1204,81 @@
             document.body.classList.toggle('dyslexie-mode');
             const btn = document.getElementById('dyslexieBtn');
             btn.textContent = document.body.classList.contains('dyslexie-mode') ? '👁️' : '👁';
+        }
+
+        // AUDIO DISCRET POUR LES SITUATIONS
+        let currentUtterance = null;
+
+        function lireSituation(id) {
+            // Arrêter toute lecture en cours
+            if (currentUtterance) {
+                speechSynth.cancel();
+                document.querySelectorAll('.audio-btn.playing').forEach(btn => {
+                    btn.classList.remove('playing');
+                });
+            }
+
+            const situation = situations.find(s => s.id === id);
+            let audioBtn = event.target;
+            
+            if (situation) {
+                let text = `Situation ${situation.id}. ${situation.contexte}. Question : ${situation.question}`;
+                
+                audioBtn.classList.add('playing');
+                
+                currentUtterance = new SpeechSynthesisUtterance(text);
+                currentUtterance.lang = 'fr-FR';
+                currentUtterance.rate = 0.9;
+                currentUtterance.pitch = 1.1;
+                
+                currentUtterance.onend = function() {
+                    audioBtn.classList.remove('playing');
+                    currentUtterance = null;
+                };
+                
+                currentUtterance.onerror = function() {
+                    audioBtn.classList.remove('playing');
+                    currentUtterance = null;
+                };
+                
+                speechSynth.speak(currentUtterance);
+            }
+        }
+
+        function lireCorrige(id) {
+            // Arrêter toute lecture en cours
+            if (currentUtterance) {
+                speechSynth.cancel();
+                document.querySelectorAll('.audio-btn.playing').forEach(btn => {
+                    btn.classList.remove('playing');
+                });
+            }
+
+            const situation = situations.find(s => s.id === id);
+            let audioBtn = event.target;
+            
+            if (situation) {
+                let text = `Corrigé situation ${situation.id}. Bonne réponse : ${situation.options[situation.correct]}. Explication : ${situation.explication}`;
+                
+                audioBtn.classList.add('playing');
+                
+                currentUtterance = new SpeechSynthesisUtterance(text);
+                currentUtterance.lang = 'fr-FR';
+                currentUtterance.rate = 0.9;
+                currentUtterance.pitch = 1.1;
+                
+                currentUtterance.onend = function() {
+                    audioBtn.classList.remove('playing');
+                    currentUtterance = null;
+                };
+                
+                currentUtterance.onerror = function() {
+                    audioBtn.classList.remove('playing');
+                    currentUtterance = null;
+                };
+                
+                speechSynth.speak(currentUtterance);
+            }
         }
     </script>
 </body>
