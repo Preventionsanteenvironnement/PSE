@@ -1,10 +1,12 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.0 (RGPD COMPLIANT)
+// pse-runner.js - Version 7.1 (RGPD COMPLIANT)
 // Collection : resultats/{eleveCode}/copies/{docId}
 // Date : 26 janvier 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
+// Fix v7.1 : init Firebase SAFE (évite double initializeApp)
 // ════════════════════════════════════════════════════════════════════════
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -16,31 +18,32 @@ const firebaseConfig = {
     appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
 
-const app = initializeApp(firebaseConfig);
+// ✅ Init SAFE : évite Firebase App named '[DEFAULT]' already exists
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v7.0 RGPD - Structure : resultats/{eleveCode}/copies/");
+console.log("🚀 PSE Runner v7.1 RGPD - Structure : resultats/{eleveCode}/copies/");
 
 window.envoyerCopie = async function(code, pasteStats, eleveData) {
     console.log("📤 Envoi...", { code, eleveData });
-    
+
     try {
         const eleveInfo = eleveData || { code: code, classe: "?" };
         const eleveCode = (eleveInfo.code || code).toUpperCase().trim();
-        
+
         if (!eleveCode || eleveCode.length < 2) {
             throw new Error("Code élève invalide");
         }
-        
+
         // ════════════════════════════════════════════════════════════════
         // COLLECTE DES RÉPONSES
         // ════════════════════════════════════════════════════════════════
         const reponses = {};
-        
+
         // 1. Textarea et inputs avec data-qid
         document.querySelectorAll('.reponse-eleve').forEach((el, idx) => {
             const qid = el.dataset.qid;
-            
+
             let value = '';
             if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
                 if (el.type === 'radio') {
@@ -56,12 +59,12 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                         return;
                     }
                 } else {
-                    value = el.value.trim();
+                    value = (el.value || '').trim();
                 }
             }
-            
+
             if (!value) return;
-            
+
             if (qid) {
                 if (reponses[qid]) {
                     if (Array.isArray(reponses[qid])) {
@@ -76,10 +79,10 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 const questionBlock = el.closest('.question-block');
                 const numDisplay = questionBlock?.querySelector('.num-display');
                 const numSelector = questionBlock?.querySelector('.num-selector');
-                let questionNum = numDisplay?.textContent?.trim() 
-                               || numSelector?.value 
+                let questionNum = numDisplay?.textContent?.trim()
+                               || numSelector?.value
                                || `Q${idx + 1}`;
-                
+
                 let key = questionNum;
                 let suffix = 1;
                 while (reponses[key] !== undefined) {
@@ -89,7 +92,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 reponses[key] = value;
             }
         });
-        
+
         // 2. QCM checkboxes
         document.querySelectorAll('.save-me-qcm:checked').forEach((el) => {
             const qid = el.dataset.qid;
@@ -106,16 +109,16 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 }
             }
         });
-        
+
         // 3. Matching (reliage)
         document.querySelectorAll('.save-me-match').forEach((el) => {
             const questionBlock = el.closest('.question-block');
             const qidFromBlock = questionBlock?.querySelector('[data-qid]')?.dataset.qid;
             const id = el.dataset.id || `match_${Math.random().toString(36).substr(2, 9)}`;
-            
+
             if (el.value) {
                 reponses[id] = el.value;
-                
+
                 if (qidFromBlock) {
                     if (!reponses[qidFromBlock]) reponses[qidFromBlock] = [];
                     if (!Array.isArray(reponses[qidFromBlock])) reponses[qidFromBlock] = [reponses[qidFromBlock]];
@@ -124,24 +127,24 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 }
             }
         });
-        
+
         // 4. Textes à trous
         document.querySelectorAll('.trou-eleve').forEach((el, i) => {
             const questionBlock = el.closest('.question-block');
             const qidFromBlock = questionBlock?.querySelector('[data-qid]')?.dataset.qid;
             const qid = el.dataset.qid || `trou_${i}`;
-            const value = el.tagName === 'SELECT' ? el.value : el.value.trim();
-            
+            const value = el.tagName === 'SELECT' ? el.value : (el.value || '').trim();
+
             if (value) {
                 reponses[qid] = value;
-                
+
                 if (qidFromBlock && qidFromBlock !== qid) {
                     if (!reponses[qidFromBlock + '_trous']) reponses[qidFromBlock + '_trous'] = [];
                     reponses[qidFromBlock + '_trous'].push(value);
                 }
             }
         });
-        
+
         // 5. Matrice de risque
         document.querySelectorAll('.risk-cell-value').forEach((el) => {
             const qid = el.dataset.qid;
@@ -149,7 +152,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 reponses[qid + '_matrice'] = el.value;
             }
         });
-        
+
         // 6. Radios de décision
         document.querySelectorAll('input[type="radio"][name*="decision"]:checked').forEach((el) => {
             const qid = el.dataset.qid;
@@ -157,7 +160,7 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 reponses[qid + '_decision'] = el.value;
             }
         });
-        
+
         // 7. Radios de gravité
         document.querySelectorAll('input[type="radio"][name*="grav"]:checked').forEach((el) => {
             const qid = el.dataset.qid;
@@ -165,51 +168,51 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 reponses[qid + '_gravite'] = el.value;
             }
         });
-        
+
         console.log("📋 Réponses collectées:", reponses);
         console.log("📊 Nombre de réponses:", Object.keys(reponses).length);
-        
+
         // ════════════════════════════════════════════════════════════════
         // CALCUL DES COMPÉTENCES
         // ════════════════════════════════════════════════════════════════
         const competences = {};
         let totalPoints = 0, maxPoints = 0;
-        
+
         document.querySelectorAll('.question-block').forEach(block => {
             const compSelector = block.querySelector('.comp-selector');
             const compDisplay = block.querySelector('.comp-display');
             const scoreInput = block.querySelector('.student-score');
             const maxInput = block.querySelector('.point-input');
-            
+
             const comp = compSelector?.value || compDisplay?.textContent?.trim();
             const score = parseFloat(scoreInput?.value) || 0;
             const max = parseFloat(maxInput?.value) || 0;
-            
-            if(comp && max > 0) {
+
+            if (comp && max > 0) {
                 const ratio = score / max;
                 let niveau = ratio >= 0.85 ? 3 : ratio >= 0.65 ? 2 : ratio >= 0.40 ? 1 : 0;
-                if(!competences[comp]) competences[comp] = 0;
+                if (!competences[comp]) competences[comp] = 0;
                 competences[comp] += niveau;
                 totalPoints += score;
                 maxPoints += max;
             }
         });
-        
+
         const noteSur20 = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 20 * 10) / 10 : 0;
-        
+
         // ════════════════════════════════════════════════════════════════
         // TEMPS ET MÉTADONNÉES
         // ════════════════════════════════════════════════════════════════
         const devoirId = document.body.dataset.idExercice || "unknown";
         const startTime = parseInt(localStorage.getItem('devoir_start_time_' + devoirId)) || Date.now();
         const tempsSecondes = Math.floor((Date.now() - startTime) / 1000);
-        
-        const titre = document.querySelector('.main-title-editable')?.textContent.trim() 
+
+        const titre = document.querySelector('.main-title-editable')?.textContent.trim()
                    || document.querySelector('h1')?.textContent.trim()
                    || "Devoir PSE";
-        
+
         // ════════════════════════════════════════════════════════════════
-        // ⭐ STRUCTURE DU DOCUMENT (v7.0 RGPD - sans nom/prénom)
+        // ⭐ STRUCTURE DU DOCUMENT (v7.1 RGPD - sans nom/prénom)
         // ════════════════════════════════════════════════════════════════
         const data = {
             // Identifiants
@@ -217,53 +220,54 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
             devoirId: devoirId,
             exercice: devoirId,
             titre: titre,
-            
+
             // Infos élève (RGPD : uniquement code + classe)
             classe: eleveInfo.classe,
-            eleve: { 
-                userCode: eleveCode, 
-                classe: eleveInfo.classe 
+            eleve: {
+                userCode: eleveCode,
+                classe: eleveInfo.classe
             },
-            
+
             // Contenu
             reponses: reponses,
             competences: competences,
-            
+
             // Notes
             note_auto: noteSur20,
             score: noteSur20,
-            // note_finale sera ajoutée par le prof lors de la correction
-            
+
             // Métadonnées
             temps_secondes: tempsSecondes,
             pasteStats: pasteStats || { total: 0, external: 0, document: 0 },
-            
+
             // Timestamps
             createdAt: serverTimestamp(),
             createdAtISO: new Date().toISOString(),
             ts: Date.now()
         };
-        
+
         // ════════════════════════════════════════════════════════════════
         // ⭐ ÉCRITURE DANS resultats/{eleveCode}/copies/{docId}
         // ════════════════════════════════════════════════════════════════
         const docId = `${devoirId}_${Date.now()}`;
         const docPath = `resultats/${eleveCode}/copies/${docId}`;
-        
+
         await setDoc(doc(db, "resultats", eleveCode, "copies", docId), data);
-        
+
         console.log("✅ Envoyé dans:", docPath);
         console.log("📦 Data:", data);
-        
-        alert("✅ COPIE ENVOYÉE !\n\n" + 
-              "👤 Code : " + eleveCode + "\n" + 
-              "📝 " + titre + "\n" +
-              "📊 Réponses: " + Object.keys(reponses).length);
-        
+
+        alert(
+            "✅ COPIE ENVOYÉE !\n\n" +
+            "👤 Code : " + eleveCode + "\n" +
+            "📝 " + titre + "\n" +
+            "📊 Réponses: " + Object.keys(reponses).length
+        );
+
         // Nettoyage localStorage
         localStorage.removeItem('paste_log_' + devoirId);
         localStorage.removeItem('devoir_start_time_' + devoirId);
-        
+
         // Écran de confirmation
         document.body.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
@@ -279,12 +283,12 @@ window.envoyerCopie = async function(code, pasteStats, eleveData) {
                 </p>
             </div>
         `;
-        
-    } catch(error) {
+
+    } catch (error) {
         console.error("❌ Erreur:", error);
         alert("❌ ERREUR: " + error.message);
         throw error;
     }
 };
 
-console.log("✅ window.envoyerCopie prêt (v7.0 RGPD - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.1 RGPD - resultats/{eleveCode}/copies/)");
