@@ -1,10 +1,10 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.1.2 (RGPD COMPLIANT + Firebase SAFE)
+// pse-runner.js - Version 7.1.3 (RGPD COMPLIANT + Firebase SAFE)
 // Collection : resultats/{eleveCode}/copies/{docId}
 // Date : 10 février 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
 // Fix : init Firebase SAFE (évite double initializeApp si annuaire.js est chargé)
-// Fix : blueprint embarqué dans la copie (plus de dépendance externe)
+// Fix : blueprint embarqué dans la copie (priorité window.__PSE_BLUEPRINT, fallback JSON)
 // ════════════════════════════════════════════════════════════════════════
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -23,7 +23,7 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v7.1.2 RGPD - resultats/{eleveCode}/copies/");
+console.log("🚀 PSE Runner v7.1.3 RGPD - resultats/{eleveCode}/copies/");
 
 // ────────────────────────────────────────────────────────────────────────
 // UTIL : charger le blueprint (optionnel) pour l'embarquer dans la copie
@@ -233,9 +233,24 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
       "Devoir PSE";
 
     // ════════════════════════════════════════════════════════════════
-    // BLUEPRINT (embarqué dans la copie si trouvable)
+    // BLUEPRINT (embarqué dans la copie : priorité au blueprint injecté)
     // ════════════════════════════════════════════════════════════════
-    const blueprint = await tryLoadBlueprint(devoirId);
+    let blueprint = null;
+
+    // 1) Priorité au blueprint injecté dans le HTML élève par le Master
+    try {
+      if (window.__PSE_BLUEPRINT && typeof window.__PSE_BLUEPRINT === "object") {
+        blueprint = window.__PSE_BLUEPRINT;
+        console.log("✅ Blueprint embarqué depuis window.__PSE_BLUEPRINT");
+      }
+    } catch (e) {}
+
+    // 2) Fallback : tenter le fichier JSON externe (si présent et bien nommé)
+    if (!blueprint) {
+      blueprint = await tryLoadBlueprint(devoirId);
+      if (blueprint) console.log("✅ Blueprint embarqué depuis fichier JSON externe");
+    }
+
     const blueprintEmbedded = !!blueprint;
 
     // ════════════════════════════════════════════════════════════════
@@ -318,4 +333,4 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
   }
 };
 
-console.log("✅ window.envoyerCopie prêt (v7.1.2 RGPD - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.1.3 RGPD - resultats/{eleveCode}/copies/)");
