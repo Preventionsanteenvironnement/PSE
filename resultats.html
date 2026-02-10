@@ -1128,40 +1128,63 @@
 
    window.ouvrirDetail = async function(evalId) {
   const evaluation = allEvaluations.find(e => e.id === evalId);
-  if (!evaluation || !evaluation.estCorrige) {
-    alert('Évaluation non disponible');
-    return;
-  }
+  if (!evaluation || !evaluation.estCorrige) return;
 
-  document.getElementById('modalTitle').textContent = evaluation.titre || 'Détail';
-  
+  let blueprint = null;
+  try {
+    const resp = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
+    if (resp.ok) blueprint = await resp.json();
+  } catch (e) { console.warn("Blueprint non trouvé:", e); }
+
+  const isNN = evaluation.note === "NN" || evaluation.nonNote;
+  const isABS = evaluation.note === "ABS";
+  const hasNote = evaluation.note !== null && !isNaN(evaluation.note) && !isNN && !isABS;
+  const noteVal = hasNote ? parseFloat(evaluation.note) : null;
+  const noteDisplay = isNN ? "Non noté" : isABS ? "Absent" : hasNote ? noteVal.toFixed(1) + "/20" : "--";
+
   let noteClass = 'nn';
-  let noteText = 'NN';
-  if (evaluation.note !== null && !isNaN(evaluation.note)) {
-    const n = parseFloat(evaluation.note);
-    noteText = n.toFixed(1);
-    if (n >= 16) noteClass = 'excellent';
-    else if (n >= 12) noteClass = 'good'; 
-    else if (n >= 10) noteClass = 'average';
-    else noteClass = 'poor';
+  if (hasNote) { 
+    if (noteVal >= 16) noteClass = 'excellent'; 
+    else if (noteVal >= 12) noteClass = 'good'; 
+    else if (noteVal >= 10) noteClass = 'average'; 
+    else noteClass = 'poor'; 
   }
 
-  let html = `
-    <div class="modal-note-banner ${noteClass}">
-      <div class="modal-note-big">${noteText}/20</div>
-      <div class="modal-note-bar">
-        <div class="modal-note-bar-fill" style="width: ${evaluation.note ? (evaluation.note/20*100) : 0}%"></div>
-      </div>
-    </div>
-  `;
+  document.getElementById('modalTitle').textContent = evaluation.titre;
+  
+  let html = `<div class="modal-note-banner ${noteClass}">
+      <div class="modal-note-big">${noteDisplay}</div>
+      ${hasNote ? `<div class="modal-note-bar"><div class="modal-note-bar-fill" style="width:${Math.min(100, (noteVal / 20) * 100)}%"></div></div>` : ''}
+  </div>`;
 
   if (evaluation.appreciation) {
-    html += `
-      <div class="appreciation-block">
-        <div class="appreciation-title">Appréciation générale</div>
-        <div class="appreciation-text">${evaluation.appreciation}</div>
-      </div>
-    `;
+    html += `<div class="appreciation-block"><div class="appreciation-title">Appréciation</div><div class="appreciation-text">${evaluation.appreciation}</div></div>`;
+  }
+
+  if (evaluation.questions && Object.keys(evaluation.questions).length > 0) {
+    html += '<h3>Détail par question</h3>';
+    Object.entries(evaluation.questions).forEach(([qId, qData]) => {
+      html += `<div class="question-card-grid">
+          <div class="question-header-grid">
+            <span class="question-number-grid">Question ${qId}</span>
+          </div>
+          ${qData.question ? `<div class="question-text-grid">${qData.question}</div>` : ''}
+          
+          ${qData.reponse_eleve ? `
+            <div class="answer-section-grid">
+              <div class="section-label-grid">Ta réponse</div>
+              <div class="section-content-grid">${qData.reponse_eleve}</div>
+            </div>
+          ` : ''}
+          
+          ${qData.correction ? `
+            <div class="correction-section-grid">
+              <div class="section-label-grid">Correction</div>
+              <div class="section-content-grid">${qData.correction}</div>
+            </div>
+          ` : ''}
+        </div>`;
+    });
   }
 
   document.getElementById('modalBody').innerHTML = html;
