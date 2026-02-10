@@ -1,9 +1,10 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.1.1 (RGPD COMPLIANT + Firebase SAFE)
+// pse-runner.js - Version 7.1.2 (RGPD COMPLIANT + Firebase SAFE)
 // Collection : resultats/{eleveCode}/copies/{docId}
-// Date : 09 février 2026
+// Date : 10 février 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
 // Fix : init Firebase SAFE (évite double initializeApp si annuaire.js est chargé)
+// Fix : blueprint embarqué dans la copie (plus de dépendance externe)
 // ════════════════════════════════════════════════════════════════════════
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -22,7 +23,31 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v7.1.1 RGPD - resultats/{eleveCode}/copies/");
+console.log("🚀 PSE Runner v7.1.2 RGPD - resultats/{eleveCode}/copies/");
+
+// ────────────────────────────────────────────────────────────────────────
+// UTIL : charger le blueprint (optionnel) pour l'embarquer dans la copie
+// ────────────────────────────────────────────────────────────────────────
+async function tryLoadBlueprint(devoirId) {
+  if (!devoirId || devoirId === "unknown") return null;
+
+  const candidates = [
+    `/devoirs/${devoirId}_blueprint.json`,
+    `./${devoirId}_blueprint.json`,
+    `${devoirId}_blueprint.json`
+  ];
+
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(`${url}?ts=${Date.now()}`, { cache: "no-store" });
+      if (!resp.ok) continue;
+      const json = await resp.json();
+      if (json && typeof json === "object") return json;
+    } catch (e) {}
+  }
+
+  return null;
+}
 
 window.envoyerCopie = async function (code, pasteStats, eleveData) {
   console.log("📤 Envoi...", { code, eleveData });
@@ -208,6 +233,12 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
       "Devoir PSE";
 
     // ════════════════════════════════════════════════════════════════
+    // BLUEPRINT (embarqué dans la copie si trouvable)
+    // ════════════════════════════════════════════════════════════════
+    const blueprint = await tryLoadBlueprint(devoirId);
+    const blueprintEmbedded = !!blueprint;
+
+    // ════════════════════════════════════════════════════════════════
     // DOCUMENT (RGPD)
     // ════════════════════════════════════════════════════════════════
     const data = {
@@ -230,6 +261,9 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 
       temps_secondes: tempsSecondes,
       pasteStats: pasteStats || { total: 0, external: 0, document: 0 },
+
+      blueprint: blueprint,
+      blueprintEmbedded: blueprintEmbedded,
 
       createdAt: serverTimestamp(),
       createdAtISO: new Date().toISOString(),
@@ -284,4 +318,4 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
   }
 };
 
-console.log("✅ window.envoyerCopie prêt (v7.1.1 RGPD - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.1.2 RGPD - resultats/{eleveCode}/copies/)");
