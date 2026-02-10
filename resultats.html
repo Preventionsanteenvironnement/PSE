@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+-<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -1021,12 +1021,23 @@
         }
 
         /** Formater une réponse pour affichage HTML */
-        function formatReponseDisplay(reponse) {
-            if (reponse === null || reponse === undefined) return '<span style="color:#94a3b8; font-style:italic;">Non répondu</span>';
+        function formatReponseDisplay(reponse, bpQ) {
+            if (reponse === null || reponse === undefined) {
+                return '<span style="color:#94a3b8; font-style:italic;">Non répondu</span>';
+            }
+
+            const mapValue = (v) => {
+                if (!bpQ || !Array.isArray(bpQ.options)) return v;
+                const opt = bpQ.options.find(o => o && (o.value === v || o.id === v));
+                return (opt && opt.label) ? opt.label : v;
+            };
+
             if (Array.isArray(reponse)) {
-                const hasArrows = reponse.some(r => typeof r === 'string' && r.includes('→'));
+                const mapped = reponse.map(r => typeof r === 'string' ? mapValue(r) : r);
+
+                const hasArrows = mapped.some(r => typeof r === 'string' && r.includes('→'));
                 if (hasArrows) {
-                    return '<div class="matching-display">' + reponse.map(r => {
+                    return '<div class="matching-display">' + mapped.map(r => {
                         if (typeof r === 'string' && r.includes('→')) {
                             const parts = r.split('→').map(p => p.trim());
                             return `<div class="matching-row"><span>${parts[0]}</span><span class="matching-arrow">→</span><span>${parts.slice(1).join(' → ')}</span></div>`;
@@ -1034,45 +1045,76 @@
                         return `<div class="matching-row"><span>${r}</span></div>`;
                     }).join('') + '</div>';
                 }
-                return reponse.map(r => `• ${r}`).join('<br>');
+
+                return mapped.map(r => `• ${r}`).join('<br>');
             }
-            if (typeof reponse === 'string') return reponse.replace(/\n/g, '<br>');
+
+            if (typeof reponse === 'string') return mapValue(reponse).replace(/\n/g, '<br>');
             return String(reponse);
         }
 
         /** Agréger les compétences pour le tableau récapitulatif */
         function aggregateCompetences(bpQuestions, evalQuestions, evalCompetences) {
             const compMap = {};
+            const LEVEL_RATIO = { M: 1.0, A: 0.66, I: 0.33, NT: 0 };
+
             bpQuestions.forEach(bpQ => {
                 const comp = bpQ.competence;
                 if (!comp) return;
-                const evalQ = evalQuestions[bpQ.qid] || {};
+
+                const evalQ = (evalQuestions && evalQuestions[bpQ.qid]) ? evalQuestions[bpQ.qid] : {};
                 const niveau = evalQ.level || 'NT';
                 const bareme = parseFloat(bpQ.bareme) || 0;
-                const points = parseFloat(evalQ.points) || 0;
+
+                let points = parseFloat(evalQ.points);
+                if (isNaN(points)) {
+                    points = bareme * (LEVEL_RATIO[niveau] ?? 0);
+                }
+
                 if (!compMap[comp]) compMap[comp] = { totalBareme: 0, totalPoints: 0, niveaux: [], questions: [] };
                 compMap[comp].totalBareme += bareme;
                 compMap[comp].totalPoints += points;
                 compMap[comp].niveaux.push(niveau);
                 compMap[comp].questions.push(bpQ.qid);
             });
+
             if (evalCompetences && typeof evalCompetences === 'object') {
                 Object.entries(evalCompetences).forEach(([comp, data]) => {
                     if (!compMap[comp]) compMap[comp] = { totalBareme: 0, totalPoints: 0, niveaux: [], questions: [] };
-                    if (typeof data === 'object' && data.points !== undefined) {
-                        compMap[comp].totalPoints = parseFloat(data.points) || compMap[comp].totalPoints;
-                        compMap[comp].totalBareme = parseFloat(data.bareme) || compMap[comp].totalBareme;
-                        if (data.niveau) compMap[comp].niveauGlobal = data.niveau;
-                    }
+                    if (typeof data !== 'object' || !data) return;
+
+                    const norm = (x) => {
+                        const v = parseFloat(String(x ?? '').replace(',', '.'));
+                        return isNaN(v) ? null : v;
+                    };
+
+                    // Schéma Cockpit : pts / max
+                    const pts = norm(data.pts);
+                    const mx  = norm(data.max);
+                    if (pts !== null) compMap[comp].totalPoints = pts;
+                    if (mx  !== null) compMap[comp].totalBareme = mx;
+
+                    // Schéma legacy : points / bareme
+                    const pts2 = norm(data.points);
+                    const mx2  = norm(data.bareme);
+                    if (pts2 !== null) compMap[comp].totalPoints = pts2;
+                    if (mx2  !== null) compMap[comp].totalBareme = mx2;
+
+                    if (data.niveau) compMap[comp].niveauGlobal = data.niveau;
                 });
             }
-            const niveauOrder = { 'M': 3, 'A': 2, 'I': 1, 'NT': 0 };
+
+            const niveauOrder = { M: 3, A: 2, I: 1, NT: 0 };
             Object.values(compMap).forEach(c => {
                 if (!c.niveauGlobal && c.niveaux.length > 0) {
                     const avg = c.niveaux.reduce((sum, n) => sum + (niveauOrder[n] || 0), 0) / c.niveaux.length;
-                    if (avg >= 2.5) c.niveauGlobal = 'M'; else if (avg >= 1.5) c.niveauGlobal = 'A'; else if (avg >= 0.5) c.niveauGlobal = 'I'; else c.niveauGlobal = 'NT';
+                    if (avg >= 2.5) c.niveauGlobal = 'M';
+                    else if (avg >= 1.5) c.niveauGlobal = 'A';
+                    else if (avg >= 0.5) c.niveauGlobal = 'I';
+                    else c.niveauGlobal = 'NT';
                 }
             });
+
             return compMap;
         }
 
@@ -1165,7 +1207,7 @@
                                 <div class="question-level-grid ${cfg.css}">${cfg.emoji} ${cfg.label}</div>
                             </div>
                             <div class="question-text-grid">${q.bpQ.questionText}</div>
-                            <div class="answer-section-grid"><div class="section-label-grid">✍️ Ta réponse</div><div class="section-content-grid">${formatReponseDisplay(q.reponse)}</div></div>
+                            <div class="answer-section-grid"><div class="section-label-grid">✍️ Ta réponse</div><div class="section-content-grid">${formatReponseDisplay(q.reponse, q.bpQ)}</div></div>
                             ${q.correction ? `<div class="correction-section-grid"><div class="section-label-grid">🎯 Correction</div><div class="section-content-grid">${q.correction.replace(/\n/g, '<br>')}</div></div>` : ''}
                             ${q.commentaire ? `<div class="comment-section-grid"><div class="section-label-grid">💬 Commentaire</div><div class="section-content-grid">${q.commentaire}</div></div>` : ''}
                         </div>`;
@@ -1186,7 +1228,7 @@
                         </div>`;
 
                         html += `<div class="question-compact-detail" id="${uniqueId}">
-                            <div class="answer-section-grid"><div class="section-label-grid">✍️ Ta réponse</div><div class="section-content-grid">${formatReponseDisplay(q.reponse)}</div></div>
+                            <div class="answer-section-grid"><div class="section-label-grid">✍️ Ta réponse</div><div class="section-content-grid">${formatReponseDisplay(q.reponse, q.bpQ)}</div></div>
                             ${q.correction && q.correction.length < 200 ? `<div class="correction-section-grid"><div class="section-label-grid">🎯 Correction</div><div class="section-content-grid">${q.correction.replace(/\n/g, '<br>')}</div></div>` : ''}
                             ${q.commentaire ? `<div class="comment-section-grid"><div class="section-label-grid">💬 Commentaire</div><div class="section-content-grid">${q.commentaire}</div></div>` : ''}
                         </div>`;
