@@ -1130,11 +1130,27 @@
             if (!evaluation || !evaluation.estCorrige) return;
 
             // Charger le blueprint
-            let blueprint = null;
-            try {
-                const resp = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
-                if (resp.ok) blueprint = await resp.json();
-            } catch (e) { console.warn("Blueprint non trouvé:", e); }
+            // Charger le blueprint
+let blueprint = null;
+
+async function tryFetchJSON(urls) {
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url, { cache: "no-store" });
+      if (resp.ok) return await resp.json();
+    } catch (e) {}
+  }
+  return null;
+}
+
+const bpUrls = [
+  `./devoirs/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`,
+  `https://mapse.fr/devoirs/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`,
+  `https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`
+];
+
+blueprint = await tryFetchJSON(bpUrls);
+if (!blueprint) console.warn("Blueprint non trouvé:", bpUrls);
 
             // Extraire TOUTES les questions (parsing récursif)
             const bpQuestions = blueprint ? extractAllQuestions(blueprint) : [];
