@@ -666,26 +666,53 @@
   <script type="module">
   const statusEl = document.getElementById("envoi-status");
 
-  async function importSameOrigin(candidates) {
-    let lastErr;
-    for (const url of candidates) {
+  // Même origine uniquement (aucune URL absolue externe)
+  const segRaw = location.pathname.split("/").filter(Boolean)[0] || "";
+  const seg = segRaw.includes(".") ? "" : segRaw;
+
+  const prefixes = [];
+  if (seg) prefixes.push("/" + seg); // ex: /CockpitPSE
+  prefixes.push("/PSE");
+  prefixes.push("");
+
+  const uniquePrefixes = [...new Set(prefixes)];
+
+  function buildUrl(prefix, relPath) {
+    const p = prefix || "";
+    const base = p ? p.replace(/\/+$/, "") : "";
+    const rel = String(relPath || "").replace(/^\/+/, "");
+    return (base ? base + "/" : "/") + rel;
+  }
+
+  async function importWithPrefixes(fileRelativePath, optionalRelativePaths = []) {
+    let lastError = null;
+    const attempts = [];
+
+    uniquePrefixes.forEach(prefix => attempts.push(buildUrl(prefix, fileRelativePath)));
+    optionalRelativePaths.forEach(opt => {
+      uniquePrefixes.forEach(prefix => attempts.push(buildUrl(prefix, opt)));
+    });
+
+    const uniqueAttempts = [...new Set(attempts)];
+
+    for (const url of uniqueAttempts) {
       try {
+        console.warn("Tentative import:", url);
         await import(url);
         return url;
       } catch (e) {
-        lastErr = e;
+        lastError = e;
+        console.warn("Import échoué:", url, e);
       }
     }
-    throw lastErr || new Error("Import module impossible");
+
+    throw lastError || new Error("Impossible de charger le module: " + fileRelativePath);
   }
 
   try {
-    statusEl.textContent = "Chargement...";
+    statusEl.textContent = "Chargement des modules...";
 
-    const annuaireUrl = await importSameOrigin([
-      "/annuaire.js",
-      "/PSE/annuaire.js"
-    ]);
+    const annuaireUrl = await importWithPrefixes("annuaire.js");
 
     if (typeof window.demanderCode === "function") {
       const user = await window.demanderCode("Test de Culture Générale");
@@ -695,12 +722,12 @@
       }
     }
 
-    const runnerUrl = await importSameOrigin([
-      "/assets/pse-runner.js",
-      "/PSE/assets/pse-runner.js"
-    ]);
+    const runnerUrl = await importWithPrefixes(
+      "assets/pse-runner.js",
+      ["PSE/assets/pse-runner.js"]
+    );
 
-    console.log("Modules OK:", { annuaireUrl, runnerUrl });
+    console.log("Modules chargés:", { annuaireUrl, runnerUrl, seg, prefixes: uniquePrefixes });
     statusEl.textContent = "Système prêt.";
   } catch (e) {
     console.error("Erreur modules:", e);
@@ -708,6 +735,7 @@
     statusEl.style.color = "red";
   }
 </script>
+
 
 </body>
 </html>
