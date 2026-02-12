@@ -664,27 +664,50 @@
   </script>
 
   <script type="module">
-    const statusEl = document.getElementById("envoi-status");
+  const statusEl = document.getElementById("envoi-status");
 
-    try {
-      statusEl.textContent = "Chargement...";
-      await import("https://preventionsanteenvironnement.github.io/PSE/annuaire.js");
-
-      if (typeof window.demanderCode === "function") {
-        const user = await window.demanderCode("Test de Culture Générale");
-        if (user && user.code) {
-          document.getElementById("code-eleve").value = user.code;
-          window.eleveData = user;
-        }
+  async function importSameOrigin(candidates) {
+    let lastErr;
+    for (const url of candidates) {
+      try {
+        await import(url);
+        return url;
+      } catch (e) {
+        lastErr = e;
       }
-
-      await import("https://preventionsanteenvironnement.github.io/PSE/assets/pse-runner.js");
-      statusEl.textContent = "Système prêt.";
-    } catch (e) {
-      console.error("Erreur modules:", e);
-      statusEl.textContent = "Erreur chargement modules.";
-      statusEl.style.color = "red";
     }
-  </script>
+    throw lastErr || new Error("Import module impossible");
+  }
+
+  try {
+    statusEl.textContent = "Chargement...";
+
+    const annuaireUrl = await importSameOrigin([
+      "/annuaire.js",
+      "/PSE/annuaire.js"
+    ]);
+
+    if (typeof window.demanderCode === "function") {
+      const user = await window.demanderCode("Test de Culture Générale");
+      if (user && user.code) {
+        document.getElementById("code-eleve").value = user.code;
+        window.eleveData = user;
+      }
+    }
+
+    const runnerUrl = await importSameOrigin([
+      "/assets/pse-runner.js",
+      "/PSE/assets/pse-runner.js"
+    ]);
+
+    console.log("Modules OK:", { annuaireUrl, runnerUrl });
+    statusEl.textContent = "Système prêt.";
+  } catch (e) {
+    console.error("Erreur modules:", e);
+    statusEl.textContent = "Erreur chargement modules.";
+    statusEl.style.color = "red";
+  }
+</script>
+
 </body>
 </html>
