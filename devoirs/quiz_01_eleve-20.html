@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSE - Évaluation PSE : Le Sommeil et les Rythmes Biologiques</title>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #f0f2f5 0%, #e8ecef 100%); 
+            color: #1a1a2e; line-height: 1.6; padding: 12px; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 900px; margin: 0 auto; background: #fff; 
+            border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); overflow: hidden; 
+        }
+        .header { 
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #74b9ff 100%); 
+            color: #fff; padding: 32px 30px; text-align: center; 
+            position: relative; overflow: hidden;
+        }
+        .header::before {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: headerShimmer 6s ease-in-out infinite;
+        }
+        @keyframes headerShimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+        .header h1 { font-size: 1.6em; margin-bottom: 6px; font-weight: 700; position: relative; z-index: 1; }
+        .header .subtitle { font-size: 1.05em; opacity: 0.95; position: relative; z-index: 1; }
+        
+        .competences-box { 
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); 
+            border-left: 5px solid #6c5ce7; margin: 24px 28px; padding: 18px 22px; 
+            border-radius: 0 10px 10px 0; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.08);
+        }
+        .competences-box h3 { color: #6c5ce7; margin-bottom: 12px; font-size: 1em; font-weight: 600; }
+        .competences-box ul { list-style: none; padding: 0; display:flex; gap:12px; flex-wrap:wrap; }
+        .comp-tag { 
+            display: inline-block; background: linear-gradient(135deg, #6c5ce7, #8b5cf6); 
+            color: #fff; padding: 2px 12px; border-radius: 6px; font-weight: 600; 
+            font-size: 0.8em; box-shadow: 0 2px 4px rgba(108, 92, 231, 0.2);
+        }
+        .body-content { padding: 0 28px 28px; }
+        .identification { 
+            background: linear-gradient(135deg, #fff3e0 0%, #fff8f1 100%); 
+            border: 2px solid #ff9800; border-radius: 12px; padding: 18px 22px; 
+            margin: 24px 0; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
+        }
+        .identification h3 { color: #e65100; margin-bottom: 12px; font-weight: 600; }
+        .identification label { font-weight: 600; font-size: 0.9em; margin-right:12px; }
+        .identification input { 
+            padding: 10px 14px; border: 2px solid #ffcc80; border-radius: 8px; 
+            font-size: 0.95em; width: 200px; text-transform: uppercase; 
+            transition: all 0.2s ease; font-weight: 600;
+        }
+        .identification input:focus {
+            border-color: #ff9800; outline: none; 
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .document-box { 
+            background: linear-gradient(135deg, #fff8e1 0%, #fffbef 100%); 
+            border: 1px solid #ffc107; border-radius: 10px; padding: 16px 20px; 
+            margin: 16px 0; font-size: 0.9em; border-left: 6px solid #ffb74d; 
+            box-shadow: 0 3px 10px rgba(255, 193, 7, 0.1);
+        }
+        .document-box h4 { 
+            color: #f57f17; margin-bottom: 10px; font-size: 1.1em; 
+            border-bottom: 2px solid #ffe0b2; padding-bottom: 6px; font-weight: 600;
+        }
+
+        .question-block { 
+            background: linear-gradient(135deg, #fafbff 0%, #f8fafc 100%); 
+            border: 2px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; 
+            margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            transition: all 0.2s ease;
+        }
+        .question-block:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .q-label { 
+            display: inline-block; background: linear-gradient(135deg, #6c5ce7, #8b5cf6); 
+            color: #fff; width: 32px; height: 32px; line-height: 32px; text-align: center; 
+            border-radius: 50%; font-size: 0.85em; font-weight: bold; margin-right: 10px; 
+            box-shadow: 0 3px 8px rgba(108, 92, 231, 0.3);
+        }
+        .q-comp { 
+            display: inline-block; background: linear-gradient(135deg, #e8eaf6, #f3e5f5); 
+            color: #3949ab; padding: 3px 10px; border-radius: 6px; font-size: 0.75em; 
+            font-weight: 600; margin-left: 8px; 
+        }
+        .q-points { 
+            float: right; background: linear-gradient(135deg, #e0f7fa, #e1f5fe); 
+            color: #006064; padding: 3px 12px; border-radius: 15px; font-size: 0.78em; 
+            font-weight: 600; 
+        }
+        .q-text { 
+            margin: 12px 0; font-size: 0.95em; font-weight: 500; color: #2c3e50; 
+            line-height: 1.6;
+        }
+        
+        .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .checkbox-group label { 
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; 
+            background: linear-gradient(135deg, #fff 0%, #fafafa 100%); 
+            border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; 
+            font-size: 0.9em; transition: all 0.2s ease;
+        }
+        .checkbox-group label:hover { 
+            background: linear-gradient(135deg, #f3f0ff, #f8f5ff); 
+            border-color: #a29bfe; transform: translateX(4px);
+        }
+        .checkbox-group input { width: 20px; height: 20px; accent-color: #6c5ce7; }
+        
+        .answer-input { 
+            padding: 12px 16px; border: 3px solid #d1c4e9; border-radius: 8px; 
+            font-size: 0.95em; width: 100%; max-width: 320px; 
+            transition: all 0.2s ease; font-weight: 500;
+            resize: none; overflow: hidden; min-height: 40px;
+        }
+        .answer-input:focus {
+            border-color: #6c5ce7; outline: none;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+            transform: translateY(-1px);
+        }
+        .answer-select { 
+            padding: 12px 16px; border: 3px solid #d1c4e9; border-radius: 8px; 
+            font-size: 0.95em; background: #fff; width: 100%; font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .answer-select:focus {
+            border-color: #6c5ce7; outline: none;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+        
+        .eval-table { 
+            width: 100%; border-collapse: collapse; font-size: 0.9em; 
+            margin-top: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-radius: 8px; overflow: hidden;
+        }
+        .eval-table td { 
+            padding: 12px; border-bottom: 1px solid #f0f0f0; 
+            background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+        }
+        
+        .submit-section { text-align: center; margin: 40px 0; }
+        .submit-btn { 
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff; 
+            border: none; padding: 16px 48px; font-size: 1.1em; font-weight: 700; 
+            border-radius: 50px; cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+            position: relative; overflow: hidden;
+        }
+        .submit-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .submit-btn:hover::before { left: 100%; }
+        .submit-btn:hover { 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 12px 35px rgba(108, 92, 231, 0.4); 
+        }
+        .submit-btn:disabled { 
+            background: #bbb; cursor: not-allowed; transform: none; 
+            box-shadow: none;
+        }
+        
+        /* ANIMATIONS */
+        .question-block { animation: slideInUp 0.5s ease-out; }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .body-content { padding: 0 16px 16px; }
+            .competences-box { margin: 16px; }
+            .identification { margin: 16px 0; padding: 16px; }
+            .question-block { margin: 12px 0; padding: 16px; }
+        }
+    </style>
+</head>
+<body data-id-exercice="quiz_01">
+<div class="container">
+    <div class="header">
+        <h1>Évaluation PSE : Le Sommeil et les Rythmes Biologiques</h1>
+    </div>
+    <div class="competences-box">
+        <h3>Compétences évaluées</h3>
+        <ul><li><span class="comp-tag">C1</span></li><li><span class="comp-tag">C2</span></li><li><span class="comp-tag">C3</span></li><li><span class="comp-tag">C5</span></li></ul>
+    </div>
+    <div class="body-content">
+
+    <div class="identification">
+        <h3>Identification</h3>
+        <div>
+            <label for="code-eleve">Code élève :</label>
+            <input type="text" id="code-eleve" class="reponse-eleve" data-qid="code_eleve" placeholder="Votre code">
+        </div>
+    </div>
+
+    
+                        <div class="question-block">
+                            <span class="q-label">1</span><span class="q-comp">C1</span><span class="q-points">4 pts</span>
+                            <div class="q-text">Un cycle de sommeil est composé d'une succession de phases. Quelles sont les deux principales ?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771005007425_832" value="q_1771005007425_832_opt1" class="reponse-eleve" data-qid="q_1771005007425_832"> Le sommeil lent et le sommeil paradoxal</label><label><input type="radio" name="q_1771005007425_832" value="q_1771005007425_832_opt2" class="reponse-eleve" data-qid="q_1771005007425_832"> Le sommeil lourd et le sommeil léger</label><label><input type="radio" name="q_1771005007425_832" value="q_1771005007425_832_opt3" class="reponse-eleve" data-qid="q_1771005007425_832"> Le sommeil actif et le sommeil passif</label></div></div>
+                    <div class="question-block">
+                        <span class="q-label">2</span><span class="q-comp">C2</span><span class="q-points">4 pts</span>
+                        <div class="q-text">Le sommeil lent profond est la phase qui permet principalement la récupération de la fatigue mentale et la mémorisation.</div>
+                        <div class="checkbox-group">
+                            <label><input type="radio" name="q_1771005009590_755" value="vrai" class="reponse-eleve" data-qid="q_1771005009590_755"> Vrai</label>
+                            <label><input type="radio" name="q_1771005009590_755" value="faux" class="reponse-eleve" data-qid="q_1771005009590_755"> Faux</label>
+                        </div>
+                    </div>
+                
+                        <div class="question-block">
+                            <span class="q-label">3</span><span class="q-comp">C3</span><span class="q-points">4 pts</span>
+                            <div class="q-text">Quelle est la conséquence directe d'une dette de sommeil (manque de sommeil) sur l'activité professionnelle ?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771005011606_292" value="q_1771005011606_292_opt1" class="reponse-eleve" data-qid="q_1771005011606_292"> Une augmentation de la vigilance</label><label><input type="radio" name="q_1771005011606_292" value="q_1771005011606_292_opt2" class="reponse-eleve" data-qid="q_1771005011606_292"> Une baisse de concentration et un risque d'accident</label><label><input type="radio" name="q_1771005011606_292" value="q_1771005011606_292_opt3" class="reponse-eleve" data-qid="q_1771005011606_292"> Une meilleure humeur avec les collègues</label></div></div>
+                    <div class="question-block">
+                        <span class="q-label">4</span><span class="q-comp">C1</span><span class="q-points">4 pts</span>
+                        <div class="q-text">Quelle est la durée moyenne d'un cycle de sommeil chez l'adulte (en minutes) ?</div>
+                        <div><input type="number" class="reponse-eleve answer-input" data-qid="q_1771005013404_968" placeholder="Votre réponse"></div>
+                    </div>
+                
+                        <div class="question-block">
+                            <span class="q-label">5</span><span class="q-comp">C5</span><span class="q-points">4 pts</span>
+                            <div class="q-text">Quelle hormone, sécrétée dans l'obscurité, favorise l'endormissement ?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771005015669_34" value="q_1771005015669_34_opt1" class="reponse-eleve" data-qid="q_1771005015669_34"> La mélatonine</label><label><input type="radio" name="q_1771005015669_34" value="q_1771005015669_34_opt2" class="reponse-eleve" data-qid="q_1771005015669_34"> L'adrénaline</label><label><input type="radio" name="q_1771005015669_34" value="q_1771005015669_34_opt3" class="reponse-eleve" data-qid="q_1771005015669_34"> Le cortisol</label></div></div>
+
+    <div class="submit-section">
+        <button class="submit-btn" id="btn-envoyer" onclick="window.tenterEnvoi()">Envoyer ma copie 📤</button>
+        <p id="envoi-status" style="font-size:0.85em; color:#666; margin-top:12px;">Le système se charge...</p>
+    </div>
+
+    </div>
+</div>
+
+<script>
+    const focus = { focusLeaves: 0, copyAttempts: 0 };
+    function getAntiCheatOptions() {
+        return (window.__PSE_BLUEPRINT && window.__PSE_BLUEPRINT.options) || { antiLeave: true, antiPaste: true, maxLeaves: 2 };
+    }
+
+    // Auto-resize pour les zones de texte
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    // Appliquer l'auto-resize à tous les champs texte
+    document.addEventListener('DOMContentLoaded', function() {
+        const textInputs = document.querySelectorAll('textarea, input[type="text"]');
+        textInputs.forEach(input => {
+            if (input.tagName === 'TEXTAREA') {
+                input.addEventListener('input', () => autoResize(input));
+                autoResize(input); // Taille initiale
+            }
+        });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        const antiCheatOptions = getAntiCheatOptions();
+        if (antiCheatOptions.antiLeave !== false && document.visibilityState === 'hidden') {
+            focus.focusLeaves += 1;
+        }
+    });
+
+    window.addEventListener('blur', () => {
+        const antiCheatOptions = getAntiCheatOptions();
+        if (antiCheatOptions.antiLeave !== false) {
+            focus.focusLeaves += 1;
+        }
+    });
+
+    document.addEventListener('copy', () => {
+        focus.copyAttempts += 1;
+    });
+
+    document.addEventListener('paste', (event) => {
+        const antiCheatOptions = getAntiCheatOptions();
+        focus.copyAttempts += 1;
+        if (antiCheatOptions.antiPaste !== false) {
+            event.preventDefault();
+        }
+    });
+
+    function ensureEmptyAnswerBindings() {
+        const items = Array.isArray(window.__PSE_BLUEPRINT?.content) ? window.__PSE_BLUEPRINT.content : [];
+        const expectedQids = items.map((item) => String(item?.qid || "").trim()).filter(Boolean);
+        expectedQids.forEach((qid) => {
+            const existingFallback = document.querySelector('input.reponse-eleve[type="hidden"][data-qid="' + qid + '"][data-fallback="1"]');
+            const controls = Array.from(document.querySelectorAll('.reponse-eleve[data-qid="' + qid + '"]:not([data-fallback="1"])'));
+            let answered = false;
+            controls.forEach((el) => {
+                const tag = (el.tagName || "").toUpperCase();
+                const type = (el.type || "").toLowerCase();
+                if (type === "radio" || type === "checkbox") {
+                    if (el.checked) answered = true;
+                } else if (tag === "SELECT") {
+                    if ((el.value || "").trim() !== "") answered = true;
+                } else if ((el.value || "").trim() !== "") {
+                    answered = true;
+                }
+            });
+            if (!answered && !existingFallback) {
+                const fallback = document.createElement("input");
+                fallback.type = "hidden";
+                fallback.value = "";
+                fallback.className = "reponse-eleve";
+                fallback.setAttribute("data-qid", qid);
+                fallback.setAttribute("data-fallback", "1");
+                document.body.appendChild(fallback);
+            }
+            if (answered && existingFallback) {
+                existingFallback.remove();
+            }
+        });
+    }
+
+    // Configuration Runner
+    window.tenterEnvoi = async function() {
+        const codeInput = document.getElementById('code-eleve');
+        const code = (codeInput.value || '').trim().toUpperCase();
+        if(!code || code.length < 2) { alert("Code élève requis !"); return; }
+        ensureEmptyAnswerBindings();
+        
+        const btn = document.getElementById('btn-envoyer');
+        btn.disabled = true;
+        btn.textContent = "Envoi en cours...";
+
+        if (typeof window.envoyerCopie === 'function') {
+            try {
+                const classeLS = (localStorage.getItem('userClasse') || '').trim();
+                const elevePayload = classeLS
+                    ? { code: code, classe: classeLS, blueprintEmbedded: true, focus: focus }
+                    : { code: code, blueprintEmbedded: true, focus: focus };
+                await window.envoyerCopie(code, { external: 0 }, elevePayload);
+                btn.textContent = "✅ Envoyé !";
+                btn.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+            } catch(e) {
+                console.error(e);
+                alert("Erreur: " + e.message);
+                btn.disabled = false;
+                btn.textContent = "Réessayer";
+            }
+        } else {
+            alert("Système non prêt. Rechargez la page.");
+            btn.disabled = false;
+        }
+    };
+</script>
+
+
+<script>
+    window.__PSE_BLUEPRINT = {
+  "id": "quiz_01",
+  "devoirId": "quiz_01",
+  "titre": "Évaluation PSE : Le Sommeil et les Rythmes Biologiques",
+  "niveau": "Bac Pro",
+  "competences": [
+    "C1",
+    "C2",
+    "C3",
+    "C5"
+  ],
+  "version": "v1",
+  "autocorrect": true,
+  "options": {
+    "antiLeave": true,
+    "antiPaste": true,
+    "maxLeaves": 2
+  },
+  "content": [
+    {
+      "type": "question",
+      "qid": "q_1771005007425_832",
+      "label": "1",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Un cycle de sommeil est composé d'une succession de phases. Quelles sont les deux principales ?",
+      "reponseCorrecte": "q_1771005007425_832_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Un cycle se compose de sommeil lent (léger et profond) et de sommeil paradoxal. Ces deux phases s'alternent environ toutes les 90 minutes.",
+      "options": [
+        {
+          "value": "q_1771005007425_832_opt1",
+          "label": "Le sommeil lent et le sommeil paradoxal"
+        },
+        {
+          "value": "q_1771005007425_832_opt2",
+          "label": "Le sommeil lourd et le sommeil léger"
+        },
+        {
+          "value": "q_1771005007425_832_opt3",
+          "label": "Le sommeil actif et le sommeil passif"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005009590_755",
+      "label": "2",
+      "competence": "C2",
+      "bareme": 4,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "Le sommeil lent profond est la phase qui permet principalement la récupération de la fatigue mentale et la mémorisation.",
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005011606_292",
+      "label": "3",
+      "competence": "C3",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quelle est la conséquence directe d'une dette de sommeil (manque de sommeil) sur l'activité professionnelle ?",
+      "reponseCorrecte": "q_1771005011606_292_opt2",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le manque de sommeil entraîne une hypovigilance (baisse de l'attention), ce qui augmente le risque d'accident du travail.",
+      "options": [
+        {
+          "value": "q_1771005011606_292_opt1",
+          "label": "Une augmentation de la vigilance"
+        },
+        {
+          "value": "q_1771005011606_292_opt2",
+          "label": "Une baisse de concentration et un risque d'accident"
+        },
+        {
+          "value": "q_1771005011606_292_opt3",
+          "label": "Une meilleure humeur avec les collègues"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005013404_968",
+      "label": "4",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Quelle est la durée moyenne d'un cycle de sommeil chez l'adulte (en minutes) ?",
+      "reponseCorrecte": 90,
+      "reponseAttendue": "90",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005015669_34",
+      "label": "5",
+      "competence": "C5",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quelle hormone, sécrétée dans l'obscurité, favorise l'endormissement ?",
+      "reponseCorrecte": "q_1771005015669_34_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "La mélatonine. Elle est sécrétée par le cerveau dès que la lumière baisse pour signaler à l'organisme qu'il est temps de dormir.",
+      "options": [
+        {
+          "value": "q_1771005015669_34_opt1",
+          "label": "La mélatonine"
+        },
+        {
+          "value": "q_1771005015669_34_opt2",
+          "label": "L'adrénaline"
+        },
+        {
+          "value": "q_1771005015669_34_opt3",
+          "label": "Le cortisol"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "type": "question",
+      "qid": "q_1771005007425_832",
+      "label": "1",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Un cycle de sommeil est composé d'une succession de phases. Quelles sont les deux principales ?",
+      "reponseCorrecte": "q_1771005007425_832_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Un cycle se compose de sommeil lent (léger et profond) et de sommeil paradoxal. Ces deux phases s'alternent environ toutes les 90 minutes.",
+      "options": [
+        {
+          "value": "q_1771005007425_832_opt1",
+          "label": "Le sommeil lent et le sommeil paradoxal"
+        },
+        {
+          "value": "q_1771005007425_832_opt2",
+          "label": "Le sommeil lourd et le sommeil léger"
+        },
+        {
+          "value": "q_1771005007425_832_opt3",
+          "label": "Le sommeil actif et le sommeil passif"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005009590_755",
+      "label": "2",
+      "competence": "C2",
+      "bareme": 4,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "Le sommeil lent profond est la phase qui permet principalement la récupération de la fatigue mentale et la mémorisation.",
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005011606_292",
+      "label": "3",
+      "competence": "C3",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quelle est la conséquence directe d'une dette de sommeil (manque de sommeil) sur l'activité professionnelle ?",
+      "reponseCorrecte": "q_1771005011606_292_opt2",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le manque de sommeil entraîne une hypovigilance (baisse de l'attention), ce qui augmente le risque d'accident du travail.",
+      "options": [
+        {
+          "value": "q_1771005011606_292_opt1",
+          "label": "Une augmentation de la vigilance"
+        },
+        {
+          "value": "q_1771005011606_292_opt2",
+          "label": "Une baisse de concentration et un risque d'accident"
+        },
+        {
+          "value": "q_1771005011606_292_opt3",
+          "label": "Une meilleure humeur avec les collègues"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005013404_968",
+      "label": "4",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Quelle est la durée moyenne d'un cycle de sommeil chez l'adulte (en minutes) ?",
+      "reponseCorrecte": 90,
+      "reponseAttendue": "90",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005015669_34",
+      "label": "5",
+      "competence": "C5",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quelle hormone, sécrétée dans l'obscurité, favorise l'endormissement ?",
+      "reponseCorrecte": "q_1771005015669_34_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "La mélatonine. Elle est sécrétée par le cerveau dès que la lumière baisse pour signaler à l'organisme qu'il est temps de dormir.",
+      "options": [
+        {
+          "value": "q_1771005015669_34_opt1",
+          "label": "La mélatonine"
+        },
+        {
+          "value": "q_1771005015669_34_opt2",
+          "label": "L'adrénaline"
+        },
+        {
+          "value": "q_1771005015669_34_opt3",
+          "label": "Le cortisol"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "type": "question",
+      "qid": "q_1771005007425_832",
+      "label": "1",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Un cycle de sommeil est composé d'une succession de phases. Quelles sont les deux principales ?",
+      "reponseCorrecte": "q_1771005007425_832_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Un cycle se compose de sommeil lent (léger et profond) et de sommeil paradoxal. Ces deux phases s'alternent environ toutes les 90 minutes.",
+      "options": [
+        {
+          "value": "q_1771005007425_832_opt1",
+          "label": "Le sommeil lent et le sommeil paradoxal"
+        },
+        {
+          "value": "q_1771005007425_832_opt2",
+          "label": "Le sommeil lourd et le sommeil léger"
+        },
+        {
+          "value": "q_1771005007425_832_opt3",
+          "label": "Le sommeil actif et le sommeil passif"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005009590_755",
+      "label": "2",
+      "competence": "C2",
+      "bareme": 4,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "Le sommeil lent profond est la phase qui permet principalement la récupération de la fatigue mentale et la mémorisation.",
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005011606_292",
+      "label": "3",
+      "competence": "C3",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quelle est la conséquence directe d'une dette de sommeil (manque de sommeil) sur l'activité professionnelle ?",
+      "reponseCorrecte": "q_1771005011606_292_opt2",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le manque de sommeil entraîne une hypovigilance (baisse de l'attention), ce qui augmente le risque d'accident du travail.",
+      "options": [
+        {
+          "value": "q_1771005011606_292_opt1",
+          "label": "Une augmentation de la vigilance"
+        },
+        {
+          "value": "q_1771005011606_292_opt2",
+          "label": "Une baisse de concentration et un risque d'accident"
+        },
+        {
+          "value": "q_1771005011606_292_opt3",
+          "label": "Une meilleure humeur avec les collègues"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005013404_968",
+      "label": "4",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Quelle est la durée moyenne d'un cycle de sommeil chez l'adulte (en minutes) ?",
+      "reponseCorrecte": 90,
+      "reponseAttendue": "90",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771005015669_34",
+      "label": "5",
+      "competence": "C5",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quelle hormone, sécrétée dans l'obscurité, favorise l'endormissement ?",
+      "reponseCorrecte": "q_1771005015669_34_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "La mélatonine. Elle est sécrétée par le cerveau dès que la lumière baisse pour signaler à l'organisme qu'il est temps de dormir.",
+      "options": [
+        {
+          "value": "q_1771005015669_34_opt1",
+          "label": "La mélatonine"
+        },
+        {
+          "value": "q_1771005015669_34_opt2",
+          "label": "L'adrénaline"
+        },
+        {
+          "value": "q_1771005015669_34_opt3",
+          "label": "Le cortisol"
+        }
+      ]
+    }
+  ]
+};
+</script>
+        
+
+<script type="module" src="https://mapse.fr/annuaire.js"></script>
+<script type="module" src="https://mapse.fr/assets/pse-runner.js"></script>
+
+<script>
+    const statusEl = document.getElementById("envoi-status");
+    statusEl.textContent = "Chargement des modules...";
+
+    // Vérification simple : si window.envoyerCopie existe, c'est chargé
+    const checkLoaded = setInterval(() => {
+        if (window.envoyerCopie) {
+            statusEl.textContent = "Système prêt.";
+            statusEl.style.color = "green";
+            console.log("Modules chargés avec succès (méthode directe).");
+            clearInterval(checkLoaded);
+        }
+    }, 500);
+
+    // Sécurité au bout de 10 secondes
+    setTimeout(() => {
+        if (!window.envoyerCopie) {
+            statusEl.textContent = "Si ce message persiste, vérifiez votre connexion ou contactez le support.";
+            statusEl.style.color = "#d35400";
+        }
+    }, 10000);
+</script>
+</body>
+</html>
