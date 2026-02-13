@@ -805,69 +805,32 @@
   ]
 };
 </script>
-        
 
-<script type="module">
+<script type="module" src="https://mapse.fr/annuaire.js"></script>
+<script type="module" src="https://mapse.fr/assets/pse-runner.js"></script>
+
+<script>
     const statusEl = document.getElementById("envoi-status");
-    const segRaw = location.pathname.split("/").filter(Boolean)[0] || "";
-    const seg = segRaw.includes(".") ? "" : segRaw;
-    const prefixes = [];
-    if (seg) prefixes.push("/" + seg);
-    prefixes.push("/PSE");
-    prefixes.push("");
-    const uniquePrefixes = [...new Set(prefixes)];
+    statusEl.textContent = "Chargement des modules...";
 
-    // Fonction de construction d'URL corrigée (Regex propre)
-    function buildUrl(prefix, relPath) {
-        const p = prefix || "";
-        // Correction de la regex: échappement des slashs /\/+$/
-        const base = p ? p.replace(/\/+$/, "") : "";
-        const rel = String(relPath || "").replace(/^\/+/, "");
-        return (base ? base + "/" : "/") + rel;
-    }
-
-    async function importWithPrefixes(fileRelativePath, optionalRelativePaths = []) {
-        let lastError = null;
-        const attempts = [];
-
-        uniquePrefixes.forEach(prefix => attempts.push(buildUrl(prefix, fileRelativePath)));
-        optionalRelativePaths.forEach(opt => {
-            uniquePrefixes.forEach(prefix => attempts.push(buildUrl(prefix, opt)));
-        });
-
-        const uniqueAttempts = [...new Set(attempts)];
-
-        for (const url of uniqueAttempts) {
-            try {
-                console.warn("Tentative import:", url);
-                await import(url);
-                return url;
-            } catch (e) {
-                lastError = e;
-                console.warn("Import échoué:", url, e);
-            }
+    // Vérification simple : si window.envoyerCopie existe, c'est chargé
+    const checkLoaded = setInterval(() => {
+        if (window.envoyerCopie) {
+            statusEl.textContent = "Système prêt.";
+            statusEl.style.color = "green";
+            console.log("Modules chargés avec succès (méthode directe).");
+            clearInterval(checkLoaded);
         }
+    }, 500);
 
-        throw lastError || new Error("Impossible de charger le module: " + fileRelativePath);
-    }
-
-    try {
-        statusEl.textContent = "Chargement des modules...";
-
-        // CORRECTION IMPORTANTE : Utilisation directe de mapse.fr pour éviter les erreurs CORS
-        const annuaireUrl = "https://mapse.fr/annuaire.js";
-        const runnerUrl = "https://mapse.fr/assets/pse-runner.js";
-
-        await import(annuaireUrl);
-        await import(runnerUrl);
-
-        console.log("Modules chargés:", { annuaireUrl, runnerUrl, seg, prefixes: uniquePrefixes });
-        statusEl.textContent = "Système prêt.";
-    } catch(e) {
-        console.error("Erreur modules:", e);
-        statusEl.textContent = "Erreur de chargement des modules (Vérifiez la console).";
-        statusEl.style.color = "red";
-    }
+    // Sécurité au bout de 10 secondes
+    setTimeout(() => {
+        if (!window.envoyerCopie) {
+            statusEl.textContent = "Si ce message persiste, vérifiez votre connexion ou contactez le support.";
+            statusEl.style.color = "#d35400";
+        }
+    }, 10000);
 </script>
+
 </body>
 </html>
