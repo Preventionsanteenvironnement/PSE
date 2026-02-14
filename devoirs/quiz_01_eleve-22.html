@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSE - Évaluation PSE : L'addiction au téléphone portable</title>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #f0f2f5 0%, #e8ecef 100%); 
+            color: #1a1a2e; line-height: 1.6; padding: 12px; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 900px; margin: 0 auto; background: #fff; 
+            border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); overflow: hidden; 
+        }
+        .header { 
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #74b9ff 100%); 
+            color: #fff; padding: 32px 30px; text-align: center; 
+            position: relative; overflow: hidden;
+        }
+        .header::before {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: headerShimmer 6s ease-in-out infinite;
+        }
+        @keyframes headerShimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+        .header h1 { font-size: 1.6em; margin-bottom: 6px; font-weight: 700; position: relative; z-index: 1; }
+        .header .subtitle { font-size: 1.05em; opacity: 0.95; position: relative; z-index: 1; }
+        
+        .competences-box { 
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); 
+            border-left: 5px solid #6c5ce7; margin: 24px 28px; padding: 18px 22px; 
+            border-radius: 0 10px 10px 0; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.08);
+        }
+        .competences-box h3 { color: #6c5ce7; margin-bottom: 12px; font-size: 1em; font-weight: 600; }
+        .competences-box ul { list-style: none; padding: 0; display:flex; gap:12px; flex-wrap:wrap; }
+        .comp-tag { 
+            display: inline-block; background: linear-gradient(135deg, #6c5ce7, #8b5cf6); 
+            color: #fff; padding: 2px 12px; border-radius: 6px; font-weight: 600; 
+            font-size: 0.8em; box-shadow: 0 2px 4px rgba(108, 92, 231, 0.2);
+        }
+        .body-content { padding: 0 28px 28px; }
+        .identification { 
+            background: linear-gradient(135deg, #fff3e0 0%, #fff8f1 100%); 
+            border: 2px solid #ff9800; border-radius: 12px; padding: 18px 22px; 
+            margin: 24px 0; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.1);
+        }
+        .identification h3 { color: #e65100; margin-bottom: 12px; font-weight: 600; }
+        .identification label { font-weight: 600; font-size: 0.9em; margin-right:12px; }
+        .identification input { 
+            padding: 10px 14px; border: 2px solid #ffcc80; border-radius: 8px; 
+            font-size: 0.95em; width: 200px; text-transform: uppercase; 
+            transition: all 0.2s ease; font-weight: 600;
+        }
+        .identification input:focus {
+            border-color: #ff9800; outline: none; 
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .document-box { 
+            background: linear-gradient(135deg, #fff8e1 0%, #fffbef 100%); 
+            border: 1px solid #ffc107; border-radius: 10px; padding: 16px 20px; 
+            margin: 16px 0; font-size: 0.9em; border-left: 6px solid #ffb74d; 
+            box-shadow: 0 3px 10px rgba(255, 193, 7, 0.1);
+        }
+        .document-box h4 { 
+            color: #f57f17; margin-bottom: 10px; font-size: 1.1em; 
+            border-bottom: 2px solid #ffe0b2; padding-bottom: 6px; font-weight: 600;
+        }
+
+        .question-block { 
+            background: linear-gradient(135deg, #fafbff 0%, #f8fafc 100%); 
+            border: 2px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; 
+            margin: 16px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            transition: all 0.2s ease;
+        }
+        .question-block:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .q-label { 
+            display: inline-block; background: linear-gradient(135deg, #6c5ce7, #8b5cf6); 
+            color: #fff; width: 32px; height: 32px; line-height: 32px; text-align: center; 
+            border-radius: 50%; font-size: 0.85em; font-weight: bold; margin-right: 10px; 
+            box-shadow: 0 3px 8px rgba(108, 92, 231, 0.3);
+        }
+        .q-comp { 
+            display: inline-block; background: linear-gradient(135deg, #e8eaf6, #f3e5f5); 
+            color: #3949ab; padding: 3px 10px; border-radius: 6px; font-size: 0.75em; 
+            font-weight: 600; margin-left: 8px; 
+        }
+        .q-points { 
+            float: right; background: linear-gradient(135deg, #e0f7fa, #e1f5fe); 
+            color: #006064; padding: 3px 12px; border-radius: 15px; font-size: 0.78em; 
+            font-weight: 600; 
+        }
+        .q-text { 
+            margin: 12px 0; font-size: 0.95em; font-weight: 500; color: #2c3e50; 
+            line-height: 1.6;
+        }
+        
+        .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .checkbox-group label { 
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; 
+            background: linear-gradient(135deg, #fff 0%, #fafafa 100%); 
+            border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; 
+            font-size: 0.9em; transition: all 0.2s ease;
+        }
+        .checkbox-group label:hover { 
+            background: linear-gradient(135deg, #f3f0ff, #f8f5ff); 
+            border-color: #a29bfe; transform: translateX(4px);
+        }
+        .checkbox-group input { width: 20px; height: 20px; accent-color: #6c5ce7; }
+        
+        .answer-input { 
+            padding: 12px 16px; border: 3px solid #d1c4e9; border-radius: 8px; 
+            font-size: 0.95em; width: 100%; max-width: 320px; 
+            transition: all 0.2s ease; font-weight: 500;
+            resize: none; overflow: hidden; min-height: 40px;
+        }
+        .answer-input:focus {
+            border-color: #6c5ce7; outline: none;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+            transform: translateY(-1px);
+        }
+        .answer-select { 
+            padding: 12px 16px; border: 3px solid #d1c4e9; border-radius: 8px; 
+            font-size: 0.95em; background: #fff; width: 100%; font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .answer-select:focus {
+            border-color: #6c5ce7; outline: none;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+        
+        .eval-table { 
+            width: 100%; border-collapse: collapse; font-size: 0.9em; 
+            margin-top: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-radius: 8px; overflow: hidden;
+        }
+        .eval-table td { 
+            padding: 12px; border-bottom: 1px solid #f0f0f0; 
+            background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+        }
+        
+        .submit-section { text-align: center; margin: 40px 0; }
+        .submit-btn { 
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff; 
+            border: none; padding: 16px 48px; font-size: 1.1em; font-weight: 700; 
+            border-radius: 50px; cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+            position: relative; overflow: hidden;
+        }
+        .submit-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .submit-btn:hover::before { left: 100%; }
+        .submit-btn:hover { 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 12px 35px rgba(108, 92, 231, 0.4); 
+        }
+        .submit-btn:disabled { 
+            background: #bbb; cursor: not-allowed; transform: none; 
+            box-shadow: none;
+        }
+        
+        /* ANIMATIONS */
+        .question-block { animation: slideInUp 0.5s ease-out; }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .body-content { padding: 0 16px 16px; }
+            .competences-box { margin: 16px; }
+            .identification { margin: 16px 0; padding: 16px; }
+            .question-block { margin: 12px 0; padding: 16px; }
+        }
+    </style>
+</head>
+<body data-id-exercice="quiz_01">
+<div class="container">
+    <div class="header">
+        <h1>Évaluation PSE : L'addiction au téléphone portable</h1>
+    </div>
+    <div class="competences-box">
+        <h3>Compétences évaluées</h3>
+        <ul><li><span class="comp-tag">C1</span></li><li><span class="comp-tag">C2</span></li><li><span class="comp-tag">C3</span></li><li><span class="comp-tag">C4</span></li></ul>
+    </div>
+    <div class="body-content">
+
+    <div class="identification">
+        <h3>Identification</h3>
+        <div>
+            <label for="code-eleve">Code élève :</label>
+            <input type="text" id="code-eleve" class="reponse-eleve" data-qid="code_eleve" placeholder="Votre code">
+        </div>
+    </div>
+
+    
+                        <div class="question-block">
+                            <span class="q-label">1</span><span class="q-comp">C2</span><span class="q-points">1 pts</span>
+                            <div class="q-text">Qu'est-ce que la « nomophobie » ?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771048567851_757" value="q_1771048567851_757_opt1" class="reponse-eleve" data-qid="q_1771048567851_757"> La peur d'être sans son téléphone portable</label><label><input type="radio" name="q_1771048567851_757" value="q_1771048567851_757_opt2" class="reponse-eleve" data-qid="q_1771048567851_757"> La peur des ondes électromagnétiques</label></div></div>
+                    <div class="question-block">
+                        <span class="q-label">2</span><span class="q-comp">C2</span><span class="q-points">2 pts</span>
+                        <div class="q-text">La lumière bleue émise par les écrans facilite l'endormissement.</div>
+                        <div class="checkbox-group">
+                            <label><input type="radio" name="q_1771048571916_69" value="vrai" class="reponse-eleve" data-qid="q_1771048571916_69"> Vrai</label>
+                            <label><input type="radio" name="q_1771048571916_69" value="faux" class="reponse-eleve" data-qid="q_1771048571916_69"> Faux</label>
+                        </div>
+                    </div>
+                
+                    <div class="question-block">
+                        <span class="q-label">3</span><span class="q-comp">C4</span><span class="q-points">2 pts</span>
+                        <div class="q-text">Combien d'heures avant le coucher est-il recommandé d'arrêter les écrans pour favoriser un bon sommeil ?</div>
+                        <div><input type="number" class="reponse-eleve answer-input" data-qid="q_1771048575403_601" placeholder="Votre réponse"></div>
+                    </div>
+                
+                    <div class="question-block">
+                        <span class="q-label">4</span><span class="q-comp">C2</span><span class="q-points">2 pts</span>
+                        <div class="q-text">Quel est le seuil de danger (en décibels) pour l'audition lors d'une écoute prolongée avec un casque ?</div>
+                        <div><input type="number" class="reponse-eleve answer-input" data-qid="q_1771048586573_852" placeholder="Votre réponse"></div>
+                    </div>
+                
+                        <div class="question-block">
+                            <span class="q-label">5</span><span class="q-comp">C3</span><span class="q-points">1 pts</span>
+                            <div class="q-text">Quel trouble physique est directement lié à la posture tête penchée sur le téléphone ?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771048587641_975" value="q_1771048587641_975_opt1" class="reponse-eleve" data-qid="q_1771048587641_975"> L'entorse du pouce</label><label><input type="radio" name="q_1771048587641_975" value="q_1771048587641_975_opt2" class="reponse-eleve" data-qid="q_1771048587641_975"> Le syndrome du « Text-Neck » (douleurs cervicales)</label><label><input type="radio" name="q_1771048587641_975" value="q_1771048587641_975_opt3" class="reponse-eleve" data-qid="q_1771048587641_975"> La scoliose lombaire</label></div></div>
+                        <div class="question-block">
+                            <span class="q-label">6</span><span class="q-comp">C4</span><span class="q-points">2 pts</span>
+                            <div class="q-text">Quel comportement social négatif est associé à l'usage excessif du téléphone en présence d'autrui ?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771048602208_195" value="q_1771048602208_195_opt1" class="reponse-eleve" data-qid="q_1771048602208_195"> Le Phubbing (ignorer les autres)</label><label><input type="radio" name="q_1771048602208_195" value="q_1771048602208_195_opt2" class="reponse-eleve" data-qid="q_1771048602208_195"> Le Networking (réseautage)</label></div></div>
+                    <div class="question-block">
+                        <span class="q-label">7</span><span class="q-comp">C1</span><span class="q-points">1 pts</span>
+                        <div class="q-text">Désactiver les notifications non urgentes aide à réduire l'addiction au téléphone.</div>
+                        <div class="checkbox-group">
+                            <label><input type="radio" name="q_1771048604374_240" value="vrai" class="reponse-eleve" data-qid="q_1771048604374_240"> Vrai</label>
+                            <label><input type="radio" name="q_1771048604374_240" value="faux" class="reponse-eleve" data-qid="q_1771048604374_240"> Faux</label>
+                        </div>
+                    </div>
+                
+                    <div class="document-box">
+                        <h4>L'accident de trajet de Julie</h4>
+                        <p>Julie, 19 ans, rentre chez elle à pied après sa journée de cours. Pour passer le temps, elle écoute de la musique avec son casque à réduction de bruit et consulte son fil d'actualité sur son smartphone en marchant. Captivée par son écran, elle s'engage sur un passage piéton sans lever les yeux ni regarder à gauche ou à droite. Elle n'entend pas et ne voit pas arriver une trottinette électrique qui circule sur la chaussée. Le conducteur de la trottinette ne peut pas freiner à temps et percute Julie, qui chute violemment sur le trottoir.</p>
+                    </div>
+                
+                    <div class="question-block">
+                        <span class="q-label">8</span><span class="q-comp">C1</span><span class="q-points">1 pts</span>
+                        <div class="q-text">Compléter le tableau PAD</div>
+                        <div class="table-wrapper">
+                            <table class="eval-table">
+                                <tbody>
+                
+                        <tr>
+                            <td>OPERATEUR</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049349678_887_pad_operateur" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>DANGER</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049349678_887_pad_danger" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>SITUATION_DANGEREUSE</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049349678_887_pad_situation_dangereuse" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>EVENEMENT_DECLENCHEUR</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049349678_887_pad_evenement_declencheur" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>DOMMAGE</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049349678_887_pad_dommage" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                
+                    <div class="question-block">
+                        <span class="q-label">9</span><span class="q-comp">C2</span><span class="q-points">1 pts</span>
+                        <div class="q-text">Compléter le tableau ITAMAMI</div>
+                        <div class="table-wrapper">
+                            <table class="eval-table">
+                                <tbody>
+                
+                        <tr>
+                            <td>INDIVIDU</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049336025_0_itamami_individu" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>TACHE</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049336025_0_itamami_tache" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>ACTIVITE</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049336025_0_itamami_activite" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>MATERIEL</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049336025_0_itamami_materiel" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                        <tr>
+                            <td>MILIEU</td>
+                            <td><textarea class="reponse-eleve answer-input" data-qid="q_1771049336025_0_itamami_milieu" rows="2" style="width:100%; min-height:54px;" placeholder="Votre réponse"></textarea></td>
+                        </tr>
+                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                
+                    <div class="question-block">
+                        <span class="q-label">10</span><span class="q-comp">C3</span><span class="q-points">3 pts</span>
+                        <div class="q-text">réponds a la question</div>
+                        <div class="checkbox-group">
+                            <label><input type="radio" name="q_1771049357529_173" value="vrai" class="reponse-eleve" data-qid="q_1771049357529_173"> Vrai</label>
+                            <label><input type="radio" name="q_1771049357529_173" value="faux" class="reponse-eleve" data-qid="q_1771049357529_173"> Faux</label>
+                        </div>
+                    </div>
+                <div class="document-box" style="background:#f8fafc;border-color:#cbd5e1;"><hr style="border:none;border-top:3px solid #94a3b8;"></div>
+                        <div class="question-block">
+                            <span class="q-label">11</span><span class="q-comp">C1</span><span class="q-points">4 pts</span>
+                            <div class="q-text">est elle imprudente?</div>
+                            <div class="checkbox-group">
+                    <label><input type="radio" name="q_1771049362717_372" value="q_1771049362717_372_opt1" class="reponse-eleve" data-qid="q_1771049362717_372"> oui</label><label><input type="radio" name="q_1771049362717_372" value="q_1771049362717_372_opt2" class="reponse-eleve" data-qid="q_1771049362717_372"> non</label></div></div>
+
+    <div class="submit-section">
+        <button class="submit-btn" id="btn-envoyer" onclick="window.tenterEnvoi()">Envoyer ma copie 📤</button>
+        <p id="envoi-status" style="font-size:0.85em; color:#666; margin-top:12px;">Le système se charge...</p>
+    </div>
+
+    </div>
+</div>
+
+<script>
+    const focus = { focusLeaves: 0, copyAttempts: 0 };
+    function getAntiCheatOptions() {
+        return (window.__PSE_BLUEPRINT && window.__PSE_BLUEPRINT.options) || { antiLeave: true, antiPaste: true, maxLeaves: 2 };
+    }
+
+    // Auto-resize pour les zones de texte
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    // Appliquer l'auto-resize à tous les champs texte
+    document.addEventListener('DOMContentLoaded', function() {
+        const textInputs = document.querySelectorAll('textarea, input[type="text"]');
+        textInputs.forEach(input => {
+            if (input.tagName === 'TEXTAREA') {
+                input.addEventListener('input', () => autoResize(input));
+                autoResize(input); // Taille initiale
+            }
+        });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        const antiCheatOptions = getAntiCheatOptions();
+        if (antiCheatOptions.antiLeave !== false && document.visibilityState === 'hidden') {
+            focus.focusLeaves += 1;
+        }
+    });
+
+    window.addEventListener('blur', () => {
+        const antiCheatOptions = getAntiCheatOptions();
+        if (antiCheatOptions.antiLeave !== false) {
+            focus.focusLeaves += 1;
+        }
+    });
+
+    document.addEventListener('copy', () => {
+        focus.copyAttempts += 1;
+    });
+
+    document.addEventListener('paste', (event) => {
+        const antiCheatOptions = getAntiCheatOptions();
+        focus.copyAttempts += 1;
+        if (antiCheatOptions.antiPaste !== false) {
+            event.preventDefault();
+        }
+    });
+
+    function ensureEmptyAnswerBindings() {
+        const items = Array.isArray(window.__PSE_BLUEPRINT?.content) ? window.__PSE_BLUEPRINT.content : [];
+        const expectedQids = items.map((item) => String(item?.qid || "").trim()).filter(Boolean);
+        expectedQids.forEach((qid) => {
+            const existingFallback = document.querySelector('input.reponse-eleve[type="hidden"][data-qid="' + qid + '"][data-fallback="1"]');
+            const controls = Array.from(document.querySelectorAll('.reponse-eleve[data-qid="' + qid + '"]:not([data-fallback="1"])'));
+            let answered = false;
+            controls.forEach((el) => {
+                const tag = (el.tagName || "").toUpperCase();
+                const type = (el.type || "").toLowerCase();
+                if (type === "radio" || type === "checkbox") {
+                    if (el.checked) answered = true;
+                } else if (tag === "SELECT") {
+                    if ((el.value || "").trim() !== "") answered = true;
+                } else if ((el.value || "").trim() !== "") {
+                    answered = true;
+                }
+            });
+            if (!answered && !existingFallback) {
+                const fallback = document.createElement("input");
+                fallback.type = "hidden";
+                fallback.value = "";
+                fallback.className = "reponse-eleve";
+                fallback.setAttribute("data-qid", qid);
+                fallback.setAttribute("data-fallback", "1");
+                document.body.appendChild(fallback);
+            }
+            if (answered && existingFallback) {
+                existingFallback.remove();
+            }
+        });
+    }
+
+    // Configuration Runner
+    window.tenterEnvoi = async function() {
+        const codeInput = document.getElementById('code-eleve');
+        const code = (codeInput.value || '').trim().toUpperCase();
+        if(!code || code.length < 2) { alert("Code élève requis !"); return; }
+        ensureEmptyAnswerBindings();
+        
+        const btn = document.getElementById('btn-envoyer');
+        btn.disabled = true;
+        btn.textContent = "Envoi en cours...";
+
+        if (typeof window.envoyerCopie === 'function') {
+            try {
+                const classeLS = (localStorage.getItem('userClasse') || '').trim();
+                const elevePayload = classeLS
+                    ? { code: code, classe: classeLS, blueprintEmbedded: true, focus: focus }
+                    : { code: code, blueprintEmbedded: true, focus: focus };
+                await window.envoyerCopie(code, { external: 0 }, elevePayload);
+                btn.textContent = "✅ Envoyé !";
+                btn.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+            } catch(e) {
+                console.error(e);
+                alert("Erreur: " + e.message);
+                btn.disabled = false;
+                btn.textContent = "Réessayer";
+            }
+        } else {
+            alert("Système non prêt. Rechargez la page.");
+            btn.disabled = false;
+        }
+    };
+</script>
+
+
+<script>
+    window.__PSE_BLUEPRINT = {
+  "id": "quiz_01",
+  "devoirId": "quiz_01",
+  "titre": "Évaluation PSE : L'addiction au téléphone portable",
+  "niveau": "Bac Pro",
+  "competences": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "version": "v1",
+  "autocorrect": true,
+  "options": {
+    "antiLeave": true,
+    "antiPaste": true,
+    "maxLeaves": 2
+  },
+  "content": [
+    {
+      "type": "question",
+      "qid": "q_1771048567851_757",
+      "label": "1",
+      "competence": "C2",
+      "bareme": 1,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Qu'est-ce que la « nomophobie » ?",
+      "reponseCorrecte": "q_1771048567851_757_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "La nomophobie (de l'anglais « no mobile phobia ») est la peur excessive d'être séparé de son téléphone portable ou de ne pas pouvoir l'utiliser.",
+      "options": [
+        {
+          "value": "q_1771048567851_757_opt1",
+          "label": "La peur d'être sans son téléphone portable"
+        },
+        {
+          "value": "q_1771048567851_757_opt2",
+          "label": "La peur des ondes électromagnétiques"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048571916_69",
+      "label": "2",
+      "competence": "C2",
+      "bareme": 2,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "La lumière bleue émise par les écrans facilite l'endormissement.",
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048575403_601",
+      "label": "3",
+      "competence": "C4",
+      "bareme": 2,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Combien d'heures avant le coucher est-il recommandé d'arrêter les écrans pour favoriser un bon sommeil ?",
+      "reponseCorrecte": 1,
+      "reponseAttendue": "1",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048586573_852",
+      "label": "4",
+      "competence": "C2",
+      "bareme": 2,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Quel est le seuil de danger (en décibels) pour l'audition lors d'une écoute prolongée avec un casque ?",
+      "reponseCorrecte": 85,
+      "reponseAttendue": "85",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048587641_975",
+      "label": "5",
+      "competence": "C3",
+      "bareme": 1,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quel trouble physique est directement lié à la posture tête penchée sur le téléphone ?",
+      "reponseCorrecte": "q_1771048587641_975_opt2",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le « Text-Neck » (syndrome du cou du texto) est causé par la flexion constante de la nuque, entraînant des douleurs cervicales et des maux de tête.",
+      "options": [
+        {
+          "value": "q_1771048587641_975_opt1",
+          "label": "L'entorse du pouce"
+        },
+        {
+          "value": "q_1771048587641_975_opt2",
+          "label": "Le syndrome du « Text-Neck » (douleurs cervicales)"
+        },
+        {
+          "value": "q_1771048587641_975_opt3",
+          "label": "La scoliose lombaire"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048602208_195",
+      "label": "6",
+      "competence": "C4",
+      "bareme": 2,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quel comportement social négatif est associé à l'usage excessif du téléphone en présence d'autrui ?",
+      "reponseCorrecte": "q_1771048602208_195_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le « Phubbing » (télé-snobisme) consiste à ignorer la personne avec qui l'on est pour consulter son téléphone.",
+      "options": [
+        {
+          "value": "q_1771048602208_195_opt1",
+          "label": "Le Phubbing (ignorer les autres)"
+        },
+        {
+          "value": "q_1771048602208_195_opt2",
+          "label": "Le Networking (réseautage)"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048604374_240",
+      "label": "7",
+      "competence": "C1",
+      "bareme": 1,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "Désactiver les notifications non urgentes aide à réduire l'addiction au téléphone.",
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
+    },
+    {
+      "type": "doc",
+      "docId": "dg_1771049327657_372",
+      "docTitle": "L'accident de trajet de Julie",
+      "docContent": "Julie, 19 ans, rentre chez elle à pied après sa journée de cours. Pour passer le temps, elle écoute de la musique avec son casque à réduction de bruit et consulte son fil d'actualité sur son smartphone en marchant. Captivée par son écran, elle s'engage sur un passage piéton sans lever les yeux ni regarder à gauche ou à droite. Elle n'entend pas et ne voit pas arriver une trottinette électrique qui circule sur la chaussée. Le conducteur de la trottinette ne peut pas freiner à temps et percute Julie, qui chute violemment sur le trottoir."
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_operateur",
+      "label": "8.1",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — OPERATEUR",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_danger",
+      "label": "8.2",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — DANGER",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_situation_dangereuse",
+      "label": "8.3",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — SITUATION_DANGEREUSE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_evenement_declencheur",
+      "label": "8.4",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — EVENEMENT_DECLENCHEUR",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_dommage",
+      "label": "8.5",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — DOMMAGE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_individu",
+      "label": "9.1",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — INDIVIDU",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_tache",
+      "label": "9.2",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — TACHE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_activite",
+      "label": "9.3",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — ACTIVITE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_materiel",
+      "label": "9.4",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — MATERIEL",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_milieu",
+      "label": "9.5",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — MILIEU",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049357529_173",
+      "label": "10",
+      "competence": "C3",
+      "bareme": 3,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "réponds a la question",
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049362717_372",
+      "label": "11",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "est elle imprudente?",
+      "reponseCorrecte": "q_1771049362717_372_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "oui",
+      "options": [
+        {
+          "value": "q_1771049362717_372_opt1",
+          "label": "oui"
+        },
+        {
+          "value": "q_1771049362717_372_opt2",
+          "label": "non"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "type": "question",
+      "qid": "q_1771048567851_757",
+      "label": "1",
+      "competence": "C2",
+      "bareme": 1,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Qu'est-ce que la « nomophobie » ?",
+      "reponseCorrecte": "q_1771048567851_757_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "La nomophobie (de l'anglais « no mobile phobia ») est la peur excessive d'être séparé de son téléphone portable ou de ne pas pouvoir l'utiliser.",
+      "options": [
+        {
+          "value": "q_1771048567851_757_opt1",
+          "label": "La peur d'être sans son téléphone portable"
+        },
+        {
+          "value": "q_1771048567851_757_opt2",
+          "label": "La peur des ondes électromagnétiques"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048571916_69",
+      "label": "2",
+      "competence": "C2",
+      "bareme": 2,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "La lumière bleue émise par les écrans facilite l'endormissement.",
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048575403_601",
+      "label": "3",
+      "competence": "C4",
+      "bareme": 2,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Combien d'heures avant le coucher est-il recommandé d'arrêter les écrans pour favoriser un bon sommeil ?",
+      "reponseCorrecte": 1,
+      "reponseAttendue": "1",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048586573_852",
+      "label": "4",
+      "competence": "C2",
+      "bareme": 2,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Quel est le seuil de danger (en décibels) pour l'audition lors d'une écoute prolongée avec un casque ?",
+      "reponseCorrecte": 85,
+      "reponseAttendue": "85",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048587641_975",
+      "label": "5",
+      "competence": "C3",
+      "bareme": 1,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quel trouble physique est directement lié à la posture tête penchée sur le téléphone ?",
+      "reponseCorrecte": "q_1771048587641_975_opt2",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le « Text-Neck » (syndrome du cou du texto) est causé par la flexion constante de la nuque, entraînant des douleurs cervicales et des maux de tête.",
+      "options": [
+        {
+          "value": "q_1771048587641_975_opt1",
+          "label": "L'entorse du pouce"
+        },
+        {
+          "value": "q_1771048587641_975_opt2",
+          "label": "Le syndrome du « Text-Neck » (douleurs cervicales)"
+        },
+        {
+          "value": "q_1771048587641_975_opt3",
+          "label": "La scoliose lombaire"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048602208_195",
+      "label": "6",
+      "competence": "C4",
+      "bareme": 2,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quel comportement social négatif est associé à l'usage excessif du téléphone en présence d'autrui ?",
+      "reponseCorrecte": "q_1771048602208_195_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le « Phubbing » (télé-snobisme) consiste à ignorer la personne avec qui l'on est pour consulter son téléphone.",
+      "options": [
+        {
+          "value": "q_1771048602208_195_opt1",
+          "label": "Le Phubbing (ignorer les autres)"
+        },
+        {
+          "value": "q_1771048602208_195_opt2",
+          "label": "Le Networking (réseautage)"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048604374_240",
+      "label": "7",
+      "competence": "C1",
+      "bareme": 1,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "Désactiver les notifications non urgentes aide à réduire l'addiction au téléphone.",
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
+    },
+    {
+      "type": "doc",
+      "docId": "dg_1771049327657_372",
+      "docTitle": "L'accident de trajet de Julie",
+      "docContent": "Julie, 19 ans, rentre chez elle à pied après sa journée de cours. Pour passer le temps, elle écoute de la musique avec son casque à réduction de bruit et consulte son fil d'actualité sur son smartphone en marchant. Captivée par son écran, elle s'engage sur un passage piéton sans lever les yeux ni regarder à gauche ou à droite. Elle n'entend pas et ne voit pas arriver une trottinette électrique qui circule sur la chaussée. Le conducteur de la trottinette ne peut pas freiner à temps et percute Julie, qui chute violemment sur le trottoir."
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_operateur",
+      "label": "8.1",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — OPERATEUR",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_danger",
+      "label": "8.2",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — DANGER",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_situation_dangereuse",
+      "label": "8.3",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — SITUATION_DANGEREUSE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_evenement_declencheur",
+      "label": "8.4",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — EVENEMENT_DECLENCHEUR",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_dommage",
+      "label": "8.5",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — DOMMAGE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_individu",
+      "label": "9.1",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — INDIVIDU",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_tache",
+      "label": "9.2",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — TACHE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_activite",
+      "label": "9.3",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — ACTIVITE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_materiel",
+      "label": "9.4",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — MATERIEL",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_milieu",
+      "label": "9.5",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — MILIEU",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049357529_173",
+      "label": "10",
+      "competence": "C3",
+      "bareme": 3,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "réponds a la question",
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049362717_372",
+      "label": "11",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "est elle imprudente?",
+      "reponseCorrecte": "q_1771049362717_372_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "oui",
+      "options": [
+        {
+          "value": "q_1771049362717_372_opt1",
+          "label": "oui"
+        },
+        {
+          "value": "q_1771049362717_372_opt2",
+          "label": "non"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "type": "question",
+      "qid": "q_1771048567851_757",
+      "label": "1",
+      "competence": "C2",
+      "bareme": 1,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Qu'est-ce que la « nomophobie » ?",
+      "reponseCorrecte": "q_1771048567851_757_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "La nomophobie (de l'anglais « no mobile phobia ») est la peur excessive d'être séparé de son téléphone portable ou de ne pas pouvoir l'utiliser.",
+      "options": [
+        {
+          "value": "q_1771048567851_757_opt1",
+          "label": "La peur d'être sans son téléphone portable"
+        },
+        {
+          "value": "q_1771048567851_757_opt2",
+          "label": "La peur des ondes électromagnétiques"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048571916_69",
+      "label": "2",
+      "competence": "C2",
+      "bareme": 2,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "La lumière bleue émise par les écrans facilite l'endormissement.",
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048575403_601",
+      "label": "3",
+      "competence": "C4",
+      "bareme": 2,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Combien d'heures avant le coucher est-il recommandé d'arrêter les écrans pour favoriser un bon sommeil ?",
+      "reponseCorrecte": 1,
+      "reponseAttendue": "1",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048586573_852",
+      "label": "4",
+      "competence": "C2",
+      "bareme": 2,
+      "inputType": "number",
+      "autocorrect": true,
+      "questionText": "Quel est le seuil de danger (en décibels) pour l'audition lors d'une écoute prolongée avec un casque ?",
+      "reponseCorrecte": 85,
+      "reponseAttendue": "85",
+      "tolerance": 0
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048587641_975",
+      "label": "5",
+      "competence": "C3",
+      "bareme": 1,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quel trouble physique est directement lié à la posture tête penchée sur le téléphone ?",
+      "reponseCorrecte": "q_1771048587641_975_opt2",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le « Text-Neck » (syndrome du cou du texto) est causé par la flexion constante de la nuque, entraînant des douleurs cervicales et des maux de tête.",
+      "options": [
+        {
+          "value": "q_1771048587641_975_opt1",
+          "label": "L'entorse du pouce"
+        },
+        {
+          "value": "q_1771048587641_975_opt2",
+          "label": "Le syndrome du « Text-Neck » (douleurs cervicales)"
+        },
+        {
+          "value": "q_1771048587641_975_opt3",
+          "label": "La scoliose lombaire"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048602208_195",
+      "label": "6",
+      "competence": "C4",
+      "bareme": 2,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "Quel comportement social négatif est associé à l'usage excessif du téléphone en présence d'autrui ?",
+      "reponseCorrecte": "q_1771048602208_195_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "Le « Phubbing » (télé-snobisme) consiste à ignorer la personne avec qui l'on est pour consulter son téléphone.",
+      "options": [
+        {
+          "value": "q_1771048602208_195_opt1",
+          "label": "Le Phubbing (ignorer les autres)"
+        },
+        {
+          "value": "q_1771048602208_195_opt2",
+          "label": "Le Networking (réseautage)"
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "qid": "q_1771048604374_240",
+      "label": "7",
+      "competence": "C1",
+      "bareme": 1,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "Désactiver les notifications non urgentes aide à réduire l'addiction au téléphone.",
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
+    },
+    {
+      "type": "doc",
+      "docId": "dg_1771049327657_372",
+      "docTitle": "L'accident de trajet de Julie",
+      "docContent": "Julie, 19 ans, rentre chez elle à pied après sa journée de cours. Pour passer le temps, elle écoute de la musique avec son casque à réduction de bruit et consulte son fil d'actualité sur son smartphone en marchant. Captivée par son écran, elle s'engage sur un passage piéton sans lever les yeux ni regarder à gauche ou à droite. Elle n'entend pas et ne voit pas arriver une trottinette électrique qui circule sur la chaussée. Le conducteur de la trottinette ne peut pas freiner à temps et percute Julie, qui chute violemment sur le trottoir."
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_operateur",
+      "label": "8.1",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — OPERATEUR",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_danger",
+      "label": "8.2",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — DANGER",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_situation_dangereuse",
+      "label": "8.3",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — SITUATION_DANGEREUSE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_evenement_declencheur",
+      "label": "8.4",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — EVENEMENT_DECLENCHEUR",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049349678_887_pad_dommage",
+      "label": "8.5",
+      "competence": "C1",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau PAD — DOMMAGE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_individu",
+      "label": "9.1",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — INDIVIDU",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_tache",
+      "label": "9.2",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — TACHE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_activite",
+      "label": "9.3",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — ACTIVITE",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_materiel",
+      "label": "9.4",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — MATERIEL",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049336025_0_itamami_milieu",
+      "label": "9.5",
+      "competence": "C2",
+      "bareme": 0.2,
+      "inputType": "texte_exact",
+      "autocorrect": false,
+      "besoinCorrectionManuelle": true,
+      "questionText": "Compléter le tableau ITAMAMI — MILIEU",
+      "reponseCorrecte": [],
+      "reponseAttendue": "",
+      "explication": "",
+      "reponseEleve": ""
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049357529_173",
+      "label": "10",
+      "competence": "C3",
+      "bareme": 3,
+      "inputType": "vrai_faux",
+      "autocorrect": true,
+      "questionText": "réponds a la question",
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
+    },
+    {
+      "type": "question",
+      "qid": "q_1771049362717_372",
+      "label": "11",
+      "competence": "C1",
+      "bareme": 4,
+      "inputType": "checkbox",
+      "autocorrect": true,
+      "besoinCorrectionManuelle": false,
+      "questionText": "est elle imprudente?",
+      "reponseCorrecte": "q_1771049362717_372_opt1",
+      "reponseEleve": "",
+      "correctionMode": "single_exact",
+      "reponseAttendue": "oui",
+      "options": [
+        {
+          "value": "q_1771049362717_372_opt1",
+          "label": "oui"
+        },
+        {
+          "value": "q_1771049362717_372_opt2",
+          "label": "non"
+        }
+      ]
+    }
+  ]
+};
+</script>
+        
+
+<script type="module" src="https://mapse.fr/annuaire.js"></script>
+<script type="module" src="https://mapse.fr/assets/pse-runner.js"></script>
+
+<script>
+    const statusEl = document.getElementById("envoi-status");
+    statusEl.textContent = "Chargement des modules...";
+
+    // Vérification simple : si window.envoyerCopie existe, c'est chargé
+    const checkLoaded = setInterval(() => {
+        if (window.envoyerCopie) {
+            statusEl.textContent = "Système prêt.";
+            statusEl.style.color = "green";
+            console.log("Modules chargés avec succès (méthode directe).");
+            clearInterval(checkLoaded);
+        }
+    }, 500);
+
+    // Sécurité au bout de 10 secondes
+    setTimeout(() => {
+        if (!window.envoyerCopie) {
+            statusEl.textContent = "Si ce message persiste, vérifiez votre connexion ou contactez le support.";
+            statusEl.style.color = "#d35400";
+        }
+    }, 10000);
+</script>
+</body>
+</html>
