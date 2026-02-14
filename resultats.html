@@ -176,13 +176,17 @@
         .answer-section-grid { background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
         .correction-section-grid { background: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
         .comment-section-grid { background: #fffbeb; border-left: 4px solid #fbbf24; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+        .explication-section-grid { background: #ede9fe; border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+        .question-bareme-grid { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 0.8em; color: #64748b; }
         .section-label-grid { font-weight: 600; margin-bottom: 8px; font-size: 0.95em; }
         .section-content-grid { line-height: 1.6; white-space: pre-wrap; }
         .answer-section-grid .section-label-grid { color: #1e40af; }
         .correction-section-grid .section-label-grid { color: #166534; }
+        .explication-section-grid .section-label-grid { color: #6d28d9; }
         .comment-section-grid .section-label-grid { color: #78350f; }
         .answer-section-grid .section-content-grid { color: #0f172a; }
         .correction-section-grid .section-content-grid { color: #166534; }
+        .explication-section-grid .section-content-grid { color: #5b21b6; }
         .comment-section-grid .section-content-grid { color: #78350f; font-style: italic; }
         
         @media print {
@@ -190,6 +194,8 @@
             .comp-table thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .comp-table td[style*="background"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .question-card-grid { page-break-inside: avoid; }
+            .explication-section-grid { background: #ede9fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .question-bareme-grid { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         
         /* === CHARTS === */
@@ -201,20 +207,38 @@
         /* === PRINT STYLES === */
         @media print {
             @page { size: A4; margin: 15mm; }
-            body { background: white; max-width: 100%; }
-            header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { background: white !important; max-width: 100%; }
+
+            /* Masquer TOUT sauf le contenu du modal */
+            header, main, .login-screen, .results-screen, .student-banner,
+            .stats-grid, .tabs, .tab-content, #modalInfo { display: none !important; }
+
+            /* Afficher uniquement le modal de détail */
+            .modal-overlay.active { display: block !important; position: static !important; background: none !important; padding: 0 !important; }
+            .modal-content { max-height: none !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; }
+            .modal-header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .modal-body { padding: 10px !important; }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            .modal-header { background: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            /* Forcer les couleurs des sections */
             .appreciation-block { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .question-card { page-break-inside: avoid; border: 1px solid #e2e8f0; }
-            .comp-badge-large, .badge-M, .badge-A, .badge-I, .badge-NT { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .answer-section-grid { background: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .correction-section-grid { background: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .explication-section-grid { background: #ede9fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .comment-section-grid { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .competences-table-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .comp-badge-large, .badge-M, .badge-A, .badge-I, .badge-NT,
+            .question-level-grid, .question-comp-grid, .question-bareme-grid { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            /* Questions : éviter la coupure en milieu de question */
+            .question-card, .question-card-grid { page-break-inside: avoid; border: 1px solid #e2e8f0; }
+
+            /* Anciens styles (rétro-compat) */
             .answer-section { background: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .evaluation-section { background: #fef3c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .comment-section { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .correction-section { background: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .modal-content { max-height: none; box-shadow: none; }
-            .modal-body { padding: 10px; }
         }
         
         /* === PRINT HEADER === */
@@ -1568,14 +1592,19 @@
             if (!evaluation || !evaluation.estCorrige) return;
             
             console.log("📄 Ouverture détail:", evaluation.devoirId);
-            
-            // Charger le blueprint depuis CockpitPSE
-            let blueprint = null;
-            try {
-                const resp = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
-                if (resp.ok) blueprint = await resp.json();
-            } catch (e) {
-                console.warn("⚠️ Blueprint non trouvé:", e);
+
+            // Charger le blueprint : d'abord depuis l'évaluation Firestore, sinon fallback GitHub Pages
+            let blueprint = evaluation.evaluation?.blueprint || null;
+            if (blueprint) {
+                console.log("✅ Blueprint chargé depuis Firestore (embarqué)");
+            } else {
+                console.log("⚠️ Blueprint absent de Firestore, fallback GitHub Pages...");
+                try {
+                    const resp = await fetch(`https://preventionsanteenvironnement.github.io/CockpitPSE/${evaluation.devoirId}_blueprint.json?ts=${Date.now()}`, { cache: "no-store" });
+                    if (resp.ok) blueprint = await resp.json();
+                } catch (e) {
+                    console.warn("⚠️ Blueprint non trouvé:", e);
+                }
             }
             
             // Charger le fichier correction depuis CockpitPSE (optionnel)
@@ -1755,66 +1784,94 @@
             `;
             
             if (blueprint && blueprint.content) {
+                // Helper : convertir un ID d'option en label lisible
+                const optionToLabel = (val, options) => {
+                    if (!Array.isArray(options) || !options.length) return val;
+                    const found = options.find(o => String(o.value || o.id || "").trim() === String(val).trim());
+                    return found ? (found.label || found.text || val) : val;
+                };
+
+                let qNumber = 0;
                 blueprint.content.forEach((item, idx) => {
                     if (item.type === 'question') {
+                        qNumber++;
                         const qid = item.qid;
-                        const label = item.label || `Q${idx + 1}`;
+                        const label = item.label || `${qNumber}`;
                         const questionText = item.questionText || "Question";
                         const competence = item.competence || "";
-                        
+                        const bareme = item.bareme || 0;
+                        const options = item.options || [];
+
                         // Chercher la réponse
-                        let reponse = evaluation.reponses[qid] || 
-                                     evaluation.reponses[label] || 
+                        let reponseRaw = evaluation.reponses[qid] ||
+                                     evaluation.reponses[label] ||
                                      evaluation.reponses[`Q${label}`] ||
                                      evaluation.reponses[`q_${idx}`] ||
-                                     "<i>Non répondu</i>";
-                        
-                        if (Array.isArray(reponse)) {
-                            reponse = reponse.map(r => `• ${r}`).join('<br>');
+                                     null;
+
+                        let reponse = "<i>Non répondu</i>";
+                        if (reponseRaw !== null && reponseRaw !== undefined && reponseRaw !== "") {
+                            if (Array.isArray(reponseRaw)) {
+                                // Traduire IDs d'options en labels (QRM/QCU)
+                                reponse = reponseRaw.map(r => `• ${optionToLabel(r, options)}`).join('<br>');
+                            } else {
+                                reponse = optionToLabel(String(reponseRaw), options);
+                            }
                         }
-                        
+
                         // Récupérer l'évaluation
                         const questionEval = evaluation.questions[qid] || evaluation.questions[label] || {};
                         const niveau = questionEval.level || "NT";
                         const commentaire = questionEval.comment || "";
-                        
+
                         const niveauLabels = {
                             M: "🟢 Maîtrisé",
-                            A: "🔵 Acceptable",
+                            A: "🔵 Acquis",
                             I: "🟠 Insuffisant",
                             NT: "⚪ Non Traité"
                         };
-                        
-                        // Chercher la correction dans le BLUEPRINT (reponseAttendue)
+
+                        // Correction = reponseAttendue (la bonne réponse)
                         let correctionText = "";
-                        if (blueprint && blueprint.content) {
-                            const bp = blueprint.content.find(c => c.qid === qid || c.label === label);
-                            if (bp && bp.reponseAttendue) {
-                                correctionText = bp.reponseAttendue.replace(/\n/g, '<br>');
-                            }
+                        if (item.reponseAttendue) {
+                            correctionText = String(item.reponseAttendue).replace(/\n/g, '<br>');
                         }
-                        
+
+                        // Explication = explication pédagogique (séparée de la correction)
+                        let explicationText = "";
+                        if (item.explication && item.explication !== item.reponseAttendue) {
+                            explicationText = String(item.explication).replace(/\n/g, '<br>');
+                        }
+
                         html += `
                             <div class="question-card-grid">
                                 <div class="question-header-grid">
-                                    <div class="question-number-grid">Question ${idx + 1}</div>
+                                    <div class="question-number-grid">Q${label}</div>
                                     ${competence ? `<div class="question-comp-grid">${competence}</div>` : ''}
+                                    ${bareme ? `<div class="question-bareme-grid">${bareme} pt${bareme > 1 ? 's' : ''}</div>` : ''}
                                     <div class="question-level-grid badge-${niveau}">${niveauLabels[niveau] || niveau}</div>
                                 </div>
                                 <div class="question-text-grid">${questionText}</div>
-                                
+
                                 <div class="answer-section-grid">
                                     <div class="section-label-grid">✍️ Ta réponse</div>
                                     <div class="section-content-grid">${reponse}</div>
                                 </div>
-                                
+
                                 ${correctionText ? `
                                     <div class="correction-section-grid">
-                                        <div class="section-label-grid">🎯 Correction attendue</div>
+                                        <div class="section-label-grid">✅ Correction</div>
                                         <div class="section-content-grid">${correctionText}</div>
                                     </div>
                                 ` : ''}
-                                
+
+                                ${explicationText ? `
+                                    <div class="explication-section-grid">
+                                        <div class="section-label-grid">📖 Explication</div>
+                                        <div class="section-content-grid">${explicationText}</div>
+                                    </div>
+                                ` : ''}
+
                                 ${commentaire ? `
                                     <div class="comment-section-grid">
                                         <div class="section-label-grid">💬 Commentaire du professeur</div>
