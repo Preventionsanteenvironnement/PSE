@@ -329,4 +329,27 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
   }
 };
 
+// ════════════════════════════════════════════════════════════════
+// DEMANDE DE 2ÈME CHANCE (à distance)
+// ════════════════════════════════════════════════════════════════
+window.demander2eChanceFirestore = async function (eleveCode, devoirId, classe) {
+  const docId = `${eleveCode}_${devoirId}`;
+  await setDoc(doc(db, "demandes_2chance", docId), {
+    eleveCode: eleveCode,
+    devoirId: devoirId,
+    classe: classe || "?",
+    status: "en_attente",
+    createdAt: serverTimestamp(),
+    createdAtISO: new Date().toISOString()
+  });
+  console.log("📩 Demande 2ème chance envoyée:", docId);
+};
+
+window.verifier2eChanceFirestore = async function (eleveCode, devoirId) {
+  const docId = `${eleveCode}_${devoirId}`;
+  const snap = await getDoc(doc(db, "demandes_2chance", docId));
+  if (!snap.exists()) return null;
+  return snap.data().status; // "en_attente", "acceptee", "refusee"
+};
+
 console.log("✅ window.envoyerCopie prêt (v7.2.0 RGPD - resultats/{eleveCode}/copies/)");
