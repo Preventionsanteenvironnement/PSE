@@ -11,7 +11,7 @@
 // ════════════════════════════════════════════════════════════════════════
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -263,6 +263,22 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     const isSecondeChance = !!(eleveData && eleveData.secondeChance);
     const existingSnap = await getDoc(doc(db, "resultats", eleveCode, "copies", stableDocId));
     if (existingSnap.exists() && !isSecondeChance) {
+      // ── ALERTE DOUBLON → notification Firestore pour l'enseignant ──
+      try {
+        await addDoc(collection(db, "alertes_doublons"), {
+          eleveCode: eleveCode,
+          classe: classe,
+          devoirId: devoirId,
+          titre: titre,
+          type: "doublon",
+          message: eleveCode + " a tenté de renvoyer sa copie pour « " + titre + " »",
+          createdAt: serverTimestamp(),
+          lu: false
+        });
+        console.log("🔔 Alerte doublon envoyée à Firestore");
+      } catch (alertErr) {
+        console.warn("⚠️ Impossible d'envoyer l'alerte doublon:", alertErr);
+      }
       throw new Error("Vous avez déjà envoyé une copie pour cet exercice. Une seule soumission est autorisée.");
     }
 
