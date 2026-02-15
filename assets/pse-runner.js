@@ -1,14 +1,17 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.1.3 (RGPD COMPLIANT + Firebase SAFE)
+// pse-runner.js - Version 7.2.0 (RGPD COMPLIANT + Firebase SAFE)
 // Collection : resultats/{eleveCode}/copies/{docId}
-// Date : 10 février 2026
+// Date : 15 février 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
 // Fix : init Firebase SAFE (évite double initializeApp si annuaire.js est chargé)
 // Fix : blueprint embarqué dans la copie (priorité window.__PSE_BLUEPRINT, fallback JSON)
+// Fix : focus (focusLeaves, copyAttempts, pasteBlocked) sauvegardé dans Firestore
+// Fix : anti-doublon — une seule soumission par élève et par devoir
+// Fix : suppression alert/écran qui écrasait le récépissé du Master
 // ════════════════════════════════════════════════════════════════════════
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -23,7 +26,7 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🚀 PSE Runner v7.1.3 RGPD - resultats/{eleveCode}/copies/");
+console.log("🚀 PSE Runner v7.2.0 RGPD - resultats/{eleveCode}/copies/");
 
 // ────────────────────────────────────────────────────────────────────────
 // UTIL : charger le blueprint (optionnel) pour l'embarquer dans la copie
@@ -254,6 +257,24 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     const blueprintEmbedded = !!blueprint;
 
     // ════════════════════════════════════════════════════════════════
+    // ANTI-DOUBLON : vérifier si une copie existe déjà pour ce devoir
+    // ════════════════════════════════════════════════════════════════
+    const stableDocId = `${devoirId}_copie`;
+    const existingSnap = await getDoc(doc(db, "resultats", eleveCode, "copies", stableDocId));
+    if (existingSnap.exists()) {
+      throw new Error("Vous avez déjà envoyé une copie pour cet exercice. Une seule soumission est autorisée.");
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // FOCUS / ANTI-TRICHE (transmis par le Master via eleveData.focus)
+    // ════════════════════════════════════════════════════════════════
+    const focusData = (eleveData && eleveData.focus) ? {
+      focusLeaves: Number(eleveData.focus.focusLeaves) || 0,
+      copyAttempts: Number(eleveData.focus.copyAttempts) || 0,
+      pasteBlocked: Number(eleveData.focus.pasteBlocked) || 0
+    } : { focusLeaves: 0, copyAttempts: 0, pasteBlocked: 0 };
+
+    // ════════════════════════════════════════════════════════════════
     // DOCUMENT (RGPD)
     // ════════════════════════════════════════════════════════════════
     const data = {
@@ -276,6 +297,7 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 
       temps_secondes: tempsSecondes,
       pasteStats: pasteStats || { total: 0, external: 0, document: 0 },
+      focus: focusData,
 
       blueprint: blueprint,
       blueprintEmbedded: blueprintEmbedded,
@@ -286,51 +308,22 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     };
 
     // ════════════════════════════════════════════════════════════════
-    // ÉCRITURE resultats/{eleveCode}/copies/{docId}
+    // ÉCRITURE resultats/{eleveCode}/copies/{stableDocId}
     // ════════════════════════════════════════════════════════════════
-    const docId = `${devoirId}_${Date.now()}`;
-    const docPath = `resultats/${eleveCode}/copies/${docId}`;
+    const docPath = `resultats/${eleveCode}/copies/${stableDocId}`;
 
-    await setDoc(doc(db, "resultats", eleveCode, "copies", docId), data);
+    await setDoc(doc(db, "resultats", eleveCode, "copies", stableDocId), data);
 
     console.log("✅ Envoyé dans:", docPath);
-
-    alert(
-      "✅ COPIE ENVOYÉE !\n\n" +
-        "👤 Code : " +
-        eleveCode +
-        "\n" +
-        "📝 " +
-        titre +
-        "\n" +
-        "📊 Réponses: " +
-        Object.keys(reponses).length
-    );
 
     // Nettoyage localStorage
     localStorage.removeItem("paste_log_" + devoirId);
     localStorage.removeItem(startKey);
-
-    // Écran de confirmation
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;padding:20px;">
-        <div style="font-size:4rem;">✅</div>
-        <h1 style="color:#16a34a;">Copie envoyée !</h1>
-        <p style="color:#64748b;margin-top:10px;">
-          Code : ${eleveCode}<br>
-          ${titre}<br>
-          ${Object.keys(reponses).length} réponses enregistrées
-        </p>
-        <p style="color:#94a3b8;margin-top:20px;font-size:0.9em;">
-          Vous pouvez fermer cette fenêtre.
-        </p>
-      </div>
-    `;
   } catch (error) {
     console.error("❌ Erreur:", error);
-    alert("❌ ERREUR: " + error.message);
+    // Ne pas afficher d'alert ici : le Master (envoyerDefinitivement) gère l'affichage
     throw error;
   }
 };
 
-console.log("✅ window.envoyerCopie prêt (v7.1.3 RGPD - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.2.0 RGPD - resultats/{eleveCode}/copies/)");
