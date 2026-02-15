@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.2.0 (RGPD COMPLIANT + Firebase SAFE)
+// pse-runner.js - Version 7.3.0 (RGPD COMPLIANT + Firebase SAFE)
 // Collection : resultats/{eleveCode}/copies/{docId}
 // Date : 15 février 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
@@ -8,6 +8,8 @@
 // Fix : focus (focusLeaves, copyAttempts, pasteBlocked) sauvegardé dans Firestore
 // Fix : anti-doublon — une seule soumission par élève et par devoir
 // Fix : suppression alert/écran qui écrasait le récépissé du Master
+// Fix : alerte doublon Firestore (collection alertes_doublons) pour l'enseignant
+// Fix : données chrono sauvegardées dans la copie élève
 // ════════════════════════════════════════════════════════════════════════
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -321,6 +323,14 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 
       tentative: isSecondeChance ? 2 : 1,
 
+      chrono: (eleveData && eleveData.chrono) ? {
+        actif: !!eleveData.chrono.actif,
+        minutesAllouees: Number(eleveData.chrono.minutesAllouees) || 0,
+        secondesRestantes: Number(eleveData.chrono.secondesRestantes) || 0,
+        tempsUtiliseSec: eleveData.chrono.tempsUtiliseSec != null ? Number(eleveData.chrono.tempsUtiliseSec) : null,
+        tempsEcoule: !!eleveData.chrono.tempsEcoule
+      } : { actif: false },
+
       createdAt: serverTimestamp(),
       createdAtISO: new Date().toISOString(),
       ts: Date.now()
@@ -368,4 +378,4 @@ window.verifier2eChanceFirestore = async function (eleveCode, devoirId) {
   return snap.data().status; // "en_attente", "acceptee", "refusee"
 };
 
-console.log("✅ window.envoyerCopie prêt (v7.2.0 RGPD - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.3.0 RGPD - resultats/{eleveCode}/copies/)");
