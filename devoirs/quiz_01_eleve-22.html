@@ -302,9 +302,112 @@
             .pse-recepisse-box { box-shadow: none !important; max-width: 100% !important; }
             .pse-recepisse-box .btn-print { display: none !important; }
         }
+        /* ── Chronomètre ── */
+        .pse-chrono-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 800;
+            background: #1e293b; color: #fff; display: none;
+            align-items: center; justify-content: center; gap: 10px;
+            padding: 6px 16px; font-size: 0.9em; font-weight: 600;
+        }
+        .pse-chrono-bar.visible { display: flex; }
+        .pse-chrono-bar.warning { background: #dc2626; animation: pulse-chrono 1s infinite; }
+        @keyframes pulse-chrono { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+        .pse-chrono-bar + .pse-overlay { top: 38px; }
+        body.has-chrono { padding-top: 38px; }
+        /* ── 2ème chance overlay ── */
+        .pse-2chance-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 9997;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .pse-2chance-overlay.active { display: flex; }
+        /* ── 2ème chance : choix des options ── */
+        .pse-2chance-options {
+            display: none; flex-direction: column; gap: 10px;
+            background: #fff; border-radius: 16px; padding: 30px;
+            max-width: 440px; width: 100%; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .pse-2chance-options.active { display: flex; }
+        .pse-2chance-opt-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 12px;
+            background: #fff; cursor: pointer; text-align: left; font-size: 0.95em;
+            transition: all 0.2s;
+        }
+        .pse-2chance-opt-btn:hover { border-color: #6366f1; background: #f5f3ff; }
+        .pse-2chance-opt-btn .opt-icon { font-size: 1.5em; }
+        .pse-2chance-opt-btn .opt-label { font-weight: 600; }
+        .pse-2chance-opt-btn .opt-desc { font-size: 0.8em; color: #64748b; margin-top: 2px; }
+        .pse-2chance-status {
+            display: none; flex-direction: column; align-items: center; gap: 12px;
+            background: #fff; border-radius: 16px; padding: 30px;
+            max-width: 440px; width: 100%; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .pse-2chance-status.active { display: flex; }
+        .pse-2chance-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #6366f1; border-radius: 50%; animation: spin2c 0.8s linear infinite; }
+        @keyframes spin2c { to { transform: rotate(360deg); } }
+        .pse-2chance-box {
+            background: #fff; border-radius: 16px; padding: 30px; max-width: 420px;
+            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .pse-2chance-box input {
+            width: 160px; text-align: center; font-size: 1.5em; letter-spacing: 8px;
+            padding: 10px; border: 2px solid #cbd5e1; border-radius: 10px; margin: 16px 0;
+        }
     </style>
 </head>
 <body data-id-exercice="quiz_01">
+
+<!-- ── CHRONOMÈTRE (discret, en haut) ── -->
+<div class="pse-chrono-bar" id="pse-chrono-bar">
+    <span>⏱️</span>
+    <span id="pse-chrono-display">--:--</span>
+    <span id="pse-chrono-label" style="font-weight:400; font-size:0.85em; opacity:0.8;">restantes</span>
+</div>
+
+<!-- ── 2ÈME CHANCE (code prof) ── -->
+<div class="pse-2chance-overlay" id="pse-2chance-overlay">
+    <div class="pse-2chance-box">
+        <h2>🔄 2ème tentative</h2>
+        <p style="color:#64748b; margin:8px 0 16px;">Votre copie a déjà été envoyée.<br>Pour une 2ème tentative, entrez le <b>code enseignant</b>.</p>
+        <input type="text" id="pse-2chance-input" placeholder="····" maxlength="4" autocomplete="off" inputmode="numeric">
+        <p class="err" id="pse-2chance-err" style="color:#dc2626; font-size:0.85em; display:none;">Code incorrect</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
+            <button onclick="document.getElementById('pse-2chance-overlay').classList.remove('active')" style="padding:10px 20px; border:1px solid #cbd5e1; background:#fff; border-radius:8px; cursor:pointer;">Annuler</button>
+            <button id="pse-btn-2chance-valider" style="padding:10px 20px; background:#6366f1; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Valider</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── 2ÈME CHANCE : choix du mode ── -->
+<div class="pse-2chance-overlay" id="pse-2chance-choice-overlay">
+    <div class="pse-2chance-options" id="pse-2chance-options" style="display:flex;">
+        <h2 style="margin:0 0 4px;">🔄 2ème tentative</h2>
+        <p style="color:#64748b; margin:0 0 16px; font-size:0.9em;">Votre copie a déjà été envoyée. Choisissez comment obtenir une 2ème tentative :</p>
+        <button class="pse-2chance-opt-btn" onclick="choisir2eChanceCode()">
+            <span class="opt-icon">🔑</span>
+            <div><div class="opt-label">Code enseignant (en classe)</div><div class="opt-desc">Demandez le code à votre professeur</div></div>
+        </button>
+        <button class="pse-2chance-opt-btn" id="btn-2chance-distance" onclick="choisir2eChanceDistance()">
+            <span class="opt-icon">📩</span>
+            <div><div class="opt-label">Demander à distance</div><div class="opt-desc">Envoyez une demande, le professeur validera</div></div>
+        </button>
+        <button onclick="document.getElementById('pse-2chance-choice-overlay').classList.remove('active')" style="margin-top:8px; padding:10px 20px; border:1px solid #cbd5e1; background:#fff; border-radius:8px; cursor:pointer; color:#64748b;">Annuler</button>
+    </div>
+</div>
+
+<!-- ── 2ÈME CHANCE : attente validation à distance ── -->
+<div class="pse-2chance-overlay" id="pse-2chance-wait-overlay">
+    <div class="pse-2chance-status" id="pse-2chance-wait-box" style="display:flex;">
+        <div class="pse-2chance-spinner"></div>
+        <h2 style="margin:0;">📩 Demande envoyée</h2>
+        <p style="color:#64748b; margin:0; font-size:0.9em;" id="pse-2chance-wait-msg">Votre demande a été transmise au professeur.<br>Cette page se met à jour automatiquement.</p>
+        <p style="color:#94a3b8; font-size:0.8em; margin:0;" id="pse-2chance-wait-timer">Vérification dans 5s...</p>
+        <button onclick="annuler2eChanceAttente()" style="margin-top:8px; padding:10px 20px; border:1px solid #cbd5e1; background:#fff; border-radius:8px; cursor:pointer; color:#64748b;">Annuler</button>
+    </div>
+</div>
 
 <!-- ── OVERLAY IDENTIFICATION ── -->
 <div class="pse-overlay" id="pse-overlay-id">
@@ -323,6 +426,12 @@
             <li>📝 Répondez à <b>toutes les questions</b> avant d'envoyer</li>
             <li>✅ Une fois envoyé, vous ne pourrez <b>pas modifier</b> vos réponses</li>
         </ul>
+        <div id="pse-chrono-warning" style="display:none; margin:16px 0 8px; padding:14px; background:linear-gradient(135deg,#fef3c7,#fffbeb); border:2px solid #f59e0b; border-radius:12px; text-align:center;">
+            <div style="font-size:1.8em; margin-bottom:6px;">⏱️</div>
+            <div style="font-size:1.1em; font-weight:700; color:#92400e;">Épreuve chronométrée</div>
+            <div style="font-size:1.4em; font-weight:800; color:#dc2626; margin:6px 0;" id="pse-chrono-announce">--:--</div>
+            <div style="font-size:0.85em; color:#78716c;">Le chronomètre démarre dès que vous cliquez sur <b>Commencer</b>.<br>L'envoi sera <b>automatique</b> à la fin du temps.</div>
+        </div>
         <button class="btn-accept" id="pse-btn-accepter">J'ai compris, commencer l'évaluation</button>
     </div>
 </div>
@@ -556,6 +665,14 @@
             // Passer à l'écran d'avertissement
             document.getElementById('pse-step-code').style.display = 'none';
             document.getElementById('pse-step-warning').style.display = 'block';
+
+            // Afficher l'info chrono si activé
+            const optsWarn = getAntiCheatOptions();
+            if (optsWarn.chrono && optsWarn.chronoMinutes > 0) {
+                const m = optsWarn.chronoMinutes;
+                document.getElementById('pse-chrono-warning').style.display = 'block';
+                document.getElementById('pse-chrono-announce').textContent = m + ' minute' + (m > 1 ? 's' : '');
+            }
         }
 
         btnValider.addEventListener('click', validerCode);
@@ -569,6 +686,12 @@
             // Enregistrer l'heure de début
             const devoirId = document.body.dataset.idExercice || 'unknown';
             localStorage.setItem('devoir_start_time_' + devoirId, Date.now().toString());
+
+            // ── Chronomètre (si activé) ──
+            const opts = getAntiCheatOptions();
+            if (opts.chrono && opts.chronoMinutes > 0) {
+                startChrono(opts.chronoMinutes);
+            }
         });
 
         // Auto-resize textareas
@@ -585,6 +708,255 @@
     function autoResize(el) {
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // CHRONOMÈTRE
+    // ═══════════════════════════════════════════════════════
+    let chronoInterval = null;
+    let chronoSecondsLeft = 0;
+
+    function startChrono(minutes) {
+        const bar = document.getElementById('pse-chrono-bar');
+        const display = document.getElementById('pse-chrono-display');
+        bar.classList.add('visible');
+        bar.classList.remove('warning');
+        document.body.classList.add('has-chrono');
+        document.getElementById('pse-chrono-label').textContent = 'restantes';
+        chronoSecondsLeft = minutes * 60;
+
+        // Affichage immédiat
+        display.textContent = String(minutes).padStart(2, '0') + ':00';
+
+        chronoInterval = setInterval(() => {
+            chronoSecondsLeft--;
+            if (chronoSecondsLeft <= 0) {
+                clearInterval(chronoInterval);
+                display.textContent = "00:00";
+                bar.classList.add('warning');
+                document.getElementById('pse-chrono-label').textContent = "TEMPS ÉCOULÉ — envoi automatique !";
+                // Envoi automatique SANS confirmation
+                const code = (document.getElementById('code-eleve').value || '').trim().toUpperCase();
+                const totalQ = (window.__PSE_BLUEPRINT?.content || []).filter(i => i.type === 'question').length;
+                const missing = typeof getUnansweredQuestions === 'function' ? getUnansweredQuestions() : [];
+                const answered = totalQ - missing.length;
+                envoyerDefinitivement(code, totalQ, answered);
+                return;
+            }
+            const m = Math.floor(chronoSecondsLeft / 60);
+            const s = chronoSecondsLeft % 60;
+            display.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            // Alerte visuelle dans les 2 dernières minutes
+            if (chronoSecondsLeft <= 120 && !bar.classList.contains('warning')) {
+                bar.classList.add('warning');
+            }
+        }, 1000);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 2ÈME CHANCE
+    // ═══════════════════════════════════════════════════════
+    let isSecondeChance = false;
+
+    function demander2eChance() {
+        const opts = getAntiCheatOptions();
+        if (!opts.secondeChance || !opts.codeProf) {
+            alert("La 2ème tentative n'est pas activée pour cet exercice.");
+            return;
+        }
+        document.getElementById('pse-2chance-overlay').classList.add('active');
+        const input = document.getElementById('pse-2chance-input');
+        input.value = '';
+        input.focus();
+    }
+
+    // Event listeners pour 2ème chance
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn2 = document.getElementById('pse-btn-2chance-valider');
+        const input2 = document.getElementById('pse-2chance-input');
+        if (btn2) {
+            btn2.addEventListener('click', valider2eChance);
+        }
+        if (input2) {
+            input2.addEventListener('keypress', (e) => { if (e.key === 'Enter') valider2eChance(); });
+        }
+    });
+
+    function valider2eChance() {
+        const opts = getAntiCheatOptions();
+        const input = document.getElementById('pse-2chance-input');
+        const err = document.getElementById('pse-2chance-err');
+        const code = (input.value || '').trim();
+        if (code === opts.codeProf) {
+            isSecondeChance = true;
+            document.getElementById('pse-2chance-overlay').classList.remove('active');
+            // Réactiver le bouton d'envoi
+            const btn = document.getElementById('btn-envoyer');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '📤 Envoyer (2ème tentative)';
+                btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            }
+            // Reset le chrono si actif
+            if (opts.chrono && opts.chronoMinutes > 0) {
+                if (chronoInterval) clearInterval(chronoInterval);
+                const bar = document.getElementById('pse-chrono-bar');
+                bar.classList.remove('warning');
+                document.getElementById('pse-chrono-label').textContent = 'restantes';
+                startChrono(opts.chronoMinutes);
+            }
+        } else {
+            err.style.display = 'block';
+            input.classList.add('shake');
+            setTimeout(() => input.classList.remove('shake'), 400);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 2ÈME CHANCE : OPTIONS (code prof OU demande à distance)
+    // ═══════════════════════════════════════════════════════
+    let pollingInterval2c = null;
+
+    function afficher2eChanceOptions(btn, opts) {
+        // Désactiver le bouton d'envoi
+        btn.textContent = '⛔ Déjà envoyé';
+        btn.style.background = '#94a3b8';
+        btn.disabled = true;
+
+        // Si code prof configuré → montrer le bouton "en classe"
+        const btnCodeProf = document.querySelector('#pse-2chance-options .pse-2chance-opt-btn:first-of-type');
+        if (btnCodeProf) btnCodeProf.style.display = opts.codeProf ? 'flex' : 'none';
+
+        // Toujours montrer le bouton distance (Firestore)
+        const btnDistance = document.getElementById('btn-2chance-distance');
+        if (btnDistance) btnDistance.style.display = 'flex';
+
+        // Si un seul mode est disponible, on saute directement
+        if (!opts.codeProf) {
+            // Pas de code prof → directement demande à distance
+            choisir2eChanceDistance();
+            return;
+        }
+
+        // Ouvrir l'overlay de choix (les deux modes sont disponibles)
+        document.getElementById('pse-2chance-choice-overlay').classList.add('active');
+    }
+
+    function choisir2eChanceCode() {
+        // Fermer l'overlay de choix, ouvrir l'overlay code prof
+        document.getElementById('pse-2chance-choice-overlay').classList.remove('active');
+        demander2eChance();
+    }
+
+    function choisir2eChanceDistance() {
+        const devoirId = document.body.dataset.idExercice || 'unknown';
+        const eleveCode = (localStorage.getItem('userCode') || '').toUpperCase().trim();
+        const classe = (localStorage.getItem('userClasse') || '').trim() || '?';
+
+        if (!eleveCode || eleveCode.length < 2) {
+            alert('Code élève introuvable. Rechargez la page.');
+            return;
+        }
+
+        // Fermer l'overlay de choix
+        document.getElementById('pse-2chance-choice-overlay').classList.remove('active');
+
+        // Envoyer la demande via Firestore
+        if (typeof window.demander2eChanceFirestore === 'function') {
+            window.demander2eChanceFirestore(eleveCode, devoirId, classe).then(() => {
+                // Ouvrir l'overlay d'attente
+                document.getElementById('pse-2chance-wait-overlay').classList.add('active');
+                // Démarrer le polling
+                demarrerPolling2eChance(eleveCode, devoirId);
+            }).catch(err => {
+                console.error('Erreur demande 2ème chance:', err);
+                alert('Erreur lors de la demande. Réessayez.');
+            });
+        } else {
+            alert("Le système de demande à distance n'est pas disponible.");
+        }
+    }
+
+    function demarrerPolling2eChance(eleveCode, devoirId) {
+        let countdown = 5;
+        const timerEl = document.getElementById('pse-2chance-wait-timer');
+        const msgEl = document.getElementById('pse-2chance-wait-msg');
+
+        // Countdown visuel
+        const countdownTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                timerEl.textContent = 'Vérification dans ' + countdown + 's...';
+            } else {
+                timerEl.textContent = 'Vérification en cours...';
+            }
+        }, 1000);
+
+        // Polling toutes les 5 secondes
+        pollingInterval2c = setInterval(async () => {
+            try {
+                if (typeof window.verifier2eChanceFirestore !== 'function') return;
+                const status = await window.verifier2eChanceFirestore(eleveCode, devoirId);
+
+                if (status === 'acceptee') {
+                    // Approuvé !
+                    clearInterval(pollingInterval2c);
+                    clearInterval(countdownTimer);
+                    pollingInterval2c = null;
+
+                    isSecondeChance = true;
+
+                    // Fermer l'overlay d'attente
+                    document.getElementById('pse-2chance-wait-overlay').classList.remove('active');
+
+                    // Réactiver le bouton d'envoi
+                    const btn = document.getElementById('btn-envoyer');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '📤 Envoyer (2ème tentative)';
+                        btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                    }
+
+                    // Reset le chrono si actif
+                    const opts = getAntiCheatOptions();
+                    if (opts.chrono && opts.chronoMinutes > 0) {
+                        if (chronoInterval) clearInterval(chronoInterval);
+                        const bar = document.getElementById('pse-chrono-bar');
+                        if (bar) bar.classList.remove('warning');
+                        const label = document.getElementById('pse-chrono-label');
+                        if (label) label.textContent = 'restantes';
+                        startChrono(opts.chronoMinutes);
+                    }
+
+                } else if (status === 'refusee') {
+                    // Refusé
+                    clearInterval(pollingInterval2c);
+                    clearInterval(countdownTimer);
+                    pollingInterval2c = null;
+
+                    msgEl.innerHTML = '❌ <b>Demande refusée</b> par le professeur.';
+                    timerEl.textContent = '';
+                    // Masquer le spinner
+                    const spinner = document.querySelector('#pse-2chance-wait-box .pse-2chance-spinner');
+                    if (spinner) spinner.style.display = 'none';
+
+                } else {
+                    // Toujours en attente — reset countdown
+                    countdown = 5;
+                    timerEl.textContent = 'Vérification dans 5s...';
+                }
+            } catch (err) {
+                console.error('Erreur polling 2ème chance:', err);
+            }
+        }, 5000);
+    }
+
+    function annuler2eChanceAttente() {
+        if (pollingInterval2c) {
+            clearInterval(pollingInterval2c);
+            pollingInterval2c = null;
+        }
+        document.getElementById('pse-2chance-wait-overlay').classList.remove('active');
     }
 
     // ── ANTI-TRICHE : Sortie de page ──
@@ -723,19 +1095,33 @@
             try {
                 const classeLS = (localStorage.getItem('userClasse') || '').trim();
                 const elevePayload = classeLS
-                    ? { code: code, classe: classeLS, blueprintEmbedded: true, focus: focus }
-                    : { code: code, blueprintEmbedded: true, focus: focus };
+                    ? { code: code, classe: classeLS, blueprintEmbedded: true, focus: focus, secondeChance: isSecondeChance }
+                    : { code: code, blueprintEmbedded: true, focus: focus, secondeChance: isSecondeChance };
                 await window.envoyerCopie(code, { external: focus.pasteBlocked }, elevePayload);
                 btn.textContent = '✅ Envoyé !';
                 btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+                // Arrêter le chrono
+                if (chronoInterval) clearInterval(chronoInterval);
 
                 // Afficher le récépissé
                 showRecepisse(code, totalQ, answered);
             } catch(e) {
                 console.error(e);
-                alert('Erreur: ' + e.message);
-                btn.disabled = false;
-                btn.textContent = 'Réessayer';
+                if (e.message && e.message.includes('déjà envoyé')) {
+                    const opts = getAntiCheatOptions();
+                    if (opts.secondeChance && !isSecondeChance) {
+                        // 2ème chance disponible — afficher les deux options
+                        afficher2eChanceOptions(btn, opts);
+                    } else {
+                        btn.textContent = '⛔ Déjà envoyé';
+                        btn.style.background = '#94a3b8';
+                        alert(e.message);
+                    }
+                } else {
+                    alert('Erreur: ' + e.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Réessayer';
+                }
             }
         } else {
             alert('Système non prêt. Rechargez la page.');
@@ -789,907 +1175,13 @@
     "antiLeave": true,
     "antiPaste": true,
     "maxLeaves": 2,
-    "recepisse": false
+    "recepisse": false,
+    "secondeChance": false,
+    "codeProf": "",
+    "chrono": false,
+    "chronoMinutes": 0
   },
   "content": [
-    {
-      "type": "question",
-      "qid": "q_1771053064030_178",
-      "label": "1",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Qu'est-ce que la « nomophobie » ?",
-      "reponseCorrecte": "q_1771053064030_178_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "La nomophobie est la peur excessive d'être séparé de son téléphone portable (ou d'être sans réseau/batterie).",
-      "options": [
-        {
-          "value": "q_1771053064030_178_opt1",
-          "label": "La peur des ondes électromagnétiques"
-        },
-        {
-          "value": "q_1771053064030_178_opt2",
-          "label": "La peur d'être sans son téléphone portable"
-        },
-        {
-          "value": "q_1771053064030_178_opt3",
-          "label": "La peur de recevoir des appels inconnus"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053064474_100",
-      "label": "2",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel est l'effet principal de la lumière bleue des écrans sur le sommeil ?",
-      "reponseCorrecte": "q_1771053064474_100_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Elle bloque la sécrétion de mélatonine, l'hormone qui favorise l'endormissement.",
-      "options": [
-        {
-          "value": "q_1771053064474_100_opt1",
-          "label": "Elle aide à s'endormir plus vite"
-        },
-        {
-          "value": "q_1771053064474_100_opt2",
-          "label": "Elle retarde l'endormissement en bloquant la mélatonine"
-        },
-        {
-          "value": "q_1771053064474_100_opt3",
-          "label": "Elle améliore la qualité des rêves"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053064828_294",
-      "label": "3",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Qu'appelle-t-on le « Text-Neck » ?",
-      "reponseCorrecte": "q_1771053064828_294_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Ce sont des douleurs cervicales causées par la posture tête penchée pour regarder l'écran.",
-      "options": [
-        {
-          "value": "q_1771053064828_294_opt1",
-          "label": "Des douleurs cervicales liées à la posture penchée"
-        },
-        {
-          "value": "q_1771053064828_294_opt2",
-          "label": "Une crampe au pouce à force d'écrire"
-        },
-        {
-          "value": "q_1771053064828_294_opt3",
-          "label": "Une fatigue visuelle intense"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053065085_237",
-      "label": "4",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Qu'est-ce que le « Phubbing » ?",
-      "reponseCorrecte": "q_1771053065085_237_opt3",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Le Phubbing (télé-snobisme) est le fait d'ignorer les personnes présentes physiquement pour consulter son téléphone.",
-      "options": [
-        {
-          "value": "q_1771053065085_237_opt1",
-          "label": "Le piratage de données personnelles"
-        },
-        {
-          "value": "q_1771053065085_237_opt2",
-          "label": "L'envoi de messages publicitaires"
-        },
-        {
-          "value": "q_1771053065085_237_opt3",
-          "label": "Le fait d'ignorer son entourage pour regarder son téléphone"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053065302_451",
-      "label": "5",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel est un risque majeur de l'écoute prolongée de musique à fort volume avec un casque ?",
-      "reponseCorrecte": "q_1771053065302_451_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Le risque principal est la perte d'audition irréversible (surdité précoce) et les acouphènes.",
-      "options": [
-        {
-          "value": "q_1771053065302_451_opt1",
-          "label": "La déshydratation"
-        },
-        {
-          "value": "q_1771053065302_451_opt2",
-          "label": "La perte d'audition irréversible"
-        },
-        {
-          "value": "q_1771053065302_451_opt3",
-          "label": "L'augmentation de la vue"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053065644_345",
-      "label": "6",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel signe peut indiquer une cyberaddiction ?",
-      "reponseCorrecte": "q_1771053065644_345_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Le repli sur soi, l'isolement social et l'abandon des autres activités sont des signes d'alerte.",
-      "options": [
-        {
-          "value": "q_1771053065644_345_opt1",
-          "label": "L'isolement social et le délaissement des activités"
-        },
-        {
-          "value": "q_1771053065644_345_opt2",
-          "label": "Une meilleure organisation du travail"
-        },
-        {
-          "value": "q_1771053065644_345_opt3",
-          "label": "L'augmentation de l'activité physique"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053067716_632",
-      "label": "7",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Que signifie le DAS (Débit d'Absorption Spécifique) d'un téléphone ?",
-      "reponseCorrecte": "q_1771053067716_632_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "C'est l'indice qui mesure la quantité d'énergie (ondes) absorbée par le corps lors de l'utilisation de l'appareil.",
-      "options": [
-        {
-          "value": "q_1771053067716_632_opt1",
-          "label": "La vitesse de connexion internet"
-        },
-        {
-          "value": "q_1771053067716_632_opt2",
-          "label": "La quantité d'ondes absorbées par le corps"
-        },
-        {
-          "value": "q_1771053067716_632_opt3",
-          "label": "La capacité de stockage de la mémoire"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053072173_189",
-      "label": "8",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Consulter son téléphone au volant multiplie le risque d'accident par 3.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053072607_1",
-      "label": "9",
-      "competence": "C1",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Le cerveau des adolescents est plus sensible aux addictions que celui des adultes.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053074151_115",
-      "label": "10",
-      "competence": "C5",
-      "bareme": 1,
-      "inputType": "number",
-      "autocorrect": true,
-      "questionText": "Combien d'heures avant le coucher est-il conseillé d'arrêter les écrans ?",
-      "reponseCorrecte": 1,
-      "reponseAttendue": "1",
-      "tolerance": 0
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053079684_41",
-      "label": "11",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quelle astuce permet de réduire la fatigue visuelle liée aux écrans ?",
-      "reponseCorrecte": "q_1771053079684_41_opt3",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "La règle du 20-20-20 : toutes les 20 minutes, regarder à 20 pieds (6m) pendant 20 secondes.",
-      "options": [
-        {
-          "value": "q_1771053079684_41_opt1",
-          "label": "Augmenter la luminosité au maximum"
-        },
-        {
-          "value": "q_1771053079684_41_opt2",
-          "label": "Regarder l'écran dans le noir complet"
-        },
-        {
-          "value": "q_1771053079684_41_opt3",
-          "label": "Faire des pauses régulières pour regarder au loin"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053080232_609",
-      "label": "12",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Comment limiter son exposition aux ondes lors d'un appel ?",
-      "reponseCorrecte": "q_1771053080232_609_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Utiliser un kit mains-libres ou le haut-parleur éloigne le téléphone de la tête.",
-      "options": [
-        {
-          "value": "q_1771053080232_609_opt1",
-          "label": "Utiliser un kit mains-libres"
-        },
-        {
-          "value": "q_1771053080232_609_opt2",
-          "label": "Coller le téléphone à l'oreille"
-        },
-        {
-          "value": "q_1771053080232_609_opt3",
-          "label": "Appeler uniquement dans les ascenseurs"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053088182_449",
-      "label": "13",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Le cyberharcèlement est puni par la loi.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053088786_643",
-      "label": "14",
-      "competence": "C4",
-      "bareme": 1,
-      "inputType": "number",
-      "autocorrect": true,
-      "questionText": "Quel est le seuil de danger pour l'audition (en décibels) ?",
-      "reponseCorrecte": 85,
-      "reponseAttendue": "85",
-      "tolerance": 0
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053093307_270",
-      "label": "15",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "number",
-      "autocorrect": true,
-      "questionText": "Quelle distance minimale (en cm) est recommandée entre les yeux et l'écran ?",
-      "reponseCorrecte": 30,
-      "reponseAttendue": "30",
-      "tolerance": 0
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053095339_103",
-      "label": "16",
-      "competence": "C1",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel est l'impact environnemental majeur de la fabrication des smartphones ?",
-      "reponseCorrecte": "q_1771053095339_103_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "L'extraction de métaux rares (terres rares) qui est très polluante.",
-      "options": [
-        {
-          "value": "q_1771053095339_103_opt1",
-          "label": "L'utilisation de papier"
-        },
-        {
-          "value": "q_1771053095339_103_opt2",
-          "label": "L'extraction de métaux rares et la pollution"
-        },
-        {
-          "value": "q_1771053095339_103_opt3",
-          "label": "La consommation d'eau potable lors de l'appel"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053099587_595",
-      "label": "17",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quelle est une bonne pratique de « Digital Detox » ?",
-      "reponseCorrecte": "q_1771053099587_595_opt3",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Désactiver les notifications et définir des zones « sans téléphone » (ex: à table).",
-      "options": [
-        {
-          "value": "q_1771053099587_595_opt1",
-          "label": "Acheter un deuxième téléphone"
-        },
-        {
-          "value": "q_1771053099587_595_opt2",
-          "label": "Dormir avec son téléphone"
-        },
-        {
-          "value": "q_1771053099587_595_opt3",
-          "label": "Désactiver les notifications non essentielles"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053105855_707",
-      "label": "18",
-      "competence": "C4",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Pourquoi est-il dangereux de marcher en regardant son téléphone (« Smombie ») ?",
-      "reponseCorrecte": "q_1771053105855_707_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "On perd la perception de l'environnement (visuelle et auditive), risquant chutes et collisions.",
-      "options": [
-        {
-          "value": "q_1771053105855_707_opt1",
-          "label": "Risque de chute ou de collision par inattention"
-        },
-        {
-          "value": "q_1771053105855_707_opt2",
-          "label": "Risque d'améliorer son endurance"
-        },
-        {
-          "value": "q_1771053105855_707_opt3",
-          "label": "Risque de perdre du réseau"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053107025_83",
-      "label": "19",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Le téléphone portable est autorisé en classe au lycée et en CFA sans restriction.",
-      "reponseCorrecte": "faux",
-      "reponseAttendue": "Faux"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053110503_999",
-      "label": "20",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Les notifications stimulent le circuit de la récompense (dopamine) dans le cerveau.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    }
-  ],
-  "questions": [
-    {
-      "type": "question",
-      "qid": "q_1771053064030_178",
-      "label": "1",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Qu'est-ce que la « nomophobie » ?",
-      "reponseCorrecte": "q_1771053064030_178_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "La nomophobie est la peur excessive d'être séparé de son téléphone portable (ou d'être sans réseau/batterie).",
-      "options": [
-        {
-          "value": "q_1771053064030_178_opt1",
-          "label": "La peur des ondes électromagnétiques"
-        },
-        {
-          "value": "q_1771053064030_178_opt2",
-          "label": "La peur d'être sans son téléphone portable"
-        },
-        {
-          "value": "q_1771053064030_178_opt3",
-          "label": "La peur de recevoir des appels inconnus"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053064474_100",
-      "label": "2",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel est l'effet principal de la lumière bleue des écrans sur le sommeil ?",
-      "reponseCorrecte": "q_1771053064474_100_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Elle bloque la sécrétion de mélatonine, l'hormone qui favorise l'endormissement.",
-      "options": [
-        {
-          "value": "q_1771053064474_100_opt1",
-          "label": "Elle aide à s'endormir plus vite"
-        },
-        {
-          "value": "q_1771053064474_100_opt2",
-          "label": "Elle retarde l'endormissement en bloquant la mélatonine"
-        },
-        {
-          "value": "q_1771053064474_100_opt3",
-          "label": "Elle améliore la qualité des rêves"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053064828_294",
-      "label": "3",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Qu'appelle-t-on le « Text-Neck » ?",
-      "reponseCorrecte": "q_1771053064828_294_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Ce sont des douleurs cervicales causées par la posture tête penchée pour regarder l'écran.",
-      "options": [
-        {
-          "value": "q_1771053064828_294_opt1",
-          "label": "Des douleurs cervicales liées à la posture penchée"
-        },
-        {
-          "value": "q_1771053064828_294_opt2",
-          "label": "Une crampe au pouce à force d'écrire"
-        },
-        {
-          "value": "q_1771053064828_294_opt3",
-          "label": "Une fatigue visuelle intense"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053065085_237",
-      "label": "4",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Qu'est-ce que le « Phubbing » ?",
-      "reponseCorrecte": "q_1771053065085_237_opt3",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Le Phubbing (télé-snobisme) est le fait d'ignorer les personnes présentes physiquement pour consulter son téléphone.",
-      "options": [
-        {
-          "value": "q_1771053065085_237_opt1",
-          "label": "Le piratage de données personnelles"
-        },
-        {
-          "value": "q_1771053065085_237_opt2",
-          "label": "L'envoi de messages publicitaires"
-        },
-        {
-          "value": "q_1771053065085_237_opt3",
-          "label": "Le fait d'ignorer son entourage pour regarder son téléphone"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053065302_451",
-      "label": "5",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel est un risque majeur de l'écoute prolongée de musique à fort volume avec un casque ?",
-      "reponseCorrecte": "q_1771053065302_451_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Le risque principal est la perte d'audition irréversible (surdité précoce) et les acouphènes.",
-      "options": [
-        {
-          "value": "q_1771053065302_451_opt1",
-          "label": "La déshydratation"
-        },
-        {
-          "value": "q_1771053065302_451_opt2",
-          "label": "La perte d'audition irréversible"
-        },
-        {
-          "value": "q_1771053065302_451_opt3",
-          "label": "L'augmentation de la vue"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053065644_345",
-      "label": "6",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel signe peut indiquer une cyberaddiction ?",
-      "reponseCorrecte": "q_1771053065644_345_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Le repli sur soi, l'isolement social et l'abandon des autres activités sont des signes d'alerte.",
-      "options": [
-        {
-          "value": "q_1771053065644_345_opt1",
-          "label": "L'isolement social et le délaissement des activités"
-        },
-        {
-          "value": "q_1771053065644_345_opt2",
-          "label": "Une meilleure organisation du travail"
-        },
-        {
-          "value": "q_1771053065644_345_opt3",
-          "label": "L'augmentation de l'activité physique"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053067716_632",
-      "label": "7",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Que signifie le DAS (Débit d'Absorption Spécifique) d'un téléphone ?",
-      "reponseCorrecte": "q_1771053067716_632_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "C'est l'indice qui mesure la quantité d'énergie (ondes) absorbée par le corps lors de l'utilisation de l'appareil.",
-      "options": [
-        {
-          "value": "q_1771053067716_632_opt1",
-          "label": "La vitesse de connexion internet"
-        },
-        {
-          "value": "q_1771053067716_632_opt2",
-          "label": "La quantité d'ondes absorbées par le corps"
-        },
-        {
-          "value": "q_1771053067716_632_opt3",
-          "label": "La capacité de stockage de la mémoire"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053072173_189",
-      "label": "8",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Consulter son téléphone au volant multiplie le risque d'accident par 3.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053072607_1",
-      "label": "9",
-      "competence": "C1",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Le cerveau des adolescents est plus sensible aux addictions que celui des adultes.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053074151_115",
-      "label": "10",
-      "competence": "C5",
-      "bareme": 1,
-      "inputType": "number",
-      "autocorrect": true,
-      "questionText": "Combien d'heures avant le coucher est-il conseillé d'arrêter les écrans ?",
-      "reponseCorrecte": 1,
-      "reponseAttendue": "1",
-      "tolerance": 0
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053079684_41",
-      "label": "11",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quelle astuce permet de réduire la fatigue visuelle liée aux écrans ?",
-      "reponseCorrecte": "q_1771053079684_41_opt3",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "La règle du 20-20-20 : toutes les 20 minutes, regarder à 20 pieds (6m) pendant 20 secondes.",
-      "options": [
-        {
-          "value": "q_1771053079684_41_opt1",
-          "label": "Augmenter la luminosité au maximum"
-        },
-        {
-          "value": "q_1771053079684_41_opt2",
-          "label": "Regarder l'écran dans le noir complet"
-        },
-        {
-          "value": "q_1771053079684_41_opt3",
-          "label": "Faire des pauses régulières pour regarder au loin"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053080232_609",
-      "label": "12",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Comment limiter son exposition aux ondes lors d'un appel ?",
-      "reponseCorrecte": "q_1771053080232_609_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Utiliser un kit mains-libres ou le haut-parleur éloigne le téléphone de la tête.",
-      "options": [
-        {
-          "value": "q_1771053080232_609_opt1",
-          "label": "Utiliser un kit mains-libres"
-        },
-        {
-          "value": "q_1771053080232_609_opt2",
-          "label": "Coller le téléphone à l'oreille"
-        },
-        {
-          "value": "q_1771053080232_609_opt3",
-          "label": "Appeler uniquement dans les ascenseurs"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053088182_449",
-      "label": "13",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Le cyberharcèlement est puni par la loi.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053088786_643",
-      "label": "14",
-      "competence": "C4",
-      "bareme": 1,
-      "inputType": "number",
-      "autocorrect": true,
-      "questionText": "Quel est le seuil de danger pour l'audition (en décibels) ?",
-      "reponseCorrecte": 85,
-      "reponseAttendue": "85",
-      "tolerance": 0
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053093307_270",
-      "label": "15",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "number",
-      "autocorrect": true,
-      "questionText": "Quelle distance minimale (en cm) est recommandée entre les yeux et l'écran ?",
-      "reponseCorrecte": 30,
-      "reponseAttendue": "30",
-      "tolerance": 0
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053095339_103",
-      "label": "16",
-      "competence": "C1",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quel est l'impact environnemental majeur de la fabrication des smartphones ?",
-      "reponseCorrecte": "q_1771053095339_103_opt2",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "L'extraction de métaux rares (terres rares) qui est très polluante.",
-      "options": [
-        {
-          "value": "q_1771053095339_103_opt1",
-          "label": "L'utilisation de papier"
-        },
-        {
-          "value": "q_1771053095339_103_opt2",
-          "label": "L'extraction de métaux rares et la pollution"
-        },
-        {
-          "value": "q_1771053095339_103_opt3",
-          "label": "La consommation d'eau potable lors de l'appel"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053099587_595",
-      "label": "17",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Quelle est une bonne pratique de « Digital Detox » ?",
-      "reponseCorrecte": "q_1771053099587_595_opt3",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "Désactiver les notifications et définir des zones « sans téléphone » (ex: à table).",
-      "options": [
-        {
-          "value": "q_1771053099587_595_opt1",
-          "label": "Acheter un deuxième téléphone"
-        },
-        {
-          "value": "q_1771053099587_595_opt2",
-          "label": "Dormir avec son téléphone"
-        },
-        {
-          "value": "q_1771053099587_595_opt3",
-          "label": "Désactiver les notifications non essentielles"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053105855_707",
-      "label": "18",
-      "competence": "C4",
-      "bareme": 1,
-      "inputType": "checkbox",
-      "autocorrect": true,
-      "besoinCorrectionManuelle": false,
-      "questionText": "Pourquoi est-il dangereux de marcher en regardant son téléphone (« Smombie ») ?",
-      "reponseCorrecte": "q_1771053105855_707_opt1",
-      "reponseEleve": "",
-      "correctionMode": "single_exact",
-      "reponseAttendue": "On perd la perception de l'environnement (visuelle et auditive), risquant chutes et collisions.",
-      "options": [
-        {
-          "value": "q_1771053105855_707_opt1",
-          "label": "Risque de chute ou de collision par inattention"
-        },
-        {
-          "value": "q_1771053105855_707_opt2",
-          "label": "Risque d'améliorer son endurance"
-        },
-        {
-          "value": "q_1771053105855_707_opt3",
-          "label": "Risque de perdre du réseau"
-        }
-      ]
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053107025_83",
-      "label": "19",
-      "competence": "C3",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Le téléphone portable est autorisé en classe au lycée et en CFA sans restriction.",
-      "reponseCorrecte": "faux",
-      "reponseAttendue": "Faux"
-    },
-    {
-      "type": "question",
-      "qid": "q_1771053110503_999",
-      "label": "20",
-      "competence": "C2",
-      "bareme": 1,
-      "inputType": "vrai_faux",
-      "autocorrect": true,
-      "questionText": "Les notifications stimulent le circuit de la récompense (dopamine) dans le cerveau.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
-    }
-  ],
-  "items": [
     {
       "type": "question",
       "qid": "q_1771053064030_178",
