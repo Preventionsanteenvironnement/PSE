@@ -305,15 +305,18 @@
         /* ── Chronomètre ── */
         .pse-chrono-bar {
             position: fixed; top: 0; left: 0; right: 0; z-index: 800;
-            background: #1e293b; color: #fff; display: none;
-            align-items: center; justify-content: center; gap: 10px;
-            padding: 6px 16px; font-size: 0.9em; font-weight: 600;
+            background: linear-gradient(135deg, #1e293b, #334155); color: #fff; display: none;
+            align-items: center; justify-content: center; gap: 12px;
+            padding: 8px 16px; font-size: 1em; font-weight: 700;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         .pse-chrono-bar.visible { display: flex; }
-        .pse-chrono-bar.warning { background: #dc2626; animation: pulse-chrono 1s infinite; }
+        .pse-chrono-bar.warning { background: linear-gradient(135deg, #dc2626, #b91c1c); animation: pulse-chrono 1s infinite; }
+        .pse-chrono-bar.warning-soon { background: linear-gradient(135deg, #f59e0b, #d97706); }
         @keyframes pulse-chrono { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
-        .pse-chrono-bar + .pse-overlay { top: 38px; }
-        body.has-chrono { padding-top: 38px; }
+        .pse-chrono-bar + .pse-overlay { top: 42px; }
+        body.has-chrono { padding-top: 42px; }
+        #pse-chrono-display { font-size: 1.3em; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
         /* ── 2ème chance overlay ── */
         .pse-2chance-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -728,11 +731,15 @@
         // Affichage immédiat
         display.textContent = String(minutes).padStart(2, '0') + ':00';
 
+        let chrono5minWarned = false;
+        let chrono2minWarned = false;
+
         chronoInterval = setInterval(() => {
             chronoSecondsLeft--;
             if (chronoSecondsLeft <= 0) {
                 clearInterval(chronoInterval);
                 display.textContent = "00:00";
+                bar.classList.remove('warning-soon');
                 bar.classList.add('warning');
                 document.getElementById('pse-chrono-label').textContent = "TEMPS ÉCOULÉ — envoi automatique !";
                 // Envoi automatique SANS confirmation
@@ -746,9 +753,22 @@
             const m = Math.floor(chronoSecondsLeft / 60);
             const s = chronoSecondsLeft % 60;
             display.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-            // Alerte visuelle dans les 2 dernières minutes
-            if (chronoSecondsLeft <= 120 && !bar.classList.contains('warning')) {
+
+            // Alerte à 5 minutes (orange)
+            if (chronoSecondsLeft <= 300 && !chrono5minWarned) {
+                chrono5minWarned = true;
+                bar.classList.add('warning-soon');
+                document.getElementById('pse-chrono-label').textContent = '⚠️ Plus que 5 minutes !';
+                showLeaveToast('⏱️ Attention : il ne reste que 5 minutes !');
+            }
+
+            // Alerte à 2 minutes (rouge clignotant)
+            if (chronoSecondsLeft <= 120 && !chrono2minWarned) {
+                chrono2minWarned = true;
+                bar.classList.remove('warning-soon');
                 bar.classList.add('warning');
+                document.getElementById('pse-chrono-label').textContent = '🚨 Dernières 2 minutes !';
+                showLeaveToast('🚨 ATTENTION : 2 minutes restantes ! Envoi automatique à la fin !');
             }
         }, 1000);
     }
@@ -1094,9 +1114,26 @@
         if (typeof window.envoyerCopie === 'function') {
             try {
                 const classeLS = (localStorage.getItem('userClasse') || '').trim();
-                const elevePayload = classeLS
-                    ? { code: code, classe: classeLS, blueprintEmbedded: true, focus: focus, secondeChance: isSecondeChance }
-                    : { code: code, blueprintEmbedded: true, focus: focus, secondeChance: isSecondeChance };
+                const opts = getAntiCheatOptions();
+                // Calcul du temps utilisé
+                const devoirId = document.body.dataset.idExercice || 'unknown';
+                const startTime = localStorage.getItem('devoir_start_time_' + devoirId);
+                const tempsUtiliseSec = startTime ? Math.floor((Date.now() - parseInt(startTime)) / 1000) : null;
+
+                const elevePayload = {
+                    code: code,
+                    blueprintEmbedded: true,
+                    focus: focus,
+                    secondeChance: isSecondeChance,
+                    chrono: {
+                        actif: !!(opts.chrono && opts.chronoMinutes > 0),
+                        minutesAllouees: (opts.chrono ? opts.chronoMinutes : 0),
+                        secondesRestantes: chronoSecondsLeft,
+                        tempsUtiliseSec: tempsUtiliseSec,
+                        tempsEcoule: chronoSecondsLeft <= 0
+                    }
+                };
+                if (classeLS) elevePayload.classe = classeLS;
                 await window.envoyerCopie(code, { external: focus.pasteBlocked }, elevePayload);
                 btn.textContent = '✅ Envoyé !';
                 btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
@@ -1523,8 +1560,8 @@
       "inputType": "vrai_faux",
       "autocorrect": true,
       "questionText": "Le cyberharcèlement est puni par la loi.",
-      "reponseCorrecte": "faux",
-      "reponseAttendue": "Faux"
+      "reponseCorrecte": "vrai",
+      "reponseAttendue": "Vrai"
     },
     {
       "type": "question",
