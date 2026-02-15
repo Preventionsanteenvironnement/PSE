@@ -1138,11 +1138,45 @@
         const now = new Date();
         const dateStr = now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
 
+        // Calcul du temps utilisé
+        const devoirId = document.body.dataset.idExercice || 'unknown';
+        const startTime = localStorage.getItem('devoir_start_time_' + devoirId);
+        let tempsUtilise = '';
+        if (startTime) {
+            const elapsed = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            tempsUtilise = mins + ' min ' + String(secs).padStart(2, '0') + ' s';
+        }
+
         let infoHTML = '';
         infoHTML += '<div class="info-row"><span class="info-label">📋 Devoir</span><span class="info-value">' + titre + '</span></div>';
         infoHTML += '<div class="info-row"><span class="info-label">👤 Code</span><span class="info-value">' + code + '</span></div>';
         infoHTML += '<div class="info-row"><span class="info-label">🕐 Envoyé le</span><span class="info-value">' + dateStr + '</span></div>';
         infoHTML += '<div class="info-row"><span class="info-label">📝 Réponses</span><span class="info-value">' + answered + ' / ' + totalQ + '</span></div>';
+
+        // Afficher le temps utilisé
+        if (tempsUtilise) {
+            infoHTML += '<div class="info-row"><span class="info-label">⏱️ Temps utilisé</span><span class="info-value">' + tempsUtilise + '</span></div>';
+        }
+
+        // Afficher info chrono si activé
+        if (opts.chrono && opts.chronoMinutes > 0) {
+            infoHTML += '<div class="info-row"><span class="info-label">⏳ Temps alloué</span><span class="info-value">' + opts.chronoMinutes + ' minutes</span></div>';
+            // Temps restant
+            if (chronoSecondsLeft > 0) {
+                const rm = Math.floor(chronoSecondsLeft / 60);
+                const rs = chronoSecondsLeft % 60;
+                infoHTML += '<div class="info-row"><span class="info-label">✅ Temps restant</span><span class="info-value" style="color:#059669;">' + rm + ' min ' + String(rs).padStart(2, '0') + ' s</span></div>';
+            } else {
+                infoHTML += '<div class="info-row"><span class="info-label">⚠️ Chrono</span><span class="info-value" style="color:#dc2626;">Temps écoulé — envoi automatique</span></div>';
+            }
+        }
+
+        // Info 2ème tentative
+        if (isSecondeChance) {
+            infoHTML += '<div class="info-row"><span class="info-label">🔄 Tentative</span><span class="info-value" style="color:#f59e0b;">2ème chance</span></div>';
+        }
 
         document.getElementById('pse-recepisse-info').innerHTML = infoHTML;
 
@@ -1489,8 +1523,8 @@
       "inputType": "vrai_faux",
       "autocorrect": true,
       "questionText": "Le cyberharcèlement est puni par la loi.",
-      "reponseCorrecte": "vrai",
-      "reponseAttendue": "Vrai"
+      "reponseCorrecte": "faux",
+      "reponseAttendue": "Faux"
     },
     {
       "type": "question",
