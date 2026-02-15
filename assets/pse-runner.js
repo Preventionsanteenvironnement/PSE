@@ -260,8 +260,9 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     // ANTI-DOUBLON : vérifier si une copie existe déjà pour ce devoir
     // ════════════════════════════════════════════════════════════════
     const stableDocId = `${devoirId}_copie`;
+    const isSecondeChance = !!(eleveData && eleveData.secondeChance);
     const existingSnap = await getDoc(doc(db, "resultats", eleveCode, "copies", stableDocId));
-    if (existingSnap.exists()) {
+    if (existingSnap.exists() && !isSecondeChance) {
       throw new Error("Vous avez déjà envoyé une copie pour cet exercice. Une seule soumission est autorisée.");
     }
 
@@ -301,6 +302,8 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 
       blueprint: blueprint,
       blueprintEmbedded: blueprintEmbedded,
+
+      tentative: isSecondeChance ? 2 : 1,
 
       createdAt: serverTimestamp(),
       createdAtISO: new Date().toISOString(),
