@@ -1,19 +1,24 @@
 // ════════════════════════════════════════════════════════════════════════
-// pse-runner.js - Version 7.3.0 (RGPD COMPLIANT + Firebase SAFE)
+// pse-runner.js - Version 7.4.0 (RGPD COMPLIANT + Firebase COMPAT)
 // Collection : resultats/{eleveCode}/copies/{docId}
-// Date : 15 février 2026
+// Date : 16 février 2026
 // RGPD : Aucun nom/prénom stocké - uniquement code + classe
-// Fix : init Firebase SAFE (évite double initializeApp si annuaire.js est chargé)
+// Fix v7.4 : API Firebase compat (harmonisé avec annuaire.js)
+//   → annuaire.js utilise firebase-app-compat + firebase-firestore-compat
+//   → pse-runner.js réutilise window.db créé par annuaire.js (ou le crée)
+//   → PLUS de conflit compat vs modulaire
 // Fix : blueprint embarqué dans la copie (priorité window.__PSE_BLUEPRINT, fallback JSON)
 // Fix : focus (focusLeaves, copyAttempts, pasteBlocked) sauvegardé dans Firestore
 // Fix : anti-doublon — une seule soumission par élève et par devoir
 // Fix : suppression alert/écran qui écrasait le récépissé du Master
 // Fix : alerte doublon Firestore (collection alertes_doublons) pour l'enseignant
 // Fix : données chrono sauvegardées dans la copie élève
+// Fix : 2ème chance à distance (demandes_2chance)
 // ════════════════════════════════════════════════════════════════════════
 
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// ── Firebase compat (même API que annuaire.js) ──
+import firebase from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
+import "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -24,11 +29,14 @@ const firebaseConfig = {
   appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
 
-// ✅ Init SAFE : évite "Firebase App named '[DEFAULT]' already exists"
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// ✅ Init SAFE : réutilise l'app/db de annuaire.js si déjà chargé
+if (!firebase.apps || !firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = window.db || firebase.firestore();
+window.db = db;
 
-console.log("🚀 PSE Runner v7.2.0 RGPD - resultats/{eleveCode}/copies/");
+console.log("🚀 PSE Runner v7.4.0 RGPD (compat) - resultats/{eleveCode}/copies/");
 
 // ────────────────────────────────────────────────────────────────────────
 // UTIL : charger le blueprint (optionnel) pour l'embarquer dans la copie
@@ -263,18 +271,18 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     // ════════════════════════════════════════════════════════════════
     const stableDocId = `${devoirId}_copie`;
     const isSecondeChance = !!(eleveData && eleveData.secondeChance);
-    const existingSnap = await getDoc(doc(db, "resultats", eleveCode, "copies", stableDocId));
-    if (existingSnap.exists() && !isSecondeChance) {
+    const existingSnap = await db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).get();
+    if (existingSnap.exists && !isSecondeChance) {
       // ── ALERTE DOUBLON → notification Firestore pour l'enseignant ──
       try {
-        await addDoc(collection(db, "alertes_doublons"), {
+        await db.collection("alertes_doublons").add({
           eleveCode: eleveCode,
           classe: classe,
           devoirId: devoirId,
           titre: titre,
           type: "doublon",
           message: eleveCode + " a tenté de renvoyer sa copie pour « " + titre + " »",
-          createdAt: serverTimestamp(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           lu: false
         });
         console.log("🔔 Alerte doublon envoyée à Firestore");
@@ -331,7 +339,7 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
         tempsEcoule: !!eleveData.chrono.tempsEcoule
       } : { actif: false },
 
-      createdAt: serverTimestamp(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdAtISO: new Date().toISOString(),
       ts: Date.now()
     };
@@ -341,7 +349,7 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     // ════════════════════════════════════════════════════════════════
     const docPath = `resultats/${eleveCode}/copies/${stableDocId}`;
 
-    await setDoc(doc(db, "resultats", eleveCode, "copies", stableDocId), data);
+    await db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data);
 
     console.log("✅ Envoyé dans:", docPath);
 
@@ -360,12 +368,12 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 // ════════════════════════════════════════════════════════════════
 window.demander2eChanceFirestore = async function (eleveCode, devoirId, classe) {
   const docId = `${eleveCode}_${devoirId}`;
-  await setDoc(doc(db, "demandes_2chance", docId), {
+  await db.collection("demandes_2chance").doc(docId).set({
     eleveCode: eleveCode,
     devoirId: devoirId,
     classe: classe || "?",
     status: "en_attente",
-    createdAt: serverTimestamp(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     createdAtISO: new Date().toISOString()
   });
   console.log("📩 Demande 2ème chance envoyée:", docId);
@@ -373,9 +381,9 @@ window.demander2eChanceFirestore = async function (eleveCode, devoirId, classe) 
 
 window.verifier2eChanceFirestore = async function (eleveCode, devoirId) {
   const docId = `${eleveCode}_${devoirId}`;
-  const snap = await getDoc(doc(db, "demandes_2chance", docId));
-  if (!snap.exists()) return null;
+  const snap = await db.collection("demandes_2chance").doc(docId).get();
+  if (!snap.exists) return null;
   return snap.data().status; // "en_attente", "acceptee", "refusee"
 };
 
-console.log("✅ window.envoyerCopie prêt (v7.3.0 RGPD - resultats/{eleveCode}/copies/)");
+console.log("✅ window.envoyerCopie prêt (v7.4.0 RGPD compat - resultats/{eleveCode}/copies/)");
