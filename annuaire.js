@@ -8,8 +8,22 @@
    - Envoi copies aligné grille : resultats/{eleveCode}/copies/{docId}
 */
 
-import firebase from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
-import "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
+// Chargement Firebase compat en mode classique (compat n'a pas d'export ES default)
+await new Promise((resolve, reject) => {
+  if (window.firebase) return resolve();
+  const s1 = document.createElement("script");
+  s1.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
+  s1.onload = () => {
+    const s2 = document.createElement("script");
+    s2.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
+    s2.onload = resolve;
+    s2.onerror = reject;
+    document.head.appendChild(s2);
+  };
+  s1.onerror = reject;
+  document.head.appendChild(s1);
+});
+const firebase = window.firebase;
 
 // 1) CONFIG FIREBASE (officielle)
 const firebaseConfig = {

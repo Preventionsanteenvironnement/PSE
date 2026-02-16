@@ -8,8 +8,22 @@
    Fix v4.1 : évite double initializeApp (getApps/getApp)
    ═══════════════════════════════════════════════════════════════════════ */
 
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// Chargement Firebase compat (compat n'a pas d'export ES default)
+await new Promise((resolve, reject) => {
+  if (window.firebase) return resolve();
+  const s1 = document.createElement("script");
+  s1.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
+  s1.onload = () => {
+    const s2 = document.createElement("script");
+    s2.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
+    s2.onload = resolve;
+    s2.onerror = reject;
+    document.head.appendChild(s2);
+  };
+  s1.onerror = reject;
+  document.head.appendChild(s1);
+});
+const firebase = window.firebase;
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -21,13 +35,14 @@ const firebaseConfig = {
 };
 
 // ✅ Init SAFE : évite Firebase App named '[DEFAULT]' already exists
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
+if (!firebase.apps || !firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = window.db || firebase.firestore();
 window.db = db;
 window._ensureDb = () => window.db;
 
-console.log("✅ [annuaire.js v4.1] Init Firebase SAFE + structure sécurisée");
+console.log("✅ [annuaire.js v4.2] Init Firebase SAFE compat + structure sécurisée");
 
 // ═══════════════════════════════════════════════════════════════════════
 // ANNUAIRE - CODES COURTS (inchangés)
@@ -189,7 +204,7 @@ window.PSE_submitDevoir = async function(payload) {
       titre: payload.titre || payload.module || "",
       url: window.location.href,
 
-      createdAt: serverTimestamp(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdAtISO: new Date().toISOString(),
 
       eleveCode: eleveCode,
@@ -216,7 +231,7 @@ window.PSE_submitDevoir = async function(payload) {
 
     // ⭐ CHEMIN SÉCURISÉ : resultats/{eleveCode}/copies/{docId}
     const docId = `${docData.devoirId}_${Date.now()}`;
-    await setDoc(doc(db, "resultats", eleveCode, "copies", docId), docData);
+    await db.collection("resultats").doc(eleveCode).collection("copies").doc(docId).set(docData);
 
     sessionStorage.setItem(antiKey, "1");
     console.log("✅ Copie enregistrée :", `resultats/${eleveCode}/copies/${docId}`);
@@ -236,12 +251,12 @@ window.enregistrerVisite = async function(nomPage) {
 
     const jour = new Date().toISOString().slice(0, 10);
 
-    await addDoc(collection(db, "tracking", jour, "visites"), {
+    await db.collection("tracking").doc(jour).collection("visites").add({
       page: (nomPage || document.title || "Page").slice(0, 200),
       userCode: userCode,
       classe: (localStorage.getItem("userClasse") || "VISITEUR").slice(0, 20),
       date: new Date().toISOString(),
-      timestamp: serverTimestamp()
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
   } catch(e) {
     // Silencieux
