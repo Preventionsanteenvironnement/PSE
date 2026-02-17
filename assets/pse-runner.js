@@ -290,19 +290,32 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     sessionStorage.setItem(antiClickKey, String(Date.now()));
 
     // ════════════════════════════════════════════════════════════════
-    // MULTI-COPIES : compter les copies existantes pour numéroter
+    // VÉRIF COPIE EXISTANTE + 2ÈME CHANCE
     // ════════════════════════════════════════════════════════════════
+    const isSecondeChance = !!(eleveData && eleveData.secondeChance);
     let tentative = 1;
-    try {
-      const copiesSnap = await db.collection("resultats").doc(eleveCode).collection("copies")
-        .where("devoirId", "==", devoirId).get();
-      tentative = copiesSnap.size + 1;
-    } catch (countErr) {
-      console.warn("⚠️ Impossible de compter les copies existantes:", countErr);
-      // Fallback : utiliser un timestamp pour garantir l'unicité
+
+    // Vérifier si une copie existe déjà (copie_1)
+    const copie1Snap = await db.collection("resultats").doc(eleveCode)
+      .collection("copies").doc(`${devoirId}_copie_1`).get();
+
+    if (copie1Snap.exists && !isSecondeChance) {
+      // Copie déjà envoyée et pas de 2ème chance validée → bloquer
+      throw new Error("Vous avez déjà envoyé une copie pour cet exercice. Une seule soumission est autorisée.");
     }
+
+    if (isSecondeChance) {
+      // Compter les copies existantes pour numéroter
+      try {
+        const copiesSnap = await db.collection("resultats").doc(eleveCode)
+          .collection("copies").where("devoirId", "==", devoirId).get();
+        tentative = copiesSnap.size + 1;
+      } catch (countErr) {
+        tentative = 2; // Fallback safe
+      }
+    }
+
     const stableDocId = `${devoirId}_copie_${tentative}`;
-    const isSecondeChance = tentative > 1;
 
     // ════════════════════════════════════════════════════════════════
     // FOCUS / ANTI-TRICHE (transmis par le Master via eleveData.focus)
