@@ -280,30 +280,29 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     const blueprintEmbedded = !!blueprint;
 
     // ════════════════════════════════════════════════════════════════
-    // ANTI-DOUBLON : vérifier si une copie existe déjà pour ce devoir
+    // ANTI DOUBLE-CLIC (10s) — empêche les envois accidentels
     // ════════════════════════════════════════════════════════════════
-    const stableDocId = `${devoirId}_copie`;
-    const isSecondeChance = !!(eleveData && eleveData.secondeChance);
-    const existingSnap = await db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).get();
-    if (existingSnap.exists && !isSecondeChance) {
-      // ── ALERTE DOUBLON → notification Firestore pour l'enseignant ──
-      try {
-        await db.collection("alertes_doublons").add({
-          eleveCode: eleveCode,
-          classe: classe,
-          devoirId: devoirId,
-          titre: titre,
-          type: "doublon",
-          message: eleveCode + " a tenté de renvoyer sa copie pour « " + titre + " »",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lu: false
-        });
-        console.log("🔔 Alerte doublon envoyée à Firestore");
-      } catch (alertErr) {
-        console.warn("⚠️ Impossible d'envoyer l'alerte doublon:", alertErr);
-      }
-      throw new Error("Vous avez déjà envoyé une copie pour cet exercice. Une seule soumission est autorisée.");
+    const antiClickKey = "envoi_lock_" + devoirId + "_" + eleveCode;
+    const lastSend = parseInt(sessionStorage.getItem(antiClickKey) || "0", 10);
+    if (Date.now() - lastSend < 10000) {
+      throw new Error("Envoi déjà en cours. Patientez quelques secondes.");
     }
+    sessionStorage.setItem(antiClickKey, String(Date.now()));
+
+    // ════════════════════════════════════════════════════════════════
+    // MULTI-COPIES : compter les copies existantes pour numéroter
+    // ════════════════════════════════════════════════════════════════
+    let tentative = 1;
+    try {
+      const copiesSnap = await db.collection("resultats").doc(eleveCode).collection("copies")
+        .where("devoirId", "==", devoirId).get();
+      tentative = copiesSnap.size + 1;
+    } catch (countErr) {
+      console.warn("⚠️ Impossible de compter les copies existantes:", countErr);
+      // Fallback : utiliser un timestamp pour garantir l'unicité
+    }
+    const stableDocId = `${devoirId}_copie_${tentative}`;
+    const isSecondeChance = tentative > 1;
 
     // ════════════════════════════════════════════════════════════════
     // FOCUS / ANTI-TRICHE (transmis par le Master via eleveData.focus)
@@ -342,7 +341,7 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
       blueprint: blueprint,
       blueprintEmbedded: blueprintEmbedded,
 
-      tentative: isSecondeChance ? 2 : 1,
+      tentative: tentative,
 
       chrono: (eleveData && eleveData.chrono) ? {
         actif: !!eleveData.chrono.actif,
