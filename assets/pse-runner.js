@@ -381,7 +381,25 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 // ════════════════════════════════════════════════════════════════
 window.demander2eChanceFirestore = async function (eleveCode, devoirId, classe) {
   const docId = `${eleveCode}_${devoirId}`;
-  await db.collection("demandes_2chance").doc(docId).set({
+  const ref = db.collection("demandes_2chance").doc(docId);
+
+  // Vérifier si le document existe déjà (un .set() sur doc existant = update,
+  // et update exige auth → permission-denied pour l'élève)
+  const existing = await ref.get();
+  if (existing.exists) {
+    // Le doc existe déjà : supprimer puis recréer (delete est interdit sans auth,
+    // donc on signale que la demande est déjà en cours)
+    const currentStatus = existing.data().status;
+    if (currentStatus === "en_attente") {
+      console.log("📩 Demande 2ème chance déjà en attente:", docId);
+      return; // Pas besoin de réécrire
+    }
+    // Si refusée ou acceptée, on ne peut pas recréer sans auth → erreur claire
+    throw new Error("Une demande existe déjà pour ce devoir (status: " + currentStatus + ").");
+  }
+
+  // Nouveau document → create (autorisé sans auth dans les règles)
+  await ref.set({
     eleveCode: eleveCode,
     devoirId: devoirId,
     classe: classe || "?",
