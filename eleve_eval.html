@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Evaluation PSE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8; min-height: 100vh; color: #1e293b;
+        }
+
+        /* === SCREENS === */
+        .screen {
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .screen-hidden { display: none !important; }
+
+        /* === LOGIN === */
+        .login-card {
+            background: white; border-radius: 20px; padding: 40px; text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); max-width: 420px; width: 100%;
+        }
+        .login-icon { font-size: 4rem; margin-bottom: 16px; }
+        .login-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+        .login-sub { color: #64748b; margin-bottom: 24px; font-size: 0.95rem; }
+        .login-input {
+            width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: 1.3rem; text-align: center; letter-spacing: 4px; font-weight: 800;
+            text-transform: uppercase; outline: none; margin-bottom: 16px;
+        }
+        .login-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .login-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white; border: none; border-radius: 12px; font-size: 1.1rem;
+            font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(59,130,246,0.4); }
+        .login-error {
+            background: #fef2f2; color: #dc2626; padding: 10px; border-radius: 8px;
+            margin-top: 12px; display: none; font-size: 0.9rem; border-left: 4px solid #dc2626;
+        }
+        .login-error.visible { display: block; }
+
+        /* === EVAL LIST === */
+        .eval-list-screen { background: #f0f4f8; }
+        .student-banner {
+            background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
+            padding: 16px 24px; border-radius: 16px; margin-bottom: 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-width: 700px;
+        }
+        .student-banner .sb-info { font-weight: 700; font-size: 1.1rem; }
+        .student-banner .sb-class { opacity: 0.8; font-size: 0.9rem; }
+        .student-banner .sb-logout {
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
+        }
+
+        .eval-list-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 16px; text-align: center; }
+        .eval-list-container { width: 100%; max-width: 700px; }
+        .eval-list-empty { text-align: center; color: #94a3b8; padding: 40px; }
+
+        .eval-card {
+            background: white; border-radius: 16px; padding: 20px; margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;
+            border: 2px solid transparent;
+        }
+        .eval-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+        .eval-card.done { opacity: 0.5; cursor: not-allowed; }
+        .eval-card-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
+        .eval-card-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+        .eval-card-meta span {
+            font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 600;
+        }
+        .ecm-questions { background: #dbeafe; color: #1e40af; }
+        .ecm-bareme { background: #ede9fe; color: #5b21b6; }
+        .ecm-timer { background: #fef3c7; color: #92400e; }
+        .ecm-done { background: #dcfce7; color: #166534; }
+
+        /* === EVALUATION === */
+        .eval-screen { background: #f0f4f8; padding: 0; }
+
+        .eval-topbar {
+            background: white; border-bottom: 1px solid #e2e8f0; padding: 12px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 50; width: 100%;
+        }
+        .eval-topbar .et-title { font-weight: 700; font-size: 0.95rem; }
+        .eval-topbar .et-timer { font-weight: 800; font-size: 1.1rem; color: #3b82f6; }
+        .eval-topbar .et-progress { font-size: 0.85rem; color: #64748b; }
+
+        .eval-nav {
+            display: flex; gap: 6px; padding: 12px 20px; flex-wrap: wrap;
+            justify-content: center; background: white; border-bottom: 1px solid #e2e8f0;
+        }
+        .nav-btn {
+            width: 38px; height: 38px; border-radius: 10px; border: 2px solid #e2e8f0;
+            background: white; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+            transition: 0.2s; color: #64748b;
+        }
+        .nav-btn.active { border-color: #3b82f6; background: #3b82f6; color: white; }
+        .nav-btn.answered { border-color: #22c55e; background: #dcfce7; color: #166534; }
+        .nav-btn.answered.active { background: #22c55e; color: white; }
+
+        .eval-body {
+            flex: 1; padding: 20px; overflow-y: auto; display: flex;
+            flex-direction: column; align-items: center; width: 100%;
+        }
+
+        .question-container {
+            background: white; border-radius: 20px; padding: 30px; max-width: 700px;
+            width: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Document display */
+        .doc-display {
+            background: #fffbeb; border: 1px solid #fbbf24; border-radius: 12px;
+            padding: 16px; margin-bottom: 20px;
+        }
+        .doc-display h4 { color: #92400e; margin-bottom: 8px; font-size: 0.9rem; }
+        .doc-display img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+        .doc-display .doc-text { color: #78350f; line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem; }
+
+        .q-number { color: #3b82f6; font-weight: 800; font-size: 0.9rem; margin-bottom: 6px; }
+        .q-comp-badge { font-size: 0.75rem; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+        .q-text { font-size: 1.15rem; font-weight: 600; line-height: 1.5; margin-bottom: 20px; }
+        .q-multi-hint { font-size: 0.8rem; color: #64748b; font-style: italic; margin-bottom: 12px; }
+
+        /* Answer options */
+        .answer-option {
+            display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+            border: 2px solid #e2e8f0; border-radius: 12px; margin-bottom: 8px;
+            cursor: pointer; transition: 0.2s; font-weight: 500;
+        }
+        .answer-option:hover { border-color: #3b82f6; background: #f0f7ff; }
+        .answer-option.selected { border-color: #3b82f6; background: #dbeafe; }
+        .answer-option input { accent-color: #3b82f6; width: 20px; height: 20px; cursor: pointer; }
+
+        .vf-options { display: flex; gap: 12px; }
+        .vf-option {
+            flex: 1; padding: 20px; border: 2px solid #e2e8f0; border-radius: 16px;
+            text-align: center; font-weight: 700; font-size: 1.2rem; cursor: pointer;
+            transition: 0.2s;
+        }
+        .vf-option:hover { border-color: #3b82f6; }
+        .vf-option.selected-true { border-color: #22c55e; background: #dcfce7; color: #166534; }
+        .vf-option.selected-false { border-color: #ef4444; background: #fef2f2; color: #dc2626; }
+
+        .text-answer {
+            width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: 1.1rem; outline: none; font-family: inherit;
+        }
+        .text-answer:focus { border-color: #3b82f6; }
+        .number-answer { width: 200px; text-align: center; }
+
+        /* Navigation buttons */
+        .eval-footer {
+            padding: 16px 20px; background: white; border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center; width: 100%;
+        }
+        .ef-btn {
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer;
+            border: none; font-size: 0.95rem; transition: 0.2s;
+        }
+        .ef-prev { background: #e2e8f0; color: #475569; }
+        .ef-next { background: #3b82f6; color: white; }
+        .ef-submit { background: #22c55e; color: white; font-size: 1rem; }
+        .ef-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .ef-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+        /* === RESULTS === */
+        .results-screen { background: #f0f4f8; padding: 20px; }
+        .results-container { max-width: 700px; width: 100%; }
+
+        .score-card {
+            background: white; border-radius: 20px; padding: 40px; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 24px;
+        }
+        .score-big { font-size: 4rem; font-weight: 900; margin-bottom: 8px; }
+        .score-ok { color: #22c55e; }
+        .score-mid { color: #f59e0b; }
+        .score-low { color: #ef4444; }
+        .score-label { font-size: 1.2rem; color: #64748b; font-weight: 600; }
+
+        .comps-card {
+            background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .comps-card h3 { font-size: 1rem; margin-bottom: 12px; }
+        .comp-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+        }
+        .comp-row:last-child { border-bottom: none; }
+        .comp-name { font-weight: 600; font-size: 0.9rem; }
+        .comp-badge {
+            padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;
+        }
+        .cb-M { background: #dcfce7; color: #166534; }
+        .cb-A { background: #dbeafe; color: #1e40af; }
+        .cb-I { background: #fef3c7; color: #92400e; }
+        .cb-NT { background: #e2e8f0; color: #64748b; }
+
+        .detail-card {
+            background: white; border-radius: 16px; padding: 20px; margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 4px solid #e2e8f0;
+        }
+        .detail-card.correct { border-left-color: #22c55e; }
+        .detail-card.incorrect { border-left-color: #ef4444; }
+        .detail-card.unanswered { border-left-color: #94a3b8; }
+
+        .dc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .dc-num { font-weight: 800; color: #3b82f6; font-size: 0.9rem; }
+        .dc-result { font-weight: 700; font-size: 0.85rem; }
+        .dc-correct { color: #22c55e; }
+        .dc-incorrect { color: #ef4444; }
+        .dc-question { font-weight: 600; margin-bottom: 10px; line-height: 1.4; }
+
+        .dc-answer-block {
+            padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; font-size: 0.9rem;
+        }
+        .dc-your { background: #f0f9ff; border-left: 3px solid #3b82f6; }
+        .dc-good { background: #f0fdf4; border-left: 3px solid #22c55e; }
+        .dc-correction { background: #fffbeb; border-left: 3px solid #f59e0b; }
+        .dc-explication { background: #faf5ff; border-left: 3px solid #8b5cf6; }
+        .dc-label { font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; }
+
+        .mapse-link {
+            text-align: center; padding: 20px; color: #64748b; font-size: 0.9rem;
+        }
+        .mapse-link a { color: #3b82f6; font-weight: 700; text-decoration: none; }
+
+        /* === ANTI-CHEAT ALERT === */
+        #alert-tabswitch {
+            position: fixed; inset: 0; z-index: 9999; background: rgba(220,38,38,0.95);
+            display: none; align-items: center; justify-content: center;
+            flex-direction: column; color: white; text-align: center;
+            animation: flashBg 0.4s ease 3;
+        }
+        @keyframes flashBg { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        #alert-tabswitch .alert-icon { font-size: 4rem; margin-bottom: 16px; }
+        #alert-tabswitch .alert-text { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+        #alert-tabswitch .alert-sub { font-size: 1rem; opacity: 0.8; }
+
+        @media (max-width: 600px) {
+            .login-card { padding: 24px; }
+            .question-container { padding: 20px; }
+            .q-text { font-size: 1rem; }
+            .score-big { font-size: 3rem; }
+            .eval-nav { gap: 4px; padding: 8px 12px; }
+            .nav-btn { width: 32px; height: 32px; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ANTI-CHEAT ALERT -->
+<div id="alert-tabswitch">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-text">Sortie detectee !</div>
+    <div class="alert-sub" id="alert-count-msg">Ne quittez pas cette page pendant l'evaluation.</div>
+</div>
+
+<!-- SCREEN 1: LOGIN -->
+<div class="screen" id="screen-login">
+    <div class="login-card">
+        <div class="login-icon">📋</div>
+        <div class="login-title">Auto-Evaluation PSE</div>
+        <div class="login-sub">Entre ton code eleve pour acceder a tes evaluations.</div>
+        <input type="text" class="login-input" id="login-code" maxlength="10" placeholder="CODE" autocomplete="off">
+        <button class="login-btn" id="btn-login" onclick="doLogin()">Se connecter</button>
+        <div class="login-error" id="login-error"></div>
+    </div>
+</div>
+
+<!-- SCREEN 2: EVAL LIST -->
+<div class="screen eval-list-screen screen-hidden" id="screen-list">
+    <div class="student-banner" id="student-banner">
+        <div>
+            <div class="sb-info" id="sb-info"></div>
+            <div class="sb-class" id="sb-class"></div>
+        </div>
+        <button class="sb-logout" onclick="doLogout()">Deconnexion</button>
+    </div>
+    <div class="eval-list-container">
+        <div class="eval-list-title">Mes evaluations disponibles</div>
+        <div id="eval-list-content"></div>
+    </div>
+</div>
+
+<!-- SCREEN 3: EVALUATION -->
+<div class="screen eval-screen screen-hidden" id="screen-eval" style="justify-content:flex-start; padding:0;">
+    <div class="eval-topbar">
+        <div class="et-title" id="et-title"></div>
+        <div class="et-timer" id="et-timer"></div>
+        <div class="et-progress" id="et-progress"></div>
+    </div>
+    <div class="eval-nav" id="eval-nav"></div>
+    <div class="eval-body">
+        <div class="question-container" id="question-container"></div>
+    </div>
+    <div class="eval-footer">
+        <button class="ef-btn ef-prev" id="btn-prev" onclick="prevQ()">◀ Precedente</button>
+        <button class="ef-btn ef-submit" id="btn-submit" onclick="submitEval()" style="display:none;">Soumettre ✓</button>
+        <button class="ef-btn ef-next" id="btn-next" onclick="nextQ()">Suivante ▶</button>
+    </div>
+</div>
+
+<!-- SCREEN 4: RESULTS -->
+<div class="screen results-screen screen-hidden" id="screen-results" style="justify-content:flex-start; padding-top:30px;">
+    <div class="results-container" id="results-container"></div>
+</div>
+
+<script src="data_eleves.js"></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+        authDomain: "devoirs-pse.firebaseapp.com",
+        projectId: "devoirs-pse",
+        storageBucket: "devoirs-pse.firebasestorage.app",
+        messagingSenderId: "614730413904",
+        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // === STATE ===
+    let currentUser = null; // { userCode, classe }
+    let currentEval = null; // eval data from eval_banque
+    let currentEvalId = null;
+    let currentQuestionIndex = 0;
+    let answers = {}; // { q_0: value, q_1: value, ... }
+    let tabSwitchCount = 0;
+    let evalStartTime = null;
+    let timerInterval = null;
+    let timerRemaining = 0;
+
+    // === SCREENS ===
+    function showScreen(name) {
+        ['screen-login', 'screen-list', 'screen-eval', 'screen-results'].forEach(id => {
+            document.getElementById(id).classList.add('screen-hidden');
+        });
+        document.getElementById('screen-' + name).classList.remove('screen-hidden');
+    }
+
+    // === NORMALIZE TEXT (for mot answers) ===
+    function normalizeText(text) {
+        return text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    // === LOGIN ===
+    document.getElementById('login-code').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doLogin();
+    });
+
+    window.doLogin = function() {
+        const code = document.getElementById('login-code').value.trim().toUpperCase();
+        const errEl = document.getElementById('login-error');
+
+        if (!code) {
+            errEl.textContent = 'Entre ton code eleve.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        // Look up in BDD_ELEVES
+        const eleves = window.BDD_ELEVES || [];
+        const found = eleves.find(e => e.userCode === code);
+
+        if (!found) {
+            errEl.textContent = 'Code inconnu. Verifie ton code eleve.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        errEl.classList.remove('visible');
+        currentUser = found;
+
+        document.getElementById('sb-info').textContent = '👤 ' + found.userCode;
+        document.getElementById('sb-class').textContent = 'Classe : ' + found.classe;
+
+        showScreen('list');
+        loadAvailableEvals();
+    };
+
+    window.doLogout = function() {
+        currentUser = null;
+        currentEval = null;
+        showScreen('login');
+        document.getElementById('login-code').value = '';
+    };
+
+    // === LOAD AVAILABLE EVALS ===
+    async function loadAvailableEvals() {
+        if (!currentUser) return;
+        const container = document.getElementById('eval-list-content');
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8;">Chargement...</p>';
+
+        try {
+            // Get all published evals
+            const qEvals = query(collection(db, "eval_banque"), where("publie", "==", true), orderBy("updatedAt", "desc"));
+            const snap = await getDocs(qEvals);
+
+            const evals = [];
+            snap.forEach(d => {
+                const data = d.data();
+                // Filter by class: show if classeId matches or classeId is null (all classes)
+                if (!data.classeId || data.classeId === currentUser.classe || isInGroup(data.classeId, currentUser.classe)) {
+                    evals.push({ id: d.id, ...data });
+                }
+            });
+
+            // Check which ones are already submitted
+            const submittedSet = new Set();
+            for (const ev of evals) {
+                const respDocId = currentUser.userCode + '_' + ev.id;
+                const respSnap = await getDoc(doc(db, "eval_reponses", respDocId));
+                if (respSnap.exists()) submittedSet.add(ev.id);
+            }
+
+            if (evals.length === 0) {
+                container.innerHTML = '<div class="eval-list-empty"><div style="font-size:3rem;margin-bottom:12px;">📭</div><p>Aucune evaluation disponible pour ta classe.</p></div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            evals.forEach(ev => {
+                const isDone = submittedSet.has(ev.id);
+                const card = document.createElement('div');
+                card.className = 'eval-card' + (isDone ? ' done' : '');
+                if (!isDone) {
+                    card.onclick = () => startEval(ev.id, ev);
+                }
+
+                const qCount = (ev.questions || []).length;
+                const timerInfo = ev.timer > 0 ? '<span class="ecm-timer">⏱️ ' + ev.timer + ' min</span>' : '';
+                const doneInfo = isDone ? '<span class="ecm-done">✓ Deja fait</span>' : '';
+
+                card.innerHTML = '<div class="eval-card-title">' + (ev.titre || 'Evaluation') + '</div>' +
+                    '<div class="eval-card-meta">' +
+                    '<span class="ecm-questions">' + qCount + ' questions</span>' +
+                    '<span class="ecm-bareme">/' + (ev.bareme || 20) + '</span>' +
+                    timerInfo + doneInfo + '</div>';
+                container.appendChild(card);
+            });
+
+        } catch(e) {
+            console.error("Erreur chargement evals:", e);
+            container.innerHTML = '<p style="text-align:center; color:#ef4444;">Erreur : ' + e.message + '</p>';
+        }
+    }
+
+    function isInGroup(groupId, classeId) {
+        if (window.getClassesFromGroupe) {
+            const classes = window.getClassesFromGroupe(groupId);
+            return classes.includes(classeId);
+        }
+        return false;
+    }
+
+    // === START EVAL ===
+    async function startEval(evalId, evalData) {
+        currentEvalId = evalId;
+        currentEval = evalData;
+        currentQuestionIndex = 0;
+        answers = {};
+        tabSwitchCount = 0;
+        evalStartTime = Date.now();
+
+        document.getElementById('et-title').textContent = evalData.titre || 'Evaluation';
+
+        // Build nav buttons
+        buildNav();
+        displayQuestion(0);
+        showScreen('eval');
+
+        // Start timer if configured
+        if (evalData.timer > 0) {
+            timerRemaining = evalData.timer * 60;
+            startTimer();
+        } else {
+            document.getElementById('et-timer').textContent = '';
+        }
+    }
+
+    // === TIMER ===
+    function startTimer() {
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timerRemaining--;
+            updateTimerDisplay();
+            if (timerRemaining <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                alert('Temps ecoule ! Soumission automatique.');
+                submitEval();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const min = Math.floor(timerRemaining / 60);
+        const sec = timerRemaining % 60;
+        const el = document.getElementById('et-timer');
+        el.textContent = '⏱️ ' + min + ':' + (sec < 10 ? '0' : '') + sec;
+        if (timerRemaining <= 60) el.style.color = '#ef4444';
+        else if (timerRemaining <= 180) el.style.color = '#f59e0b';
+        else el.style.color = '#3b82f6';
+    }
+
+    // === NAV ===
+    function buildNav() {
+        const nav = document.getElementById('eval-nav');
+        nav.innerHTML = '';
+        const qs = currentEval.questions || [];
+        qs.forEach((q, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (answers[q.id] !== undefined ? ' answered' : '');
+            btn.textContent = (i + 1);
+            btn.onclick = () => { currentQuestionIndex = i; displayQuestion(i); updateNav(); };
+            nav.appendChild(btn);
+        });
+    }
+
+    function updateNav() {
+        const btns = document.querySelectorAll('.nav-btn');
+        const qs = currentEval.questions || [];
+        btns.forEach((btn, i) => {
+            btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (answers[qs[i]?.id] !== undefined ? ' answered' : '');
+        });
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const total = (currentEval.questions || []).length;
+        const done = Object.keys(answers).length;
+        document.getElementById('et-progress').textContent = done + '/' + total + ' repondu(es)';
+
+        // Show submit button if all answered or on last question
+        document.getElementById('btn-submit').style.display = (done >= total || currentQuestionIndex === total - 1) ? 'inline-block' : 'none';
+
+        // Prev/Next buttons
+        document.getElementById('btn-prev').disabled = currentQuestionIndex === 0;
+        document.getElementById('btn-next').disabled = currentQuestionIndex >= total - 1;
+    }
+
+    // === DISPLAY QUESTION ===
+    function displayQuestion(index) {
+        const qs = currentEval.questions || [];
+        const q = qs[index];
+        if (!q) return;
+
+        const container = document.getElementById('question-container');
+        let html = '';
+
+        // Show associated document if any
+        if (q.documentRef) {
+            const docObj = (currentEval.documents || []).find(d => d.id === q.documentRef);
+            if (docObj) {
+                html += '<div class="doc-display"><h4>📄 ' + docObj.titre + '</h4>';
+                if (docObj.type === 'image') {
+                    html += '<img src="' + docObj.content + '" alt="' + docObj.titre + '">';
+                } else {
+                    html += '<div class="doc-text">' + docObj.content + '</div>';
+                }
+                html += '</div>';
+            }
+        }
+
+        html += '<div class="q-number">Question ' + (index + 1) + ' / ' + qs.length;
+        if (q.competence) html += '<span class="q-comp-badge">' + q.competence + '</span>';
+        html += '</div>';
+        html += '<div class="q-text">' + q.question + '</div>';
+
+        const currentAnswer = answers[q.id];
+
+        if (q.type === 'qcm_single') {
+            (q.choices || []).forEach((choice, ci) => {
+                const checked = currentAnswer === ci ? ' checked' : '';
+                const selected = currentAnswer === ci ? ' selected' : '';
+                html += '<div class="answer-option' + selected + '" onclick="selectRadio(\'' + q.id + '\', ' + ci + ')">' +
+                    '<input type="radio" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + choice + '</div>';
+            });
+        } else if (q.type === 'qcm_multi') {
+            html += '<div class="q-multi-hint">Plusieurs reponses possibles — coche toutes les bonnes reponses.</div>';
+            (q.choices || []).forEach((choice, ci) => {
+                const isChecked = Array.isArray(currentAnswer) && currentAnswer.includes(ci);
+                const checked = isChecked ? ' checked' : '';
+                const selected = isChecked ? ' selected' : '';
+                html += '<div class="answer-option' + selected + '" onclick="toggleCheck(\'' + q.id + '\', ' + ci + ')">' +
+                    '<input type="checkbox" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + choice + '</div>';
+            });
+        } else if (q.type === 'vf') {
+            const selTrue = currentAnswer === true ? ' selected-true' : '';
+            const selFalse = currentAnswer === false ? ' selected-false' : '';
+            html += '<div class="vf-options">' +
+                '<div class="vf-option' + selTrue + '" onclick="selectVF(\'' + q.id + '\', true)">Vrai</div>' +
+                '<div class="vf-option' + selFalse + '" onclick="selectVF(\'' + q.id + '\', false)">Faux</div>' +
+                '</div>';
+        } else if (q.type === 'mot') {
+            html += '<input type="text" class="text-answer" id="input-mot" placeholder="Ta reponse..." value="' + (currentAnswer || '') + '" oninput="setMotAnswer(\'' + q.id + '\', this.value)">';
+            html += '<div class="info-text" style="margin-top:8px;">Ecris le mot correctement (accents et majuscules toleres).</div>';
+        } else if (q.type === 'nombre') {
+            html += '<input type="number" class="text-answer number-answer" id="input-nombre" placeholder="Ta reponse..." value="' + (currentAnswer !== undefined ? currentAnswer : '') + '" step="any" oninput="setNombreAnswer(\'' + q.id + '\', this.value)">';
+        }
+
+        container.innerHTML = html;
+        updateProgress();
+    }
+
+    // === ANSWER HANDLERS ===
+    window.selectRadio = function(qId, value) {
+        answers[qId] = value;
+        displayQuestion(currentQuestionIndex); // refresh visual
+        updateNav();
+    };
+
+    window.toggleCheck = function(qId, value) {
+        if (!Array.isArray(answers[qId])) answers[qId] = [];
+        const idx = answers[qId].indexOf(value);
+        if (idx >= 0) {
+            answers[qId].splice(idx, 1);
+            if (answers[qId].length === 0) delete answers[qId];
+        } else {
+            answers[qId].push(value);
+        }
+        displayQuestion(currentQuestionIndex);
+        updateNav();
+    };
+
+    window.selectVF = function(qId, value) {
+        answers[qId] = value;
+        displayQuestion(currentQuestionIndex);
+        updateNav();
+    };
+
+    window.setMotAnswer = function(qId, value) {
+        if (value.trim()) answers[qId] = value.trim();
+        else delete answers[qId];
+        updateNav();
+    };
+
+    window.setNombreAnswer = function(qId, value) {
+        if (value !== '') answers[qId] = parseFloat(value);
+        else delete answers[qId];
+        updateNav();
+    };
+
+    window.prevQ = function() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            displayQuestion(currentQuestionIndex);
+            updateNav();
+        }
+    };
+
+    window.nextQ = function() {
+        const total = (currentEval.questions || []).length;
+        if (currentQuestionIndex < total - 1) {
+            currentQuestionIndex++;
+            displayQuestion(currentQuestionIndex);
+            updateNav();
+        }
+    };
+
+    // === SUBMIT EVAL ===
+    window.submitEval = async function() {
+        const total = (currentEval.questions || []).length;
+        const answered = Object.keys(answers).length;
+
+        if (answered < total) {
+            if (!confirm('Tu n\'as repondu qu\'a ' + answered + '/' + total + ' questions. Soumettre quand meme ?')) return;
+        } else {
+            if (!confirm('Es-tu sur de vouloir soumettre ? Tu ne pourras plus modifier tes reponses.')) return;
+        }
+
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+        const tempsSecondes = Math.round((Date.now() - evalStartTime) / 1000);
+
+        // 1. Run auto-correction
+        const correctionResult = autoCorrect(currentEval, answers);
+
+        // 2. Save raw answers to eval_reponses
+        const respDocId = currentUser.userCode + '_' + currentEvalId;
+        await setDoc(doc(db, "eval_reponses", respDocId), {
+            eleveCode: currentUser.userCode,
+            evalId: currentEvalId,
+            classe: currentUser.classe,
+            reponses: answers,
+            submittedAt: new Date().toISOString(),
+            tabSwitchCount,
+            tempsSecondes
+        });
+
+        // 3. Write to resultats for integration with resultats.html
+        await writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes);
+
+        // 4. Show results
+        showResults(correctionResult);
+    };
+
+    // === AUTO-CORRECTION ENGINE ===
+    function autoCorrect(evalData, studentAnswers) {
+        const results = { questions: {}, competences: {}, totalPoints: 0, totalMax: 0 };
+        const qs = evalData.questions || [];
+
+        qs.forEach(q => {
+            const studentAnswer = studentAnswers[q.id];
+            let isCorrect = false;
+            let earnedPoints = 0;
+
+            if (studentAnswer === undefined || studentAnswer === null || studentAnswer === '') {
+                // Not answered
+                results.questions[q.id] = { level: 'NT', earnedPoints: 0, maxPoints: q.points || 0, studentAnswer: null, isCorrect: false };
+                results.totalMax += (q.points || 0);
+                if (q.competence) {
+                    if (!results.competences[q.competence]) results.competences[q.competence] = { pts: 0, max: 0 };
+                    results.competences[q.competence].max += (q.points || 0);
+                }
+                return;
+            }
+
+            switch (q.type) {
+                case 'qcm_single':
+                    isCorrect = studentAnswer === q.correct;
+                    break;
+                case 'qcm_multi':
+                    const correctSet = new Set(q.correct || []);
+                    const answerSet = new Set(studentAnswer || []);
+                    isCorrect = correctSet.size === answerSet.size && [...correctSet].every(c => answerSet.has(c));
+                    break;
+                case 'vf':
+                    isCorrect = studentAnswer === q.correct;
+                    break;
+                case 'mot':
+                    isCorrect = normalizeText(String(studentAnswer)) === normalizeText(String(q.correct || q.reponse || ''));
+                    break;
+                case 'nombre':
+                    const tolerance = q.tolerance || 0;
+                    isCorrect = Math.abs(parseFloat(studentAnswer) - parseFloat(q.correct)) <= tolerance;
+                    break;
+            }
+
+            earnedPoints = isCorrect ? (q.points || 0) : 0;
+            const level = isCorrect ? 'M' : 'I';
+
+            results.questions[q.id] = { level, earnedPoints, maxPoints: q.points || 0, studentAnswer, isCorrect };
+            results.totalPoints += earnedPoints;
+            results.totalMax += (q.points || 0);
+
+            if (q.competence) {
+                if (!results.competences[q.competence]) results.competences[q.competence] = { pts: 0, max: 0 };
+                results.competences[q.competence].pts += earnedPoints;
+                results.competences[q.competence].max += (q.points || 0);
+            }
+        });
+
+        // Final note
+        results.note = results.totalMax > 0
+            ? Math.round((results.totalPoints / results.totalMax) * (currentEval.bareme || 20) * 2) / 2
+            : 0;
+        results.bareme = currentEval.bareme || 20;
+
+        return results;
+    }
+
+    // === WRITE RESULTS TO FIREBASE (for resultats.html integration) ===
+    async function writeResults(eleveCode, evalId, evalData, correction, tempsSecondes) {
+        const now = new Date().toISOString();
+        const qs = evalData.questions || [];
+
+        // Build blueprint for detail view in resultats.html
+        const blueprintContent = qs.map((q, i) => {
+            let reponseAttendue = '';
+            if (q.type === 'qcm_single') reponseAttendue = (q.choices || [])[q.correct] || '';
+            else if (q.type === 'qcm_multi') reponseAttendue = (q.correct || []).map(c => (q.choices || [])[c]).join(', ');
+            else if (q.type === 'vf') reponseAttendue = q.correct ? 'Vrai' : 'Faux';
+            else if (q.type === 'mot') reponseAttendue = q.correct || q.reponse || '';
+            else if (q.type === 'nombre') reponseAttendue = String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : '');
+
+            return {
+                type: 'question',
+                qid: q.id,
+                label: 'Q' + (i + 1),
+                question: q.question,
+                competence: q.competence,
+                bareme: q.points,
+                reponseAttendue,
+                correction: q.correction || '',
+                explication: q.explication || ''
+            };
+        });
+
+        // Build questions map for resultats.html format
+        const questionsMap = {};
+        qs.forEach((q, i) => {
+            const result = correction.questions[q.id];
+            questionsMap['q_' + i] = {
+                level: result ? result.level : 'NT',
+                comment: q.correction || ''
+            };
+        });
+
+        // Build simplified reponses for copy doc
+        const reponsesSimple = {};
+        qs.forEach(q => {
+            reponsesSimple[q.id] = answers[q.id] !== undefined ? answers[q.id] : null;
+        });
+
+        // 1. Write COPY document
+        await setDoc(doc(db, "resultats", eleveCode, "copies", evalId + '_autoeval'), {
+            eleveCode,
+            devoirId: evalId,
+            titre: 'Auto-evaluation : ' + (evalData.titre || 'Evaluation'),
+            createdAtISO: now,
+            eleve: { userCode: eleveCode, classe: currentUser.classe },
+            reponses: reponsesSimple,
+            source: 'auto_eval',
+            temps_secondes: tempsSecondes
+        });
+
+        // 2. Write EVALUATION document
+        await setDoc(doc(db, "resultats", eleveCode, "evaluations", evalId + '_eval'), {
+            eleveCode,
+            devoirId: evalId,
+            titre: 'Auto-evaluation : ' + (evalData.titre || 'Evaluation'),
+            note_finale: correction.note,
+            appreciation: 'Auto-correction automatique. Note : ' + correction.note + '/' + correction.bareme,
+            publie: false, // Will be published by teacher
+            autocorrected: true,
+            source: 'auto_eval',
+            competences: correction.competences,
+            questions: questionsMap,
+            blueprint: {
+                titre: 'Auto-evaluation : ' + (evalData.titre || 'Evaluation'),
+                content: blueprintContent
+            },
+            savedAt: now,
+            savedBy: 'auto_correction'
+        });
+    }
+
+    // === SHOW RESULTS ===
+    function showResults(correction) {
+        const container = document.getElementById('results-container');
+        const qs = currentEval.questions || [];
+        let html = '';
+
+        // Score card
+        const pct = correction.bareme > 0 ? (correction.note / correction.bareme) * 100 : 0;
+        const scoreClass = pct >= 60 ? 'score-ok' : pct >= 40 ? 'score-mid' : 'score-low';
+        html += '<div class="score-card">' +
+            '<div class="score-big ' + scoreClass + '">' + correction.note + ' / ' + correction.bareme + '</div>' +
+            '<div class="score-label">' + correction.totalPoints + ' points sur ' + correction.totalMax + '</div>' +
+            '</div>';
+
+        // Competences card
+        const compEntries = Object.entries(correction.competences);
+        if (compEntries.length > 0) {
+            html += '<div class="comps-card"><h3>🎯 Competences</h3>';
+            compEntries.forEach(([compId, comp]) => {
+                const compPct = comp.max > 0 ? (comp.pts / comp.max) * 100 : 0;
+                let level = 'NT';
+                if (compPct >= 80) level = 'M';
+                else if (compPct >= 50) level = 'A';
+                else if (compPct > 0) level = 'I';
+                const levelLabels = { M: 'Maitrise', A: 'Acquis', I: 'En cours', NT: 'Non travaille' };
+                html += '<div class="comp-row">' +
+                    '<span class="comp-name">' + compId + '</span>' +
+                    '<span>' + comp.pts + '/' + comp.max + ' pts</span>' +
+                    '<span class="comp-badge cb-' + level + '">' + levelLabels[level] + '</span>' +
+                    '</div>';
+            });
+            html += '</div>';
+        }
+
+        // Detail per question
+        html += '<h3 style="margin:16px 0 12px; font-size:1.1rem;">📝 Detail des reponses</h3>';
+        qs.forEach((q, i) => {
+            const result = correction.questions[q.id] || { level: 'NT', isCorrect: false, studentAnswer: null };
+            const cardClass = result.level === 'NT' ? 'unanswered' : (result.isCorrect ? 'correct' : 'incorrect');
+            const resultLabel = result.level === 'NT' ? 'Non repondu' : (result.isCorrect ? '✅ Correct' : '❌ Incorrect');
+            const resultClass = result.level === 'NT' ? '' : (result.isCorrect ? 'dc-correct' : 'dc-incorrect');
+
+            html += '<div class="detail-card ' + cardClass + '">';
+            html += '<div class="dc-header"><span class="dc-num">Q' + (i + 1) + (q.competence ? ' — ' + q.competence : '') + '</span><span class="dc-result ' + resultClass + '">' + resultLabel + ' (' + (result.earnedPoints || 0) + '/' + (q.points || 0) + ' pts)</span></div>';
+            html += '<div class="dc-question">' + q.question + '</div>';
+
+            // Your answer
+            if (result.studentAnswer !== null && result.studentAnswer !== undefined) {
+                let yourText = formatAnswer(q, result.studentAnswer);
+                html += '<div class="dc-answer-block dc-your"><div class="dc-label">✍️ Ta reponse :</div>' + yourText + '</div>';
+            }
+
+            // Correct answer
+            let goodText = formatCorrectAnswer(q);
+            html += '<div class="dc-answer-block dc-good"><div class="dc-label">✅ Bonne reponse :</div>' + goodText + '</div>';
+
+            // Correction
+            if (q.correction) {
+                html += '<div class="dc-answer-block dc-correction"><div class="dc-label">📝 Correction :</div>' + q.correction + '</div>';
+            }
+
+            // Explication
+            if (q.explication) {
+                html += '<div class="dc-answer-block dc-explication"><div class="dc-label">💡 Explication :</div>' + q.explication + '</div>';
+            }
+
+            html += '</div>';
+        });
+
+        // Mapse link
+        html += '<div class="mapse-link">Retrouve toutes tes ressources et resultats sur <a href="https://mapse.fr" target="_blank">mapse.fr</a></div>';
+
+        container.innerHTML = html;
+        showScreen('results');
+        window.scrollTo(0, 0);
+    }
+
+    function formatAnswer(q, answer) {
+        if (q.type === 'qcm_single') return (q.choices || [])[answer] || '?';
+        if (q.type === 'qcm_multi') return (answer || []).map(i => (q.choices || [])[i]).join(', ') || '?';
+        if (q.type === 'vf') return answer ? 'Vrai' : 'Faux';
+        if (q.type === 'mot') return String(answer);
+        if (q.type === 'nombre') return String(answer);
+        return String(answer);
+    }
+
+    function formatCorrectAnswer(q) {
+        if (q.type === 'qcm_single') return (q.choices || [])[q.correct] || '?';
+        if (q.type === 'qcm_multi') return (q.correct || []).map(i => (q.choices || [])[i]).join(', ') || '?';
+        if (q.type === 'vf') return q.correct ? 'Vrai' : 'Faux';
+        if (q.type === 'mot') return q.correct || q.reponse || '?';
+        if (q.type === 'nombre') return String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : '');
+        return '?';
+    }
+
+    // === ANTI-CHEAT: Tab switch detection ===
+    document.addEventListener('visibilitychange', () => {
+        if (!currentEval || !currentUser) return;
+
+        if (document.hidden) {
+            tabSwitchCount++;
+        } else {
+            const alertEl = document.getElementById('alert-tabswitch');
+            document.getElementById('alert-count-msg').textContent = 'Sortie(s) detectee(s) : ' + tabSwitchCount;
+            alertEl.style.display = 'flex';
+            setTimeout(() => { alertEl.style.display = 'none'; }, 3000);
+        }
+    });
+</script>
+</body>
+</html>
