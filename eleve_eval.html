@@ -808,10 +808,24 @@
             };
         });
 
-        // Build simplified reponses for copy doc
+        // Build human-readable reponses for copy doc (resultats.html display)
         const reponsesSimple = {};
         qs.forEach(q => {
-            reponsesSimple[q.id] = answers[q.id] !== undefined ? answers[q.id] : null;
+            const raw = answers[q.id];
+            if (raw === undefined || raw === null) {
+                reponsesSimple[q.id] = null;
+                return;
+            }
+            // Convert indices to readable text for resultats.html
+            if (q.type === 'qcm_single') {
+                reponsesSimple[q.id] = (q.choices || [])[raw] || String(raw);
+            } else if (q.type === 'qcm_multi') {
+                reponsesSimple[q.id] = (Array.isArray(raw) ? raw : []).map(i => (q.choices || [])[i] || String(i)).join(', ');
+            } else if (q.type === 'vf') {
+                reponsesSimple[q.id] = raw === true ? 'Vrai' : 'Faux';
+            } else {
+                reponsesSimple[q.id] = String(raw);
+            }
         });
 
         // 1. Write COPY document
