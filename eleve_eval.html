@@ -317,7 +317,7 @@
 <script src="data_eleves.js"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -403,8 +403,8 @@
         container.innerHTML = '<p style="text-align:center; color:#94a3b8;">Chargement...</p>';
 
         try {
-            // Get all published evals
-            const qEvals = query(collection(db, "eval_banque"), where("publie", "==", true), orderBy("updatedAt", "desc"));
+            // Get all published evals (no orderBy to avoid composite index requirement)
+            const qEvals = query(collection(db, "eval_banque"), where("publie", "==", true));
             const snap = await getDocs(qEvals);
 
             const evals = [];
@@ -414,6 +414,12 @@
                 if (!data.classeId || data.classeId === currentUser.classe || isInGroup(data.classeId, currentUser.classe)) {
                     evals.push({ id: d.id, ...data });
                 }
+            });
+            // Sort client-side by updatedAt descending
+            evals.sort((a, b) => {
+                const ta = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : (a.updatedAt || 0);
+                const tb = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : (b.updatedAt || 0);
+                return tb - ta;
             });
 
             // Check which ones are already submitted
