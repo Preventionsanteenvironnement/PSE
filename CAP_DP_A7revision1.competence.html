@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Révision PSE - Module A7</title>
+    <style>
+        :root {
+            --primary: #00695c;
+            --secondary: #b2dfdb;
+            --bg: #f5f5f5;
+            --text: #333;
+            --card-bg: #fff;
+            --btn-bg: #e0f2f1;
+            --btn-border: #80cbc4;
+            --success: #2e7d32;
+            --error: #c62828;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Mode Sombre */
+        body.dark-mode {
+            --primary: #80cbc4;
+            --secondary: #004d40;
+            --bg: #121212;
+            --text: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --btn-bg: #2c2c2c;
+            --btn-border: #4f4f4f;
+            --shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        /* Police Dyslexie simulée (OpenDyslexic si installée, sinon Comic Sans/Verdana aérés) */
+        body.dys-font {
+            font-family: 'OpenDyslexic', 'Comic Sans MS', 'Verdana', sans-serif !important;
+            line-height: 2 !important;
+            letter-spacing: 0.1em;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Verdana', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s, color 0.3s;
+            padding-bottom: 50px;
+        }
+
+        /* Barre d'outils Accessibilité */
+        .a11y-bar {
+            background-color: var(--card-bg);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .a11y-btn {
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--text);
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .a11y-btn:hover { background-color: var(--secondary); color: #000; }
+        .a11y-active { background-color: var(--primary); color: #fff !important; }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* En-tête du module */
+        header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border-left: 6px solid var(--primary);
+        }
+        h1 { color: var(--primary); margin: 0 0 10px 0; font-size: 1.4rem; }
+        h2 { font-size: 1.1rem; color: var(--text); margin: 0 0 10px 0; opacity: 0.8; }
+        .objective {
+            background: var(--btn-bg);
+            padding: 10px;
+            border-radius: 8px;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+        
+        .competences-list {
+            font-size: 0.9rem;
+            background-color: rgba(0,0,0,0.03);
+            padding: 10px;
+            border-radius: 8px;
+            display: none; /* Masqué par défaut, on peut l'ouvrir */
+        }
+        .toggle-comp {
+            color: var(--primary);
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: block;
+            margin-top: 10px;
+        }
+
+        /* Carte Question */
+        .question-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            animation: slideIn 0.4s ease-out;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .comp-tag {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            margin: 15px 0 25px 0;
+            font-weight: 500;
+        }
+        
+        /* Options de réponse */
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .option-btn {
+            background: var(--btn-bg);
+            border: 2px solid var(--btn-border);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--text);
+            transition: all 0.2s;
+            position: relative;
+        }
+        .option-btn:hover { transform: translateX(5px); background: var(--secondary); color: #000; }
+        .option-btn:disabled { cursor: default; transform: none; }
+
+        /* États de réponse */
+        .correct { background-color: #dcedc8 !important; border-color: var(--success) !important; color: #000 !important; }
+        .wrong { background-color: #ffcdd2 !important; border-color: var(--error) !important; color: #000 !important; }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-weight: bold;
+        }
+        .feedback.success { background-color: #e8f5e9; color: #1b5e20; border-left: 5px solid var(--success); }
+        .feedback.error { background-color: #ffebee; color: #b71c1c; border-left: 5px solid var(--error); }
+
+        /* Progression */
+        .progress-wrapper {
+            background: #ddd;
+            height: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        /* Bouton Suivant */
+        .next-btn {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            margin-top: 20px;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Résultats */
+        #result-screen { display: none; text-align: center; }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 20px auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        .skill-bar-container { margin: 15px 0; text-align: left; }
+        .skill-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        .skill-track { background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden; }
+        .skill-val { height: 100%; background: var(--primary); width: 0%; transition: width 1s; }
+
+        /* Zoom classes */
+        body.zoom-1 { font-size: 18px; }
+        body.zoom-2 { font-size: 22px; }
+
+    </style>
+</head>
+<body class="zoom-1">
+
+    <div class="a11y-bar">
+        <button class="a11y-btn" onclick="toggleDys()" title="Police adaptée Dyslexie">Dyslexie</button>
+        <button class="a11y-btn" onclick="toggleDark()" title="Mode Sombre / Clair">Contrast</button>
+        <button class="a11y-btn" onclick="toggleZoom()" title="Agrandir le texte">A A+</button>
+    </div>
+
+    <div class="container">
+        
+        <header>
+            <h2>Thématique A : L'individu responsable de son capital santé</h2>
+            <h1>Module A7 : L'alimentation adaptée à son activité</h1>
+            <div class="objective">
+                🎯 <strong>Objectif général :</strong> Être capable d'adopter un comportement alimentaire responsable et adapté à son activité professionnelle.
+            </div>
+            
+            <div class="toggle-comp" onclick="toggleComps()">Voir les compétences travaillées (PSE - CAP) ▼</div>
+            <div class="competences-list" id="compList">
+                <ul style="padding-left: 20px; margin: 0;">
+                    <li><strong>C1</strong> : Traiter une information.</li>
+                    <li><strong>C2</strong> : Appliquer une méthode d’analyse dans une situation donnée.</li>
+                    <li><strong>C3</strong> : Mettre en relation un phénomène physio., un enjeu, une règle avec une mesure de prévention.</li>
+                    <li><strong>C4</strong> : Proposer une solution pour résoudre un problème (santé/env./conso).</li>
+                    <li><strong>C5</strong> : Argumenter un choix.</li>
+                    <li><strong>C6</strong> : Communiquer à l’écrit et à l’oral.</li>
+                </ul>
+            </div>
+        </header>
+
+        <div id="quiz-screen">
+            <div class="progress-wrapper">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+
+            <div class="question-card" id="card">
+                </div>
+
+            <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Question suivante ➜</button>
+        </div>
+
+        <div id="result-screen" class="question-card">
+            <h2>Bilan de la séance</h2>
+            <div class="score-circle">
+                <span id="finalScore">0</span>/20
+            </div>
+            <p>Voici ton profil de compétences sur ce module :</p>
+            <div id="skills-display">
+                </div>
+            <button class="next-btn" style="display:block; margin-top:30px;" onclick="location.reload()">Recommencer l'entraînement</button>
+        </div>
+
+    </div>
+
+<script>
+    // --- DONNÉES PÉDAGOGIQUES (20 Questions - Approche Compétences) ---
+    const questions = [
+        // --- BASES (C1) ---
+        {
+            comp: "C1",
+            text: "[C1] **Identifier** l'unité de mesure utilisée pour calculer l'énergie des aliments.",
+            options: ["Le Volt (V)", "La Kilocalorie (kcal)", "Le Watt (W)"],
+            ans: 1,
+            feedback: "C'est la Kilocalorie (kcal) ou le Kilojoule (kJ)."
+        },
+        {
+            comp: "C1",
+            text: "[C1] **Repérer** l'élément qui n'est PAS un facteur de variation des besoins énergétiques.",
+            options: ["L'âge", "Le sexe (homme/femme)", "La couleur des cheveux", "L'activité physique"],
+            ans: 2,
+            feedback: "La couleur des cheveux n'a aucun rapport avec l'énergie dépensée."
+        },
+        {
+            comp: "C1",
+            text: "[C1] **Classer** le 'poisson' dans son groupe alimentaire.",
+            options: ["Produits laitiers", "VPO (Viandes, Poissons, Œufs)", "Féculents"],
+            ans: 1,
+            feedback: "Le poisson appartient au groupe VPO (Bâtisseurs)."
+        },
+        // --- COMPRÉHENSION & LIENS (C3) ---
+        {
+            comp: "C3",
+            text: "[C3] **Mettre en relation** le type d'activité et le besoin énergétique.",
+            sub: "Un employé de bureau assis toute la journée a un besoin :",
+            options: ["Faible (Sédentaire)", "Moyen", "Très élevé"],
+            ans: 0,
+            feedback: "Activité sédentaire = dépense faible (environ 2000-2200 kcal)."
+        },
+        {
+            comp: "C3",
+            text: "[C3] **Mettre en relation** l'activité physique intense et le besoin.",
+            sub: "Un couvreur-zingueur qui monte sur les toits a un besoin :",
+            options: ["Faible", "Moyen", "Élevé (Travail de force)"],
+            ans: 2,
+            feedback: "Travail physique + extérieur = besoin élevé (3000-3500 kcal)."
+        },
+        // --- MÉTHODE & ANALYSE (C2) ---
+        {
+            comp: "C2",
+            text: "[C2] **Calculer** (estimer) l'IMC de Julie.",
+            sub: "Taille: 1.70m, Poids: 60kg. Formule : Poids ÷ (Taille × Taille). <br> 60 ÷ (1.7 × 1.7) = 20.7",
+            options: ["Elle est en maigreur (<18.5)", "Elle est de corpulence normale (18.5 à 25)", "Elle est en surpoids (>25)"],
+            ans: 1,
+            feedback: "20.7 est compris entre 18.5 et 25, c'est une corpulence normale."
+        },
+        {
+            comp: "C2",
+            text: "[C2] **Analyser** la composition de ce repas : <br><em>Steak haché + Pâtes + Eau</em>.",
+            sub: "Quel groupe important manque-t-il pour l'équilibre ?",
+            options: ["Il manque des Féculents", "Il manque des Fruits et Légumes", "Il manque des Protéines"],
+            ans: 1,
+            feedback: "Il n'y a ni fruit, ni légume. Il manque des fibres et vitamines."
+        },
+        // --- RISQUES SANTÉ (C3) ---
+        {
+            comp: "C3",
+            text: "[C3] **Expliquer** le risque d'une consommation excessive de produits sucrés (sodas, bonbons).",
+            options: ["Risque de diabète et obésité", "Risque de chute", "Risque de grippe"],
+            ans: 0,
+            feedback: "Le sucre en excès fatigue le pancréas (diabète) et est stocké en graisse (obésité)."
+        },
+        {
+            comp: "C3",
+            text: "[C3] **Mettre en relation** l'alimentation et le sommeil.",
+            sub: "Que se passe-t-il si on mange un repas très lourd et gras le soir ?",
+            options: ["On s'endort tout de suite", "Le sommeil est perturbé et la digestion difficile", "On fait de beaux rêves"],
+            ans: 1,
+            feedback: "La digestion lourde augmente la température du corps et gêne le sommeil."
+        },
+        // --- SOLUTIONS (C4) ---
+        {
+            comp: "C4",
+            text: "[C4] **Proposer** une collation (goûter) équilibrée pour éviter le coup de fatigue.",
+            options: ["Une barre chocolatée et un soda", "Une pomme et un verre d'eau", "Un paquet de chips"],
+            ans: 1,
+            feedback: "Le fruit apporte de l'énergie et des vitamines sans mauvaises graisses."
+        },
+        {
+            comp: "C4",
+            text: "[C4] **Choisir** la meilleure boisson pour s'hydrater sur un chantier en été.",
+            options: ["L'eau", "Le café", "La bière", "Le soda glacé"],
+            ans: 0,
+            feedback: "L'eau est la seule boisson indispensable. L'alcool est interdit et déshydrate."
+        },
+        {
+            comp: "C4",
+            text: "[C4] **Proposer** une action pour réduire sa consommation de sel.",
+            options: ["Saler le plat avant de le goûter", "Remplacer le sel par des épices et herbes", "Manger plus de charcuterie"],
+            ans: 1,
+            feedback: "Les épices donnent du goût sans les risques du sel (hypertension)."
+        },
+        // --- IDENTIFICATION (C1) ---
+        {
+            comp: "C1",
+            text: "[C1] **Identifier** le rôle des 'aliments bâtisseurs' (Protéines).",
+            options: ["Donner de l'énergie", "Construire et réparer les muscles/os", "Aider au transit"],
+            ans: 1,
+            feedback: "Comme des briques pour une maison, ils construisent le corps."
+        },
+        {
+            comp: "C1",
+            text: "[C1] **Relever** le nombre de fruits et légumes recommandés par jour.",
+            options: ["Au moins 1 par jour", "Au moins 5 par jour", "Uniquement le dimanche"],
+            ans: 1,
+            feedback: "La recommandation officielle est 'Manger au moins 5 fruits et légumes par jour'."
+        },
+        // --- ARGUMENTATION (C5) ---
+        {
+            comp: "C5",
+            text: "[C5] **Argumenter** l'importance du petit-déjeuner.",
+            options: ["Il sert juste à se faire plaisir", "Il permet de recharger les batteries après la nuit et d'éviter l'hypoglycémie", "Il fait grossir"],
+            ans: 1,
+            feedback: "C'est le repas 'starter' de la journée après le jeûne de la nuit."
+        },
+        {
+            comp: "C5",
+            text: "[C5] **Justifier** pourquoi le grignotage est mauvais pour la santé.",
+            options: ["Car les aliments grignotés sont souvent gras/sucrés et cela dérègle l'appétit", "Parce que c'est interdit par la loi", "Parce que ça coûte moins cher"],
+            ans: 0,
+            feedback: "Le grignotage apporte des calories vides et coupe l'appétit pour les vrais repas."
+        },
+        // --- MÉTHODE (C2) ---
+        {
+            comp: "C2",
+            text: "[C2] **Diagnostiquer** le problème : 'Il est 11h, Karim a des vertiges, tremble et a des sueurs froides'.",
+            options: ["Il fait une indigestion", "Il fait une hypoglycémie (manque de sucre)", "Il a trop mangé"],
+            ans: 1,
+            feedback: "Ce sont les symptômes typiques de l'hypoglycémie (souvent due à l'absence de petit-déjeuner)."
+        },
+        // --- SOLUTIONS PRO (C4) ---
+        {
+            comp: "C4",
+            text: "[C4] **Proposer** une amélioration pour un chauffeur routier qui mange souvent des sandwichs.",
+            options: ["Prendre un sandwich complet (pain complet, crudités, poulet) au lieu d'un hot-dog", "Ne plus manger le midi", "Manger deux sandwichs"],
+            ans: 0,
+            feedback: "Choisir la qualité (pain complet, fibres, protéines maigres) améliore l'équilibre."
+        },
+        // --- COMMUNICATION (C6) ---
+        {
+            comp: "C6",
+            text: "[C6] **Communiquer** à l'écrit : Choisis la phrase correcte pour un rapport d'accident.",
+            options: ["Il est tombé paskil avait faim.", "La victime a fait un malaise suite à une hypoglycémie.", "Le gars il a eu la tête qui tourne."],
+            ans: 1,
+            feedback: "Vocabulaire précis (malaise, hypoglycémie) et syntaxe correcte."
+        },
+        {
+            comp: "C5",
+            text: "[C5] **Argumenter** : Pourquoi faut-il se laver les mains avant de manger au travail ?",
+            options: ["Pour éviter d'ingérer des produits chimiques ou des microbes présents sur les mains sales", "Pour avoir les mains douces", "Pour perdre du temps"],
+            ans: 0,
+            feedback: "C'est une mesure d'hygiène de base pour éviter les intoxications (Risque biologique/chimique)."
+        }
+    ];
+
+    // --- LOGIQUE JS ---
+    let currentIdx = 0;
+    let score = 0;
+    let skills = { C1:{ok:0,tot:0}, C2:{ok:0,tot:0}, C3:{ok:0,tot:0}, C4:{ok:0,tot:0}, C5:{ok:0,tot:0}, C6:{ok:0,tot:0} };
+
+    const card = document.getElementById('card');
+    const pBar = document.getElementById('progressBar');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function toggleComps() {
+        const x = document.getElementById("compList");
+        x.style.display = (x.style.display === "block") ? "none" : "block";
+    }
+
+    // ACCESSIBILITÉ
+    function toggleDys() { document.body.classList.toggle('dys-font'); }
+    function toggleDark() { document.body.classList.toggle('dark-mode'); }
+    let zoomLevel = 1;
+    function toggleZoom() {
+        document.body.classList.remove(`zoom-${zoomLevel}`);
+        zoomLevel = zoomLevel === 1 ? 2 : 1;
+        document.body.classList.add(`zoom-${zoomLevel}`);
+    }
+
+    // QUIZ ENGINE
+    function loadQuestion() {
+        if(currentIdx >= questions.length) { showResult(); return; }
+        
+        const Q = questions[currentIdx];
+        pBar.style.width = ((currentIdx) / questions.length * 100) + "%";
+        
+        let html = `
+            <span class="comp-tag">${Q.comp}</span>
+            <div class="question-text">
+                ${Q.text.replace(/\*\*(.*?)\*\*/g, '<span style="color:var(--primary); font-weight:800; text-decoration:underline;">$1</span>')}
+                ${Q.sub ? `<br><small style="color:var(--text); opacity:0.8; display:block; margin-top:10px;">${Q.sub}</small>` : ''}
+            </div>
+            <div class="options-grid">
+        `;
+
+        Q.options.forEach((opt, i) => {
+            html += `<button class="option-btn" onclick="check(${i}, this)">${opt}</button>`;
+        });
+        
+        html += `</div><div class="feedback" id="fb"></div>`;
+        card.innerHTML = html;
+        nextBtn.style.display = "none";
+    }
+
+    function check(choice, btn) {
+        const Q = questions[currentIdx];
+        const allBtns = document.querySelectorAll('.option-btn');
+        const fb = document.getElementById('fb');
+        
+        // Désactiver clics
+        allBtns.forEach(b => b.disabled = true);
+        
+        skills[Q.comp].tot++;
+
+        if(choice === Q.ans) {
+            btn.classList.add('correct');
+            fb.innerHTML = "✅ Bravo ! " + Q.feedback;
+            fb.classList.add('success');
+            score++;
+            skills[Q.comp].ok++;
+        } else {
+            btn.classList.add('wrong');
+            allBtns[Q.ans].classList.add('correct'); // Montrer la bonne
+            fb.innerHTML = "❌ Dommage. " + Q.feedback;
+            fb.classList.add('error');
+        }
+        
+        fb.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        loadQuestion();
+    }
+
+    function showResult() {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('finalScore').innerText = score;
+        
+        const container = document.getElementById('skills-display');
+        
+        // Génération des barres de compétences
+        const labels = {
+            C1: "C1 - Traiter l'info",
+            C2: "C2 - Méthode & Analyse",
+            C3: "C3 - Mettre en relation",
+            C4: "C4 - Proposer solutions",
+            C5: "C5 - Argumenter",
+            C6: "C6 - Communiquer"
+        };
+
+        for (let k in skills) {
+            if(skills[k].tot > 0) {
+                let pct = Math.round((skills[k].ok / skills[k].tot) * 100);
+                container.innerHTML += `
+                    <div class="skill-bar-container">
+                        <div class="skill-header">
+                            <span>${labels[k]}</span>
+                            <span>${pct}%</span>
+                        </div>
+                        <div class="skill-track">
+                            <div class="skill-val" style="width:${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Init
+    loadQuestion();
+
+</script>
+</body>
+</html>

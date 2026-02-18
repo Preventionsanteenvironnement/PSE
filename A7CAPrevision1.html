@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Révision Module A7 : Alimentation & Activité</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* --- RESET & BASE --- */
+:root {
+    --primary: #1b3a5c; /* Navy du PDF */
+    --accent: #f59e0b;  /* Orange/Jaune du PDF */
+    --success: #10b981;
+    --error: #ef4444;
+    --bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --text-light: #6b7280;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; padding: 0; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding-bottom: 40px;}
+
+/* --- HEADER --- */
+header {
+    background: var(--primary); color: white; padding: 15px;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex; justify-content: space-between; align-items: center;
+}
+h1 { margin: 0; font-size: 1rem; font-weight: 800; }
+.progress-container { width: 100%; position: absolute; bottom: 0; left: 0; height: 4px; background: rgba(255,255,255,0.2); }
+.progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
+
+/* --- CONTAINERS --- */
+.container { max-width: 600px; margin: 0 auto; padding: 15px; }
+.card {
+    background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 20px; margin-bottom: 20px; overflow: hidden; animation: slideIn 0.3s ease-out;
+}
+
+/* --- QUESTION STYLES --- */
+.q-tag {
+    display: inline-block; background: #e0e7ff; color: var(--primary);
+    font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.q-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: #111; }
+.context-box {
+    background: #fffbeb; border-left: 4px solid var(--accent); padding: 10px;
+    font-size: 0.9rem; margin-bottom: 15px; color: #78350f; border-radius: 4px;
+}
+
+/* --- OPTIONS (BUTTONS) --- */
+.options-grid { display: flex; flex-direction: column; gap: 10px; }
+.opt-btn {
+    background: white; border: 2px solid #e5e7eb; padding: 15px; border-radius: 10px;
+    text-align: left; font-size: 1rem; font-family: inherit; font-weight: 600; color: var(--text);
+    cursor: pointer; transition: all 0.2s; position: relative;
+}
+.opt-btn:active { transform: scale(0.98); }
+.opt-btn.selected { border-color: var(--primary); background: #f0f9ff; }
+.opt-btn.correct { border-color: var(--success); background: #d1fae5; color: #065f46; }
+.opt-btn.wrong { border-color: var(--error); background: #fee2e2; color: #991b1b; }
+.opt-btn:disabled { cursor: default; transform: none; }
+
+/* --- FEEDBACK --- */
+.feedback {
+    margin-top: 15px; padding: 15px; border-radius: 8px; font-size: 0.95rem; display: none;
+    animation: fadeIn 0.4s;
+}
+.feedback.show { display: block; }
+.feedback.is-correct { background: #d1fae5; border: 1px solid var(--success); color: #064e3b; }
+.feedback.is-wrong { background: #fee2e2; border: 1px solid var(--error); color: #7f1d1d; }
+.feedback strong { display: block; margin-bottom: 5px; }
+
+/* --- NAVIGATION --- */
+.nav-btn {
+    width: 100%; background: var(--primary); color: white; border: none; padding: 15px;
+    font-size: 1rem; font-weight: 700; border-radius: 10px; margin-top: 20px; cursor: pointer;
+    display: none; box-shadow: 0 4px 10px rgba(27, 58, 92, 0.3);
+}
+.nav-btn:hover { background: #2c5282; }
+.nav-btn.show { display: block; }
+
+/* --- INTRO & OUTRO --- */
+.intro-screen, .outro-screen { text-align: center; padding: 20px 0; }
+.big-score { font-size: 3rem; font-weight: 900; color: var(--accent); line-height: 1; margin: 20px 0; }
+.start-btn {
+    background: var(--accent); color: white; border: none; padding: 15px 30px;
+    font-size: 1.1rem; font-weight: 800; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); transition: transform 0.2s;
+}
+.start-btn:active { transform: scale(0.95); }
+
+/* --- ANIMATIONS --- */
+@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- CLASSIFICATION SPECIFIC --- */
+.drop-zone {
+    border: 2px dashed #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 10px;
+    text-align: center; font-size: 0.85rem; color: var(--text-light); min-height: 50px;
+    display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
+}
+.classification-item {
+    display: inline-block; padding: 6px 12px; background: white; border: 1px solid #cbd5e1;
+    border-radius: 20px; font-weight: 700; cursor: pointer; user-select: none;
+}
+.classification-item.used { opacity: 0.4; pointer-events: none; }
+.classification-item.in-zone { background: var(--primary); color: white; border: none; font-size: 0.75rem;}
+
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Module A7 : Révision</h1>
+    <div style="font-size: 0.8rem; opacity: 0.8;">CAP/BAC PRO</div>
+    <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+</header>
+
+<div class="container" id="app">
+    </div>
+
+<script>
+// --- DONNÉES PÉDAGOGIQUES ---
+// Basé strictement sur le PDF Delagrave PSE CAP 2025 (Module A7)
+
+const quizData = [
+    // BLOC 1 : LES BESOINS NUTRITIONNELS
+    {
+        id: 1,
+        type: 'qcm',
+        category: 'Besoins Nutritionnels',
+        question: "Selon le cours, quels sont les trois types de besoins que l'alimentation doit satisfaire ?",
+        options: [
+            "Énergétiques, Plastiques, Fonctionnels",
+            "Énergétiques, Caloriques, Vitaminiques",
+            "Musculaires, Digestifs, Respiratoires"
+        ],
+        correct: 0,
+        explanation: "L'organisme a 3 besoins : Énergétiques (carburant), Plastiques ou Bâtisseurs (construire/réparer) et Fonctionnels (bon fonctionnement des cellules)."
+    },
+    {
+        id: 2,
+        type: 'qcm',
+        category: 'Besoins Nutritionnels',
+        question: "Les besoins dits 'Bâtisseurs' (ou plastiques) servent principalement à :",
+        options: [
+            "Fournir de l'énergie pour bouger",
+            "Construire, réparer et renouveler les cellules",
+            "Apporter uniquement des vitamines"
+        ],
+        correct: 1,
+        explanation: "Comme des briques pour une maison, les besoins plastiques (protéines) servent à construire et réparer le corps (muscles, os, peau)."
+    },
+    {
+        id: 3,
+        type: 'classification', // Custom logic for simplification
+        category: 'Classification',
+        question: "Classe ces aliments selon le besoin principal qu'ils couvrent.",
+        items: [
+            { name: "Pâtes", type: "energie" },
+            { name: "Steak", type: "plastique" },
+            { name: "Orange", type: "fonctionnel" },
+            { name: "Poisson", type: "plastique" },
+            { name: "Pain", type: "energie" },
+            { name: "Légumes", type: "fonctionnel" }
+        ],
+        zones: [
+            { id: "energie", label: "⚡ Énergétique (Carburant)" },
+            { id: "plastique", label: "🏗️ Plastique (Bâtisseur)" },
+            { id: "fonctionnel", label: "⚙️ Fonctionnel (Outils)" }
+        ],
+        explanation: "Pâtes/Pain = Glucides (Énergie). Viande/Poisson = Protéines (Bâtisseur). Fruits/Légumes = Vitamines (Fonctionnel)."
+    },
+
+    // BLOC 2 : FACTEURS DE VARIATION
+    {
+        id: 4,
+        type: 'qcm',
+        category: 'Facteurs de variation',
+        question: "Dans le document sur les facteurs de variation, pourquoi Kamel (manutentionnaire) a-t-il besoin de 3000 kcal alors que Bruno (bureau) n'en a besoin que de 2500 ?",
+        options: [
+            "À cause de l'âge",
+            "À cause du sexe",
+            "À cause de l'activité physique"
+        ],
+        correct: 2,
+        explanation: "L'activité physique est un facteur majeur. Un travail physique (porter des charges) consomme beaucoup plus de carburant qu'un travail sédentaire."
+    },
+    {
+        id: 5,
+        type: 'qcm',
+        category: 'Facteurs de variation',
+        question: "Quel état physiologique particulier augmente les besoins énergétiques chez la femme ?",
+        options: [
+            "La fatigue",
+            "La grossesse",
+            "Le sommeil"
+        ],
+        correct: 1,
+        explanation: "La grossesse (et l'allaitement) demandent plus d'énergie pour le développement du bébé. Exemple du cours : Sylvie (enceinte) passe de 1900 à 2250 kcal."
+    },
+
+    // BLOC 3 : ÉQUILIBRE ALIMENTAIRE & GROUPES
+    {
+        id: 6,
+        type: 'qcm',
+        category: 'Équilibre Alimentaire',
+        question: "Selon la pyramide alimentaire (PNNS), quelle est la recommandation pour les fruits et légumes ?",
+        options: [
+            "1 fois par semaine",
+            "Au moins 5 par jour",
+            "Uniquement le midi"
+        ],
+        correct: 1,
+        explanation: "Il est recommandé de consommer au moins 5 portions de fruits et légumes par jour pour l'apport en fibres, vitamines et minéraux."
+    },
+    {
+        id: 7,
+        type: 'qcm',
+        category: 'L\'Assiette Équilibrée',
+        question: "Regarde le schéma de l'assiette équilibrée (Doc D). Quelle proportion doivent occuper les LÉGUMES ?",
+        options: [
+            "1/4 de l'assiette",
+            "1/2 de l'assiette (la moitié)",
+            "Toute l'assiette"
+        ],
+        correct: 1,
+        explanation: "Les légumes doivent représenter la moitié (1/2) de l'assiette. Les féculents 1/4 et les protéines (viande/poisson/œuf) 1/4."
+    },
+    {
+        id: 8,
+        type: 'qcm',
+        category: 'Fréquence',
+        question: "Combien de fois par semaine est-il recommandé de manger du poisson ?",
+        options: [
+            "Jamais",
+            "Tous les jours",
+            "2 fois par semaine (dont 1 gras)"
+        ],
+        correct: 2,
+        explanation: "Le PNNS recommande du poisson 2 fois par semaine, dont un poisson gras (sardine, saumon, maquereau) pour les bons lipides."
+    },
+
+    // BLOC 4 : ERREURS & CONSÉQUENCES (Situations)
+    {
+        id: 9,
+        type: 'situation',
+        category: 'Analyse de Situation',
+        context: "Amina (lycéenne) saute le petit-déjeuner. À 10h, elle ressent un gros coup de fatigue.",
+        question: "Quelle est la conséquence immédiate de l'erreur d'Amina sur son activité ?",
+        options: [
+            "Une prise de poids immédiate",
+            "Une hypoglycémie (coup de pompe) et baisse de concentration",
+            "Une meilleure vigilance"
+        ],
+        correct: 1,
+        explanation: "Sauter le petit-déjeuner prive le cerveau de carburant (glucose) le matin, entraînant fatigue, manque de concentration et risque d'accident."
+    },
+    {
+        id: 10,
+        type: 'situation',
+        category: 'Santé',
+        context: "Katia ne mange jamais de fruits ni de légumes. Elle souffre de constipation.",
+        question: "Quel nutriment manque-t-il à Katia pour régler son problème de transit ?",
+        options: [
+            "Les Protéines",
+            "Les Lipides",
+            "Les Fibres"
+        ],
+        correct: 2,
+        explanation: "Les fibres (présentes dans les fruits, légumes, céréales complètes) sont indispensables au bon transit intestinal. Leur absence cause la constipation."
+    },
+    {
+        id: 11,
+        type: 'situation',
+        category: 'Risques Long Terme',
+        context: "Jérôme mange gras, sucré, grignote et ne bouge pas assez. Il a pris du poids.",
+        question: "Quelles maladies Jérôme risque-t-il à long terme selon le médecin ?",
+        options: [
+            "Diabète et maladies cardiovasculaires",
+            "Rhume et Grippe",
+            "Carence en calcium"
+        ],
+        correct: 0,
+        explanation: "Une alimentation déséquilibrée (trop gras/sucré) + sédentarité favorisent l'obésité, le diabète de type 2 et les maladies du cœur (cardiovasculaires)."
+    },
+
+    // BLOC 5 : ADAPTATION AU TRAVAIL
+    {
+        id: 12,
+        type: 'situation',
+        category: 'Choix Professionnel',
+        context: "Tu es maçon (travail physique dehors). Tu as 1h de pause. Quel est le meilleur choix ?",
+        question: "Choisis le menu le plus adapté :",
+        options: [
+            "Sandwich merguez + Frites + Bière",
+            "Salade de pâtes au poulet + Yaourt + Fruit + Eau",
+            "Paquet de chips + Soda"
+        ],
+        correct: 1,
+        explanation: "Le menu 2 est équilibré : Féculents (pâtes) pour l'énergie durable, Protéines (poulet) pour les muscles, Eau pour l'hydratation. L'alcool est dangereux au travail (vigilance)."
+    },
+    {
+        id: 13,
+        type: 'situation',
+        category: 'Travail de Nuit',
+        context: "David travaille en 3x8 (de nuit). Il rentre chez lui à 5h du matin pour dormir.",
+        question: "Que doit-il manger avant de se coucher ?",
+        options: [
+            "Un repas très copieux (Steak frites) pour tenir",
+            "Rien du tout",
+            "Un petit-déjeuner léger (ex: produit laitier, fruit, pain)"
+        ],
+        correct: 2,
+        explanation: "Avant de dormir, il faut une digestion légère pour ne pas perturber le sommeil. Un petit-déjeuner léger est idéal au retour du poste de nuit."
+    },
+    {
+        id: 14,
+        type: 'qcm',
+        category: 'Travail de Nuit',
+        question: "Pour rester éveillé la nuit au travail, quelle est la MEILLEURE stratégie alimentaire ?",
+        options: [
+            "Boire 1 litre de café et manger des barres chocolatées",
+            "Manger une collation équilibrée (fruit, yaourt) et boire de l'eau",
+            "Manger des chips pour le plaisir"
+        ],
+        correct: 1,
+        explanation: "Le sucre (barres) et l'excès de caféine provoquent des pics d'énergie suivis de chutes brutales (coups de barre). L'eau et les fruits apportent une énergie stable."
+    }
+];
+
+// --- LOGIQUE DE L'APPLICATION ---
+
+let currentQuestionIndex = 0;
+let score = 0;
+let userAnswers = [];
+
+const appContainer = document.getElementById('app');
+const progressBar = document.getElementById('progressBar');
+
+function initApp() {
+    showIntro();
+}
+
+function showIntro() {
+    appContainer.innerHTML = `
+        <div class="intro-screen card">
+            <h2>Prêt pour la révision ?</h2>
+            <p>Testez vos connaissances sur le module <strong>A7 : Alimentation & Activité</strong>.</p>
+            <ul style="text-align:left; font-size:0.9rem; color:#555; margin: 20px 0;">
+                <li>Besoins nutritionnels</li>
+                <li>Équilibre alimentaire (PNNS)</li>
+                <li>Adaptation au travail (3x8, travail physique)</li>
+                <li>Erreurs et conséquences santé</li>
+            </ul>
+            <p><strong>${quizData.length} questions</strong> pour vous préparer au CAP.</p>
+            <button class="start-btn" onclick="startQuiz()">C'est parti ! 🚀</button>
+        </div>
+    `;
+    progressBar.style.width = '0%';
+}
+
+function startQuiz() {
+    currentQuestionIndex = 0;
+    score = 0;
+    userAnswers = [];
+    renderQuestion();
+}
+
+function renderQuestion() {
+    const q = quizData[currentQuestionIndex];
+    
+    // Mise à jour barre progression
+    const progress = ((currentQuestionIndex) / quizData.length) * 100;
+    progressBar.style.width = `${progress}%`;
+
+    let contentHtml = '';
+
+    // Header de la carte
+    contentHtml += `
+        <div class="card">
+            <span class="q-tag">${q.category}</span>
+            <div class="q-title">${q.id}. ${q.question}</div>
+            ${q.context ? `<div class="context-box">📝 <strong>Situation :</strong> ${q.context}</div>` : ''}
+    `;
+
+    // Corps de la question selon le type
+    if (q.type === 'qcm' || q.type === 'situation') {
+        contentHtml += `<div class="options-grid" id="options-container">`;
+        q.options.forEach((opt, index) => {
+            contentHtml += `<button class="opt-btn" onclick="checkAnswer(${index})">${opt}</button>`;
+        });
+        contentHtml += `</div>`;
+    } 
+    else if (q.type === 'classification') {
+        contentHtml += `
+            <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:15px;" id="items-pool">
+                ${q.items.map((item, idx) => `<span class="classification-item" id="item-${idx}" onclick="selectItem(${idx})">${item.name}</span>`).join('')}
+            </div>
+            <div id="zones-container">
+                ${q.zones.map((zone, zIdx) => `
+                    <div class="drop-zone" onclick="dropItem('${zone.id}')">
+                        <strong>${zone.label}</strong>
+                        <div id="zone-${zone.id}" style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:5px; margin-top:5px;"></div>
+                    </div>
+                `).join('')}
+            </div>
+            <button class="nav-btn show" id="validate-classif" onclick="checkClassification()" style="background:var(--accent); margin-top:15px;">Valider</button>
+        `;
+    }
+
+    // Zone de feedback (cachée au début)
+    contentHtml += `
+            <div class="feedback" id="feedback"></div>
+            <button class="nav-btn" id="next-btn" onclick="nextQuestion()">Question Suivante →</button>
+        </div>
+    `;
+
+    appContainer.innerHTML = contentHtml;
+    
+    // Scroll top smooth
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// --- LOGIQUE QCM ---
+function checkAnswer(selectedIndex) {
+    const q = quizData[currentQuestionIndex];
+    const opts = document.querySelectorAll('.opt-btn');
+    const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+
+    // Désactiver les boutons
+    opts.forEach(btn => btn.disabled = true);
+
+    const isCorrect = (selectedIndex === q.correct);
+    if (isCorrect) score++;
+
+    // Visuel boutons
+    opts[selectedIndex].classList.add(isCorrect ? 'correct' : 'wrong');
+    if (!isCorrect) {
+        opts[q.correct].classList.add('correct'); // Montrer la bonne réponse
+    }
+
+    // Afficher feedback
+    feedback.className = `feedback show ${isCorrect ? 'is-correct' : 'is-wrong'}`;
+    feedback.innerHTML = `
+        <strong>${isCorrect ? '✅ Excellent !' : '❌ Aïe, ce n\'est pas ça.'}</strong>
+        ${q.explanation}
+    `;
+
+    nextBtn.classList.add('show');
+}
+
+// --- LOGIQUE CLASSIFICATION (Simplifiée pour mobile : Tap to select, Tap to drop) ---
+let selectedItemId = null;
+
+function selectItem(idx) {
+    // Reset visual selection
+    document.querySelectorAll('.classification-item').forEach(el => el.style.borderColor = '#cbd5e1');
+    
+    const itemEl = document.getElementById(`item-${idx}`);
+    if(itemEl.classList.contains('used')) return;
+
+    selectedItemId = idx;
+    itemEl.style.borderColor = 'var(--primary)';
+    itemEl.style.borderWidth = '2px';
+}
+
+function dropItem(zoneId) {
+    if (selectedItemId === null) return;
+    
+    const q = quizData[currentQuestionIndex];
+    const item = q.items[selectedItemId];
+    const itemEl = document.getElementById(`item-${selectedItemId}`);
+    
+    // Déplacer visuellement
+    const zoneEl = document.getElementById(`zone-${zoneId}`);
+    const clone = document.createElement('span');
+    clone.className = 'classification-item in-zone';
+    clone.textContent = item.name;
+    // Stocker la réponse utilisateur
+    clone.dataset.originalId = selectedItemId;
+    clone.dataset.targetZone = zoneId;
+    
+    zoneEl.appendChild(clone);
+    
+    // Marquer l'original comme utilisé
+    itemEl.classList.add('used');
+    itemEl.style.borderColor = '#cbd5e1';
+    itemEl.style.borderWidth = '1px';
+    selectedItemId = null;
+}
+
+function checkClassification() {
+    const q = quizData[currentQuestionIndex];
+    const placedItems = document.querySelectorAll('.in-zone');
+    
+    // Vérifier si tout est classé
+    if (placedItems.length < q.items.length) {
+        alert("Classe tous les aliments avant de valider !");
+        return;
+    }
+
+    let errors = 0;
+    placedItems.forEach(el => {
+        const originalId = el.dataset.originalId;
+        const userZone = el.dataset.targetZone;
+        const correctZone = q.items[originalId].type;
+        
+        if (userZone !== correctZone) {
+            el.style.backgroundColor = 'var(--error)';
+            errors++;
+        } else {
+            el.style.backgroundColor = 'var(--success)';
+        }
+    });
+
+    const isCorrect = (errors === 0);
+    if (isCorrect) score++;
+
+    document.getElementById('validate-classif').style.display = 'none';
+    const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+
+    feedback.className = `feedback show ${isCorrect ? 'is-correct' : 'is-wrong'}`;
+    feedback.innerHTML = `
+        <strong>${isCorrect ? '✅ Parfait !' : `❌ Il y a ${errors} erreur(s).`}</strong>
+        ${q.explanation}
+    `;
+    nextBtn.classList.add('show');
+}
+
+function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < quizData.length) {
+        renderQuestion();
+    } else {
+        showResults();
+    }
+}
+
+function showResults() {
+    progressBar.style.width = '100%';
+    const percentage = Math.round((score / quizData.length) * 100);
+    
+    let msg = "";
+    if (percentage === 100) msg = "Incroyable ! Tu es prêt pour l'examen ! 🏆";
+    else if (percentage >= 75) msg = "Très bon travail ! Encore quelques détails et c'est parfait. 👏";
+    else if (percentage >= 50) msg = "Pas mal, mais relis bien les corrections pour progresser. 👍";
+    else msg = "Il faut revoir le cours. Poursuis les efforts, recommence pour comprendre ! 💪";
+
+    appContainer.innerHTML = `
+        <div class="outro-screen card">
+            <h2>Bilan de la révision</h2>
+            <div class="big-score">${score} / ${quizData.length}</div>
+            <p style="font-size:1.2rem; margin-bottom:20px;">${msg}</p>
+            <p style="color:#666; font-size:0.9rem;">
+                Cette révision couvre les notions essentielles du Module A7 pour le CAP/Bac Pro.
+            </p>
+            <button class="start-btn" onclick="initApp()">🔄 Recommencer</button>
+        </div>
+    `;
+}
+
+// Lancement au chargement
+document.addEventListener('DOMContentLoaded', initApp);
+
+</script>
+</body>
+</html>

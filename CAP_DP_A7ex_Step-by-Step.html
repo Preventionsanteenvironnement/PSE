@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Le Self-Service Interactif</title>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #e0f7fa;
+        --card-bg: #ffffff;
+        --text: #2c3e50;
+        --primary: #00bcd4; /* Bleu doux */
+        --accent: #ff9800; /* Orange peps */
+        --success: #4caf50;
+        --error: #f44336;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+    body {
+        margin: 0; padding: 0;
+        font-family: 'Comic Neue', 'Verdana', sans-serif; /* Police très lisible, style BD */
+        font-size: 20px; /* Texte gros pour accessibilité */
+        background-color: var(--bg); color: var(--text);
+        height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* --- EN-TÊTE CLIENT --- */
+    .header-client {
+        background: var(--card-bg); padding: 15px;
+        border-bottom: 4px solid var(--primary);
+        display: flex; align-items: center; gap: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10;
+    }
+    .client-avatar { font-size: 3rem; background: #eee; border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; }
+    .client-info h2 { margin: 0; font-size: 1.2rem; color: var(--primary); font-weight: bold; }
+    .client-info p { margin: 5px 0 0 0; font-size: 0.9rem; color: #555; }
+
+    /* --- ZONE PLATEAU --- */
+    .tray-container {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: url('https://www.transparenttextures.com/patterns/checkerboard-cross-hatch.png');
+        padding: 10px; position: relative;
+    }
+    
+    .tray {
+        width: 100%; max-width: 400px; height: 250px;
+        background: #cfd8dc; border-radius: 20px; border: 5px solid #b0bec5;
+        display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 15px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        transition: transform 0.3s;
+    }
+
+    .tray-slot {
+        background: rgba(255,255,255,0.6); border-radius: 10px; border: 2px dashed #90a4ae;
+        display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+        position: relative; transition: all 0.2s;
+    }
+    .tray-slot.filled { background: white; border-style: solid; border-color: var(--success); animation: popIn 0.4s; }
+    .tray-slot.main-dish { grid-column: span 2; } /* Le plat prend toute la largeur */
+    
+    /* --- BARRE DE CHOIX (ALIMENTS) --- */
+    .choices-bar {
+        background: white; padding: 20px; height: 180px;
+        display: flex; gap: 15px; overflow-x: auto; align-items: center;
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .food-card {
+        min-width: 120px; height: 130px; background: #f9f9f9; border: 2px solid #ddd; border-radius: 15px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer; transition: transform 0.1s; text-align: center;
+        padding: 5px;
+    }
+    .food-card:active { transform: scale(0.95); background: #e0f7fa; border-color: var(--primary); }
+    .food-icon { font-size: 3rem; margin-bottom: 5px; }
+    .food-name { font-size: 0.8rem; font-weight: bold; line-height: 1.2; }
+
+    /* --- FEEDBACK OVERLAY (RESULTAT) --- */
+    .modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); z-index: 100;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s; text-align: center; color: white; padding: 20px;
+    }
+    .modal.show { opacity: 1; pointer-events: all; }
+    
+    .modal-icon { font-size: 5rem; margin-bottom: 20px; animation: bounce 1s infinite; }
+    .modal h2 { font-size: 2rem; margin: 0 0 10px 0; color: var(--accent); }
+    .modal p { font-size: 1.1rem; max-width: 400px; line-height: 1.5; }
+    
+    .btn-next {
+        background: var(--success); color: white; border: none; padding: 15px 40px;
+        font-size: 1.2rem; font-weight: bold; border-radius: 50px; margin-top: 30px;
+        cursor: pointer; box-shadow: 0 5px 0 #2e7d32;
+    }
+    .btn-next:active { transform: translateY(4px); box-shadow: 0 0 0; }
+    .btn-retry { background: var(--accent); box-shadow: 0 5px 0 #e65100; }
+
+    /* --- INSTRUCTIONS VISUELLES --- */
+    .instruction-bubble {
+        position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+        background: var(--accent); color: white; padding: 8px 20px; border-radius: 20px;
+        font-weight: bold; box-shadow: 0 4px 0 #e65100; animation: float 2s infinite;
+        white-space: nowrap; font-size: 1rem; z-index: 5;
+    }
+
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    @keyframes float { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
+
+</style>
+</head>
+<body>
+
+<div class="header-client">
+    <div class="client-avatar" id="c-avatar">👷‍♂️</div>
+    <div class="client-info">
+        <h2 id="c-name">Mourad</h2>
+        <p id="c-desc">Il est Maçon. Il a besoin de FORCE !</p>
+    </div>
+</div>
+
+<div class="tray-container">
+    <div class="instruction-bubble" id="instruction">Choisis une ENTRÉE 👇</div>
+    <div class="tray">
+        <div class="tray-slot" id="slot-0"></div> <div class="tray-slot" id="slot-1"></div> <div class="tray-slot main-dish" id="slot-2"></div> </div>
+</div>
+
+<div class="choices-bar" id="choices-container">
+    </div>
+
+<div class="modal" id="modal">
+    <div class="modal-icon" id="m-icon">🌟</div>
+    <h2 id="m-title">BRAVO !</h2>
+    <p id="m-text">Le plateau est parfait.</p>
+    <button class="btn-next" id="m-btn" onclick="nextLevel()">CLIENT SUIVANT</button>
+</div>
+
+<script>
+/* --- DATA SIMPLIFIÉE --- */
+const levels = [
+    {
+        name: "Mourad", avatar: "👷‍♂️",
+        desc: "Maçon (Chantier). Il force beaucoup.",
+        need: "energy", // Besoin principal
+        steps: [
+            {
+                type: "Entrée",
+                items: [
+                    { name: "Salade", icon: "🥗", tags: ["ok"], feedback: "Bien, des vitamines." },
+                    { name: "Saucisson", icon: "🥓", tags: ["fat"], feedback: "Trop gras pour commencer." },
+                    { name: "Carottes", icon: "🥕", tags: ["ok"], feedback: "Super, des légumes !" }
+                ]
+            },
+            {
+                type: "Plat Principal",
+                items: [
+                    { name: "Pâtes Bolo", icon: "🍝", tags: ["energy", "ok"], feedback: "Parfait ! Des sucres lents pour tenir tout l'après-midi." },
+                    { name: "Haricots Verts", icon: "🥦", tags: ["light"], feedback: "C'est trop léger pour un maçon. Il va avoir faim." },
+                    { name: "Frites", icon: "🍟", tags: ["fat"], feedback: "Attention, trop de gras endort." }
+                ]
+            },
+            {
+                type: "Dessert",
+                items: [
+                    { name: "Pomme", icon: "🍎", tags: ["ok"], feedback: "Très bien." },
+                    { name: "Glace", icon: "🍦", tags: ["sugar"], feedback: "Trop de sucre rapide." },
+                    { name: "Yaourt", icon: "🥛", tags: ["ok"], feedback: "Bon pour le calcium." }
+                ]
+            }
+        ]
+    },
+    {
+        name: "Livia", avatar: "💇‍♀️",
+        desc: "Coiffeuse. Elle veut faire attention à son poids.",
+        need: "light",
+        steps: [
+            {
+                type: "Entrée",
+                items: [
+                    { name: "Radis", icon: "🥗", tags: ["ok"], feedback: "Parfait, c'est léger et croquant." },
+                    { name: "Friand", icon: "🥐", tags: ["fat"], feedback: "Aïe, c'est très gras (feuilleté)." }
+                ]
+            },
+            {
+                type: "Plat Principal",
+                items: [
+                    { name: "Poisson & Riz", icon: "🐟", tags: ["ok", "light"], feedback: "Excellent ! Protéines maigres et un peu de riz." },
+                    { name: "Burger", icon: "🍔", tags: ["fat"], feedback: "Le burger est trop riche pour son activité." }
+                ]
+            },
+            {
+                type: "Boisson",
+                items: [
+                    { name: "Eau", icon: "💧", tags: ["ok"], feedback: "La seule vraie boisson." },
+                    { name: "Soda", icon: "🥤", tags: ["sugar"], feedback: "Le soda contient 7 morceaux de sucre !" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "David", avatar: "🥱",
+        desc: "Travail de Nuit (3x8). Il rentre dormir.",
+        need: "sleep",
+        steps: [
+            {
+                type: "Petit Faim",
+                items: [
+                    { name: "Potage", icon: "🥣", tags: ["ok"], feedback: "Chaud et léger, ça aide à dormir." },
+                    { name: "Pizza", icon: "🍕", tags: ["fat"], feedback: "Trop lourd à digérer avant le lit." }
+                ]
+            },
+            {
+                type: "Boisson",
+                items: [
+                    { name: "Tisane/Eau", icon: "🫖", tags: ["ok"], feedback: "Parfait pour le sommeil." },
+                    { name: "Café", icon: "☕", tags: ["cafe"], feedback: "NON ! La caféine va l'empêcher de dormir." }
+                ]
+            },
+            {
+                type: "En plus",
+                items: [
+                    { name: "Compote", icon: "🍎", tags: ["ok"], feedback: "Douceur sucrée légère." },
+                    { name: "Chocolat", icon: "🍫", tags: ["sugar"], feedback: "Le sucre va l'exciter." }
+                ]
+            }
+        ]
+    }
+];
+
+/* --- MOTEUR DE JEU --- */
+let currentLevel = 0;
+let currentStep = 0;
+let currentTray = [];
+
+function initGame() {
+    loadLevel(0);
+}
+
+function loadLevel(idx) {
+    currentLevel = idx;
+    currentStep = 0;
+    currentTray = [];
+    
+    // Reset UI
+    document.querySelectorAll('.tray-slot').forEach(el => {
+        el.innerHTML = "";
+        el.className = "tray-slot"; // Reset classes
+        if(el.id === "slot-2") el.classList.add("main-dish");
+    });
+    
+    // Update Header
+    const data = levels[idx];
+    document.getElementById('c-avatar').innerText = data.avatar;
+    document.getElementById('c-name').innerText = data.name;
+    document.getElementById('c-desc').innerText = data.desc;
+    
+    loadStep();
+}
+
+function loadStep() {
+    const data = levels[currentLevel];
+    const stepData = data.steps[currentStep];
+    
+    // Instruction
+    document.getElementById('instruction').innerText = `Choisis : ${stepData.type} 👇`;
+    
+    // Items
+    const container = document.getElementById('choices-container');
+    container.innerHTML = "";
+    
+    stepData.items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "food-card";
+        div.innerHTML = `<div class="food-icon">${item.icon}</div><div class="food-name">${item.name}</div>`;
+        div.onclick = () => selectItem(item);
+        container.appendChild(div);
+    });
+}
+
+function selectItem(item) {
+    // Ajouter au plateau visuellement
+    const slotId = currentStep === 1 ? "slot-2" : (currentStep === 0 ? "slot-0" : "slot-1");
+    const slot = document.getElementById(slotId);
+    
+    slot.innerHTML = item.icon;
+    slot.classList.add("filled");
+    
+    // Stocker le choix
+    currentTray.push(item);
+    
+    // Feedback immédiat si erreur critique (café ou alcool)
+    if (item.tags.includes("cafe") && levels[currentLevel].need === "sleep") {
+        showModal(false, item.feedback);
+        return;
+    }
+
+    // Étape suivante
+    currentStep++;
+    if (currentStep < levels[currentLevel].steps.length) {
+        setTimeout(loadStep, 400); // Petite pause pour l'anim
+    } else {
+        validateLevel();
+    }
+}
+
+function validateLevel() {
+    const data = levels[currentLevel];
+    let errors = 0;
+    let comments = [];
+
+    // Analyse simple
+    currentTray.forEach(item => {
+        if (item.tags.includes("fat") || item.tags.includes("sugar") || item.tags.includes("cafe")) {
+            errors++;
+            comments.push(item.feedback);
+        } else if (data.need === "energy" && item.tags.includes("light") && !item.tags.includes("energy")) {
+            // Cas spécial Mourad mange de la salade
+            errors++;
+            comments.push(item.feedback);
+        }
+    });
+
+    if (errors === 0) {
+        showModal(true, "Ce repas est parfaitement adapté !");
+    } else {
+        // On prend le premier commentaire d'erreur
+        showModal(false, comments[0] || "Ce n'est pas tout à fait ça. Essaie plus équilibré.");
+    }
+}
+
+function showModal(success, text) {
+    const m = document.getElementById('modal');
+    const icon = document.getElementById('m-icon');
+    const title = document.getElementById('m-title');
+    const msg = document.getElementById('m-text');
+    const btn = document.getElementById('m-btn');
+
+    m.classList.add('show');
+    msg.innerText = text;
+
+    if (success) {
+        icon.innerText = "🌟";
+        title.innerText = "BRAVO !";
+        title.style.color = "var(--success)";
+        btn.innerText = "CLIENT SUIVANT";
+        btn.className = "btn-next";
+        btn.onclick = nextLevel;
+    } else {
+        icon.innerText = "🤔";
+        title.innerText = "OUPS...";
+        title.style.color = "var(--accent)";
+        btn.innerText = "RÉESSAYER";
+        btn.className = "btn-next btn-retry";
+        btn.onclick = retryLevel;
+    }
+}
+
+function retryLevel() {
+    document.getElementById('modal').classList.remove('show');
+    loadLevel(currentLevel);
+}
+
+function nextLevel() {
+    document.getElementById('modal').classList.remove('show');
+    if (currentLevel < levels.length - 1) {
+        loadLevel(currentLevel + 1);
+    } else {
+        // Fin du jeu
+        document.getElementById('c-name').innerText = "FINI !";
+        document.getElementById('c-desc').innerText = "Tu es un chef !";
+        document.getElementById('choices-container').innerHTML = "<div style='width:100%; text-align:center; font-weight:bold;'>Service terminé 🏆</div>";
+        document.getElementById('instruction').style.display = 'none';
+    }
+}
+
+// Lancement
+initGame();
+
+</script>
+</body>
+</html>

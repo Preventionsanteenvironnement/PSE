@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Marathon de Révision PSE - Module A7</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #2563eb;
+        --dark: #1e293b;
+        --light: #f1f5f9;
+        --success: #10b981;
+        --error: #ef4444;
+        --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; background: var(--light); color: var(--dark); height: 100vh; display: flex; flex-direction: column; }
+
+    /* --- HEADER --- */
+    header {
+        background: white; padding: 10px 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        display: flex; justify-content: space-between; align-items: center; z-index: 10;
+    }
+    .level-indicator { font-weight: 900; color: var(--primary); font-size: 1.1rem; text-transform: uppercase; }
+    .score-badge { background: var(--dark); color: white; padding: 5px 10px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; }
+
+    /* --- PROGRESS BAR --- */
+    .progress-container { width: 100%; height: 6px; background: #e2e8f0; }
+    .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+
+    /* --- MAIN CONTENT --- */
+    #game-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; width: 100%; }
+    
+    .card {
+        background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px; animation: slideIn 0.3s ease-out;
+    }
+
+    .question-text { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; line-height: 1.4; color: var(--dark); }
+    .context-tag { 
+        display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 0.75rem; 
+        padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; font-weight: 700; 
+    }
+
+    /* --- OPTIONS --- */
+    .options-stack { display: flex; flex-direction: column; gap: 10px; }
+    .opt-btn {
+        background: white; border: 2px solid #cbd5e1; padding: 16px; border-radius: 12px;
+        text-align: left; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
+        position: relative;
+    }
+    .opt-btn:active { transform: scale(0.98); }
+    .opt-btn.correct { border-color: var(--success); background: #ecfdf5; color: #065f46; }
+    .opt-btn.wrong { border-color: var(--error); background: #fef2f2; color: #991b1b; }
+    
+    /* --- FEEDBACK --- */
+    .feedback { 
+        margin-top: 20px; padding: 15px; border-radius: 10px; font-size: 0.95rem; line-height: 1.5; 
+        display: none; animation: fadeIn 0.3s; 
+    }
+    .feedback.good { background: #d1fae5; border-left: 4px solid var(--success); color: #064e3b; }
+    .feedback.bad { background: #fee2e2; border-left: 4px solid var(--error); color: #7f1d1d; }
+    .source-cite { display: block; margin-top: 5px; font-size: 0.75rem; opacity: 0.7; font-style: italic; }
+
+    /* --- NEXT BUTTON --- */
+    .next-btn {
+        background: var(--primary); color: white; border: none; padding: 16px; width: 100%;
+        border-radius: 12px; font-size: 1.1rem; font-weight: 700; margin-top: 20px; cursor: pointer;
+        display: none; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    /* --- LEVEL SCREENS --- */
+    .interstitial { text-align: center; padding: 40px 20px; }
+    .big-icon { font-size: 4rem; margin-bottom: 20px; display: block; }
+    .start-btn { 
+        background: var(--warning); color: white; border: none; padding: 15px 40px; 
+        font-size: 1.2rem; font-weight: 800; border-radius: 50px; margin-top: 30px; 
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); cursor: pointer;
+    }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="level-indicator" id="level-indicator">Accueil</div>
+    <div class="score-badge">Score: <span id="score">0</span>/30</div>
+</header>
+<div class="progress-container"><div class="progress-fill" id="progress"></div></div>
+
+<div id="game-area">
+    </div>
+
+<script>
+// --- BANQUE DE DONNÉES (30 QUESTIONS - Sources: Foucher, Delagrave, Carnet) ---
+const levels = [
+    {
+        name: "Niveau 1 : Les Bases (C'est cadeau)",
+        questions: [
+            {
+                ctx: "Définition", q: "Selon l'OMS (Plan de prévention), la santé est un état complet de bien-être...",
+                opts: ["Physique, mental et social", "Physique uniquement", "Mental et financier"],
+                good: 0,
+                why: "L'OMS définit la santé comme un état complet de bien-être physique, mental et social (Delagrave).",
+                src: "Source : Delagrave, Plan de prévention"
+            },
+            {
+                ctx: "Besoins", q: "Quels sont les trois grands types de besoins nutritionnels ?",
+                opts: ["Énergétiques, Plastiques, Fonctionnels", "Énergétiques, Sportifs, Chimiques", "Glucides, Lipides, Protides"],
+                good: 0,
+                why: "L'organisme a 3 besoins : Énergétiques (carburant), Plastiques/Bâtisseurs (construction) et Fonctionnels (outils).",
+                src: "Source : Foucher Mémo 7 / Carnet p.129"
+            },
+            {
+                ctx: "Rôle", q: "À quoi servent les besoins 'Plastiques' (ou Bâtisseurs) ?",
+                opts: ["Fournir de l'énergie", "Construire et réparer les cellules", "Réguler la température"],
+                good: 1,
+                why: "Les besoins plastiques assurent la construction, la réparation et le renouvellement des cellules (ex: muscles, os).",
+                src: "Source : Carnet de réussite p.129"
+            },
+            {
+                ctx: "Constituants", q: "Quels nutriments couvrent principalement les besoins 'Fonctionnels' ?",
+                opts: ["Les graisses", "Les sucres", "Les vitamines et minéraux"],
+                good: 2,
+                why: "Les besoins fonctionnels sont assurés par les vitamines, les minéraux et les fibres (nécessaires au bon fonctionnement).",
+                src: "Source : Foucher Mémo 7"
+            },
+            {
+                ctx: "Énergie", q: "Quel est le rôle principal des 'Besoins Énergétiques' ?",
+                opts: ["Le fonctionnement musculaire et la thermorégulation", "La solidité des os", "La vision"],
+                good: 0,
+                why: "L'énergie sert au fonctionnement des organes, au travail musculaire et au maintien de la température (37°C).",
+                src: "Source : Carnet de réussite / Foucher"
+            }
+        ]
+    },
+    {
+        name: "Niveau 2 : Les Chiffres & Variations",
+        questions: [
+            {
+                ctx: "Comparaison Âge", q: "Qui a le besoin énergétique le plus élevé ?",
+                opts: ["Éric, 50 ans (8 800 kJ)", "Léo, 15 ans (12 100 kJ)"],
+                good: 1,
+                why: "L'adolescent a des besoins plus élevés à cause de la croissance et de l'activité.",
+                src: "Source : Carnet p.126 (Tableau)"
+            },
+            {
+                ctx: "Facteur", q: "Quel facteur explique la différence de besoin entre Anaïs (15 ans) et Adam (15 ans) ?",
+                opts: ["L'âge", "Le sexe (genre)", "L'activité"],
+                good: 1,
+                why: "À âge égal, le sexe influe sur les besoins (10 400 kJ pour Anaïs vs 12 100 kJ pour Adam).",
+                src: "Source : Carnet p.126"
+            },
+            {
+                ctx: "Activité", q: "Mourad est maçon, Young est agent d'accueil. Quelle est la différence de besoins ?",
+                opts: ["Identique", "Mourad a besoin de +3700 kJ que Young", "Young a besoin de plus d'énergie"],
+                good: 1,
+                why: "Le travail physique (Maçon) demande 12 500 kJ contre 8 800 kJ pour un travail sédentaire.",
+                src: "Source : Carnet p.126"
+            },
+            {
+                ctx: "Physiologie", q: "Pourquoi Juliette (enceinte) a-t-elle besoin de 9 000 kJ contre 7 900 kJ pour Clara ?",
+                opts: ["Elle mange pour deux par plaisir", "C'est l'état physiologique (grossesse)", "C'est l'âge"],
+                good: 1,
+                why: "L'état physiologique (grossesse, allaitement, maladie) augmente les besoins énergétiques.",
+                src: "Source : Carnet p.126 / Foucher Mémo 7"
+            },
+            {
+                ctx: "Unité", q: "Dans les documents, quelle unité est utilisée pour mesurer l'énergie ?",
+                opts: ["Le Volt", "Le Kilojoule (kJ)", "Le Litre"],
+                good: 1,
+                why: "L'énergie nutritionnelle se mesure en Kilojoules (kJ) ou Kilocalories (kcal).",
+                src: "Source : Tous documents"
+            }
+        ]
+    },
+    {
+        name: "Niveau 3 : L'Assiette Parfaite (PNNS)",
+        questions: [
+            {
+                ctx: "Proportions", q: "Dans une assiette équilibrée, quelle part doivent occuper les LÉGUMES ?",
+                opts: ["1/4 (25%)", "1/2 (50%)", "1/3 (33%)"],
+                good: 1,
+                why: "Les légumes doivent représenter la moitié de l'assiette (50%) pour apporter fibres et volume sans trop de calories.",
+                src: "Source : Delagrave Doc D / Carnet p.129"
+            },
+            {
+                ctx: "Féculents", q: "Quelle part pour les féculents (pâtes, riz, pain) ?",
+                opts: ["1/4 (25%)", "1/2 (50%)", "Volonté"],
+                good: 0,
+                why: "Les féculents doivent occuper 1/4 de l'assiette pour fournir l'énergie.",
+                src: "Source : Carnet p.129"
+            },
+            {
+                ctx: "VPO", q: "Que signifie le groupe VPO qui doit occuper le dernier quart ?",
+                opts: ["Vitamines Pommes Oranges", "Viandes Poissons Œufs", "Végétaux Pains Olives"],
+                good: 1,
+                why: "VPO désigne les sources de protéines animales : Viandes, Poissons, Œufs.",
+                src: "Source : Carnet / Foucher"
+            },
+            {
+                ctx: "Fréquence", q: "Combien de fois par semaine faut-il manger du poisson ?",
+                opts: ["1 fois", "2 fois (dont 1 gras)", "Tous les jours"],
+                good: 1,
+                why: "Le PNNS recommande du poisson 2 fois par semaine, dont un poisson gras.",
+                src: "Source : Delagrave"
+            },
+            {
+                ctx: "Compléments", q: "Que faut-il ajouter à l'assiette pour un repas complet ?",
+                opts: ["Soda + Café", "Produit laitier + Fruit + Eau", "Chips + Glace"],
+                good: 1,
+                why: "Un repas complet comprend : le plat (Légume/Féculent/VPO) + 1 produit laitier + 1 fruit + Eau.",
+                src: "Source : Carnet p.127"
+            },
+            {
+                ctx: "À éviter", q: "Quels aliments faut-il limiter selon le mémo ?",
+                opts: ["L'eau et le pain", "Les produits sucrés et matières grasses", "Les fruits"],
+                good: 1,
+                why: "Il faut limiter la consommation de sucres simples, de matières grasses et de sel.",
+                src: "Source : Foucher Mémo 7"
+            }
+        ]
+    },
+    {
+        name: "Niveau 4 : Rythme & Répartition",
+        questions: [
+            {
+                ctx: "Petit-Déjeuner", q: "Quelle part de l'énergie totale de la journée doit apporter le petit-déjeuner ?",
+                opts: ["10%", "25%", "40%"],
+                good: 1,
+                why: "Le petit-déjeuner doit représenter 25% de l'apport énergétique total (1/4 de la journée).",
+                src: "Source : Foucher Mémo 7 (Graphique)"
+            },
+            {
+                ctx: "Déjeuner/Dîner", q: "Quelle est la part recommandée pour le déjeuner et le dîner ?",
+                opts: ["30% chacun", "50% le midi, 10% le soir", "20% chacun"],
+                good: 0,
+                why: "Les deux repas principaux doivent apporter chacun 30% de l'énergie journalière.",
+                src: "Source : Foucher Mémo 7"
+            },
+            {
+                ctx: "Goûter", q: "Le goûter est-il interdit ?",
+                opts: ["Oui, c'est du grignotage", "Non, il peut représenter 15% de l'apport", "Seulement pour les enfants"],
+                good: 1,
+                why: "Le goûter est un repas structuré qui peut représenter 15% de l'apport journalier, évitant ainsi le grignotage.",
+                src: "Source : Foucher Mémo 7"
+            },
+            {
+                ctx: "Grignotage", q: "Quelle est la différence entre goûter et grignotage ?",
+                opts: ["Aucune", "Le grignotage est une prise alimentaire anarchique et souvent déséquilibrée", "Le goûter se fait la nuit"],
+                good: 1,
+                why: "Le grignotage (décrit comme erreur alimentaire) est la consommation répétée hors repas, souvent de produits gras/sucrés.",
+                src: "Source : Foucher / Delagrave"
+            },
+            {
+                ctx: "Oubli", q: "Livia ne prend qu'un thé le matin. Quelle est l'erreur ?",
+                opts: ["Absence de petit-déjeuner", "Elle devrait boire du café", "Trop de liquide"],
+                good: 0,
+                why: "L'absence de petit-déjeuner est une erreur majeure qui entraîne fatigue et grignotage plus tard.",
+                src: "Source : Foucher p.1 (Situation Livia)"
+            }
+        ]
+    },
+    {
+        name: "Niveau 5 : Situations Pro (Boss Final)",
+        questions: [
+            {
+                ctx: "Cas David", q: "David travaille en 3x8 (nuit). Il mange sans arrêt et boit du café. Quel est son problème ?",
+                opts: ["Il ne dort pas assez", "Désynchronisation du rythme biologique et mauvaise alimentation", "Il travaille trop"],
+                good: 1,
+                why: "Les horaires décalés perturbent le rythme biologique. Compenser par du grignotage et des excitants aggrave la fatigue.",
+                src: "Source : Delagrave p.1 (Situation David)"
+            },
+            {
+                ctx: "Cas David", q: "David rentre à 5h du matin. Que devrait-il faire ?",
+                opts: ["Manger un repas lourd", "Prendre un petit-déjeuner léger avant de dormir", "Boire un café"],
+                good: 1,
+                why: "Avant de dormir après un poste de nuit, il faut un repas léger pour ne pas perturber le sommeil.",
+                src: "Source : Delagrave (Analyse)"
+            },
+            {
+                ctx: "Cas Livia", q: "Livia (coiffeuse) a pris du poids. Quelle est la cause principale ?",
+                opts: ["Elle reste debout", "Grignotage de barres chocolatées et sandwichs/sodas", "Le stress"],
+                good: 1,
+                why: "Le grignotage de produits sucrés (barres) et les repas déséquilibrés (sandwich/soda) sont la cause directe de sa prise de poids.",
+                src: "Source : Foucher p.1"
+            },
+            {
+                ctx: "Risques Santé", q: "Quelles sont les maladies liées à ces erreurs (gras/sucre/sédentarité) ?",
+                opts: ["Rhume et Grippe", "Maladies cardiovasculaires, Diabète, Obésité", "Céphalées"],
+                good: 1,
+                why: "Les excès alimentaires entraînent surpoids, diabète et maladies cardiovasculaires.",
+                src: "Source : Foucher Mémo 7 / Carnet p.129"
+            },
+            {
+                ctx: "Risques Travail", q: "Quel est l'impact d'une mauvaise alimentation SUR LE TRAVAIL ?",
+                opts: ["Aucun impact", "Baisse de productivité et risque d'accident", "Meilleure ambiance"],
+                good: 1,
+                why: "Une mauvaise alimentation cause fatigue et baisse de vigilance, augmentant le risque d'accident et d'erreur.",
+                src: "Source : Foucher Mémo 7"
+            },
+            {
+                ctx: "Solution", q: "Que devrait faire Livia le soir au lieu de manger des produits ultra-transformés ?",
+                opts: ["Ne rien manger", "Cuisiner des plats maison simples", "Commander une pizza"],
+                good: 1,
+                why: "Il faut limiter les produits ultra-transformés et privilégier le 'Fait Maison'.",
+                src: "Source : Foucher p.8"
+            },
+            {
+                ctx: "Prévention", q: "Le Plan de prévention (Delagrave) conseille de remplacer le temps d'écran par...",
+                opts: ["Du sommeil", "Des livres et du sport", "Des jeux vidéo"],
+                good: 1,
+                why: "Le document conseille : 'Remplacez vos portables par des livres et faites du sport'.",
+                src: "Source : Delagrave (Plan de prévention)"
+            },
+            {
+                ctx: "Synthèse", q: "Quel est l'objectif final du module A7 ?",
+                opts: ["Devenir nutritionniste", "Adopter un comportement alimentaire responsable adapté à son activité", "Savoir cuisiner"],
+                good: 1,
+                why: "Objectif du module : 'Je dois être capable d'adopter un comportement alimentaire responsable et adapté à mon activité'.",
+                src: "Source : Delagrave p.1"
+            },
+            {
+                ctx: "Dernière chance", q: "Si je suis maçon, mes besoins énergétiques sont...",
+                opts: ["Faibles", "Moyens", "Très élevés"],
+                good: 2,
+                why: "Le travail physique lourd augmente considérablement les besoins énergétiques (ex: 12500 kJ).",
+                src: "Source : Carnet p.126"
+            }
+        ]
+    }
+];
+
+// --- LOGIQUE DU JEU ---
+let currentLevel = 0;
+let currentQuestion = 0;
+let totalScore = 0;
+const totalQuestions = levels.reduce((acc, lvl) => acc + lvl.questions.length, 0);
+
+const dom = {
+    area: document.getElementById('game-area'),
+    level: document.getElementById('level-indicator'),
+    score: document.getElementById('score'),
+    progress: document.getElementById('progress')
+};
+
+function init() {
+    showInterstitial();
+}
+
+function showInterstitial() {
+    if (currentLevel >= levels.length) {
+        showEndScreen();
+        return;
+    }
+    const lvl = levels[currentLevel];
+    dom.area.innerHTML = `
+        <div class="interstitial fade-in">
+            <span class="big-icon">${['🏁','📊','🍽️','⏰','⚠️'][currentLevel]}</span>
+            <h2>${lvl.name}</h2>
+            <p>${lvl.questions.length} questions pour valider cette étape.</p>
+            <button class="start-btn" onclick="startLevel()">C'est parti !</button>
+        </div>
+    `;
+}
+
+function startLevel() {
+    currentQuestion = 0;
+    renderQuestion();
+}
+
+function renderQuestion() {
+    const q = levels[currentLevel].questions[currentQuestion];
+    
+    // Calcul progression globale
+    let passedQuestions = 0;
+    for(let i=0; i<currentLevel; i++) passedQuestions += levels[i].questions.length;
+    passedQuestions += currentQuestion;
+    const pct = (passedQuestions / totalQuestions) * 100;
+    dom.progress.style.width = pct + '%';
+    dom.level.textContent = levels[currentLevel].name.split(':')[0];
+
+    dom.area.innerHTML = `
+        <div class="card">
+            <span class="context-tag">${q.ctx}</span>
+            <div class="question-text">${q.q}</div>
+            <div class="options-stack">
+                ${q.opts.map((opt, i) => `
+                    <button class="opt-btn" onclick="handleAnswer(${i})">${opt}</button>
+                `).join('')}
+            </div>
+            <div class="feedback" id="fb"></div>
+            <button class="next-btn" id="next" onclick="nextQuestion()">Suivant</button>
+        </div>
+    `;
+}
+
+window.handleAnswer = function(idx) {
+    const q = levels[currentLevel].questions[currentQuestion];
+    const btns = document.querySelectorAll('.opt-btn');
+    const fb = document.getElementById('fb');
+    const next = document.getElementById('next');
+
+    // Bloquer les clics
+    btns.forEach(b => b.disabled = true);
+
+    if (idx === q.good) {
+        btns[idx].classList.add('correct');
+        fb.className = 'feedback good';
+        fb.innerHTML = `<strong>✅ Exact !</strong><br>${q.why}<br><span class="source-cite">${q.src}</span>`;
+        totalScore++;
+        dom.score.textContent = totalScore;
+    } else {
+        btns[idx].classList.add('wrong');
+        btns[q.good].classList.add('correct');
+        fb.className = 'feedback bad';
+        fb.innerHTML = `<strong>❌ Aïe...</strong><br>${q.why}<br><span class="source-cite">${q.src}</span>`;
+    }
+    
+    fb.style.display = 'block';
+    next.style.display = 'block';
+    
+    // Auto scroll pour voir la réponse
+    setTimeout(() => {
+        next.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+};
+
+window.nextQuestion = function() {
+    const lvl = levels[currentLevel];
+    if (currentQuestion < lvl.questions.length - 1) {
+        currentQuestion++;
+        renderQuestion();
+    } else {
+        currentLevel++;
+        showInterstitial();
+    }
+};
+
+function showEndScreen() {
+    dom.progress.style.width = '100%';
+    let msg = "";
+    if (totalScore === 30) msg = "PERFECTION ABSOLUE ! 🏆 Tu es prêt(e) pour le CAP.";
+    else if (totalScore >= 25) msg = "Excellent travail ! C'est du solide. 👏";
+    else if (totalScore >= 15) msg = "Pas mal, mais il y a encore des pièges à éviter. 📚";
+    else msg = "Il faut reprendre le cours sérieusement. Courage ! 💪";
+
+    dom.area.innerHTML = `
+        <div class="interstitial">
+            <span class="big-icon">🎓</span>
+            <h1>Résultat Final</h1>
+            <div style="font-size:3rem; font-weight:900; color:var(--primary); margin:20px 0;">
+                ${totalScore} / ${totalQuestions}
+            </div>
+            <p style="font-size:1.2rem; line-height:1.6; padding:0 20px;">${msg}</p>
+            <button class="start-btn" onclick="location.reload()">Recommencer tout</button>
+        </div>
+    `;
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
