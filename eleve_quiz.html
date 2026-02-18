@@ -141,6 +141,20 @@
         .summary-score { font-size: 2.5rem; font-weight: 900; color: white; margin-bottom: 8px; }
         .summary-detail { font-size: 1.2rem; color: rgba(255,255,255,0.8); margin-bottom: 8px; }
         .summary-msg { font-size: 1rem; color: rgba(255,255,255,0.6); margin-top: 16px; }
+
+        /* === ANTI-DISPERSION === */
+        #alert-tabswitch {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #ef4444; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center; padding: 30px;
+            animation: flashBg 0.4s ease 3;
+        }
+        @keyframes flashBg { 0%,100% { background: #ef4444; } 50% { background: #b91c1c; } }
+        .alert-icon { font-size: 5rem; margin-bottom: 16px; }
+        .alert-title { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+        .alert-sub { font-size: 1rem; opacity: 0.8; }
+        .alert-count { font-size: 0.85rem; opacity: 0.6; margin-top: 16px; }
     </style>
 </head>
 <body>
@@ -184,6 +198,14 @@
     <div class="result-text" id="result-text"></div>
     <div class="result-answer" id="result-answer"></div>
     <div class="result-waiting">Question suivante<span class="dots"></span></div>
+</div>
+
+<!-- ALERTE ANTI-DISPERSION -->
+<div id="alert-tabswitch">
+    <div class="alert-icon">🚨</div>
+    <div class="alert-title">Reviens sur le quiz !</div>
+    <div class="alert-sub">Ton prof est prevenu que tu as quitte la page.</div>
+    <div class="alert-count" id="alert-count-msg"></div>
 </div>
 
 <!-- ÉCRAN 5 : BILAN -->
@@ -233,6 +255,7 @@
     let hasAnswered = false;
     let myScore = 0;
     let totalQuestions = 0;
+    let tabSwitchCount = 0;
     let timerInterval = null;
     let unsubConfig = null;
 
@@ -478,6 +501,35 @@
         const el = document.getElementById('screen-' + name);
         if (el) el.style.display = 'flex';
     }
+
+    // === ANTI-DISPERSION ===
+    document.addEventListener('visibilitychange', async () => {
+        if (!currentSessionId || !myPseudo) return; // pas encore connecté
+
+        if (document.hidden) {
+            // L'élève a quitté l'onglet
+            tabSwitchCount++;
+            // Signaler au prof via Firebase
+            try {
+                await setDoc(doc(db, "quiz_live_presence", myVisitorId), {
+                    visitorId: myVisitorId,
+                    pseudo: myPseudo,
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId,
+                    tabSwitches: tabSwitchCount,
+                    lastSwitch: Date.now()
+                }, { merge: true });
+            } catch(e) {}
+        } else {
+            // L'élève revient — afficher l'alerte
+            const alertEl = document.getElementById('alert-tabswitch');
+            document.getElementById('alert-count-msg').textContent = 'Sortie(s) detectee(s) : ' + tabSwitchCount;
+            alertEl.style.display = 'flex';
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+            }, 3000);
+        }
+    });
 </script>
 </body>
 </html>
