@@ -79,6 +79,15 @@
         const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 
+        // --- SESSION ID ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "itamami_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
         let username = localStorage.getItem('itamami_username');
         if(username) { document.getElementById('login-screen').style.display = 'none'; registerPresence(username); loadHistory(); }
 
@@ -91,7 +100,7 @@
             }
         };
 
-        async function registerPresence(name) { try{ await setDoc(doc(db, "itamami_presence", name), {online:true, timestamp:Date.now()}); }catch(e){} }
+        async function registerPresence(name) { try{ await setDoc(doc(db, "itamami_presence", name), {online:true, timestamp:Date.now(), sessionId: currentSessionId || null}); }catch(e){} }
 
         // ÉCOUTE DU CONFIG PROF (Pour afficher la bonne zone)
         onSnapshot(doc(db, "itamami_config", "global"), (doc) => {
@@ -124,7 +133,7 @@
             const input = document.getElementById('ideaInput'), text = input.value.trim();
             if(!text) return;
             addVisualItem(text, 'wait'); input.value = ""; input.focus();
-            try { await addDoc(collection(db, "itamami_ideas"), { text: text, student: username, status: 'waiting', timestamp: Date.now() }); } catch(e){}
+            try { await addDoc(collection(db, "itamami_ideas"), { text: text, student: username, status: 'waiting', timestamp: Date.now(), sessionId: currentSessionId || null }); } catch(e){}
         };
 
         window.clearMyHistory = () => { if(confirm("Effacer ?")) document.getElementById('list').innerHTML = ""; };

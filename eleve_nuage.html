@@ -66,8 +66,21 @@
         const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
+
         let myName = "";
+
+        // ── SESSION ──────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+
+        // Si pas de sessionId dans l'URL, écouter la config pour le récupérer
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "nuage_etat", "config"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) {
+                    currentSessionId = snap.data().sessionId;
+                }
+            });
+        }
 
         // LOGIN
         window.joinSession = async () => {
@@ -75,7 +88,7 @@
             if(!val) return;
             myName = val;
             document.getElementById('display-name').innerText = myName;
-            await addDoc(collection(db, "nuage_presence"), { name: myName, timestamp: Date.now() });
+            await addDoc(collection(db, "nuage_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'flex';
         };
@@ -103,7 +116,7 @@
             if(!txt) return;
             // Envoi dans 'nuage_attente' (Salle d'attente)
             try {
-                await addDoc(collection(db, "nuage_attente"), { text: txt, student: myName, timestamp: Date.now() });
+                await addDoc(collection(db, "nuage_attente"), { text: txt, student: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
                 inp.value = "";
                 showStatus("Envoyé au prof ! (Attente validation)", "success");
             } catch(e) { showStatus("Erreur (fermé ?)", "error"); }

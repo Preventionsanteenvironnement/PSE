@@ -84,12 +84,21 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
+
+        // --- SESSION ID ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "pad_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
         let myName = "";
 
         // --- CONNEXION ---
@@ -103,7 +112,7 @@
             
             // On signale la présence (Important pour la liste prof)
             try {
-                await addDoc(collection(db, "pad_presence"), { name: myName, timestamp: Date.now() });
+                await addDoc(collection(db, "pad_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
             } catch(e) { console.log("Erreur presence"); }
 
             document.getElementById('login-screen').style.display = 'none';
@@ -148,11 +157,12 @@
 
             try {
                 // Envoi dans 'pad_ideas' avec statut 'waiting' pour la validation prof
-                await addDoc(collection(db, "pad_ideas"), { 
-                    text: txt, 
-                    student: myName, 
-                    status: "waiting", // IMPORTANT : remet le statut à "attente"
-                    timestamp: Date.now() 
+                await addDoc(collection(db, "pad_ideas"), {
+                    text: txt,
+                    student: myName,
+                    status: "waiting",
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId || null
                 });
                 
                 inp.value = "";

@@ -95,11 +95,20 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // --- SESSION ID ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "postit_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
 
         let myName = "";
         let selectedColor = "yellow";
@@ -112,7 +121,7 @@
             document.getElementById('display-name').innerText = myName;
             
             // Ajout Présence
-            await addDoc(collection(db, "postit_presence"), { name: myName, timestamp: Date.now() });
+            await addDoc(collection(db, "postit_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
 
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'flex';
@@ -178,7 +187,8 @@
                     color: selectedColor,
                     student: myName,
                     status: "waiting",
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId || null
                 });
 
                 area.value = "";

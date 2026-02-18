@@ -63,6 +63,19 @@
         const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 
+        // ── SESSION ──────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+
+        // Si pas de sessionId dans l'URL, écouter la config pour le récupérer
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "mindmap_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) {
+                    currentSessionId = snap.data().sessionId;
+                }
+            });
+        }
+
         let username = localStorage.getItem('mindmap_username');
         if(username) document.getElementById('login-screen').style.display = 'none';
 
@@ -84,7 +97,7 @@
             const input = document.getElementById('ideaInput'), text = input.value.trim();
             if(!text) return;
             addVisualItem(text, 'wait'); input.value = ""; input.focus();
-            try { await addDoc(collection(db, "mindmap_ideas"), { text: text, student: username||"Anonyme", status: 'waiting', timestamp: Date.now() }); } catch(e){}
+            try { await addDoc(collection(db, "mindmap_ideas"), { text: text, student: username||"Anonyme", status: 'waiting', timestamp: Date.now(), sessionId: currentSessionId || null }); } catch(e){}
         };
 
         function addVisualItem(text, status, isLiked) {

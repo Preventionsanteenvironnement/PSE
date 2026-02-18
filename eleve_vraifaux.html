@@ -87,7 +87,16 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
+
+        // --- SESSION SYSTEM ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "vraifaux_etat", "config"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
         let studentId = localStorage.getItem("pse_student_id");
         if(!studentId) {
             studentId = "eleve_" + Math.random().toString(36).substr(2, 9);
@@ -143,7 +152,8 @@
             try {
                 await setDoc(doc(db, "vraifaux_reponses", studentId), {
                     vote: choix,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId || null
                 });
             } catch(e) {}
         };

@@ -89,7 +89,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // TA CLÉ VALIDÉE
         const firebaseConfig = {
@@ -104,6 +104,19 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // ── SESSION ──────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+
+        // Si pas de sessionId dans l'URL, écouter la config pour le récupérer
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "meteo_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) {
+                    currentSessionId = snap.data().sessionId;
+                }
+            });
+        }
 
         let myMood = null, myEmoji = null, mySoc = null, myDefi = null;
 
@@ -147,7 +160,8 @@
                     emoji: myEmoji,
                     social: mySoc,
                     defi: myDefi,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId || null
                 });
                 document.getElementById('form-screen').classList.add('hidden');
                 document.getElementById('success-screen').classList.remove('hidden');
