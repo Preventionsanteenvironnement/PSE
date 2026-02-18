@@ -192,6 +192,24 @@
         .alert-title { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
         .alert-sub { font-size: 1rem; opacity: 0.8; }
         .alert-count { font-size: 0.85rem; opacity: 0.6; margin-top: 16px; }
+
+        /* === EQUIPE DANS LOBBY === */
+        #team-assignment {
+            display: none; margin-top: 20px; animation: bounceIn 0.6s;
+            background: rgba(255,255,255,0.15); border-radius: 16px; padding: 18px 24px;
+            text-align: center; width: 100%; max-width: 320px;
+        }
+        #team-assignment .team-label { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+        #team-assignment .team-name {
+            font-size: 1.6rem; font-weight: 900; color: white; margin-bottom: 8px;
+        }
+        #team-assignment .team-mates {
+            font-size: 0.85rem; color: rgba(255,255,255,0.7); line-height: 1.6;
+        }
+        #team-assignment .team-mate-item {
+            display: inline-block; background: rgba(255,255,255,0.12); border-radius: 20px;
+            padding: 3px 10px; margin: 2px 3px; font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -212,6 +230,11 @@
     <div style="background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
         <div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-bottom: 8px;">Ton pseudo pour ce quiz :</div>
         <div style="color: white; font-size: 1.8rem; font-weight: 900;" id="my-pseudo-full"></div>
+    </div>
+    <div id="team-assignment">
+        <div class="team-label">Ton equipe :</div>
+        <div class="team-name" id="team-name-display"></div>
+        <div class="team-mates" id="team-mates-display"></div>
     </div>
     <div class="waiting-msg">En attente du prof<span class="dots"></span></div>
 </div>
@@ -317,6 +340,9 @@
     let tabSwitchCount = 0;
     let timerInterval = null;
     let unsubConfig = null;
+    let myTeamId = null;
+    let myTeam = null;
+    let currentGameMode = 'solo';
 
     // === REJOINDRE ===
     window.joinSession = async function() {
@@ -387,12 +413,40 @@
     });
 
     // === ECOUTER CONFIG ===
+    function updateTeamDisplay(d) {
+        currentGameMode = d.gameMode || 'solo';
+        const configTeams = d.teams || [];
+        myTeam = configTeams.find(t => t.members.some(m => m.visitorId === myVisitorId)) || null;
+        myTeamId = myTeam ? myTeam.teamId : null;
+
+        const teamEl = document.getElementById('team-assignment');
+        if (myTeam && currentGameMode !== 'solo') {
+            const nameEl = document.getElementById('team-name-display');
+            nameEl.innerHTML = '<span style="font-size:2rem; vertical-align:middle;">' + myTeam.teamEmoji + '</span> ' + myTeam.teamName;
+            nameEl.style.color = myTeam.teamColor;
+
+            const matesEl = document.getElementById('team-mates-display');
+            const teammates = myTeam.members.filter(m => m.visitorId !== myVisitorId);
+            if (teammates.length > 0) {
+                matesEl.innerHTML = teammates.map(m => '<span class="team-mate-item">' + m.pseudo + '</span>').join(' ');
+            } else {
+                matesEl.innerHTML = '<span style="opacity:0.5">Seul dans l\'equipe</span>';
+            }
+            teamEl.style.display = 'block';
+        } else {
+            teamEl.style.display = 'none';
+        }
+    }
+
     function startListening() {
         if (unsubConfig) unsubConfig();
         unsubConfig = onSnapshot(doc(db, "quiz_live_config", "global"), (snap) => {
             if (!snap.exists()) return;
             const d = snap.data();
             if (d.sessionId !== currentSessionId) return;
+
+            // Update team info
+            updateTeamDisplay(d);
 
             // Handle pause
             if (d.paused) {
@@ -534,7 +588,7 @@
             const isCorrect = answerIndex === correct;
             if (isCorrect) myScore++;
 
-            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), {
+            const reponseDoc = {
                 visitorId: myVisitorId,
                 pseudo: myPseudo,
                 answer: answerIndex,
@@ -542,7 +596,10 @@
                 correct: isCorrect,
                 timestamp: Date.now(),
                 sessionId: currentSessionId
-            });
+            };
+            if (myTeamId) reponseDoc.teamId = myTeamId;
+            if (currentGameMode !== 'solo') reponseDoc.gameMode = currentGameMode;
+            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), reponseDoc);
         } catch(e) {
             console.error("Erreur envoi reponse:", e);
         }
@@ -570,7 +627,7 @@
             const isCorrect = normalizeText(userAnswer) === normalizeText(expectedAnswer);
             if (isCorrect) myScore++;
 
-            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), {
+            const motReponseDoc = {
                 visitorId: myVisitorId,
                 pseudo: myPseudo,
                 answerText: userAnswer,
@@ -579,7 +636,10 @@
                 correct: isCorrect,
                 timestamp: Date.now(),
                 sessionId: currentSessionId
-            });
+            };
+            if (myTeamId) motReponseDoc.teamId = myTeamId;
+            if (currentGameMode !== 'solo') motReponseDoc.gameMode = currentGameMode;
+            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), motReponseDoc);
         } catch(e) {
             console.error("Erreur envoi reponse mot:", e);
         }
