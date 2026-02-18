@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PSE Quiz Live</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            height: 100dvh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* === ÉCRAN REJOINDRE === */
+        #screen-join {
+            position: fixed; inset: 0; z-index: 100;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px;
+        }
+        #screen-join h1 { font-size: 2.5rem; color: white; margin-bottom: 8px; }
+        #screen-join .subtitle { color: rgba(255,255,255,0.8); font-size: 1rem; margin-bottom: 40px; }
+        #join-input {
+            width: 100%; max-width: 300px; padding: 18px; border: none; border-radius: 16px;
+            font-size: 1.8rem; font-weight: 900; text-align: center; text-transform: uppercase;
+            letter-spacing: 8px; background: white; color: #1a1a2e;
+            -webkit-appearance: none; outline: none;
+        }
+        #join-input::placeholder { letter-spacing: 2px; font-size: 1rem; color: #aaa; font-weight: 400; }
+        #btn-join {
+            width: 100%; max-width: 300px; margin-top: 16px; padding: 18px;
+            border: none; border-radius: 16px; background: #2ecc71; color: white;
+            font-size: 1.3rem; font-weight: 800; cursor: pointer;
+            box-shadow: 0 4px 0 #27ae60; transition: 0.1s;
+        }
+        #btn-join:active { transform: translateY(4px); box-shadow: none; }
+        #join-error { color: #ff6b6b; margin-top: 12px; font-weight: 600; min-height: 24px; }
+
+        /* === ÉCRAN LOBBY === */
+        #screen-lobby {
+            position: fixed; inset: 0; z-index: 90;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px; text-align: center;
+        }
+        .pseudo-display {
+            font-size: 3rem; margin-bottom: 10px;
+            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .pseudo-name { font-size: 1.5rem; color: white; font-weight: 800; margin-bottom: 30px; }
+        .waiting-msg { color: rgba(255,255,255,0.7); font-size: 1.1rem; }
+        .dots::after { content: ''; animation: dots 1.5s infinite; }
+        @keyframes dots {
+            0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); }
+        }
+
+        /* === ÉCRAN QUESTION === */
+        #screen-question {
+            position: fixed; inset: 0; z-index: 80;
+            background: #f0f4f8;
+            display: none; flex-direction: column;
+            padding: 20px; padding-top: env(safe-area-inset-top, 20px);
+        }
+        .question-card {
+            background: white; border-radius: 16px; padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 16px; min-height: 100px;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center;
+        }
+        .question-text { font-size: 1.2rem; font-weight: 700; color: #1a1a2e; line-height: 1.4; }
+        .timer-bar-container {
+            height: 8px; background: #e2e8f0; border-radius: 4px;
+            margin-bottom: 16px; overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%; background: #2ecc71; border-radius: 4px;
+            transition: width 1s linear, background 0.3s;
+            width: 100%;
+        }
+        .timer-bar.warning { background: #f39c12; }
+        .timer-bar.danger { background: #e74c3c; }
+        .timer-label {
+            text-align: center; font-size: 1.1rem; font-weight: 700;
+            color: #64748b; margin-bottom: 12px;
+        }
+        .choices-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; flex: 1;
+        }
+        .choice-btn {
+            border: none; border-radius: 16px; color: white;
+            font-size: 1.1rem; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px 12px; text-align: center; line-height: 1.3;
+            transition: transform 0.15s, opacity 0.3s;
+            min-height: 80px;
+        }
+        .choice-btn:active { transform: scale(0.95); }
+        .choice-btn.selected { animation: pulse 0.5s; border: 4px solid white; }
+        .choice-btn.faded { opacity: 0.3; pointer-events: none; }
+        .choice-btn.disabled { pointer-events: none; }
+        .choice-a { background: #3b82f6; box-shadow: 0 4px 0 #2563eb; }
+        .choice-b { background: #f59e0b; box-shadow: 0 4px 0 #d97706; }
+        .choice-c { background: #22c55e; box-shadow: 0 4px 0 #16a34a; }
+        .choice-d { background: #ef4444; box-shadow: 0 4px 0 #dc2626; }
+        .sent-msg {
+            text-align: center; padding: 20px; color: #22c55e;
+            font-weight: 800; font-size: 1.2rem;
+            display: none;
+        }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        /* === ÉCRAN RÉSULTAT === */
+        #screen-result {
+            position: fixed; inset: 0; z-index: 80;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px; text-align: center;
+        }
+        #screen-result.correct { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        #screen-result.wrong { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .result-icon { font-size: 5rem; margin-bottom: 16px; animation: bounceIn 0.5s; }
+        .result-text { font-size: 1.8rem; font-weight: 900; color: white; margin-bottom: 12px; }
+        .result-answer { font-size: 1.1rem; color: rgba(255,255,255,0.9); font-weight: 600; padding: 12px 20px; background: rgba(255,255,255,0.15); border-radius: 12px; }
+        .result-waiting { color: rgba(255,255,255,0.6); margin-top: 20px; font-size: 0.9rem; }
+
+        /* === ÉCRAN BILAN === */
+        #screen-summary {
+            position: fixed; inset: 0; z-index: 80;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px; text-align: center;
+        }
+        .summary-emoji { font-size: 5rem; margin-bottom: 10px; animation: bounceIn 0.6s; }
+        .summary-score { font-size: 2.5rem; font-weight: 900; color: white; margin-bottom: 8px; }
+        .summary-detail { font-size: 1.2rem; color: rgba(255,255,255,0.8); margin-bottom: 8px; }
+        .summary-msg { font-size: 1rem; color: rgba(255,255,255,0.6); margin-top: 16px; }
+    </style>
+</head>
+<body>
+
+<!-- ÉCRAN 1 : REJOINDRE -->
+<div id="screen-join">
+    <h1>Quiz Live</h1>
+    <div class="subtitle">Entre le code donné par ton prof</div>
+    <input type="text" id="join-input" placeholder="CODE" maxlength="10" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+    <button id="btn-join" onclick="joinSession()">REJOINDRE</button>
+    <div id="join-error"></div>
+</div>
+
+<!-- ÉCRAN 2 : LOBBY -->
+<div id="screen-lobby">
+    <div class="pseudo-display" id="my-pseudo-emoji"></div>
+    <div class="pseudo-name" id="my-pseudo-name"></div>
+    <div style="background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+        <div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-bottom: 8px;">Ton pseudo pour ce quiz :</div>
+        <div style="color: white; font-size: 1.8rem; font-weight: 900;" id="my-pseudo-full"></div>
+    </div>
+    <div class="waiting-msg">En attente du prof<span class="dots"></span></div>
+</div>
+
+<!-- ÉCRAN 3 : QUESTION -->
+<div id="screen-question">
+    <div class="question-card">
+        <div class="question-text" id="q-text">Chargement...</div>
+    </div>
+    <div class="timer-label" id="timer-label">15s</div>
+    <div class="timer-bar-container">
+        <div class="timer-bar" id="timer-bar"></div>
+    </div>
+    <div class="choices-grid" id="choices-grid"></div>
+    <div class="sent-msg" id="sent-msg">Reponse envoyee !</div>
+</div>
+
+<!-- ÉCRAN 4 : RÉSULTAT -->
+<div id="screen-result">
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-text" id="result-text"></div>
+    <div class="result-answer" id="result-answer"></div>
+    <div class="result-waiting">Question suivante<span class="dots"></span></div>
+</div>
+
+<!-- ÉCRAN 5 : BILAN -->
+<div id="screen-summary">
+    <div class="summary-emoji" id="summary-emoji"></div>
+    <div class="summary-score" id="summary-score"></div>
+    <div class="summary-detail" id="summary-detail"></div>
+    <div class="summary-msg" id="summary-msg"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+        authDomain: "devoirs-pse.firebaseapp.com",
+        projectId: "devoirs-pse",
+        storageBucket: "devoirs-pse.firebasestorage.app",
+        messagingSenderId: "614730413904",
+        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // === PSEUDOS ===
+    const PSEUDOS = [
+        "Panda 🐼","Etoile ⭐","Fusee 🚀","Diamant 💎","Tigre 🐯","Dragon 🐉",
+        "Licorne 🦄","Phoenix 🔥","Ninja 🥷","Robot 🤖","Koala 🐨","Dauphin 🐬",
+        "Aigle 🦅","Papillon 🦋","Lion 🦁","Comete ☄️","Eclair ⚡","Flocon ❄️",
+        "Soleil ☀️","Lune 🌙","Galaxie 🌌","Hibou 🦉","Renard 🦊","Tornade 🌪️",
+        "Volcan 🌋","Cristal 💠","Trefle 🍀","Cerise 🍒","Arc-en-ciel 🌈","Pingouin 🐧",
+        "Flamant 🦩","Abeille 🐝","Ours 🐻","Loup 🐺","Requin 🦈","Baleine 🐋",
+        "Herisson 🦔","Chat 🐱","Perroquet 🦜","Tortue 🐢","Crabe 🦀","Meduse 🪼",
+        "Pieuvre 🐙","Serpent 🐍","Cameleon 🦎","Scarabee 🪲","Morse 🦭","Colibri 🌺"
+    ];
+
+    // === STATE ===
+    let currentSessionId = null;
+    let myPseudo = null;
+    let myVisitorId = localStorage.getItem('quiz_live_visitorId');
+    if (!myVisitorId) {
+        myVisitorId = 'v_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+        localStorage.setItem('quiz_live_visitorId', myVisitorId);
+    }
+    let currentQuestionIndex = -1;
+    let hasAnswered = false;
+    let myScore = 0;
+    let totalQuestions = 0;
+    let timerInterval = null;
+    let unsubConfig = null;
+
+    // === REJOINDRE ===
+    window.joinSession = async function() {
+        const code = document.getElementById('join-input').value.trim().toUpperCase();
+        if (!code) {
+            document.getElementById('join-error').textContent = "Entre un code !";
+            return;
+        }
+        document.getElementById('join-error').textContent = "Connexion...";
+        document.getElementById('btn-join').disabled = true;
+
+        try {
+            // Lire la config pour trouver le sessionCode
+            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
+            if (!configSnap.exists() || configSnap.data().sessionCode !== code) {
+                document.getElementById('join-error').textContent = "Code introuvable. Verifie avec ton prof.";
+                document.getElementById('btn-join').disabled = false;
+                return;
+            }
+
+            currentSessionId = configSnap.data().sessionId;
+
+            // Récupérer les pseudos déjà pris
+            const presSnap = await getDocs(query(collection(db, "quiz_live_presence"), where("sessionId", "==", currentSessionId)));
+            const takenPseudos = [];
+            let existingPseudo = null;
+            presSnap.forEach(d => {
+                takenPseudos.push(d.data().pseudo);
+                if (d.data().visitorId === myVisitorId) existingPseudo = d.data().pseudo;
+            });
+
+            // Si déjà connecté avec ce visitorId, réutiliser le pseudo
+            if (existingPseudo) {
+                myPseudo = existingPseudo;
+            } else {
+                // Prendre le premier pseudo dispo
+                const available = PSEUDOS.filter(p => !takenPseudos.includes(p));
+                myPseudo = available.length > 0 ? available[Math.floor(Math.random() * Math.min(5, available.length))] : "Joueur " + (takenPseudos.length + 1);
+
+                // Enregistrer présence
+                const numero = takenPseudos.length + 1;
+                await setDoc(doc(db, "quiz_live_presence", myVisitorId), {
+                    visitorId: myVisitorId,
+                    pseudo: myPseudo,
+                    numero: numero,
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId
+                });
+            }
+
+            // Afficher lobby
+            showScreen('lobby');
+            const parts = myPseudo.split(' ');
+            document.getElementById('my-pseudo-emoji').textContent = parts[1] || '🎯';
+            document.getElementById('my-pseudo-name').textContent = parts[0] || myPseudo;
+            document.getElementById('my-pseudo-full').textContent = myPseudo;
+
+            // Écouter les changements de config
+            startListening();
+
+        } catch(e) {
+            console.error(e);
+            document.getElementById('join-error').textContent = "Erreur de connexion.";
+            document.getElementById('btn-join').disabled = false;
+        }
+    };
+
+    // Touche Entrée pour rejoindre
+    document.getElementById('join-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') window.joinSession();
+    });
+
+    // === ÉCOUTER CONFIG ===
+    function startListening() {
+        if (unsubConfig) unsubConfig();
+        unsubConfig = onSnapshot(doc(db, "quiz_live_config", "global"), (snap) => {
+            if (!snap.exists()) return;
+            const d = snap.data();
+            if (d.sessionId !== currentSessionId) return;
+
+            const phase = d.phase || 'lobby';
+            const qIndex = d.currentQuestionIndex ?? -1;
+            const questions = d.questions || [];
+            totalQuestions = questions.length;
+
+            if (phase === 'lobby') {
+                showScreen('lobby');
+            } else if (phase === 'question') {
+                if (qIndex !== currentQuestionIndex) {
+                    currentQuestionIndex = qIndex;
+                    hasAnswered = false;
+                    showQuestion(questions[qIndex], d.timer || 15);
+                }
+            } else if (phase === 'results') {
+                if (!hasAnswered) hasAnswered = true; // temps écoulé
+                const q = questions[qIndex];
+                showResult(q);
+            } else if (phase === 'summary') {
+                showSummary();
+            }
+        });
+    }
+
+    // === AFFICHER QUESTION ===
+    function showQuestion(q, timer) {
+        showScreen('question');
+        document.getElementById('q-text').textContent = q.question;
+        document.getElementById('sent-msg').style.display = 'none';
+
+        const grid = document.getElementById('choices-grid');
+        grid.innerHTML = '';
+        const letters = ['A', 'B', 'C', 'D'];
+        const colors = ['choice-a', 'choice-b', 'choice-c', 'choice-d'];
+
+        q.choices.forEach((choice, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn ' + colors[i];
+            btn.innerHTML = '<span style="font-size:1.4rem;font-weight:900;margin-right:8px;">' + letters[i] + '</span> ' + choice;
+            btn.onclick = () => submitAnswer(i);
+            grid.appendChild(btn);
+        });
+
+        // Timer
+        startTimer(timer);
+    }
+
+    function startTimer(seconds) {
+        if (timerInterval) clearInterval(timerInterval);
+        let remaining = seconds;
+        const bar = document.getElementById('timer-bar');
+        const label = document.getElementById('timer-label');
+        bar.style.width = '100%';
+        bar.className = 'timer-bar';
+        label.textContent = remaining + 's';
+
+        timerInterval = setInterval(() => {
+            remaining--;
+            if (remaining < 0) { clearInterval(timerInterval); return; }
+            const pct = (remaining / seconds) * 100;
+            bar.style.width = pct + '%';
+            label.textContent = remaining + 's';
+            if (pct < 20) bar.className = 'timer-bar danger';
+            else if (pct < 50) bar.className = 'timer-bar warning';
+        }, 1000);
+    }
+
+    // === ENVOYER RÉPONSE ===
+    async function submitAnswer(answerIndex) {
+        if (hasAnswered) return;
+        hasAnswered = true;
+
+        // UI feedback
+        const btns = document.querySelectorAll('.choice-btn');
+        btns.forEach((btn, i) => {
+            if (i === answerIndex) { btn.classList.add('selected'); }
+            else { btn.classList.add('faded'); }
+            btn.classList.add('disabled');
+        });
+        document.getElementById('sent-msg').style.display = 'block';
+
+        // Sauvegarder dans Firebase
+        try {
+            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
+            const questions = configSnap.data().questions || [];
+            const correct = questions[currentQuestionIndex]?.correct;
+            const isCorrect = answerIndex === correct;
+            if (isCorrect) myScore++;
+
+            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), {
+                visitorId: myVisitorId,
+                pseudo: myPseudo,
+                answer: answerIndex,
+                questionIndex: currentQuestionIndex,
+                correct: isCorrect,
+                timestamp: Date.now(),
+                sessionId: currentSessionId
+            });
+        } catch(e) {
+            console.error("Erreur envoi réponse:", e);
+        }
+    }
+
+    // === AFFICHER RÉSULTAT ===
+    function showResult(q) {
+        if (timerInterval) clearInterval(timerInterval);
+
+        // Vérifier si l'élève a répondu correctement
+        const resultScreen = document.getElementById('screen-result');
+        // On check via le score local
+        const configDoc = doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex);
+        getDoc(configDoc).then(snap => {
+            const wasCorrect = snap.exists() && snap.data().correct === true;
+            const didAnswer = snap.exists();
+
+            resultScreen.className = '';
+            if (!didAnswer) {
+                resultScreen.className = 'wrong';
+                document.getElementById('result-icon').textContent = '⏰';
+                document.getElementById('result-text').textContent = "Temps ecoule !";
+            } else if (wasCorrect) {
+                resultScreen.className = 'correct';
+                document.getElementById('result-icon').textContent = '✅';
+                document.getElementById('result-text').textContent = "Bonne reponse !";
+            } else {
+                resultScreen.className = 'wrong';
+                document.getElementById('result-icon').textContent = '❌';
+                document.getElementById('result-text').textContent = "Mauvaise reponse";
+            }
+            document.getElementById('result-answer').textContent = "Reponse : " + q.choices[q.correct];
+            showScreen('result');
+        });
+    }
+
+    // === BILAN ===
+    function showSummary() {
+        if (timerInterval) clearInterval(timerInterval);
+        showScreen('summary');
+
+        const pct = totalQuestions > 0 ? Math.round((myScore / totalQuestions) * 100) : 0;
+        document.getElementById('summary-score').textContent = myScore + ' / ' + totalQuestions;
+        document.getElementById('summary-detail').textContent = pct + '% de bonnes reponses';
+
+        let emoji, msg;
+        if (pct >= 80) { emoji = '🏆'; msg = 'Excellent travail !'; }
+        else if (pct >= 60) { emoji = '👏'; msg = 'Bien joue !'; }
+        else if (pct >= 40) { emoji = '💪'; msg = 'Continue comme ca !'; }
+        else { emoji = '📚'; msg = 'Revise bien pour la prochaine fois !'; }
+
+        document.getElementById('summary-emoji').textContent = emoji;
+        document.getElementById('summary-msg').textContent = msg;
+    }
+
+    // === NAVIGATION ÉCRANS ===
+    function showScreen(name) {
+        document.getElementById('screen-join').style.display = 'none';
+        document.getElementById('screen-lobby').style.display = 'none';
+        document.getElementById('screen-question').style.display = 'none';
+        document.getElementById('screen-result').style.display = 'none';
+        document.getElementById('screen-summary').style.display = 'none';
+
+        const el = document.getElementById('screen-' + name);
+        if (el) el.style.display = 'flex';
+    }
+</script>
+</body>
+</html>
