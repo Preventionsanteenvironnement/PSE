@@ -134,13 +134,22 @@
         #screen-summary {
             position: fixed; inset: 0; z-index: 80;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            padding: 30px; text-align: center;
+            display: none; flex-direction: column; align-items: center;
+            padding: 30px; padding-top: 40px; text-align: center;
+            overflow-y: auto;
         }
         .summary-emoji { font-size: 5rem; margin-bottom: 10px; animation: bounceIn 0.6s; }
         .summary-score { font-size: 2.5rem; font-weight: 900; color: white; margin-bottom: 8px; }
         .summary-detail { font-size: 1.2rem; color: rgba(255,255,255,0.8); margin-bottom: 8px; }
-        .summary-msg { font-size: 1rem; color: rgba(255,255,255,0.6); margin-top: 16px; }
+        .summary-msg { font-size: 1rem; color: rgba(255,255,255,0.6); margin-top: 16px; margin-bottom: 20px; }
+
+        /* === ÉCRAN PAUSE === */
+        #screen-paused {
+            position: fixed; inset: 0; z-index: 95;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center;
+        }
 
         /* === ANTI-DISPERSION === */
         #alert-tabswitch {
@@ -162,7 +171,7 @@
 <!-- ÉCRAN 1 : REJOINDRE -->
 <div id="screen-join">
     <h1>Quiz Live</h1>
-    <div class="subtitle">Entre le code donné par ton prof</div>
+    <div class="subtitle">Entre le code donne par ton prof</div>
     <input type="text" id="join-input" placeholder="CODE" maxlength="10" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     <button id="btn-join" onclick="joinSession()">REJOINDRE</button>
     <div id="join-error"></div>
@@ -185,7 +194,7 @@
         <div class="question-text" id="q-text">Chargement...</div>
     </div>
     <div class="timer-label" id="timer-label">15s</div>
-    <div class="timer-bar-container">
+    <div class="timer-bar-container" id="timer-bar-container">
         <div class="timer-bar" id="timer-bar"></div>
     </div>
     <div class="choices-grid" id="choices-grid"></div>
@@ -198,6 +207,13 @@
     <div class="result-text" id="result-text"></div>
     <div class="result-answer" id="result-answer"></div>
     <div class="result-waiting">Question suivante<span class="dots"></span></div>
+</div>
+
+<!-- ÉCRAN PAUSE -->
+<div id="screen-paused">
+    <div style="font-size:5rem; margin-bottom:16px;">⏸️</div>
+    <div style="font-size:1.8rem; font-weight:900; color:white; margin-bottom:12px;">Quiz en pause</div>
+    <div style="font-size:1rem; color:rgba(255,255,255,0.6);">Le prof a mis le quiz en pause. Patiente...</div>
 </div>
 
 <!-- ALERTE ANTI-DISPERSION -->
@@ -214,6 +230,7 @@
     <div class="summary-score" id="summary-score"></div>
     <div class="summary-detail" id="summary-detail"></div>
     <div class="summary-msg" id="summary-msg"></div>
+    <div id="summary-questions" style="width:100%; max-width:400px;"></div>
 </div>
 
 <script type="module">
@@ -280,7 +297,7 @@
 
             currentSessionId = configSnap.data().sessionId;
 
-            // Récupérer les pseudos déjà pris
+            // Recuperer les pseudos deja pris
             const presSnap = await getDocs(query(collection(db, "quiz_live_presence"), where("sessionId", "==", currentSessionId)));
             const takenPseudos = [];
             let existingPseudo = null;
@@ -289,7 +306,7 @@
                 if (d.data().visitorId === myVisitorId) existingPseudo = d.data().pseudo;
             });
 
-            // Si déjà connecté avec ce visitorId, réutiliser le pseudo
+            // Si deja connecte avec ce visitorId, reutiliser le pseudo
             if (existingPseudo) {
                 myPseudo = existingPseudo;
             } else {
@@ -297,7 +314,7 @@
                 const available = PSEUDOS.filter(p => !takenPseudos.includes(p));
                 myPseudo = available.length > 0 ? available[Math.floor(Math.random() * Math.min(5, available.length))] : "Joueur " + (takenPseudos.length + 1);
 
-                // Enregistrer présence
+                // Enregistrer presence
                 const numero = takenPseudos.length + 1;
                 await setDoc(doc(db, "quiz_live_presence", myVisitorId), {
                     visitorId: myVisitorId,
@@ -315,7 +332,7 @@
             document.getElementById('my-pseudo-name').textContent = parts[0] || myPseudo;
             document.getElementById('my-pseudo-full').textContent = myPseudo;
 
-            // Écouter les changements de config
+            // Ecouter les changements de config
             startListening();
 
         } catch(e) {
@@ -325,18 +342,25 @@
         }
     };
 
-    // Touche Entrée pour rejoindre
+    // Touche Entree pour rejoindre
     document.getElementById('join-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') window.joinSession();
     });
 
-    // === ÉCOUTER CONFIG ===
+    // === ECOUTER CONFIG ===
     function startListening() {
         if (unsubConfig) unsubConfig();
         unsubConfig = onSnapshot(doc(db, "quiz_live_config", "global"), (snap) => {
             if (!snap.exists()) return;
             const d = snap.data();
             if (d.sessionId !== currentSessionId) return;
+
+            // Handle pause
+            if (d.paused) {
+                showScreen('paused');
+                if (timerInterval) clearInterval(timerInterval);
+                return; // don't process phase changes while paused
+            }
 
             const phase = d.phase || 'lobby';
             const qIndex = d.currentQuestionIndex ?? -1;
@@ -349,10 +373,12 @@
                 if (qIndex !== currentQuestionIndex) {
                     currentQuestionIndex = qIndex;
                     hasAnswered = false;
-                    showQuestion(questions[qIndex], d.timer || 15);
+                    const shuffleMap = d.shuffleMap || null;
+                    const isManual = d.mode === 'manual';
+                    showQuestion(questions[qIndex], isManual ? 0 : (d.timer || 15), shuffleMap);
                 }
             } else if (phase === 'results') {
-                if (!hasAnswered) hasAnswered = true; // temps écoulé
+                if (!hasAnswered) hasAnswered = true; // temps ecoule
                 const q = questions[qIndex];
                 showResult(q);
             } else if (phase === 'summary') {
@@ -362,21 +388,25 @@
     }
 
     // === AFFICHER QUESTION ===
-    function showQuestion(q, timer) {
+    function showQuestion(q, timer, shuffleMap) {
         showScreen('question');
         document.getElementById('q-text').textContent = q.question;
         document.getElementById('sent-msg').style.display = 'none';
+
+        // Determine display order from shuffleMap
+        const myOrder = (shuffleMap && shuffleMap[myVisitorId]) || [0, 1, 2, 3];
 
         const grid = document.getElementById('choices-grid');
         grid.innerHTML = '';
         const letters = ['A', 'B', 'C', 'D'];
         const colors = ['choice-a', 'choice-b', 'choice-c', 'choice-d'];
 
-        q.choices.forEach((choice, i) => {
+        myOrder.forEach((origIdx, displayPos) => {
             const btn = document.createElement('button');
-            btn.className = 'choice-btn ' + colors[i];
-            btn.innerHTML = '<span style="font-size:1.4rem;font-weight:900;margin-right:8px;">' + letters[i] + '</span> ' + choice;
-            btn.onclick = () => submitAnswer(i);
+            btn.className = 'choice-btn ' + colors[displayPos];
+            btn.dataset.origIdx = origIdx;
+            btn.innerHTML = '<span style="font-size:1.4rem;font-weight:900;margin-right:8px;">' + letters[displayPos] + '</span> ' + q.choices[origIdx];
+            btn.onclick = () => submitAnswer(origIdx);
             grid.appendChild(btn);
         });
 
@@ -386,6 +416,18 @@
 
     function startTimer(seconds) {
         if (timerInterval) clearInterval(timerInterval);
+
+        // Manual mode - no timer
+        if (seconds <= 0) {
+            document.getElementById('timer-bar-container').style.display = 'none';
+            document.getElementById('timer-label').style.display = 'none';
+            return;
+        }
+
+        // Show timer elements
+        document.getElementById('timer-bar-container').style.display = 'block';
+        document.getElementById('timer-label').style.display = 'block';
+
         let remaining = seconds;
         const bar = document.getElementById('timer-bar');
         const label = document.getElementById('timer-label');
@@ -404,16 +446,20 @@
         }, 1000);
     }
 
-    // === ENVOYER RÉPONSE ===
+    // === ENVOYER REPONSE ===
     async function submitAnswer(answerIndex) {
         if (hasAnswered) return;
         hasAnswered = true;
 
-        // UI feedback
+        // UI feedback using data-origIdx
         const btns = document.querySelectorAll('.choice-btn');
-        btns.forEach((btn, i) => {
-            if (i === answerIndex) { btn.classList.add('selected'); }
-            else { btn.classList.add('faded'); }
+        btns.forEach((btn) => {
+            const origIdx = parseInt(btn.dataset.origIdx);
+            if (origIdx === answerIndex) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.add('faded');
+            }
             btn.classList.add('disabled');
         });
         document.getElementById('sent-msg').style.display = 'block';
@@ -436,17 +482,15 @@
                 sessionId: currentSessionId
             });
         } catch(e) {
-            console.error("Erreur envoi réponse:", e);
+            console.error("Erreur envoi reponse:", e);
         }
     }
 
-    // === AFFICHER RÉSULTAT ===
+    // === AFFICHER RESULTAT ===
     function showResult(q) {
         if (timerInterval) clearInterval(timerInterval);
 
-        // Vérifier si l'élève a répondu correctement
         const resultScreen = document.getElementById('screen-result');
-        // On check via le score local
         const configDoc = doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex);
         getDoc(configDoc).then(snap => {
             const wasCorrect = snap.exists() && snap.data().correct === true;
@@ -471,8 +515,8 @@
         });
     }
 
-    // === BILAN ===
-    function showSummary() {
+    // === BILAN DETAILLE ===
+    async function showSummary() {
         if (timerInterval) clearInterval(timerInterval);
         showScreen('summary');
 
@@ -488,28 +532,59 @@
 
         document.getElementById('summary-emoji').textContent = emoji;
         document.getElementById('summary-msg').textContent = msg;
+
+        // Build detailed question list
+        const container = document.getElementById('summary-questions');
+        container.innerHTML = '';
+
+        try {
+            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
+            const questions = configSnap.data().questions || [];
+
+            for (let i = 0; i < totalQuestions; i++) {
+                const respSnap = await getDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + i));
+                const wasCorrect = respSnap.exists() && respSnap.data().correct;
+                const didAnswer = respSnap.exists();
+
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; margin-bottom:6px; background:rgba(255,255,255,0.1); border-radius:10px; animation:fadeIn 0.4s ease ' + (i * 0.1) + 's both;';
+
+                const icon = wasCorrect ? '✅' : (didAnswer ? '❌' : '⏰');
+                const qText = questions[i] ? questions[i].question : 'Question ' + (i + 1);
+                const shortQ = qText.length > 40 ? qText.substring(0, 40) + '...' : qText;
+
+                let correctAnswerHtml = '';
+                if (!wasCorrect && questions[i]) {
+                    correctAnswerHtml = '<div style="font-size:0.75rem; color:rgba(255,255,255,0.6); margin-top:2px;">→ ' + questions[i].choices[questions[i].correct] + '</div>';
+                }
+
+                row.innerHTML = '<span style="font-size:1.3rem;">' + icon + '</span>' +
+                    '<div style="flex:1; text-align:left;">' +
+                    '<div style="font-size:0.85rem; color:white; font-weight:600;">Q' + (i + 1) + ' : ' + shortQ + '</div>' +
+                    correctAnswerHtml +
+                    '</div>';
+                container.appendChild(row);
+            }
+        } catch(e) {
+            console.error("Erreur chargement bilan:", e);
+        }
     }
 
-    // === NAVIGATION ÉCRANS ===
+    // === NAVIGATION ECRANS ===
     function showScreen(name) {
-        document.getElementById('screen-join').style.display = 'none';
-        document.getElementById('screen-lobby').style.display = 'none';
-        document.getElementById('screen-question').style.display = 'none';
-        document.getElementById('screen-result').style.display = 'none';
-        document.getElementById('screen-summary').style.display = 'none';
-
+        ['screen-join', 'screen-lobby', 'screen-question', 'screen-result', 'screen-summary', 'screen-paused'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
         const el = document.getElementById('screen-' + name);
         if (el) el.style.display = 'flex';
     }
 
     // === ANTI-DISPERSION ===
     document.addEventListener('visibilitychange', async () => {
-        if (!currentSessionId || !myPseudo) return; // pas encore connecté
+        if (!currentSessionId || !myPseudo) return;
 
         if (document.hidden) {
-            // L'élève a quitté l'onglet
             tabSwitchCount++;
-            // Signaler au prof via Firebase
             try {
                 await setDoc(doc(db, "quiz_live_presence", myVisitorId), {
                     visitorId: myVisitorId,
@@ -521,7 +596,6 @@
                 }, { merge: true });
             } catch(e) {}
         } else {
-            // L'élève revient — afficher l'alerte
             const alertEl = document.getElementById('alert-tabswitch');
             document.getElementById('alert-count-msg').textContent = 'Sortie(s) detectee(s) : ' + tabSwitchCount;
             alertEl.style.display = 'flex';
