@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Jeu : Nutri-Truck Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #FF6B6B;
+        --secondary: #4ECDC4;
+        --dark: #2C3E50;
+        --light: #F7F9FC;
+        --gold: #FFD93D;
+        --success: #6BCB77;
+        --error: #FF6B6B;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    
+    body {
+        margin: 0; padding: 0; background: var(--dark); color: var(--dark);
+        font-family: 'Open Sans', sans-serif; height: 100vh; overflow: hidden;
+        display: flex; flex-direction: column;
+    }
+
+    /* --- ECRANS --- */
+    .screen {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--light); transition: transform 0.4s ease-in-out;
+        display: flex; flex-direction: column;
+    }
+    .screen.hidden { transform: translateX(100%); }
+    .screen.active { transform: translateX(0); z-index: 10; }
+    .screen.left { transform: translateX(-100%); }
+
+    /* --- UI ELEMENTS --- */
+    h1, h2, h3 { font-family: 'Fredoka', sans-serif; margin: 0; }
+    
+    .btn {
+        background: var(--primary); color: white; border: none; padding: 15px 30px;
+        border-radius: 50px; font-family: 'Fredoka', sans-serif; font-size: 1.2rem;
+        cursor: pointer; box-shadow: 0 4px 0 #c0392b; transition: transform 0.1s;
+        text-transform: uppercase;
+    }
+    .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #c0392b; }
+    .btn-secondary { background: var(--secondary); box-shadow: 0 4px 0 #3b9c96; }
+
+    /* --- INTRO --- */
+    #intro-screen {
+        background: var(--primary); color: white;
+        align-items: center; justify-content: center; text-align: center; padding: 20px;
+    }
+    .truck-icon { font-size: 6rem; margin-bottom: 20px; animation: bounce 2s infinite; }
+
+    /* --- MAP (LEVEL SELECT) --- */
+    #map-screen { background: #8EC5FC; background-image: linear-gradient(62deg, #8EC5FC 0%, #E0C3FC 100%); }
+    .map-header { padding: 20px; background: rgba(255,255,255,0.9); text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .level-container { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding: 20px; }
+    .level-card {
+        background: white; border-radius: 15px; padding: 20px; display: flex; align-items: center; gap: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;
+        border-left: 8px solid #ccc; position: relative; overflow: hidden;
+    }
+    .level-card.unlocked { border-left-color: var(--success); }
+    .level-card.locked { opacity: 0.6; pointer-events: none; filter: grayscale(1); }
+    .level-card:active { transform: scale(0.98); }
+    .lvl-icon { font-size: 2.5rem; }
+    .lvl-info h3 { font-size: 1.2rem; color: var(--dark); }
+    .lvl-info p { font-size: 0.8rem; color: #666; margin: 0; }
+
+    /* --- GAMEPLAY (SERVICE) --- */
+    #game-screen { background: var(--light); }
+    
+    /* Top Bar: Stats */
+    .game-header {
+        height: 60px; background: white; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 20;
+    }
+    .stat-pill { background: #eee; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: flex; gap: 5px; }
+
+    /* Customer Area */
+    .customer-zone {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        background: url('https://www.transparenttextures.com/patterns/cubes.png'), linear-gradient(to bottom, #dfe9f3 0%, #ffffff 100%);
+        position: relative; overflow: hidden;
+    }
+    .customer {
+        text-align: center; position: relative;
+        animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .cust-emoji { font-size: 6rem; display: block; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.2)); }
+    .bubble {
+        background: white; padding: 10px 20px; border-radius: 20px; position: absolute; top: -20px; right: -80px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-size: 0.8rem; width: 160px; text-align: left;
+        animation: popIn 0.5s 0.3s backwards;
+    }
+    .bubble::after { content:''; position: absolute; bottom: -10px; left: 20px; border-width: 10px 10px 0; border-style: solid; border-color: white transparent; }
+
+    /* Tray Area */
+    .tray-zone {
+        height: 140px; background: #e0e0e0; border-top: 5px solid #ccc;
+        display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px;
+        position: relative;
+    }
+    .tray-slot {
+        width: 80px; height: 80px; background: rgba(255,255,255,0.5); border: 2px dashed #999; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; font-size: 2.5rem; transition: all 0.2s;
+        cursor: pointer;
+    }
+    .tray-slot.filled { background: white; border-style: solid; border-color: var(--success); box-shadow: 0 4px 0 #ddd; transform: translateY(-2px); }
+    .serve-btn {
+        position: absolute; right: 10px; bottom: 80px; background: var(--success); color: white;
+        width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem;
+        box-shadow: 0 4px 0 #45a049; cursor: pointer; display: none; animation: pulse 1s infinite;
+    }
+
+    /* Food Menu */
+    .menu-zone {
+        height: 200px; background: white; padding: 15px; overflow-y: auto;
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+    }
+    .food-item {
+        background: #f8f9fa; border: 1px solid #eee; border-radius: 10px; padding: 10px;
+        display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer;
+        transition: all 0.1s;
+    }
+    .food-item:active { transform: scale(0.95); background: #e9ecef; }
+    .food-icon { font-size: 2rem; }
+    .food-name { font-size: 0.7rem; font-weight: bold; text-align: center; color: #555; }
+    .food-tag { font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; color: white; font-weight: bold; }
+
+    /* --- FEEDBACK MODAL --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+        z-index: 100; display: flex; align-items: center; justify-content: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .feedback-card {
+        background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; text-align: center;
+        transform: translateY(50px); transition: transform 0.3s;
+    }
+    .modal-overlay.show .feedback-card { transform: translateY(0); }
+    .fb-icon { font-size: 4rem; margin-bottom: 10px; display: block; }
+    .fb-score { font-size: 2rem; font-family: 'Fredoka'; color: var(--primary); margin: 10px 0; }
+
+    /* Animations */
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    @keyframes slideInRight { from { transform: translateX(100vw); } to { transform: translateX(0); } }
+    @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+</style>
+</head>
+<body>
+
+<div id="intro-screen" class="screen active">
+    <div class="truck-icon">🚚</div>
+    <h1>NUTRI-TRUCK<br>CHALLENGE</h1>
+    <p style="margin: 20px 0; font-size: 1.1rem; line-height: 1.6;">
+        Tu es le chef ! 👩‍🍳👨‍🍳<br>
+        Ta mission : Servir le repas parfait adapté à l'activité de chaque client.
+    </p>
+    <button class="btn btn-secondary" onclick="goToMap()">DÉMARRER LA TOURNÉE</button>
+</div>
+
+<div id="map-screen" class="screen hidden">
+    <div class="map-header">
+        <h2>CHOISIS TON SPOT</h2>
+        <div style="font-size:0.9rem; color:#666;">Score Global: <span id="total-score">0</span> pts</div>
+    </div>
+    <div class="level-container">
+        <div class="level-card unlocked" onclick="startLevel(0)">
+            <div class="lvl-icon">🏗️</div>
+            <div class="lvl-info">
+                <h3>LE CHANTIER</h3>
+                <p>Client : Mourad (Maçon)<br>Besoin : Énergie Max (12 500 kJ)</p>
+            </div>
+        </div>
+        <div class="level-card locked" id="lvl-1">
+            <div class="lvl-icon">💻</div>
+            <div class="lvl-info">
+                <h3>LES BUREAUX</h3>
+                <p>Client : Livia (Coiffeuse/Accueil)<br>Besoin : Léger & Vitaminé (8 800 kJ)</p>
+            </div>
+        </div>
+        <div class="level-card locked" id="lvl-2">
+            <div class="lvl-icon">🏭</div>
+            <div class="lvl-info">
+                <h3>L'USINE (NUIT)</h3>
+                <p>Client : David (3x8)<br>Besoin : Digeste & Vigilance</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="game-screen" class="screen hidden">
+    <div class="game-header">
+        <button onclick="goToMap()" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">🔙</button>
+        <div class="stat-pill">❤️ <span id="satisfaction">100%</span></div>
+        <div class="stat-pill">⭐ <span id="level-score">0</span></div>
+    </div>
+
+    <div class="customer-zone" id="cust-zone">
+        </div>
+
+    <div class="tray-zone">
+        <div class="tray-slot" onclick="removeFood(0)" id="slot-0"></div>
+        <div class="tray-slot" onclick="removeFood(1)" id="slot-1"></div>
+        <div class="tray-slot" onclick="removeFood(2)" id="slot-2"></div>
+        <button class="serve-btn" id="serve-btn" onclick="validateOrder()">🛎️</button>
+    </div>
+
+    <div class="menu-zone" id="menu-zone">
+        </div>
+</div>
+
+<div class="modal-overlay" id="feedback-modal">
+    <div class="feedback-card">
+        <div class="fb-icon" id="fb-icon">🎉</div>
+        <h2 id="fb-title">SERVICE PARFAIT !</h2>
+        <p id="fb-text" style="color:#666; font-size:0.9rem; line-height:1.5; margin:15px 0;">...</p>
+        <div class="fb-score" id="fb-points">+100 Pts</div>
+        <button class="btn" onclick="nextCustomer()">CLIENT SUIVANT</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="level-win-screen">
+    <div class="feedback-card" style="border: 4px solid var(--gold);">
+        <div class="fb-icon">🏆</div>
+        <h2 style="color:var(--dark);">NIVEAU TERMINÉ !</h2>
+        <p>Les clients sont servis et satisfaits.</p>
+        <button class="btn" onclick="closeLevelWin()">RETOUR CARTE</button>
+    </div>
+</div>
+
+<script>
+/* --- DATA & CONFIG --- */
+/* Basé sur Carnet p.126, Delagrave Doc David, Foucher Doc Livia */
+
+const foods = [
+    { id: 'salade', icon: '🥗', name: 'Salade César', tags: ['Legume', 'Proteine'], heavy: false, energy: 1 },
+    { id: 'pates', icon: '🍝', name: 'Pâtes Bolo', tags: ['Feculent', 'Proteine'], heavy: true, energy: 3 },
+    { id: 'burger', icon: '🍔', name: 'Double Burger', tags: ['Gras', 'Proteine'], heavy: true, energy: 3 },
+    { id: 'soup', icon: '🥣', name: 'Potage', tags: ['Legume', 'Eau'], heavy: false, energy: 0.5 },
+    { id: 'fruit', icon: '🍎', name: 'Pomme', tags: ['Vitamine', 'Fibre'], heavy: false, energy: 1 },
+    { id: 'donut', icon: '🍩', name: 'Donut', tags: ['Sucre', 'Gras'], heavy: true, energy: 2 },
+    { id: 'eau', icon: '💧', name: 'Eau', tags: ['Hydratation'], heavy: false, energy: 0 },
+    { id: 'soda', icon: '🥤', name: 'Soda', tags: ['Sucre'], heavy: false, energy: 1 },
+    { id: 'cafe', icon: '☕', name: 'Café', tags: ['Excitant'], heavy: false, energy: 0 },
+    { id: 'yaourt', icon: '🥛', name: 'Yaourt', tags: ['Calcium', 'Proteine'], heavy: false, energy: 1 },
+    { id: 'biere', icon: '🍺', name: 'Bière', tags: ['Alcool', 'Sucre'], heavy: false, energy: 2 }
+];
+
+const levels = [
+    {
+        name: "LE CHANTIER",
+        bg: "#f39c12",
+        customers: [
+            { 
+                name: "Mourad", job: "Maçon", emoji: "👷‍♂️", 
+                req: "J'ai une dalle à couler cet aprèm, j'ai besoin de force !", 
+                ideal: { energy: 'high', type: 'feculent', no: 'alcool' },
+                feedbackOk: "Super ! Les pâtes lui donnent l'énergie (glucides lents) pour tenir l'effort physique intense (12500 kJ).",
+                feedbackKo: "Aïe... Soit c'est trop léger (il va faire un malaise), soit il y a de l'alcool (interdit sur chantier !)."
+            },
+            {
+                name: "Jeanne", job: "Peintre", emoji: "👩‍🎨",
+                req: "Je monte sur l'échafaudage. Un truc costaud mais pas d'alcool !",
+                ideal: { energy: 'high', type: 'feculent', no: 'alcool' },
+                feedbackOk: "Parfait. Féculents + Protéines = Force. Et de l'eau pour l'hydratation !",
+                feedbackKo: "Attention, sur un échafaudage, l'alcool ou le manque d'énergie sont dangereux."
+            }
+        ]
+    },
+    {
+        name: "LES BUREAUX",
+        bg: "#3498db",
+        customers: [
+            {
+                name: "Young", job: "Accueil", emoji: "👨‍💼",
+                req: "Je reste assis toute la journée. Un truc léger pour pas dormir.",
+                ideal: { energy: 'low', type: 'legume', no: 'gras' },
+                feedbackOk: "Excellent. Salade + Fruit + Eau. Parfait pour une activité sédentaire (8800 kJ).",
+                feedbackKo: "Oups. Trop gras (Burger/Frites) = Somnolence l'après-midi (Digestion lourde)."
+            },
+            {
+                name: "Livia", job: "Coiffeuse", emoji: "💇‍♀️",
+                req: "J'ai pris du poids récemment... Je veux faire attention.",
+                ideal: { energy: 'low', type: 'legume', no: 'sucre' },
+                feedbackOk: "Bravo ! Des fibres et des vitamines. Fini les sandwichs/sodas qui lui faisaient prendre du poids.",
+                feedbackKo: "Livia essaye de maigrir ! Évite le soda et les gâteaux (Sucre rapide)."
+            }
+        ]
+    },
+    {
+        name: "L'USINE (NUIT)",
+        bg: "#8e44ad",
+        customers: [
+            {
+                name: "David", job: "Ouvrier 3x8", emoji: "🏭",
+                req: "Je rentre chez moi dormir (il est 5h). J'ai faim mais je veux dormir.",
+                ideal: { energy: 'light', type: 'digest', no: 'cafe' },
+                feedbackOk: "Top. Un potage ou un yaourt calme la faim sans empêcher le sommeil.",
+                feedbackKo: "Erreur ! Le café ou un gros burger vont l'empêcher de dormir (Rythme biologique cassé)."
+            }
+        ]
+    }
+];
+
+/* --- ENGINE --- */
+let currentLevelIdx = 0;
+let currentCustIdx = 0;
+let tray = [];
+let score = 0;
+let globalScore = 0;
+
+function goToMap() {
+    switchScreen('map-screen');
+    updateMap();
+}
+
+function updateMap() {
+    document.getElementById('total-score').innerText = globalScore;
+    if (globalScore >= 150) document.getElementById('lvl-1').classList.remove('locked');
+    if (globalScore >= 350) document.getElementById('lvl-2').classList.remove('locked');
+}
+
+function startLevel(idx) {
+    currentLevelIdx = idx;
+    currentCustIdx = 0;
+    score = 0;
+    updateStats();
+    renderMenu();
+    switchScreen('game-screen');
+    showCustomer();
+}
+
+function showCustomer() {
+    const cust = levels[currentLevelIdx].customers[currentCustIdx];
+    const zone = document.getElementById('cust-zone');
+    
+    zone.innerHTML = `
+        <div class="customer">
+            <div class="bubble">${cust.req}</div>
+            <span class="cust-emoji">${cust.emoji}</span>
+            <div style="background:rgba(255,255,255,0.8); padding:5px 10px; border-radius:10px; margin-top:10px; font-weight:bold;">${cust.name} - ${cust.job}</div>
+        </div>
+    `;
+    
+    // Clear tray
+    tray = [];
+    renderTray();
+}
+
+function renderMenu() {
+    const zone = document.getElementById('menu-zone');
+    zone.innerHTML = foods.map(f => `
+        <div class="food-item" onclick="addFood('${f.id}')">
+            <span class="food-icon">${f.icon}</span>
+            <span class="food-name">${f.name}</span>
+            <div style="display:flex; gap:2px;">
+                ${f.tags.map(t => `<span class="food-tag" style="background:${getTagColor(t)}">${t}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function getTagColor(tag) {
+    if(['Legume','Vitamine','Hydratation'].includes(tag)) return '#2ecc71';
+    if(['Gras','Sucre','Alcool'].includes(tag)) return '#e74c3c';
+    if(['Feculent','Proteine'].includes(tag)) return '#f1c40f';
+    return '#95a5a6';
+}
+
+function addFood(id) {
+    if (tray.length < 3) {
+        tray.push(foods.find(f => f.id === id));
+        renderTray();
+    }
+}
+
+function removeFood(idx) {
+    if (tray[idx]) {
+        tray.splice(idx, 1);
+        renderTray();
+    }
+}
+
+function renderTray() {
+    for (let i = 0; i < 3; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        if (tray[i]) {
+            slot.innerHTML = tray[i].icon;
+            slot.classList.add('filled');
+        } else {
+            slot.innerHTML = '';
+            slot.classList.remove('filled');
+        }
+    }
+    const btn = document.getElementById('serve-btn');
+    btn.style.display = tray.length === 3 ? 'block' : 'none';
+}
+
+function validateOrder() {
+    const lvl = levels[currentLevelIdx];
+    const cust = lvl.customers[currentCustIdx];
+    const ideal = cust.ideal;
+    
+    let points = 0;
+    let isSuccess = true;
+    let reason = "";
+
+    // Analyse du plateau
+    const hasAlcool = tray.some(f => f.tags.includes('Alcool'));
+    const hasCafe = tray.some(f => f.tags.includes('Excitant'));
+    const totalEnergy = tray.reduce((acc, f) => acc + f.energy, 0);
+    const hasFeculent = tray.some(f => f.tags.includes('Feculent'));
+    const hasLegume = tray.some(f => f.tags.includes('Legume'));
+
+    // Règles Logiques (basées sur le cours)
+    if (ideal.no === 'alcool' && hasAlcool) { isSuccess = false; reason = "Alcool interdit au travail !"; }
+    else if (ideal.no === 'cafe' && hasCafe) { isSuccess = false; reason = "Le café empêche de dormir."; }
+    else if (ideal.no === 'gras' && totalEnergy > 5) { isSuccess = false; reason = "Trop gras pour rester assis."; }
+    else if (ideal.energy === 'high' && totalEnergy < 4) { isSuccess = false; reason = "Pas assez d'énergie pour le chantier."; }
+    else if (ideal.energy === 'low' && totalEnergy > 4) { isSuccess = false; reason = "Trop calorique pour le bureau."; }
+    else if (ideal.type === 'feculent' && !hasFeculent) { isSuccess = false; reason = "Il manque des féculents (carburant)."; }
+    
+    if (isSuccess) {
+        points = 100;
+        showFeedback(true, cust.feedbackOk, points);
+        score += points;
+        globalScore += points;
+    } else {
+        showFeedback(false, reason || cust.feedbackKo, 0);
+    }
+    updateStats();
+}
+
+function showFeedback(success, text, pts) {
+    const modal = document.getElementById('feedback-modal');
+    document.getElementById('fb-icon').innerText = success ? '🎉' : '⚠️';
+    document.getElementById('fb-title').innerText = success ? 'SERVICE TOP !' : 'ERREUR COMMANDE';
+    document.getElementById('fb-title').style.color = success ? 'var(--success)' : 'var(--error)';
+    document.getElementById('fb-text').innerText = text;
+    document.getElementById('fb-points').innerText = success ? `+${pts} Pts` : '+0 Pts';
+    modal.classList.add('show');
+}
+
+// CORRECTION : Fonction Next Customer améliorée
+function nextCustomer() {
+    document.getElementById('feedback-modal').classList.remove('show');
+    currentCustIdx++;
+    if (currentCustIdx < levels[currentLevelIdx].customers.length) {
+        showCustomer();
+    } else {
+        // Affiche le bel écran de victoire au lieu de l'alerte
+        document.getElementById('level-win-screen').classList.add('show');
+    }
+}
+
+function closeLevelWin() {
+    document.getElementById('level-win-screen').classList.remove('show');
+    goToMap();
+}
+
+function updateStats() {
+    document.getElementById('level-score').innerText = score;
+}
+
+function switchScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('hidden');
+    });
+    const target = document.getElementById(id);
+    target.classList.remove('hidden');
+    target.classList.add('active');
+}
+
+// Init
+goToMap(); // Dev mode: start at map. In prod, switchScreen('intro-screen');
+
+</script>
+</body>
+</html>

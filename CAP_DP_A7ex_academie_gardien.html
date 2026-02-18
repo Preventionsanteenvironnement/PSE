@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mission : Gardiens de la Forme</title>
+<link href="https://fonts.googleapis.com/css2?family=Verdana&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #1a1a2e; /* Bleu nuit apaisant */
+        --card: #16213e;
+        --text: #ffffff;
+        --highlight: #f9a826; /* Jaune chaud */
+        --btn: #0f3460;
+        --success: #2ecc71;
+        --error: #e94560;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+    body {
+        margin: 0; padding: 0;
+        background-color: var(--bg); color: var(--text);
+        font-family: 'Verdana', sans-serif; /* Police très lisible pour Dys */
+        font-size: 18px; /* Texte plus gros par défaut */
+        height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* --- STRUCTURE ECRAN --- */
+    .screen {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: var(--bg); transition: opacity 0.5s; opacity: 0; pointer-events: none; z-index: 0;
+    }
+    .screen.active { opacity: 1; pointer-events: all; z-index: 10; }
+
+    /* --- CARTES & CONTENU --- */
+    .card {
+        background: var(--card); border-radius: 20px; padding: 30px;
+        width: 100%; max-width: 600px; text-align: center;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3); border: 2px solid #2a3b55;
+    }
+
+    h1 { color: var(--highlight); margin-bottom: 20px; font-size: 1.8rem; line-height: 1.4; }
+    p { line-height: 1.6; margin-bottom: 30px; font-size: 1.1rem; }
+
+    /* --- BOUTONS ACCESSIBLES --- */
+    .btn {
+        display: block; width: 100%; background: var(--btn); color: white;
+        border: 2px solid var(--highlight); border-radius: 15px;
+        padding: 20px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+        margin-bottom: 15px; transition: transform 0.1s, background 0.2s;
+        text-align: left; display: flex; align-items: center; gap: 15px;
+    }
+    .btn:active { transform: scale(0.98); background: var(--highlight); color: black; }
+    
+    .icon { font-size: 2rem; min-width: 50px; text-align: center; }
+
+    /* --- BARRE DE PROGRESSION VISUELLE --- */
+    .progress-track {
+        position: fixed; top: 0; left: 0; width: 100%; height: 10px; background: #000; z-index: 100;
+    }
+    .progress-fill { height: 100%; background: var(--highlight); width: 0%; transition: width 0.5s; }
+
+    /* --- FEEDBACK VISUEL --- */
+    .feedback-modal {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200;
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .feedback-modal.show { opacity: 1; pointer-events: all; }
+    .fb-content {
+        background: white; color: black; padding: 30px; border-radius: 20px;
+        text-align: center; max-width: 90%; width: 400px;
+    }
+    .fb-icon { font-size: 5rem; display: block; margin-bottom: 20px; }
+    .fb-btn {
+        background: var(--highlight); color: black; border: none; padding: 15px 40px;
+        font-size: 1.2rem; font-weight: bold; border-radius: 50px; margin-top: 20px; cursor: pointer;
+    }
+
+    /* --- ZONES SPECIFIQUES --- */
+    /* Zone Trieur */
+    .sort-container { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+    .drop-zone {
+        width: 100px; height: 120px; border: 3px dashed #555; border-radius: 15px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+    }
+    .drop-zone.selected { background: rgba(255, 255, 255, 0.1); border-color: var(--highlight); transform: scale(1.1); }
+    
+    /* Zone Assiette */
+    .plate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .plate-item { 
+        background: #2a3b55; padding: 15px; border-radius: 10px; cursor: pointer; 
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+    .plate-item.active { background: var(--highlight); color: black; }
+
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="prog-bar"></div></div>
+
+<div id="screen-intro" class="screen active">
+    <div class="card">
+        <div style="font-size: 4rem; margin-bottom: 10px;">🦸‍♂️🦸‍♀️</div>
+        <h1>ACADÉMIE DES GARDIENS</h1>
+        <p>Bonjour Recrue !<br>Pour devenir un Gardien de la Forme, tu dois réussir 4 missions.</p>
+        <p style="color: var(--highlight);">Ton objectif : Apprendre à bien nourrir ton corps.</p>
+        <button class="btn" style="justify-content:center;" onclick="startMission()">COMMENCER L'AVENTURE</button>
+    </div>
+</div>
+
+<div id="screen-game" class="screen">
+    <div class="card">
+        <h2 id="q-title" style="color:#aaa; font-size:1rem; text-transform:uppercase; margin-bottom:10px;">MISSION 1</h2>
+        <div id="q-text" style="font-size:1.3rem; font-weight:bold; margin-bottom:20px;">Question ici</div>
+        
+        <div id="options-container"></div>
+    </div>
+</div>
+
+<div id="feedback-overlay" class="feedback-modal">
+    <div class="fb-content">
+        <div class="fb-icon" id="fb-icon">🌟</div>
+        <h2 id="fb-title">BRAVO !</h2>
+        <p id="fb-msg" style="font-size:1.1rem; color:#333;">Explication...</p>
+        <button class="fb-btn" onclick="nextStep()">CONTINUER</button>
+    </div>
+</div>
+
+<div id="screen-end" class="screen">
+    <div class="card">
+        <div style="font-size: 5rem; margin-bottom: 10px;">🏆</div>
+        <h1>FÉLICITATIONS !</h1>
+        <p>Tu es maintenant un expert.</p>
+        <ul style="text-align:left; font-size:1rem; margin-bottom:20px; list-style:none; padding:0;">
+            <li style="margin-bottom:10px;">✅ Tu connais les 3 rôles des aliments.</li>
+            <li style="margin-bottom:10px;">✅ Tu sais adapter l'énergie au métier.</li>
+            <li style="margin-bottom:10px;">✅ Tu sais composer une assiette santé.</li>
+        </ul>
+        <button class="btn" style="justify-content:center;" onclick="location.reload()">REJOUER</button>
+    </div>
+</div>
+
+<script>
+/* --- DONNÉES PÉDAGOGIQUES SIMPLIFIÉES & ADAPTÉES --- */
+/* Utilisation de métaphores visuelles et consignes simples */
+
+const missions = [
+    // MISSION 1 : LE TRI (Les Groupes)
+    // On utilise les 3 images mentales : Pile (Energie), Brique (Bâtisseur), Bouclier (Fonctionnel)
+    {
+        title: "ZONE 1 : LE CARBURANT",
+        text: "Ton corps est comme une maison. Pour construire les murs (les muscles), il faut des BRIQUES. Quel aliment est une brique ?",
+        options: [
+            { txt: "Un Steak (Protéines)", icon: "🥩", correct: true, feedback: "Exact ! La viande, le poisson et les œufs sont des Bâtisseurs. Ils construisent ton corps." },
+            { txt: "Des Bonbons (Sucre)", icon: "🍬", correct: false, feedback: "Non. Le sucre donne de l'énergie rapide, mais il ne construit pas les muscles." },
+            { txt: "De l'Eau", icon: "💧", correct: false, feedback: "L'eau est vitale, mais ce n'est pas un matériau de construction." }
+        ]
+    },
+    {
+        title: "ZONE 1 : LE CARBURANT",
+        text: "Pour courir et bouger, tu as besoin d'ÉNERGIE (La Pile ⚡). Où trouves-tu l'énergie durable ?",
+        options: [
+            { txt: "Dans les Pâtes et le Riz", icon: "🍝", correct: true, feedback: "Bravo ! Les féculents (Pâtes, Riz, Pain) sont le meilleur carburant pour tenir longtemps." },
+            { txt: "Dans la Salade", icon: "🥗", correct: false, feedback: "La salade est pleine de vitamines (Bouclier), mais elle n'apporte pas assez d'énergie." }
+        ]
+    },
+    {
+        title: "ZONE 1 : LE CARBURANT",
+        text: "Pour te protéger des maladies, il te faut un BOUCLIER 🛡️ (Vitamines). Quel aliment choisir ?",
+        options: [
+            { txt: "Un Hamburger", icon: "🍔", correct: false, feedback: "Le burger est souvent trop gras. Il ne protège pas ton corps." },
+            { txt: "Une Orange et des Carottes", icon: "🍊", correct: true, feedback: "Super ! Les fruits et légumes apportent les vitamines pour te protéger (Besoins Fonctionnels)." }
+        ]
+    },
+
+    // MISSION 2 : LES PROFILS (Différenciation Besoins)
+    {
+        title: "ZONE 2 : LE SCANNER",
+        text: "Regarde ces deux personnes. Qui a besoin de manger le plus (Énergie) ?",
+        options: [
+            { txt: "Mourad : Il est Maçon sur un chantier", icon: "👷‍♂️", correct: true, feedback: "Oui ! Mourad porte des charges lourdes et bouge tout le temps. Il dépense beaucoup d'énergie (12 500 kJ)." },
+            { txt: "Young : Il travaille assis à l'accueil", icon: "👨‍💻", correct: false, feedback: "Non. Young reste assis. Il a besoin de moins d'énergie que Mourad." }
+        ]
+    },
+    {
+        title: "ZONE 2 : LE SCANNER",
+        text: "Juliette attend un bébé (Enceinte). A-t-elle besoin de plus d'énergie que d'habitude ?",
+        options: [
+            { txt: "OUI, un peu plus", icon: "🤰", correct: true, feedback: "C'est vrai. Le bébé a besoin d'énergie pour grandir. C'est un état physiologique particulier." },
+            { txt: "NON, elle doit manger moins", icon: "🚫", correct: false, feedback: "Surtout pas ! Elle ne doit pas faire de régime, elle doit nourrir le bébé." }
+        ]
+    },
+
+    // MISSION 3 : L'ASSIETTE (PNNS - Visuel)
+    {
+        title: "ZONE 3 : LA CUISINE",
+        text: "Composons l'assiette idéale. Quelle est la plus grosse partie de l'assiette (la moitié) ?",
+        options: [
+            { txt: "Les Légumes", icon: "🥦", correct: true, feedback: "Parfait ! La moitié de l'assiette, c'est pour les légumes (Fibres et Vitamines)." },
+            { txt: "La Viande", icon: "🍖", correct: false, feedback: "Non, la viande ne doit prendre qu'un quart (1/4) de l'assiette." },
+            { txt: "Les Frites", icon: "🍟", correct: false, feedback: "Attention, c'est trop gras. Les féculents c'est 1/4 de l'assiette." }
+        ]
+    },
+    {
+        title: "ZONE 3 : LA CUISINE",
+        text: "En plus de l'assiette, que faut-il boire ?",
+        options: [
+            { txt: "Du Soda", icon: "🥤", correct: false, feedback: "Le soda est trop sucré. Ce n'est pas bon pour la santé tous les jours." },
+            { txt: "De l'Eau", icon: "💧", correct: true, feedback: "Oui ! L'eau est la seule boisson indispensable." }
+        ]
+    },
+
+    // MISSION 4 : SITUATIONS CONCRÈTES
+    {
+        title: "ZONE 4 : SUR LE TERRAIN",
+        text: "David travaille la nuit (3x8). Il rentre dormir à 5h du matin. Il a faim. Que lui conseilles-tu ?",
+        options: [
+            { txt: "Manger un repas léger (Yaourt, Fruit)", icon: "🥣", correct: true, feedback: "Excellent conseil. C'est léger, ça coupe la faim et ça permet de bien dormir après." },
+            { txt: "Boire deux grands cafés", icon: "☕", correct: false, feedback: "Mauvaise idée. La caféine va l'empêcher de dormir, alors qu'il a besoin de repos." }
+        ]
+    },
+    {
+        title: "ZONE 4 : SUR LE TERRAIN",
+        text: "Livia a pris du poids car elle grignote des barres chocolatées. Que doit-elle faire ?",
+        options: [
+            { txt: "Ne rien manger le matin", icon: "🤐", correct: false, feedback: "Non, si elle ne mange pas le matin, elle aura trop faim et grignotera encore plus." },
+            { txt: "Prendre un vrai petit-déjeuner et arrêter le grignotage", icon: "🍎", correct: true, feedback: "C'est la solution. Un bon petit-déjeuner lui évitera d'avoir faim à 10h." }
+        ]
+    }
+];
+
+/* --- LOGIQUE DU JEU (SIMPLE ET ROBUSTE) --- */
+let currentIdx = 0;
+
+function startMission() {
+    switchScreen('screen-game');
+    loadQuestion();
+}
+
+function loadQuestion() {
+    const data = missions[currentIdx];
+    
+    // Mise à jour textes
+    document.getElementById('q-title').textContent = `MISSION ${currentIdx + 1} / ${missions.length}`;
+    document.getElementById('q-text').textContent = data.text;
+    
+    // Barre de progression
+    const pct = (currentIdx / missions.length) * 100;
+    document.getElementById('prog-bar').style.width = pct + "%";
+
+    // Création des boutons (Gros et cliquables)
+    const container = document.getElementById('options-container');
+    container.innerHTML = ''; // Nettoyer
+
+    data.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.innerHTML = `<span class="icon">${opt.icon}</span> <span>${opt.txt}</span>`;
+        btn.onclick = () => checkAnswer(opt);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(option) {
+    const modal = document.getElementById('feedback-overlay');
+    const icon = document.getElementById('fb-icon');
+    const title = document.getElementById('fb-title');
+    const msg = document.getElementById('fb-msg');
+    const btn = document.querySelector('.fb-btn');
+
+    if (option.correct) {
+        icon.textContent = "🌟";
+        title.textContent = "BRAVO !";
+        title.style.color = "var(--success)";
+        msg.textContent = option.feedback;
+        btn.onclick = nextStep; // Avancer
+        btn.textContent = "CONTINUER";
+    } else {
+        icon.textContent = "🤔";
+        title.textContent = "ESSAIE ENCORE";
+        title.style.color = "var(--highlight)"; // Pas rouge, jaune (encouragement)
+        msg.textContent = option.feedback + " Recommence, tu vas y arriver !";
+        btn.onclick = closeModal; // Juste fermer pour réessayer
+        btn.textContent = "RÉESSAYER";
+    }
+    
+    modal.classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('feedback-overlay').classList.remove('show');
+}
+
+function nextStep() {
+    closeModal();
+    currentIdx++;
+    if (currentIdx < missions.length) {
+        loadQuestion();
+    } else {
+        document.getElementById('prog-bar').style.width = "100%";
+        switchScreen('screen-end');
+    }
+}
+
+function switchScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+</script>
+</body>
+</html>

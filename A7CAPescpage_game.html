@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Escape Game : L'Architecte Santé</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #050505;
+        --panel: #111;
+        --neon-blue: #00f3ff;
+        --neon-green: #0aff00;
+        --neon-red: #ff003c;
+        --neon-yellow: #fcee0a;
+        --text: #fff;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    
+    body {
+        margin: 0; padding: 0; background: var(--bg); color: var(--text);
+        font-family: 'Rajdhani', sans-serif; height: 100vh; overflow: hidden;
+        background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000 100%);
+    }
+
+    /* --- LAYOUT & FX --- */
+    .screen {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 20px; transition: opacity 0.5s, transform 0.5s; opacity: 0; pointer-events: none;
+        z-index: 1;
+    }
+    .screen.active { opacity: 1; pointer-events: all; z-index: 10; transform: scale(1); }
+    .screen.exit { opacity: 0; transform: scale(1.1); pointer-events: none; }
+
+    h1, h2 { font-family: 'Orbitron', sans-serif; text-transform: uppercase; text-align: center; margin: 0; }
+    h1 { color: var(--neon-blue); text-shadow: 0 0 20px var(--neon-blue); font-size: 2.5rem; margin-bottom: 20px; }
+    h2 { color: var(--neon-yellow); margin-bottom: 15px; font-size: 1.5rem; }
+
+    .card {
+        background: rgba(20, 20, 20, 0.9); border: 1px solid #333; border-radius: 12px;
+        padding: 20px; width: 100%; max-width: 500px; box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        position: relative; overflow: hidden; backdrop-filter: blur(5px);
+    }
+    .card::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+        background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+        animation: scan 2s infinite linear;
+    }
+
+    /* --- HUD (HEADS UP DISPLAY) --- */
+    .hud {
+        position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
+        display: flex; justify-content: space-between; z-index: 100;
+        background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+    }
+    .status-bar { font-family: 'Orbitron', monospace; color: var(--neon-green); font-size: 1.2rem; }
+    .energy-bar-container { width: 150px; height: 10px; background: #333; border: 1px solid #555; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+    .energy-fill { height: 100%; background: var(--neon-green); width: 50%; transition: width 0.3s, background 0.3s; box-shadow: 0 0 10px var(--neon-green); }
+
+    /* --- GAMEPLAY ELEMENTS --- */
+    .question-text { font-size: 1.2rem; margin-bottom: 20px; line-height: 1.4; text-align: center; font-weight: 600; }
+    
+    .btn-grid { display: grid; gap: 10px; width: 100%; }
+    
+    .btn {
+        background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue);
+        padding: 15px; font-family: 'Orbitron', sans-serif; font-size: 1rem; cursor: pointer;
+        transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    }
+    .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 20px var(--neon-blue); }
+    .btn:active { transform: scale(0.95); }
+
+    .btn.start-btn { background: var(--neon-green); color: black; border: none; font-weight: 900; font-size: 1.2rem; animation: pulse 1.5s infinite; }
+    
+    /* Repas Builder Styles */
+    .plate-builder { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 15px; }
+    .food-item {
+        background: #222; border: 1px solid #444; padding: 10px 15px; border-radius: 20px;
+        cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+    }
+    .food-item.selected { background: var(--neon-yellow); color: black; border-color: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); font-weight: bold; }
+
+    /* --- ANIMATIONS --- */
+    @keyframes scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(10, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(10, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(10, 255, 0, 0); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
+    @keyframes unlock { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; filter: brightness(2); } 100% { transform: scale(1); opacity: 1; } }
+
+    .shake { animation: shake 0.4s; border-color: var(--neon-red) !important; color: var(--neon-red) !important; box-shadow: 0 0 15px var(--neon-red); }
+    .success-anim { animation: unlock 0.5s; border-color: var(--neon-green) !important; background: rgba(10,255,0,0.2) !important; color: var(--neon-green) !important; }
+
+    /* --- FEEDBACK OVERLAY --- */
+    .overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); z-index: 200; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 30px; text-align: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .overlay.visible { opacity: 1; pointer-events: all; }
+    .overlay-icon { font-size: 4rem; margin-bottom: 20px; }
+    .overlay-title { font-family: 'Orbitron'; font-size: 1.5rem; color: var(--neon-blue); margin-bottom: 15px; }
+    .overlay-text { font-size: 1.1rem; margin-bottom: 30px; line-height: 1.5; color: #ddd; }
+    .overlay-btn { background: var(--text); color: black; padding: 15px 30px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+
+</style>
+</head>
+<body>
+
+<div class="hud" id="hud" style="display:none;">
+    <div class="status-bar">BIO-ÉNERGIE</div>
+    <div class="energy-bar-container">
+        <div class="energy-fill" id="energyBar" style="width: 20%;"></div>
+    </div>
+</div>
+
+<div id="screen-intro" class="screen active">
+    <div class="card" style="text-align:center;">
+        <h1 style="font-size:3rem;">ARCHITECTE<br>SANTÉ</h1>
+        <p style="margin-bottom: 30px; font-size: 1.1rem;">
+            Votre Avatar Bio-Robotique est en état critique.<br>
+            Batterie : 20% ⚠️<br>
+            Performance : Faible 📉
+        </p>
+        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">
+            Mission : Rétablir les niveaux d'énergie en faisant les bons choix nutritionnels et de vie.
+        </p>
+        <button class="btn start-btn" onclick="startGame()">LANCER LA RESTAURATION</button>
+    </div>
+</div>
+
+<div id="screen-game" class="screen">
+    <div class="card">
+        <h2 id="level-title">NIVEAU 1</h2>
+        <div class="question-text" id="question-text">Question...</div>
+        
+        <div class="btn-grid" id="qcm-area"></div>
+        
+        <div id="plate-area" style="display:none;">
+            <div style="width:150px; height:150px; border:3px dashed #555; border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; color:#555; font-size:0.8rem;">
+                <span id="plate-content">ASSIETTE VIDE</span>
+            </div>
+            <div class="plate-builder" id="food-list"></div>
+            <button class="btn" style="margin-top:20px; width:100%; border-color:var(--neon-green); color:var(--neon-green);" onclick="validatePlate()">VALIDER LE REPAS</button>
+        </div>
+
+    </div>
+</div>
+
+<div id="overlay" class="overlay">
+    <div class="overlay-icon" id="ov-icon">✅</div>
+    <div class="overlay-title" id="ov-title">CORRECT</div>
+    <div class="overlay-text" id="ov-text">Explication...</div>
+    <button class="overlay-btn" id="ov-btn" onclick="nextStep()">CONTINUER</button>
+</div>
+
+<div id="screen-win" class="screen">
+    <div class="card" style="text-align:center; border-color: var(--neon-green);">
+        <h1 style="color:var(--neon-green); text-shadow:0 0 20px var(--neon-green);">SYSTÈME OPTIMISÉ</h1>
+        <div style="font-size:4rem; margin:20px 0;">🔋 100%</div>
+        <p>L'Avatar est opérationnel.</p>
+        <p style="margin-top:15px; font-size:0.9rem; color:#ccc;">
+            Rappel pour ta vraie vie :<br>
+            • Mange 50% de légumes<br>
+            • Dors loin des écrans<br>
+            • Bouge chaque jour
+        </p>
+        <button class="btn" style="margin-top:30px;" onclick="location.reload()">NOUVELLE SIMULATION</button>
+    </div>
+</div>
+
+<script>
+/* --- SCÉNARIO PÉDAGOGIQUE --- */
+/* Conçu pour enseigner sans pré-requis. La leçon est dans le feedback ou le contexte. */
+
+const levels = [
+    // NIVEAU 1 : LES CARBURANTS (Besoins)
+    {
+        type: 'qcm',
+        title: "DIAGNOSTIC MOTEUR",
+        q: "L'Avatar manque de force pour construire ses muscles après l'effort. Quel matériau lui donnes-tu ?",
+        options: [
+            { txt: "Des Sucres (Glucides)", correct: false, feed: "Non. Le sucre est un carburant (énergie), pas une brique de construction." },
+            { txt: "Des Protéines (Viande/Œuf)", correct: true, feed: "Correct ! Les protéines sont les 'briques' (besoins plastiques/bâtisseurs) pour réparer les muscles." },
+            { txt: "Des Vitamines", correct: false, feed: "Non. Les vitamines sont des outils (fonctionnels), pas des matériaux de construction." }
+        ]
+    },
+    {
+        type: 'qcm',
+        title: "CALIBRAGE ÉNERGIE",
+        q: "Nous avons deux profils. Qui a besoin de la plus grosse batterie (Apport Énergétique) ?",
+        options: [
+            { txt: "Profil A : Employé de bureau assis toute la journée", correct: false, feed: "Non. La sédentarité réduit les besoins énergétiques." },
+            { txt: "Profil B : Maçon travaillant sur un chantier", correct: true, feed: "Exact ! Le travail physique augmente considérablement la dépense d'énergie." }
+        ]
+    },
+    // NIVEAU 2 : L'ASSIETTE (Pratique)
+    {
+        type: 'plate',
+        title: "ASSEMBLAGE REPAS",
+        q: "C'est l'heure du déjeuner. Compose une assiette équilibrée selon les règles de santé. (Sélectionne 3 éléments)",
+        items: [
+            { id: 'frites', name: '🍟 Frites', type: 'gras' },
+            { id: 'haricots', name: '🥦 Haricots Verts', type: 'legume' },
+            { id: 'steak', name: '🥩 Steak', type: 'proteine' },
+            { id: 'pates', name: '🍝 Pâtes', type: 'feculent' },
+            { id: 'gateau', name: '🍰 Gâteau', type: 'sucre' },
+            { id: 'soda', name: '🥤 Soda', type: 'sucre' }
+        ],
+        // La logique de validation est gérée par la fonction validatePlate()
+        feedSuccess: "Parfait ! Une assiette idéale c'est : 1/2 Légumes + 1/4 Féculents + 1/4 Protéines.",
+        feedFail: "Alerte ! Trop de gras/sucre ou pas assez de légumes. L'équilibre c'est : Légumes + Féculents + Protéines."
+    },
+    // NIVEAU 3 : RYTHME & MODE DE VIE (Mises en situation génériques)
+    {
+        type: 'qcm',
+        title: "GESTION DE NUIT",
+        q: "Ton Avatar travaille en horaires décalés (3x8) et rentre à 5h du matin. Il a faim. Que fais-tu ?",
+        options: [
+            { txt: "Un gros Kebab frites", correct: false, feed: "Erreur ! Un repas lourd et gras va empêcher l'endormissement et perturber le sommeil." },
+            { txt: "Un petit-déjeuner léger", correct: true, feed: "Validé. Un repas léger permet de ne pas avoir faim sans alourdir la digestion avant de dormir." },
+            { txt: "Trois cafés", correct: false, feed: "Danger ! La caféine va bloquer le sommeil de récupération." }
+        ]
+    },
+    {
+        type: 'qcm',
+        title: "OPTIMISATION SOMMEIL",
+        q: "L'Avatar a du mal à dormir le soir. Quelle habitude dois-tu SUPPRIMER ?",
+        options: [
+            { txt: "Lire un livre papier", correct: false, feed: "Non, lire favorise l'endormissement." },
+            { txt: "Scroller sur son téléphone au lit", correct: true, feed: "Bien vu. La lumière bleue des écrans et l'excitation des réseaux sociaux empêchent le cerveau de se reposer." }
+        ]
+    },
+    {
+        type: 'qcm',
+        title: "MAINTENANCE",
+        q: "Dernière vérification. Pourquoi est-il vital de bien manger et bouger ?",
+        options: [
+            { txt: "Juste pour l'esthétique", correct: false, feed: "C'est bien plus que ça." },
+            { txt: "Pour éviter maladies (Diabète/Cœur) et accidents", correct: true, feed: "Absolument. Une bonne hygiène de vie prévient les maladies graves et améliore la vigilance au travail." }
+        ]
+    }
+];
+
+/* --- MOTEUR DE JEU --- */
+let currentLevelIdx = 0;
+let energy = 20; // Barre de vie qui augmente
+
+const dom = {
+    screens: {
+        intro: document.getElementById('screen-intro'),
+        game: document.getElementById('screen-game'),
+        win: document.getElementById('screen-win')
+    },
+    game: {
+        title: document.getElementById('level-title'),
+        text: document.getElementById('question-text'),
+        qcm: document.getElementById('qcm-area'),
+        plate: document.getElementById('plate-area'),
+        plateContent: document.getElementById('plate-content'),
+        foodList: document.getElementById('food-list')
+    },
+    overlay: {
+        el: document.getElementById('overlay'),
+        icon: document.getElementById('ov-icon'),
+        title: document.getElementById('ov-title'),
+        text: document.getElementById('ov-text')
+    },
+    hud: document.getElementById('hud'),
+    bar: document.getElementById('energyBar')
+};
+
+function switchScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('exit');
+    });
+    setTimeout(() => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('exit'));
+        id.classList.add('active');
+    }, 500);
+}
+
+function startGame() {
+    dom.hud.style.display = 'flex';
+    updateEnergy(20);
+    switchScreen(dom.screens.game);
+    loadLevel(0);
+}
+
+function updateEnergy(val) {
+    energy = val;
+    dom.bar.style.width = energy + '%';
+    if(energy < 30) dom.bar.style.backgroundColor = 'var(--neon-red)';
+    else if(energy < 70) dom.bar.style.backgroundColor = 'var(--neon-yellow)';
+    else dom.bar.style.backgroundColor = 'var(--neon-green)';
+}
+
+function loadLevel(idx) {
+    currentLevelIdx = idx;
+    const lvl = levels[idx];
+    
+    dom.game.title.innerText = lvl.title;
+    dom.game.text.innerText = lvl.q;
+    
+    // Reset display zones
+    dom.game.qcm.style.display = 'none';
+    dom.game.plate.style.display = 'none';
+    dom.game.qcm.innerHTML = '';
+
+    if (lvl.type === 'qcm') {
+        dom.game.qcm.style.display = 'grid';
+        lvl.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = opt.txt;
+            btn.onclick = () => checkAnswer(i);
+            dom.game.qcm.appendChild(btn);
+        });
+    } else if (lvl.type === 'plate') {
+        dom.game.plate.style.display = 'block';
+        setupPlateBuilder(lvl.items);
+    }
+}
+
+function checkAnswer(optIdx) {
+    const lvl = levels[currentLevelIdx];
+    const opt = lvl.options[optIdx];
+    
+    if (opt.correct) {
+        // Success Effect
+        showFeedback(true, opt.feed);
+        // Bonus énergie
+        updateEnergy(energy + 15);
+    } else {
+        // Fail Effect
+        const btns = dom.game.qcm.querySelectorAll('.btn');
+        btns[optIdx].classList.add('shake');
+        setTimeout(() => btns[optIdx].classList.remove('shake'), 500);
+        // Pénalité énergie (visuelle seulement pour pas frustrer)
+        dom.bar.classList.add('shake');
+        setTimeout(() => dom.bar.classList.remove('shake'), 500);
+        
+        // Show Fail Feedback but force retry ? Or next ? Let's allow next for flow.
+        showFeedback(false, opt.feed);
+    }
+}
+
+/* --- PLATE BUILDER LOGIC --- */
+let selectedFoods = [];
+
+function setupPlateBuilder(items) {
+    dom.game.foodList.innerHTML = '';
+    selectedFoods = [];
+    updatePlateDisplay();
+    
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'food-item';
+        div.innerText = item.name;
+        div.onclick = () => toggleFood(div, item);
+        dom.game.foodList.appendChild(div);
+    });
+}
+
+function toggleFood(el, item) {
+    if (selectedFoods.includes(item)) {
+        selectedFoods = selectedFoods.filter(f => f !== item);
+        el.classList.remove('selected');
+    } else {
+        if (selectedFoods.length < 3) {
+            selectedFoods.push(item);
+            el.classList.add('selected');
+        }
+    }
+    updatePlateDisplay();
+}
+
+function updatePlateDisplay() {
+    if (selectedFoods.length === 0) {
+        dom.game.plateContent.innerText = "ASSIETTE VIDE\n(Choisis 3 éléments)";
+    } else {
+        dom.game.plateContent.innerText = selectedFoods.map(f => f.name).join('\n+ ');
+    }
+}
+
+function validatePlate() {
+    // Logic: Need 1 legume, 1 feculent, 1 proteine.
+    const types = selectedFoods.map(f => f.type);
+    const hasLegume = types.includes('legume');
+    const hasFeculent = types.includes('feculent');
+    const hasProteine = types.includes('proteine');
+    const hasBad = types.includes('sucre') || types.includes('gras');
+
+    const lvl = levels[currentLevelIdx];
+
+    if (hasLegume && hasFeculent && hasProteine && !hasBad) {
+        updateEnergy(energy + 20);
+        showFeedback(true, lvl.feedSuccess);
+    } else {
+        showFeedback(false, lvl.feedFail);
+    }
+}
+
+/* --- FEEDBACK SYSTEM --- */
+function showFeedback(success, text) {
+    dom.overlay.icon.innerText = success ? '✅' : '⚠️';
+    dom.overlay.title.innerText = success ? 'SYSTÈME MIS À JOUR' : 'ERREUR DÉTECTÉE';
+    dom.overlay.title.style.color = success ? 'var(--neon-green)' : 'var(--neon-red)';
+    dom.overlay.text.innerText = text;
+    dom.overlay.el.classList.add('visible');
+}
+
+function nextStep() {
+    dom.overlay.el.classList.remove('visible');
+    
+    if (currentLevelIdx < levels.length - 1) {
+        loadLevel(currentLevelIdx + 1);
+    } else {
+        updateEnergy(100);
+        switchScreen(dom.screens.win);
+        dom.hud.style.display = 'none';
+    }
+}
+
+</script>
+</body>
+</html>
