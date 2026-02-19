@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkChat - Simulateur PSE</title>
+    <style>
+        :root {
+            --app-bg: #e5ddd5;
+            --chat-bg: #ffffff;
+            --header-bg: #075e54;
+            --msg-in: #ffffff;
+            --msg-out: #dcf8c6;
+            --sys-msg: #fff3cd;
+            --sys-border: #ffeeba;
+            --sys-text: #856404;
+            --correct-bg: #d4edda;
+            --correct-border: #c3e6cb;
+            --correct-text: #155724;
+            --error-bg: #f8d7da;
+            --error-border: #f5c6cb;
+            --error-text: #721c24;
+            --text-main: #303030;
+            --text-muted: #999;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--app-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        @media (min-width: 500px) {
+            .phone-container { height: 90vh; border-radius: 20px; border: 8px solid #222; }
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .header-avatar {
+            width: 40px; height: 40px;
+            background-color: #ccc;
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem;
+        }
+
+        .header-info h1 { margin: 0; font-size: 1.1rem; }
+        .header-info p { margin: 0; font-size: 0.8rem; opacity: 0.8; }
+
+        .chat-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+        }
+
+        .message {
+            max-width: 85%;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background-color: var(--msg-in);
+            border-bottom-left-radius: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background-color: var(--msg-out);
+            border-bottom-right-radius: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .sender-name {
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: var(--header-bg);
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .sys-msg {
+            align-self: center;
+            background-color: var(--sys-msg);
+            color: var(--sys-text);
+            border: 1px solid var(--sys-border);
+            width: 95%;
+            font-size: 0.9rem;
+            text-align: center;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0 20px 0;
+        }
+
+        .sys-msg.correct { background-color: var(--correct-bg); color: var(--correct-text); border-color: var(--correct-border); }
+        .sys-msg.error { background-color: var(--error-bg); color: var(--error-text); border-color: var(--error-border); }
+
+        .competence-badge {
+            display: inline-block;
+            background: #444; color: white;
+            padding: 2px 6px; border-radius: 4px;
+            font-size: 0.75rem; font-weight: bold; margin-bottom: 5px;
+        }
+
+        .typing {
+            display: none; align-self: flex-start; background: var(--msg-in);
+            padding: 10px 15px; border-radius: 15px; border-bottom-left-radius: 0;
+            margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .dot { display: inline-block; width: 6px; height: 6px; background: #999; border-radius: 50%; animation: blink 1.4s infinite both; margin: 0 2px; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0% { opacity: .2; } 20% { opacity: 1; } 100% { opacity: .2; } }
+
+        .input-area {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            display: none;
+        }
+
+        .options-container button {
+            background-color: white; border: 1px solid #ccc;
+            padding: 10px; margin-bottom: 8px; border-radius: 20px;
+            cursor: pointer; font-size: 0.95rem; text-align: left;
+            transition: 0.2s; width: 100%;
+        }
+        .options-container button:hover { background-color: #e9ecef; border-color: #bbb; }
+        
+        .text-input-container { display: flex; width: 100%; }
+        .text-input-container input {
+            flex-grow: 1; padding: 12px; border: 1px solid #ccc;
+            border-radius: 20px; outline: none; font-size: 0.95rem;
+        }
+        .text-input-container button {
+            background-color: var(--header-bg); color: white;
+            border: none; border-radius: 50%; width: 45px; height: 45px;
+            margin-left: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center;
+        }
+
+        .overlay-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 20; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 20px; text-align: center;
+        }
+        .overlay-screen h2 { color: var(--header-bg); }
+        .btn-start {
+            background: var(--header-bg); color: white; border: none;
+            padding: 12px 25px; font-size: 1.1rem; border-radius: 25px;
+            margin-top: 20px; cursor: pointer; font-weight: bold;
+        }
+
+        .bilan-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem;}
+        .bilan-table th, .bilan-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .bilan-table th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        
+        <div class="overlay-screen" id="intro-screen">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📱</div>
+            <h2>WorkChat Pro</h2>
+            <p><strong>Module : Les contrats de travail</strong></p>
+            <p style="font-size: 0.9rem; color: #555; margin-top: 15px;">
+                Vous venez d'être embauché(e) en tant qu'Assistant(e) RH.<br><br>
+                Vos collègues vous posent des questions sur le chat de l'entreprise. Répondez-leur en mobilisant vos compétences (C1 à C5).
+            </p>
+            <button class="btn-start" onclick="startGame()">Ouvrir l'application</button>
+        </div>
+
+        <div class="overlay-screen" id="end-screen" style="display: none;">
+            <h2>📊 Bilan de la journée</h2>
+            <p>Vous avez traité toutes les demandes RH !</p>
+            <table class="bilan-table">
+                <thead>
+                    <tr><th>Compétence</th><th>Score</th></tr>
+                </thead>
+                <tbody id="bilan-body">
+                </tbody>
+            </table>
+            <button class="btn-start" onclick="location.reload()">Refaire la simulation</button>
+        </div>
+
+        <div class="header">
+            <div class="header-avatar">🏢</div>
+            <div class="header-info">
+                <h1>Groupe "Support RH"</h1>
+                <p>Membres : Directeur, Emma, Lucas...</p>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chat-area">
+            <div class="typing" id="typing-indicator">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="input-area" id="input-area">
+            <div class="consigne-box" id="consigne-text" style="font-size: 0.85rem; color: #666; margin-bottom: 10px; font-style: italic;">
+                [Consigne]
+            </div>
+            
+            <div class="options-container" id="options-container" style="display: none;">
+            </div>
+
+            <div class="text-input-container" id="text-container" style="display: none;">
+                <input type="text" id="text-answer" placeholder="Tapez votre réponse...">
+                <button onclick="submitTextAnswer()">➤</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const scenarios = [
+            {
+                id: 1,
+                sender: "Emma (Apprentie)",
+                comp: "C1",
+                consigne: "<strong>Indiquer</strong> la signification exacte du sigle de l'école de l'apprenti.",
+                message: "Salut ! Je suis la nouvelle en alternance. Le boss m'a dit que je dois passer 1 semaine sur 3 au CFA. Tu te rappelles ce que veut dire le sigle CFA ?",
+                type: "text",
+                expectedWords: ["centre", "formation", "apprentis"],
+                expectedDisplay: "Centre de Formation d'Apprentis",
+                feedbackCorrect: "C'est exactement ça ! Le contrat d'apprentissage repose sur l'alternance entre l'entreprise (pratique) et le CFA (théorie).",
+                feedbackError: "Oups... CFA signifie Centre de Formation d'Apprentis. C'est l'école où l'apprenti apprend la théorie de son métier."
+            },
+            {
+                id: 2,
+                sender: "Lucas (Manager)",
+                comp: "C2",
+                consigne: "<strong>Analyser</strong> la situation (un remplacement) pour choisir le contrat adapté.",
+                message: "Bonjour. Sarah part en congé maternité pour 4 mois. Je dois embaucher quelqu'un pour la remplacer sur cette tâche précise et temporaire. Quel contrat je dois préparer ?",
+                type: "qcm",
+                options: [
+                    "Prépare un CDI (Contrat à Durée Indéterminée).",
+                    "Prépare un CDD (Contrat à Durée Déterminée).",
+                    "Fais-lui signer un contrat de professionnalisation."
+                ],
+                correctIndex: 1,
+                feedbackCorrect: "Excellente analyse. Le remplacement d'un salarié absent est un motif légal strict pour recourir au CDD. La date de fin sera le retour de Sarah.",
+                feedbackError: "Erreur d'analyse. Un remplacement est une situation temporaire. La loi impose donc un CDD. Le CDI est interdit pour un besoin ponctuel, et la professionnalisation sert à obtenir un diplôme."
+            },
+            {
+                id: 3,
+                sender: "Samir (Ouvrier)",
+                comp: "C3",
+                consigne: "<strong>Mettre en relation</strong> un risque professionnel avec la règle de sécurité applicable.",
+                message: "Dis, le sol de l'atelier est hyper glissant à cause d'une fuite d'huile. Je suis obligé de mettre mes chaussures de sécurité (EPI) ? Elles me font mal aux pieds...",
+                type: "qcm",
+                options: [
+                    "Parce que le sol est glissant, donc tu dois obligatoirement porter tes EPI pour éviter la chute.",
+                    "Parce que le sol est glissant, donc le patron doit te payer une prime de risque pour que tu travailles sans chaussures.",
+                    "Parce que le sol est glissant, donc tu as le droit de refuser de travailler."
+                ],
+                correctIndex: 0,
+                feedbackCorrect: "Parfaite mise en relation (Parce que... donc) ! Le port des Équipements de Protection Individuelle (EPI) est une obligation stricte du salarié pour prévenir les risques.",
+                feedbackError: "Attention à la logique de prévention. Parce qu'il y a un risque (sol glissant), donc la mesure de prévention (les EPI) est obligatoire. Le salarié a le devoir de respecter les consignes de sécurité."
+            },
+            {
+                id: 4,
+                sender: "Monsieur Martin (Directeur)",
+                comp: "C4",
+                consigne: "<strong>Proposer</strong> une mesure légale pour résoudre un problème de comportement.",
+                message: "Alerte ! Un salarié refuse de respecter ses horaires depuis une semaine. Je sais que la loi m'interdit de lui faire payer une amende (retenue sur salaire). Que puis-je faire légalement ?",
+                type: "qcm",
+                options: [
+                    "Vous pouvez le licencier sur-le-champ sans lui envoyer de courrier.",
+                    "Vous pouvez utiliser votre pouvoir disciplinaire en lui adressant un avertissement écrit.",
+                    "Vous ne pouvez rien faire, il faut ignorer la situation."
+                ],
+                correctIndex: 1,
+                feedbackCorrect: "Très bonne proposition ! L'employeur possède un pouvoir disciplinaire. L'avertissement écrit est la sanction légale et proportionnée pour un tel comportement.",
+                feedbackError: "Proposition incorrecte. L'employeur doit utiliser son pouvoir disciplinaire en respectant la loi. Une sanction comme l'avertissement écrit est la bonne solution."
+            },
+            {
+                id: 5,
+                sender: "Nina (Vendeuse)",
+                comp: "C5",
+                consigne: "<strong>Argumenter</strong> le choix d'un contrat en s'appuyant sur ses spécificités.",
+                message: "Coucou ! Mon CDD se termine, et le Boss me propose un CDI. Mais avec mon CDD je touche l'indemnité de précarité à la fin, c'est cool pour l'argent... Pourquoi je devrais accepter le CDI ?",
+                type: "qcm",
+                options: [
+                    "Parce que le CDI te permettra de toucher encore plus de primes de fin de contrat tous les mois.",
+                    "Parce que le CDI n'a aucune date de fin. Cette stabilité financière est exigée par les banques si tu as des projets de vie (crédit, location).",
+                    "Parce que la loi t'interdit de refuser un CDI après un CDD."
+                ],
+                correctIndex: 1,
+                feedbackCorrect: "Argumentation solide ! Le CDI offre la stabilité de l'emploi (pas de limitation de durée). C'est le contrat 'roi' pour se projeter dans la vie active et rassurer les banques/propriétaires.",
+                feedbackError: "L'argument n'est pas bon. La vraie force du CDI, c'est l'absence de limitation de durée. Cette stabilité est indispensable pour réaliser des projets personnels (location, emprunt)."
+            }
+        ];
+
+        let currentStep = 0;
+        let scores = { C1: 0, C2: 0, C3: 0, C4: 0, C5: 0 };
+        const chatArea = document.getElementById('chat-area');
+        const inputArea = document.getElementById('input-area');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        function startGame() {
+            document.getElementById('intro-screen').style.display = 'none';
+            setTimeout(() => playScenario(currentStep), 800);
+        }
+
+        function scrollToBottom() {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function playScenario(index) {
+            inputArea.style.display = 'none';
+            chatArea.appendChild(typingIndicator);
+            typingIndicator.style.display = 'inline-block';
+            scrollToBottom();
+
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                
+                const step = scenarios[index];
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message received';
+                msgDiv.innerHTML = `<span class="sender-name">${step.sender}</span>${step.message}`;
+                chatArea.appendChild(msgDiv);
+                scrollToBottom();
+
+                setTimeout(() => showInputOptions(step), 800);
+
+            }, 1500); 
+        }
+
+        function showInputOptions(step) {
+            inputArea.style.display = 'flex';
+            document.getElementById('consigne-text').innerHTML = `<span class="competence-badge">${step.comp}</span> ${step.consigne}`;
+            
+            const optContainer = document.getElementById('options-container');
+            const txtContainer = document.getElementById('text-container');
+            
+            if (step.type === 'qcm') {
+                optContainer.style.display = 'block';
+                txtContainer.style.display = 'none';
+                optContainer.innerHTML = '';
+                
+                step.options.forEach((opt, i) => {
+                    const btn = document.createElement('button');
+                    btn.innerText = opt;
+                    btn.onclick = () => handleAnswer(i, step);
+                    optContainer.appendChild(btn);
+                });
+            } else if (step.type === 'text') {
+                optContainer.style.display = 'none';
+                txtContainer.style.display = 'flex';
+                
+                let inputField = document.getElementById('text-answer');
+                inputField.value = '';
+                inputField.focus();
+
+                // CORRECTION APPLIQUÉE ICI : Permet de valider avec la touche "Entrée"
+                inputField.onkeypress = function(e) {
+                    if (!e) e = window.event;
+                    var keyCode = e.code || e.key;
+                    if (keyCode == 'Enter') {
+                        submitTextAnswer();
+                        return false;
+                    }
+                }
+            }
+            scrollToBottom();
+        }
+
+        function submitTextAnswer() {
+            const val = document.getElementById('text-answer').value.trim();
+            if(val === '') { alert("Veuillez taper une réponse."); return; }
+            handleAnswer(val, scenarios[currentStep]);
+        }
+
+        function handleAnswer(answer, step) {
+            inputArea.style.display = 'none'; 
+
+            let isCorrect = false;
+            let displayAnswer = "";
+
+            if (step.type === 'qcm') {
+                displayAnswer = step.options[answer];
+                if (answer === step.correctIndex) isCorrect = true;
+            } else if (step.type === 'text') {
+                displayAnswer = answer;
+                let textLower = answer.toLowerCase();
+                let matchCount = 0;
+                step.expectedWords.forEach(kw => {
+                    if(textLower.includes(kw)) matchCount++;
+                });
+                
+                if (matchCount >= (step.expectedWords.length > 1 ? 2 : 1)) {
+                    isCorrect = true;
+                }
+            }
+
+            const sentDiv = document.createElement('div');
+            sentDiv.className = 'message sent';
+            sentDiv.innerText = displayAnswer;
+            chatArea.appendChild(sentDiv);
+            scrollToBottom();
+
+            if(isCorrect) scores[step.comp]++;
+
+            setTimeout(() => {
+                const sysDiv = document.createElement('div');
+                sysDiv.className = 'sys-msg ' + (isCorrect ? 'correct' : 'error');
+                
+                let title = isCorrect ? "✅ Chef RH : Excellente réponse !" : "❌ Chef RH : Attention, correction :";
+                let feedbackText = isCorrect ? step.feedbackCorrect : step.feedbackError;
+                
+                if(!isCorrect && step.type === 'text') {
+                    feedbackText = `La réponse attendue était : <strong>${step.expectedDisplay}</strong>.<br>` + feedbackText;
+                }
+
+                sysDiv.innerHTML = `<strong>${title}</strong><br><br>${feedbackText}`;
+                chatArea.appendChild(sysDiv);
+                scrollToBottom();
+
+                currentStep++;
+                if (currentStep < scenarios.length) {
+                    setTimeout(() => playScenario(currentStep), 2500);
+                } else {
+                    setTimeout(showEndScreen, 3000);
+                }
+            }, 1000);
+        }
+
+        function showEndScreen() {
+            const tbody = document.getElementById('bilan-body');
+            tbody.innerHTML = '';
+            
+            for(let comp in scores) {
+                let status = scores[comp] === 1 ? '🟢 Validé' : '🔴 À revoir';
+                tbody.innerHTML += `<tr><td><strong>${comp}</strong></td><td>${status}</td></tr>`;
+            }
+            
+            document.getElementById('end-screen').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

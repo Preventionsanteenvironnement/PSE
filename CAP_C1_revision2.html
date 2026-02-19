@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Évaluation PSE - Les Contrats de Travail</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #2563EB; /* Bleu académique moderne */
+            --primary-hover: #1D4ED8;
+            --bg-color: #F1F5F9;
+            --card-bg: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --success: #059669;
+            --success-bg: #D1FAE5;
+            --danger: #DC2626;
+            --danger-bg: #FEE2E2;
+        }
+
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        header {
+            width: 100%; background-color: #0F172A; color: white;
+            padding: 15px 20px; text-align: center;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 1rem; color: #93C5FD; text-transform: uppercase; letter-spacing: 1px;}
+        header h2 { margin: 5px 0; font-size: 1.2rem; }
+        header p { margin: 0; font-size: 0.85rem; color: #CBD5E1; }
+
+        /* CONTENEUR */
+        .container {
+            width: 100%; max-width: 650px; padding: 20px 15px;
+            display: flex; flex-direction: column; flex-grow: 1;
+        }
+
+        /* ÉCRAN D'ACCUEIL */
+        #intro-screen { text-align: center; background: var(--card-bg); padding: 30px 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px; }
+        #intro-screen h3 { color: var(--primary); margin-top: 0; }
+        #intro-screen p { color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; }
+        
+        .btn-main {
+            background-color: var(--primary); color: white; border: none; border-radius: 8px;
+            padding: 15px 20px; font-size: 1.05rem; font-weight: 600; width: 100%;
+            cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
+        .btn-main:hover { background-color: var(--primary-hover); }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* PROGRESSION */
+        .progress-wrapper { width: 100%; margin-bottom: 20px; display: none; }
+        .progress-bar { width: 100%; height: 8px; background-color: #E2E8F0; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: var(--primary); width: 0%; transition: width 0.3s ease; }
+        .progress-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; text-align: right; font-weight: 600; }
+
+        /* CARTE QUESTION */
+        .question-card {
+            background: var(--card-bg); border-radius: 12px; padding: 25px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; animation: fadeIn 0.4s ease;
+        }
+
+        .badge-comp {
+            display: inline-block; background-color: #DBEAFE; color: var(--primary);
+            padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-bottom: 15px;
+        }
+
+        .consigne { font-size: 1.1rem; font-weight: 400; line-height: 1.5; margin-bottom: 20px; color: var(--text-main); }
+        .consigne strong { font-weight: 700; color: var(--primary); }
+
+        /* OPTIONS */
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn {
+            background-color: var(--card-bg); border: 2px solid #E2E8F0; border-radius: 8px;
+            padding: 15px; font-size: 0.95rem; color: var(--text-main); font-weight: 500;
+            text-align: left; cursor: pointer; transition: all 0.2s ease; line-height: 1.4;
+        }
+        .option-btn:hover:not(:disabled) { border-color: var(--primary); background-color: #F8FAFC; }
+        
+        .option-btn.correct { background-color: var(--success-bg); border-color: var(--success); color: #064E3B; font-weight: 600; }
+        .option-btn.wrong { background-color: var(--danger-bg); border-color: var(--danger); color: #7F1D1D; opacity: 0.8; }
+        .option-btn:disabled { cursor: not-allowed; }
+
+        /* FEEDBACK (Explication) */
+        .feedback-box {
+            margin-top: 20px; padding: 15px; border-radius: 8px; display: none; animation: fadeIn 0.3s;
+        }
+        .feedback-box.success { background-color: var(--success-bg); border-left: 5px solid var(--success); }
+        .feedback-box.error { background-color: var(--danger-bg); border-left: 5px solid var(--danger); }
+        
+        .feedback-title { font-weight: 700; margin-bottom: 8px; font-size: 1.05rem; }
+        .success .feedback-title { color: var(--success); }
+        .error .feedback-title { color: var(--danger); }
+        .feedback-text { font-size: 0.9rem; line-height: 1.5; color: #334155; }
+
+        /* DASHBOARD FINAL */
+        #dashboard { display: none; animation: fadeIn 0.5s; width: 100%; background: var(--card-bg); padding: 25px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        .score-display { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #E2E8F0; }
+        .score-number { font-size: 3rem; font-weight: 800; color: var(--primary); }
+        .dashboard-msg { font-size: 1.05rem; font-weight: 600; margin-top: 10px; }
+
+        .comp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 20px; }
+        .comp-table th, .comp-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #E2E8F0; }
+        .comp-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; }
+        .status-good { color: var(--success); font-weight: 600; }
+        .status-bad { color: var(--danger); font-weight: 600; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Ajustements petits écrans */
+        @media (max-width: 400px) {
+            .consigne { font-size: 1rem; }
+            .option-btn { font-size: 0.9rem; padding: 12px; }
+            .btn-main { font-size: 1rem; padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Thématique C - Prévention des risques</h1>
+        <h2>Module C1 : Contrats de travail</h2>
+        <p>Objectif : Être capable de différencier les différents contrats.</p>
+    </header>
+
+    <div class="container">
+        
+        <div id="intro-screen">
+            <h3>Évaluation des connaissances</h3>
+            <p>Ce test complet (22 questions) vérifie votre maîtrise des notions obligatoires pour l'examen du CAP : types de contrats, âge légal, Code du travail, droits, obligations et prévention.</p>
+            <p style="font-size: 0.85rem; background: #EEF2FF; padding: 10px; border-radius: 6px; color: #1E40AF;">Règle : Lisez attentivement la consigne.</p>
+            <button class="btn-main" onclick="startQuiz()">Commencer l'évaluation</button>
+        </div>
+
+        <div class="progress-wrapper" id="progress-wrapper">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="progress-text" id="progress-text">Question 1 / 22</div>
+        </div>
+
+        <div class="question-card" id="question-card">
+            <div class="badge-comp" id="q-comp">C1</div>
+            <div class="consigne" id="q-text">Chargement...</div>
+            <div class="options" id="q-options"></div>
+            
+            <div class="feedback-box" id="feedback-box">
+                <div class="feedback-title" id="feedback-title">Correct !</div>
+                <div class="feedback-text" id="feedback-text">Explication pédagogique...</div>
+            </div>
+
+            <button class="btn-main" id="btn-next" style="display:none;" onclick="nextQuestion()">Question suivante ➔</button>
+        </div>
+
+        <div id="dashboard">
+            <div class="score-display">
+                <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; font-weight: 700;">Score global</div>
+                <div class="score-number" id="score-number">0/22</div>
+                <div class="dashboard-msg" id="dashboard-msg">Message de fin</div>
+            </div>
+
+            <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; font-weight: 700; margin-bottom: 10px;">Bilan par Compétence (APC)</div>
+            <table class="comp-table">
+                <thead><tr><th>Compétence</th><th>Résultat</th><th>Statut</th></tr></thead>
+                <tbody id="comp-tbody"></tbody>
+            </table>
+
+            <button class="btn-main" onclick="location.reload()">Refaire l'évaluation</button>
+        </div>
+
+    </div>
+
+    <script>
+        // BASE DE DONNÉES ACADÉMIQUE - STRICTEMENT CONFORME APC ET CONTENU DU COURS
+        const questions = [
+            { comp: "C1", q: "<strong>Indiquer</strong> l'âge légal requis pour signer un contrat d'apprentissage (QCM).",
+              options: ["Dès 14 ans uniquement", "De 16 à 29 ans révolus", "À partir de 18 ans sans limite d'âge"], rep: 1,
+              expl: "Le contrat d'apprentissage s'adresse aux jeunes de 16 à 29 ans révolus. Il permet de préparer un diplôme (CAP, Bac pro...) en alternance." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> la tranche d'âge principale visée par le contrat de professionnalisation (QCM).",
+              options: ["De 16 à 25 ans (et 26+ pour les demandeurs d'emploi)", "De 20 à 35 ans obligatoirement", "Les moins de 16 ans uniquement"], rep: 0,
+              expl: "Ce contrat vise l'acquisition d'une qualification professionnelle pour favoriser l'insertion des 16-25 ans et des adultes demandeurs d'emploi." },
+            
+            { comp: "C1", q: "<strong>Relever</strong> la durée généralement prévue pour un contrat d'apprentissage (QCM).",
+              options: ["Entre 1 et 3 mois maximum", "De 6 mois à 3 ans", "Toujours 5 ans fixes"], rep: 1,
+              expl: "La durée de l'apprentissage varie selon le diplôme préparé (souvent 1 ou 2 ans pour un CAP, jusqu'à 3 ans pour un Bac Pro ou plus)." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> l'âge minimum légal pour travailler sous contrat (CDD, CDI ou Intérim) sous certaines conditions (QCM).",
+              options: ["14 ans", "16 ans", "18 ans"], rep: 1,
+              expl: "La loi autorise le travail dès 16 ans (avec l'accord des parents, et sous réserve de restrictions sur les travaux dangereux ou de nuit)." },
+            
+            { comp: "C1", q: "<strong>Indiquer</strong> la particularité principale du Contrat à Durée Indéterminée - CDI (QCM).",
+              options: ["Il a une date de fin obligatoire", "Il n'indique aucune date de fin (seulement la date d'embauche)", "Il doit être renouvelé tous les six mois"], rep: 1,
+              expl: "Le CDI est le contrat qui offre l'emploi le plus stable car il ne comporte aucune limitation de durée à l'avance." },
+            
+            { comp: "C1", q: "<strong>Indiquer</strong> la démarche légale qui permet à un salarié de rompre un CDI de son plein gré (QCM).",
+              options: ["Faire un abandon de poste sans prévenir", "Démissionner en respectant une période de préavis", "Arrêter de travailler dès le lendemain matin"], rep: 1,
+              expl: "Le salarié a le droit de démissionner, mais il doit exécuter un 'préavis'. Ce délai permet à l'entreprise de recruter un remplaçant." },
+            
+            { comp: "C2", q: "<strong>Analyser</strong> la situation suivante pour déterminer le contrat adapté : <em>Un directeur a besoin d'une personne juste pour faire face à un surcroît d'activité pendant les fêtes de fin d'année.</em> (QCM).",
+              options: ["Un Contrat à Durée Indéterminée (CDI)", "Un Contrat à Durée Déterminée (CDD) ou un contrat d'Intérim", "Un Contrat d'apprentissage"], rep: 1,
+              expl: "Le CDD et l'intérim sont obligatoires pour des tâches temporaires et précises (remplacement, surcroît d'activité). Le CDI est illégal pour un besoin ponctuel." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> les deux indemnités obligatoires perçues par le salarié à la fin d'un CDD (QCM).",
+              options: ["L'indemnité de fin de contrat (précarité) ET l'indemnité compensatrice de congés payés", "Une prime d'ancienneté et une prime de Noël", "Uniquement le salaire du dernier mois"], rep: 0,
+              expl: "Pour compenser l'instabilité du CDD, la loi impose le versement d'une indemnité de fin de contrat (souvent 10% de la rémunération totale), plus les congés non pris." },
+            
+            { comp: "C1", q: "<strong>Citer</strong> les trois parties signataires impliquées dans un contrat de travail temporaire (Intérim) (QCM).",
+              options: ["L'apprenti, le CFA et le Maître d'apprentissage", "Le salarié intérimaire, l'entreprise de travail temporaire (l'agence) et l'entreprise utilisatrice", "L'employeur, le salarié et l'État"], rep: 1,
+              expl: "L'agence d'intérim (ex: Adecco, Manpower) est le véritable employeur. Elle signe le contrat avec le salarié et le 'loue' à l'entreprise utilisatrice." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> le seul contrat de travail qui n'est pas obligatoirement rédigé par écrit s'il est à temps plein (QCM).",
+              options: ["Le CDD (Contrat à Durée Déterminée)", "Le Contrat d'apprentissage", "Le CDI (Contrat à Durée Indéterminée)"], rep: 2,
+              expl: "Le CDI à temps plein peut légalement être oral (bien que l'écrit soit recommandé). Tous les autres contrats (CDD, Intérim, Apprentissage) DOIVENT être écrits." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> la définition exacte de la 'période d'essai' inscrite dans le contrat (QCM).",
+              options: ["Une période non rémunérée au début du contrat", "Une période au début du contrat permettant aux deux parties de le rompre sans préavis ni indemnité", "La durée totale d'un Contrat à Durée Déterminée"], rep: 1,
+              expl: "L'essai permet à l'employeur de vérifier les compétences du salarié, et au salarié de vérifier si le poste lui convient, avec une liberté de rupture totale." },
+            
+            { comp: "C1", q: "<strong>Repérer</strong> la liste contenant des mentions obligatoires devant figurer sur un contrat de travail écrit (QCM).",
+              options: ["L'âge du salarié, sa religion et son numéro de sécurité sociale", "Le nom du responsable, la marque des outils et le menu de la cantine", "Les identités/adresses, la désignation de l'emploi, la rémunération, la date d'embauche et le lieu"], rep: 2,
+              expl: "Un contrat est un document juridique. Il doit impérativement préciser qui travaille pour qui, où, pour faire quoi, et à quel prix." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> l'obligation principale de l'employeur envers le salarié en contrepartie de son travail (QCM).",
+              options: ["Verser le salaire correspondant au travail effectué", "Prendre en charge les frais personnels de l'employé", "Garantir au salarié un emploi à vie"], rep: 0,
+              expl: "La contrepartie fondamentale du contrat de travail est la rémunération. Tout travail exécuté mérite salaire." },
+            
+            { comp: "C1", q: "<strong>Relever</strong> les trois obligations principales du salarié dans le cadre de son contrat (QCM).",
+              options: ["Effectuer des heures supplémentaires gratuites, fixer ses propres horaires et travailler", "Réaliser le travail demandé, respecter les horaires et respecter le règlement intérieur", "Choisir ses jours de repos, ignorer la sécurité et faire son travail"], rep: 1,
+              expl: "Le salarié est soumis au lien de subordination : il s'engage à faire le travail, à être ponctuel et à obéir aux règles de l'entreprise." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> le droit de l'employeur face à un salarié qui commet une faute ou ne respecte pas le règlement (QCM).",
+              options: ["Le droit de le sanctionner (pouvoir disciplinaire)", "Le droit de faire justice lui-même physiquement", "Le droit de modifier son contrat de travail sans son accord"], rep: 0,
+              expl: "L'employeur possède un pouvoir disciplinaire proportionné (avertissement, mise à pied, ou licenciement selon la gravité)." },
+            
+            { comp: "C4", q: "<strong>Proposer</strong> une mesure disciplinaire légale pour un employeur face à un salarié régulièrement en retard (QCM).",
+              options: ["Lui adresser une sanction disciplinaire comme un avertissement écrit", "Faire une retenue sur son salaire (amende financière)", "Lui confisquer ses affaires personnelles"], rep: 0,
+              expl: "Les sanctions pécuniaires (amendes sur salaire) sont strictement INTERDITES par le Code du travail. La sanction légale est l'avertissement écrit." },
+            
+            { comp: "C1", q: "<strong>Indiquer</strong> le droit social fondamental dont bénéficie un salarié déclaré, en plus de son salaire (QCM).",
+              options: ["L'obtention gratuite d'un logement", "Bénéficier d'une couverture sociale (Sécurité sociale)", "La gratuité des transports en commun à vie"], rep: 1,
+              expl: "En travaillant, le salarié cotise (prélèvements sur le salaire brut). Cela lui ouvre des droits vitaux : couverture maladie, chômage et retraite." },
+            
+            { comp: "C1", q: "<strong>Identifier</strong> l'obligation de l'employeur concernant la législation (loi) du travail (QCM).",
+              options: ["Il doit respecter le Code du travail et les clauses du contrat", "Il peut créer ses propres lois internes", "Il n'est pas soumis aux lois de l'État"], rep: 0,
+              expl: "Le Code du travail est la loi suprême de l'emploi en France. Tout employeur a l'obligation de s'y soumettre, notamment pour protéger la santé des salariés." },
+            
+            { comp: "C1", q: "<strong>Indiquer</strong> la signification exacte du sigle SMIC (QCM).",
+              options: ["Système Minimum d'Indemnisation du Chômage", "Salaire Minimum Interprofessionnel de Croissance", "Salaire Mensuel Inter-Catégories"], rep: 1,
+              expl: "Le SMIC est le salaire minimum légal. Il est interdit de rémunérer un salarié majeur à un taux horaire inférieur au SMIC." },
+            
+            { comp: "C5", q: "<strong>Argumenter</strong> le choix d'un CDI plutôt qu'un CDD pour rassurer une agence immobilière lors d'une location (QCM).",
+              options: ["Parce que le CDI donne toujours lieu à des primes annuelles plus élevées", "Parce que le CDI est sans limitation de durée, ce qui garantit une stabilité financière à long terme", "Parce que le CDI permet d'être logé par l'entreprise"], rep: 1,
+              expl: "Le meilleur argument pour un dossier de location est la sécurité de l'emploi. Le CDI, n'ayant pas de date de fin, prouve cette pérennité." },
+            
+            { comp: "C1", q: "<strong>Indiquer</strong> l'obligation du salarié concernant les Équipements de Protection Individuelle (EPI) (QCM).",
+              options: ["L'obligation stricte de les porter et de respecter les consignes", "C'est facultatif si l'équipement n'est pas confortable", "Seulement obligatoire si l'inspecteur du travail est présent"], rep: 0,
+              expl: "Les EPI (chaussures, gants, casques) font partie des consignes de sécurité. Le salarié a le devoir de veiller à sa propre sécurité en les utilisant." },
+            
+            { comp: "C3", q: "<strong>Mettre en relation</strong> le risque de glissade sur un sol humide avec la règle de prévention adaptée (Choisir la proposition respectant la structure attendue) (QCM).",
+              options: ["Je mets mes chaussures de sécurité pour faire plaisir au chef d'atelier", "Parce que le sol est glissant, donc je dois obligatoirement porter mes chaussures de sécurité (EPI)", "Le sol est glissant, c'est la faute de l'entreprise"], rep: 1,
+              expl: "La compétence C3 exige une relation de Cause à Effet stricte : 'Parce que [Risque/Danger]... donc [Mesure de prévention appliquée]'." }
+        ];
+
+        let currentQIndex = 0;
+        let scoreTotal = 0;
+        let compScores = { C1: {s: 0, t: 0}, C2: {s: 0, t: 0}, C3: {s: 0, t: 0}, C4: {s: 0, t: 0}, C5: {s: 0, t: 0}, C6: {s: 0, t: 0} };
+        
+        // Calcul du total par compétence
+        questions.forEach(q => { compScores[q.comp].t++; });
+
+        const introScreen = document.getElementById("intro-screen");
+        const progressWrapper = document.getElementById("progress-wrapper");
+        const questionCard = document.getElementById("question-card");
+        const dashboard = document.getElementById("dashboard");
+
+        function startQuiz() {
+            introScreen.style.display = "none";
+            progressWrapper.style.display = "block";
+            questionCard.style.display = "block";
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            let q = questions[currentQIndex];
+            
+            // Mise à jour de la progression
+            document.getElementById("progress-fill").style.width = `${((currentQIndex) / questions.length) * 100}%`;
+            document.getElementById("progress-text").innerText = `Question ${currentQIndex + 1} / ${questions.length}`;
+            
+            document.getElementById("q-comp").innerText = q.comp;
+            document.getElementById("q-text").innerHTML = q.q;
+            
+            const optionsContainer = document.getElementById("q-options");
+            optionsContainer.innerHTML = "";
+            
+            q.options.forEach((opt, index) => {
+                let btn = document.createElement("button");
+                btn.className = "option-btn";
+                btn.innerHTML = opt;
+                btn.onclick = () => checkAnswer(index, btn, q);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById("feedback-box").style.display = "none";
+            document.getElementById("btn-next").style.display = "none";
+            
+            // Remonter en haut de page pour le confort sur mobile
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function checkAnswer(selectedIndex, btnElement, qData) {
+            let allBtns = document.querySelectorAll(".option-btn");
+            allBtns.forEach(b => b.disabled = true);
+
+            let isCorrect = (selectedIndex === qData.rep);
+            let feedbackBox = document.getElementById("feedback-box");
+            let feedbackTitle = document.getElementById("feedback-title");
+            
+            if(isCorrect) {
+                btnElement.classList.add("correct");
+                scoreTotal++;
+                compScores[qData.comp].s++;
+                feedbackBox.className = "feedback-box success";
+                feedbackTitle.innerText = "✅ Bonne réponse !";
+            } else {
+                btnElement.classList.add("wrong");
+                allBtns[qData.rep].classList.add("correct"); 
+                feedbackBox.className = "feedback-box error";
+                feedbackTitle.innerText = "❌ Erreur ! Explication :";
+            }
+
+            document.getElementById("feedback-text").innerHTML = qData.expl;
+            feedbackBox.style.display = "block";
+            document.getElementById("btn-next").style.display = "block";
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+            if(currentQIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showDashboard();
+            }
+        }
+
+        function showDashboard() {
+            progressWrapper.style.display = "none";
+            questionCard.style.display = "none";
+            dashboard.style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            document.getElementById("score-number").innerText = `${scoreTotal}/${questions.length}`;
+            let msg = document.getElementById("dashboard-msg");
+
+            if(scoreTotal === questions.length) {
+                msg.innerHTML = "🏆 Perfection ! Tu maîtrises l'intégralité du module C1. Prêt(e) pour le CAP !";
+                msg.style.color = "var(--success)";
+            } else if(scoreTotal >= 16) {
+                msg.innerHTML = "👍 Très bon travail ! Les notions principales sont comprises. Relis tes erreurs pour viser le 20/20.";
+                msg.style.color = "var(--primary)";
+            } else {
+                msg.innerHTML = "⚠️ Fragilités repérées. Les règles liées au contrat de travail doivent être connues par cœur. Recommence l'exercice.";
+                msg.style.color = "var(--danger)";
+            }
+
+            let tbody = document.getElementById("comp-tbody");
+            tbody.innerHTML = "";
+            for(let key in compScores) {
+                if(compScores[key].t > 0) {
+                    let s = compScores[key].s;
+                    let t = compScores[key].t;
+                    let percent = (s / t) * 100;
+                    let statusClass = percent === 100 ? "status-good" : (percent >= 50 ? "" : "status-bad");
+                    let statusText = percent === 100 ? "Acquis" : (percent >= 50 ? "En cours" : "À réviser");
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${key}</strong></td>
+                            <td class="${statusClass}">${s} / ${t}</td>
+                            <td class="${statusClass}">${statusText}</td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
