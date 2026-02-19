@@ -36,6 +36,9 @@
         }
         .level-btn:hover { border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(59,130,246,0.15); }
         .level-btn.active { border-color: #3b82f6; background: #eff6ff; color: #2563eb; }
+        .level-btn-trans { font-size: 0.9rem; padding: 14px 12px; }
+        .level-btn-trans:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .level-btn-trans.active { background: #fffbeb; }
 
         /* === MODULE LIST === */
         .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px; }
@@ -471,6 +474,8 @@
     <div id="zone-niveaux">
         <div class="theme-label">Choisis ton niveau</div>
         <div class="level-grid" id="level-grid"></div>
+        <div class="theme-label" style="color:#f59e0b; margin-top:8px;">Competences transversales</div>
+        <div class="level-grid" id="transversal-grid"></div>
     </div>
 
     <!-- Modules -->
@@ -478,11 +483,9 @@
         <div id="modules-container"></div>
     </div>
 
-    <!-- Transversal -->
+    <!-- Transversal exercises list -->
     <div id="zone-transversal" style="display:none;">
-        <div class="theme-label" style="color:#f59e0b; border-bottom:2px solid #f59e0b; padding-bottom:4px; margin-top:18px;">
-            Competences transversales
-        </div>
+        <div class="theme-label" id="transversal-label" style="color:#f59e0b;">Exercices transversaux</div>
         <div id="transversal-list"></div>
     </div>
 
@@ -646,6 +649,27 @@ function renderNiveaux() {
         if (count === 0) { btn.style.opacity = '0.4'; btn.style.cursor = 'default'; btn.onclick = null; }
         grid.appendChild(btn);
     });
+
+    // Transversal buttons
+    const transGrid = document.getElementById('transversal-grid');
+    if (!transGrid) return;
+    transGrid.innerHTML = '';
+    const TRANSVERSAL_BTNS = [
+        { type: 'pad', label: '⚠️ PAD', color: '#f59e0b' },
+        { type: 'prevention', label: '🛡️ Mesures de prevention', color: '#22c55e' },
+        { type: 'estimation_risque', label: '📊 Estimation du risque', color: '#8b5cf6' }
+    ];
+    TRANSVERSAL_BTNS.forEach(t => {
+        const count = allExercices.filter(e => TRANSVERSAL_TYPES.includes(e.type) && e.type === t.type).length;
+        const btn = document.createElement('div');
+        btn.className = 'level-btn level-btn-trans';
+        btn.style.borderColor = t.color;
+        btn.style.color = t.color;
+        btn.innerHTML = t.label + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
+        btn.onclick = () => selectTransversal(t.type, btn);
+        if (count === 0) { btn.style.opacity = '0.4'; btn.style.cursor = 'default'; btn.onclick = null; }
+        transGrid.appendChild(btn);
+    });
 }
 
 function selectNiveau(niveauKey, btnEl) {
@@ -655,11 +679,22 @@ function selectNiveau(niveauKey, btnEl) {
     if (btnEl) btnEl.classList.add('active');
     document.getElementById('zone-modules').style.display = '';
     document.getElementById('zone-exercices').style.display = 'none';
-    var zt = document.getElementById('zone-transversal');
-    if (zt) zt.style.display = 'none';
+    document.getElementById('zone-transversal').style.display = 'none';
     renderModules(niveauKey);
-    if (typeof renderTransversal === 'function') renderTransversal(niveauKey);
     setTimeout(() => { document.getElementById('zone-modules').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+}
+
+function selectTransversal(type, btnEl) {
+    currentNiveau = null;
+    currentModuleId = null;
+    document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    document.getElementById('zone-modules').style.display = 'none';
+    document.getElementById('zone-exercices').style.display = 'none';
+    // Show transversal exercises zone
+    document.getElementById('zone-transversal').style.display = '';
+    renderTransversal(type);
+    setTimeout(() => { document.getElementById('zone-transversal').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
 function renderModules(niveauKey) {
@@ -695,18 +730,18 @@ function renderModules(niveauKey) {
     });
 }
 
-function renderTransversal(niveauKey) {
+function renderTransversal(type) {
     const container = document.getElementById('transversal-list');
     if (!container) return;
     container.innerHTML = '';
-    const transExos = allExercices.filter(e =>
-        e.niveau === niveauKey && TRANSVERSAL_TYPES.includes(e.type)
-    );
+    var transExos = allExercices.filter(e => e.type === type);
+    var label = document.getElementById('transversal-label');
+    var typeNames = { pad: '⚠️ PAD — Analyse des risques', prevention: '🛡️ Mesures de prevention', estimation_risque: '📊 Estimation du risque' };
+    if (label) label.textContent = (typeNames[type] || type) + ' — ' + transExos.length + ' exercice' + (transExos.length > 1 ? 's' : '');
     if (transExos.length === 0) {
-        document.getElementById('zone-transversal').style.display = 'none';
+        container.innerHTML = '<div class="empty-msg">Aucun exercice de ce type pour le moment.</div>';
         return;
     }
-    document.getElementById('zone-transversal').style.display = '';
     transExos.forEach(ex => {
         const card = document.createElement('div');
         card.className = 'exo-card';
