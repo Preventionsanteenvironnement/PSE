@@ -528,6 +528,7 @@ async function loadExercices() {
     const snap = await getDocs(q);
     allExercices = [];
     snap.forEach(d => allExercices.push({ id: d.id, ...d.data() }));
+    console.log("✅ Exercices charges:", allExercices.length, allExercices.map(e => ({titre: e.titre, niveau: e.niveau, moduleId: e.moduleId})));
     renderNiveaux();
 }
 
@@ -560,9 +561,12 @@ function selectNiveau(niveauKey, btnEl) {
     document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
     document.getElementById('zone-modules').style.display = '';
-    document.getElementById('zone-exercices').style.display = 'none';
     renderModules(niveauKey);
-    setTimeout(() => { document.getElementById('zone-modules').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+    // Afficher directement TOUS les exercices du niveau
+    currentModuleId = '__ALL__';
+    document.getElementById('zone-exercices').style.display = '';
+    renderExercicesList();
+    setTimeout(() => { document.getElementById('zone-exercices').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
 function renderModules(niveauKey) {
@@ -610,22 +614,31 @@ function selectModule(moduleId, btnEl) {
 function renderExercicesList() {
     const list = document.getElementById('exercices-list');
     list.innerHTML = '';
-    const exos = allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId);
+    const isAll = currentModuleId === '__ALL__';
+    const exos = isAll
+        ? allExercices.filter(e => e.niveau === currentNiveau)
+        : allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId);
     const label = document.getElementById('exercices-label');
-    label.textContent = exos.length + ' exercice' + (exos.length > 1 ? 's' : '') + ' disponible' + (exos.length > 1 ? 's' : '');
+    label.textContent = (isAll ? 'Tous les exercices — ' : '') + exos.length + ' exercice' + (exos.length > 1 ? 's' : '') + ' disponible' + (exos.length > 1 ? 's' : '');
 
     if (exos.length === 0) {
-        list.innerHTML = '<div class="empty-msg">Aucun exercice pour ce module.</div>';
+        list.innerHTML = '<div class="empty-msg">Aucun exercice ' + (isAll ? 'pour ce niveau' : 'pour ce module') + '.</div>';
         return;
     }
+    // Trouver les noms de modules pour affichage
+    const modulesMap = {};
+    Object.values(window.MODULES_PSE || {}).forEach(arr => arr.forEach(m => { modulesMap[m.id] = m.id + ' — ' + m.titre; }));
+
     exos.forEach(ex => {
         const card = document.createElement('div');
         card.className = 'exo-card';
+        const moduleLabel = isAll && ex.moduleId ? '<span class="exo-badge" style="background:#e0e7ff; color:#3730a3;">' + (modulesMap[ex.moduleId] || ex.moduleId) + '</span>' : '';
         card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[ex.type] || '📄') + '</div>' +
             '<div class="exo-info"><h3>' + (ex.titre || 'Sans titre') + '</h3>' +
             '<div class="exo-meta">' +
             '<span class="exo-badge badge-type">' + (TYPE_LABELS[ex.type] || ex.type) + '</span>' +
             (ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '') +
+            moduleLabel +
             '</div></div>';
         card.onclick = () => startExercice(ex);
         list.appendChild(card);
