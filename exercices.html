@@ -478,6 +478,14 @@
         <div id="modules-container"></div>
     </div>
 
+    <!-- Transversal -->
+    <div id="zone-transversal" style="display:none;">
+        <div class="theme-label" style="color:#f59e0b; border-bottom:2px solid #f59e0b; padding-bottom:4px; margin-top:18px;">
+            Competences transversales
+        </div>
+        <div id="transversal-list"></div>
+    </div>
+
     <!-- Exercices -->
     <div id="zone-exercices" style="display:none;">
         <div class="theme-label" id="exercices-label">Exercices disponibles</div>
@@ -522,6 +530,7 @@ const TYPE_LABELS = {
     pendu: 'Pendu', mots_croises: 'Mots croises', swipe_vf: 'Vrai/Faux',
     qcm_image: 'QCM Image', tableau: 'Tableau', etude_cas: 'Etude de cas', pad: 'PAD', prevention: 'Prevention'
 };
+const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque'];
 
 let allExercices = [];
 let currentNiveau = null;
@@ -645,12 +654,12 @@ function selectNiveau(niveauKey, btnEl) {
     document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
     document.getElementById('zone-modules').style.display = '';
+    document.getElementById('zone-exercices').style.display = 'none';
+    var zt = document.getElementById('zone-transversal');
+    if (zt) zt.style.display = 'none';
     renderModules(niveauKey);
-    // Afficher directement TOUS les exercices du niveau
-    currentModuleId = '__ALL__';
-    document.getElementById('zone-exercices').style.display = '';
-    renderExercicesList();
-    setTimeout(() => { document.getElementById('zone-exercices').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+    if (typeof renderTransversal === 'function') renderTransversal(niveauKey);
+    setTimeout(() => { document.getElementById('zone-modules').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
 function renderModules(niveauKey) {
@@ -686,6 +695,32 @@ function renderModules(niveauKey) {
     });
 }
 
+function renderTransversal(niveauKey) {
+    const container = document.getElementById('transversal-list');
+    if (!container) return;
+    container.innerHTML = '';
+    const transExos = allExercices.filter(e =>
+        e.niveau === niveauKey && TRANSVERSAL_TYPES.includes(e.type)
+    );
+    if (transExos.length === 0) {
+        document.getElementById('zone-transversal').style.display = 'none';
+        return;
+    }
+    document.getElementById('zone-transversal').style.display = '';
+    transExos.forEach(ex => {
+        const card = document.createElement('div');
+        card.className = 'exo-card';
+        card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[ex.type] || '📌') + '</div>' +
+            '<div class="exo-info"><h3>' + (ex.titre || 'Sans titre') + '</h3>' +
+            '<div class="exo-meta">' +
+            '<span class="exo-badge badge-type">' + (TYPE_LABELS[ex.type] || ex.type) + '</span>' +
+            (ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '') +
+            '</div></div>';
+        card.onclick = () => startExercice(ex);
+        container.appendChild(card);
+    });
+}
+
 function selectModule(moduleId, btnEl) {
     currentModuleId = moduleId;
     document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
@@ -700,8 +735,8 @@ function renderExercicesList() {
     list.innerHTML = '';
     const isAll = currentModuleId === '__ALL__';
     const exos = isAll
-        ? allExercices.filter(e => e.niveau === currentNiveau)
-        : allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId);
+        ? allExercices.filter(e => e.niveau === currentNiveau && !TRANSVERSAL_TYPES.includes(e.type))
+        : allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId && !TRANSVERSAL_TYPES.includes(e.type));
     const label = document.getElementById('exercices-label');
     label.textContent = (isAll ? 'Tous les exercices — ' : '') + exos.length + ' exercice' + (exos.length > 1 ? 's' : '') + ' disponible' + (exos.length > 1 ? 's' : '');
 
