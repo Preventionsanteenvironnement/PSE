@@ -210,6 +210,12 @@
             display: inline-block; background: rgba(255,255,255,0.12); border-radius: 20px;
             padding: 3px 10px; margin: 2px 3px; font-weight: 600;
         }
+
+        /* === MEDIA QUESTION === */
+        .q-media-container { width: 100%; margin-bottom: 12px; text-align: center; }
+        .q-media-container img { max-width: 100%; max-height: 200px; border-radius: 12px; object-fit: contain; }
+        .q-media-container iframe { width: 100%; max-width: 480px; height: 270px; border: none; border-radius: 12px; }
+        .q-media-container .media-texte { background: #f8fafc; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 12px 12px 0; color: #334155; font-style: italic; line-height: 1.5; text-align: left; white-space: pre-wrap; font-size: 0.95rem; }
     </style>
 </head>
 <body>
@@ -241,6 +247,7 @@
 
 <!-- ECRAN 3 : QUESTION -->
 <div id="screen-question">
+    <div class="q-media-container" id="q-media" style="display:none;"></div>
     <div class="question-card">
         <div class="question-text" id="q-text">Chargement...</div>
     </div>
@@ -480,9 +487,38 @@
         });
     }
 
+    // === MEDIA HELPERS ===
+    function extractYouTubeId(url) {
+        if (!url) return null;
+        const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+        return m ? m[1] : null;
+    }
+    function renderMediaHtml(media) {
+        if (!media || !media.type || !media.content) return '';
+        if (media.type === 'image') {
+            return '<img src="' + media.content + '" alt="Media" onerror="this.style.display=\'none\'">';
+        } else if (media.type === 'video') {
+            const vid = extractYouTubeId(media.content);
+            if (!vid) return '';
+            return '<iframe src="https://www.youtube-nocookie.com/embed/' + vid + '" allowfullscreen></iframe>';
+        } else if (media.type === 'texte') {
+            return '<div class="media-texte">' + media.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+        }
+        return '';
+    }
+
     // === AFFICHER QUESTION ===
     function showQuestion(q, timer, shuffleMap) {
         showScreen('question');
+        // Media
+        const mediaEl = document.getElementById('q-media');
+        if (q.media) {
+            mediaEl.innerHTML = renderMediaHtml(q.media);
+            mediaEl.style.display = 'block';
+        } else {
+            mediaEl.innerHTML = '';
+            mediaEl.style.display = 'none';
+        }
         document.getElementById('q-text').textContent = q.question;
         document.getElementById('sent-msg').style.display = 'none';
 
