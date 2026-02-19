@@ -265,6 +265,33 @@
         }
         .mapse-link a { color: #3b82f6; font-weight: 700; text-decoration: none; }
 
+        /* === WARNING SCREEN (pre-exam) === */
+        .warning-box {
+            background: white; border-radius: 20px; padding: 40px; max-width: 560px; width: 100%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1); text-align: center;
+        }
+        .warning-box .warn-icon { font-size: 4rem; margin-bottom: 12px; }
+        .warning-box h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 20px; color: #1e293b; }
+        .warning-box ul {
+            text-align: left; margin: 0 auto 20px; max-width: 420px;
+            list-style: none; padding: 0;
+        }
+        .warning-box ul li {
+            padding: 10px 14px; margin-bottom: 8px; border-radius: 10px;
+            background: #fef3c7; border-left: 4px solid #f59e0b;
+            font-size: 0.95rem; font-weight: 500; color: #78350f;
+        }
+        .warning-box ul li::before { content: '⚠️ '; }
+        .warning-box .warn-note {
+            font-size: 0.9rem; color: #64748b; margin-bottom: 24px; line-height: 1.5;
+        }
+        .warning-box .warn-btn {
+            padding: 16px 40px; background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white; border: none; border-radius: 14px; font-size: 1.1rem;
+            font-weight: 800; cursor: pointer; transition: 0.2s;
+        }
+        .warning-box .warn-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,197,94,0.4); }
+
         /* === ANTI-CHEAT ALERT === */
         #alert-tabswitch {
             position: fixed; inset: 0; z-index: 9999; background: rgba(220,38,38,0.95);
@@ -324,6 +351,22 @@
     <div class="eval-list-container">
         <div class="eval-list-title">Mes evaluations disponibles</div>
         <div id="eval-list-content"></div>
+    </div>
+</div>
+
+<!-- SCREEN 2b: WARNING PRE-EXAM -->
+<div class="screen screen-hidden" id="screen-warning">
+    <div class="warning-box">
+        <div class="warn-icon">🛡️</div>
+        <h2>Evaluation surveillee</h2>
+        <ul>
+            <li>Les sorties d'onglet sont detectees et comptabilisees</li>
+            <li>Le copier-coller est detecte et comptabilise</li>
+            <li>Le clic droit est desactive</li>
+            <li>Votre enseignant verra toutes les alertes dans ses resultats</li>
+        </ul>
+        <p class="warn-note">En cliquant sur "Commencer", vous acceptez ces conditions de surveillance.<br>Bonne evaluation !</p>
+        <button class="warn-btn" onclick="confirmStartEval()">Commencer l'evaluation</button>
     </div>
 </div>
 
@@ -389,13 +432,15 @@
 
     const DOC_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#10b981', '#e11d48'];
     let tabSwitchCount = 0;
+    let copyPasteCount = 0;
+    let rightClickCount = 0;
     let evalStartTime = null;
     let timerInterval = null;
     let timerRemaining = 0;
 
     // === SCREENS ===
     function showScreen(name) {
-        ['screen-login', 'screen-list', 'screen-eval', 'screen-results'].forEach(id => {
+        ['screen-login', 'screen-list', 'screen-warning', 'screen-eval', 'screen-results'].forEach(id => {
             document.getElementById(id).classList.add('screen-hidden');
         });
         document.getElementById('screen-' + name).classList.remove('screen-hidden');
@@ -462,8 +507,9 @@
             const evals = [];
             snap.forEach(d => {
                 const data = d.data();
-                // Filter by class: show if classeId matches or classeId is null (all classes)
-                if (!data.classeId || data.classeId === currentUser.classe || isInGroup(data.classeId, currentUser.classe)) {
+                // Filter by class: support both classeIds (array) and classeId (string) for backward compat
+                const evalClasseIds = data.classeIds || (data.classeId ? [data.classeId] : []);
+                if (evalClasseIds.length === 0 || evalClasseIds.includes(currentUser.classe) || evalClasseIds.some(id => isInGroup(id, currentUser.classe))) {
                     evals.push({ id: d.id, ...data });
                 }
             });
@@ -499,8 +545,9 @@
                 const qCount = (ev.questions || []).length;
                 const timerInfo = ev.timer > 0 ? '<span class="ecm-timer">⏱️ ' + ev.timer + ' min</span>' : '';
                 const doneInfo = isDone ? '<span class="ecm-done">✓ Deja fait</span>' : '';
-                const classeInfo = ev.classeId
-                    ? '<span class="ecm-classe">🎯 ' + ev.classeId + '</span>'
+                const evClasseIds = ev.classeIds || (ev.classeId ? [ev.classeId] : []);
+                const classeInfo = evClasseIds.length > 0
+                    ? '<span class="ecm-classe">🎯 ' + evClasseIds.join(', ') + '</span>'
                     : '<span class="ecm-classe ecm-all">Toutes classes</span>';
                 const moduleInfo = ev.moduleId ? '<span class="ecm-module">📘 ' + ev.moduleId + '</span>' : '';
 
@@ -525,12 +572,28 @@
     }
 
     // === START EVAL ===
+    let pendingEvalId = null;
+    let pendingEvalData = null;
+
     async function startEval(evalId, evalData) {
+        // Store pending eval and show warning screen first
+        pendingEvalId = evalId;
+        pendingEvalData = evalData;
+        showScreen('warning');
+    }
+
+    window.confirmStartEval = function() {
+        const evalId = pendingEvalId;
+        const evalData = pendingEvalData;
+        if (!evalId || !evalData) return;
+
         currentEvalId = evalId;
         currentEval = evalData;
         currentQuestionIndex = 0;
         answers = {};
         tabSwitchCount = 0;
+        copyPasteCount = 0;
+        rightClickCount = 0;
         evalStartTime = Date.now();
 
         document.getElementById('et-title').textContent = evalData.titre || 'Evaluation';
@@ -552,7 +615,7 @@
         } else {
             document.getElementById('et-timer').textContent = '';
         }
-    }
+    };
 
     // === TIMER ===
     function startTimer() {
@@ -894,6 +957,8 @@
             reponses: answers,
             submittedAt: new Date().toISOString(),
             tabSwitchCount,
+            copyPasteCount,
+            rightClickCount,
             tempsSecondes
         });
 
@@ -1166,6 +1231,31 @@
             alertEl.style.display = 'flex';
             setTimeout(() => { alertEl.style.display = 'none'; }, 3000);
         }
+    });
+
+    // === ANTI-CHEAT: Copy/Paste/Cut detection ===
+    ['copy', 'paste', 'cut'].forEach(evt => {
+        document.addEventListener(evt, (e) => {
+            if (!currentEval || !currentUser) return;
+            copyPasteCount++;
+            const alertEl = document.getElementById('alert-tabswitch');
+            document.getElementById('alert-count-msg').textContent = 'Copier/coller detecte ! (' + copyPasteCount + ')';
+            alertEl.style.display = 'flex';
+            setTimeout(() => { alertEl.style.display = 'none'; }, 3000);
+        });
+    });
+
+    // === ANTI-CHEAT: Right-click prevention ===
+    document.addEventListener('contextmenu', (e) => {
+        if (!currentEval || !currentUser) return;
+        e.preventDefault();
+        rightClickCount++;
+    });
+
+    // === ANTI-CHEAT: Drag prevention ===
+    document.addEventListener('dragstart', (e) => {
+        if (!currentEval || !currentUser) return;
+        e.preventDefault();
     });
 </script>
 </body>
