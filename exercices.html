@@ -368,7 +368,83 @@
             .score-big { font-size: 2.5rem; }
             .results-actions { flex-direction: column; }
             .results-actions button { width: 100%; }
+            .pad-chain { flex-direction: column; }
+            .pad-arrow { transform: rotate(90deg); }
+            .pad-step { min-width: unset; }
         }
+
+        /* === PAD === */
+        .pad-situation {
+            background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px 20px;
+            border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; color: #1e3a5f;
+        }
+        .pad-situation-label { font-weight: 800; color: #2563eb; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .pad-instruction { font-weight: 700; color: #475569; margin-bottom: 16px; font-size: 0.95rem; text-align: center; }
+        .pad-chain {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin-bottom: 24px; flex-wrap: nowrap;
+        }
+        .pad-arrow { color: #94a3b8; font-size: 1.5rem; font-weight: 900; flex-shrink: 0; }
+        .pad-step {
+            background: white; border: 2px solid #e2e8f0; border-radius: 12px;
+            padding: 12px; text-align: center; min-width: 150px; flex: 1;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .pad-step-label {
+            font-weight: 800; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+            color: #64748b; margin-bottom: 8px;
+        }
+        .pad-step select {
+            width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 8px;
+            font-size: 0.85rem; color: #1e293b; background: #f8fafc; cursor: pointer;
+        }
+        .pad-step select:focus { border-color: #3b82f6; outline: none; }
+        .pad-step.correct { background: #f0fdf4; border-color: #22c55e; }
+        .pad-step.correct select { border-color: #22c55e; background: #f0fdf4; }
+        .pad-step.wrong { background: #fef2f2; border-color: #ef4444; }
+        .pad-step.wrong select { border-color: #ef4444; background: #fef2f2; }
+        .pad-correction { font-size: 0.8rem; color: #dc2626; margin-top: 6px; font-weight: 600; }
+        .pad-section-title {
+            font-weight: 800; color: #475569; font-size: 0.85rem; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 8px;
+        }
+        .pad-risk-row {
+            display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .pad-risk-row label { font-weight: 600; font-size: 0.9rem; color: #475569; cursor: pointer; }
+        .pad-risk-row input[type="radio"] { margin-right: 4px; }
+        .pad-risk-row select {
+            padding: 6px 10px; border: 2px solid #e2e8f0; border-radius: 8px;
+            font-size: 0.85rem; cursor: pointer;
+        }
+        .pad-estimation-row {
+            display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
+        }
+        .pad-estimation-group { display: flex; align-items: center; gap: 8px; }
+        .pad-estimation-group label { font-weight: 600; font-size: 0.9rem; color: #475569; }
+        .pad-estimation-group select {
+            padding: 6px 10px; border: 2px solid #e2e8f0; border-radius: 8px;
+            font-size: 0.85rem; cursor: pointer;
+        }
+        .pad-result-box {
+            background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+            padding: 16px; margin-top: 16px; display: none;
+        }
+        .pad-result-box.visible { display: block; }
+        .pad-result-box .pad-priority {
+            font-weight: 800; font-size: 1.1rem; padding: 8px 16px; border-radius: 8px;
+            display: inline-block; margin-top: 6px;
+        }
+        .pad-priority.prioritaire { background: #fef2f2; color: #dc2626; border: 2px solid #fca5a5; }
+        .pad-priority.non-prioritaire { background: #f0fdf4; color: #166534; border: 2px solid #86efac; }
+        .pad-mesures {
+            background: #fefce8; border-left: 4px solid #f59e0b; padding: 14px 18px;
+            border-radius: 8px; margin-top: 14px; display: none;
+        }
+        .pad-mesures.visible { display: block; }
+        .pad-mesures-title { font-weight: 800; color: #92400e; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 8px; }
+        .pad-mesures ul { margin: 0; padding-left: 20px; }
+        .pad-mesures li { font-size: 0.9rem; color: #78350f; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -685,7 +761,8 @@ function startExercice(ex) {
         swipe_vf: renderSwipeVF,
         qcm_image: renderQcmImage,
         tableau: renderTableau,
-        etude_cas: renderEtudeCas
+        etude_cas: renderEtudeCas,
+        pad: renderPad
     };
 
     const renderer = renderers[ex.type];
@@ -1258,6 +1335,114 @@ function ecQcmSelect(el) {
     el.classList.add('selected');
 }
 
+// --- 11. PAD (Processus d'Apparition du Dommage) ---
+function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function renderPad(zone, c) {
+    // Build options for each PAD step (correct answer + distractors, shuffled)
+    function buildOptions(correct, distracteurs, fieldId) {
+        const options = shuffleArray([correct, ...(distracteurs || [])]);
+        let html = '<select id="' + fieldId + '" class="pad-select">';
+        html += '<option value="">-- Choisissez --</option>';
+        options.forEach(opt => {
+            html += '<option value="' + opt.replace(/"/g, '&quot;') + '">' + opt + '</option>';
+        });
+        html += '</select>';
+        return html;
+    }
+
+    let html = '';
+
+    // Situation
+    html += '<div class="pad-situation">';
+    html += '<div class="pad-situation-label">📋 Situation professionnelle</div>';
+    html += c.situation;
+    html += '</div>';
+
+    // Instruction
+    html += '<div class="pad-instruction">Completez le processus d\'apparition du dommage :</div>';
+
+    // PAD Chain: 4 steps with arrows
+    html += '<div class="pad-chain">';
+
+    // Step 1: Danger
+    html += '<div class="pad-step" id="pad-step-danger" data-answer="' + (c.danger || '').replace(/"/g, '&quot;') + '">';
+    html += '<div class="pad-step-label">⚠️ Danger</div>';
+    html += buildOptions(c.danger, c.distracteurs_danger, 'pad-sel-danger');
+    html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '</div>';
+
+    html += '<div class="pad-arrow">→</div>';
+
+    // Step 2: Situation dangereuse
+    html += '<div class="pad-step" id="pad-step-sitdang" data-answer="' + (c.situation_dangereuse || '').replace(/"/g, '&quot;') + '">';
+    html += '<div class="pad-step-label">🔶 Situation dangereuse</div>';
+    html += buildOptions(c.situation_dangereuse, c.distracteurs_situation_dangereuse, 'pad-sel-sitdang');
+    html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '</div>';
+
+    html += '<div class="pad-arrow">→</div>';
+
+    // Step 3: Evenement declencheur
+    html += '<div class="pad-step" id="pad-step-event" data-answer="' + (c.evenement_declencheur || '').replace(/"/g, '&quot;') + '">';
+    html += '<div class="pad-step-label">⚡ Evenement declencheur</div>';
+    html += buildOptions(c.evenement_declencheur, c.distracteurs_evenement_declencheur, 'pad-sel-event');
+    html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '</div>';
+
+    html += '<div class="pad-arrow">→</div>';
+
+    // Step 4: Dommage
+    html += '<div class="pad-step" id="pad-step-dommage" data-answer="' + (c.dommage || '').replace(/"/g, '&quot;') + '">';
+    html += '<div class="pad-step-label">🩹 Dommage</div>';
+    html += buildOptions(c.dommage, c.distracteurs_dommage, 'pad-sel-dommage');
+    html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '</div>';
+
+    html += '</div>'; // end pad-chain
+
+    // Type de risque
+    html += '<div class="pad-section-title">Type de risque</div>';
+    html += '<div class="pad-risk-row" id="pad-type-risque-row">';
+    html += '<label><input type="radio" name="pad-type-risque" value="accident"> Accident du travail</label>';
+    html += '<label><input type="radio" name="pad-type-risque" value="maladie_pro"> Maladie professionnelle</label>';
+    html += '</div>';
+
+    // Estimation du risque
+    html += '<div class="pad-section-title">Estimation du risque</div>';
+    html += '<div class="pad-estimation-row">';
+    html += '<div class="pad-estimation-group">';
+    html += '<label>Gravite :</label>';
+    html += '<select id="pad-est-gravite"><option value="">--</option><option value="1">1 - Faible</option><option value="2">2 - Moyenne</option><option value="3">3 - Grave</option><option value="4">4 - Tres grave</option></select>';
+    html += '</div>';
+    html += '<div class="pad-estimation-group">';
+    html += '<label>Probabilite :</label>';
+    html += '<select id="pad-est-probabilite"><option value="">--</option><option value="1">1 - Tres improbable</option><option value="2">2 - Improbable</option><option value="3">3 - Probable</option><option value="4">4 - Tres probable</option></select>';
+    html += '</div>';
+    html += '</div>';
+
+    // Result box (hidden until validation)
+    html += '<div class="pad-result-box" id="pad-result-box">';
+    html += '<div class="pad-section-title">Resultat de l\'estimation</div>';
+    html += '<div id="pad-result-content"></div>';
+    html += '</div>';
+
+    // Mesures de prevention (hidden until validation)
+    html += '<div class="pad-mesures" id="pad-mesures-box">';
+    html += '<div class="pad-mesures-title">🛡️ Mesures de prevention</div>';
+    html += '<ul id="pad-mesures-list"></ul>';
+    html += '</div>';
+
+    zone.innerHTML = html;
+}
+
 // =====================================================================
 // VALIDATION
 // =====================================================================
@@ -1408,6 +1593,88 @@ function validateExercice() {
                 details.push({ ok: hasAnswer, label: qBlock.querySelector('.ec-q-text').textContent, detail: hasAnswer ? 'Reponse fournie (verifiez avec la correction)' : 'Aucune reponse' });
             }
         });
+    }
+
+    else if (type === 'pad') {
+        const c = currentExo.contenu;
+        // 4 PAD steps
+        const steps = [
+            { id: 'danger', label: 'Danger', answer: c.danger },
+            { id: 'sitdang', label: 'Situation dangereuse', answer: c.situation_dangereuse },
+            { id: 'event', label: 'Evenement declencheur', answer: c.evenement_declencheur },
+            { id: 'dommage', label: 'Dommage', answer: c.dommage }
+        ];
+        steps.forEach(step => {
+            const sel = document.getElementById('pad-sel-' + step.id);
+            const stepEl = document.getElementById('pad-step-' + step.id);
+            const given = sel ? sel.value : '';
+            total++;
+            const ok = given === step.answer;
+            if (ok) { correct++; stepEl.classList.add('correct'); }
+            else {
+                stepEl.classList.add('wrong');
+                const corr = stepEl.querySelector('.pad-correction');
+                if (corr) { corr.textContent = '✓ ' + step.answer; corr.style.display = ''; }
+            }
+            if (sel) sel.disabled = true;
+            details.push({ ok, label: step.label, detail: ok ? 'Correct' : 'Reponse : "' + given + '"' });
+        });
+
+        // Type de risque
+        const typeRadio = document.querySelector('input[name="pad-type-risque"]:checked');
+        const givenType = typeRadio ? typeRadio.value : '';
+        total++;
+        const typeOk = givenType === c.type_risque;
+        if (typeOk) correct++;
+        // Color radios
+        document.querySelectorAll('input[name="pad-type-risque"]').forEach(r => {
+            r.disabled = true;
+            const lbl = r.closest('label');
+            if (r.value === c.type_risque) lbl.style.color = '#166534';
+            else if (r.checked && !typeOk) lbl.style.color = '#dc2626';
+        });
+        details.push({ ok: typeOk, label: 'Type de risque', detail: typeOk ? 'Correct' : 'Reponse attendue : ' + (c.type_risque === 'accident' ? 'Accident du travail' : 'Maladie professionnelle') });
+
+        // Gravite
+        const gravSel = document.getElementById('pad-est-gravite');
+        const givenGrav = gravSel ? parseInt(gravSel.value) : 0;
+        total++;
+        const gravOk = givenGrav === c.gravite;
+        if (gravOk) correct++;
+        if (gravSel) { gravSel.disabled = true; gravSel.style.borderColor = gravOk ? '#22c55e' : '#ef4444'; }
+        details.push({ ok: gravOk, label: 'Gravite', detail: gravOk ? 'Correct' : 'Reponse attendue : ' + c.gravite });
+
+        // Probabilite
+        const probSel = document.getElementById('pad-est-probabilite');
+        const givenProb = probSel ? parseInt(probSel.value) : 0;
+        total++;
+        const probOk = givenProb === c.probabilite;
+        if (probOk) correct++;
+        if (probSel) { probSel.disabled = true; probSel.style.borderColor = probOk ? '#22c55e' : '#ef4444'; }
+        details.push({ ok: probOk, label: 'Probabilite', detail: probOk ? 'Correct' : 'Reponse attendue : ' + c.probabilite });
+
+        // Show result box
+        const resultBox = document.getElementById('pad-result-box');
+        const resultContent = document.getElementById('pad-result-content');
+        if (resultBox && resultContent) {
+            const g = c.gravite;
+            const p = c.probabilite;
+            const score = g * p;
+            const isPrioritaire = score >= 10;
+            resultContent.innerHTML = '<div style="margin-bottom:8px;"><strong>Gravite : ' + g + '</strong> x <strong>Probabilite : ' + p + '</strong> = <strong>' + score + '</strong></div>' +
+                '<div class="pad-priority ' + (isPrioritaire ? 'prioritaire' : 'non-prioritaire') + '">' +
+                (isPrioritaire ? '🔴 Risque PRIORITAIRE' : '🟢 Risque non prioritaire') + '</div>';
+            resultBox.classList.add('visible');
+        }
+
+        // Show mesures de prevention
+        const mesuresBox = document.getElementById('pad-mesures-box');
+        const mesuresList = document.getElementById('pad-mesures-list');
+        if (mesuresBox && mesuresList && c.mesures_prevention) {
+            const mesures = c.mesures_prevention.split(',').map(s => s.trim()).filter(Boolean);
+            mesuresList.innerHTML = mesures.map(m => '<li>' + m + '</li>').join('');
+            mesuresBox.classList.add('visible');
+        }
     }
 
     document.getElementById('btn-validate').disabled = true;
