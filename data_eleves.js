@@ -8,6 +8,9 @@
 */
 
 window.BDD_ELEVES = [
+    // PROF — compte test enseignant (ne pas supprimer)
+    { userCode: "PROFPSE", classe: "PROF" },
+
     // B1AGO1 (8 élèves)
     { userCode: "KA47", classe: "B1AGO1" },
     { userCode: "LU83", classe: "B1AGO1" },
