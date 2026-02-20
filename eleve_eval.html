@@ -362,12 +362,10 @@
         .ord-list { display: flex; flex-direction: column; gap: 8px; }
         .ord-item { background: #1e293b; padding: 12px 16px; border-radius: 10px; border: 1px solid #334155; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; }
         .ord-item:hover { border-color: #3b82f6; }
-        .ord-num { background: #3b82f6; color: white; border-radius: 50%; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
         .ord-text { flex: 1; }
-        .ord-btns { display: flex; gap: 4px; }
-        .ord-btns button { padding: 8px 12px; font-size: 1rem; min-width: 40px; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; cursor: pointer; }
-        .ord-btns button:disabled { opacity: 0.3; cursor: default; }
-        .ord-btns button:hover:not(:disabled) { background: #475569; }
+        .ord-select { flex-shrink: 0; }
+        .ord-select select { padding: 8px 12px; border-radius: 8px; border: 2px solid #3b82f6; background: #1e293b; color: white; font-weight: 700; font-size: 1rem; min-width: 52px; cursor: pointer; -webkit-appearance: none; }
+        .ord-select select:focus { border-color: #60a5fa; outline: none; }
         .ord-reset-btn { margin-top: 8px; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: 1px solid #475569; background: transparent; color: #94a3b8; cursor: pointer; }
         .ord-reset-btn:hover { color: white; border-color: #64748b; }
         /* Document image placeholder */
@@ -1021,20 +1019,27 @@
                     [currentOrder[i], currentOrder[j]] = [currentOrder[j], currentOrder[i]];
                 }
                 answers[q.id] = currentOrder;
-                initialShuffles[q.id] = [...currentOrder]; // Store initial shuffle
+                initialShuffles[q.id] = [...currentOrder];
             }
             html += '<div class="ord-list" id="ord-list-' + q.id + '">';
-            currentOrder.forEach((idx, pos) => {
-                html += '<div class="ord-item" data-idx="' + idx + '">' +
-                    '<span class="ord-num">' + (pos + 1) + '</span>' +
-                    '<span class="ord-text">' + escHtml((q.items || [])[idx]) + '</span>' +
-                    '<div class="ord-btns">' +
-                        '<button type="button" onclick="moveOrdItem(\'' + q.id + '\',' + pos + ',-1)"' + (pos === 0 ? ' disabled' : '') + '>▲</button>' +
-                        '<button type="button" onclick="moveOrdItem(\'' + q.id + '\',' + pos + ',1)"' + (pos === currentOrder.length - 1 ? ' disabled' : '') + '>▼</button>' +
-                    '</div></div>';
+            const n = (q.items || []).length;
+            currentOrder.forEach((itemIdx, rank) => {
+                let options = '';
+                for (let r = 0; r < n; r++) {
+                    options += '<option value="' + r + '"' + (r === rank ? ' selected' : '') + '>' + (r + 1) + '</option>';
+                }
+                html += '<div class="ord-item" data-idx="' + itemIdx + '">' +
+                    '<div class="ord-select">' +
+                        '<select id="ord-sel-' + q.id + '-' + itemIdx + '" ' +
+                            'onchange="window.setOrdRank(\'' + q.id + '\',' + itemIdx + ',parseInt(this.value,10))">' +
+                            options +
+                        '</select>' +
+                    '</div>' +
+                    '<span class="ord-text">' + escHtml((q.items || [])[itemIdx]) + '</span>' +
+                '</div>';
             });
             html += '</div>';
-            html += '<button type="button" class="ord-reset-btn" onclick="resetOrdItem(\'' + q.id + '\')">🔄 Remélanger</button>';
+            html += '<button type="button" class="ord-reset-btn" onclick="window.resetOrdItem(\'' + q.id + '\')">🔄 Remelanger</button>';
         }
 
         container.innerHTML = html;
@@ -1081,28 +1086,19 @@
     };
 
     // === ORDONNER HANDLERS ===
-    window.moveOrdItem = function(qId, pos, dir) {
+    window.setOrdRank = function(qId, itemIdx, newRank) {
         const order = answers[qId];
-        if (!order) return;
-        const newPos = pos + dir;
-        if (newPos < 0 || newPos >= order.length) return;
-        [order[pos], order[newPos]] = [order[newPos], order[pos]];
+        if (!Array.isArray(order)) return;
+        if (newRank < 0 || newRank >= order.length) return;
+        const oldRank = order.indexOf(itemIdx);
+        if (oldRank === -1 || oldRank === newRank) return;
+        // Swap automatique : l'item qui occupait newRank prend oldRank
+        const displacedItem = order[newRank];
+        order[newRank] = itemIdx;
+        order[oldRank] = displacedItem;
         answers[qId] = order;
-        // Re-render only the ord-list (not the whole question)
-        const q = currentEval.questions[currentQuestionIndex];
-        const listEl = document.getElementById('ord-list-' + qId);
-        if (!listEl) { displayQuestion(currentQuestionIndex); return; }
-        let html = '';
-        order.forEach((idx, p) => {
-            html += '<div class="ord-item" data-idx="' + idx + '">' +
-                '<span class="ord-num">' + (p + 1) + '</span>' +
-                '<span class="ord-text">' + escHtml((q.items || [])[idx]) + '</span>' +
-                '<div class="ord-btns">' +
-                    '<button type="button" onclick="moveOrdItem(\'' + qId + '\',' + p + ',-1)"' + (p === 0 ? ' disabled' : '') + '>▲</button>' +
-                    '<button type="button" onclick="moveOrdItem(\'' + qId + '\',' + p + ',1)"' + (p === order.length - 1 ? ' disabled' : '') + '>▼</button>' +
-                '</div></div>';
-        });
-        listEl.innerHTML = html;
+        displayQuestion(currentQuestionIndex);
+        updateNav();
     };
 
     window.resetOrdItem = function(qId) {
@@ -1110,6 +1106,7 @@
             answers[qId] = [...initialShuffles[qId]];
         }
         displayQuestion(currentQuestionIndex);
+        updateNav();
     };
 
     window.prevQ = function() {
