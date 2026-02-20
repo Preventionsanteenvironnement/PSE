@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pause 3 minutes — CPS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+        .container { max-width: 420px; width: 100%; text-align: center; }
+        .header h1 { font-size: 1.3rem; margin-bottom: 6px; color: #f1f5f9; }
+        .header p { font-size: 0.82rem; color: #94a3b8; margin-bottom: 20px; line-height: 1.4; }
+
+        /* === MENU EXERCICES === */
+        .menu { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .menu-btn {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.2s;
+            text-align: left; font-family: inherit; color: #e2e8f0;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+        .menu-btn .menu-emoji { font-size: 1.5rem; margin-bottom: 4px; }
+        .menu-btn .menu-title { font-size: 0.95rem; font-weight: 700; display: block; }
+        .menu-btn .menu-desc { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+
+        /* === EXERCICE SCREEN === */
+        .exercice { display: none; animation: fadeIn 0.5s ease; }
+        .exercice.visible { display: block; }
+
+        /* Bouton retour */
+        .btn-back {
+            background: none; border: none; color: #94a3b8; font-size: 0.82rem;
+            cursor: pointer; font-family: inherit; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .btn-back:hover { color: #e2e8f0; }
+
+        /* === RESPIRATION === */
+        .breath-container { position: relative; width: 220px; height: 220px; margin: 0 auto 20px; }
+        .breath-circle {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(circle, rgba(99,102,241,0.3) 0%, rgba(99,102,241,0.05) 70%);
+            border: 2px solid rgba(99,102,241,0.4);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 4s ease-in-out;
+            flex-direction: column;
+        }
+        .breath-circle.inhale { transform: scale(1.3); border-color: rgba(34,197,94,0.6); background: radial-gradient(circle, rgba(34,197,94,0.2) 0%, rgba(34,197,94,0.05) 70%); }
+        .breath-circle.hold { border-color: rgba(250,204,21,0.6); background: radial-gradient(circle, rgba(250,204,21,0.15) 0%, rgba(250,204,21,0.03) 70%); }
+        .breath-circle.exhale { transform: scale(0.8); border-color: rgba(99,102,241,0.6); }
+        .breath-text { font-size: 1.1rem; font-weight: 700; }
+        .breath-count { font-size: 2rem; font-weight: 800; margin-top: 4px; }
+        .breath-timer { font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px; }
+
+        .btn-start {
+            background: #6366f1; color: #fff; border: none; border-radius: 12px;
+            padding: 14px 32px; font-size: 1rem; font-weight: 700; cursor: pointer;
+            font-family: inherit; transition: background 0.2s;
+        }
+        .btn-start:hover { background: #4f46e5; }
+        .btn-start:disabled { background: #475569; cursor: default; }
+
+        /* === ANCRAGE 5-4-3-2-1 === */
+        .ancrage-step { display: none; animation: fadeIn 0.4s ease; }
+        .ancrage-step.visible { display: block; }
+        .ancrage-num { font-size: 4rem; font-weight: 800; color: #6366f1; margin-bottom: 8px; }
+        .ancrage-sens { font-size: 1rem; margin-bottom: 6px; color: #f1f5f9; }
+        .ancrage-consigne { font-size: 0.85rem; color: #94a3b8; margin-bottom: 16px; line-height: 1.4; }
+        .ancrage-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; text-align: left; }
+        .ancrage-input {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px; padding: 10px 12px; color: #e2e8f0;
+            font-size: 0.85rem; font-family: inherit; width: 100%;
+        }
+        .ancrage-input:focus { outline: none; border-color: #6366f1; }
+        .ancrage-input::placeholder { color: #64748b; }
+        .btn-next {
+            background: #6366f1; color: #fff; border: none; border-radius: 10px;
+            padding: 12px 24px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-next:hover { background: #4f46e5; }
+
+        /* === BODY SCAN === */
+        .scan-zone {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 14px; margin-bottom: 10px;
+            transition: all 0.3s; cursor: pointer;
+        }
+        .scan-zone:hover { background: rgba(255,255,255,0.1); }
+        .scan-zone.active { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+        .scan-zone .zone-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+        .scan-zone .zone-consigne { font-size: 0.78rem; color: #94a3b8; line-height: 1.3; }
+        .scan-progress { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 16px 0; overflow: hidden; }
+        .scan-progress-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.5s ease; }
+
+        /* === FIN === */
+        .fin-screen { display: none; animation: fadeIn 0.5s ease; }
+        .fin-screen.visible { display: block; }
+        .fin-emoji { font-size: 3rem; margin-bottom: 10px; }
+        .fin-text { font-size: 1rem; color: #f1f5f9; margin-bottom: 6px; }
+        .fin-sub { font-size: 0.82rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { margin-top: 30px; font-size: 0.7rem; color: #475569; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>🧘 Pause 3 minutes</h1>
+        <p>Prends un instant pour toi. Choisis un exercice de pleine attention.</p>
+    </div>
+
+    <!-- MENU PRINCIPAL -->
+    <div class="menu" id="menu">
+        <button class="menu-btn" onclick="startExercice('respiration')">
+            <div class="menu-emoji">🌬️</div>
+            <span class="menu-title">Respiration guidee</span>
+            <span class="menu-desc">Respiration carree 4-4-4-4 — calme le corps et l'esprit en 2 minutes</span>
+        </button>
+        <button class="menu-btn" onclick="startExercice('ancrage')">
+            <div class="menu-emoji">🔍</div>
+            <span class="menu-title">Ancrage 5-4-3-2-1</span>
+            <span class="menu-desc">Utilise tes 5 sens pour revenir dans le moment present</span>
+        </button>
+        <button class="menu-btn" onclick="startExercice('bodyscan')">
+            <div class="menu-emoji">🧍</div>
+            <span class="menu-title">Scan corporel express</span>
+            <span class="menu-desc">Passe en revue ton corps zone par zone, relache les tensions</span>
+        </button>
+    </div>
+
+    <!-- EXERCICE 1 : RESPIRATION -->
+    <div class="exercice" id="ex-respiration">
+        <button class="btn-back" onclick="backToMenu()">← Retour</button>
+        <h2 style="font-size:1.1rem; margin-bottom:6px;">🌬️ Respiration carree</h2>
+        <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:20px;">Inspire 4s — Bloque 4s — Expire 4s — Bloque 4s<br>Repete 4 cycles.</p>
+        <div class="breath-container">
+            <div class="breath-circle" id="breath-circle">
+                <div class="breath-text" id="breath-text">Pret ?</div>
+                <div class="breath-count" id="breath-count"></div>
+            </div>
+        </div>
+        <div class="breath-timer" id="breath-timer">4 cycles — environ 2 minutes</div>
+        <button class="btn-start" id="btn-breath" onclick="startBreathing()">Commencer</button>
+    </div>
+
+    <!-- EXERCICE 2 : ANCRAGE 5-4-3-2-1 -->
+    <div class="exercice" id="ex-ancrage">
+        <button class="btn-back" onclick="backToMenu()">← Retour</button>
+        <h2 style="font-size:1.1rem; margin-bottom:6px;">🔍 Ancrage sensoriel</h2>
+        <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:20px;">Nomme ce que tu percois autour de toi, sens par sens.</p>
+
+        <div class="ancrage-step" id="ancrage-5">
+            <div class="ancrage-num">5</div>
+            <div class="ancrage-sens">👀 Choses que tu VOIS</div>
+            <div class="ancrage-consigne">Regarde autour de toi et nomme 5 choses que tu vois en ce moment.</div>
+            <div class="ancrage-inputs" id="inputs-5"></div>
+            <button class="btn-next" onclick="nextAncrage(4)">Suivant →</button>
+        </div>
+        <div class="ancrage-step" id="ancrage-4">
+            <div class="ancrage-num">4</div>
+            <div class="ancrage-sens">✋ Choses que tu TOUCHES</div>
+            <div class="ancrage-consigne">Concentre-toi sur 4 sensations de toucher (tes pieds sur le sol, tes mains sur la table...).</div>
+            <div class="ancrage-inputs" id="inputs-4"></div>
+            <button class="btn-next" onclick="nextAncrage(3)">Suivant →</button>
+        </div>
+        <div class="ancrage-step" id="ancrage-3">
+            <div class="ancrage-num">3</div>
+            <div class="ancrage-sens">👂 Choses que tu ENTENDS</div>
+            <div class="ancrage-consigne">Ferme les yeux 5 secondes puis nomme 3 sons que tu percois.</div>
+            <div class="ancrage-inputs" id="inputs-3"></div>
+            <button class="btn-next" onclick="nextAncrage(2)">Suivant →</button>
+        </div>
+        <div class="ancrage-step" id="ancrage-2">
+            <div class="ancrage-num">2</div>
+            <div class="ancrage-sens">👃 Choses que tu SENS (odeurs)</div>
+            <div class="ancrage-consigne">Inspire doucement et identifie 2 odeurs autour de toi.</div>
+            <div class="ancrage-inputs" id="inputs-2"></div>
+            <button class="btn-next" onclick="nextAncrage(1)">Suivant →</button>
+        </div>
+        <div class="ancrage-step" id="ancrage-1">
+            <div class="ancrage-num">1</div>
+            <div class="ancrage-sens">👅 Chose que tu GOUTES</div>
+            <div class="ancrage-consigne">Concentre-toi sur le gout dans ta bouche en ce moment.</div>
+            <div class="ancrage-inputs" id="inputs-1"></div>
+            <button class="btn-next" onclick="finishAncrage()">Terminer ✓</button>
+        </div>
+    </div>
+
+    <!-- EXERCICE 3 : BODY SCAN -->
+    <div class="exercice" id="ex-bodyscan">
+        <button class="btn-back" onclick="backToMenu()">← Retour</button>
+        <h2 style="font-size:1.1rem; margin-bottom:6px;">🧍 Scan corporel express</h2>
+        <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:16px;">Clique sur chaque zone, lis la consigne, prends 10 secondes pour la ressentir.</p>
+        <div class="scan-progress"><div class="scan-progress-fill" id="scan-fill" style="width:0%;"></div></div>
+        <div id="scan-zones"></div>
+    </div>
+
+    <!-- FIN -->
+    <div class="fin-screen" id="fin-screen">
+        <div class="fin-emoji">✨</div>
+        <div class="fin-text">Bravo, tu as pris soin de toi !</div>
+        <div class="fin-sub">La pleine attention, c'est comme un muscle : plus tu la pratiques, plus elle devient naturelle.</div>
+        <button class="btn-start" style="margin-top:20px;" onclick="backToMenu()">← Retour au menu</button>
+    </div>
+
+    <div class="footer">Competences psychosociales — C1.6 Pleine attention</div>
+</div>
+
+<script>
+// =============================================
+// NAVIGATION
+// =============================================
+function startExercice(type) {
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('fin-screen').classList.remove('visible');
+    document.querySelectorAll('.exercice').forEach(function(e){ e.classList.remove('visible'); });
+
+    if (type === 'respiration') {
+        document.getElementById('ex-respiration').classList.add('visible');
+        resetBreathing();
+    } else if (type === 'ancrage') {
+        document.getElementById('ex-ancrage').classList.add('visible');
+        initAncrage();
+    } else if (type === 'bodyscan') {
+        document.getElementById('ex-bodyscan').classList.add('visible');
+        initBodyScan();
+    }
+}
+
+function backToMenu() {
+    document.querySelectorAll('.exercice').forEach(function(e){ e.classList.remove('visible'); });
+    document.getElementById('fin-screen').classList.remove('visible');
+    document.getElementById('menu').style.display = 'flex';
+    stopBreathing();
+}
+
+function showFin() {
+    document.querySelectorAll('.exercice').forEach(function(e){ e.classList.remove('visible'); });
+    document.getElementById('fin-screen').classList.add('visible');
+}
+
+// =============================================
+// RESPIRATION CARREE
+// =============================================
+var breathInterval = null;
+var breathTimeout = null;
+var breathCycle = 0;
+var breathPhase = 0; // 0=inspire, 1=bloque, 2=expire, 3=bloque
+var breathSec = 0;
+
+function resetBreathing() {
+    stopBreathing();
+    document.getElementById('breath-text').textContent = 'Pret ?';
+    document.getElementById('breath-count').textContent = '';
+    document.getElementById('breath-timer').textContent = '4 cycles — environ 2 minutes';
+    document.getElementById('btn-breath').textContent = 'Commencer';
+    document.getElementById('btn-breath').disabled = false;
+    document.getElementById('breath-circle').className = 'breath-circle';
+}
+
+function stopBreathing() {
+    if (breathInterval) clearInterval(breathInterval);
+    if (breathTimeout) clearTimeout(breathTimeout);
+    breathInterval = null; breathTimeout = null;
+}
+
+function startBreathing() {
+    document.getElementById('btn-breath').disabled = true;
+    breathCycle = 0; breathPhase = 0; breathSec = 4;
+    nextBreathPhase();
+}
+
+function nextBreathPhase() {
+    var circle = document.getElementById('breath-circle');
+    var text = document.getElementById('breath-text');
+    var count = document.getElementById('breath-count');
+    var timer = document.getElementById('breath-timer');
+
+    var phases = [
+        { text: 'Inspire...', cls: 'inhale' },
+        { text: 'Bloque...', cls: 'hold' },
+        { text: 'Expire...', cls: 'exhale' },
+        { text: 'Bloque...', cls: 'hold' }
+    ];
+
+    if (breathPhase >= 4) {
+        breathPhase = 0;
+        breathCycle++;
+        if (breathCycle >= 4) {
+            circle.className = 'breath-circle';
+            text.textContent = 'Termine !';
+            count.textContent = '🙏';
+            timer.textContent = '4 cycles termines';
+            breathTimeout = setTimeout(showFin, 2000);
+            return;
+        }
+    }
+
+    var p = phases[breathPhase];
+    circle.className = 'breath-circle ' + p.cls;
+    text.textContent = p.text;
+    timer.textContent = 'Cycle ' + (breathCycle + 1) + ' / 4';
+    breathSec = 4;
+    count.textContent = breathSec;
+
+    breathInterval = setInterval(function() {
+        breathSec--;
+        if (breathSec <= 0) {
+            clearInterval(breathInterval);
+            breathPhase++;
+            nextBreathPhase();
+        } else {
+            count.textContent = breathSec;
+        }
+    }, 1000);
+}
+
+// =============================================
+// ANCRAGE 5-4-3-2-1
+// =============================================
+function initAncrage() {
+    [5,4,3,2,1].forEach(function(n) {
+        var container = document.getElementById('inputs-' + n);
+        container.innerHTML = '';
+        for (var i = 0; i < n; i++) {
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'ancrage-input';
+            input.placeholder = (i + 1) + '...';
+            container.appendChild(input);
+        }
+    });
+    document.querySelectorAll('.ancrage-step').forEach(function(s){ s.classList.remove('visible'); });
+    document.getElementById('ancrage-5').classList.add('visible');
+}
+
+function nextAncrage(n) {
+    document.querySelectorAll('.ancrage-step').forEach(function(s){ s.classList.remove('visible'); });
+    document.getElementById('ancrage-' + n).classList.add('visible');
+}
+
+function finishAncrage() {
+    showFin();
+}
+
+// =============================================
+// BODY SCAN
+// =============================================
+var scanZones = [
+    { emoji: '🦶', name: 'Pieds', consigne: 'Sens le contact de tes pieds avec le sol. Appuie legerement. Relache.' },
+    { emoji: '🦵', name: 'Jambes', consigne: 'Tes jambes sont-elles tendues ? Lourdes ? Legeres ? Relache les tensions.' },
+    { emoji: '🫁', name: 'Ventre', consigne: 'Pose ta main sur ton ventre. Sens-le bouger avec ta respiration. Gonfle, degonfle.' },
+    { emoji: '🫀', name: 'Poitrine', consigne: 'Sens ton coeur battre. Ta poitrine se souleve doucement. Respire profondement.' },
+    { emoji: '💪', name: 'Epaules et bras', consigne: 'Monte tes epaules vers tes oreilles, tiens 3 secondes, puis relache d\'un coup.' },
+    { emoji: '🧠', name: 'Tete et visage', consigne: 'Desserre ta machoire. Defronce tes sourcils. Relache ton front. Souris legerement.' }
+];
+var scanDone = [];
+
+function initBodyScan() {
+    scanDone = [];
+    var container = document.getElementById('scan-zones');
+    container.innerHTML = scanZones.map(function(z, i) {
+        return '<div class="scan-zone" id="scan-' + i + '" onclick="doScan(' + i + ')">'
+            + '<div class="zone-name">' + z.emoji + ' ' + z.name + '</div>'
+            + '<div class="zone-consigne">' + z.consigne + '</div></div>';
+    }).join('');
+    document.getElementById('scan-fill').style.width = '0%';
+}
+
+function doScan(i) {
+    var zone = document.getElementById('scan-' + i);
+    if (zone.classList.contains('active')) return;
+    zone.classList.add('active');
+    if (scanDone.indexOf(i) === -1) scanDone.push(i);
+    var pct = (scanDone.length / scanZones.length) * 100;
+    document.getElementById('scan-fill').style.width = pct + '%';
+    if (scanDone.length >= scanZones.length) {
+        setTimeout(showFin, 1500);
+    }
+}
+</script>
+</body>
+</html>

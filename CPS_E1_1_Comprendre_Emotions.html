@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dico des émotions — CPS E1.1</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            color: #333;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container {
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        /* === BACK BUTTON === */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #636e72;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #2d3436; }
+
+        /* === HEADER === */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #2d3436;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: #636e72;
+            line-height: 1.4;
+        }
+        .header .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #4338ca;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+
+        /* === CARDS === */
+        .card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            color: #2d3436;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.7); }
+            70% { transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* ===============================
+           SECTION 1: EMOTION WHEEL
+           =============================== */
+        .wheel-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 10px auto 20px;
+        }
+        .wheel-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem;
+            color: #4338ca;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.2;
+            z-index: 2;
+            box-shadow: 0 2px 10px rgba(67,56,202,0.2);
+        }
+        .petal-btn {
+            position: absolute;
+            width: 68px; height: 68px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            cursor: pointer;
+            font-size: 1.8rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+            z-index: 3;
+        }
+        .petal-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+        }
+        .petal-btn.active {
+            transform: scale(1.2);
+            border-width: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            z-index: 4;
+        }
+        .petal-label {
+            position: absolute;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #636e72;
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* Petal positions (7 petals in a circle) */
+        .petal-0 { top: 2px; left: 50%; transform: translateX(-50%); }
+        .petal-1 { top: 38px; right: 12px; }
+        .petal-2 { bottom: 58px; right: 2px; }
+        .petal-3 { bottom: 8px; left: 50%; transform: translateX(-50%); }
+        .petal-4 { bottom: 58px; left: 2px; }
+        .petal-5 { top: 38px; left: 12px; }
+        .petal-6 { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        /* Label positions */
+        .label-0 { top: -16px; left: 50%; transform: translateX(-50%); }
+        .label-1 { top: 30px; right: -28px; }
+        .label-2 { bottom: 50px; right: -32px; }
+        .label-3 { bottom: -16px; left: 50%; transform: translateX(-50%); }
+        .label-4 { bottom: 50px; left: -28px; }
+        .label-5 { top: 30px; left: -30px; }
+
+        /* === DETAIL PANEL === */
+        .detail-panel {
+            display: none;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 10px;
+            animation: fadeIn 0.35s ease;
+        }
+        .detail-panel.visible { display: block; }
+        .detail-panel h3 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-panel .family-desc {
+            font-size: 0.78rem;
+            color: #555;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .gradient-label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .gradient-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .emotion-pill {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            color: #fff;
+        }
+        .emotion-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        .emotion-pill.selected {
+            border-color: #2d3436;
+            transform: scale(1.05);
+        }
+        .pill-definition {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #444;
+            line-height: 1.5;
+            animation: fadeIn 0.25s ease;
+            border-left: 3px solid #ccc;
+        }
+        .pill-definition.visible { display: block; }
+
+        /* ===============================
+           SECTION 2: LE SAVAIS-TU
+           =============================== */
+        .fact-box {
+            background: #f0f4ff;
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 90px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .fact-box .fact-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+        .fact-box .fact-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #333;
+        }
+        .btn-fact {
+            background: #4b6ee6;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .btn-fact:hover { background: #3b5ec6; }
+        .btn-fact:active { transform: scale(0.98); }
+
+        /* ===============================
+           SECTION 3: QUIZ
+           =============================== */
+        .quiz-progress {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .quiz-dot {
+            flex: 1;
+            height: 5px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            transition: background 0.3s;
+        }
+        .quiz-dot.done { background: #22c55e; }
+        .quiz-dot.wrong { background: #ef4444; }
+        .quiz-dot.current { background: #4b6ee6; }
+
+        .quiz-situation {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #333;
+            border-left: 4px solid #4b6ee6;
+        }
+        .quiz-question {
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .quiz-opt {
+            background: #f8f9fa;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 10px;
+            cursor: pointer;
+            text-align: center;
+            font-family: inherit;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .quiz-opt .opt-emoji { font-size: 1.6rem; }
+        .quiz-opt .opt-label { font-weight: 600; color: #444; }
+        .quiz-opt:hover { border-color: #4b6ee6; background: #eef2ff; }
+        .quiz-opt.correct {
+            border-color: #22c55e;
+            background: #dcfce7;
+        }
+        .quiz-opt.incorrect {
+            border-color: #ef4444;
+            background: #fee2e2;
+        }
+        .quiz-opt:disabled { cursor: default; opacity: 0.85; }
+
+        .quiz-feedback {
+            display: none;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        .quiz-feedback.visible { display: block; }
+        .quiz-feedback.correct { background: #dcfce7; color: #166534; }
+        .quiz-feedback.incorrect { background: #fee2e2; color: #991b1b; }
+
+        .btn-quiz-next {
+            display: none;
+            background: #4b6ee6;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .btn-quiz-next.visible { display: block; }
+        .btn-quiz-next:hover { background: #3b5ec6; }
+
+        .quiz-result {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.4s ease;
+        }
+        .quiz-result.visible { display: block; }
+        .quiz-result .result-emoji { font-size: 3rem; margin-bottom: 10px; }
+        .quiz-result .result-score {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #2d3436;
+            margin-bottom: 6px;
+        }
+        .quiz-result .result-msg {
+            font-size: 0.85rem;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+        .btn-quiz-restart {
+            background: #4b6ee6;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-quiz-restart:hover { background: #3b5ec6; }
+
+        /* ===============================
+           SECTION 4: JOURNAL
+           =============================== */
+        .journal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .journal-input, .journal-textarea {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            color: #333;
+            transition: border-color 0.2s;
+            background: #f8f9fa;
+        }
+        .journal-input:focus, .journal-textarea:focus {
+            outline: none;
+            border-color: #4b6ee6;
+            background: #fff;
+        }
+        .journal-textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .btn-journal-save {
+            background: #4b6ee6;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .btn-journal-save:hover { background: #3b5ec6; }
+        .btn-journal-save:disabled { background: #94a3b8; cursor: default; }
+
+        .journal-entries {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .journal-entry {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px 14px;
+            animation: fadeIn 0.3s ease;
+        }
+        .journal-entry .entry-date {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-bottom: 3px;
+        }
+        .journal-entry .entry-emotion {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2d3436;
+            margin-bottom: 2px;
+        }
+        .journal-entry .entry-note {
+            font-size: 0.8rem;
+            color: #555;
+            line-height: 1.4;
+        }
+        .journal-empty {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 0.82rem;
+        }
+
+        /* === FOOTER === */
+        .footer {
+            text-align: center;
+            padding: 20px 0 10px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- BACK BUTTON -->
+    <a href="index.html" class="back-link">&larr; Retour</a>
+
+    <!-- HEADER -->
+    <div class="header">
+        <span class="badge">CPS &mdash; E1.1</span>
+        <h1>Le Dico des Emotions</h1>
+        <p>Explore les 7 familles d'emotions, leurs intensites et apprends a les reconnaitre.</p>
+    </div>
+
+    <!-- ========================================
+         SECTION 1 : LA ROUE DES EMOTIONS
+         ======================================== -->
+    <div class="card" id="section-wheel">
+        <h2>La roue des emotions</h2>
+        <p style="font-size:0.8rem;color:#636e72;margin-bottom:10px;">Touche une emotion pour explorer sa famille.</p>
+
+        <div class="wheel-wrapper" id="wheel">
+            <div class="wheel-center">7<br>familles</div>
+            <!-- Petals inserted by JS -->
+        </div>
+
+        <div id="detail-panel" class="detail-panel"></div>
+    </div>
+
+    <!-- ========================================
+         SECTION 2 : LE SAVAIS-TU ?
+         ======================================== -->
+    <div class="card" id="section-facts">
+        <h2>Le savais-tu ?</h2>
+        <div class="fact-box" id="fact-box">
+            <span class="fact-icon">💡</span>
+            <span class="fact-text" id="fact-text"></span>
+        </div>
+        <button class="btn-fact" id="btn-next-fact" onclick="showRandomFact()">Un autre fait !</button>
+    </div>
+
+    <!-- ========================================
+         SECTION 3 : TESTE-TOI !
+         ======================================== -->
+    <div class="card" id="section-quiz">
+        <h2>Teste-toi !</h2>
+        <p style="font-size:0.8rem;color:#636e72;margin-bottom:14px;">5 situations, 5 emotions a identifier. C'est parti !</p>
+
+        <div class="quiz-progress" id="quiz-progress"></div>
+
+        <div id="quiz-area"></div>
+        <div id="quiz-result" class="quiz-result"></div>
+    </div>
+
+    <!-- ========================================
+         SECTION 4 : MON CARNET
+         ======================================== -->
+    <div class="card" id="section-journal">
+        <h2>Mon carnet des emotions</h2>
+        <p style="font-size:0.8rem;color:#636e72;margin-bottom:14px;">Note une emotion que tu as decouverte ou ressentie aujourd'hui.</p>
+        <div class="journal-form">
+            <input type="text" class="journal-input" id="journal-emotion" placeholder="Nom de l'emotion (ex: serein, agace...)" maxlength="60">
+            <textarea class="journal-textarea" id="journal-note" placeholder="Pourquoi cette emotion ? (optionnel)" maxlength="200"></textarea>
+            <button class="btn-journal-save" id="btn-journal-save" onclick="saveJournalEntry()">Enregistrer</button>
+        </div>
+        <div id="journal-entries" class="journal-entries"></div>
+    </div>
+
+    <div class="footer">CPS &mdash; Competences Psychosociales &mdash; E1.1 Comprendre les emotions</div>
+
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+
+const EMOTIONS = [
+    {
+        name: 'Joie',
+        emoji: '😊',
+        color: '#fbbf24',
+        colorLight: '#fef3c7',
+        colorDark: '#f59e0b',
+        textColor: '#92400e',
+        description: 'La joie nous signale que nos besoins sont satisfaits. Elle nous donne de l\'energie et nous pousse a partager.',
+        gradient: [
+            { name: 'Satisfaction', def: 'Un sentiment calme de contentement quand quelque chose se passe bien.' },
+            { name: 'Contentement', def: 'Un etat de bien-etre tranquille, on se sent a sa place.' },
+            { name: 'Joie', def: 'Un elan de bonheur qui se manifeste par le sourire, le rire.' },
+            { name: 'Enthousiasme', def: 'Une forte envie d\'agir, une excitation positive face a un projet.' },
+            { name: 'Euphorie', def: 'Un bonheur intense qui fait oublier tout le reste.' },
+            { name: 'Extase', def: 'Un etat de joie extreme, presque irreal, ou l\'on se sent transporte.' }
+        ]
+    },
+    {
+        name: 'Tristesse',
+        emoji: '😢',
+        color: '#3b82f6',
+        colorLight: '#dbeafe',
+        colorDark: '#2563eb',
+        textColor: '#1e3a8a',
+        description: 'La tristesse nous aide a ralentir, a accepter une perte et a rechercher du soutien aupres des autres.',
+        gradient: [
+            { name: 'Melancolie', def: 'Une tristesse douce et vague, sans cause precise, un peu reveur.' },
+            { name: 'Deception', def: 'On attendait quelque chose qui ne s\'est pas produit comme prevu.' },
+            { name: 'Chagrin', def: 'Une douleur emotionnelle liee a une perte ou une separation.' },
+            { name: 'Tristesse', def: 'Un sentiment profond de peine qui peut s\'exprimer par les larmes.' },
+            { name: 'Desespoir', def: 'On a l\'impression que la situation ne peut pas s\'ameliorer.' },
+            { name: 'Detresse', def: 'Une souffrance extreme qui appelle a l\'aide de toute urgence.' }
+        ]
+    },
+    {
+        name: 'Colere',
+        emoji: '😡',
+        color: '#ef4444',
+        colorLight: '#fee2e2',
+        colorDark: '#dc2626',
+        textColor: '#991b1b',
+        description: 'La colere nous signale qu\'une de nos limites a ete franchie. C\'est un signal d\'alarme qui nous pousse a agir.',
+        gradient: [
+            { name: 'Agacement', def: 'Un petit irritation passagere, souvent pour un detail.' },
+            { name: 'Irritation', def: 'Un mecontentement qui monte, on commence a perdre patience.' },
+            { name: 'Frustration', def: 'On est bloque, empeche d\'atteindre ce qu\'on veut.' },
+            { name: 'Colere', def: 'Une reaction forte face a l\'injustice ou au non-respect de nos limites.' },
+            { name: 'Rage', def: 'Une colere violente qui submerge et rend difficile la reflexion.' },
+            { name: 'Fureur', def: 'L\'intensite maximale de la colere, un etat explosif et envahissant.' }
+        ]
+    },
+    {
+        name: 'Peur',
+        emoji: '😰',
+        color: '#8b5cf6',
+        colorLight: '#ede9fe',
+        colorDark: '#7c3aed',
+        textColor: '#5b21b6',
+        description: 'La peur nous protege du danger. Sans elle, nous prendrions des risques inconsideres !',
+        gradient: [
+            { name: 'Inquietude', def: 'Un leger souci, on pense a quelque chose qui pourrait mal tourner.' },
+            { name: 'Apprehension', def: 'On redoute un evenement a venir, sans certitude que ce sera grave.' },
+            { name: 'Anxiete', def: 'Une inquietude diffuse et persistante qui s\'installe durablement.' },
+            { name: 'Peur', def: 'Une reaction vive face a un danger percu, reel ou imagine.' },
+            { name: 'Terreur', def: 'Une peur extreme qui paralyse, le corps est en alerte maximale.' },
+            { name: 'Panique', def: 'Un etat de peur incontrole ou l\'on perd ses moyens completement.' }
+        ]
+    },
+    {
+        name: 'Degout',
+        emoji: '🤢',
+        color: '#22c55e',
+        colorLight: '#dcfce7',
+        colorDark: '#16a34a',
+        textColor: '#166534',
+        description: 'Le degout nous protege en nous eloignant de ce qui pourrait nous faire du mal (nourriture avariee, situations toxiques).',
+        gradient: [
+            { name: 'Gene', def: 'Un leger malaise face a quelque chose de desagreable mais supportable.' },
+            { name: 'Malaise', def: 'Un inconfort grandissant, on sent que quelque chose ne va pas.' },
+            { name: 'Aversion', def: 'Un rejet net, on veut s\'eloigner de la source du deplaisir.' },
+            { name: 'Degout', def: 'Un rejet physique et mental fort, souvent accompagne de nausee.' },
+            { name: 'Repulsion', def: 'Un besoin irrepressible de s\'eloigner, le corps reagit violemment.' },
+            { name: 'Ecourement', def: 'L\'intensite maximale du degout, un rejet total et visceral.' }
+        ]
+    },
+    {
+        name: 'Surprise',
+        emoji: '😲',
+        color: '#f97316',
+        colorLight: '#ffedd5',
+        colorDark: '#ea580c',
+        textColor: '#9a3412',
+        description: 'La surprise nous aide a nous adapter rapidement a quelque chose d\'inattendu. Elle capte toute notre attention.',
+        gradient: [
+            { name: 'Etonnement', def: 'Un leger « oh ! », quelque chose d\'inattendu mais pas bouleversant.' },
+            { name: 'Surprise', def: 'Un sursaut interieur face a l\'imprevu, on est pris au depourvu.' },
+            { name: 'Stupefaction', def: 'On reste bouche bee, l\'evenement depasse tout ce qu\'on imaginait.' },
+            { name: 'Choc', def: 'Un impact emotionnel fort qui coupe le souffle un instant.' },
+            { name: 'Sideration', def: 'On est fige, incapable de reagir face a l\'ampleur de l\'imprevu.' },
+            { name: 'Ebahissement', def: 'Un emerveillement mele de stupeur, on est completement subjugue.' }
+        ]
+    },
+    {
+        name: 'Mepris',
+        emoji: '😒',
+        color: '#6b7280',
+        colorLight: '#f3f4f6',
+        colorDark: '#4b5563',
+        textColor: '#1f2937',
+        description: 'Le mepris marque une distance avec ce qu\'on juge inferieur ou indigne. Il peut signaler un besoin de respect.',
+        gradient: [
+            { name: 'Indifference', def: 'Un detachement total, on ne ressent ni interet ni emotion.' },
+            { name: 'Dedain', def: 'Un regard de haut, on considere l\'autre comme peu digne d\'interet.' },
+            { name: 'Condescendance', def: 'On s\'adresse a l\'autre en se sentant superieur, avec une fausse bienveillance.' },
+            { name: 'Mepris', def: 'Un rejet de la valeur de l\'autre ou de ce qu\'il represente.' },
+            { name: 'Arrogance', def: 'Une conviction exageree de sa propre superiorite.' },
+            { name: 'Hostilite', def: 'Un rejet actif et agressif, on veut nuire ou exclure.' }
+        ]
+    }
+];
+
+const FACTS = [
+    "Une emotion dure en moyenne 90 secondes. Ce qui dure plus longtemps, c'est notre reaction a l'emotion !",
+    "Il n'y a pas d'emotions \u00ab positives \u00bb ou \u00ab negatives \u00bb. Toutes les emotions sont utiles et nous informent sur nos besoins.",
+    "La peur nous protege du danger. Sans elle, nous prendrions des risques inconsideres !",
+    "La colere nous signale qu'une de nos limites a ete franchie. C'est un signal d'alarme precieux.",
+    "La tristesse nous aide a ralentir, a accepter une perte et a demander du soutien aux autres.",
+    "Le degout nous protege : il nous eloigne de ce qui pourrait nous faire du mal (nourriture avariee, situations toxiques).",
+    "La surprise nous aide a nous adapter rapidement a quelque chose d'inattendu.",
+    "Les emotions se manifestent dans notre corps AVANT que notre cerveau ne les identifie.",
+    "Savoir nommer precisement une emotion reduit son intensite. Les scientifiques appellent ca \u00ab affect labeling \u00bb.",
+    "On peut ressentir plusieurs emotions en meme temps. C'est tout a fait normal !"
+];
+
+const QUIZ = [
+    {
+        situation: "Tu recois un cadeau surprise pour ton anniversaire. Quelle famille d'emotions ressens-tu ?",
+        options: [
+            { emoji: '😊', label: 'Joie', value: 'joie' },
+            { emoji: '😢', label: 'Tristesse', value: 'tristesse' },
+            { emoji: '😰', label: 'Peur', value: 'peur' },
+            { emoji: '😡', label: 'Colere', value: 'colere' }
+        ],
+        correct: ['joie'],
+        alsoAccept: ['surprise'],
+        feedback: {
+            correct: "Bravo ! Un cadeau surprise declenche de la joie (et aussi de la surprise). Ces deux emotions vont souvent ensemble !",
+            incorrect: "C'est de la joie (et aussi de la surprise) qu'on ressent en recevant un cadeau inattendu. La joie signale que nos besoins sont satisfaits."
+        }
+    },
+    {
+        situation: "Un ami te trahit en revelant un secret que tu lui avais confie. Quelle est l'emotion principale ?",
+        options: [
+            { emoji: '😡', label: 'Colere', value: 'colere' },
+            { emoji: '😊', label: 'Joie', value: 'joie' },
+            { emoji: '🤢', label: 'Degout', value: 'degout' },
+            { emoji: '😲', label: 'Surprise', value: 'surprise' }
+        ],
+        correct: ['colere'],
+        alsoAccept: ['tristesse'],
+        feedback: {
+            correct: "Exact ! La colere est la reaction principale quand nos limites sont franchies. On peut aussi ressentir de la tristesse face a cette trahison.",
+            incorrect: "La colere est l'emotion principale ici : une limite a ete franchie. On peut aussi ressentir de la tristesse. La colere nous signale que nos limites n'ont pas ete respectees."
+        }
+    },
+    {
+        situation: "Tu dois presenter un expose devant toute la classe demain. Comment te sens-tu ?",
+        options: [
+            { emoji: '😰', label: 'Peur', value: 'peur' },
+            { emoji: '😒', label: 'Mepris', value: 'mepris' },
+            { emoji: '😊', label: 'Joie', value: 'joie' },
+            { emoji: '🤢', label: 'Degout', value: 'degout' }
+        ],
+        correct: ['peur'],
+        alsoAccept: [],
+        feedback: {
+            correct: "Bien vu ! C'est de la peur (ou plus precisement de l'anxiete/apprehension). Cette emotion nous prepare a affronter le defi.",
+            incorrect: "On ressent de la peur, et plus precisement de l'anxiete ou de l'apprehension. C'est le corps qui se prepare a affronter une situation stressante."
+        }
+    },
+    {
+        situation: "Tu vois quelqu'un jeter ses dechets par terre dans un parc. Que ressens-tu ?",
+        options: [
+            { emoji: '🤢', label: 'Degout', value: 'degout' },
+            { emoji: '😢', label: 'Tristesse', value: 'tristesse' },
+            { emoji: '😲', label: 'Surprise', value: 'surprise' },
+            { emoji: '😰', label: 'Peur', value: 'peur' }
+        ],
+        correct: ['degout'],
+        alsoAccept: ['colere'],
+        feedback: {
+            correct: "C'est ca ! Le degout est la reaction face a ce comportement irrespectueux. On peut aussi ressentir de la colere face a cette incivilite.",
+            incorrect: "Le degout est la reaction principale ici (aversion face a un comportement irrespectueux). On peut aussi ressentir de la colere. Le degout nous eloigne de ce qui est nuisible."
+        }
+    },
+    {
+        situation: "Tu apprends que tu as reussi ton examen alors que tu pensais avoir echoue. C'est...",
+        options: [
+            { emoji: '😊', label: 'Joie', value: 'joie' },
+            { emoji: '😡', label: 'Colere', value: 'colere' },
+            { emoji: '😒', label: 'Mepris', value: 'mepris' },
+            { emoji: '😢', label: 'Tristesse', value: 'tristesse' }
+        ],
+        correct: ['joie'],
+        alsoAccept: ['surprise'],
+        feedback: {
+            correct: "Bravo ! C'est de la joie (et de la surprise aussi) ! Le soulagement et le bonheur se melangent dans ce genre de moment.",
+            incorrect: "C'est de la joie qu'on ressent (avec de la surprise) ! Reussir un examen qu'on croyait rate provoque un elan de bonheur et de soulagement."
+        }
+    }
+];
+
+/* ============================================================
+   SECTION 1 : EMOTION WHEEL
+   ============================================================ */
+
+let activeFamily = -1;
+let activePill = -1;
+
+function buildWheel() {
+    const wheel = document.getElementById('wheel');
+    const cx = 140, cy = 140, radius = 98;
+
+    EMOTIONS.forEach((emo, i) => {
+        if (i >= 6) return; // Mepris goes in the center ring area below
+
+        const angle = (i * 360 / 7 - 90) * Math.PI / 180;
+        const adjustedAngle = (i * (360/7) - 90) * Math.PI / 180;
+        const x = cx + radius * Math.cos(adjustedAngle) - 34;
+        const y = cy + radius * Math.sin(adjustedAngle) - 34;
+
+        const btn = document.createElement('button');
+        btn.className = 'petal-btn';
+        btn.style.left = x + 'px';
+        btn.style.top = y + 'px';
+        btn.style.background = `linear-gradient(135deg, ${emo.colorLight}, ${emo.color})`;
+        btn.textContent = emo.emoji;
+        btn.setAttribute('aria-label', emo.name);
+        btn.onclick = () => toggleFamily(i);
+        btn.dataset.index = i;
+        wheel.appendChild(btn);
+
+        // Label
+        const labelAngle = adjustedAngle;
+        const labelRadius = radius + 42;
+        const lx = cx + labelRadius * Math.cos(labelAngle);
+        const ly = cy + labelRadius * Math.sin(labelAngle);
+        const label = document.createElement('span');
+        label.className = 'petal-label';
+        label.textContent = emo.name;
+        label.style.left = lx + 'px';
+        label.style.top = ly + 'px';
+        label.style.transform = 'translate(-50%, -50%)';
+        label.style.color = emo.colorDark;
+        wheel.appendChild(label);
+    });
+
+    // Mepris (7th) — placed bottom center, slightly offset
+    const mepris = EMOTIONS[6];
+    const mAngle = (6 * 360 / 7 - 90) * Math.PI / 180;
+    const mx = cx + radius * Math.cos(mAngle) - 34;
+    const my = cy + radius * Math.sin(mAngle) - 34;
+
+    const mBtn = document.createElement('button');
+    mBtn.className = 'petal-btn';
+    mBtn.style.left = mx + 'px';
+    mBtn.style.top = my + 'px';
+    mBtn.style.background = `linear-gradient(135deg, ${mepris.colorLight}, ${mepris.color})`;
+    mBtn.textContent = mepris.emoji;
+    mBtn.setAttribute('aria-label', mepris.name);
+    mBtn.onclick = () => toggleFamily(6);
+    mBtn.dataset.index = '6';
+    wheel.appendChild(mBtn);
+
+    const mLabel = document.createElement('span');
+    mLabel.className = 'petal-label';
+    mLabel.textContent = mepris.name;
+    const mlAngle = mAngle;
+    const mlRadius = radius + 42;
+    mLabel.style.left = (cx + mlRadius * Math.cos(mlAngle)) + 'px';
+    mLabel.style.top = (cy + mlRadius * Math.sin(mlAngle)) + 'px';
+    mLabel.style.transform = 'translate(-50%, -50%)';
+    mLabel.style.color = mepris.colorDark;
+    wheel.appendChild(mLabel);
+}
+
+function toggleFamily(index) {
+    const panel = document.getElementById('detail-panel');
+    const allPetals = document.querySelectorAll('.petal-btn');
+
+    // Toggle off if same
+    if (activeFamily === index) {
+        activeFamily = -1;
+        activePill = -1;
+        panel.classList.remove('visible');
+        panel.innerHTML = '';
+        allPetals.forEach(b => b.classList.remove('active'));
+        return;
+    }
+
+    activeFamily = index;
+    activePill = -1;
+    allPetals.forEach(b => b.classList.remove('active'));
+    allPetals.forEach(b => {
+        if (parseInt(b.dataset.index) === index) b.classList.add('active');
+    });
+
+    const emo = EMOTIONS[index];
+    renderDetailPanel(emo, index);
+
+    // Scroll to panel
+    setTimeout(() => {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+}
+
+function renderDetailPanel(emo, familyIndex) {
+    const panel = document.getElementById('detail-panel');
+    panel.style.background = emo.colorLight;
+    panel.style.borderLeft = `4px solid ${emo.color}`;
+
+    let pillsHTML = '';
+    emo.gradient.forEach((g, i) => {
+        const steps = emo.gradient.length;
+        const ratio = i / (steps - 1);
+        const r1 = parseInt(emo.colorLight.length > 4 ? emo.colorLight.slice(1,3) : '', 16) || 200;
+        const bg = interpolateColor(emo.colorLight, emo.colorDark, ratio);
+        const textBrightness = ratio > 0.4 ? '#fff' : emo.textColor;
+
+        pillsHTML += `<button class="emotion-pill" style="background:${bg};color:${textBrightness}" onclick="togglePillDef(${familyIndex},${i})" data-pill="${i}">${g.name}</button>`;
+    });
+
+    panel.innerHTML = `
+        <h3 style="color:${emo.textColor}">${emo.emoji} ${emo.name}</h3>
+        <p class="family-desc">${emo.description}</p>
+        <div class="gradient-label">
+            <span>Faible intensite</span>
+            <span>Forte intensite &rarr;</span>
+        </div>
+        <div class="gradient-bar">${pillsHTML}</div>
+        <div id="pill-def" class="pill-definition"></div>
+    `;
+
+    panel.classList.add('visible');
+}
+
+function togglePillDef(familyIndex, pillIndex) {
+    const defBox = document.getElementById('pill-def');
+    const pills = document.querySelectorAll('.emotion-pill');
+    const emo = EMOTIONS[familyIndex];
+    const grad = emo.gradient[pillIndex];
+
+    if (activePill === pillIndex) {
+        activePill = -1;
+        defBox.classList.remove('visible');
+        defBox.innerHTML = '';
+        pills.forEach(p => p.classList.remove('selected'));
+        return;
+    }
+
+    activePill = pillIndex;
+    pills.forEach(p => p.classList.remove('selected'));
+    pills[pillIndex].classList.add('selected');
+
+    defBox.style.borderLeftColor = emo.color;
+    defBox.innerHTML = `<strong>${grad.name}</strong> : ${grad.def}`;
+    defBox.classList.add('visible');
+}
+
+function interpolateColor(hex1, hex2, ratio) {
+    const c1 = hexToRgb(hex1);
+    const c2 = hexToRgb(hex2);
+    const r = Math.round(c1.r + (c2.r - c1.r) * ratio);
+    const g = Math.round(c1.g + (c2.g - c1.g) * ratio);
+    const b = Math.round(c1.b + (c2.b - c1.b) * ratio);
+    return `rgb(${r},${g},${b})`;
+}
+
+function hexToRgb(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    return {
+        r: parseInt(hex.slice(0,2), 16),
+        g: parseInt(hex.slice(2,4), 16),
+        b: parseInt(hex.slice(4,6), 16)
+    };
+}
+
+/* ============================================================
+   SECTION 2 : LE SAVAIS-TU ?
+   ============================================================ */
+
+let lastFactIndex = -1;
+
+function showRandomFact() {
+    let idx;
+    do {
+        idx = Math.floor(Math.random() * FACTS.length);
+    } while (idx === lastFactIndex && FACTS.length > 1);
+    lastFactIndex = idx;
+
+    const textEl = document.getElementById('fact-text');
+    textEl.style.opacity = '0';
+    textEl.style.transform = 'translateY(6px)';
+    setTimeout(() => {
+        textEl.textContent = FACTS[idx];
+        textEl.style.transition = 'all 0.3s ease';
+        textEl.style.opacity = '1';
+        textEl.style.transform = 'translateY(0)';
+    }, 150);
+}
+
+/* ============================================================
+   SECTION 3 : QUIZ
+   ============================================================ */
+
+let quizCurrent = 0;
+let quizScore = 0;
+let quizAnswers = [];
+let quizAnswered = false;
+
+function initQuiz() {
+    quizCurrent = 0;
+    quizScore = 0;
+    quizAnswers = [];
+    quizAnswered = false;
+    document.getElementById('quiz-result').classList.remove('visible');
+    document.getElementById('quiz-result').innerHTML = '';
+    renderQuizProgress();
+    renderQuizQuestion();
+}
+
+function renderQuizProgress() {
+    const prog = document.getElementById('quiz-progress');
+    let html = '';
+    for (let i = 0; i < QUIZ.length; i++) {
+        let cls = 'quiz-dot';
+        if (i < quizAnswers.length) {
+            cls += quizAnswers[i] ? ' done' : ' wrong';
+        } else if (i === quizCurrent) {
+            cls += ' current';
+        }
+        html += `<div class="${cls}"></div>`;
+    }
+    prog.innerHTML = html;
+}
+
+function renderQuizQuestion() {
+    const area = document.getElementById('quiz-area');
+    const q = QUIZ[quizCurrent];
+    quizAnswered = false;
+
+    let optsHTML = '';
+    q.options.forEach((opt, i) => {
+        optsHTML += `<button class="quiz-opt" data-value="${opt.value}" onclick="handleQuizAnswer('${opt.value}', this)">
+            <span class="opt-emoji">${opt.emoji}</span>
+            <span class="opt-label">${opt.label}</span>
+        </button>`;
+    });
+
+    area.innerHTML = `
+        <div class="quiz-situation">${q.situation}</div>
+        <p class="quiz-question">Question ${quizCurrent + 1} / ${QUIZ.length}</p>
+        <div class="quiz-options">${optsHTML}</div>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+        <button class="btn-quiz-next" id="btn-quiz-next" onclick="nextQuizQuestion()">
+            ${quizCurrent < QUIZ.length - 1 ? 'Question suivante' : 'Voir mon score'}
+        </button>
+    `;
+
+    area.style.animation = 'none';
+    area.offsetHeight; // reflow
+    area.style.animation = 'fadeIn 0.3s ease';
+}
+
+function handleQuizAnswer(value, btn) {
+    if (quizAnswered) return;
+    quizAnswered = true;
+
+    const q = QUIZ[quizCurrent];
+    const isCorrect = q.correct.includes(value) || q.alsoAccept.includes(value);
+    if (isCorrect) quizScore++;
+    quizAnswers.push(isCorrect);
+
+    // Highlight buttons
+    const allBtns = document.querySelectorAll('.quiz-opt');
+    allBtns.forEach(b => {
+        b.disabled = true;
+        const val = b.dataset.value;
+        if (q.correct.includes(val)) {
+            b.classList.add('correct');
+        }
+        if (val === value && !isCorrect) {
+            b.classList.add('incorrect');
+        }
+    });
+
+    // Show feedback
+    const fb = document.getElementById('quiz-feedback');
+    fb.className = 'quiz-feedback visible ' + (isCorrect ? 'correct' : 'incorrect');
+    fb.textContent = isCorrect ? q.feedback.correct : q.feedback.incorrect;
+
+    // Show next button
+    document.getElementById('btn-quiz-next').classList.add('visible');
+
+    renderQuizProgress();
+}
+
+function nextQuizQuestion() {
+    quizCurrent++;
+    if (quizCurrent >= QUIZ.length) {
+        showQuizResult();
+        return;
+    }
+    renderQuizProgress();
+    renderQuizQuestion();
+}
+
+function showQuizResult() {
+    const area = document.getElementById('quiz-area');
+    area.innerHTML = '';
+
+    const result = document.getElementById('quiz-result');
+    let emoji, msg;
+
+    if (quizScore === 5) {
+        emoji = '🌟';
+        msg = 'Expert des emotions ! Tu sais parfaitement identifier ce que tu ressens.';
+    } else if (quizScore >= 3) {
+        emoji = '👍';
+        msg = 'Tres bien ! Tu as une bonne comprehension des emotions.';
+    } else if (quizScore >= 1) {
+        emoji = '💪';
+        msg = 'Continue d\'explorer ! Plus tu t\'entraines, mieux tu comprendras tes emotions.';
+    } else {
+        emoji = '🌱';
+        msg = 'C\'est un debut ! Les emotions sont complexes, reviens explorer la roue.';
+    }
+
+    result.innerHTML = `
+        <div class="result-emoji">${emoji}</div>
+        <div class="result-score">${quizScore} / ${QUIZ.length}</div>
+        <p class="result-msg">${msg}</p>
+        <button class="btn-quiz-restart" onclick="initQuiz()">Recommencer le quiz</button>
+    `;
+    result.classList.add('visible');
+}
+
+/* ============================================================
+   SECTION 4 : JOURNAL (localStorage)
+   ============================================================ */
+
+const JOURNAL_KEY = 'cps_dico_emotions_notes';
+const JOURNAL_MAX = 20;
+
+function getJournalEntries() {
+    try {
+        const raw = localStorage.getItem(JOURNAL_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch(e) {
+        return [];
+    }
+}
+
+function setJournalEntries(entries) {
+    localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries));
+}
+
+function saveJournalEntry() {
+    const emotionInput = document.getElementById('journal-emotion');
+    const noteInput = document.getElementById('journal-note');
+    const emotion = emotionInput.value.trim();
+    const note = noteInput.value.trim();
+
+    if (!emotion) {
+        emotionInput.focus();
+        emotionInput.style.borderColor = '#ef4444';
+        setTimeout(() => { emotionInput.style.borderColor = '#e2e8f0'; }, 1500);
+        return;
+    }
+
+    let entries = getJournalEntries();
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    entries.unshift({ date: dateStr, emotion: emotion, note: note });
+
+    // FIFO: keep max 20
+    if (entries.length > JOURNAL_MAX) {
+        entries = entries.slice(0, JOURNAL_MAX);
+    }
+
+    setJournalEntries(entries);
+
+    emotionInput.value = '';
+    noteInput.value = '';
+
+    renderJournalEntries();
+}
+
+function renderJournalEntries() {
+    const container = document.getElementById('journal-entries');
+    const entries = getJournalEntries();
+    const display = entries.slice(0, 5);
+
+    if (display.length === 0) {
+        container.innerHTML = '<p class="journal-empty">Aucune note pour le moment. Commence par explorer la roue des emotions ci-dessus !</p>';
+        return;
+    }
+
+    let html = '';
+    display.forEach((entry, i) => {
+        html += `<div class="journal-entry" style="animation-delay:${i * 0.05}s">
+            <div class="entry-date">${entry.date}</div>
+            <div class="entry-emotion">${entry.emotion}</div>
+            ${entry.note ? `<div class="entry-note">${escapeHtml(entry.note)}</div>` : ''}
+        </div>`;
+    });
+
+    if (entries.length > 5) {
+        html += `<p style="text-align:center;font-size:0.75rem;color:#94a3b8;margin-top:4px;">+ ${entries.length - 5} autres notes enregistrees</p>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+
+document.addEventListener('DOMContentLoaded', () => {
+    buildWheel();
+    showRandomFact();
+    initQuiz();
+    renderJournalEntries();
+});
+
+</script>
+</body>
+</html>
