@@ -1322,8 +1322,8 @@
         // 1. Run auto-correction
         const correctionResult = autoCorrect(currentEval, answers);
 
+        // 2. Save raw answers to eval_reponses
         try {
-            // 2. Save raw answers to eval_reponses
             const respDocId = currentUser.userCode + '_' + currentEvalId;
             await setDoc(doc(db, "eval_reponses", respDocId), {
                 eleveCode: currentUser.userCode,
@@ -1337,20 +1337,21 @@
                 screenshotCount,
                 tempsSecondes
             });
+        } catch(e) {
+            console.error("Erreur envoi eval_reponses:", e);
+        }
 
-            // 3. Write to resultats for integration with resultats.html
+        // 3. Write notes + copies to resultats (ne bloque pas l'affichage)
+        try {
             await writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes);
         } catch(e) {
-            console.error("Erreur envoi Firebase:", e);
-            alert("Erreur lors de l'envoi de ta copie. Verifie ta connexion et reessaie.\n\n" + e.message);
-            isSubmitting = false;
-            return;
+            console.warn("Erreur writeResults:", e.message);
         }
 
         // Desactiver la protection fermeture (copie envoyee)
         window.onbeforeunload = null;
 
-        // 4. Show results
+        // 4. TOUJOURS afficher les resultats a l'eleve (meme si Firebase a eu un souci)
         showResults(correctionResult);
     };
 
@@ -1489,19 +1490,23 @@
             }
         });
 
-        // 1. Write COPY document
-        await setDoc(doc(db, "resultats", eleveCode, "copies", evalId + '_autoeval'), {
-            eleveCode,
-            devoirId: evalId,
-            titre: 'Auto-evaluation : ' + (evalData.titre || 'Evaluation'),
-            createdAtISO: now,
-            eleve: { userCode: eleveCode, classe: currentUser.classe },
-            reponses: reponsesSimple,
-            source: 'auto_eval',
-            temps_secondes: tempsSecondes
-        });
+        // 1. Write COPY document (non critique — ne bloque pas les notes)
+        try {
+            await setDoc(doc(db, "resultats", eleveCode, "copies", evalId + '_autoeval'), {
+                eleveCode,
+                devoirId: evalId,
+                titre: 'Auto-evaluation : ' + (evalData.titre || 'Evaluation'),
+                createdAtISO: now,
+                eleve: { userCode: eleveCode, classe: currentUser.classe },
+                reponses: reponsesSimple,
+                source: 'auto_eval',
+                temps_secondes: tempsSecondes
+            });
+        } catch(e) {
+            console.warn('[COPIES] Erreur ecriture copie (non critique):', e.message);
+        }
 
-        // 2. Write EVALUATION document
+        // 2. Write EVALUATION document (CRITIQUE — contient les notes et competences)
         await setDoc(doc(db, "resultats", eleveCode, "evaluations", evalId + '_eval'), {
             eleveCode,
             devoirId: evalId,
