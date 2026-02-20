@@ -2501,7 +2501,26 @@ function showScenEtape(etapeId) {
     document.getElementById('scen-progress').innerHTML = dotsHtml;
     // Choices or end
     if (!etape.choix || etape.choix.length === 0) {
-        // End of scenario
+        // Safety net: if this is a "bad" step with no choices, auto-inject a retry button
+        if (etapeId.startsWith('bad') && s.history.length > 0) {
+            // Find the step that led here (last correct step, or the step before the wrong choice)
+            let retourId = 'debut';
+            for (let i = s.history.length - 1; i >= 0; i--) {
+                if (s.history[i].fromEtape) { retourId = s.history[i].fromEtape; break; }
+            }
+            // Fallback: find which step points to this bad step
+            if (retourId === 'debut') {
+                for (const et of s.etapes) {
+                    if (et.choix && et.choix.some(ch => ch.suite === etapeId)) {
+                        retourId = et.id;
+                        break;
+                    }
+                }
+            }
+            document.getElementById('scen-choices').innerHTML = '<div class="scen-choice" data-idx="0" data-etape="' + etapeId + '" onclick="showScenEtape(\'' + retourId + '\')">\u21a9 Reessayer</div>';
+            return;
+        }
+        // Real end of scenario
         document.getElementById('scen-choices').innerHTML = '<div class="scen-end"><h3>Fin du scenario</h3><p>' + etape.texte + '</p></div>';
         document.getElementById('scen-texte').style.display = 'none';
         const details = s.history.map(h => ({ label: h.label, ok: h.correct }));
@@ -2526,7 +2545,7 @@ function answerScenario(el) {
     s.totalChoices++;
     const isCorrect = !!choix.correct;
     if (isCorrect) s.score++;
-    s.history.push({ label: choix.label.substring(0, 60), correct: isCorrect });
+    s.history.push({ label: choix.label.substring(0, 60), correct: isCorrect, fromEtape: etapeId });
     // Visual feedback
     el.classList.add(isCorrect ? 'selected-correct' : 'selected-wrong');
     document.querySelectorAll('.scen-choice').forEach(c => { c.style.pointerEvents = 'none'; });
