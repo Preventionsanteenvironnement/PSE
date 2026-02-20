@@ -360,7 +360,7 @@
             .question-container { padding: 16px; }
             .q-text { font-size: 1rem; }
             .score-big { font-size: 3rem; }
-            #doc-container .doc-display img { max-height: 20vh; }
+            #doc-container .doc-display img { max-height: 60vh; }
             /* Topbar plus compact */
             .eval-topbar { padding: 8px 12px; }
             .eval-topbar .et-title { font-size: 0.8rem; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -368,10 +368,13 @@
             /* Nav numerotee cachee sur mobile — remplacee par barre de progression */
             .eval-nav { display: none; }
             .eval-progress-bar { display: block; }
-            /* Document repliable sur mobile */
-            .doc-toggle-btn { display: block; }
-            #doc-container .doc-display { max-height: 25vh; padding: 10px; font-size: 0.85rem; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, border-width 0.3s ease; }
-            #doc-container .doc-display.doc-collapsed { max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; border-width: 0; }
+            /* Document en flux continu sur mobile (scroll naturel) */
+            .doc-toggle-btn { display: none; }
+            #doc-container .doc-display { max-height: none; padding: 10px; font-size: 0.85rem; overflow-y: visible; transition: none; }
+            #doc-container .doc-display.doc-collapsed { max-height: none; overflow: visible; padding-top: 10px; padding-bottom: 10px; border-width: 2px; }
+            /* Bouton flottant document/questions */
+            .mobile-scroll-fab { position: fixed; bottom: 70px; right: 12px; z-index: 40; background: #3b82f6; color: white; border: none; border-radius: 50%; width: 48px; height: 48px; font-size: 1.3rem; box-shadow: 0 2px 10px rgba(0,0,0,0.25); display: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+            .mobile-scroll-fab.fab-visible { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; }
             #doc-container .doc-display h4 { font-size: 0.8rem; }
             /* Footer boutons compacts */
             .eval-footer { padding: 10px 12px; }
@@ -551,6 +554,9 @@
     let timerInterval = null;
     let timerRemaining = 0;
     let isSubmitting = false;
+
+    // === MOBILE DETECTION ===
+    function isMobile() { return window.innerWidth <= 600; }
 
     // === SCREENS ===
     function showScreen(name) {
@@ -773,6 +779,17 @@
         displayQuestion(0);
         showScreen('eval');
 
+        // Mobile: creer le FAB et ecouter le scroll
+        if (isMobile()) {
+            createMobileScrollFab();
+            var evalBody = document.querySelector('.eval-body');
+            if (evalBody) {
+                evalBody.addEventListener('scroll', function() {
+                    updateFabDirection();
+                });
+            }
+        }
+
         // Start timer if configured
         if (evalData.timer > 0) {
             timerRemaining = evalData.timer * 60;
@@ -941,6 +958,11 @@
             docContainer.innerHTML = '';
             docContainer.style.display = 'none';
             qContainer.classList.remove('has-doc');
+            if (isMobile()) {
+                var evalBody = document.querySelector('.eval-body');
+                if (evalBody) evalBody.scrollTop = 0;
+            }
+            updateFabVisibility();
             return;
         }
 
@@ -950,14 +972,19 @@
             docContainer.innerHTML = '';
             docContainer.style.display = 'none';
             qContainer.classList.remove('has-doc');
+            updateFabVisibility();
             return;
         }
 
         const color = docColorMap[docRef] || '#fbbf24';
         const icon = docObj.type === 'image' ? '🖼️' : (docObj.type === 'video' ? '🎬' : '📄');
-        // Bouton toggle document (visible uniquement sur mobile via CSS)
-        let html = '<button class="doc-toggle-btn" onclick="toggleDoc()" style="border-color:' + color + '; color:' + color + ';">' + icon + ' ' + escHtml(docObj.titre) + ' ▼</button>';
-        html += '<div class="doc-display doc-collapsed" style="border-color:' + color + ';">';
+        const mobile = isMobile();
+        // Bouton toggle document (desktop uniquement)
+        let html = '';
+        if (!mobile) {
+            html += '<button class="doc-toggle-btn" onclick="toggleDoc()" style="border-color:' + color + '; color:' + color + ';">' + icon + ' ' + escHtml(docObj.titre) + ' ▼</button>';
+        }
+        html += '<div class="doc-display' + (mobile ? '' : ' doc-collapsed') + '" style="border-color:' + color + ';">';
         html += '<h4 style="color:' + color + ';">' + icon + ' ' + escHtml(docObj.titre) + '</h4>';
         if (docObj.type === 'image') {
             const imgUrl = docObj.content || '';
@@ -975,7 +1002,10 @@
         } else if (docObj.type === 'video') {
             const embedUrl = extractYouTubeEmbed(docObj.content);
             if (embedUrl) {
-                html += '<iframe src="' + embedUrl + '" allowfullscreen></iframe>';
+                // Wrapper padding-bottom 16:9 (compatible tous navigateurs)
+                html += '<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px; margin-top:8px;">';
+                html += '<iframe src="' + embedUrl + '" allowfullscreen style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>';
+                html += '</div>';
             } else {
                 html += '<div class="doc-text" style="color:#dc2626;">URL video invalide</div>';
             }
@@ -991,16 +1021,106 @@
         docContainer.innerHTML = html;
         docContainer.style.display = 'block';
         qContainer.classList.add('has-doc');
+        // Mobile: scroll au top quand le document change
+        if (mobile) {
+            var evalBody = document.querySelector('.eval-body');
+            if (evalBody) evalBody.scrollTop = 0;
+        }
+        updateFabVisibility();
     }
 
-    // === TOGGLE DOCUMENT (mobile) ===
+    // === TOGGLE DOCUMENT (desktop uniquement) ===
     window.toggleDoc = function() {
+        if (isMobile()) return; // Sur mobile, le document est toujours en flux continu
         const display = document.querySelector('#doc-container .doc-display');
         const btn = document.querySelector('#doc-container .doc-toggle-btn');
         if (!display || !btn) return;
         display.classList.toggle('doc-collapsed');
         btn.textContent = btn.textContent.replace(/[▼▲]/, display.classList.contains('doc-collapsed') ? '▼' : '▲');
     };
+
+    // === MOBILE : BOUTON FLOTTANT (FAB) DOCUMENT/QUESTIONS ===
+    var mobileScrollFab = null;
+    var fabMode = 'questions'; // 'questions' ou 'document'
+
+    function createMobileScrollFab() {
+        if (mobileScrollFab) return;
+        mobileScrollFab = document.createElement('button');
+        mobileScrollFab.className = 'mobile-scroll-fab';
+        mobileScrollFab.textContent = '\u2193'; // flèche bas
+        mobileScrollFab.setAttribute('aria-label', 'Aller aux questions');
+        mobileScrollFab.onclick = function() {
+            var target;
+            if (fabMode === 'questions') {
+                target = document.getElementById('question-container');
+            } else {
+                target = document.getElementById('doc-container');
+            }
+            if (target) smoothScrollTo(target);
+        };
+        document.getElementById('screen-eval').appendChild(mobileScrollFab);
+    }
+
+    function updateFabVisibility() {
+        if (!mobileScrollFab) return;
+        if (!isMobile() || !currentEval) {
+            mobileScrollFab.classList.remove('fab-visible');
+            return;
+        }
+        var docContainer = document.getElementById('doc-container');
+        if (!docContainer || docContainer.style.display === 'none' || docContainer.innerHTML === '') {
+            mobileScrollFab.classList.remove('fab-visible');
+            return;
+        }
+        mobileScrollFab.classList.add('fab-visible');
+    }
+
+    function updateFabDirection() {
+        if (!mobileScrollFab || !isMobile()) return;
+        var evalBody = document.querySelector('.eval-body');
+        var qContainer = document.getElementById('question-container');
+        if (!evalBody || !qContainer) return;
+        var bodyRect = evalBody.getBoundingClientRect();
+        var qRect = qContainer.getBoundingClientRect();
+        var midpoint = bodyRect.top + bodyRect.height / 2;
+        if (qRect.top > midpoint) {
+            fabMode = 'questions';
+            mobileScrollFab.textContent = '\u2193'; // flèche bas
+            mobileScrollFab.setAttribute('aria-label', 'Aller aux questions');
+        } else {
+            fabMode = 'document';
+            mobileScrollFab.textContent = '\u2191'; // flèche haut
+            mobileScrollFab.setAttribute('aria-label', 'Retour au document');
+        }
+    }
+
+    function smoothScrollTo(element) {
+        var evalBody = document.querySelector('.eval-body');
+        if (!evalBody || !element) return;
+        try {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch(e) {
+            // Fallback pour vieux navigateurs : animation manuelle
+            var targetTop = element.offsetTop - evalBody.offsetTop;
+            var startTop = evalBody.scrollTop;
+            var distance = targetTop - startTop;
+            var duration = 400;
+            var startTime = null;
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                var elapsed = timestamp - startTime;
+                var progress = Math.min(elapsed / duration, 1);
+                var eased = progress * (2 - progress); // ease-out quad
+                evalBody.scrollTop = startTop + distance * eased;
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            if (typeof requestAnimationFrame !== 'undefined') {
+                requestAnimationFrame(step);
+            } else {
+                element.scrollIntoView(true);
+            }
+        }
+    }
 
     // === DISPLAY QUESTION ===
     function displayQuestion(index) {
