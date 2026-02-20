@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma météo intérieure — CPS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            color: #333;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* === HEADER === */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #2d3436;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: #636e72;
+            line-height: 1.4;
+        }
+
+        /* === CARDS === */
+        .card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            font-size: 1.05rem;
+            color: #2d3436;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h2 .step-num {
+            background: #4b6ee6;
+            color: #fff;
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .card-subtitle {
+            font-size: 0.8rem;
+            color: #636e72;
+            margin-bottom: 12px;
+        }
+
+        /* === METEO GRID === */
+        .meteo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .meteo-btn {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 14px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #555;
+            font-family: inherit;
+        }
+        .meteo-btn .meteo-emoji {
+            font-size: 2rem;
+        }
+        .meteo-btn:hover { background: #eef2ff; }
+        .meteo-btn.selected {
+            border-color: #4b6ee6;
+            background: #e3f2fd;
+            transform: scale(1.03);
+        }
+
+        /* === SOUS-EMOTIONS === */
+        .sous-emotions {
+            display: none;
+            margin-top: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+        .sous-emotions.visible { display: block; }
+        .sous-emotions h3 {
+            font-size: 0.85rem;
+            color: #636e72;
+            margin-bottom: 10px;
+        }
+        .sous-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .sous-btn {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            color: #555;
+            font-family: inherit;
+        }
+        .sous-btn:hover { background: #eef2ff; }
+        .sous-btn.selected {
+            border-color: #4b6ee6;
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        /* === INFO BULLE === */
+        .info-bulle {
+            display: none;
+            background: #fffbeb;
+            border-left: 3px solid #f59e0b;
+            border-radius: 0 8px 8px 0;
+            padding: 10px 12px;
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #92400e;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease;
+        }
+        .info-bulle.visible { display: block; }
+
+        /* === ETAPE 2 — DECLENCHEUR === */
+        .step2-section { display: none; animation: fadeIn 0.3s ease; }
+        .step2-section.visible { display: block; }
+
+        .declencheur-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .decl-btn {
+            background: #fff;
+            border: 1px solid #dfe6e9;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .decl-btn:hover { background: #f1f2f6; }
+        .decl-btn.selected {
+            background: #dff9fb;
+            border-color: #00cec9;
+            border-width: 2px;
+            color: #00796b;
+            font-weight: 600;
+        }
+
+        /* Champ texte libre */
+        .texte-libre {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            resize: none;
+            margin-top: 8px;
+            transition: border-color 0.2s;
+        }
+        .texte-libre:focus {
+            outline: none;
+            border-color: #4b6ee6;
+        }
+
+        /* === INTENSITE SLIDER === */
+        .intensite-section { margin: 16px 0; }
+        .intensite-section label {
+            font-size: 0.85rem;
+            color: #555;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: #4b6ee6;
+            cursor: pointer;
+        }
+        .intensite-val {
+            font-weight: 700;
+            font-size: 1.1rem;
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* === SENSATIONS CORPORELLES === */
+        .sensations-section { margin-top: 16px; }
+        .sensations-section label {
+            font-size: 0.85rem;
+            color: #555;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .sensations-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .sens-btn {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            color: #555;
+            font-family: inherit;
+        }
+        .sens-btn:hover { background: #fef3f2; }
+        .sens-btn.selected {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        /* === ETAPE 3 — RECAP + JOURNAL === */
+        .step3-section { display: none; animation: fadeIn 0.3s ease; }
+        .step3-section.visible { display: block; }
+
+        .recap-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 18px;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+        .recap-box .recap-meteo {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .recap-box .recap-emotion {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .recap-box .recap-sous {
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 12px;
+        }
+        .recap-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .recap-tag {
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+        }
+
+        /* Bouton enregistrer */
+        .btn-save {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .btn-save:hover { background: #16a34a; }
+        .btn-save:disabled { background: #94a3b8; cursor: default; }
+
+        /* Confirmation */
+        .save-confirm {
+            display: none;
+            text-align: center;
+            padding: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        .save-confirm.visible { display: block; }
+        .save-confirm .check { font-size: 2.5rem; margin-bottom: 8px; }
+        .save-confirm p { font-size: 0.9rem; color: #636e72; }
+
+        /* === JOURNAL / HISTORIQUE === */
+        .journal-card { margin-top: 8px; }
+        .journal-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .journal-title h2 { margin-bottom: 0; }
+        .btn-clear {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.72rem;
+            color: #94a3b8;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-clear:hover { border-color: #ef4444; color: #ef4444; }
+
+        .journal-empty {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .journal-list { list-style: none; }
+        .journal-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .journal-entry:last-child { border-bottom: none; }
+        .journal-entry .je-date {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            min-width: 50px;
+        }
+        .journal-entry .je-meteo { font-size: 1.3rem; }
+        .journal-entry .je-emotion {
+            flex: 1;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #334155;
+        }
+        .journal-entry .je-sous {
+            font-weight: 400;
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+        .journal-entry .je-bar {
+            width: 50px; height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .journal-entry .je-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        /* Bouton nouvelle entree */
+        .btn-new {
+            width: 100%;
+            padding: 12px;
+            background: #4b6ee6;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .btn-new:hover { background: #3b5bdb; }
+
+        /* === RESSOURCES === */
+        .ressources {
+            text-align: center;
+            margin-top: 20px;
+            padding: 16px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+        .ressources a {
+            color: #4b6ee6;
+            text-decoration: none;
+        }
+
+        /* === FOOTER === */
+        .footer {
+            text-align: center;
+            padding: 20px 0 10px;
+            font-size: 0.7rem;
+            color: #b0b8c1;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 400px) {
+            .meteo-btn { padding: 10px 6px; }
+            .meteo-btn .meteo-emoji { font-size: 1.6rem; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>🌤️ Ma météo intérieure</h1>
+        <p>Apprendre à identifier ses émotions, c'est une compétence qui se travaille. Prends un moment pour toi.</p>
+    </div>
+
+    <!-- ETAPE 1 — METEO + EMOTION -->
+    <div class="card" id="card-step1">
+        <h2><span class="step-num">1</span> Comment je me sens ?</h2>
+        <p class="card-subtitle">Choisis la météo qui correspond à ton humeur en ce moment</p>
+
+        <div class="meteo-grid" id="meteo-grid">
+            <button class="meteo-btn" onclick="selectMeteo(this, 'joie', '☀️')" data-meteo="joie">
+                <span class="meteo-emoji">☀️</span>Grand soleil
+            </button>
+            <button class="meteo-btn" onclick="selectMeteo(this, 'calme', '🌤️')" data-meteo="calme">
+                <span class="meteo-emoji">🌤️</span>Éclaircies
+            </button>
+            <button class="meteo-btn" onclick="selectMeteo(this, 'tristesse', '☁️')" data-meteo="tristesse">
+                <span class="meteo-emoji">☁️</span>Nuageux
+            </button>
+            <button class="meteo-btn" onclick="selectMeteo(this, 'colere', '⛈️')" data-meteo="colere">
+                <span class="meteo-emoji">⛈️</span>Orage
+            </button>
+            <button class="meteo-btn" onclick="selectMeteo(this, 'peur', '🌧️')" data-meteo="peur">
+                <span class="meteo-emoji">🌧️</span>Pluie
+            </button>
+            <button class="meteo-btn" onclick="selectMeteo(this, 'confusion', '🌫️')" data-meteo="confusion">
+                <span class="meteo-emoji">🌫️</span>Brouillard
+            </button>
+        </div>
+
+        <!-- Sous-émotions (apparaissent après sélection météo) -->
+        <div class="sous-emotions" id="sous-emotions">
+            <h3>Précise ton émotion :</h3>
+            <div class="sous-grid" id="sous-grid"></div>
+        </div>
+
+        <!-- Info bulle pédagogique -->
+        <div class="info-bulle" id="info-bulle"></div>
+    </div>
+
+    <!-- ETAPE 2 — DECLENCHEUR + CORPS (cachée au début) -->
+    <div class="card step2-section" id="card-step2">
+        <h2><span class="step-num">2</span> Qu'est-ce qui a déclenché ça ?</h2>
+
+        <div class="declencheur-grid" id="declencheur-grid">
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'ecole')">🏫 L'école</button>
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'famille')">👨‍👩‍👧 La famille</button>
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'amis')">👫 Les amis</button>
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'pensees')">💭 Mes pensées</button>
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'fatigue')">🏋️ La fatigue</button>
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'avenir')">🔮 L'avenir</button>
+            <button class="decl-btn" onclick="selectDeclencheur(this, 'autre')">✏️ Autre...</button>
+        </div>
+
+        <textarea class="texte-libre" id="texte-declencheur" rows="2" placeholder="Tu veux préciser ? (facultatif)" style="display:none;"></textarea>
+
+        <!-- Intensité -->
+        <div class="intensite-section">
+            <label>Intensité de ton émotion :</label>
+            <div class="slider-row">
+                <span style="font-size:0.75rem; color:#94a3b8;">Faible</span>
+                <input type="range" id="intensite-range" min="1" max="10" value="5" oninput="updateIntensite(this.value)">
+                <span style="font-size:0.75rem; color:#94a3b8;">Forte</span>
+                <span class="intensite-val" id="intensite-val" style="color:#f59e0b;">5</span>
+            </div>
+        </div>
+
+        <!-- Sensations corporelles -->
+        <div class="sensations-section">
+            <label>Où le ressens-tu dans ton corps ? (plusieurs choix possibles)</label>
+            <div class="sensations-grid" id="sensations-grid">
+                <button class="sens-btn" onclick="toggleSensation(this, 'tete')">🧠 Tête</button>
+                <button class="sens-btn" onclick="toggleSensation(this, 'gorge')">😶 Gorge</button>
+                <button class="sens-btn" onclick="toggleSensation(this, 'poitrine')">💓 Poitrine</button>
+                <button class="sens-btn" onclick="toggleSensation(this, 'ventre')">🤢 Ventre</button>
+                <button class="sens-btn" onclick="toggleSensation(this, 'mains')">🤲 Mains</button>
+                <button class="sens-btn" onclick="toggleSensation(this, 'jambes')">🦵 Jambes</button>
+                <button class="sens-btn" onclick="toggleSensation(this, 'tout')">🧍 Tout le corps</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ETAPE 3 — RECAP + ENREGISTRER (cachée au début) -->
+    <div class="card step3-section" id="card-step3">
+        <h2><span class="step-num">3</span> Ton bilan</h2>
+
+        <div class="recap-box" id="recap-box"></div>
+
+        <button class="btn-save" id="btn-save" onclick="enregistrer()">✅ Enregistrer dans mon journal</button>
+
+        <div class="save-confirm" id="save-confirm">
+            <div class="check">✅</div>
+            <p>C'est noté ! Tu peux consulter ton journal ci-dessous.</p>
+        </div>
+    </div>
+
+    <!-- JOURNAL / HISTORIQUE -->
+    <div class="card journal-card" id="card-journal">
+        <div class="journal-title">
+            <h2>📔 Mon journal</h2>
+            <button class="btn-clear" id="btn-clear" onclick="effacerJournal()">🗑️ Effacer</button>
+        </div>
+        <div id="journal-content">
+            <div class="journal-empty">Aucune entrée pour le moment.</div>
+        </div>
+        <button class="btn-new" id="btn-new" onclick="nouvelleEntree()" style="display:none;">🌤️ Nouvelle entrée</button>
+    </div>
+
+    <!-- RESSOURCES -->
+    <div class="ressources">
+        Si tu traverses un moment difficile, tu peux en parler :<br>
+        📞 <strong>3114</strong> — Numéro national de prévention du suicide (24h/24)<br>
+        📞 <strong>0 800 235 236</strong> — <a href="https://www.filsantejeunes.com" target="_blank">Fil Santé Jeunes</a> (anonyme et gratuit)
+    </div>
+
+    <div class="footer">Compétences psychosociales — Référentiel Santé publique France 2025</div>
+
+</div>
+
+<script>
+// =============================================
+// DONNÉES — sous-émotions par famille (référentiel SPF 2025, p.133)
+// =============================================
+const SOUS_EMOTIONS = {
+    joie: [
+        { label: 'Enthousiaste', info: 'L\'enthousiasme, c\'est une joie tournée vers l\'avenir. Tu es motivé(e) et plein(e) d\'énergie !' },
+        { label: 'Fier/Fière', info: 'La fierté naît quand tu reconnais ta propre valeur. C\'est une émotion importante pour la confiance en soi.' },
+        { label: 'Reconnaissant(e)', info: 'La gratitude renforce le bien-être. Les personnes qui l\'expriment régulièrement se sentent plus heureuses.' },
+        { label: 'Amusé(e)', info: 'Le rire et l\'amusement libèrent des endorphines, les hormones du plaisir. C\'est bon pour la santé !' },
+        { label: 'Soulagé(e)', info: 'Le soulagement arrive quand une tension disparaît. Ton corps se relâche et tu respires mieux.' }
+    ],
+    calme: [
+        { label: 'Détendu(e)', info: 'Quand tu es détendu(e), ton rythme cardiaque ralentit et tes muscles se relâchent. C\'est l\'état idéal pour apprendre.' },
+        { label: 'Confiant(e)', info: 'La confiance, c\'est croire en ta capacité à faire face. Elle se construit petit à petit, par l\'expérience.' },
+        { label: 'Paisible', info: 'La paix intérieure, c\'est être en accord avec soi-même. C\'est un état que la pleine attention aide à cultiver.' },
+        { label: 'Satisfait(e)', info: 'La satisfaction vient quand tes actions sont alignées avec tes valeurs. C\'est différent du plaisir immédiat.' },
+        { label: 'Concentré(e)', info: 'La concentration, c\'est quand ton esprit est pleinement engagé dans une tâche. C\'est un état très productif.' }
+    ],
+    tristesse: [
+        { label: 'Déçu(e)', info: 'La déception naît d\'un écart entre ce qu\'on espérait et la réalité. C\'est normal et ça aide à ajuster ses attentes.' },
+        { label: 'Nostalgique', info: 'La nostalgie, c\'est un mélange de tristesse et de tendresse pour un souvenir. Elle montre que tu as vécu de bons moments.' },
+        { label: 'Découragé(e)', info: 'Le découragement est temporaire. Il signale que tu as besoin de soutien ou d\'une pause avant de repartir.' },
+        { label: 'Seul(e)', info: 'Se sentir seul(e) n\'est pas pareil qu\'être seul(e). C\'est un signal que tu as besoin de connexion avec les autres.' },
+        { label: 'Blessé(e)', info: 'Se sentir blessé(e) montre que quelque chose comptait pour toi. C\'est une information précieuse sur tes besoins.' }
+    ],
+    colere: [
+        { label: 'Agacé(e)', info: 'L\'agacement est une colère légère. Il te signale qu\'une limite est en train d\'être franchie.' },
+        { label: 'Frustré(e)', info: 'La frustration naît quand un obstacle t\'empêche d\'atteindre ton but. Elle peut devenir un moteur si tu l\'écoutes.' },
+        { label: 'Furieux/se', info: 'La fureur est une colère intense. Ton corps est en mode "alerte maximale". Il faut d\'abord te calmer avant d\'agir.' },
+        { label: 'Indigné(e)', info: 'L\'indignation est liée au sentiment d\'injustice. C\'est une émotion qui pousse à défendre ses valeurs.' },
+        { label: 'Jaloux/se', info: 'La jalousie mélange colère et peur de perdre. La reconnaître, c\'est déjà un premier pas pour la gérer.' }
+    ],
+    peur: [
+        { label: 'Inquiet/ète', info: 'L\'inquiétude est tournée vers l\'avenir. Elle te prépare à faire face, mais trop d\'inquiétude peut bloquer.' },
+        { label: 'Stressé(e)', info: 'Le stress est une réaction du corps face à une demande. Un peu de stress aide à performer, trop de stress paralyse.' },
+        { label: 'Paniqué(e)', info: 'La panique est une peur très intense. La respiration lente (inspire 4s, expire 6s) aide à retrouver le calme.' },
+        { label: 'Timide', info: 'La timidité est une peur du regard des autres. Beaucoup de personnes la ressentent, même celles qui paraissent à l\'aise.' },
+        { label: 'Vulnérable', info: 'Se sentir vulnérable, c\'est se sentir exposé(e). C\'est aussi un signe de courage : tu t\'ouvres au lieu de te fermer.' }
+    ],
+    confusion: [
+        { label: 'Perdu(e)', info: 'Se sentir perdu(e), c\'est ne pas savoir quelle direction prendre. C\'est souvent un moment de transition.' },
+        { label: 'Fatigué(e)', info: 'La fatigue émotionnelle est aussi réelle que la fatigue physique. Ton cerveau a besoin de repos.' },
+        { label: 'Indifférent(e)', info: 'L\'indifférence peut être un mécanisme de protection. Parfois, on "débranche" pour se protéger.' },
+        { label: 'Débordé(e)', info: 'Être débordé(e), c\'est avoir trop de choses à gérer en même temps. Une liste de priorités peut aider.' },
+        { label: 'Ennuyé(e)', info: 'L\'ennui n\'est pas forcément négatif. Il peut pousser à la créativité et à chercher de nouvelles activités.' }
+    ]
+};
+
+const METEO_EMOJIS = { joie: '☀️', calme: '🌤️', tristesse: '☁️', colere: '⛈️', peur: '🌧️', confusion: '🌫️' };
+const METEO_LABELS = { joie: 'Joie', calme: 'Sérénité', tristesse: 'Tristesse', colere: 'Colère', peur: 'Peur', confusion: 'Confusion' };
+const DECL_LABELS = { ecole: '🏫 L\'école', famille: '👨‍👩‍👧 La famille', amis: '👫 Les amis', pensees: '💭 Mes pensées', fatigue: '🏋️ La fatigue', avenir: '🔮 L\'avenir', autre: '✏️ Autre' };
+
+// =============================================
+// ÉTAT
+// =============================================
+let state = {
+    meteo: null,
+    meteoEmoji: null,
+    sousEmotion: null,
+    sousEmotionInfo: null,
+    declencheur: null,
+    declencheurTexte: '',
+    intensite: 5,
+    sensations: []
+};
+
+// =============================================
+// ÉTAPE 1 — Météo + Sous-émotion
+// =============================================
+function selectMeteo(el, meteo, emoji) {
+    // Deselect all
+    document.querySelectorAll('.meteo-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    state.meteo = meteo;
+    state.meteoEmoji = emoji;
+    state.sousEmotion = null;
+    state.sousEmotionInfo = null;
+
+    // Afficher sous-émotions
+    const sousDiv = document.getElementById('sous-emotions');
+    const grid = document.getElementById('sous-grid');
+    const infoBulle = document.getElementById('info-bulle');
+    infoBulle.classList.remove('visible');
+
+    grid.innerHTML = '';
+    const options = SOUS_EMOTIONS[meteo] || [];
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'sous-btn';
+        btn.textContent = opt.label;
+        btn.onclick = function() { selectSousEmotion(this, opt.label, opt.info); };
+        grid.appendChild(btn);
+    });
+
+    sousDiv.classList.add('visible');
+
+    // Cacher étapes 2 et 3
+    document.getElementById('card-step2').classList.remove('visible');
+    document.getElementById('card-step3').classList.remove('visible');
+}
+
+function selectSousEmotion(el, label, info) {
+    document.querySelectorAll('.sous-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    state.sousEmotion = label;
+    state.sousEmotionInfo = info;
+
+    // Afficher info bulle
+    const infoBulle = document.getElementById('info-bulle');
+    infoBulle.textContent = '💡 ' + info;
+    infoBulle.classList.add('visible');
+
+    // Afficher étape 2
+    document.getElementById('card-step2').classList.add('visible');
+    // Scroll vers étape 2
+    setTimeout(function() {
+        document.getElementById('card-step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+}
+
+// =============================================
+// ÉTAPE 2 — Déclencheur + Intensité + Corps
+// =============================================
+function selectDeclencheur(el, type) {
+    document.querySelectorAll('.decl-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    state.declencheur = type;
+
+    // Afficher champ texte si "autre"
+    const texteLibre = document.getElementById('texte-declencheur');
+    if (type === 'autre') {
+        texteLibre.style.display = 'block';
+        texteLibre.focus();
+    } else {
+        texteLibre.style.display = 'none';
+    }
+
+    checkStep2Complete();
+}
+
+function updateIntensite(val) {
+    state.intensite = parseInt(val);
+    const display = document.getElementById('intensite-val');
+    display.textContent = val;
+    // Couleur dynamique
+    if (val <= 3) { display.style.color = '#22c55e'; }
+    else if (val <= 6) { display.style.color = '#f59e0b'; }
+    else { display.style.color = '#ef4444'; }
+}
+
+function toggleSensation(el, zone) {
+    el.classList.toggle('selected');
+    const idx = state.sensations.indexOf(zone);
+    if (idx > -1) {
+        state.sensations.splice(idx, 1);
+    } else {
+        state.sensations.push(zone);
+    }
+}
+
+function checkStep2Complete() {
+    if (state.declencheur) {
+        // Construire le récap et afficher étape 3
+        buildRecap();
+        document.getElementById('card-step3').classList.add('visible');
+        setTimeout(function() {
+            document.getElementById('card-step3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+    }
+}
+
+// =============================================
+// ÉTAPE 3 — Récap + Enregistrement
+// =============================================
+function buildRecap() {
+    const box = document.getElementById('recap-box');
+    let tags = [];
+    tags.push(DECL_LABELS[state.declencheur] || state.declencheur);
+    tags.push('Intensité : ' + state.intensite + '/10');
+    if (state.sensations.length > 0) {
+        const sensLabels = { tete: '🧠 Tête', gorge: '😶 Gorge', poitrine: '💓 Poitrine', ventre: '🤢 Ventre', mains: '🤲 Mains', jambes: '🦵 Jambes', tout: '🧍 Tout le corps' };
+        state.sensations.forEach(function(s) { tags.push(sensLabels[s] || s); });
+    }
+
+    box.innerHTML = '<div class="recap-meteo">' + state.meteoEmoji + '</div>'
+        + '<div class="recap-emotion">' + METEO_LABELS[state.meteo] + '</div>'
+        + '<div class="recap-sous">' + (state.sousEmotion || '') + '</div>'
+        + '<div class="recap-details">' + tags.map(function(t) { return '<span class="recap-tag">' + t + '</span>'; }).join('') + '</div>';
+}
+
+function enregistrer() {
+    state.declencheurTexte = document.getElementById('texte-declencheur').value.trim();
+
+    const entry = {
+        date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+        meteo: state.meteo,
+        meteoEmoji: state.meteoEmoji,
+        emotion: METEO_LABELS[state.meteo],
+        sousEmotion: state.sousEmotion,
+        declencheur: state.declencheur,
+        declencheurTexte: state.declencheurTexte,
+        intensite: state.intensite,
+        sensations: state.sensations.slice(),
+        timestamp: Date.now()
+    };
+
+    // Sauvegarder dans localStorage
+    let journal = [];
+    try { journal = JSON.parse(localStorage.getItem('cps_meteo_journal')) || []; } catch(e) {}
+    journal.unshift(entry);
+    // Max 30 entrées
+    if (journal.length > 30) journal = journal.slice(0, 30);
+    localStorage.setItem('cps_meteo_journal', JSON.stringify(journal));
+
+    // Feedback
+    document.getElementById('btn-save').style.display = 'none';
+    document.getElementById('save-confirm').classList.add('visible');
+    document.getElementById('btn-new').style.display = 'block';
+
+    // Rafraîchir le journal
+    renderJournal();
+}
+
+// =============================================
+// JOURNAL — Affichage
+// =============================================
+function renderJournal() {
+    let journal = [];
+    try { journal = JSON.parse(localStorage.getItem('cps_meteo_journal')) || []; } catch(e) {}
+
+    const container = document.getElementById('journal-content');
+    const btnClear = document.getElementById('btn-clear');
+
+    if (journal.length === 0) {
+        container.innerHTML = '<div class="journal-empty">Aucune entrée pour le moment.</div>';
+        btnClear.style.display = 'none';
+        return;
+    }
+
+    btnClear.style.display = 'block';
+
+    let html = '<ul class="journal-list">';
+    // Afficher les 7 dernières entrées
+    const display = journal.slice(0, 7);
+    display.forEach(function(e) {
+        const barColor = e.intensite <= 3 ? '#22c55e' : (e.intensite <= 6 ? '#f59e0b' : '#ef4444');
+        const barWidth = (e.intensite / 10) * 100;
+        html += '<li class="journal-entry">'
+            + '<span class="je-date">' + e.date + '</span>'
+            + '<span class="je-meteo">' + e.meteoEmoji + '</span>'
+            + '<span class="je-emotion">' + e.emotion + '<br><span class="je-sous">' + (e.sousEmotion || '') + '</span></span>'
+            + '<span class="je-bar"><span class="je-bar-fill" style="width:' + barWidth + '%; background:' + barColor + ';"></span></span>'
+            + '</li>';
+    });
+    html += '</ul>';
+
+    if (journal.length > 7) {
+        html += '<p style="text-align:center; font-size:0.72rem; color:#94a3b8; margin-top:8px;">+ ' + (journal.length - 7) + ' entrées précédentes</p>';
+    }
+
+    container.innerHTML = html;
+}
+
+function effacerJournal() {
+    if (!confirm('Effacer tout ton journal ? Cette action est irréversible.')) return;
+    localStorage.removeItem('cps_meteo_journal');
+    renderJournal();
+}
+
+function nouvelleEntree() {
+    // Reset state
+    state = { meteo: null, meteoEmoji: null, sousEmotion: null, sousEmotionInfo: null, declencheur: null, declencheurTexte: '', intensite: 5, sensations: [] };
+
+    // Reset UI
+    document.querySelectorAll('.meteo-btn, .sous-btn, .decl-btn, .sens-btn').forEach(function(b) { b.classList.remove('selected'); });
+    document.getElementById('sous-emotions').classList.remove('visible');
+    document.getElementById('info-bulle').classList.remove('visible');
+    document.getElementById('card-step2').classList.remove('visible');
+    document.getElementById('card-step3').classList.remove('visible');
+    document.getElementById('save-confirm').classList.remove('visible');
+    document.getElementById('btn-save').style.display = 'block';
+    document.getElementById('texte-declencheur').value = '';
+    document.getElementById('texte-declencheur').style.display = 'none';
+    document.getElementById('intensite-range').value = 5;
+    updateIntensite(5);
+
+    // Scroll en haut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// =============================================
+// INIT
+// =============================================
+renderJournal();
+</script>
+
+</body>
+</html>
