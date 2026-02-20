@@ -292,6 +292,46 @@
         }
         .warning-box .warn-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,197,94,0.4); }
 
+        /* === CHRONO WARNING SCREEN === */
+        .chrono-box {
+            background: white; border-radius: 20px; padding: 40px; max-width: 580px; width: 100%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1); text-align: center;
+        }
+        .chrono-box .chrono-icon { font-size: 4rem; margin-bottom: 12px; }
+        .chrono-box h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 16px; color: #1e293b; }
+        .chrono-box .chrono-duree {
+            display: inline-block; padding: 12px 28px; border-radius: 12px;
+            background: linear-gradient(135deg, #f59e0b, #d97706); color: white;
+            font-size: 1.5rem; font-weight: 900; margin-bottom: 20px;
+        }
+        .chrono-box ul {
+            text-align: left; margin: 0 auto 20px; max-width: 460px;
+            list-style: none; padding: 0;
+        }
+        .chrono-box ul li {
+            padding: 10px 14px; margin-bottom: 8px; border-radius: 10px;
+            background: #fff7ed; border-left: 4px solid #f59e0b;
+            font-size: 0.95rem; color: #92400e;
+        }
+        .chrono-box ul li::before { content: '⏱️ '; }
+        .chrono-box .chrono-engage {
+            font-size: 0.88rem; color: #64748b; margin-bottom: 24px; line-height: 1.5;
+            font-style: italic;
+        }
+        .chrono-box .chrono-btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .chrono-box .chrono-btn-go {
+            padding: 16px 32px; background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white; border: none; border-radius: 14px; font-size: 1.05rem;
+            font-weight: 800; cursor: pointer; transition: 0.2s;
+        }
+        .chrono-box .chrono-btn-go:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,197,94,0.4); }
+        .chrono-box .chrono-btn-cancel {
+            padding: 16px 32px; background: #e2e8f0;
+            color: #475569; border: none; border-radius: 14px; font-size: 1.05rem;
+            font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .chrono-box .chrono-btn-cancel:hover { background: #cbd5e1; }
+
         /* === ANTI-CHEAT ALERT === */
         #alert-tabswitch {
             position: fixed; inset: 0; z-index: 9999; background: rgba(220,38,38,0.95);
@@ -380,7 +420,27 @@
             <li>Votre enseignant verra toutes les alertes dans ses resultats</li>
         </ul>
         <p class="warn-note">En cliquant sur "Commencer", vous acceptez ces conditions de surveillance.<br>Bonne evaluation !</p>
-        <button class="warn-btn" onclick="confirmStartEval()">Commencer l'evaluation</button>
+        <button class="warn-btn" onclick="proceedAfterWarning()">Commencer l'evaluation</button>
+    </div>
+</div>
+
+<!-- SCREEN 2c: CHRONO WARNING -->
+<div class="screen screen-hidden" id="screen-chrono-warning">
+    <div class="chrono-box">
+        <div class="chrono-icon">⏱️</div>
+        <h2>Evaluation chronometree</h2>
+        <div class="chrono-duree" id="chrono-warn-duree">-- minutes</div>
+        <ul>
+            <li>Le chronometre demarre des que vous cliquez sur <strong>"Je suis pret"</strong></li>
+            <li>Vous devez rester concentre pendant toute la duree (<span class="chrono-warn-minutes">--</span> minutes sans interruption)</li>
+            <li>A la fin du temps, votre copie sera <strong>envoyee automatiquement</strong>, meme si vous n'avez pas termine</li>
+            <li>Assurez-vous d'etre dans un endroit calme, sans distraction, pret a travailler</li>
+        </ul>
+        <p class="chrono-engage">En cliquant sur "Je suis pret", vous confirmez etre disponible et concentre pour les <span class="chrono-warn-minutes">--</span> prochaines minutes.</p>
+        <div class="chrono-btn-group">
+            <button class="chrono-btn-go" onclick="confirmStartEval()">✅ Je suis pret, lancer l'evaluation</button>
+            <button class="chrono-btn-cancel" onclick="cancelChronoStart()">← Pas maintenant</button>
+        </div>
     </div>
 </div>
 
@@ -604,6 +664,26 @@
         pendingEvalData = evalData;
         showScreen('warning');
     }
+
+    // === CHRONO WARNING (entre anti-triche et lancement) ===
+    window.proceedAfterWarning = function() {
+        if (pendingEvalData && pendingEvalData.timer > 0) {
+            // Chrono actif → afficher l'avertissement chrono
+            const mins = pendingEvalData.timer;
+            document.getElementById('chrono-warn-duree').textContent = mins + ' minute' + (mins > 1 ? 's' : '');
+            document.querySelectorAll('.chrono-warn-minutes').forEach(el => { el.textContent = mins; });
+            showScreen('chrono-warning');
+        } else {
+            // Pas de chrono → lancer directement
+            confirmStartEval();
+        }
+    };
+
+    window.cancelChronoStart = function() {
+        pendingEvalId = null;
+        pendingEvalData = null;
+        showScreen('list');
+    };
 
     window.confirmStartEval = function() {
         const evalId = pendingEvalId;
