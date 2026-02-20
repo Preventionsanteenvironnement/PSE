@@ -349,6 +349,8 @@
         /* Barre de progression mobile (cachee par defaut sur desktop) */
         .eval-progress-bar { display: none; width: 100%; height: 4px; background: #e2e8f0; }
         .eval-progress-fill { height: 100%; width: 0%; background: #22c55e; transition: width 0.3s ease; border-radius: 0 2px 2px 0; }
+        /* Bouton toggle document (cache sur desktop) */
+        .doc-toggle-btn { display: none; width: 100%; padding: 10px 14px; background: #fffbeb; border: 2px solid #fbbf24; border-radius: 12px; font-weight: 600; font-size: 0.85rem; color: #92400e; cursor: pointer; text-align: left; margin-bottom: 0; }
 
         @media (max-width: 600px) {
             /* Fix: screens ne doivent pas centrer verticalement sur mobile */
@@ -366,8 +368,10 @@
             /* Nav numerotee cachee sur mobile — remplacee par barre de progression */
             .eval-nav { display: none; }
             .eval-progress-bar { display: block; }
-            /* Document container moins de place sur mobile */
-            #doc-container .doc-display { max-height: 25vh; padding: 10px; font-size: 0.85rem; }
+            /* Document repliable sur mobile */
+            .doc-toggle-btn { display: block; }
+            #doc-container .doc-display { max-height: 25vh; padding: 10px; font-size: 0.85rem; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, border-width 0.3s ease; }
+            #doc-container .doc-display.doc-collapsed { max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; border-width: 0; }
             #doc-container .doc-display h4 { font-size: 0.8rem; }
             /* Footer boutons compacts */
             .eval-footer { padding: 10px 12px; }
@@ -951,7 +955,9 @@
 
         const color = docColorMap[docRef] || '#fbbf24';
         const icon = docObj.type === 'image' ? '🖼️' : (docObj.type === 'video' ? '🎬' : '📄');
-        let html = '<div class="doc-display" style="border-color:' + color + ';">';
+        // Bouton toggle document (visible uniquement sur mobile via CSS)
+        let html = '<button class="doc-toggle-btn" onclick="toggleDoc()" style="border-color:' + color + '; color:' + color + ';">' + icon + ' ' + escHtml(docObj.titre) + ' ▼</button>';
+        html += '<div class="doc-display doc-collapsed" style="border-color:' + color + ';">';
         html += '<h4 style="color:' + color + ';">' + icon + ' ' + escHtml(docObj.titre) + '</h4>';
         if (docObj.type === 'image') {
             const imgUrl = docObj.content || '';
@@ -986,6 +992,15 @@
         docContainer.style.display = 'block';
         qContainer.classList.add('has-doc');
     }
+
+    // === TOGGLE DOCUMENT (mobile) ===
+    window.toggleDoc = function() {
+        const display = document.querySelector('#doc-container .doc-display');
+        const btn = document.querySelector('#doc-container .doc-toggle-btn');
+        if (!display || !btn) return;
+        display.classList.toggle('doc-collapsed');
+        btn.textContent = btn.textContent.replace(/[▼▲]/, display.classList.contains('doc-collapsed') ? '▼' : '▲');
+    };
 
     // === DISPLAY QUESTION ===
     function displayQuestion(index) {
