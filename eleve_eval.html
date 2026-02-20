@@ -316,6 +316,20 @@
             .nav-group-btns { gap: 2px; }
             #doc-container .doc-display { max-height: 35vh; padding: 12px; }
         }
+        /* Ordonner */
+        .ord-list { display: flex; flex-direction: column; gap: 8px; }
+        .ord-item { background: #1e293b; padding: 12px 16px; border-radius: 10px; border: 1px solid #334155; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; }
+        .ord-item:hover { border-color: #3b82f6; }
+        .ord-num { background: #3b82f6; color: white; border-radius: 50%; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .ord-text { flex: 1; }
+        .ord-btns { display: flex; gap: 4px; }
+        .ord-btns button { padding: 8px 12px; font-size: 1rem; min-width: 40px; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; cursor: pointer; }
+        .ord-btns button:disabled { opacity: 0.3; cursor: default; }
+        .ord-btns button:hover:not(:disabled) { background: #475569; }
+        .ord-reset-btn { margin-top: 8px; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: 1px solid #475569; background: transparent; color: #94a3b8; cursor: pointer; }
+        .ord-reset-btn:hover { color: white; border-color: #64748b; }
+        /* Document image placeholder */
+        .doc-img-placeholder { padding: 20px; text-align: center; color: #94a3b8; background: #1e293b; border-radius: 8px; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -426,6 +440,7 @@
     let currentEvalId = null;
     let currentQuestionIndex = 0;
     let answers = {}; // { q_0: value, q_1: value, ... }
+    const initialShuffles = {}; // Store initial shuffle for ordonner reset
     let evalSegments = [];
     let docColorMap = {};
     let currentDisplayedDocRef = '__none__';
@@ -449,6 +464,13 @@
     // === NORMALIZE TEXT (for mot answers) ===
     function normalizeText(text) {
         return text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    // === ESCAPE HTML (security) ===
+    function escHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     // === LOGIN ===
@@ -787,9 +809,20 @@
         const color = docColorMap[docRef] || '#fbbf24';
         const icon = docObj.type === 'image' ? '🖼️' : (docObj.type === 'video' ? '🎬' : '📄');
         let html = '<div class="doc-display" style="border-color:' + color + ';">';
-        html += '<h4 style="color:' + color + ';">' + icon + ' ' + docObj.titre + '</h4>';
+        html += '<h4 style="color:' + color + ';">' + icon + ' ' + escHtml(docObj.titre) + '</h4>';
         if (docObj.type === 'image') {
-            html += '<img src="' + docObj.content + '" alt="' + docObj.titre + '" style="max-width:100%; max-height:35vh; object-fit:contain; border-radius:8px; margin-top:8px;">';
+            const imgUrl = docObj.content || '';
+            if (/^https?:\/\//.test(imgUrl)) {
+                html += '<img src="' + imgUrl + '" alt="' + escHtml(docObj.alt || docObj.titre) + '" onerror="this.outerHTML=\'<div class=doc-img-placeholder>📷 Image non disponible</div>\'" style="max-width:100%; max-height:35vh; object-fit:contain; border-radius:8px; margin-top:8px;">';
+            } else {
+                html += '<div class="doc-img-placeholder">📷 URL image invalide</div>';
+            }
+            if (docObj.description || docObj.credit) {
+                html += '<div class="doc-caption" style="font-size:0.8rem; color:#94a3b8; margin-top:6px;">';
+                if (docObj.description) html += escHtml(docObj.description);
+                if (docObj.credit) html += (docObj.description ? ' — ' : '') + 'Crédit : ' + escHtml(docObj.credit);
+                html += '</div>';
+            }
         } else if (docObj.type === 'video') {
             const embedUrl = extractYouTubeEmbed(docObj.content);
             if (embedUrl) {
@@ -798,11 +831,11 @@
                 html += '<div class="doc-text" style="color:#dc2626;">URL video invalide</div>';
             }
         } else {
-            html += '<div class="doc-text">' + docObj.content + '</div>';
+            html += '<div class="doc-text">' + escHtml(docObj.content || '').replace(/\n/g, '<br>') + '</div>';
         }
-        // Render description if present (image + text support)
-        if (docObj.description) {
-            html += '<div class="doc-text" style="margin-top:10px; padding-top:10px; border-top:1px solid #fde68a;">' + docObj.description + '</div>';
+        // Render description if present (text docs)
+        if (docObj.type !== 'image' && docObj.description) {
+            html += '<div class="doc-text" style="margin-top:10px; padding-top:10px; border-top:1px solid #fde68a;">' + escHtml(docObj.description) + '</div>';
         }
         html += '</div>';
 
@@ -830,14 +863,14 @@
             const posInSeg = seg.questionIndices.indexOf(index) + 1;
             const totalInSeg = seg.questionIndices.length;
             const color = docColorMap[seg.documentRef] || '#fbbf24';
-            const docTitle = docObj ? docObj.titre : 'Document';
+            const docTitle = docObj ? escHtml(docObj.titre) : 'Document';
             html += '<div class="q-section-badge" style="border-left-color:' + color + ';">Question ' + posInSeg + ' sur ' + totalInSeg + ' — ' + docTitle + '</div>';
         }
 
         html += '<div class="q-number">Question ' + (index + 1) + ' / ' + qs.length;
-        if (q.competence) html += '<span class="q-comp-badge">' + q.competence + '</span>';
+        if (q.competence) html += '<span class="q-comp-badge">' + escHtml(q.competence) + '</span>';
         html += '</div>';
-        html += '<div class="q-text">' + q.question + '</div>';
+        html += '<div class="q-text">' + escHtml(q.question) + '</div>';
 
         const currentAnswer = answers[q.id];
 
@@ -846,7 +879,7 @@
                 const checked = currentAnswer === ci ? ' checked' : '';
                 const selected = currentAnswer === ci ? ' selected' : '';
                 html += '<div class="answer-option' + selected + '" onclick="selectRadio(\'' + q.id + '\', ' + ci + ')">' +
-                    '<input type="radio" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + choice + '</div>';
+                    '<input type="radio" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + escHtml(choice) + '</div>';
             });
         } else if (q.type === 'qcm_multi') {
             html += '<div class="q-multi-hint">Plusieurs reponses possibles — coche toutes les bonnes reponses.</div>';
@@ -855,7 +888,7 @@
                 const checked = isChecked ? ' checked' : '';
                 const selected = isChecked ? ' selected' : '';
                 html += '<div class="answer-option' + selected + '" onclick="toggleCheck(\'' + q.id + '\', ' + ci + ')">' +
-                    '<input type="checkbox" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + choice + '</div>';
+                    '<input type="checkbox" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + escHtml(choice) + '</div>';
             });
         } else if (q.type === 'vf') {
             const selTrue = currentAnswer === true ? ' selected-true' : '';
@@ -865,10 +898,34 @@
                 '<div class="vf-option' + selFalse + '" onclick="selectVF(\'' + q.id + '\', false)">Faux</div>' +
                 '</div>';
         } else if (q.type === 'mot') {
-            html += '<input type="text" class="text-answer" id="input-mot" placeholder="Ta reponse..." value="' + (currentAnswer || '') + '" oninput="setMotAnswer(\'' + q.id + '\', this.value)">';
+            html += '<input type="text" class="text-answer" id="input-mot" placeholder="Ta reponse..." value="' + escHtml(currentAnswer || '') + '" oninput="setMotAnswer(\'' + q.id + '\', this.value)">';
             html += '<div class="info-text" style="margin-top:8px;">Ecris le mot correctement (accents et majuscules toleres).</div>';
         } else if (q.type === 'nombre') {
             html += '<input type="number" class="text-answer number-answer" id="input-nombre" placeholder="Ta reponse..." value="' + (currentAnswer !== undefined ? currentAnswer : '') + '" step="any" oninput="setNombreAnswer(\'' + q.id + '\', this.value)">';
+        } else if (q.type === 'ordonner') {
+            let currentOrder = currentAnswer;
+            if (!currentOrder) {
+                currentOrder = (q.items || []).map((_, i) => i);
+                // Fisher-Yates shuffle
+                for (let i = currentOrder.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentOrder[i], currentOrder[j]] = [currentOrder[j], currentOrder[i]];
+                }
+                answers[q.id] = currentOrder;
+                initialShuffles[q.id] = [...currentOrder]; // Store initial shuffle
+            }
+            html += '<div class="ord-list" id="ord-list-' + q.id + '">';
+            currentOrder.forEach((idx, pos) => {
+                html += '<div class="ord-item" data-idx="' + idx + '">' +
+                    '<span class="ord-num">' + (pos + 1) + '</span>' +
+                    '<span class="ord-text">' + escHtml((q.items || [])[idx]) + '</span>' +
+                    '<div class="ord-btns">' +
+                        '<button type="button" onclick="moveOrdItem(\'' + q.id + '\',' + pos + ',-1)"' + (pos === 0 ? ' disabled' : '') + '>▲</button>' +
+                        '<button type="button" onclick="moveOrdItem(\'' + q.id + '\',' + pos + ',1)"' + (pos === currentOrder.length - 1 ? ' disabled' : '') + '>▼</button>' +
+                    '</div></div>';
+            });
+            html += '</div>';
+            html += '<button type="button" class="ord-reset-btn" onclick="resetOrdItem(\'' + q.id + '\')">🔄 Remélanger</button>';
         }
 
         container.innerHTML = html;
@@ -911,6 +968,38 @@
         if (value !== '') answers[qId] = parseFloat(value);
         else delete answers[qId];
         updateNav();
+    };
+
+    // === ORDONNER HANDLERS ===
+    window.moveOrdItem = function(qId, pos, dir) {
+        const order = answers[qId];
+        if (!order) return;
+        const newPos = pos + dir;
+        if (newPos < 0 || newPos >= order.length) return;
+        [order[pos], order[newPos]] = [order[newPos], order[pos]];
+        answers[qId] = order;
+        // Re-render only the ord-list (not the whole question)
+        const q = currentEval.questions[currentQuestionIndex];
+        const listEl = document.getElementById('ord-list-' + qId);
+        if (!listEl) { displayQuestion(currentQuestionIndex); return; }
+        let html = '';
+        order.forEach((idx, p) => {
+            html += '<div class="ord-item" data-idx="' + idx + '">' +
+                '<span class="ord-num">' + (p + 1) + '</span>' +
+                '<span class="ord-text">' + escHtml((q.items || [])[idx]) + '</span>' +
+                '<div class="ord-btns">' +
+                    '<button type="button" onclick="moveOrdItem(\'' + qId + '\',' + p + ',-1)"' + (p === 0 ? ' disabled' : '') + '>▲</button>' +
+                    '<button type="button" onclick="moveOrdItem(\'' + qId + '\',' + p + ',1)"' + (p === order.length - 1 ? ' disabled' : '') + '>▼</button>' +
+                '</div></div>';
+        });
+        listEl.innerHTML = html;
+    };
+
+    window.resetOrdItem = function(qId) {
+        if (initialShuffles[qId]) {
+            answers[qId] = [...initialShuffles[qId]];
+        }
+        displayQuestion(currentQuestionIndex);
     };
 
     window.prevQ = function() {
@@ -1009,9 +1098,21 @@
                     const tolerance = q.tolerance || 0;
                     isCorrect = Math.abs(parseFloat(studentAnswer) - parseFloat(q.correct)) <= tolerance;
                     break;
+                case 'ordonner':
+                    if (Array.isArray(studentAnswer) && Array.isArray(q.correct) && studentAnswer.length === q.correct.length) {
+                        let nbBienPlaces = 0;
+                        studentAnswer.forEach((v, i) => { if (v === q.correct[i]) nbBienPlaces++; });
+                        const ratio = nbBienPlaces / q.correct.length;
+                        earnedPoints = Math.round((q.points || 0) * ratio * 100) / 100;
+                        isCorrect = (nbBienPlaces === q.correct.length);
+                    }
+                    break;
             }
 
-            earnedPoints = isCorrect ? (q.points || 0) : 0;
+            // Don't overwrite ordonner's partial earnedPoints
+            if (q.type !== 'ordonner') {
+                earnedPoints = isCorrect ? (q.points || 0) : 0;
+            }
             const level = isCorrect ? 'M' : 'I';
 
             results.questions[q.id] = { level, earnedPoints, maxPoints: q.points || 0, studentAnswer, isCorrect };
@@ -1047,6 +1148,7 @@
             else if (q.type === 'vf') reponseAttendue = q.correct ? 'Vrai' : 'Faux';
             else if (q.type === 'mot') reponseAttendue = q.correct || q.reponse || '';
             else if (q.type === 'nombre') reponseAttendue = String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : '');
+            else if (q.type === 'ordonner') reponseAttendue = (q.correct || []).map(i => (q.items || [])[i]).join(' → ');
 
             return {
                 type: 'question',
@@ -1207,6 +1309,7 @@
         if (q.type === 'vf') return answer ? 'Vrai' : 'Faux';
         if (q.type === 'mot') return String(answer);
         if (q.type === 'nombre') return String(answer);
+        if (q.type === 'ordonner') return (answer || []).map(i => (q.items || [])[i]).join(' → ');
         return String(answer);
     }
 
@@ -1216,6 +1319,7 @@
         if (q.type === 'vf') return q.correct ? 'Vrai' : 'Faux';
         if (q.type === 'mot') return q.correct || q.reponse || '?';
         if (q.type === 'nombre') return String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : '');
+        if (q.type === 'ordonner') return (q.correct || []).map(i => (q.items || [])[i]).join(' → ');
         return '?';
     }
 
