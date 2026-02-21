@@ -177,18 +177,40 @@
         }
         .relier-item:hover { border-color: #3b82f6; }
         .relier-item.selected { border-color: #3b82f6; background: #eff6ff; color: #2563eb; }
-        .relier-item.matched { border-color: #94a3b8; background: #f1f5f9; color: #64748b; opacity: 0.7; cursor: default; }
-        .relier-item.correct { border-color: #22c55e; background: #f0fdf4; color: #166534; }
-        .relier-item.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+        .relier-item.matched { cursor: default; }
+        .relier-item.correct { border-color: #22c55e !important; background: #f0fdf4 !important; color: #166534 !important; }
+        .relier-item.wrong { border-color: #ef4444 !important; background: #fef2f2 !important; color: #991b1b !important; }
+        /* Couleurs par paire */
+        .relier-item.pair-0 { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+        .relier-item.pair-1 { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+        .relier-item.pair-2 { border-color: #10b981; background: #ecfdf5; color: #065f46; }
+        .relier-item.pair-3 { border-color: #8b5cf6; background: #f5f3ff; color: #5b21b6; }
+        .relier-item.pair-4 { border-color: #ec4899; background: #fdf2f8; color: #9d174d; }
+        .relier-item.pair-5 { border-color: #14b8a6; background: #f0fdfa; color: #134e4a; }
+        .relier-item.pair-6 { border-color: #f97316; background: #fff7ed; color: #9a3412; }
+        .relier-item.pair-7 { border-color: #6366f1; background: #eef2ff; color: #3730a3; }
+        .relier-item.pair-8 { border-color: #06b6d4; background: #ecfeff; color: #155e75; }
+        .relier-item.pair-9 { border-color: #a855f7; background: #faf5ff; color: #6b21a8; }
         .relier-pairs-display { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
         .relier-pair-tag {
             display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
-            background: #eff6ff; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #1e40af;
+            border-radius: 8px; font-size: 0.85rem; font-weight: 600; border: 2px solid transparent;
         }
-        .relier-pair-tag .remove-pair { cursor: pointer; color: #94a3b8; margin-left: 4px; }
-        .relier-pair-tag .remove-pair:hover { color: #ef4444; }
-        .relier-pair-tag.correct { background: #f0fdf4; color: #166534; }
-        .relier-pair-tag.wrong { background: #fef2f2; color: #991b1b; text-decoration: line-through; }
+        /* Couleurs tags par paire */
+        .relier-pair-tag.pair-0 { background: #eff6ff; color: #1e40af; border-color: #3b82f6; }
+        .relier-pair-tag.pair-1 { background: #fffbeb; color: #92400e; border-color: #f59e0b; }
+        .relier-pair-tag.pair-2 { background: #ecfdf5; color: #065f46; border-color: #10b981; }
+        .relier-pair-tag.pair-3 { background: #f5f3ff; color: #5b21b6; border-color: #8b5cf6; }
+        .relier-pair-tag.pair-4 { background: #fdf2f8; color: #9d174d; border-color: #ec4899; }
+        .relier-pair-tag.pair-5 { background: #f0fdfa; color: #134e4a; border-color: #14b8a6; }
+        .relier-pair-tag.pair-6 { background: #fff7ed; color: #9a3412; border-color: #f97316; }
+        .relier-pair-tag.pair-7 { background: #eef2ff; color: #3730a3; border-color: #6366f1; }
+        .relier-pair-tag.pair-8 { background: #ecfeff; color: #155e75; border-color: #06b6d4; }
+        .relier-pair-tag.pair-9 { background: #faf5ff; color: #6b21a8; border-color: #a855f7; }
+        .relier-pair-tag .remove-pair { cursor: pointer; opacity: 0.5; margin-left: 4px; }
+        .relier-pair-tag .remove-pair:hover { opacity: 1; }
+        .relier-pair-tag.correct { background: #f0fdf4 !important; color: #166534 !important; border-color: #22c55e !important; }
+        .relier-pair-tag.wrong { background: #fef2f2 !important; color: #991b1b !important; border-color: #ef4444 !important; text-decoration: line-through; }
 
         /* --- Ordre --- */
         .ordre-list { display: flex; flex-direction: column; gap: 8px; }
@@ -1143,10 +1165,12 @@ function relierClick(el) {
     if (relierState.selected && relierState.selected.dataset.side !== side) {
         const leftEl = side === 'left' ? el : relierState.selected;
         const rightEl = side === 'right' ? el : relierState.selected;
-        relierState.pairs.push({ leftIdx: parseInt(leftEl.dataset.idx), rightIdx: parseInt(rightEl.dataset.idx), leftText: leftEl.textContent, rightText: rightEl.textContent });
+        const pairIndex = relierState.pairs.length;
+        var colorClass = 'pair-' + (pairIndex % 10);
+        relierState.pairs.push({ leftIdx: parseInt(leftEl.dataset.idx), rightIdx: parseInt(rightEl.dataset.idx), leftText: leftEl.textContent, rightText: rightEl.textContent, colorClass: colorClass });
         leftEl.classList.remove('selected');
-        leftEl.classList.add('matched');
-        rightEl.classList.add('matched');
+        leftEl.classList.add('matched', colorClass);
+        rightEl.classList.add('matched', colorClass);
         relierState.selected = null;
         renderRelierPairs();
     } else {
@@ -1161,7 +1185,7 @@ function renderRelierPairs() {
     display.innerHTML = '';
     relierState.pairs.forEach((p, i) => {
         const tag = document.createElement('div');
-        tag.className = 'relier-pair-tag';
+        tag.className = 'relier-pair-tag ' + p.colorClass;
         tag.innerHTML = p.leftText + ' ↔ ' + p.rightText + ' <span class="remove-pair" onclick="removeRelierPair(' + i + ')">&times;</span>';
         display.appendChild(tag);
     });
@@ -1170,13 +1194,26 @@ function renderRelierPairs() {
 function removeRelierPair(i) {
     if (corrected) return;
     const pair = relierState.pairs.splice(i, 1)[0];
-    // Unmatch items
+    // Unmatch items and remove color
     document.querySelectorAll('.relier-item').forEach(el => {
         const idx = parseInt(el.dataset.idx);
         const side = el.dataset.side;
         if ((side === 'left' && idx === pair.leftIdx) || (side === 'right' && idx === pair.rightIdx)) {
             el.classList.remove('matched');
+            for (var c = 0; c < 10; c++) el.classList.remove('pair-' + c);
         }
+    });
+    // Reassign color classes after removal
+    relierState.pairs.forEach((p, j) => {
+        p.colorClass = 'pair-' + (j % 10);
+        document.querySelectorAll('.relier-item').forEach(el => {
+            const idx = parseInt(el.dataset.idx);
+            const side = el.dataset.side;
+            if ((side === 'left' && idx === p.leftIdx) || (side === 'right' && idx === p.rightIdx)) {
+                for (var c = 0; c < 10; c++) el.classList.remove('pair-' + c);
+                el.classList.add(p.colorClass);
+            }
+        });
     });
     renderRelierPairs();
 }
@@ -2597,8 +2634,21 @@ function validateExercice() {
         for (let i = pairs.length; i < total; i++) {
             details.push({ ok: false, label: relierState.correctPairs[i].gauche + ' ↔ ' + relierState.correctPairs[i].droite, detail: 'Non associe' });
         }
+        // Replace pair colors with correct/wrong on items
+        document.querySelectorAll('.relier-item.matched').forEach(el => {
+            for (var c = 0; c < 10; c++) el.classList.remove('pair-' + c);
+            var idx = parseInt(el.dataset.idx);
+            var side = el.dataset.side;
+            var pairFound = pairs.find(function(p) {
+                return (side === 'left' && p.leftIdx === idx) || (side === 'right' && p.rightIdx === idx);
+            });
+            if (pairFound) {
+                el.classList.add(pairFound.leftIdx === pairFound.rightIdx ? 'correct' : 'wrong');
+            }
+        });
         // Color pair tags
         document.querySelectorAll('.relier-pair-tag').forEach((tag, i) => {
+            for (var c = 0; c < 10; c++) tag.classList.remove('pair-' + c);
             tag.classList.add(pairs[i] && pairs[i].leftIdx === pairs[i].rightIdx ? 'correct' : 'wrong');
             tag.querySelector('.remove-pair').style.display = 'none';
         });
