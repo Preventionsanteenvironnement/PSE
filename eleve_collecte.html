@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="page-title">Participation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100dvh; }
+
+        /* LOGIN */
+        #login-screen { position: fixed; inset: 0; background: #0f172a; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #login-screen h2 { margin-bottom: 30px; }
+
+        /* APPEL PROF */
+        #call-screen { display: none; position: fixed; inset: 0; background: rgba(37, 99, 235, 0.95); z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; animation: pulseBlue 1s infinite; }
+        .btn-ack { background: white; color: #2563eb; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; border-radius: 50px; cursor: pointer; }
+
+        /* ZONE SUJET */
+        #current-zone-display {
+            width: 100%; max-width: 400px; padding: 20px; border-radius: 12px; margin-bottom: 20px;
+            text-align: center; font-weight: 800; font-size: 1.2rem; text-transform: uppercase;
+            border: 2px solid rgba(255,255,255,0.2); transition: 0.3s;
+        }
+
+        /* LOCK */
+        #lock-screen { display: none; width: 100%; max-width: 400px; text-align: center; padding: 20px; background: #334155; border: 2px solid #ef4444; border-radius: 12px; margin-bottom: 20px; }
+
+        /* INPUT */
+        .input-card { background: #1e293b; padding: 20px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #334155; margin-bottom: 20px; }
+        input[type="text"], textarea { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #475569; background: #0f172a; color: white; font-size: 1.1rem; box-sizing: border-box; outline: none; margin-bottom: 15px; font-family: 'Inter', sans-serif; }
+        textarea { height: 120px; resize: none; }
+        button { width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+        button:active { transform: scale(0.97); }
+
+        /* STATUS */
+        #status-msg { text-align: center; font-weight: bold; font-size: 1rem; opacity: 0; transition: 0.3s; margin-top: -10px; margin-bottom: 10px; color: #22c55e; }
+
+        /* HISTORIQUE */
+        .history { width: 100%; max-width: 400px; padding-bottom: 50px; }
+        .idea-item { background: #1e293b; padding: 10px 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #64748b; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+        .status-valid { border-color: #22c55e; }
+        .status-reject { border-color: #ef4444; opacity: 0.5; }
+        .status-liked { border-color: #facc15; background: linear-gradient(90deg, #1e293b 0%, #3e3012 100%); }
+
+        @keyframes pulseBlue { 0% { background: rgba(37, 99, 235, 0.95); } 50% { background: rgba(29, 78, 216, 0.95); } 100% { background: rgba(37, 99, 235, 0.95); } }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h2 id="login-title">Connexion</h2>
+        <input type="text" id="usernameInput" placeholder="Ton Prenom" style="width: 80%; max-width: 300px; text-align: center; padding: 15px; border-radius: 12px; border:none;">
+        <button onclick="login()" style="width: 80%; max-width: 300px; margin-top: 15px;">Entrer</button>
+    </div>
+
+    <div id="call-screen">
+        <h1 style="color:white; font-size:2.5rem; margin-bottom:20px;">📢 C'EST A TOI !</h1>
+        <button class="btn-ack" onclick="closeCall()">J'arrive !</button>
+    </div>
+
+    <div id="current-zone-display">En attente...</div>
+
+    <div id="lock-screen">⏸️ Pause</div>
+
+    <div class="input-card" id="input-area">
+        <div id="input-container"></div>
+        <button onclick="sendIdea()">Envoyer</button>
+    </div>
+
+    <div id="status-msg"></div>
+
+    <div class="history">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:0.9rem; color:#aaa;">Historique</h3>
+            <button onclick="clearMyHistory()" style="background:none; border:none; color:#ef4444; cursor:pointer; width:auto; padding:0;">🗑️</button>
+        </div>
+        <div id="list"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // =====================================================================
+        // CONFIGURATION DES MODES
+        // =====================================================================
+        const MODES = {
+            itamami: {
+                title: 'ITAMaMi',
+                prefix: 'itamami',
+                configDoc: 'global',
+                zoneField: 'currentZone',
+                labelField: 'currentLabel',
+                defaultZone: 'I',
+                inputType: 'text',
+                placeholder: 'Ta reponse...',
+                zones: {
+                    I:  { bg: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '#3b82f6' },
+                    T:  { bg: 'rgba(249, 115, 22, 0.2)', color: '#fb923c', border: '#f97316' },
+                    Ma: { bg: 'rgba(100, 116, 139, 0.2)', color: '#cbd5e1', border: '#94a3b8' },
+                    A:  { bg: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '#10b981' },
+                    Mi: { bg: 'rgba(234, 179, 8, 0.2)', color: '#facc15', border: '#eab308' }
+                }
+            },
+            qqoqcp: {
+                title: 'QQOQCP',
+                prefix: 'qqoqcp',
+                configDoc: 'global',
+                zoneField: 'currentZone',
+                labelField: 'currentLabel',
+                defaultZone: 'Qui',
+                inputType: 'text',
+                placeholder: 'Ta reponse...',
+                zones: {
+                    Qui:      { bg: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '#3b82f6' },
+                    Quoi:     { bg: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '#ef4444' },
+                    Ou:       { bg: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '#22c55e' },
+                    Quand:    { bg: 'rgba(249, 115, 22, 0.2)', color: '#fb923c', border: '#f97316' },
+                    Comment:  { bg: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '#a855f7' },
+                    Combien:  { bg: 'rgba(20, 184, 166, 0.2)', color: '#2dd4bf', border: '#14b8a6' },
+                    Pourquoi: { bg: 'rgba(234, 179, 8, 0.2)', color: '#facc15', border: '#eab308' }
+                }
+            },
+            pad: {
+                title: 'PAD - Analyse des Risques',
+                prefix: 'pad',
+                configDoc: 'global',
+                zoneField: 'currentZone',
+                labelField: 'currentLabel',
+                defaultZone: 'SD',
+                inputType: 'textarea',
+                placeholder: 'Ta proposition ici...',
+                zones: {
+                    SD: { bg: 'rgba(248, 113, 113, 0.2)', color: '#f87171', border: '#ef4444' },
+                    ED: { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', border: '#f59e0b' },
+                    D:  { bg: 'rgba(254, 240, 138, 0.2)', color: '#fef08a', border: '#eab308' },
+                    O:  { bg: 'rgba(186, 230, 253, 0.2)', color: '#bae6fd', border: '#38bdf8' },
+                    DP: { bg: 'rgba(134, 239, 172, 0.2)', color: '#86efac', border: '#22c55e' }
+                }
+            },
+            mindmap: {
+                title: 'Carte Mentale',
+                prefix: 'mindmap',
+                configDoc: 'global_state',
+                zoneField: null,
+                labelField: 'currentFocus',
+                defaultZone: null,
+                inputType: 'text',
+                placeholder: 'Ton idee...',
+                zones: {}
+            },
+            ishikawa: {
+                title: 'Ishikawa',
+                prefix: 'ishikawa',
+                configDoc: 'global',
+                zoneField: 'currentZone',
+                labelField: 'currentLabel',
+                defaultZone: null,
+                inputType: 'text',
+                placeholder: 'Ta reponse...',
+                zones: {}
+            }
+        };
+
+        // =====================================================================
+        // DETECTION DU MODE
+        // =====================================================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeName = urlParams.get('mode') || 'itamami';
+        const MODE = MODES[modeName] || MODES.itamami;
+
+        // Appliquer le titre
+        document.getElementById('page-title').textContent = 'Participation ' + MODE.title;
+        document.getElementById('login-title').textContent = MODE.title;
+
+        // Appliquer le type d'input
+        const inputContainer = document.getElementById('input-container');
+        if (MODE.inputType === 'textarea') {
+            inputContainer.innerHTML = '<textarea id="ideaInput" placeholder="' + MODE.placeholder + '" autocomplete="off"></textarea>';
+        } else {
+            inputContainer.innerHTML = '<input type="text" id="ideaInput" placeholder="' + MODE.placeholder + '" autocomplete="off">';
+        }
+
+        // =====================================================================
+        // SESSION ID
+        // =====================================================================
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, MODE.prefix + "_config", MODE.configDoc), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
+        // =====================================================================
+        // LOGIN
+        // =====================================================================
+        let username = localStorage.getItem('pse_collecte_username');
+        if (username) {
+            document.getElementById('login-screen').style.display = 'none';
+            registerPresence(username);
+            loadHistory();
+        }
+
+        window.login = () => {
+            const val = document.getElementById('usernameInput').value.trim();
+            if (val) {
+                username = val;
+                localStorage.setItem('pse_collecte_username', username);
+                document.getElementById('login-screen').style.display = 'none';
+                registerPresence(username);
+                loadHistory();
+            }
+        };
+
+        document.getElementById('usernameInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') window.login();
+        });
+
+        async function registerPresence(name) {
+            try {
+                await setDoc(doc(db, MODE.prefix + "_presence", name), {
+                    online: true, timestamp: Date.now(), sessionId: currentSessionId || null
+                });
+            } catch(e) {}
+        }
+
+        // =====================================================================
+        // ECOUTE CONFIG PROF
+        // =====================================================================
+        onSnapshot(doc(db, MODE.prefix + "_config", MODE.configDoc), (snap) => {
+            if (!snap.exists()) return;
+            const d = snap.data();
+
+            // Mettre a jour le sujet
+            const box = document.getElementById('current-zone-display');
+            const label = d[MODE.labelField] || '...';
+            box.innerText = 'Sujet : ' + label;
+
+            // Appliquer couleur de zone
+            const zone = MODE.zoneField ? d[MODE.zoneField] : null;
+            const zoneStyle = zone && MODE.zones[zone] ? MODE.zones[zone] : null;
+            if (zoneStyle) {
+                box.style.background = zoneStyle.bg;
+                box.style.color = zoneStyle.color;
+                box.style.borderColor = zoneStyle.border;
+            } else {
+                box.style.background = 'rgba(59, 130, 246, 0.2)';
+                box.style.color = '#60a5fa';
+                box.style.borderColor = '#3b82f6';
+            }
+
+            // Verrouillage
+            const isLocked = d.isLocked === true;
+            document.getElementById('lock-screen').style.display = isLocked ? 'block' : 'none';
+            document.getElementById('input-area').style.display = isLocked ? 'none' : 'block';
+
+            // Appel
+            if (d.solicitedStudent && username && d.solicitedStudent.toLowerCase() === username.toLowerCase()) {
+                document.getElementById('call-screen').style.display = 'flex';
+                if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+            } else {
+                document.getElementById('call-screen').style.display = 'none';
+            }
+        });
+
+        window.closeCall = () => document.getElementById('call-screen').style.display = 'none';
+
+        // =====================================================================
+        // ENVOI
+        // =====================================================================
+        window.sendIdea = async () => {
+            const input = document.getElementById('ideaInput');
+            const text = input.value.trim();
+            if (!text) return;
+            addVisualItem(text, 'wait');
+            input.value = '';
+            input.focus();
+            showStatus('Envoye au prof ! ✅');
+            try {
+                await addDoc(collection(db, MODE.prefix + "_ideas"), {
+                    text: text,
+                    student: username || 'Anonyme',
+                    status: 'waiting',
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId || null
+                });
+            } catch(e) {
+                showStatus('Erreur... Reessaie.');
+            }
+        };
+
+        document.addEventListener('keypress', e => {
+            if (e.key === 'Enter' && document.activeElement.id === 'ideaInput' && MODE.inputType !== 'textarea') {
+                window.sendIdea();
+            }
+        });
+
+        function showStatus(msg) {
+            const el = document.getElementById('status-msg');
+            el.innerText = msg;
+            el.style.opacity = 1;
+            setTimeout(() => el.style.opacity = 0, 2000);
+        }
+
+        // =====================================================================
+        // HISTORIQUE
+        // =====================================================================
+        window.clearMyHistory = () => {
+            if (confirm('Effacer ?')) document.getElementById('list').innerHTML = '';
+        };
+
+        function addVisualItem(text, status, isLiked) {
+            const div = document.createElement('div');
+            div.className = 'idea-item status-' + status;
+            if (isLiked) div.classList.add('status-liked');
+            const icon = status === 'valid' ? '✅' : (status === 'reject' ? '❌' : '⏳');
+            const thumb = isLiked ? ' 👍' : '';
+            div.innerHTML = '<div><span>' + escapeHtml(text) + '</span>' + thumb + '</div> <span>' + icon + '</span>';
+            document.getElementById('list').prepend(div);
+        }
+
+        function loadHistory() {
+            if (!username) return;
+            const q = query(collection(db, MODE.prefix + "_ideas"), where("student", "==", username));
+            onSnapshot(q, (snap) => {
+                document.getElementById('list').innerHTML = '';
+                let list = [];
+                snap.forEach(d => list.push(d.data()));
+                list.sort((a, b) => a.timestamp - b.timestamp);
+                list.forEach(d => {
+                    let st = 'wait';
+                    if (d.status === 'accepted') st = 'valid';
+                    if (d.status === 'rejected') st = 'reject';
+                    addVisualItem(d.text, st, d.feedback);
+                });
+            });
+        }
+
+        function escapeHtml(t) {
+            return t ? t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        }
+    </script>
+</body>
+</html>
