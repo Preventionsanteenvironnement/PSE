@@ -1538,6 +1538,7 @@ function renderPenduMot() {
     const s = penduState;
     if (s.current >= s.mots.length) { finishPendu(); return; }
     const motObj = s.mots[s.current];
+    if (!motObj || !motObj.mot) { finishPendu(); return; }
     const mot = motObj.mot.toUpperCase();
     s.errors = 0;
     s.found = [];
@@ -1577,6 +1578,7 @@ function renderPenduSvg(errors) {
 function penduGuess(letter, keyEl) {
     const s = penduState;
     if (keyEl.classList.contains('used-ok') || keyEl.classList.contains('used-ko')) return;
+    if (!s.mots[s.current] || !s.mots[s.current].mot) return;
     const mot = s.mots[s.current].mot.toUpperCase();
     if (mot.includes(letter)) {
         keyEl.classList.add('used-ok');
@@ -1812,8 +1814,11 @@ function renderSwipeCard() {
 function swipeAnswer(answer) {
     const s = swipeState;
     const aff = s.affirmations[s.current];
-    const ok = answer === aff.reponse;
-    s.results.push({ ok, texte: aff.texte, expected: aff.reponse, given: answer, explication: aff.explication });
+    // Normaliser reponse : string → boolean (certaines IA generent "vrai"/"faux" au lieu de true/false)
+    var expected = aff.reponse;
+    if (typeof expected === 'string') expected = (expected.toLowerCase() === 'true' || expected.toLowerCase() === 'vrai' || expected.toLowerCase() === 'oui');
+    const ok = answer === expected;
+    s.results.push({ ok, texte: aff.texte, expected: expected, given: answer, explication: aff.explication });
 
     const card = document.getElementById('swipe-card');
     card.classList.add(answer ? 'slide-right' : 'slide-left');
@@ -1846,7 +1851,7 @@ function renderQcmImage(zone, c) {
         html += '<div class="q-text">' + (qi + 1) + '. ' + q.question + '</div>';
         html += '<div class="qcm-img-choices">';
         (q.choix || []).forEach((ch, ci) => {
-            var choixText = (typeof ch === 'object') ? (ch.texte || ch.label || ch.text || '') : ch;
+            var choixText = (ch && typeof ch === 'object') ? (ch.texte || ch.label || ch.text || '') : (ch || '');
             html += '<div class="qcm-img-choice" data-qi="' + qi + '" data-ci="' + ci + '" onclick="qcmImgSelect(this)">' + choixText + '</div>';
         });
         html += '</div>';
@@ -1930,11 +1935,13 @@ function shuffleArray(arr) {
 function renderPad(zone, c) {
     // Build options for each PAD step (correct answer + 3 distractors, shuffled)
     function buildOptions(correct, distracteurs, fieldId) {
-        const options = shuffleArray([correct, ...(distracteurs || [])]);
+        var dist = distracteurs || [];
+        if (typeof dist === 'string') dist = dist.split(/[|,]/).map(function(s){return s.trim();}).filter(Boolean);
+        const options = shuffleArray([(correct || ''), ...dist]);
         let html = '<select id="' + fieldId + '" class="pad-select">';
         html += '<option value="">-- Choisissez --</option>';
         options.forEach(opt => {
-            html += '<option value="' + opt.replace(/"/g, '&quot;') + '">' + opt + '</option>';
+            html += '<option value="' + (opt || '').toString().replace(/"/g, '&quot;') + '">' + (opt || '') + '</option>';
         });
         html += '</select>';
         return html;
@@ -1945,7 +1952,7 @@ function renderPad(zone, c) {
     // Situation
     html += '<div class="pad-situation">';
     html += '<div class="pad-situation-label">📋 Situation professionnelle</div>';
-    html += c.situation;
+    html += (c.situation || '');
     html += '</div>';
 
     // Instruction
@@ -2004,13 +2011,13 @@ function renderPrevention(zone, c) {
     // Situation
     html += '<div class="prev-situation">';
     html += '<div class="prev-situation-label">📋 Situation professionnelle</div>';
-    html += c.situation;
+    html += (c.situation || '');
     html += '</div>';
 
     // Danger identifie
     html += '<div class="prev-danger-box">';
     html += '<div class="prev-danger-label">⚠️ Danger identifie</div>';
-    html += c.danger;
+    html += (c.danger || '');
     html += '</div>';
 
     // Instruction
@@ -2020,7 +2027,9 @@ function renderPrevention(zone, c) {
     // 5 levels
     html += '<div class="prev-levels">';
     niveaux.forEach((n, i) => {
-        const options = shuffleArray([n.bonne_reponse, ...(n.distracteurs || [])]);
+        var prevDist = n.distracteurs || [];
+        if (typeof prevDist === 'string') prevDist = prevDist.split(/[|,]/).map(function(s){return s.trim();}).filter(Boolean);
+        const options = shuffleArray([(n.bonne_reponse || ''), ...prevDist]);
         html += '<div class="prev-level" id="prev-level-' + n.niveau + '">';
         html += '<div class="prev-level-num ' + (niveauColors[n.niveau] || '') + '">' + (niveauIcons[n.niveau] || (i+1)) + '</div>';
         html += '<div class="prev-level-content">';
@@ -2344,24 +2353,25 @@ function renderDuerpLigne(zone, c) {
     html += '</div>';
 
     // Section DANGER
-    var dangers = shuffleArray(c.choix.danger);
+    var choix = c.choix || {};
+    var dangers = shuffleArray(choix.danger || []);
     html += '<div class="duerp-section">';
     html += '<div class="duerp-section-title danger">⚠️ Identifier le danger</div>';
     html += '<div class="duerp-section-body">';
     html += '<div class="duerp-qcm-choices">';
     dangers.forEach(function(d) {
-        html += '<div class="duerp-qcm-choice" data-group="duerp-danger" data-val="' + d.replace(/"/g, '&quot;') + '" onclick="selectDuerpChoice(this,\'duerp-danger\')">' + d + '</div>';
+        html += '<div class="duerp-qcm-choice" data-group="duerp-danger" data-val="' + (d || '').toString().replace(/"/g, '&quot;') + '" onclick="selectDuerpChoice(this,\'duerp-danger\')">' + (d || '') + '</div>';
     });
     html += '</div></div></div>';
 
     // Section DOMMAGE
-    var dommages = shuffleArray(c.choix.dommage);
+    var dommages = shuffleArray(choix.dommage || []);
     html += '<div class="duerp-section">';
     html += '<div class="duerp-section-title dommage">🩹 Identifier le dommage</div>';
     html += '<div class="duerp-section-body">';
     html += '<div class="duerp-qcm-choices">';
     dommages.forEach(function(d) {
-        html += '<div class="duerp-qcm-choice" data-group="duerp-dommage" data-val="' + d.replace(/"/g, '&quot;') + '" onclick="selectDuerpChoice(this,\'duerp-dommage\')">' + d + '</div>';
+        html += '<div class="duerp-qcm-choice" data-group="duerp-dommage" data-val="' + (d || '').toString().replace(/"/g, '&quot;') + '" onclick="selectDuerpChoice(this,\'duerp-dommage\')">' + (d || '') + '</div>';
     });
     html += '</div></div></div>';
 
@@ -2405,9 +2415,10 @@ function renderDuerpMini(zone, c) {
     html += '<div style="padding: 16px;">';
 
     // 4 lignes
-    c.lignes.forEach(function(ligne, idx) {
+    (c.lignes || []).forEach(function(ligne, idx) {
         var n = idx + 1;
         var prefix = 'duerp-L' + n;
+        var lChoix = ligne.choix || {};
 
         if (idx > 0) {
             html += '<hr class="duerp-row-separator">';
@@ -2425,7 +2436,7 @@ function renderDuerpMini(zone, c) {
         html += '</div>';
 
         // Danger QCM
-        var dangers = shuffleArray(ligne.choix.danger);
+        var dangers = shuffleArray(lChoix.danger || []);
         html += '<div class="duerp-section">';
         html += '<div class="duerp-section-title danger">⚠️ Danger</div>';
         html += '<div class="duerp-section-body">';
@@ -2436,7 +2447,7 @@ function renderDuerpMini(zone, c) {
         html += '</div></div></div>';
 
         // Dommage QCM
-        var dommages = shuffleArray(ligne.choix.dommage);
+        var dommages = shuffleArray(lChoix.dommage || []);
         html += '<div class="duerp-section">';
         html += '<div class="duerp-section-title dommage">🩹 Dommage</div>';
         html += '<div class="duerp-section-body">';
@@ -2566,7 +2577,7 @@ function showChronoQuestion(idx) {
             clearInterval(s.timer);
             s.answers.push(false);
             // Show correct answer briefly
-            const correctId = s.questions[s.current].reponse;
+            const correctId = String(s.questions[s.current].reponse || '');
             document.querySelectorAll('.chrono-choice').forEach(el => {
                 el.style.pointerEvents = 'none';
                 if (el.dataset.id === correctId) el.classList.add('show-correct');
@@ -2579,14 +2590,14 @@ function answerChrono(chosenId) {
     const s = chronoState;
     if (s.timer) clearInterval(s.timer);
     const q = s.questions[s.current];
-    const isCorrect = chosenId === q.reponse;
+    const isCorrect = String(chosenId) === String(q.reponse);
     s.answers.push(isCorrect);
     if (isCorrect) s.score++;
     // Visual feedback
     document.querySelectorAll('.chrono-choice').forEach(el => {
         el.style.pointerEvents = 'none';
         if (el.dataset.id === chosenId) el.classList.add(isCorrect ? 'selected-ok' : 'selected-ko');
-        if (el.dataset.id === q.reponse && !isCorrect) el.classList.add('show-correct');
+        if (el.dataset.id === String(q.reponse) && !isCorrect) el.classList.add('show-correct');
     });
     setTimeout(() => showChronoQuestion(s.current + 1), 800);
 }
@@ -3058,15 +3069,15 @@ function validateExercice() {
 
     // === ESTIMATION DU RISQUE ===
     else if (type === 'estimation_risque') {
-        const c = currentExo.contenu;
-        const probaAttendue = calcProba(c.exposition, c.declencheur);
+        const c = currentExo.contenu || {};
+        const probaAttendue = calcProba(c.exposition || '', c.declencheur || '');
         const feedbackMsgs = [];
 
         // 1. Gravite (1 pt)
         const gravSel = document.getElementById('est-sel-gravite');
         const gravStep = document.getElementById('est-step-gravite');
         const gravGiven = parseInt(gravSel.value) || 0;
-        const gravOk = gravGiven === c.gravite;
+        const gravOk = gravGiven === (c.gravite || 0);
         total++;
         if (gravOk) { correct++; gravStep.classList.add('correct'); }
         else {
@@ -3126,7 +3137,8 @@ function validateExercice() {
         if (matriceOk) { correct++; caseSelectionnee.classList.add('correct-cell'); }
         else {
             if (caseSelectionnee) caseSelectionnee.classList.add('wrong-cell');
-            document.getElementById(bonneCase).classList.add('show-correct');
+            var bonneCaseEl = document.getElementById(bonneCase);
+            if (bonneCaseEl) bonneCaseEl.classList.add('show-correct');
         }
         document.querySelectorAll('.est-matrix-cell').forEach(function(c) { c.onclick = null; c.style.cursor = 'default'; });
         details.push({ ok: matriceOk, label: 'Case matrice', detail: matriceOk ? 'Correct' : 'Mauvaise case' });
@@ -3166,7 +3178,7 @@ function validateExercice() {
     // === DUERP LIGNE ===
     else if (type === 'duerp_ligne') {
         const c = currentExo.contenu;
-        const att = c.attendus;
+        const att = c.attendus || {};
         const feedbackMsgs = [];
 
         // 1. Danger (1 pt)
@@ -3287,10 +3299,10 @@ function validateExercice() {
         const feedbackMsgs = [];
 
         // Score each line (5 pts each = 20 pts)
-        c.lignes.forEach(function(ligne, idx) {
+        (c.lignes || []).forEach(function(ligne, idx) {
             var n = idx + 1;
             var prefix = 'duerp-L' + n;
-            var att = ligne.attendus;
+            var att = ligne.attendus || {};
 
             // Danger (1 pt)
             total++;
@@ -3379,10 +3391,10 @@ function validateExercice() {
         var nbPrio = c.mission_finale ? (c.mission_finale.nb_prioritaires || 0) : 0;
         // Calculate which lines are truly priority from attendus
         var lignePrioAttendue = [];
-        c.lignes.forEach(function(ligne, idx) {
-            var att = ligne.attendus;
+        (c.lignes || []).forEach(function(ligne, idx) {
+            var att = ligne.attendus || {};
             var probaAtt = calcProba(att.exposition, att.declencheur);
-            lignePrioAttendue.push((att.gravite + probaAtt) >= 5);
+            lignePrioAttendue.push(((att.gravite || 0) + probaAtt) >= 5);
         });
 
         // Score mission: 1 pt per correct selection, 0 otherwise, NO negative
@@ -3410,8 +3422,8 @@ function validateExercice() {
         // Feedback
         var fb = document.getElementById('duerp-feedback');
         var nbLignesOk = 0;
-        c.lignes.forEach(function(ligne, idx) {
-            var att = ligne.attendus;
+        (c.lignes || []).forEach(function(ligne, idx) {
+            var att = ligne.attendus || {};
             var prefix = 'duerp-L' + (idx + 1);
             var dSel2 = document.querySelector('.duerp-qcm-choice[data-group="' + prefix + '-danger"].selected');
             var dmSel2 = document.querySelector('.duerp-qcm-choice[data-group="' + prefix + '-dommage"].selected');
@@ -3440,7 +3452,7 @@ function validateExercice() {
     else if (type === 'qcm_classique') {
         const c = currentExo.contenu;
         const isMultiple = !!c.multiple;
-        const repIds = Array.isArray(c.reponse) ? c.reponse : [c.reponse];
+        const repIds = Array.isArray(c.reponse) ? c.reponse : (c.reponse != null ? [c.reponse] : []);
         const choices = document.querySelectorAll('.qcm-c-choice');
         if (isMultiple) {
             // Multiple: score = nb correct selections + nb correct non-selections
@@ -3529,7 +3541,10 @@ function validateExercice() {
         var corrHtml = '';
         items.forEach(function(item, idx) {
             var resp = acState.responses[idx];
-            var att = item.attendus;
+            var att = item.attendus || {};
+            // Normaliser validee boolean → string
+            if (att.validee === true) att.validee = 'oui';
+            if (att.validee === false) att.validee = 'non';
             var itemCorrect = 0;
             var itemTotal = 0;
 
@@ -3755,7 +3770,7 @@ function validateExercice() {
         });
 
         // Replace the zone with correction display
-        var zone = document.getElementById('zone-play');
+        var zone = document.getElementById('screen-play');
         if (zone) {
             var consigneEl = zone.querySelector('.consigne-box');
             var navEl = document.getElementById('ac-nav');
