@@ -931,6 +931,10 @@ const TYPE_LABELS = {
 const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini', 'pictogramme'];
 const COMPETENCES_TYPES = ['analyse_copie'];
 
+function isCompetencesExercice(e) {
+    return e.categorie === 'competences' || COMPETENCES_TYPES.includes(e.type);
+}
+
 let allExercices = [];
 let currentNiveau = null;
 let currentModuleId = null;
@@ -1074,20 +1078,15 @@ function renderNiveaux() {
     const compGrid = document.getElementById('competences-grid');
     if (compGrid) {
         compGrid.innerHTML = '';
-        const COMP_BTNS = [
-            { type: 'analyse_copie', label: '📝 Competences', color: '#6366f1' }
-        ];
-        COMP_BTNS.forEach(t => {
-            const count = allExercices.filter(e => e.type === t.type).length;
-            const btn = document.createElement('div');
-            btn.className = 'level-btn level-btn-trans';
-            btn.style.borderColor = t.color;
-            btn.style.color = t.color;
-            btn.innerHTML = t.label + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
-            btn.onclick = () => selectCompetences(t.type, btn);
-            if (count === 0) { btn.style.opacity = '0.4'; btn.style.cursor = 'default'; btn.onclick = null; }
-            compGrid.appendChild(btn);
-        });
+        const count = allExercices.filter(e => isCompetencesExercice(e)).length;
+        const btn = document.createElement('div');
+        btn.className = 'level-btn level-btn-trans';
+        btn.style.borderColor = '#6366f1';
+        btn.style.color = '#6366f1';
+        btn.innerHTML = '📝 Competences' + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
+        btn.onclick = () => selectCompetences(btn);
+        if (count === 0) { btn.style.opacity = '0.4'; btn.style.cursor = 'default'; btn.onclick = null; }
+        compGrid.appendChild(btn);
     }
 }
 
@@ -1177,7 +1176,7 @@ function renderTransversal(type) {
     });
 }
 
-function selectCompetences(type, btnEl) {
+function selectCompetences(btnEl) {
     currentNiveau = null;
     currentModuleId = null;
     document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
@@ -1186,19 +1185,19 @@ function selectCompetences(type, btnEl) {
     document.getElementById('zone-exercices').style.display = 'none';
     document.getElementById('zone-transversal').style.display = 'none';
     document.getElementById('zone-competences').style.display = '';
-    renderCompetences(type);
+    renderCompetences();
     setTimeout(() => { document.getElementById('zone-competences').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
-function renderCompetences(type) {
+function renderCompetences() {
     const container = document.getElementById('competences-list');
     if (!container) return;
     container.innerHTML = '';
-    var exos = allExercices.filter(e => e.type === type);
+    var exos = allExercices.filter(e => isCompetencesExercice(e));
     var label = document.getElementById('competences-label');
-    if (label) label.textContent = '📝 Analyse de copie — ' + exos.length + ' exercice' + (exos.length > 1 ? 's' : '');
+    if (label) label.textContent = '📝 Competences PSE — ' + exos.length + ' exercice' + (exos.length > 1 ? 's' : '');
     if (exos.length === 0) {
-        container.innerHTML = '<div class="empty-msg">Aucun exercice de ce type pour le moment.</div>';
+        container.innerHTML = '<div class="empty-msg">Aucun exercice de competences pour le moment.</div>';
         return;
     }
     exos.forEach(ex => {
@@ -1228,8 +1227,8 @@ function renderExercicesList() {
     list.innerHTML = '';
     const isAll = currentModuleId === '__ALL__';
     const exos = isAll
-        ? allExercices.filter(e => e.niveau === currentNiveau && !TRANSVERSAL_TYPES.includes(e.type) && !COMPETENCES_TYPES.includes(e.type))
-        : allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId && !TRANSVERSAL_TYPES.includes(e.type) && !COMPETENCES_TYPES.includes(e.type));
+        ? allExercices.filter(e => e.niveau === currentNiveau && !TRANSVERSAL_TYPES.includes(e.type) && !isCompetencesExercice(e))
+        : allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId && !TRANSVERSAL_TYPES.includes(e.type) && !isCompetencesExercice(e));
     const label = document.getElementById('exercices-label');
     label.textContent = (isAll ? 'Tous les exercices — ' : '') + exos.length + ' exercice' + (exos.length > 1 ? 's' : '') + ' disponible' + (exos.length > 1 ? 's' : '');
 
