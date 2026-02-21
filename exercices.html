@@ -573,6 +573,25 @@
         .ac-btn-next { background: #6366f1; color: #fff; }
         .ac-btn-next:hover { background: #4f46e5; }
 
+        /* === EXPLICATIONS PEDAGOGIQUES === */
+        .ac-expl-resume { background: #f5f3ff; border-left: 3px solid #8b5cf6; padding: 8px 12px; margin: 8px 0; font-size: 0.88rem; color: #6d28d9; font-style: italic; border-radius: 0 6px 6px 0; }
+        .ac-explications { background: #faf5ff; border: 1px solid #c4b5fd; border-radius: 8px; margin: 10px 0 4px; }
+        .ac-explications summary { cursor: pointer; padding: 10px 14px; font-weight: 700; font-size: 0.9rem; color: #7c3aed; user-select: none; }
+        .ac-explications summary:hover { background: #f3e8ff; border-radius: 8px; }
+        .ac-expl-body { padding: 4px 14px 14px; }
+        .ac-expl-block { margin-bottom: 10px; }
+        .ac-expl-label { font-weight: 700; font-size: 0.82rem; color: #7c3aed; margin-bottom: 2px; }
+        .ac-expl-text { font-size: 0.85rem; color: #334155; line-height: 1.5; margin-bottom: 4px; }
+        .ac-expl-list { margin: 4px 0 4px 18px; font-size: 0.84rem; color: #475569; }
+        .ac-expl-list li { margin-bottom: 2px; }
+        .ac-expl-c6-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+        .ac-expl-c6-item { background: #ede9fe; border-radius: 6px; padding: 6px 10px; font-size: 0.82rem; }
+        .ac-expl-c6-item strong { color: #6d28d9; }
+        .ac-justification-modele { background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px 12px; margin: 6px 0; font-size: 0.85rem; color: #166534; }
+        @media (max-width: 600px) {
+            .ac-expl-c6-feedback { grid-template-columns: 1fr; }
+        }
+
         /* === RESPONSIVE === */
         @media (max-width: 600px) {
             .screen { padding: 12px; }
@@ -929,10 +948,10 @@ const TYPE_LABELS = {
     analyse_copie: 'Analyse de copie'
 };
 const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini', 'pictogramme'];
-const COMPETENCES_TYPES = ['analyse_copie'];
+const AUTO_COMPETENCES_TYPES = ['analyse_copie'];
 
 function isCompetencesExercice(e) {
-    return e.categorie === 'competences' || COMPETENCES_TYPES.includes(e.type);
+    return e.categorie === 'competences' || AUTO_COMPETENCES_TYPES.includes(e.type);
 }
 
 let allExercices = [];
@@ -3605,6 +3624,10 @@ function validateExercice() {
                 corrHtml += '<div class="ac-correction-hint" style="display:block;">💡 Mots-cles attendus : ' + justMotsCles.join(', ') + '</div>';
             }
             corrHtml += '</div>';
+            // 7b: justification_modele
+            if (att.justification_modele) {
+                corrHtml += '<div class="ac-justification-modele">💡 Modele : ' + att.justification_modele + '</div>';
+            }
             details.push({ ok: justOk, label: 'Item ' + (idx + 1) + ' — Justification', detail: justOk ? 'Mots-cles trouves' : 'Mots-cles attendus : ' + justMotsCles.join(', ') });
 
             // 6. Grille C6 (4 pts) — tolérance ±1
@@ -3639,6 +3662,13 @@ function validateExercice() {
                         corrHtml += '<div class="ac-c6-btn ' + btnCls + '" style="pointer-events:none;">' + v + '</div>';
                     }
                     corrHtml += '</div></div>';
+                    // 7c: feedback texte C6 par critere
+                    var c6CritKeys = ['vocabulaire', 'syntaxe', 'argumentation', 'presentation'];
+                    if (item.explications && item.explications.explication_c6 && item.explications.explication_c6[c6CritKeys[ci]]) {
+                        corrHtml += '<div style="padding:4px 12px 8px; font-size:0.8rem; color:#6d28d9; font-style:italic;">';
+                        corrHtml += '→ ' + item.explications.explication_c6[c6CritKeys[ci]];
+                        corrHtml += '</div>';
+                    }
                     details.push({ ok: pts >= 1, label: 'Item ' + (idx + 1) + ' — C6 ' + crit, detail: pts === 1 ? 'Exact' : pts === 0.5 ? 'Proche (±1)' : 'Repondu ' + given + ' | Attendu ' + expected });
                 });
                 corrHtml += '</div></div>';
@@ -3665,6 +3695,60 @@ function validateExercice() {
             }
             corrHtml += '</div>';
             details.push({ ok: amelOk, label: 'Item ' + (idx + 1) + ' — Amelioration', detail: amelOk ? 'Mots-cles trouves' : 'Mots-cles attendus : ' + amelMotsCles.join(', ') });
+
+            // 7d: Resume + bloc explications pedagogiques
+            if (item.explications) {
+                var expl = item.explications;
+                // Resume visible sans ouvrir le details
+                if (expl.resume) {
+                    corrHtml += '<div class="ac-expl-resume">💬 ' + expl.resume + '</div>';
+                }
+                corrHtml += '<details class="ac-explications">';
+                corrHtml += '<summary>📖 Explications pedagogiques</summary>';
+                corrHtml += '<div class="ac-expl-body">';
+                if (expl.pourquoi_valide_ou_non) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">❓ Pourquoi cette evaluation</div>';
+                    corrHtml += '<div class="ac-expl-text">' + expl.pourquoi_valide_ou_non + '</div></div>';
+                }
+                if (expl.attendu_pedagogique) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">🎯 Attendu pedagogique</div>';
+                    corrHtml += '<div class="ac-expl-text">' + expl.attendu_pedagogique + '</div></div>';
+                }
+                if (expl.exemple_reponse_amelioree) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">✨ Comment faire mieux</div>';
+                    corrHtml += '<div class="ac-expl-text">' + expl.exemple_reponse_amelioree + '</div></div>';
+                }
+                if (expl.exemple_reponse_excellente) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">🏆 Reponse excellente</div>';
+                    corrHtml += '<div class="ac-expl-text">' + expl.exemple_reponse_excellente + '</div></div>';
+                }
+                if (expl.erreurs_frequentes && expl.erreurs_frequentes.length > 0) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">⚠️ Erreurs frequentes</div>';
+                    corrHtml += '<ul class="ac-expl-list">';
+                    expl.erreurs_frequentes.forEach(function(err) {
+                        corrHtml += '<li>' + err + '</li>';
+                    });
+                    corrHtml += '</ul></div>';
+                }
+                // Detail C6 (si C6 + explication_c6)
+                if (expl.explication_c6) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">📝 Detail C6</div>';
+                    corrHtml += '<div class="ac-expl-c6-feedback">';
+                    var c6Keys = ['vocabulaire', 'syntaxe', 'argumentation', 'presentation'];
+                    var c6Labels = ['Vocabulaire', 'Syntaxe', 'Argumentation', 'Presentation'];
+                    c6Keys.forEach(function(key, ki) {
+                        if (expl.explication_c6[key]) {
+                            corrHtml += '<div class="ac-expl-c6-item"><strong>' + c6Labels[ki] + ' :</strong> ' + expl.explication_c6[key] + '</div>';
+                        }
+                    });
+                    corrHtml += '</div></div>';
+                }
+                if (expl.exemple_reformulation) {
+                    corrHtml += '<div class="ac-expl-block"><div class="ac-expl-label">💬 Exemple de reformulation</div>';
+                    corrHtml += '<div class="ac-expl-text">' + expl.exemple_reformulation + '</div></div>';
+                }
+                corrHtml += '</div></details>';
+            }
 
             corrHtml += '</div>'; // close ac-item
         });
