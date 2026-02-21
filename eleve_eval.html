@@ -690,10 +690,11 @@
                     ? '<span class="ecm-classe">🎯 ' + evClasseIds.join(', ') + '</span>'
                     : '<span class="ecm-classe ecm-all">Toutes classes</span>';
                 const moduleInfo = ev.moduleId ? '<span class="ecm-module">📘 ' + ev.moduleId + '</span>' : '';
+                const nonNoteInfo = ev.nonNote === true ? '<span class="ecm-module" style="background:rgba(245,158,11,0.15);color:#fcd34d;">📋 Non notee</span>' : '';
 
                 card.innerHTML = '<div class="eval-card-title">' + (ev.titre || 'Evaluation') + '</div>' +
                     '<div class="eval-card-meta">' +
-                    classeInfo + moduleInfo +
+                    classeInfo + moduleInfo + nonNoteInfo +
                     '<span class="ecm-questions">' + qCount + ' questions</span>' +
                     '<span class="ecm-bareme">/' + (ev.bareme || 20) + '</span>' +
                     timerInfo + doneInfo + '</div>';
@@ -1507,7 +1508,7 @@
         }
 
         // 2. Write EVALUATION document (CRITIQUE — contient les notes et competences)
-        await setDoc(doc(db, "resultats", eleveCode, "evaluations", evalId + '_eval'), {
+        const evalDoc = {
             eleveCode,
             devoirId: evalId,
             titre: 'Auto-evaluation : ' + (evalData.titre || 'Evaluation'),
@@ -1524,24 +1525,42 @@
             },
             savedAt: now,
             savedBy: 'auto_correction'
-        });
+        };
+        if (evalData.nonNote === true) evalDoc.nonNote = true;
+        await setDoc(doc(db, "resultats", eleveCode, "evaluations", evalId + '_eval'), evalDoc);
     }
 
     // === SHOW RESULTS ===
     function showResults(correction) {
         const container = document.getElementById('results-container');
         const qs = currentEval.questions || [];
+        const isNonNote = currentEval.nonNote === true;
+        const isCorrDifferee = currentEval.correctionDifferee === true;
+        const isCorrPubliee = currentEval.correctionPubliee === true;
         let html = '';
 
-        // Score card
-        const pct = correction.bareme > 0 ? (correction.note / correction.bareme) * 100 : 0;
-        const scoreClass = pct >= 60 ? 'score-ok' : pct >= 40 ? 'score-mid' : 'score-low';
-        html += '<div class="score-card">' +
-            '<div class="score-big ' + scoreClass + '">' + correction.note + ' / ' + correction.bareme + '</div>' +
-            '<div class="score-label">' + correction.totalPoints + ' points sur ' + correction.totalMax + '</div>' +
-            '</div>';
+        // Determine if we should show detailed correction
+        // Non noté → always show full correction (formative)
+        // Noté + correction immédiate → show correction
+        // Noté + correction différée → only if prof published correction
+        const showCorrection = isNonNote || (!isCorrDifferee) || (isCorrDifferee && isCorrPubliee);
 
-        // Competences card
+        // Score card (always shown, except for non-noté where we show a different message)
+        if (isNonNote) {
+            html += '<div class="score-card">' +
+                '<div class="score-big score-ok">📋 Exercice formatif</div>' +
+                '<div class="score-label">' + correction.totalPoints + ' points sur ' + correction.totalMax + '</div>' +
+                '</div>';
+        } else {
+            const pct = correction.bareme > 0 ? (correction.note / correction.bareme) * 100 : 0;
+            const scoreClass = pct >= 60 ? 'score-ok' : pct >= 40 ? 'score-mid' : 'score-low';
+            html += '<div class="score-card">' +
+                '<div class="score-big ' + scoreClass + '">' + correction.note + ' / ' + correction.bareme + '</div>' +
+                '<div class="score-label">' + correction.totalPoints + ' points sur ' + correction.totalMax + '</div>' +
+                '</div>';
+        }
+
+        // Competences card (always shown)
         const compEntries = Object.entries(correction.competences);
         if (compEntries.length > 0) {
             html += '<div class="comps-card"><h3>🎯 Competences</h3>';
@@ -1561,40 +1580,48 @@
             html += '</div>';
         }
 
-        // Detail per question
-        html += '<h3 style="margin:16px 0 12px; font-size:1.1rem;">📝 Detail des reponses</h3>';
-        qs.forEach((q, i) => {
-            const result = correction.questions[q.id] || { level: 'NT', isCorrect: false, studentAnswer: null };
-            const cardClass = result.level === 'NT' ? 'unanswered' : (result.isCorrect ? 'correct' : 'incorrect');
-            const resultLabel = result.level === 'NT' ? 'Non repondu' : (result.isCorrect ? '✅ Correct' : '❌ Incorrect');
-            const resultClass = result.level === 'NT' ? '' : (result.isCorrect ? 'dc-correct' : 'dc-incorrect');
+        // Detail per question — only if correction is allowed
+        if (showCorrection) {
+            html += '<h3 style="margin:16px 0 12px; font-size:1.1rem;">📝 Detail des reponses</h3>';
+            qs.forEach((q, i) => {
+                const result = correction.questions[q.id] || { level: 'NT', isCorrect: false, studentAnswer: null };
+                const cardClass = result.level === 'NT' ? 'unanswered' : (result.isCorrect ? 'correct' : 'incorrect');
+                const resultLabel = result.level === 'NT' ? 'Non repondu' : (result.isCorrect ? '✅ Correct' : '❌ Incorrect');
+                const resultClass = result.level === 'NT' ? '' : (result.isCorrect ? 'dc-correct' : 'dc-incorrect');
 
-            html += '<div class="detail-card ' + cardClass + '">';
-            html += '<div class="dc-header"><span class="dc-num">Q' + (i + 1) + (q.competence ? ' — ' + q.competence : '') + '</span><span class="dc-result ' + resultClass + '">' + resultLabel + ' (' + (result.earnedPoints || 0) + '/' + (q.points || 0) + ' pts)</span></div>';
-            html += '<div class="dc-question">' + q.question + '</div>';
+                html += '<div class="detail-card ' + cardClass + '">';
+                html += '<div class="dc-header"><span class="dc-num">Q' + (i + 1) + (q.competence ? ' — ' + q.competence : '') + '</span><span class="dc-result ' + resultClass + '">' + resultLabel + ' (' + (result.earnedPoints || 0) + '/' + (q.points || 0) + ' pts)</span></div>';
+                html += '<div class="dc-question">' + q.question + '</div>';
 
-            // Your answer
-            if (result.studentAnswer !== null && result.studentAnswer !== undefined) {
-                let yourText = formatAnswer(q, result.studentAnswer);
-                html += '<div class="dc-answer-block dc-your"><div class="dc-label">✍️ Ta reponse :</div>' + yourText + '</div>';
-            }
+                // Your answer
+                if (result.studentAnswer !== null && result.studentAnswer !== undefined) {
+                    let yourText = formatAnswer(q, result.studentAnswer);
+                    html += '<div class="dc-answer-block dc-your"><div class="dc-label">✍️ Ta reponse :</div>' + yourText + '</div>';
+                }
 
-            // Correct answer
-            let goodText = formatCorrectAnswer(q);
-            html += '<div class="dc-answer-block dc-good"><div class="dc-label">✅ Bonne reponse :</div>' + goodText + '</div>';
+                // Correct answer
+                let goodText = formatCorrectAnswer(q);
+                html += '<div class="dc-answer-block dc-good"><div class="dc-label">✅ Bonne reponse :</div>' + goodText + '</div>';
 
-            // Correction
-            if (q.correction) {
-                html += '<div class="dc-answer-block dc-correction"><div class="dc-label">📝 Correction :</div>' + q.correction + '</div>';
-            }
+                // Correction
+                if (q.correction) {
+                    html += '<div class="dc-answer-block dc-correction"><div class="dc-label">📝 Correction :</div>' + q.correction + '</div>';
+                }
 
-            // Explication
-            if (q.explication) {
-                html += '<div class="dc-answer-block dc-explication"><div class="dc-label">💡 Explication :</div>' + q.explication + '</div>';
-            }
+                // Explication
+                if (q.explication) {
+                    html += '<div class="dc-answer-block dc-explication"><div class="dc-label">💡 Explication :</div>' + q.explication + '</div>';
+                }
 
-            html += '</div>';
-        });
+                html += '</div>';
+            });
+        } else {
+            // Noté + correction différée non publiée → message d'attente
+            html += '<div style="text-align:center; padding:24px; margin:16px 0; background:rgba(59,130,246,0.1); border-radius:12px; border:1px solid rgba(59,130,246,0.3);">' +
+                '<div style="font-size:2rem; margin-bottom:8px;">🔒</div>' +
+                '<p style="color:#93c5fd; font-size:1rem; margin:0;">La correction sera disponible apres publication par ton professeur.</p>' +
+                '</div>';
+        }
 
         // Mapse link
         html += '<div class="mapse-link">Retrouve toutes tes ressources et resultats sur <a href="https://mapse.fr" target="_blank">mapse.fr</a></div>';
