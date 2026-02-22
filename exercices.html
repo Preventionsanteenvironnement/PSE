@@ -5027,6 +5027,11 @@ function isAnalyseCopieNewSchema(c) {
     return att.verbe_index !== undefined ||
            att.competence_index !== undefined ||
            att.justif_index !== undefined ||
+           !!item0.etape1 ||
+           !!item0.etape1_competence ||
+           !!item0.etape2_analyse ||
+           !!item0.etape3_niveau ||
+           !!item0.etape4_corrections ||
            Array.isArray(item0.justifs_proposees) ||
            Array.isArray(item0.ameliorations_proposees) ||
            !!c.final_c6 ||
@@ -5153,11 +5158,49 @@ function acGetExpectedNiveau(item) {
     return acGetAttenduIndex(niveaux, att.niveau_index, niveauLabel, 0);
 }
 
+function acHasGuidedItemSchema(item) {
+    return !!(item && item.etape1 && item.etape1_competence && item.etape2_analyse && item.etape3_niveau && item.etape4_corrections);
+}
+
+function acSetEq(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    var sa = a.slice().sort();
+    var sb = b.slice().sort();
+    for (var i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return false;
+    return true;
+}
+
+function acNormalizeIdList(v) {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.filter(Boolean).map(String);
+    return [String(v)];
+}
+
 function acNewCanScoreC6() {
     return !!(acNewState && acNewState.finalC6 && acNewState.finalC6.actif);
 }
 
 function acNewComputeItemScore(item, resp) {
+    if (acHasGuidedItemSchema(item)) {
+        var scoreGuided = 0;
+        var e1 = item.etape1 || {};
+        var e1c = item.etape1_competence || {};
+        var e2 = item.etape2_analyse || {};
+        var e3 = item.etape3_niveau || {};
+        var e4 = item.etape4_corrections || {};
+
+        if (resp.verbe_index === (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0)) scoreGuided++;
+        if (resp.competence_index === (typeof e1c.competence_index === 'number' ? e1c.competence_index : 0)) scoreGuided++;
+        if (acSetEq(acNormalizeIdList(resp.analyse_selected_ids), acNormalizeIdList(e2.corrects))) scoreGuided++;
+        if (String(resp.niveau_value || '') === String(e3.niveau_attendu || 'insuffisant')) scoreGuided++;
+
+        var selectedCorr = acNormalizeIdList(resp.correction_selected_ids);
+        var acceptables = acNormalizeIdList(e4.acceptables);
+        if (selectedCorr.length > 0 && selectedCorr.every(function(id) { return acceptables.indexOf(id) !== -1; })) scoreGuided++;
+        return scoreGuided;
+    }
+
     var attendus = item.attendus || {};
     var score = 0;
     var verbes = item.verbes_proposes || ['identifier', 'expliquer', 'proposer', 'argumenter'];
@@ -5297,6 +5340,11 @@ function acNewRenderItem(idx) {
     var resp = acNewState.responses[idx] || {};
     if (!item) return;
 
+    if (acHasGuidedItemSchema(item)) {
+        acNewRenderItemGuided(idx, item, resp);
+        return;
+    }
+
     var verbes = item.verbes_proposes || ['identifier', 'expliquer', 'proposer', 'argumenter'];
     var comps = item.competences_proposees || ['C2', 'C3', 'C4', 'C5'];
     var nivs = item.niveaux_proposees || ['non_traite', 'insuffisant', 'acceptable', 'maitrise'];
@@ -5354,13 +5402,142 @@ function acNewRenderItem(idx) {
     }
 }
 
+function acNewRenderFeedbackBlock(title, ok, text) {
+    if (!text) return '';
+    return '<div class="ac-v2-corr-block" style="margin-top:8px; border-left:4px solid ' + (ok ? '#16a34a' : '#ef4444') + '; background:' + (ok ? '#f0fdf4' : '#fef2f2') + ';">' +
+        '<strong>' + title + '</strong><div>' + text + '</div></div>';
+}
+
+function acNewRenderItemGuided(idx, item, resp) {
+    var e1 = item.etape1 || {};
+    var e1v = e1.verbe_sens_qcu || {};
+    var e1c = item.etape1_competence || {};
+    var e2 = item.etape2_analyse || {};
+    var e3 = item.etape3_niveau || {};
+    var e4 = item.etape4_corrections || {};
+
+    var verbes = e1.verbes_proposes || ['identifier', 'expliquer', 'proposer', 'argumenter'];
+    var comps = e1c.competences_proposees || ['C2', 'C3', 'C4', 'C5'];
+    var nivs = e3.niveaux_proposees || ['non_traite', 'insuffisant', 'acceptable', 'maitrise'];
+    var anChoices = Array.isArray(e2.choix) ? e2.choix : [];
+    var corrProps = Array.isArray(e4.propositions) ? e4.propositions : [];
+
+    var html = '<div class="ac-item">';
+    if (item.contexte) html += '<div class="ac-contexte">' + item.contexte + '</div>';
+    html += '<div class="ac-exam-question"><strong>Consigne d\'examen</strong>' + (item.question_examen || '') + '</div>';
+    html += '<div class="ac-response-eleve"><strong>Reponse eleve</strong>' + (item.reponse_eleve || '') + '</div>';
+
+    html += '<div class="ac-section"><div class="ac-section-title">Etape 1 - Je comprends la consigne</div>';
+    html += '<div style="margin-bottom:8px; color:#475569;">A quelle competence fait appel cette consigne ?</div>';
+    html += '<div style="font-weight:700; margin:8px 0;">1.1 Pour cela, dans un premier temps, je repere le verbe d\'action.</div><div class="ac-qcu">';
+    verbes.forEach(function(v, i) {
+        var selected = resp.verbe_index === i ? ' selected' : '';
+        html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'verbe_index\',' + i + ')">' + v + '</div>';
+    });
+    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step11\')">Valider 1.1</button>';
+    html += acNewRenderFeedbackBlock('Feedback 1.1', !!resp.step11_ok, resp.step11_feedback || '');
+
+    html += '<div style="font-weight:700; margin:12px 0 8px;">1.2 Pour verifier que j\'ai compris, j\'associe le verbe a sa signification.</div><div class="ac-qcu">';
+    (e1v.choix || []).forEach(function(v, i) {
+        var selected = resp.verbe_sens_index === i ? ' selected' : '';
+        html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'verbe_sens_index\',' + i + ')">' + v + '</div>';
+    });
+    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step12\')">Valider 1.2</button>';
+    html += acNewRenderFeedbackBlock('Feedback 1.2', !!resp.step12_ok, resp.step12_feedback || '');
+
+    html += '<div style="font-weight:700; margin:12px 0 8px;">1.3 Ensuite, j\'identifie la competence mobilisee.</div><div class="ac-qcu">';
+    comps.forEach(function(c, i) {
+        var labels = {
+            C2: 'C2 - Appliquer une demarche d\'analyse dans une situation donnee',
+            C3: 'C3 - Expliquer un phenomene, un enjeu ou une disposition',
+            C4: 'C4 - Proposer une solution adaptee',
+            C5: 'C5 - Argumenter un choix'
+        };
+        var selected = resp.competence_index === i ? ' selected' : '';
+        html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'competence_index\',' + i + ')">' + (labels[c] || c) + '</div>';
+    });
+    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step13\')">Valider 1.3</button>';
+    html += acNewRenderFeedbackBlock('Feedback 1.3', !!resp.step13_ok, resp.step13_feedback || '');
+    html += '</div>';
+
+    html += '<div class="ac-section"><div class="ac-section-title">Etape 2 - J\'analyse la reponse de l\'eleve</div>';
+    html += '<div style="margin-bottom:8px; color:#475569;">Competence attendue : <strong>' + (e1c.competence_titre || 'C2/C3/C4/C5') + '</strong></div>';
+    html += '<div style="margin-bottom:8px;">' + (e2.question || 'Au regard de la competence attendue, l\'eleve a-t-il repondu ?') + '</div><div class="ac-qcu">';
+    anChoices.forEach(function(ch) {
+        var id = ch.id || '';
+        var selected = (resp.analyse_selected_ids || []).indexOf(id) !== -1 ? ' selected' : '';
+        html += '<div class="ac-choice' + selected + '" onclick="window.acNewPickMulti(' + idx + ',\'analyse_selected_ids\',\'' + id + '\')">' + (ch.texte || '') + '</div>';
+    });
+    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step2\')">Valider l\'etape 2</button>';
+    html += acNewRenderFeedbackBlock('Feedback etape 2', !!resp.step2_ok, resp.step2_feedback || '');
+    html += '</div>';
+
+    html += '<div class="ac-section"><div class="ac-section-title">Etape 3 - J\'attribue un niveau de maitrise</div><div class="ac-qcu">';
+    var nivLabels = { non_traite: 'Non traite', insuffisant: 'Insuffisant', acceptable: 'Acceptable', maitrise: 'Maitrise' };
+    nivs.forEach(function(n) {
+        var selected = resp.niveau_value === n ? ' selected' : '';
+        html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'niveau_value\',\'' + n + '\')">' + (nivLabels[n] || n) + '</div>';
+    });
+    html += '</div>';
+    if (Array.isArray(e3.criteres_simplifies) && e3.criteres_simplifies.length > 0) {
+        html += '<div class="ac-v2-corr-block" style="margin-top:8px;"><strong>Es-tu sur ?</strong><ul class="ac-v2-ul">';
+        e3.criteres_simplifies.forEach(function(c) { html += '<li>' + c + '</li>'; });
+        html += '</ul></div>';
+    }
+    html += '<button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step3\')">Valider l\'etape 3</button>';
+    html += acNewRenderFeedbackBlock('Feedback etape 3', !!resp.step3_ok, resp.step3_feedback || '');
+    html += '</div>';
+
+    html += '<div class="ac-section"><div class="ac-section-title">Etape 4 - Je propose un corrige possible</div>';
+    html += '<div style="margin-bottom:8px;">' + (e4.instruction || 'Je selectionne une ou plusieurs propositions de correction acceptables.') + '</div><div class="ac-qcu">';
+    corrProps.forEach(function(ch) {
+        var id = ch.id || '';
+        var selected = (resp.correction_selected_ids || []).indexOf(id) !== -1 ? ' selected' : '';
+        html += '<div class="ac-choice' + selected + '" onclick="window.acNewPickMulti(' + idx + ',\'correction_selected_ids\',\'' + id + '\')">' + (ch.texte || '') + '</div>';
+    });
+    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step4\')">Valider l\'etape 4</button>';
+    html += acNewRenderFeedbackBlock('Feedback etape 4', !!resp.step4_ok, resp.step4_feedback || '');
+    html += '</div>';
+
+    html += '<div class="ac-v2-actions">';
+    html += '<button class="ac-btn-prev" onclick="window.acNewPrev()" ' + (idx === 0 ? 'disabled' : '') + '>Precedent</button>';
+    html += '<button class="ac-v2-btn-main" onclick="window.acNewValidateItem()">Valider l\'item</button>';
+    html += '<button class="ac-btn-next" onclick="window.acNewNext()">' + (idx === acNewState.items.length - 1 ? 'Etape finale' : 'Suivant') + '</button>';
+    html += '</div>';
+
+    if (resp.validated && item.recap_item) {
+        var recap = item.recap_item;
+        html += '<details class="ac-explications" open><summary>Correction recapitulative</summary><div class="ac-expl-body">';
+        if (recap.resume) html += '<div class="ac-v2-corr-resume">' + recap.resume + '</div>';
+        if (recap.modele_reponse_amelioree) html += '<div class="ac-v2-corr-block"><strong>Modele de reponse amelioree</strong><div>' + recap.modele_reponse_amelioree + '</div></div>';
+        if (Array.isArray(recap.erreurs_frequentes) && recap.erreurs_frequentes.length > 0) {
+            html += '<div class="ac-v2-corr-block"><strong>Erreurs frequentes</strong><ul class="ac-v2-ul">';
+            recap.erreurs_frequentes.forEach(function(e) { html += '<li>' + e + '</li>'; });
+            html += '</ul></div>';
+        }
+        html += '</div></details>';
+    }
+
+    html += '</div>';
+    document.getElementById('ac-item-zone').innerHTML = html;
+    document.getElementById('ac-progress-text').textContent = 'Item ' + (idx + 1) + ' / ' + acNewState.items.length;
+    for (var d = 0; d < acNewState.items.length; d++) {
+        var dot = document.getElementById('ac-dot-' + d);
+        if (!dot) continue;
+        var cls = 'ac-progress-dot';
+        if (d === idx) cls += ' active';
+        else if ((acNewState.responses[d] || {}).validated) cls += ' done';
+        dot.className = cls;
+    }
+}
+
 function acNewRenderFinalC6() {
     var finalC6 = acNewState.finalC6;
     var criteres = finalC6.criteres || [];
     var expl = finalC6.explications || {};
     var scores = acNewComputeScores();
     var html = '<div class="ac-item">';
-    html += '<div class="ac-v2-final-title">Évalue la copie entière en C6 puis donne la note finale</div>';
+    html += '<div class="ac-v2-final-title">Competence 6 - J\'evalue la qualite globale de l\'ecrit</div>';
     html += '<div class="ac-contexte">' + (finalC6.consigne || 'C6 s’évalue sur l’ensemble de la copie : clarté, syntaxe, vocabulaire, organisation.') + '</div>';
 
     html += '<div class="ac-v2-subtitle">Récapitulatif des 5 réponses</div>';
@@ -5375,6 +5552,9 @@ function acNewRenderFinalC6() {
         var cid = cr.id;
         var selected = acNewState.c6Selections[cid];
         var help = expl[cid] || {};
+        if ((!help || Object.keys(help).length === 0) && (cr.definition || cr.bon_exemple || cr.mauvais_exemple)) {
+            help = { definition: cr.definition, bon_exemple: cr.bon_exemple, mauvais_exemple: cr.mauvais_exemple };
+        }
         html += '<div class="ac-v2-c6-row">';
         html += '<div class="ac-v2-c6-left"><strong>' + (cr.label || cid) + '</strong>';
         html += '<button type="button" class="ac-v2-info-btn" onclick="window.acNewToggleC6Help(\'' + cid + '\')">i</button></div>';
@@ -5451,7 +5631,7 @@ function acNewFinishAndShow() {
     var extra = '<div class="ac-v2-final-box">' +
         '<div><strong>Score items :</strong> ' + scores.itemScore + '/25 (pondéré sur 12)</div>' +
         '<div><strong>Score C6 :</strong> ' + scores.c6Score + '/8 (pondéré sur 8)</div>' +
-        '<div class="ac-v2-final-note">🎯 Note finale : ' + scores.note + '/20</div>' +
+        '<div class="ac-v2-final-note">Note finale : ' + scores.note + '/20</div>' +
         '</div>';
     zone.innerHTML = extra + zone.innerHTML;
     document.getElementById('btn-validate').disabled = true;
@@ -5473,10 +5653,26 @@ function renderAnalyseCopieV2(zone, c) {
     acNewState.items.forEach(function() {
         acNewState.responses.push({
             verbe_index: null,
+            verbe_sens_index: null,
             competence_index: null,
             niveau_index: null,
+            niveau_value: null,
             justif_index: null,
             amelioration_index: null,
+            analyse_selected_ids: [],
+            correction_selected_ids: [],
+            step11_ok: false,
+            step12_ok: false,
+            step13_ok: false,
+            step2_ok: false,
+            step3_ok: false,
+            step4_ok: false,
+            step11_feedback: '',
+            step12_feedback: '',
+            step13_feedback: '',
+            step2_feedback: '',
+            step3_feedback: '',
+            step4_feedback: '',
             validated: false
         });
     });
@@ -5509,9 +5705,94 @@ window.acNewPick = function(itemIdx, key, value) {
     acNewRenderItem(itemIdx);
 };
 
+window.acNewPickMulti = function(itemIdx, key, id) {
+    if (!acNewState || acNewState.idx !== itemIdx) return;
+    var arr = acNewState.responses[itemIdx][key] || [];
+    var i = arr.indexOf(id);
+    if (i === -1) arr.push(id);
+    else arr.splice(i, 1);
+    acNewState.responses[itemIdx][key] = arr;
+    acNewRenderItem(itemIdx);
+};
+
+window.acNewValidateStep = function(itemIdx, stepKey) {
+    if (!acNewState || acNewState.idx !== itemIdx) return;
+    var item = acNewState.items[itemIdx] || {};
+    var resp = acNewState.responses[itemIdx] || {};
+    if (!acHasGuidedItemSchema(item)) return;
+
+    var e1 = item.etape1 || {};
+    var e1v = e1.verbe_sens_qcu || {};
+    var e1c = item.etape1_competence || {};
+    var e2 = item.etape2_analyse || {};
+    var e3 = item.etape3_niveau || {};
+    var e4 = item.etape4_corrections || {};
+
+    if (stepKey === 'step11') {
+        var ok11 = resp.verbe_index === (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0);
+        resp.step11_ok = ok11;
+        resp.step11_feedback = ok11
+            ? ('Correct. ' + (e1.verbe_definition || '') + ' ' + (e1.verbe_exemple_concret || ''))
+            : ('Incorrect. ' + (e1.verbe_definition || 'Reprends le verbe d\'action de la consigne.'));
+    }
+    if (stepKey === 'step12') {
+        var ok12 = resp.verbe_sens_index === (typeof e1v.correct === 'number' ? e1v.correct : 0);
+        resp.step12_ok = ok12;
+        resp.step12_feedback = ok12 ? ('Correct. ' + (e1v.explication || '')) : ('Incorrect. ' + (e1v.explication || ''));
+    }
+    if (stepKey === 'step13') {
+        var ok13 = resp.competence_index === (typeof e1c.competence_index === 'number' ? e1c.competence_index : 0);
+        resp.step13_ok = ok13;
+        resp.step13_feedback = ok13
+            ? ('Correct. ' + (e1c.competence_definition || '') + ' ' + (e1c.competence_exemple_concret || '') + ' ' + (e1c.pourquoi_pas_les_autres || ''))
+            : ('Incorrect. ' + (e1c.competence_definition || '') + ' ' + (e1c.pourquoi_pas_les_autres || ''));
+    }
+    if (stepKey === 'step2') {
+        var selected = acNormalizeIdList(resp.analyse_selected_ids);
+        var corrects = acNormalizeIdList(e2.corrects);
+        var ok2 = acSetEq(selected, corrects);
+        resp.step2_ok = ok2;
+        var fb2 = [];
+        selected.forEach(function(id) { if (e2.feedback && e2.feedback[id]) fb2.push(e2.feedback[id]); });
+        if (!ok2 && fb2.length === 0) fb2.push('Revise les elements attendus de la competence.');
+        if (ok2 && fb2.length === 0) fb2.push('Analyse correcte au regard de la competence attendue.');
+        resp.step2_feedback = fb2.join(' ');
+    }
+    if (stepKey === 'step3') {
+        var ok3 = String(resp.niveau_value || '') === String(e3.niveau_attendu || 'insuffisant');
+        resp.step3_ok = ok3;
+        resp.step3_feedback = (ok3 ? 'Correct. ' : 'Incorrect. ') + (e3.pourquoi_ce_niveau || '');
+    }
+    if (stepKey === 'step4') {
+        var selectedC = acNormalizeIdList(resp.correction_selected_ids);
+        var acc = acNormalizeIdList(e4.acceptables);
+        var nonp = acNormalizeIdList(e4.non_pertinentes);
+        var allGood = selectedC.length > 0 && selectedC.every(function(id) { return acc.indexOf(id) !== -1; });
+        resp.step4_ok = allGood;
+        var fb4 = [];
+        selectedC.forEach(function(id) { if (e4.feedback && e4.feedback[id]) fb4.push(e4.feedback[id]); });
+        if (selectedC.some(function(id) { return nonp.indexOf(id) !== -1; })) fb4.push('Certaines propositions cochees sont non pertinentes.');
+        fb4.push(e4.message_pedagogique || 'Plusieurs formulations peuvent etre acceptables si elles respectent la competence.');
+        resp.step4_feedback = fb4.join(' ');
+    }
+    acNewState.responses[itemIdx] = resp;
+    acNewRenderItem(itemIdx);
+};
+
 window.acNewValidateItem = function() {
     var idx = acNewState.idx;
+    var item = acNewState.items[idx] || {};
     var resp = acNewState.responses[idx];
+    if (acHasGuidedItemSchema(item)) {
+        var allOk = resp.step11_ok && resp.step12_ok && resp.step13_ok && resp.step2_ok && resp.step3_ok && resp.step4_ok;
+        if (!allOk) {
+            showToast('Valide correctement les etapes 1.1, 1.2, 1.3, 2, 3 et 4.');
+            return;
+        }
+        resp.validated = true;
+        acNewRenderItem(idx);
+        return;
+    }
     var missing = [];
     ['verbe_index', 'competence_index', 'niveau_index', 'justif_index', 'amelioration_index'].forEach(function(k) {
         if (resp[k] === null || resp[k] === undefined) missing.push(k);
