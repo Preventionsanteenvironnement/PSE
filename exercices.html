@@ -657,8 +657,38 @@
         .ac-expl-c6-item { background: #ede9fe; border-radius: 6px; padding: 6px 10px; font-size: 0.82rem; }
         .ac-expl-c6-item strong { color: #6d28d9; }
         .ac-justification-modele { background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px 12px; margin: 6px 0; font-size: 0.85rem; color: #166534; }
+        .ac-v2-intro { background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; padding: 16px; }
+        .ac-v2-intro h3 { margin: 0 0 8px; color: #1f2937; font-size: 1.2rem; }
+        .ac-v2-intro p { margin: 0 0 10px; color: #475569; }
+        .ac-v2-subtitle { font-weight: 700; color: #334155; margin: 10px 0 6px; }
+        .ac-v2-intro ol { margin: 0 0 8px 18px; color: #475569; }
+        .ac-v2-comp-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .ac-v2-comp-card { border: 1px solid #dbeafe; background: #eff6ff; border-radius: 8px; padding: 8px; font-size: 0.85rem; color: #1e3a8a; }
+        .ac-v2-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .ac-v2-btn-main { border: none; background: #2563eb; color: #fff; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+        .ac-v2-btn-main:hover { background: #1d4ed8; }
+        .ac-v2-corr { margin-top: 12px; border: 1px solid #c7d2fe; background: #eef2ff; border-radius: 10px; padding: 12px; }
+        .ac-v2-corr-title { font-weight: 800; color: #4338ca; margin-bottom: 8px; }
+        .ac-v2-corr-resume { background: #ddd6fe; color: #5b21b6; border-radius: 8px; padding: 8px; margin-bottom: 8px; font-weight: 600; }
+        .ac-v2-corr-block { margin-bottom: 8px; color: #334155; font-size: 0.9rem; }
+        .ac-v2-example { border-left: 3px solid #94a3b8; padding: 6px 8px; margin-top: 4px; border-radius: 0 6px 6px 0; background: #f8fafc; }
+        .ac-v2-example.good { border-left-color: #22c55e; background: #f0fdf4; color: #166534; }
+        .ac-v2-example.bad { border-left-color: #ef4444; background: #fef2f2; color: #991b1b; }
+        .ac-v2-ul { margin: 6px 0 0 18px; }
+        .ac-v2-final-title { font-size: 1.1rem; font-weight: 800; color: #1f2937; margin-bottom: 8px; }
+        .ac-v2-c6-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #fff; }
+        .ac-v2-c6-left { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+        .ac-v2-c6-btns { display: flex; gap: 8px; }
+        .ac-v2-info-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 700; cursor: pointer; }
+        .ac-v2-c6-help { margin-top: 8px; background: #f8fafc; border-radius: 8px; padding: 8px; font-size: 0.85rem; color: #475569; }
+        .ac-v2-score-preview { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin-top: 10px; color: #334155; font-weight: 600; display: grid; gap: 4px; }
+        .ac-v2-final-box { background: #eef2ff; border: 1px solid #c7d2fe; color: #312e81; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .ac-v2-final-note { font-size: 1.1rem; font-weight: 800; margin-top: 4px; }
         @media (max-width: 600px) {
             .ac-expl-c6-feedback { grid-template-columns: 1fr; }
+            .ac-v2-actions { flex-direction: column; }
+            .ac-v2-btn-main, .ac-v2-actions button { width: 100%; }
+            .ac-v2-c6-btns { justify-content: space-between; }
         }
 
         /* === RESPONSIVE === */
@@ -1018,7 +1048,7 @@ const TYPE_LABELS = {
     qcm_classique: 'QCM Classique', qcm_series_multi: 'QCM Serie', quiz_chrono: 'Quiz Chrono', categoriser: 'Categoriser', memory: 'Memory', scenario: 'Scenario', pictogramme: 'Pictogrammes',
     analyse_copie: 'Analyse de copie'
 };
-const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini', 'pictogramme'];
+const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini'];
 const AUTO_COMPETENCES_TYPES = ['analyse_copie'];
 
 function isCompetencesExercice(e) {
@@ -3909,6 +3939,11 @@ function validateExercice() {
 
     // === ANALYSE DE COPIE ===
     else if (type === 'analyse_copie') {
+        if (isAnalyseCopieNewSchema(currentExo.contenu)) {
+            var newRes = acNewFinishAndShow();
+            if (!newRes) return;
+            return;
+        }
         // Save current item first
         acSaveCurrentItem();
         var c = currentExo.contenu;
@@ -4974,6 +5009,7 @@ function escapeShowFinalResults() {
 // ANALYSE DE COPIE — RENDERER
 // =====================================================================
 var acState = { items: [], currentIdx: 0, responses: [], zone: null };
+var acNewState = null;
 
 var AC_VERBES = ['identifier', 'expliquer', 'proposer', 'argumenter', 'communiquer', 'appliquer'];
 var AC_COMPETENCES = ['C2', 'C3', 'C4', 'C5', 'C6'];
@@ -4984,7 +5020,484 @@ var AC_C6_CRITERES = [
     'Mise en forme (presentation)'
 ];
 
+function isAnalyseCopieNewSchema(c) {
+    if (!c || !Array.isArray(c.items) || c.items.length === 0) return false;
+    var item0 = c.items[0] || {};
+    var att = item0.attendus || {};
+    return att.verbe_index !== undefined ||
+           att.competence_index !== undefined ||
+           att.justif_index !== undefined ||
+           Array.isArray(item0.justifs_proposees) ||
+           Array.isArray(item0.ameliorations_proposees) ||
+           !!c.final_c6 ||
+           !!c.intro_eleve;
+}
+
+function acLevelToLabel(level) {
+    var lv = String(level || '').toLowerCase();
+    if (lv === 'non_traite' || lv === '0' || lv === '1') return 'non_traite';
+    if (lv === 'insuffisant' || lv === '2') return 'insuffisant';
+    if (lv === 'acceptable' || lv === '3') return 'acceptable';
+    if (lv === 'maitrise' || lv === 'maitrisee' || lv === '4') return 'maitrise';
+    return 'insuffisant';
+}
+
+function acGetAttenduIndex(options, attenduIndex, attenduValue, fallback) {
+    if (typeof attenduIndex === 'number' && attenduIndex >= 0 && attenduIndex < (options || []).length) {
+        return attenduIndex;
+    }
+    if (attenduValue !== undefined && attenduValue !== null) {
+        var expectedNorm = norm(String(attenduValue));
+        for (var i = 0; i < (options || []).length; i++) {
+            if (norm(String(options[i])) === expectedNorm) return i;
+        }
+    }
+    return fallback || 0;
+}
+
+function acGetExpectedNiveau(item) {
+    var niveaux = item.niveaux_proposees || ['non_traite', 'insuffisant', 'acceptable', 'maitrise'];
+    var att = item.attendus || {};
+    var niveauLabel = acLevelToLabel(att.niveau);
+    return acGetAttenduIndex(niveaux, att.niveau_index, niveauLabel, 0);
+}
+
+function acNewCanScoreC6() {
+    return !!(acNewState && acNewState.finalC6 && acNewState.finalC6.actif);
+}
+
+function acNewComputeItemScore(item, resp) {
+    var attendus = item.attendus || {};
+    var score = 0;
+    var verbes = item.verbes_proposes || ['identifier', 'expliquer', 'proposer', 'argumenter'];
+    var comps = item.competences_proposees || ['C2', 'C3', 'C4', 'C5'];
+    var nivs = item.niveaux_proposees || ['non_traite', 'insuffisant', 'acceptable', 'maitrise'];
+    var justifs = item.justifs_proposees || [];
+    var amels = item.ameliorations_proposees || [];
+    if (!Array.isArray(justifs) || justifs.length === 0) {
+        justifs = [attendus.justification_modele || 'Justification attendue', 'Justification partielle', 'Justification hors sujet'];
+    }
+    if (!Array.isArray(amels) || amels.length === 0) {
+        amels = [attendus.reponse_amelioree_modele || 'Réponse améliorée attendue', 'Amélioration vague', 'Amélioration inadaptée'];
+    }
+
+    var verbeIdx = acGetAttenduIndex(verbes, attendus.verbe_index, attendus.verbe, 0);
+    var compIdx = acGetAttenduIndex(comps, attendus.competence_index, attendus.competence, 0);
+    var nivIdx = acGetExpectedNiveau(item);
+    var justIdx = acGetAttenduIndex(justifs, attendus.justif_index, attendus.justification_modele, 0);
+    var amIdx = acGetAttenduIndex(amels, attendus.amelioration_index, attendus.reponse_amelioree_modele, 0);
+
+    if (resp.verbe_index === verbeIdx) score++;
+    if (resp.competence_index === compIdx) score++;
+    if (resp.niveau_index === acGetAttenduIndex(nivs, nivIdx, null, 0)) score++;
+    if (resp.justif_index === justIdx) score++;
+    if (resp.amelioration_index === amIdx) score++;
+    return score;
+}
+
+function acNewComputeScores() {
+    var items = acNewState.items || [];
+    var itemScore = 0;
+    for (var i = 0; i < items.length; i++) {
+        itemScore += acNewComputeItemScore(items[i], acNewState.responses[i] || {});
+    }
+
+    var c6Score = 0;
+    if (acNewCanScoreC6()) {
+        Object.keys(acNewState.c6Selections || {}).forEach(function(k) {
+            c6Score += parseInt(acNewState.c6Selections[k], 10) || 0;
+        });
+    }
+
+    var note;
+    if (acNewCanScoreC6()) {
+        note = Math.round(((itemScore / 25) * 12 + (c6Score / 8) * 8) * 10) / 10;
+    } else {
+        note = Math.round((itemScore / 25) * 20 * 10) / 10;
+    }
+    return { itemScore: itemScore, c6Score: c6Score, note: note };
+}
+
+function acNewRenderCorrectionPanel(item, resp) {
+    var corr = item.correction || {};
+    var exp = item.explications || {};
+    var att = item.attendus || {};
+
+    var resume = corr.resume || exp.resume || 'Correction de cet item';
+    var verbeDef = corr.verbe_definition || exp.attendu_pedagogique || '';
+    var verbeEx = corr.verbe_exemple || exp.exemple_reponse_amelioree || '';
+    var verbeBad = corr.verbe_exemple_mauvais || '';
+    var compDef = corr.competence_definition || '';
+    var compEx = corr.competence_exemple || '';
+    var compBad = corr.competence_exemple_mauvais || '';
+    var why = corr.pourquoi_ce_niveau || exp.pourquoi_valide_ou_non || '';
+    var justModele = att.justification_modele || '';
+    var repModele = att.reponse_amelioree_modele || exp.exemple_reponse_amelioree || '';
+    var errs = corr.erreurs_frequentes || exp.erreurs_frequentes || [];
+
+    var html = '<div class="ac-v2-corr">';
+    html += '<div class="ac-v2-corr-title">✅ Correction complète</div>';
+    html += '<div class="ac-v2-corr-resume">💬 ' + resume + '</div>';
+
+    html += '<div class="ac-v2-corr-block"><strong>1) Pourquoi ce verbe</strong>';
+    if (verbeDef) html += '<div>' + verbeDef + '</div>';
+    if (verbeEx) html += '<div class="ac-v2-example good">Exemple concret : ' + verbeEx + '</div>';
+    if (verbeBad) html += '<div class="ac-v2-example bad">Exemple à éviter : ' + verbeBad + '</div>';
+    html += '</div>';
+
+    html += '<div class="ac-v2-corr-block"><strong>2) Pourquoi cette compétence</strong>';
+    if (compDef) html += '<div>' + compDef + '</div>';
+    if (compEx) html += '<div class="ac-v2-example good">Exemple concret : ' + compEx + '</div>';
+    if (compBad) html += '<div class="ac-v2-example bad">Exemple à éviter : ' + compBad + '</div>';
+    html += '</div>';
+
+    if (why) {
+        html += '<div class="ac-v2-corr-block"><strong>3) Pourquoi ce niveau</strong><div>' + why + '</div></div>';
+    }
+    if (justModele) {
+        html += '<div class="ac-v2-corr-block"><strong>4) Modèle de justification</strong><div>' + justModele + '</div></div>';
+    }
+    if (repModele) {
+        html += '<div class="ac-v2-corr-block"><strong>5) Modèle de réponse améliorée</strong><div>' + repModele + '</div></div>';
+    }
+    if (Array.isArray(errs) && errs.length > 0) {
+        html += '<div class="ac-v2-corr-block"><strong>6) Erreurs fréquentes</strong><ul class="ac-v2-ul">';
+        errs.slice(0, 3).forEach(function(e) { html += '<li>' + e + '</li>'; });
+        html += '</ul></div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+function acNewRenderIntro() {
+    var intro = acNewState.contenu.intro_eleve || {};
+    var steps = intro.etapes || [
+        'Repérer le verbe d’action',
+        'Trouver la compétence dominante',
+        'Choisir un niveau',
+        'Choisir une justification',
+        'Choisir la meilleure amélioration',
+        'Évaluer C6 à la fin et obtenir une note /20'
+    ];
+    var rappel = intro.rappel_competences || [];
+    var html = '<div class="ac-v2-intro">';
+    html += '<h3>' + (intro.titre || 'Corrige une copie de Bac Pro PSE') + '</h3>';
+    html += '<p>' + (intro.accroche || 'Tu joues le correcteur. Tu vas corriger 5 réponses d’examen.') + '</p>';
+    html += '<div class="ac-v2-subtitle">Ce que tu vas faire</div><ol>';
+    steps.forEach(function(s) { html += '<li>' + s + '</li>'; });
+    html += '</ol>';
+    if (rappel.length > 0) {
+        html += '<div class="ac-v2-subtitle">Rappel compétences</div><div class="ac-v2-comp-grid">';
+        rappel.forEach(function(c) {
+            html += '<div class="ac-v2-comp-card"><strong>' + (c.id || '') + ' — ' + (c.titre || '') + '</strong>';
+            if (c.exemple) html += '<div>' + c.exemple + '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+    html += '<button class="ac-v2-btn-main" onclick="window.acNewStartItems()">Commencer</button>';
+    html += '</div>';
+    document.getElementById('ac-item-zone').innerHTML = html;
+    document.getElementById('ac-progress-text').textContent = 'Introduction';
+}
+
+function acNewRenderItem(idx) {
+    var item = acNewState.items[idx];
+    var resp = acNewState.responses[idx] || {};
+    if (!item) return;
+
+    var verbes = item.verbes_proposes || ['identifier', 'expliquer', 'proposer', 'argumenter'];
+    var comps = item.competences_proposees || ['C2', 'C3', 'C4', 'C5'];
+    var nivs = item.niveaux_proposees || ['non_traite', 'insuffisant', 'acceptable', 'maitrise'];
+    var justifs = item.justifs_proposees || [];
+    var amels = item.ameliorations_proposees || [];
+    var att = item.attendus || {};
+    if (!Array.isArray(justifs) || justifs.length === 0) {
+        justifs = [att.justification_modele || 'Justification attendue', 'Justification partielle', 'Justification hors sujet'];
+    }
+    if (!Array.isArray(amels) || amels.length === 0) {
+        amels = [att.reponse_amelioree_modele || 'Réponse améliorée attendue', 'Amélioration vague', 'Amélioration inadaptée'];
+    }
+
+    var html = '<div class="ac-item">';
+    if (item.contexte) html += '<div class="ac-contexte">' + item.contexte + '</div>';
+    html += '<div class="ac-exam-question"><strong>📋 Consigne d’examen</strong>' + (item.question_examen || '') + '</div>';
+    html += '<div class="ac-response-eleve"><strong>✏️ Réponse de l’élève fictif</strong>' + (item.reponse_eleve || '') + '</div>';
+
+    function qcu(title, key, choices, labels) {
+        html += '<div class="ac-section"><div class="ac-section-title">' + title + '</div><div class="ac-qcu">';
+        choices.forEach(function(ch, i) {
+            var selected = resp[key] === i ? ' selected' : '';
+            var txt = labels ? (labels[ch] || ch) : ch;
+            html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'' + key + '\',' + i + ')">' + txt + '</div>';
+        });
+        html += '</div></div>';
+    }
+
+    qcu('1. Verbe d’action principal', 'verbe_index', verbes);
+    qcu('2. Compétence dominante', 'competence_index', comps, { C2: 'C2 — Analyser', C3: 'C3 — Expliquer', C4: 'C4 — Proposer', C5: 'C5 — Argumenter' });
+    qcu('3. Niveau de maîtrise', 'niveau_index', nivs, { non_traite: 'Non traité', insuffisant: 'Insuffisant', acceptable: 'Acceptable', maitrise: 'Maîtrisé' });
+    qcu('4. Justification', 'justif_index', justifs);
+    qcu('5. Amélioration', 'amelioration_index', amels);
+
+    html += '<div class="ac-v2-actions">';
+    html += '<button class="ac-btn-prev" onclick="window.acNewPrev()" ' + (idx === 0 ? 'disabled' : '') + '>← Précédent</button>';
+    html += '<button class="ac-v2-btn-main" onclick="window.acNewValidateItem()">Valider l’item</button>';
+    html += '<button class="ac-btn-next" onclick="window.acNewNext()">' + (idx === acNewState.items.length - 1 ? 'Étape finale →' : 'Suivant →') + '</button>';
+    html += '</div>';
+
+    if (resp.validated) {
+        html += acNewRenderCorrectionPanel(item, resp);
+    }
+    html += '</div>';
+
+    document.getElementById('ac-item-zone').innerHTML = html;
+    document.getElementById('ac-progress-text').textContent = 'Item ' + (idx + 1) + ' / ' + acNewState.items.length;
+    for (var d = 0; d < acNewState.items.length; d++) {
+        var dot = document.getElementById('ac-dot-' + d);
+        if (!dot) continue;
+        var cls = 'ac-progress-dot';
+        if (d === idx) cls += ' active';
+        else if ((acNewState.responses[d] || {}).validated) cls += ' done';
+        dot.className = cls;
+    }
+}
+
+function acNewRenderFinalC6() {
+    var finalC6 = acNewState.finalC6;
+    var criteres = finalC6.criteres || [];
+    var expl = finalC6.explications || {};
+    var scores = acNewComputeScores();
+    var html = '<div class="ac-item">';
+    html += '<div class="ac-v2-final-title">Évalue la copie entière en C6 puis donne la note finale</div>';
+    html += '<div class="ac-contexte">' + (finalC6.consigne || 'C6 s’évalue sur l’ensemble de la copie : clarté, syntaxe, vocabulaire, organisation.') + '</div>';
+
+    html += '<div class="ac-v2-subtitle">Récapitulatif des 5 réponses</div>';
+    (acNewState.items || []).forEach(function(it, i) {
+        html += '<details class="ac-explications"><summary>Item ' + (i + 1) + ' — Voir la réponse</summary>';
+        html += '<div class="ac-expl-body"><div class="ac-exam-question"><strong>Consigne</strong>' + (it.question_examen || '') + '</div>';
+        html += '<div class="ac-response-eleve"><strong>Réponse</strong>' + (it.reponse_eleve || '') + '</div></div></details>';
+    });
+
+    html += '<div class="ac-v2-subtitle">Grille C6 (0 / 1 / 2)</div>';
+    criteres.forEach(function(cr) {
+        var cid = cr.id;
+        var selected = acNewState.c6Selections[cid];
+        var help = expl[cid] || {};
+        html += '<div class="ac-v2-c6-row">';
+        html += '<div class="ac-v2-c6-left"><strong>' + (cr.label || cid) + '</strong>';
+        html += '<button type="button" class="ac-v2-info-btn" onclick="window.acNewToggleC6Help(\'' + cid + '\')">i</button></div>';
+        html += '<div class="ac-v2-c6-btns">';
+        [0, 1, 2].forEach(function(v) {
+            html += '<button type="button" class="ac-c6-btn' + (selected === v ? ' active' : '') + '" onclick="window.acNewPickC6(\'' + cid + '\',' + v + ')">' + v + '</button>';
+        });
+        html += '</div>';
+        html += '<div class="ac-v2-c6-help" id="ac-v2-help-' + cid + '" style="display:none;">';
+        if (help.definition) html += '<div><strong>Définition :</strong> ' + help.definition + '</div>';
+        if (help.bon_exemple) html += '<div class="ac-v2-example good"><strong>Bon exemple :</strong> ' + help.bon_exemple + '</div>';
+        if (help.mauvais_exemple) html += '<div class="ac-v2-example bad"><strong>Mauvais exemple :</strong> ' + help.mauvais_exemple + '</div>';
+        html += '</div></div>';
+    });
+
+    html += '<div class="ac-v2-score-preview">';
+    html += '<div>Score items : <strong>' + scores.itemScore + '/25</strong></div>';
+    html += '<div>Score C6 : <strong>' + scores.c6Score + '/8</strong></div>';
+    html += '<div>Note finale : <strong>' + scores.note + '/20</strong></div>';
+    html += '</div>';
+
+    html += '<div class="ac-v2-actions">';
+    html += '<button class="ac-btn-prev" onclick="window.acNewBackToLastItem()">← Revenir aux items</button>';
+    html += '<button class="ac-v2-btn-main" onclick="window.acNewFinish()">Valider l’évaluation finale</button>';
+    html += '</div></div>';
+    document.getElementById('ac-item-zone').innerHTML = html;
+    document.getElementById('ac-progress-text').textContent = 'Final C6';
+}
+
+function acNewAllItemsValidated() {
+    return (acNewState.responses || []).every(function(r) { return !!r.validated; });
+}
+
+function acNewAllC6Selected() {
+    if (!acNewCanScoreC6()) return true;
+    var criteres = (acNewState.finalC6.criteres || []).map(function(c) { return c.id; });
+    return criteres.every(function(id) { return acNewState.c6Selections[id] !== undefined; });
+}
+
+function acNewBuildDetails(scores) {
+    var details = [];
+    acNewState.items.forEach(function(item, idx) {
+        var resp = acNewState.responses[idx] || {};
+        var itemScore = acNewComputeItemScore(item, resp);
+        details.push({
+            ok: itemScore >= 3,
+            label: 'Item ' + (idx + 1),
+            detail: itemScore + '/5'
+        });
+    });
+    details.unshift({
+        ok: true,
+        label: 'Note finale /20',
+        detail: 'Items: ' + scores.itemScore + '/25 | C6: ' + scores.c6Score + '/8 | Note: ' + scores.note + '/20'
+    });
+    return details;
+}
+
+function acNewFinishAndShow() {
+    if (!acNewAllItemsValidated()) {
+        showToast('Valide tous les items avant de terminer.');
+        return null;
+    }
+    if (!acNewAllC6Selected()) {
+        showToast('Renseigne tous les critères C6 avant de terminer.');
+        return null;
+    }
+    var scores = acNewComputeScores();
+    var details = acNewBuildDetails(scores);
+    var total = acNewCanScoreC6() ? 33 : 25;
+    var correct = scores.itemScore + scores.c6Score;
+    showResults(correct, total, details);
+    var zone = document.getElementById('zone-results');
+    var extra = '<div class="ac-v2-final-box">' +
+        '<div><strong>Score items :</strong> ' + scores.itemScore + '/25 (pondéré sur 12)</div>' +
+        '<div><strong>Score C6 :</strong> ' + scores.c6Score + '/8 (pondéré sur 8)</div>' +
+        '<div class="ac-v2-final-note">🎯 Note finale : ' + scores.note + '/20</div>' +
+        '</div>';
+    zone.innerHTML = extra + zone.innerHTML;
+    document.getElementById('btn-validate').disabled = true;
+    corrected = true;
+    return { correct: correct, total: total, details: details };
+}
+
+function renderAnalyseCopieV2(zone, c) {
+    acNewState = {
+        contenu: c || {},
+        items: (c.items || []).slice(0, 5),
+        idx: 0,
+        stage: (c.intro_eleve ? 'intro' : 'items'),
+        responses: [],
+        finalC6: c.final_c6 || { actif: false },
+        c6Selections: {},
+        zone: zone
+    };
+    acNewState.items.forEach(function() {
+        acNewState.responses.push({
+            verbe_index: null,
+            competence_index: null,
+            niveau_index: null,
+            justif_index: null,
+            amelioration_index: null,
+            validated: false
+        });
+    });
+
+    var html = '';
+    if (c.contexte) html += '<div class="ac-contexte">' + c.contexte + '</div>';
+    if (c.consigne) html += '<div style="font-weight:700; color:#334155; margin-bottom:16px; text-align:center;">' + c.consigne + '</div>';
+    html += '<div class="ac-progress" id="ac-progress-text">Préparation</div>';
+    html += '<div class="ac-progress-bar" id="ac-progress-bar">';
+    for (var i = 0; i < acNewState.items.length; i++) {
+        html += '<div class="ac-progress-dot' + (i === 0 ? ' active' : '') + '" id="ac-dot-' + i + '"></div>';
+    }
+    html += '</div><div id="ac-item-zone"></div>';
+    zone.innerHTML = html;
+
+    document.getElementById('btn-validate').style.display = 'none';
+    if (acNewState.stage === 'intro') acNewRenderIntro();
+    else acNewRenderItem(0);
+}
+
+window.acNewStartItems = function() {
+    acNewState.stage = 'items';
+    acNewState.idx = 0;
+    acNewRenderItem(0);
+};
+
+window.acNewPick = function(itemIdx, key, value) {
+    if (!acNewState || acNewState.idx !== itemIdx) return;
+    acNewState.responses[itemIdx][key] = value;
+    acNewRenderItem(itemIdx);
+};
+
+window.acNewValidateItem = function() {
+    var idx = acNewState.idx;
+    var resp = acNewState.responses[idx];
+    var missing = [];
+    ['verbe_index', 'competence_index', 'niveau_index', 'justif_index', 'amelioration_index'].forEach(function(k) {
+        if (resp[k] === null || resp[k] === undefined) missing.push(k);
+    });
+    if (missing.length > 0) {
+        showToast('Choisis les 5 étapes avant de valider cet item.');
+        return;
+    }
+    resp.validated = true;
+    acNewRenderItem(idx);
+};
+
+window.acNewNext = function() {
+    if (!acNewState.responses[acNewState.idx].validated) {
+        showToast('Valide d’abord cet item.');
+        return;
+    }
+    if (acNewState.idx < acNewState.items.length - 1) {
+        acNewState.idx++;
+        acNewRenderItem(acNewState.idx);
+        acNewState.zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
+    if (acNewCanScoreC6()) {
+        if (!acNewAllItemsValidated()) {
+            showToast('Valide les 5 items avant la grille C6.');
+            return;
+        }
+        acNewState.stage = 'final_c6';
+        acNewRenderFinalC6();
+        return;
+    }
+    acNewFinishAndShow();
+};
+
+window.acNewPrev = function() {
+    if (acNewState.idx > 0) {
+        acNewState.idx--;
+        acNewRenderItem(acNewState.idx);
+        acNewState.zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+window.acNewBackToLastItem = function() {
+    acNewState.stage = 'items';
+    acNewState.idx = acNewState.items.length - 1;
+    acNewRenderItem(acNewState.idx);
+};
+
+window.acNewPickC6 = function(critId, val) {
+    acNewState.c6Selections[critId] = val;
+    acNewRenderFinalC6();
+};
+
+window.acNewToggleC6Help = function(critId) {
+    var el = document.getElementById('ac-v2-help-' + critId);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+
+window.acNewFinish = function() {
+    if (!acNewAllItemsValidated()) {
+        showToast('Valide tous les items avant de finir.');
+        return;
+    }
+    if (!acNewAllC6Selected()) {
+        showToast('Attribue une note 0/1/2 pour chaque critère C6.');
+        return;
+    }
+    acNewFinishAndShow();
+};
+
 function renderAnalyseCopie(zone, c) {
+    if (isAnalyseCopieNewSchema(c)) {
+        renderAnalyseCopieV2(zone, c);
+        return;
+    }
     acState.items = c.items || [];
     acState.currentIdx = 0;
     acState.responses = [];
