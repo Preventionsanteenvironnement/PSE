@@ -350,6 +350,14 @@
         .swipe-feedback {
             font-weight: 700; font-size: 1rem; margin-bottom: 12px; min-height: 24px;
         }
+        .swipe-expl {
+            margin-top: 8px; font-weight: 500; font-size: 0.92rem; color: #475569; line-height: 1.45;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;
+            text-align: left;
+        }
+        .swipe-next-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+        .swipe-btn.swipe-next { background: #dbeafe; color: #1d4ed8; }
+        .swipe-btn.swipe-next:hover { background: #bfdbfe; }
         .swipe-progress { font-size: 0.85rem; color: #94a3b8; }
 
         /* --- QCM Image --- */
@@ -1842,7 +1850,7 @@ var swipeState = {};
 
 function renderSwipeVF(zone, c) {
     const affs = c.affirmations || [];
-    swipeState = { affirmations: affs, current: 0, results: [] };
+    swipeState = { affirmations: affs, current: 0, results: [], answered: false };
     zone.innerHTML = '<div class="swipe-zone" id="swipe-zone"></div>';
     renderSwipeCard();
 }
@@ -1851,6 +1859,7 @@ function renderSwipeCard() {
     const z = document.getElementById('swipe-zone');
     const s = swipeState;
     if (s.current >= s.affirmations.length) { finishSwipe(); return; }
+    s.answered = false;
     const aff = s.affirmations[s.current];
     z.innerHTML = '<div class="swipe-progress">' + (s.current + 1) + ' / ' + s.affirmations.length + '</div>' +
         '<div class="swipe-card" id="swipe-card">' + aff.texte + '</div>' +
@@ -1858,26 +1867,46 @@ function renderSwipeCard() {
         '<div class="swipe-btns">' +
         '<button class="swipe-btn btn-faux" onclick="swipeAnswer(false)">Faux</button>' +
         '<button class="swipe-btn btn-vrai" onclick="swipeAnswer(true)">Vrai</button>' +
+        '</div>' +
+        '<div class="swipe-next-wrap" id="swipe-next-wrap" style="display:none;">' +
+        '<button class="swipe-btn swipe-next" onclick="swipeNext()">Suivant</button>' +
         '</div>';
 }
 
 function swipeAnswer(answer) {
     const s = swipeState;
+    if (s.answered) return;
     const aff = s.affirmations[s.current];
     // Normaliser reponse : string → boolean (certaines IA generent "vrai"/"faux" au lieu de true/false)
     var expected = aff.reponse;
     if (typeof expected === 'string') expected = (expected.toLowerCase() === 'true' || expected.toLowerCase() === 'vrai' || expected.toLowerCase() === 'oui');
     const ok = answer === expected;
+    s.answered = true;
     s.results.push({ ok, texte: aff.texte, expected: expected, given: answer, explication: aff.explication });
 
-    const card = document.getElementById('swipe-card');
-    card.classList.add(answer ? 'slide-right' : 'slide-left');
     const fb = document.getElementById('swipe-feedback');
-    fb.innerHTML = ok
+    const expl = (aff.explication && String(aff.explication).trim())
+        ? aff.explication
+        : ('La bonne reponse etait : ' + (expected ? 'Vrai' : 'Faux'));
+    fb.innerHTML = (ok
         ? '<span style="color:#22c55e;">✓ Correct !</span>'
-        : '<span style="color:#ef4444;">✗ ' + (aff.explication || ('La reponse etait ' + (aff.reponse ? 'Vrai' : 'Faux'))) + '</span>';
+        : '<span style="color:#ef4444;">✗ Incorrect.</span>')
+        + '<div class="swipe-expl">💡 ' + expl + '</div>';
 
-    setTimeout(() => { s.current++; renderSwipeCard(); }, 1500);
+    document.querySelectorAll('.swipe-btns .swipe-btn').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.55';
+        btn.style.cursor = 'not-allowed';
+    });
+    const nextWrap = document.getElementById('swipe-next-wrap');
+    if (nextWrap) nextWrap.style.display = '';
+}
+
+function swipeNext() {
+    const s = swipeState;
+    if (!s.answered) return;
+    s.current++;
+    renderSwipeCard();
 }
 
 function finishSwipe() {
@@ -1886,7 +1915,7 @@ function finishSwipe() {
     showResults(correct, s.results.length, s.results.map(r => ({
         ok: r.ok,
         label: r.texte,
-        detail: r.ok ? 'Correct' : (r.explication || 'Reponse : ' + (r.expected ? 'Vrai' : 'Faux'))
+        detail: r.explication || (r.ok ? 'Correct' : ('Reponse : ' + (r.expected ? 'Vrai' : 'Faux')))
     })));
 }
 
