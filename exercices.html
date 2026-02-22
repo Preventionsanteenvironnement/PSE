@@ -3298,6 +3298,10 @@ function validateExercice() {
         document.querySelectorAll('.ec-question').forEach(qBlock => {
             const qi = qBlock.dataset.qi;
             const qType = qBlock.dataset.type;
+            const qData = (currentExo && currentExo.contenu && Array.isArray(currentExo.contenu.questions))
+                ? currentExo.contenu.questions[parseInt(qi, 10)]
+                : null;
+            const qExplication = (qData && qData.explication) ? String(qData.explication) : '';
             total++;
             if (qType === 'qcm') {
                 const correctIdx = parseInt(qBlock.querySelector('.ec-qcm-choice').dataset.correct);
@@ -3310,7 +3314,12 @@ function validateExercice() {
                     if (ci === correctIdx) ch.classList.add('correct');
                     else if (ch.classList.contains('selected') && !ok) ch.classList.add('wrong');
                 });
-                details.push({ ok, label: qBlock.querySelector('.ec-q-text').textContent, detail: ok ? 'Correct' : '' });
+                details.push({
+                    ok,
+                    label: qBlock.querySelector('.ec-q-text').textContent,
+                    detail: ok ? 'Correct' : '',
+                    explication: qExplication
+                });
             } else {
                 // Texte libre — show expected
                 const expEl = document.getElementById('ec-exp-' + qi);
@@ -3318,7 +3327,12 @@ function validateExercice() {
                 const textarea = qBlock.querySelector('.ec-text-input');
                 const hasAnswer = textarea && textarea.value.trim().length > 0;
                 if (hasAnswer) correct++;
-                details.push({ ok: hasAnswer, label: qBlock.querySelector('.ec-q-text').textContent, detail: hasAnswer ? 'Reponse fournie (verifiez avec la correction)' : 'Aucune reponse' });
+                details.push({
+                    ok: hasAnswer,
+                    label: qBlock.querySelector('.ec-q-text').textContent,
+                    detail: hasAnswer ? 'Reponse fournie (verifiez avec la correction)' : 'Aucune reponse',
+                    explication: qExplication
+                });
             }
         });
     }
