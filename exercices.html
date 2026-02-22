@@ -165,6 +165,14 @@
         .tt-texte .tt-input:focus { border-bottom-color: #2563eb; background: #dbeafe; }
         .tt-texte .tt-input.correct { border-bottom-color: #22c55e; background: #f0fdf4; color: #166534; }
         .tt-texte .tt-input.wrong { border-bottom-color: #ef4444; background: #fef2f2; color: #991b1b; }
+        .tt-texte .tt-select {
+            display: inline-block; border: 2px solid #3b82f6; background: #eff6ff;
+            padding: 2px 8px; font-size: 1rem; font-family: inherit; color: #1e293b;
+            min-width: 120px; outline: none; border-radius: 8px; text-align: center; height: 34px;
+        }
+        .tt-texte .tt-select:focus { border-color: #2563eb; background: #dbeafe; }
+        .tt-texte .tt-select.correct { border-color: #22c55e; background: #f0fdf4; color: #166534; }
+        .tt-texte .tt-select.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
         .tt-hint { font-size: 0.75rem; color: #94a3b8; font-style: italic; }
 
         /* --- Relier --- */
@@ -1365,14 +1373,30 @@ function norm(t) {
 function renderTexteTrous(zone, c) {
     const texte = c.texte || '';
     const parts = texte.split(/(\{\{[^}]+\}\})/g);
+    const mode = c.mode || 'input';
+    const answers = [];
+    parts.forEach(part => {
+        const m = part.match(/^\{\{(.+)\}\}$/);
+        if (m) answers.push(m[1]);
+    });
+    const optionPool = [...new Set(answers)];
     let idx = 0;
     let html = '<div class="tt-texte">';
     parts.forEach(part => {
         const m = part.match(/^\{\{(.+)\}\}$/);
         if (m) {
             const answer = m[1];
-            const hint = c.indice ? ' <span class="tt-hint">(' + answer.split('').sort(() => Math.random() - 0.5).join('') + ')</span>' : '';
-            html += '<input type="text" class="tt-input" data-answer="' + answer.replace(/"/g, '&quot;') + '" data-idx="' + idx + '" autocomplete="off">' + hint;
+            if (mode === 'dropdown') {
+                const shuffled = [...optionPool].sort(() => Math.random() - 0.5);
+                let opts = '<option value="">...</option>';
+                shuffled.forEach(opt => {
+                    opts += '<option value="' + opt.replace(/"/g, '&quot;') + '">' + opt + '</option>';
+                });
+                html += '<select class="tt-select" data-answer="' + answer.replace(/"/g, '&quot;') + '" data-idx="' + idx + '">' + opts + '</select>';
+            } else {
+                const hint = c.indice ? ' <span class="tt-hint">(' + answer.split('').sort(() => Math.random() - 0.5).join('') + ')</span>' : '';
+                html += '<input type="text" class="tt-input" data-answer="' + answer.replace(/"/g, '&quot;') + '" data-idx="' + idx + '" autocomplete="off">' + hint;
+            }
             idx++;
         } else {
             html += part;
@@ -2932,14 +2956,15 @@ function validateExercice() {
     let correct = 0, total = 0, details = [];
 
     if (type === 'texte_trous') {
-        document.querySelectorAll('.tt-input').forEach(inp => {
+        document.querySelectorAll('.tt-input, .tt-select').forEach(inp => {
             const expected = inp.dataset.answer;
-            const given = inp.value.trim();
+            const given = (inp.value || '').trim();
             total++;
             const ok = norm(given) === norm(expected);
             if (ok) { correct++; inp.classList.add('correct'); }
             else { inp.classList.add('wrong'); }
-            inp.readOnly = true;
+            if (inp.tagName === 'SELECT') inp.disabled = true;
+            else inp.readOnly = true;
             details.push({ ok, label: expected, detail: ok ? 'Correct' : 'Reponse donnee : "' + given + '"' });
         });
     }
