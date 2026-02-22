@@ -241,15 +241,20 @@
         }
         .ordre-item .ordre-num { color: #94a3b8; font-weight: 800; min-width: 28px; }
         .ordre-item .ordre-text { flex: 1; }
-        .ordre-item .ordre-arrows { display: flex; gap: 4px; }
-        .ordre-item .ordre-arrows button {
-            width: 34px; height: 34px; border: 1px solid #e2e8f0; border-radius: 8px;
-            background: white; cursor: pointer; font-size: 1rem; display: flex;
-            align-items: center; justify-content: center; color: #64748b; transition: 0.2s;
+        .ordre-item .ordre-select {
+            width: 86px; height: 48px; border: 3px solid #3b82f6; border-radius: 14px;
+            background: #fff; color: #0f172a; font-size: 1.8rem; font-weight: 800;
+            line-height: 1; padding: 0 8px; margin-right: 6px;
         }
-        .ordre-item .ordre-arrows button:hover { background: #eff6ff; color: #3b82f6; border-color: #3b82f6; }
+        .ordre-item .ordre-select:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
         .ordre-item.correct { border-color: #22c55e; background: #f0fdf4; }
         .ordre-item.wrong { border-color: #ef4444; background: #fef2f2; }
+        .ordre-actions { margin-top: 10px; }
+        .ordre-remelanger {
+            border: 1px solid #cbd5e1; background: #f8fafc; color: #475569;
+            border-radius: 12px; padding: 10px 16px; font-weight: 700; font-size: 1rem; cursor: pointer;
+        }
+        .ordre-remelanger:hover { border-color: #93c5fd; color: #2563eb; background: #eff6ff; }
 
         /* --- Intrus --- */
         .intrus-serie { margin-bottom: 20px; }
@@ -1468,35 +1473,35 @@ function removeRelierPair(i) {
 // --- 3. ORDRE ---
 function renderOrdre(zone, c) {
     const items = [...(c.items || [])];
-    const shuffled = items.map((text, correctIdx) => ({ text, correctIdx }));
-    shuffled.sort(() => Math.random() - 0.5);
-    zone.dataset.correctOrder = JSON.stringify(items);
-
+    const shuffled = items.map((text, correctIdx) => ({ text, correctIdx })).sort(() => Math.random() - 0.5);
+    const n = shuffled.length;
     let html = '<div class="ordre-list" id="ordre-list">';
     shuffled.forEach((item, i) => {
+        let opts = '';
+        for (let k = 1; k <= n; k++) {
+            opts += '<option value="' + k + '"' + (k === (i + 1) ? ' selected' : '') + '>' + k + '</option>';
+        }
         html += '<div class="ordre-item" data-correct="' + item.correctIdx + '">' +
-            '<span class="ordre-num">' + (i + 1) + '.</span>' +
+            '<select class="ordre-select" onchange="ordreSelectChanged(this)">' + opts + '</select>' +
             '<span class="ordre-text">' + item.text + '</span>' +
-            '<div class="ordre-arrows">' +
-            '<button onclick="ordreMove(this,-1)">▲</button>' +
-            '<button onclick="ordreMove(this,1)">▼</button>' +
-            '</div></div>';
+            '</div>';
     });
     html += '</div>';
+    html += '<div class="ordre-actions"><button type="button" class="ordre-remelanger" onclick="ordreRemelanger()">🔄 Remelanger</button></div>';
     zone.innerHTML = html;
 }
 
-function ordreMove(btn, dir) {
+function ordreSelectChanged(sel) {
     if (corrected) return;
-    const item = btn.closest('.ordre-item');
-    const list = item.parentElement;
-    const items = [...list.children];
-    const idx = items.indexOf(item);
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= items.length) return;
-    if (dir === -1) list.insertBefore(item, items[newIdx]);
-    else list.insertBefore(items[newIdx], item);
-    [...list.children].forEach((it, i) => { it.querySelector('.ordre-num').textContent = (i + 1) + '.'; });
+    const row = sel.closest('.ordre-item');
+    if (!row) return;
+    row.style.borderColor = '#3b82f6';
+}
+
+function ordreRemelanger() {
+    if (corrected || !currentExo || !currentExo.contenu) return;
+    const zone = document.getElementById('game-zone');
+    renderOrdre(zone, currentExo.contenu);
 }
 
 // --- 4. INTRUS ---
@@ -2956,15 +2961,19 @@ function validateExercice() {
         const list = document.getElementById('ordre-list');
         const items = [...list.children];
         total = items.length;
-        items.forEach((item, i) => {
+        items.forEach((item) => {
             const correctIdx = parseInt(item.dataset.correct);
-            const ok = correctIdx === i;
+            const sel = item.querySelector('.ordre-select');
+            const selectedPos = sel ? (parseInt(sel.value, 10) - 1) : -1;
+            const ok = correctIdx === selectedPos;
             if (ok) { correct++; item.classList.add('correct'); }
             else item.classList.add('wrong');
             details.push({ ok, label: item.querySelector('.ordre-text').textContent, detail: ok ? 'Bonne position' : 'Position attendue : ' + (correctIdx + 1) });
         });
-        // Disable arrows
-        list.querySelectorAll('button').forEach(b => { b.disabled = true; b.style.opacity = '0.3'; });
+        // Disable selectors + remelanger
+        list.querySelectorAll('select').forEach(s => { s.disabled = true; s.style.opacity = '0.7'; });
+        const remelangerBtn = document.querySelector('.ordre-remelanger');
+        if (remelangerBtn) { remelangerBtn.disabled = true; remelangerBtn.style.opacity = '0.5'; remelangerBtn.style.cursor = 'not-allowed'; }
     }
 
     else if (type === 'intrus') {
