@@ -671,6 +671,7 @@
         .ac-v2-corr-title { font-weight: 800; color: #4338ca; margin-bottom: 8px; }
         .ac-v2-corr-resume { background: #ddd6fe; color: #5b21b6; border-radius: 8px; padding: 8px; margin-bottom: 8px; font-weight: 600; }
         .ac-v2-corr-block { margin-bottom: 8px; color: #334155; font-size: 0.9rem; }
+        .ac-v2-pending { margin-top: 8px; padding: 8px 10px; border-left: 3px solid #94a3b8; border-radius: 0 8px 8px 0; background: #f8fafc; color: #64748b; font-size: 0.85rem; }
         .ac-v2-example { border-left: 3px solid #94a3b8; padding: 6px 8px; margin-top: 4px; border-radius: 0 6px 6px 0; background: #f8fafc; }
         .ac-v2-example.good { border-left-color: #22c55e; background: #f0fdf4; color: #166534; }
         .ac-v2-example.bad { border-left-color: #ef4444; background: #fef2f2; color: #991b1b; }
@@ -5252,6 +5253,12 @@ function acNewCanScoreC6() {
     return !!(acNewState && acNewState.finalC6 && acNewState.finalC6.actif);
 }
 
+function acFormatNote(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return '0,0';
+    return n.toFixed(1).replace('.', ',');
+}
+
 function acNewComputeItemScore(item, resp) {
     if (acHasGuidedItemSchema(item)) {
         var scoreGuided = 0;
@@ -5322,7 +5329,14 @@ function acNewComputeScores() {
     } else {
         note = Math.round((itemScore / 25) * 20 * 10) / 10;
     }
-    return { itemScore: itemScore, c6Score: c6Score, note: note };
+    var noteApprox = Math.round(note);
+    return {
+        itemScore: itemScore,
+        c6Score: c6Score,
+        note: note,
+        noteDisplay: acFormatNote(note),
+        noteApprox: noteApprox
+    };
 }
 
 function acNewRenderCorrectionPanel(item, resp) {
@@ -5481,6 +5495,11 @@ function acNewRenderFeedbackBlock(title, ok, text) {
         '<strong>' + title + '</strong><div>' + text + '</div></div>';
 }
 
+function acNewRenderPendingHint(text) {
+    if (!text) return '';
+    return '<div class="ac-v2-pending">' + text + '</div>';
+}
+
 function acNewRenderItemGuided(idx, item, resp) {
     var e1 = item.etape1 || {};
     var e1v = e1.verbe_sens_qcu || {};
@@ -5507,7 +5526,9 @@ function acNewRenderItemGuided(idx, item, resp) {
         var selected = resp.verbe_index === i ? ' selected' : '';
         html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'verbe_index\',' + i + ')">' + v + '</div>';
     });
-    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step11\')">Valider 1.1</button>';
+    html += '</div>';
+    html += acNewRenderPendingHint(resp.step11_pending || '');
+    html += '<button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step11\')">Valider 1.1</button>';
     html += acNewRenderFeedbackBlock('Feedback 1.1', !!resp.step11_ok, resp.step11_feedback || '');
 
     html += '<div style="font-weight:700; margin:12px 0 8px;">1.2 Pour verifier que j\'ai compris, j\'associe le verbe a sa signification.</div><div class="ac-qcu">';
@@ -5515,7 +5536,9 @@ function acNewRenderItemGuided(idx, item, resp) {
         var selected = resp.verbe_sens_index === i ? ' selected' : '';
         html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'verbe_sens_index\',' + i + ')">' + v + '</div>';
     });
-    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step12\')">Valider 1.2</button>';
+    html += '</div>';
+    html += acNewRenderPendingHint(resp.step12_pending || '');
+    html += '<button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step12\')">Valider 1.2</button>';
     html += acNewRenderFeedbackBlock('Feedback 1.2', !!resp.step12_ok, resp.step12_feedback || '');
 
     html += '<div style="font-weight:700; margin:12px 0 8px;">1.3 Ensuite, j\'identifie la competence mobilisee.</div><div class="ac-qcu">';
@@ -5529,7 +5552,9 @@ function acNewRenderItemGuided(idx, item, resp) {
         var selected = resp.competence_index === i ? ' selected' : '';
         html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'competence_index\',' + i + ')">' + (labels[c] || c) + '</div>';
     });
-    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step13\')">Valider 1.3</button>';
+    html += '</div>';
+    html += acNewRenderPendingHint(resp.step13_pending || '');
+    html += '<button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step13\')">Valider 1.3</button>';
     html += acNewRenderFeedbackBlock('Feedback 1.3', !!resp.step13_ok, resp.step13_feedback || '');
     html += '</div>';
 
@@ -5541,7 +5566,9 @@ function acNewRenderItemGuided(idx, item, resp) {
         var selected = (resp.analyse_selected_ids || []).indexOf(id) !== -1 ? ' selected' : '';
         html += '<div class="ac-choice' + selected + '" onclick="window.acNewPickMulti(' + idx + ',\'analyse_selected_ids\',\'' + id + '\')">' + (ch.texte || '') + '</div>';
     });
-    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step2\')">Valider l\'etape 2</button>';
+    html += '</div>';
+    html += acNewRenderPendingHint(resp.step2_pending || '');
+    html += '<button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step2\')">Valider l\'etape 2</button>';
     html += acNewRenderFeedbackBlock('Feedback etape 2', !!resp.step2_ok, resp.step2_feedback || '');
     html += '</div>';
 
@@ -5552,6 +5579,7 @@ function acNewRenderItemGuided(idx, item, resp) {
         html += '<div class="ac-choice' + selected + '" onclick="window.acNewPick(' + idx + ',\'niveau_value\',\'' + n + '\')">' + (nivLabels[n] || n) + '</div>';
     });
     html += '</div>';
+    html += acNewRenderPendingHint(resp.step3_pending || '');
     if (Array.isArray(e3.criteres_simplifies) && e3.criteres_simplifies.length > 0) {
         html += '<div class="ac-v2-corr-block" style="margin-top:8px;"><strong>Es-tu sur ?</strong><ul class="ac-v2-ul">';
         e3.criteres_simplifies.forEach(function(c) { html += '<li>' + c + '</li>'; });
@@ -5568,7 +5596,9 @@ function acNewRenderItemGuided(idx, item, resp) {
         var selected = (resp.correction_selected_ids || []).indexOf(id) !== -1 ? ' selected' : '';
         html += '<div class="ac-choice' + selected + '" onclick="window.acNewPickMulti(' + idx + ',\'correction_selected_ids\',\'' + id + '\')">' + (ch.texte || '') + '</div>';
     });
-    html += '</div><button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step4\')">Valider l\'etape 4</button>';
+    html += '</div>';
+    html += acNewRenderPendingHint(resp.step4_pending || '');
+    html += '<button class="ac-v2-btn-main" type="button" style="margin-top:8px;" onclick="window.acNewValidateStep(' + idx + ',\'step4\')">Valider l\'etape 4</button>';
     html += acNewRenderFeedbackBlock('Feedback etape 4', !!resp.step4_ok, resp.step4_feedback || '');
     html += '</div>';
 
@@ -5646,7 +5676,7 @@ function acNewRenderFinalC6() {
     html += '<div class="ac-v2-score-preview">';
     html += '<div>Score items : <strong>' + scores.itemScore + '/25</strong></div>';
     html += '<div>Score C6 : <strong>' + scores.c6Score + '/8</strong></div>';
-    html += '<div>Note finale : <strong>' + scores.note + '/20</strong></div>';
+    html += '<div>Note finale : <strong>' + scores.noteDisplay + '/20</strong> (≈ ' + scores.noteApprox + '/20)</div>';
     html += '</div>';
 
     html += '<div class="ac-v2-actions">';
@@ -5681,7 +5711,7 @@ function acNewBuildDetails(scores) {
     details.unshift({
         ok: true,
         label: 'Note finale /20',
-        detail: 'Items: ' + scores.itemScore + '/25 | C6: ' + scores.c6Score + '/8 | Note: ' + scores.note + '/20'
+        detail: 'Items: ' + scores.itemScore + '/25 | C6: ' + scores.c6Score + '/8 | Note: ' + scores.noteDisplay + '/20 (≈ ' + scores.noteApprox + '/20)'
     });
     return details;
 }
@@ -5704,7 +5734,7 @@ function acNewFinishAndShow() {
     var extra = '<div class="ac-v2-final-box">' +
         '<div><strong>Score items :</strong> ' + scores.itemScore + '/25 (pondéré sur 12)</div>' +
         '<div><strong>Score C6 :</strong> ' + scores.c6Score + '/8 (pondéré sur 8)</div>' +
-        '<div class="ac-v2-final-note">Note finale : ' + scores.note + '/20</div>' +
+        '<div class="ac-v2-final-note">Note finale : ' + scores.noteDisplay + '/20 (≈ ' + scores.noteApprox + '/20)</div>' +
         '</div>';
     zone.innerHTML = extra + zone.innerHTML;
     document.getElementById('btn-validate').disabled = true;
@@ -5752,6 +5782,12 @@ function renderAnalyseCopieV2(zone, c) {
             step2_feedback: '',
             step3_feedback: '',
             step4_feedback: '',
+            step11_pending: '',
+            step12_pending: '',
+            step13_pending: '',
+            step2_pending: '',
+            step3_pending: '',
+            step4_pending: '',
             validated: false
         });
     });
@@ -5780,17 +5816,47 @@ window.acNewStartItems = function() {
 
 window.acNewPick = function(itemIdx, key, value) {
     if (!acNewState || acNewState.idx !== itemIdx) return;
-    acNewState.responses[itemIdx][key] = value;
+    var resp = acNewState.responses[itemIdx] || {};
+    var item = acNewState.items[itemIdx] || {};
+    if (acHasGuidedItemSchema(item)) {
+        if (key === 'verbe_index') {
+            resp.step11_done = false; resp.step11_ok = false; resp.step11_feedback = '';
+            resp.step11_pending = 'Choix enregistre. Clique sur "Valider 1.1" pour verifier.';
+        } else if (key === 'verbe_sens_index') {
+            resp.step12_done = false; resp.step12_ok = false; resp.step12_feedback = '';
+            resp.step12_pending = 'Choix enregistre. Clique sur "Valider 1.2" pour verifier.';
+        } else if (key === 'competence_index') {
+            resp.step13_done = false; resp.step13_ok = false; resp.step13_feedback = '';
+            resp.step13_pending = 'Choix enregistre. Clique sur "Valider 1.3" pour verifier.';
+        } else if (key === 'niveau_value') {
+            resp.step3_done = false; resp.step3_ok = false; resp.step3_feedback = '';
+            resp.step3_pending = 'Choix enregistre. Clique sur "Valider l\'etape 3" pour verifier.';
+        }
+    }
+    resp[key] = value;
+    acNewState.responses[itemIdx] = resp;
     acNewRenderItem(itemIdx);
 };
 
 window.acNewPickMulti = function(itemIdx, key, id) {
     if (!acNewState || acNewState.idx !== itemIdx) return;
-    var arr = acNewState.responses[itemIdx][key] || [];
+    var resp = acNewState.responses[itemIdx] || {};
+    var item = acNewState.items[itemIdx] || {};
+    var arr = resp[key] || [];
     var i = arr.indexOf(id);
     if (i === -1) arr.push(id);
     else arr.splice(i, 1);
-    acNewState.responses[itemIdx][key] = arr;
+    if (acHasGuidedItemSchema(item)) {
+        if (key === 'analyse_selected_ids') {
+            resp.step2_done = false; resp.step2_ok = false; resp.step2_feedback = '';
+            resp.step2_pending = 'Choix enregistres. Clique sur "Valider l\'etape 2" pour verifier.';
+        } else if (key === 'correction_selected_ids') {
+            resp.step4_done = false; resp.step4_ok = false; resp.step4_feedback = '';
+            resp.step4_pending = 'Choix enregistres. Clique sur "Valider l\'etape 4" pour verifier.';
+        }
+    }
+    resp[key] = arr;
+    acNewState.responses[itemIdx] = resp;
     acNewRenderItem(itemIdx);
 };
 
@@ -5809,6 +5875,7 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
 
     if (stepKey === 'step11') {
         resp.step11_done = true;
+        resp.step11_pending = '';
         var ok11 = resp.verbe_index === (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0);
         resp.step11_ok = ok11;
         resp.step11_feedback = ok11
@@ -5817,12 +5884,14 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
     }
     if (stepKey === 'step12') {
         resp.step12_done = true;
+        resp.step12_pending = '';
         var ok12 = resp.verbe_sens_index === (typeof e1v.correct === 'number' ? e1v.correct : 0);
         resp.step12_ok = ok12;
         resp.step12_feedback = ok12 ? ('Correct. ' + (e1v.explication || '')) : ('Incorrect. ' + (e1v.explication || ''));
     }
     if (stepKey === 'step13') {
         resp.step13_done = true;
+        resp.step13_pending = '';
         var ok13 = resp.competence_index === (typeof e1c.competence_index === 'number' ? e1c.competence_index : 0);
         resp.step13_ok = ok13;
         resp.step13_feedback = ok13
@@ -5831,24 +5900,45 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
     }
     if (stepKey === 'step2') {
         resp.step2_done = true;
+        resp.step2_pending = '';
         var selected = acNormalizeIdList(resp.analyse_selected_ids);
         var corrects = acNormalizeIdList(e2.corrects);
         var ok2 = acSetEq(selected, corrects);
         resp.step2_ok = ok2;
         var fb2 = [];
+        function findChoiceText(id) {
+            var choix = Array.isArray(e2.choix) ? e2.choix : [];
+            for (var j = 0; j < choix.length; j++) {
+                if (String(choix[j].id || '') === String(id)) return choix[j].texte || id;
+            }
+            return id;
+        }
+        var extras = selected.filter(function(id) { return corrects.indexOf(id) === -1; });
+        var missing = corrects.filter(function(id) { return selected.indexOf(id) === -1; });
         selected.forEach(function(id) { if (e2.feedback && e2.feedback[id]) fb2.push(e2.feedback[id]); });
-        if (!ok2 && fb2.length === 0) fb2.push('Revise les elements attendus de la competence.');
-        if (ok2 && fb2.length === 0) fb2.push('Analyse correcte au regard de la competence attendue.');
+        if (ok2) fb2.unshift('Bonne combinaison exacte : 1 point.');
+        if (extras.length > 0) {
+            var extrasTxt = extras.map(function(id) { return '"' + findChoiceText(id) + '"'; }).join(', ');
+            fb2.push('Tu as coche une option en trop (' + extrasTxt + '). Ici, une option en trop fait perdre le point.');
+        }
+        if (missing.length > 0) {
+            var missingTxt = missing.map(function(id) { return '"' + findChoiceText(id) + '"'; }).join(', ');
+            fb2.push('Il manque une ou plusieurs options attendues : ' + missingTxt + '.');
+        }
+        if (!ok2 && selected.length === 0) fb2.push('Choisis les affirmations qui correspondent a l\'analyse attendue.');
+        if (!ok2 && fb2.length === 0) fb2.push('La combinaison doit etre exacte pour obtenir le point.');
         resp.step2_feedback = fb2.join(' ');
     }
     if (stepKey === 'step3') {
         resp.step3_done = true;
+        resp.step3_pending = '';
         var ok3 = String(resp.niveau_value || '') === String(e3.niveau_attendu || 'insuffisant');
         resp.step3_ok = ok3;
         resp.step3_feedback = (ok3 ? 'Correct. ' : 'Incorrect. ') + (e3.pourquoi_ce_niveau || '');
     }
     if (stepKey === 'step4') {
         resp.step4_done = true;
+        resp.step4_pending = '';
         var selectedC = acNormalizeIdList(resp.correction_selected_ids);
         var acc = acNormalizeIdList(e4.acceptables);
         var nonp = acNormalizeIdList(e4.non_pertinentes);
