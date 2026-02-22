@@ -937,14 +937,14 @@ const NIVEAUX = [
 const TYPE_ICONS = {
     texte_trous: '📝', relier: '🔗', ordre: '📋', intrus: '🔍', pendu: '🎯',
     mots_croises: '✏️', swipe_vf: '👆', qcm_image: '🖼️', tableau: '📊', etude_cas: '📖', pad: '⚠️', prevention: '🛡️', estimation_risque: '📊', duerp_ligne: '📋', duerp_mini: '📋',
-    qcm_classique: '🎯', quiz_chrono: '⏱️', categoriser: '📂', memory: '🃏', scenario: '🎬', pictogramme: '⚠️',
+    qcm_classique: '🎯', qcm_series_multi: '🧠', quiz_chrono: '⏱️', categoriser: '📂', memory: '🃏', scenario: '🎬', pictogramme: '⚠️',
     analyse_copie: '📝'
 };
 const TYPE_LABELS = {
     texte_trous: 'Texte a trous', relier: 'Relier', ordre: 'Ordre', intrus: 'Intrus',
     pendu: 'Pendu', mots_croises: 'Mots croises', swipe_vf: 'Vrai/Faux',
     qcm_image: 'QCM Image', tableau: 'Tableau', etude_cas: 'Etude de cas', pad: 'PAD', prevention: 'Prevention', estimation_risque: 'Estimation du risque', duerp_ligne: 'DUERP', duerp_mini: 'Mini DUERP',
-    qcm_classique: 'QCM Classique', quiz_chrono: 'Quiz Chrono', categoriser: 'Categoriser', memory: 'Memory', scenario: 'Scenario', pictogramme: 'Pictogrammes',
+    qcm_classique: 'QCM Classique', qcm_series_multi: 'QCM Serie', quiz_chrono: 'Quiz Chrono', categoriser: 'Categoriser', memory: 'Memory', scenario: 'Scenario', pictogramme: 'Pictogrammes',
     analyse_copie: 'Analyse de copie'
 };
 const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini', 'pictogramme'];
@@ -1322,6 +1322,7 @@ function startExercice(ex) {
         duerp_ligne: renderDuerpLigne,
         duerp_mini: renderDuerpMini,
         qcm_classique: renderQcmClassique,
+        qcm_series_multi: renderQcmSeriesMulti,
         quiz_chrono: renderQuizChrono,
         categoriser: renderCategoriser,
         memory: renderMemory,
@@ -2517,6 +2518,45 @@ function selectQcmC(el, isMultiple) {
 }
 
 // =====================================================================
+// QCM SERIE MULTI RENDERER
+// =====================================================================
+function renderQcmSeriesMulti(zone, c) {
+    const questions = c.questions || [];
+    let html = '';
+    questions.forEach((q, qi) => {
+        const choix = [...(q.choix || [])];
+        for (let i = choix.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [choix[i], choix[j]] = [choix[j], choix[i]];
+        }
+        const isMultiple = !!q.multiple || Array.isArray(q.reponse);
+        html += '<div class="qcm-series-card" style="margin-bottom:20px; padding:16px; border:1px solid #e2e8f0; border-radius:12px; background:#fff;">';
+        html += '<div style="font-size:0.85rem; color:#3b82f6; font-weight:700; margin-bottom:8px;">Question ' + (qi + 1) + '</div>';
+        html += '<div class="qcm-c-question">' + (q.question || '') + '</div>';
+        if (isMultiple) html += '<div class="qcm-c-multi-hint">Plusieurs reponses possibles — cochez toutes les bonnes reponses</div>';
+        html += '<div class="qcm-c-choices">';
+        choix.forEach(ch => {
+            html += '<div class="qcm-c-choice qcms-choice" data-qindex="' + qi + '" data-id="' + ch.id + '" onclick="selectQcmSeries(this, ' + isMultiple + ')">' + ch.texte + '</div>';
+        });
+        html += '</div>';
+        if (q.explication) html += '<div class="qcm-c-explication" style="display:none;" id="qcms-explication-' + qi + '">' + q.explication + '</div>';
+        html += '</div>';
+    });
+    zone.innerHTML = html || '<div class="empty-msg">Aucune question.</div>';
+}
+
+function selectQcmSeries(el, isMultiple) {
+    if (corrected) return;
+    if (isMultiple) {
+        el.classList.toggle('selected');
+    } else {
+        const qindex = el.getAttribute('data-qindex');
+        document.querySelectorAll('.qcms-choice[data-qindex="' + qindex + '"]').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+}
+
+// =====================================================================
 // QUIZ CHRONO RENDERER
 // =====================================================================
 let chronoState = null;
@@ -3484,6 +3524,46 @@ function validateExercice() {
         // Show explication
         const explEl = document.getElementById('qcmc-explication');
         if (explEl) explEl.style.display = 'block';
+    }
+
+    // QCM Serie validation
+    else if (type === 'qcm_series_multi') {
+        const c = currentExo.contenu;
+        (c.questions || []).forEach((q, qi) => {
+            const isMultiple = !!q.multiple || Array.isArray(q.reponse);
+            const repIds = Array.isArray(q.reponse) ? q.reponse : (q.reponse != null ? [q.reponse] : []);
+            const choices = document.querySelectorAll('.qcms-choice[data-qindex="' + qi + '"]');
+            let qOk = true;
+            if (isMultiple) {
+                total += (q.choix || []).length;
+                choices.forEach(el => {
+                    const id = el.dataset.id;
+                    const isSelected = el.classList.contains('selected');
+                    const shouldBeSelected = repIds.includes(id);
+                    if (isSelected && shouldBeSelected) { correct++; el.classList.add('correct'); }
+                    else if (isSelected && !shouldBeSelected) { el.classList.add('wrong'); qOk = false; }
+                    else if (!isSelected && shouldBeSelected) { el.classList.add('show-correct'); qOk = false; }
+                    else { correct++; }
+                    el.style.pointerEvents = 'none';
+                });
+            } else {
+                total += 1;
+                qOk = false;
+                choices.forEach(el => {
+                    el.style.pointerEvents = 'none';
+                    if (repIds.includes(el.dataset.id)) {
+                        if (el.classList.contains('selected')) { qOk = true; el.classList.add('correct'); }
+                        else { el.classList.add('show-correct'); }
+                    } else if (el.classList.contains('selected')) {
+                        el.classList.add('wrong');
+                    }
+                });
+                if (qOk) correct++;
+            }
+            details.push({ label: 'Question ' + (qi + 1), ok: qOk });
+            const explEl = document.getElementById('qcms-explication-' + qi);
+            if (explEl) explEl.style.display = 'block';
+        });
     }
 
     // Categoriser validation
