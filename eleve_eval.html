@@ -84,6 +84,14 @@
         .ecm-classe { background: #fef3c7; color: #92400e; font-weight: 600; }
         .ecm-classe.ecm-all { background: #e2e8f0; color: #64748b; }
         .ecm-module { background: #f0fdf4; color: #166534; }
+        .ecm-pastille { display: inline-flex; align-items: center; gap: 6px; }
+        .ecm-pastille-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+        .ecm-pastille-facile { background: #dcfce7; color: #166534; }
+        .ecm-pastille-facile .ecm-pastille-dot { background: #22c55e; }
+        .ecm-pastille-moyen { background: #dbeafe; color: #1e40af; }
+        .ecm-pastille-moyen .ecm-pastille-dot { background: #3b82f6; }
+        .ecm-pastille-eleve { background: #fee2e2; color: #991b1b; }
+        .ecm-pastille-eleve .ecm-pastille-dot { background: #ef4444; }
 
         /* === EVALUATION === */
         .eval-screen { background: #f0f4f8; padding: 0; }
@@ -293,6 +301,15 @@
             font-weight: 800; cursor: pointer; transition: 0.2s;
         }
         .warning-box .warn-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,197,94,0.4); }
+        .warning-box .warn-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+        .warn-pastille {
+            margin: 0 auto 16px; max-width: 420px; text-align: left;
+            padding: 12px 14px; border-radius: 10px; background: #eff6ff; border-left: 4px solid #3b82f6;
+        }
+        .warn-pastille-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; color: #1e3a8a; }
+        .warn-pastille .warn-pastille-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; }
+        .warn-pastille-check { font-size: 0.82rem; color: #334155; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .warn-pastille-check input { accent-color: #3b82f6; width: 17px; height: 17px; }
 
         /* === CHRONO WARNING SCREEN === */
         .chrono-box {
@@ -458,8 +475,16 @@
             <li>Les captures d'ecran sont detectees et interdites</li>
             <li>Votre enseignant verra toutes les alertes dans ses resultats</li>
         </ul>
+        <div class="warn-pastille" id="warn-pastille-block" style="display:none;">
+            <div class="warn-pastille-title">Controle de la pastille enseignant</div>
+            <div id="warn-pastille-chip"></div>
+            <label class="warn-pastille-check">
+                <input type="checkbox" id="warn-pastille-check" onchange="updateWarningStartButton()">
+                <span>J'ai verifie avec mon professeur que je lance la bonne pastille.</span>
+            </label>
+        </div>
         <p class="warn-note">En cliquant sur "Commencer", vous acceptez ces conditions de surveillance.<br>Bonne evaluation !</p>
-        <button class="warn-btn" onclick="proceedAfterWarning()">Commencer l'evaluation</button>
+        <button class="warn-btn" id="warn-start-btn" onclick="proceedAfterWarning()">Commencer l'evaluation</button>
     </div>
 </div>
 
@@ -546,6 +571,8 @@
     let currentDisplayedDocRef = '__none__';
 
     const DOC_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#10b981', '#e11d48'];
+    const PASTILLE_LEVELS = ['facile', 'moyen', 'eleve'];
+    const PASTILLE_LABELS = { facile: 'Facile', moyen: 'Moyen', eleve: 'Eleve' };
     let tabSwitchCount = 0;
     let copyPasteCount = 0;
     let rightClickCount = 0;
@@ -557,6 +584,25 @@
 
     // === MOBILE DETECTION ===
     function isMobile() { return window.innerWidth <= 600; }
+
+    function normalizePastilleNiveau(level) {
+        return PASTILLE_LEVELS.includes(level) ? level : null;
+    }
+
+    function buildPastilleChip(level, genericLabel) {
+        const safeLevel = normalizePastilleNiveau(level);
+        if (!safeLevel) return '';
+        const label = genericLabel ? 'Pastille' : PASTILLE_LABELS[safeLevel];
+        return '<span class="ecm-pastille ecm-pastille-' + safeLevel + '">' +
+            '<span class="ecm-pastille-dot"></span>' + label + '</span>';
+    }
+
+    function buildPastilleWarningChip(level) {
+        const safeLevel = normalizePastilleNiveau(level);
+        if (!safeLevel) return '';
+        return '<span class="warn-pastille-chip ecm-pastille-' + safeLevel + '">' +
+            '<span class="ecm-pastille-dot"></span>Pastille ' + PASTILLE_LABELS[safeLevel] + '</span>';
+    }
 
     // === SCREENS ===
     function showScreen(name) {
@@ -690,11 +736,12 @@
                     ? '<span class="ecm-classe">🎯 ' + evClasseIds.join(', ') + '</span>'
                     : '<span class="ecm-classe ecm-all">Toutes classes</span>';
                 const moduleInfo = ev.moduleId ? '<span class="ecm-module">📘 ' + ev.moduleId + '</span>' : '';
+                const pastilleInfo = buildPastilleChip(ev.pastilleNiveau, true);
                 const nonNoteInfo = ev.nonNote === true ? '<span class="ecm-module" style="background:rgba(245,158,11,0.15);color:#fcd34d;">📋 Non notee</span>' : '';
 
                 card.innerHTML = '<div class="eval-card-title">' + (ev.titre || 'Evaluation') + '</div>' +
                     '<div class="eval-card-meta">' +
-                    classeInfo + moduleInfo + nonNoteInfo +
+                    classeInfo + moduleInfo + pastilleInfo + nonNoteInfo +
                     '<span class="ecm-questions">' + qCount + ' questions</span>' +
                     '<span class="ecm-bareme">/' + (ev.bareme || 20) + '</span>' +
                     timerInfo + doneInfo + '</div>';
@@ -715,11 +762,39 @@
     // === START EVAL ===
     let pendingEvalId = null;
     let pendingEvalData = null;
+    window.updateWarningStartButton = function() {
+        const checkEl = document.getElementById('warn-pastille-check');
+        const blockEl = document.getElementById('warn-pastille-block');
+        const startBtn = document.getElementById('warn-start-btn');
+        if (!blockEl || !checkEl || !startBtn) return;
+        const requiresCheck = blockEl.style.display !== 'none';
+        startBtn.disabled = requiresCheck && !checkEl.checked;
+    };
+
+    function setupPastilleWarning(evalData) {
+        const blockEl = document.getElementById('warn-pastille-block');
+        const checkEl = document.getElementById('warn-pastille-check');
+        const chipEl = document.getElementById('warn-pastille-chip');
+        if (!blockEl || !checkEl || !chipEl) return;
+
+        checkEl.checked = false;
+        const safeLevel = normalizePastilleNiveau(evalData ? evalData.pastilleNiveau : null);
+        if (!safeLevel) {
+            blockEl.style.display = 'none';
+            chipEl.innerHTML = '';
+            window.updateWarningStartButton();
+            return;
+        }
+        chipEl.innerHTML = buildPastilleWarningChip(safeLevel);
+        blockEl.style.display = 'block';
+        window.updateWarningStartButton();
+    }
 
     async function startEval(evalId, evalData) {
         // Store pending eval and show warning screen first
         pendingEvalId = evalId;
         pendingEvalData = evalData;
+        setupPastilleWarning(evalData);
         showScreen('warning');
     }
 

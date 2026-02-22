@@ -5038,6 +5038,77 @@ function isAnalyseCopieNewSchema(c) {
            !!c.intro_eleve;
 }
 
+function acGetNewSchemaMissingBlocks(item) {
+    var missing = [];
+    if (!item || !item.etape1) missing.push('etape1');
+    if (!item || !item.etape1_competence) missing.push('etape1_competence');
+    if (!item || !item.etape3_niveau) missing.push('etape3_niveau');
+    if (!item || !item.etape4_corrections) missing.push('etape4_corrections');
+    return missing;
+}
+
+function acHasNewSchemaCore(item) {
+    return acGetNewSchemaMissingBlocks(item).length === 0;
+}
+
+function acHasAnyNewSchemaBlock(item) {
+    return !!(item && (item.etape1 || item.etape1_competence || item.etape3_niveau || item.etape4_corrections));
+}
+
+function acBuildAttendusFromNewSchema(item) {
+    var e1 = item.etape1 || {};
+    var e1c = item.etape1_competence || {};
+    var e3 = item.etape3_niveau || {};
+    var recap = item.recap_item || {};
+    return {
+        verbe_index: (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0),
+        competence_index: (typeof e1c.competence_index === 'number' ? e1c.competence_index : 0),
+        niveau: e3.niveau_attendu || 'insuffisant',
+        justif_index: null,
+        amelioration_index: null,
+        justification_modele: e1c.justification_modele || recap.resume || '',
+        reponse_amelioree_modele: recap.modele_reponse_amelioree || recap.modele_reponse || ''
+    };
+}
+
+function normalizeAnalyseCopie(exo) {
+    if (!exo || typeof exo !== 'object') return exo;
+    if (!Array.isArray(exo.items)) return exo;
+    exo.items.forEach(function(item) {
+        if (!item || typeof item !== 'object') return;
+
+        if (!item.attendus && acHasNewSchemaCore(item)) {
+            item.attendus = acBuildAttendusFromNewSchema(item);
+        } else if (!item.attendus && acHasAnyNewSchemaBlock(item)) {
+            item.attendus = acBuildAttendusFromNewSchema(item);
+        }
+
+        if (!item.attendus || typeof item.attendus !== 'object') return;
+
+        var recap = item.recap_item || {};
+        var e1c = item.etape1_competence || {};
+
+        if (!item.attendus.justification_modele) {
+            item.attendus.justification_modele = e1c.justification_modele || recap.resume || '';
+        }
+        if (!item.attendus.reponse_amelioree_modele) {
+            item.attendus.reponse_amelioree_modele = recap.modele_reponse_amelioree || recap.modele_reponse || '';
+        }
+
+        if (item.attendus.validee === true) item.attendus.validee = 'oui';
+        if (item.attendus.validee === false) item.attendus.validee = 'non';
+
+        if (acHasAnyNewSchemaBlock(item)) {
+            if (item.attendus.justif_index === undefined) item.attendus.justif_index = null;
+            if (item.attendus.amelioration_index === undefined) item.attendus.amelioration_index = null;
+        } else {
+            if (item.attendus.justif_index === undefined) item.attendus.justif_index = 0;
+            if (item.attendus.amelioration_index === undefined) item.attendus.amelioration_index = 0;
+        }
+    });
+    return exo;
+}
+
 function acAdaptLegacySchema(c) {
     if (!c || !Array.isArray(c.items) || c.items.length === 0) return c;
     if (isAnalyseCopieNewSchema(c)) return c;
@@ -5190,14 +5261,16 @@ function acNewComputeItemScore(item, resp) {
         var e3 = item.etape3_niveau || {};
         var e4 = item.etape4_corrections || {};
 
-        if (resp.verbe_index === (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0)) scoreGuided++;
+        var verbeOk = resp.verbe_index === (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0);
+        var verbeSensOk = resp.verbe_sens_index === (typeof (e1.verbe_sens_qcu || {}).correct === 'number' ? (e1.verbe_sens_qcu || {}).correct : 0);
+        if (verbeOk && verbeSensOk) scoreGuided++;
         if (resp.competence_index === (typeof e1c.competence_index === 'number' ? e1c.competence_index : 0)) scoreGuided++;
         if (acSetEq(acNormalizeIdList(resp.analyse_selected_ids), acNormalizeIdList(e2.corrects))) scoreGuided++;
         if (String(resp.niveau_value || '') === String(e3.niveau_attendu || 'insuffisant')) scoreGuided++;
 
         var selectedCorr = acNormalizeIdList(resp.correction_selected_ids);
         var acceptables = acNormalizeIdList(e4.acceptables);
-        if (selectedCorr.length > 0 && selectedCorr.every(function(id) { return acceptables.indexOf(id) !== -1; })) scoreGuided++;
+        if (acSetEq(selectedCorr, acceptables)) scoreGuided++;
         return scoreGuided;
     }
 
@@ -5661,6 +5734,12 @@ function renderAnalyseCopieV2(zone, c) {
             amelioration_index: null,
             analyse_selected_ids: [],
             correction_selected_ids: [],
+            step11_done: false,
+            step12_done: false,
+            step13_done: false,
+            step2_done: false,
+            step3_done: false,
+            step4_done: false,
             step11_ok: false,
             step12_ok: false,
             step13_ok: false,
@@ -5729,6 +5808,7 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
     var e4 = item.etape4_corrections || {};
 
     if (stepKey === 'step11') {
+        resp.step11_done = true;
         var ok11 = resp.verbe_index === (typeof e1.verbe_index === 'number' ? e1.verbe_index : 0);
         resp.step11_ok = ok11;
         resp.step11_feedback = ok11
@@ -5736,11 +5816,13 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
             : ('Incorrect. ' + (e1.verbe_definition || 'Reprends le verbe d\'action de la consigne.'));
     }
     if (stepKey === 'step12') {
+        resp.step12_done = true;
         var ok12 = resp.verbe_sens_index === (typeof e1v.correct === 'number' ? e1v.correct : 0);
         resp.step12_ok = ok12;
         resp.step12_feedback = ok12 ? ('Correct. ' + (e1v.explication || '')) : ('Incorrect. ' + (e1v.explication || ''));
     }
     if (stepKey === 'step13') {
+        resp.step13_done = true;
         var ok13 = resp.competence_index === (typeof e1c.competence_index === 'number' ? e1c.competence_index : 0);
         resp.step13_ok = ok13;
         resp.step13_feedback = ok13
@@ -5748,6 +5830,7 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
             : ('Incorrect. ' + (e1c.competence_definition || '') + ' ' + (e1c.pourquoi_pas_les_autres || ''));
     }
     if (stepKey === 'step2') {
+        resp.step2_done = true;
         var selected = acNormalizeIdList(resp.analyse_selected_ids);
         var corrects = acNormalizeIdList(e2.corrects);
         var ok2 = acSetEq(selected, corrects);
@@ -5759,19 +5842,24 @@ window.acNewValidateStep = function(itemIdx, stepKey) {
         resp.step2_feedback = fb2.join(' ');
     }
     if (stepKey === 'step3') {
+        resp.step3_done = true;
         var ok3 = String(resp.niveau_value || '') === String(e3.niveau_attendu || 'insuffisant');
         resp.step3_ok = ok3;
         resp.step3_feedback = (ok3 ? 'Correct. ' : 'Incorrect. ') + (e3.pourquoi_ce_niveau || '');
     }
     if (stepKey === 'step4') {
+        resp.step4_done = true;
         var selectedC = acNormalizeIdList(resp.correction_selected_ids);
         var acc = acNormalizeIdList(e4.acceptables);
         var nonp = acNormalizeIdList(e4.non_pertinentes);
-        var allGood = selectedC.length > 0 && selectedC.every(function(id) { return acc.indexOf(id) !== -1; });
-        resp.step4_ok = allGood;
+        var exactSet = acSetEq(selectedC, acc);
+        resp.step4_ok = exactSet;
         var fb4 = [];
         selectedC.forEach(function(id) { if (e4.feedback && e4.feedback[id]) fb4.push(e4.feedback[id]); });
         if (selectedC.some(function(id) { return nonp.indexOf(id) !== -1; })) fb4.push('Certaines propositions cochees sont non pertinentes.');
+        if (!exactSet && selectedC.length > 0 && !selectedC.some(function(id) { return nonp.indexOf(id) !== -1; })) {
+            fb4.push('Il manque encore une ou plusieurs propositions acceptables.');
+        }
         fb4.push(e4.message_pedagogique || 'Plusieurs formulations peuvent etre acceptables si elles respectent la competence.');
         resp.step4_feedback = fb4.join(' ');
     }
@@ -5784,9 +5872,9 @@ window.acNewValidateItem = function() {
     var item = acNewState.items[idx] || {};
     var resp = acNewState.responses[idx];
     if (acHasGuidedItemSchema(item)) {
-        var allOk = resp.step11_ok && resp.step12_ok && resp.step13_ok && resp.step2_ok && resp.step3_ok && resp.step4_ok;
-        if (!allOk) {
-            showToast('Valide correctement les etapes 1.1, 1.2, 1.3, 2, 3 et 4.');
+        var allDone = resp.step11_done && resp.step12_done && resp.step13_done && resp.step2_done && resp.step3_done && resp.step4_done;
+        if (!allDone) {
+            showToast('Valide les etapes 1.1, 1.2, 1.3, 2, 3 et 4 avant de continuer.');
             return;
         }
         resp.validated = true;
@@ -5866,6 +5954,7 @@ window.acNewFinish = function() {
 };
 
 function renderAnalyseCopie(zone, c) {
+    c = normalizeAnalyseCopie(c || {});
     if (isAnalyseCopieNewSchema(c)) {
         renderAnalyseCopieV2(zone, c);
         return;
