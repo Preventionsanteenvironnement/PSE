@@ -3939,7 +3939,7 @@ function validateExercice() {
 
     // === ANALYSE DE COPIE ===
     else if (type === 'analyse_copie') {
-        if (isAnalyseCopieNewSchema(currentExo.contenu)) {
+        if (acNewState && acNewState.zone) {
             var newRes = acNewFinishAndShow();
             if (!newRes) return;
             return;
@@ -5033,6 +5033,97 @@ function isAnalyseCopieNewSchema(c) {
            !!c.intro_eleve;
 }
 
+function acAdaptLegacySchema(c) {
+    if (!c || !Array.isArray(c.items) || c.items.length === 0) return c;
+    if (isAnalyseCopieNewSchema(c)) return c;
+
+    var adapted = {
+        titre: c.titre || 'Analyse de copie',
+        type: 'analyse_copie',
+        consigne: c.consigne || 'Tu es correcteur : verbe, competence, niveau, justification, amelioration.',
+        contexte: c.contexte || '',
+        intro_eleve: c.intro_eleve || {
+            titre: 'Corrige une copie de Bac Pro PSE',
+            accroche: 'Tu joues le correcteur. Corrige 5 reponses comme a l\'examen.',
+            etapes: [
+                'Repere le verbe d\'action',
+                'Trouve la competence dominante',
+                'Choisis un niveau',
+                'Choisis la justification correcte',
+                'Choisis la meilleure amelioration'
+            ]
+        },
+        final_c6: c.final_c6 || { actif: false },
+        items: []
+    };
+
+    adapted.items = c.items.slice(0, 5).map(function(item, idx) {
+        var att = item.attendus || {};
+        var exp = item.explications || {};
+        var verbes = item.verbes_proposes || ['identifier', 'expliquer', 'proposer', 'argumenter'];
+        var compOptions = item.competences_proposees || ['C2', 'C3', 'C4', 'C5'];
+        if (att.competence && compOptions.indexOf(att.competence) === -1) compOptions[0] = att.competence;
+        if (compOptions.length < 4) compOptions = ['C2', 'C3', 'C4', 'C5'];
+
+        var justifs = item.justifs_proposees || [];
+        if (!Array.isArray(justifs) || justifs.length < 3) {
+            justifs = [
+                att.justification_modele || exp.pourquoi_valide_ou_non || 'Cette competence est la plus adaptee a la consigne.',
+                'La reponse contient quelques mots du cours mais reste trop generale.',
+                'La reponse parle du theme sans traiter la demande exacte.'
+            ];
+        }
+
+        var amels = item.ameliorations_proposees || [];
+        if (!Array.isArray(amels) || amels.length < 3) {
+            amels = [
+                att.reponse_amelioree_modele || exp.exemple_reponse_amelioree || 'Ajouter une reponse plus precise avec vocabulaire professionnel.',
+                'Raccourcir la reponse sans justification.',
+                'Reprendre les memes mots sans precision supplementaire.'
+            ];
+        }
+
+        var expectedComp = att.competence || compOptions[0];
+        var expectedNiveau = att.niveau;
+        if (typeof expectedNiveau === 'number') {
+            expectedNiveau = expectedNiveau <= 1 ? 'non_traite' :
+                expectedNiveau === 2 ? 'insuffisant' :
+                expectedNiveau === 3 ? 'acceptable' : 'maitrise';
+        }
+
+        return {
+            id: item.id || ('I' + (idx + 1)),
+            contexte: item.contexte || '',
+            question_examen: item.question_examen || '',
+            reponse_eleve: item.reponse_eleve || '',
+            verbes_proposes: verbes.slice(0, 4),
+            competences_proposees: compOptions.slice(0, 4),
+            niveaux_proposees: item.niveaux_proposees || ['non_traite', 'insuffisant', 'acceptable', 'maitrise'],
+            justifs_proposees: justifs.slice(0, 3),
+            ameliorations_proposees: amels.slice(0, 3),
+            attendus: {
+                verbe_index: acGetAttenduIndex(verbes, att.verbe_index, att.verbe, 0),
+                competence_index: acGetAttenduIndex(compOptions, att.competence_index, expectedComp, 0),
+                niveau: expectedNiveau || 'insuffisant',
+                justif_index: acGetAttenduIndex(justifs, att.justif_index, att.justification_modele, 0),
+                amelioration_index: acGetAttenduIndex(amels, att.amelioration_index, att.reponse_amelioree_modele, 0),
+                justification_modele: att.justification_modele || exp.pourquoi_valide_ou_non || '',
+                reponse_amelioree_modele: att.reponse_amelioree_modele || exp.exemple_reponse_amelioree || ''
+            },
+            correction: item.correction || {
+                resume: exp.resume || 'Correction de l\'item.',
+                verbe_definition: exp.attendu_pedagogique || '',
+                verbe_exemple: exp.exemple_reponse_amelioree || '',
+                competence_definition: '',
+                competence_exemple: '',
+                pourquoi_ce_niveau: exp.pourquoi_valide_ou_non || '',
+                erreurs_frequentes: exp.erreurs_frequentes || []
+            }
+        };
+    });
+    return adapted;
+}
+
 function acLevelToLabel(level) {
     var lv = String(level || '').toLowerCase();
     if (lv === 'non_traite' || lv === '0' || lv === '1') return 'non_traite';
@@ -5496,6 +5587,11 @@ window.acNewFinish = function() {
 function renderAnalyseCopie(zone, c) {
     if (isAnalyseCopieNewSchema(c)) {
         renderAnalyseCopieV2(zone, c);
+        return;
+    }
+    var adapted = acAdaptLegacySchema(c);
+    if (isAnalyseCopieNewSchema(adapted)) {
+        renderAnalyseCopieV2(zone, adapted);
         return;
     }
     acState.items = c.items || [];
