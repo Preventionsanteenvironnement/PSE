@@ -1709,7 +1709,12 @@ function penduGuess(letter, keyEl) {
     const won = mot.split('').every(l => s.found.includes(l));
     const lost = s.errors >= s.maxErrors;
     if (won || lost) {
-        s.results.push({ mot: mot, won, errors: s.errors });
+        s.results.push({
+            mot: mot,
+            won,
+            errors: s.errors,
+            explication: (s.mots[s.current] && s.mots[s.current].explication) ? s.mots[s.current].explication : ''
+        });
         // Disable keyboard
         document.querySelectorAll('.pendu-key').forEach(k => { if (!k.classList.contains('used-ok') && !k.classList.contains('used-ko')) { k.style.opacity = '0.3'; k.style.cursor = 'default'; k.onclick = null; } });
         if (lost) document.getElementById('pendu-display').textContent = mot.split('').join(' ');
@@ -1729,7 +1734,8 @@ function finishPendu() {
     showResults(correct, total, s.results.map(r => ({
         ok: r.won,
         label: r.mot,
-        detail: r.won ? 'Trouve !' : 'Non trouve (' + r.errors + ' erreurs)'
+        detail: r.won ? 'Trouve !' : 'Non trouve (' + r.errors + ' erreurs)',
+        explication: r.explication || ''
     })));
 }
 
@@ -3012,7 +3018,7 @@ function showScenEtape(etapeId) {
         document.getElementById('scen-texte').textContent = 'Erreur : scenario en boucle (plus de 30 etapes parcourues).';
         document.getElementById('scen-choices').innerHTML = '';
         document.getElementById('scen-feedback').style.display = 'none';
-        const details = s.history.map(h => ({ label: h.label, ok: h.correct }));
+        const details = s.history.map(h => ({ label: h.label, ok: h.correct, detail: h.detail || '' }));
         showResults(s.score, s.totalChoices, details);
         return;
     }
@@ -3055,7 +3061,7 @@ function showScenEtape(etapeId) {
         // Real end of scenario
         document.getElementById('scen-choices').innerHTML = '<div class="scen-end"><h3>Fin du scenario</h3><p>' + etape.texte + '</p></div>';
         document.getElementById('scen-texte').style.display = 'none';
-        const details = s.history.map(h => ({ label: h.label, ok: h.correct }));
+        const details = s.history.map(h => ({ label: h.label, ok: h.correct, detail: h.detail || '' }));
         finishScenario(details);
         return;
     }
@@ -3077,7 +3083,12 @@ function answerScenario(el) {
     s.totalChoices++;
     const isCorrect = !!choix.correct;
     if (isCorrect) s.score++;
-    s.history.push({ label: choix.label.substring(0, 60), correct: isCorrect, fromEtape: etapeId });
+    s.history.push({
+        label: choix.label.substring(0, 60),
+        correct: isCorrect,
+        fromEtape: etapeId,
+        detail: (!isCorrect && choix.feedback) ? choix.feedback : ''
+    });
     // Visual feedback
     el.classList.add(isCorrect ? 'selected-correct' : 'selected-wrong');
     document.querySelectorAll('.scen-choice').forEach(c => { c.style.pointerEvents = 'none'; });
@@ -3200,6 +3211,16 @@ function validateExercice() {
             inp.readOnly = true;
         });
         details.push({ ok: correct === total, label: correct + '/' + total + ' lettres correctes', detail: '' });
+        const mcMots = (currentExo && currentExo.contenu && Array.isArray(currentExo.contenu.mots)) ? currentExo.contenu.mots : [];
+        mcMots.forEach(function(m) {
+            if (m && m.explication && String(m.explication).trim()) {
+                details.push({
+                    ok: true,
+                    label: (m.mot || 'Mot'),
+                    explication: String(m.explication).trim()
+                });
+            }
+        });
     }
 
     else if (type === 'qcm_image') {
@@ -4137,6 +4158,46 @@ function validateExercice() {
             if (progText) progText.textContent = '📊 Correction';
             var progBar = document.getElementById('ac-progress-bar');
             if (progBar) progBar.style.display = 'none';
+        }
+    }
+
+    // Injecte une explication pedagogique globale si presente dans le contenu
+    // et si aucune explication specifique n'a deja ete ajoutee.
+    if (currentExo && currentExo.contenu) {
+        const globalExpl = (currentExo.contenu.explication != null) ? String(currentExo.contenu.explication).trim() : '';
+        const hasExplInDetails = details.some(function(d) {
+            return d && d.explication && String(d.explication).trim();
+        });
+        if (globalExpl && !hasExplInDetails) {
+            details.push({
+                ok: true,
+                label: 'Explication pedagogique',
+                explication: globalExpl
+            });
+        } else if (!globalExpl && !hasExplInDetails) {
+            var explFallbackByType = {
+                texte_trous: 'Relis le texte complet : repere les indices de sens et la cohérence grammaticale de chaque trou.',
+                relier: 'Associe chaque element par logique de sens : definition, fonction ou consequence.',
+                ordre: 'Verifie la chronologie logique : cause, action, consequence.',
+                hierarchiser: 'Classe du plus prioritaire/efficace au moins prioritaire selon la logique de prevention.',
+                pendu: 'Observe l\'indice, le champ lexical et les notions du module pour identifier le bon terme.',
+                mots_croises: 'Les definitions renvoient au vocabulaire cle du cours : repere le mot technique attendu.',
+                tableau: 'Chaque case doit respecter la logique de classement du tableau (ligne/colonne).',
+                categoriser: 'Le tri se fait par categorie : compare la definition de chaque categorie avant de classer.',
+                scenario: 'Une bonne decision en prevention est celle qui protege d\'abord et réduit le risque a la source.',
+                pad: 'Rappel PAD : Danger → Situation dangereuse → Evenement declencheur → Dommage.',
+                prevention: 'Hierarchie de prevention : Supprimer > Reduire > Protection collective > EPI > Formation.',
+                estimation_risque: 'Le niveau de risque depend du croisement Gravite × Probabilite (Exposition + Declencheur).',
+                pictogramme: 'Identifie d\'abord la famille visuelle du pictogramme (obligation, interdiction, danger, secours...).'
+            };
+            var fallback = explFallbackByType[type];
+            if (fallback) {
+                details.push({
+                    ok: true,
+                    label: 'Explication pedagogique',
+                    explication: fallback
+                });
+            }
         }
     }
 
