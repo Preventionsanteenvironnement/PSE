@@ -1464,7 +1464,25 @@ function norm(t) {
 // --- 1. TEXTE A TROUS ---
 function renderTexteTrous(zone, c) {
     console.log('🔍 DEBUG renderTexteTrous contenu:', JSON.stringify(c));
-    const texte = c.texte || '';
+    // Robustesse : chercher le texte dans plusieurs emplacements possibles
+    var texte = '';
+    if (c && typeof c === 'object') {
+        texte = c.texte || c.text || c.texte_complet || '';
+    } else if (typeof c === 'string') {
+        texte = c;
+    }
+    // Si toujours vide, chercher dans currentExo au cas ou la structure est plate
+    if (!texte && currentExo) {
+        texte = currentExo.texte || currentExo.text || '';
+    }
+    if (!texte) {
+        zone.innerHTML = '<div style="padding:20px;color:#ef4444;font-weight:600;text-align:center;">' +
+            '⚠️ Erreur : le texte de cet exercice est vide.<br>' +
+            '<span style="font-size:0.85rem;color:#64748b;font-weight:400;">Verifiez dans l\'editeur que le champ "Texte" contient du texte avec des {{mots}} entre doubles accolades.</span>' +
+            '<br><button onclick="console.log(JSON.stringify(currentExo,null,2));alert(\'Donnees copiees dans la console (F12)\')" style="margin-top:12px;padding:6px 14px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;cursor:pointer;font-size:0.85rem;">🔍 Voir les donnees brutes</button>' +
+            '</div>';
+        return;
+    }
     const parts = texte.split(/(\{\{[^}]+\}\})/g);
     const mode = c.mode || 'input';
     const answers = [];
