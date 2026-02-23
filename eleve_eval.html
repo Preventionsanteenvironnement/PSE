@@ -573,6 +573,7 @@
     const DOC_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#10b981', '#e11d48'];
     const PASTILLE_LEVELS = ['facile', 'moyen', 'eleve'];
     const PASTILLE_LABELS = { facile: 'Facile', moyen: 'Moyen', eleve: 'Eleve' };
+    const NOTATION_MODES = ['notee', 'formatif_visible', 'non_notee'];
     let tabSwitchCount = 0;
     let copyPasteCount = 0;
     let rightClickCount = 0;
@@ -587,6 +588,15 @@
 
     function normalizePastilleNiveau(level) {
         return PASTILLE_LEVELS.includes(level) ? level : null;
+    }
+
+    function getModeNotation(ev) {
+        if (ev && NOTATION_MODES.includes(ev.modeNotation)) return ev.modeNotation;
+        return (ev && ev.nonNote === true) ? 'non_notee' : 'notee';
+    }
+
+    function isHorsMoyenneMode(modeNotation) {
+        return modeNotation === 'formatif_visible' || modeNotation === 'non_notee';
     }
 
     function buildPastilleChip(level, genericLabel) {
@@ -737,7 +747,13 @@
                     : '<span class="ecm-classe ecm-all">Toutes classes</span>';
                 const moduleInfo = ev.moduleId ? '<span class="ecm-module">📘 ' + ev.moduleId + '</span>' : '';
                 const pastilleInfo = buildPastilleChip(ev.pastilleNiveau, true);
-                const nonNoteInfo = ev.nonNote === true ? '<span class="ecm-module" style="background:rgba(245,158,11,0.15);color:#fcd34d;">📋 Non notee</span>' : '';
+                const modeNotation = getModeNotation(ev);
+                let nonNoteInfo = '';
+                if (modeNotation === 'non_notee') {
+                    nonNoteInfo = '<span class="ecm-module" style="background:rgba(245,158,11,0.15);color:#fcd34d;">📋 Non notee</span>';
+                } else if (modeNotation === 'formatif_visible') {
+                    nonNoteInfo = '<span class="ecm-module" style="background:rgba(59,130,246,0.15);color:#93c5fd;">🧪 Note formative</span>';
+                }
 
                 card.innerHTML = '<div class="eval-card-title">' + (ev.titre || 'Evaluation') + '</div>' +
                     '<div class="eval-card-meta">' +
@@ -1601,7 +1617,9 @@
             savedAt: now,
             savedBy: 'auto_correction'
         };
-        if (evalData.nonNote === true) evalDoc.nonNote = true;
+        const modeNotation = getModeNotation(evalData);
+        evalDoc.modeNotation = modeNotation;
+        if (isHorsMoyenneMode(modeNotation)) evalDoc.nonNote = true;
         await setDoc(doc(db, "resultats", eleveCode, "evaluations", evalId + '_eval'), evalDoc);
     }
 
@@ -1609,7 +1627,9 @@
     function showResults(correction) {
         const container = document.getElementById('results-container');
         const qs = currentEval.questions || [];
-        const isNonNote = currentEval.nonNote === true;
+        const modeNotation = getModeNotation(currentEval);
+        const isFormatifVisible = modeNotation === 'formatif_visible';
+        const isNonNote = modeNotation === 'non_notee';
         const isCorrDifferee = currentEval.correctionDifferee === true;
         const isCorrPubliee = currentEval.correctionPubliee === true;
         let html = '';
@@ -1620,7 +1640,7 @@
         // Noté + correction différée → only if prof published correction
         const showCorrection = isNonNote || (!isCorrDifferee) || (isCorrDifferee && isCorrPubliee);
 
-        // Score card (always shown, except for non-noté where we show a different message)
+        // Score card
         if (isNonNote) {
             html += '<div class="score-card">' +
                 '<div class="score-big score-ok">📋 Exercice formatif</div>' +
@@ -1632,6 +1652,9 @@
             html += '<div class="score-card">' +
                 '<div class="score-big ' + scoreClass + '">' + correction.note + ' / ' + correction.bareme + '</div>' +
                 '<div class="score-label">' + correction.totalPoints + ' points sur ' + correction.totalMax + '</div>' +
+                (isFormatifVisible
+                    ? '<div style="margin-top:8px;font-size:0.9rem;color:#64748b;">Note informative, non prise en compte (validation professeur).</div>'
+                    : '') +
                 '</div>';
         }
 

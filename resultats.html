@@ -74,6 +74,7 @@
         .status-corrected { background: #dcfce7; color: #166534; }
         .status-pending { background: #fef3c7; color: #92400e; }
         .status-nn { background: #fed7aa; color: #c2410c; }
+        .status-formative { background: #dbeafe; color: #1e40af; }
         .status-absent { background: #fee2e2; color: #991b1b; }
         .eval-note { font-weight: 800; font-size: 1.5em; padding: 8px 20px; border-radius: 10px; }
         .note-excellent { background: #dcfce7; color: #166534; }
@@ -82,6 +83,7 @@
         .note-poor { background: #fee2e2; color: #991b1b; }
         .note-pending { background: #e0e7ff; color: #3730a3; }
         .note-nn { background: #fef3c7; color: #b45309; font-weight: bold; }
+        .note-formative { background: #dbeafe; color: #1e3a8a; font-weight: bold; }
         .note-absent { background: #fee2e2; color: #dc2626; font-weight: bold; }
         .eval-actions { margin-top: 15px; display: flex; gap: 10px; }
         .btn-view { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
@@ -794,12 +796,14 @@
         .modal-note-banner.good { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
         .modal-note-banner.average { background: linear-gradient(135deg, #fef3c7, #fde68a); }
         .modal-note-banner.poor { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+        .modal-note-banner.formative { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
         .modal-note-banner.nn { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); }
         .modal-note-big { font-size: 2em; font-weight: 800; line-height: 1; }
         .modal-note-banner.excellent .modal-note-big { color: #166534; }
         .modal-note-banner.good .modal-note-big { color: #1e40af; }
         .modal-note-banner.average .modal-note-big { color: #92400e; }
         .modal-note-banner.poor .modal-note-big { color: #991b1b; }
+        .modal-note-banner.formative .modal-note-big { color: #1e3a8a; }
         .modal-note-banner.nn .modal-note-big { color: #475569; }
         .modal-note-bar { flex: 1; height: 10px; background: rgba(255,255,255,0.5); border-radius: 5px; overflow: hidden; }
         .modal-note-bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
@@ -807,6 +811,7 @@
         .modal-note-banner.good .modal-note-bar-fill { background: #3b82f6; }
         .modal-note-banner.average .modal-note-bar-fill { background: #f59e0b; }
         .modal-note-banner.poor .modal-note-bar-fill { background: #ef4444; }
+        .modal-note-banner.formative .modal-note-bar-fill { background: #2563eb; }
 
         .comp-summary { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
         .comp-summary-title { font-weight: 700; font-size: 0.95em; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
@@ -1137,6 +1142,18 @@
         let currentUserCode = null;
         let allEvaluations = [];
         let radarChart, barChart, lineChart;
+        const NOTATION_MODES = ['notee', 'formatif_visible', 'non_notee'];
+
+        function getModeNotationFromEvaluation(evaluationDoc) {
+            if (evaluationDoc && NOTATION_MODES.includes(evaluationDoc.modeNotation)) {
+                return evaluationDoc.modeNotation;
+            }
+            return (evaluationDoc && evaluationDoc.nonNote) ? 'non_notee' : 'notee';
+        }
+
+        function isHorsMoyenneMode(modeNotation) {
+            return modeNotation === 'formatif_visible' || modeNotation === 'non_notee';
+        }
 
         // ═══════════════════════════════════════════════════════
         // CONNEXION
@@ -1424,6 +1441,7 @@
                     const copie = docSnap.data();
                     const evaluation = evalsMap.get(copie.devoirId);
                     
+                    const modeNotation = getModeNotationFromEvaluation(evaluation);
                     allEvaluations.push({
                         id: docSnap.id,
                         copie: copie,
@@ -1433,7 +1451,8 @@
                         titre: copie.titre || "Devoir",
                         date: copie.createdAtISO || copie.createdAt?.toDate?.() || new Date(),
                         note: evaluation?.note_finale ?? null,
-                        nonNote: evaluation?.nonNote || false,  // ⭐ Récupérer le flag "Non noté"
+                        modeNotation: modeNotation,
+                        nonNote: isHorsMoyenneMode(modeNotation),
                         appreciation: evaluation?.appreciation || "",
                         competences: evaluation?.competences || {},
                         questions: evaluation?.questions || {},
@@ -1484,7 +1503,7 @@
             
             // Moyenne (exclure les "NN" - non notés et "ABS" - absents)
             const notes = corriges
-                .filter(e => e.note !== null && e.note !== "NN" && e.note !== "ABS" && !e.nonNote && !e.absent && !isNaN(e.note))
+                .filter(e => e.note !== null && e.note !== "NN" && e.note !== "ABS" && !isHorsMoyenneMode(e.modeNotation) && !e.absent && !isNaN(e.note))
                 .map(e => parseFloat(e.note));
             const moyenne = notes.length > 0 ? (notes.reduce((a, b) => a + b, 0) / notes.length).toFixed(1) : "--";
             
@@ -1537,8 +1556,10 @@
                 let statusBadge;
                 if (item.note === "ABS" || item.absent) {
                     statusBadge = '<span class="status-badge status-absent">🚫 Absent</span>';
-                } else if (item.note === "NN" || item.nonNote) {
+                } else if (item.modeNotation === "non_notee" || item.note === "NN") {
                     statusBadge = '<span class="status-badge status-nn">⚠️ Non noté</span>';
+                } else if (item.modeNotation === "formatif_visible") {
+                    statusBadge = '<span class="status-badge status-formative">🧪 Formatif</span>';
                 } else if (item.estCorrige) {
                     statusBadge = '<span class="status-badge status-corrected">✓ Corrigé</span>';
                 } else {
@@ -1551,7 +1572,7 @@
                 if (item.note === "ABS" || item.absent) {
                     noteText = 'ABS';
                     noteClass = 'note-absent';
-                } else if (item.note === "NN" || item.nonNote) {
+                } else if (item.modeNotation === "non_notee" || item.note === "NN") {
                     noteText = 'NN';
                     noteClass = 'note-nn';
                 } else if (item.note !== null && !isNaN(item.note)) {
@@ -1560,6 +1581,9 @@
                     else if (item.note >= 12) noteClass = 'note-good';
                     else if (item.note >= 10) noteClass = 'note-average';
                     else noteClass = 'note-poor';
+                    if (item.modeNotation === "formatif_visible") {
+                        noteClass = 'note-formative';
+                    }
                 }
                 
                 return `
@@ -1927,15 +1951,25 @@
             const bpQuestions = blueprint ? extractAllQuestions(blueprint) : [];
             bpQuestions.sort((a, b) => qOrderNumber(a, 0) - qOrderNumber(b, 0));
 
-            const isNN = evaluation.note === "NN" || evaluation.nonNote;
+            const modeNotation = evaluation.modeNotation || getModeNotationFromEvaluation(evaluation.evaluation || null);
+            const isNN = modeNotation === "non_notee" || evaluation.note === "NN";
+            const isFormatifVisible = modeNotation === "formatif_visible";
             const isABS = evaluation.note === "ABS";
             const hasNote = evaluation.note !== null && !isNaN(evaluation.note) && !isNN && !isABS;
             const noteVal = hasNote ? parseFloat(evaluation.note) : null;
-            const noteDisplay = isNN ? "Non noté" : isABS ? "Absent" : hasNote ? noteVal.toFixed(1) + "/20" : "--";
+            const noteDisplay = isNN
+                ? "Non noté"
+                : isABS
+                    ? "Absent"
+                    : hasNote
+                        ? (noteVal.toFixed(1) + "/20" + (isFormatifVisible ? " (formatif)" : ""))
+                        : "--";
 
             let noteClass = 'nn';
             if (hasNote) {
-                if (noteVal >= 16) noteClass = 'excellent';
+                if (isFormatifVisible) {
+                    noteClass = 'formative';
+                } else if (noteVal >= 16) noteClass = 'excellent';
                 else if (noteVal >= 12) noteClass = 'good';
                 else if (noteVal >= 10) noteClass = 'average';
                 else noteClass = 'poor';
