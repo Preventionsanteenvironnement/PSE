@@ -615,6 +615,7 @@
     }
 
     // === SCREENS ===
+    let _fromPopstate = false;
     function showScreen(name) {
         ['screen-login', 'screen-list', 'screen-warning', 'screen-chrono-warning', 'screen-eval', 'screen-results'].forEach(id => {
             document.getElementById(id).classList.add('screen-hidden');
@@ -622,6 +623,7 @@
         const target = document.getElementById('screen-' + name);
         target.classList.remove('screen-hidden');
         target.scrollTop = 0;
+        if (!_fromPopstate) history.pushState({ screen: name }, '', location.pathname + location.search);
     }
 
     // === NORMALIZE TEXT (for mot answers) ===
@@ -1807,6 +1809,18 @@
             alertEl.style.display = 'flex';
             setTimeout(() => { alertEl.style.display = 'none'; }, 3000);
         }
+    });
+
+    // === HISTORY BACK BUTTON ===
+    history.replaceState({ screen: 'login' }, '', location.pathname + location.search);
+    window.addEventListener('popstate', function(e) {
+        var cur = ['login','list','warning','chrono-warning','eval','results']
+            .find(n => !document.getElementById('screen-' + n).classList.contains('screen-hidden'));
+        if (cur === 'eval') {
+            history.pushState({ screen: 'eval' }, '', location.pathname + location.search);
+            return;
+        }
+        if (e.state && e.state.screen) { _fromPopstate = true; showScreen(e.state.screen); _fromPopstate = false; }
     });
 </script>
 </body>

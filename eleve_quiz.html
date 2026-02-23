@@ -780,12 +780,14 @@
     }
 
     // === NAVIGATION ECRANS ===
+    let _fromPopstate = false;
     function showScreen(name) {
         ['screen-join', 'screen-lobby', 'screen-question', 'screen-result', 'screen-summary', 'screen-paused'].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
         const el = document.getElementById('screen-' + name);
         if (el) el.style.display = 'flex';
+        if (!_fromPopstate) history.pushState({ screen: name }, '', location.pathname + location.search);
     }
 
     // === ANTI-DISPERSION ===
@@ -812,6 +814,18 @@
                 alertEl.style.display = 'none';
             }, 3000);
         }
+    });
+
+    // === HISTORY BACK BUTTON ===
+    history.replaceState({ screen: 'join' }, '', location.pathname + location.search);
+    window.addEventListener('popstate', function(e) {
+        var cur = ['join','lobby','question','result','summary','paused']
+            .find(n => document.getElementById('screen-' + n).style.display !== 'none');
+        if (cur === 'question' || cur === 'result' || cur === 'paused') {
+            history.pushState({ screen: cur }, '', location.pathname + location.search);
+            return;
+        }
+        if (e.state && e.state.screen) { _fromPopstate = true; showScreen(e.state.screen); _fromPopstate = false; }
     });
 </script>
 </body>
