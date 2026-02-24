@@ -1618,42 +1618,55 @@
         isSubmitting = true;
         if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
-        const tempsSecondes = Math.round((Date.now() - evalStartTime) / 1000);
-
-        // 1. Run auto-correction
-        const correctionResult = autoCorrect(currentEval, answers);
-
-        // 2. Save raw answers to eval_reponses
         try {
-            const respDocId = currentUser.userCode + '_' + currentEvalId;
-            await setDoc(doc(db, "eval_reponses", respDocId), {
-                eleveCode: currentUser.userCode,
-                evalId: currentEvalId,
-                classe: currentUser.classe,
-                reponses: answers,
-                submittedAt: new Date().toISOString(),
-                tabSwitchCount,
-                copyPasteCount,
-                rightClickCount,
-                screenshotCount,
-                tempsSecondes
-            });
-        } catch(e) {
-            console.error("Erreur envoi eval_reponses:", e);
+            const tempsSecondes = Math.round((Date.now() - evalStartTime) / 1000);
+
+            // 1. Run auto-correction
+            var correctionResult;
+            try {
+                correctionResult = autoCorrect(currentEval, answers);
+            } catch(corrErr) {
+                console.error("Erreur auto-correction:", corrErr);
+                // Correction de secours : compter les reponses sans crash
+                correctionResult = { questions: {}, competences: {}, totalPoints: 0, totalMax: 0, note: 0, bareme: (currentEval && currentEval.bareme) || 20 };
+            }
+
+            // 2. Save raw answers to eval_reponses
+            try {
+                const respDocId = currentUser.userCode + '_' + currentEvalId;
+                await setDoc(doc(db, "eval_reponses", respDocId), {
+                    eleveCode: currentUser.userCode,
+                    evalId: currentEvalId,
+                    classe: currentUser.classe,
+                    reponses: answers,
+                    submittedAt: new Date().toISOString(),
+                    tabSwitchCount,
+                    copyPasteCount,
+                    rightClickCount,
+                    screenshotCount,
+                    tempsSecondes
+                });
+            } catch(e) {
+                console.error("Erreur envoi eval_reponses:", e);
+            }
+
+            // 3. Write notes + copies to resultats (ne bloque pas l'affichage)
+            try {
+                await writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes);
+            } catch(e) {
+                console.warn("Erreur writeResults:", e.message);
+            }
+
+            // Desactiver la protection fermeture (copie envoyee)
+            window.onbeforeunload = null;
+
+            // 4. TOUJOURS afficher les resultats a l'eleve (meme si Firebase a eu un souci)
+            showResults(correctionResult);
+        } catch(fatalErr) {
+            console.error("Erreur fatale submitEval:", fatalErr);
+            isSubmitting = false;
+            alert("Erreur lors de la soumission. Reessaie ou contacte ton prof.\n\n(" + fatalErr.message + ")");
         }
-
-        // 3. Write notes + copies to resultats (ne bloque pas l'affichage)
-        try {
-            await writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes);
-        } catch(e) {
-            console.warn("Erreur writeResults:", e.message);
-        }
-
-        // Desactiver la protection fermeture (copie envoyee)
-        window.onbeforeunload = null;
-
-        // 4. TOUJOURS afficher les resultats a l'eleve (meme si Firebase a eu un souci)
-        showResults(correctionResult);
     };
 
     // === AUTO-CORRECTION ENGINE ===

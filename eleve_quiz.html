@@ -526,6 +526,8 @@
                 if (d.sessionId !== currentSessionId) {
                     if (joinedSessionCode && d.sessionCode && d.sessionCode !== joinedSessionCode) {
                         forceRejoin("Le prof a change de session. Entre le nouveau code.");
+                    } else {
+                        forceRejoin("La session a ete relancee. Rejoins avec le code actuel.");
                     }
                     return;
                 }
@@ -548,18 +550,27 @@
                 totalQuestions = cachedQuestions.length;
 
                 if (phase === 'lobby') {
+                    // Reset etat eleve quand le prof revient au lobby (restart)
+                    if (currentQuestionIndex !== -1) {
+                        currentQuestionIndex = -1;
+                        hasAnswered = false;
+                        myScore = 0;
+                        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                    }
                     showScreen('lobby');
                     setLobbyStatus('Connecte au quiz ' + (joinedSessionCode || '') + ' — en attente du lancement');
                 } else if (phase === 'question') {
-                    if (qIndex !== currentQuestionIndex) {
-                        const q = cachedQuestions[qIndex];
-                        if (!q) {
-                            showScreen('lobby');
-                            setLobbyStatus('Question indisponible. Attends le prochain envoi du prof.');
-                            return;
-                        }
+                    const q = cachedQuestions[qIndex];
+                    if (!q) {
+                        showScreen('lobby');
+                        setLobbyStatus('Question indisponible. Attends le prochain envoi du prof.');
+                        return;
+                    }
+                    const isNewQuestion = qIndex !== currentQuestionIndex;
+                    const questionScreenHidden = document.getElementById('screen-question').style.display === 'none';
+                    if (isNewQuestion || questionScreenHidden) {
                         currentQuestionIndex = qIndex;
-                        hasAnswered = false;
+                        if (isNewQuestion) hasAnswered = false;
                         const shuffleMap = d.shuffleMap || null;
                         const isManual = d.mode === 'manual';
                         showQuestion(q, isManual ? 0 : (d.timer || 15), shuffleMap);
@@ -810,6 +821,18 @@
             }
 
             showScreen('result');
+        }).catch(function(err) {
+            console.error("Erreur showResult:", err);
+            // Afficher quand meme le resultat en mode degrade
+            resultScreen.className = 'wrong';
+            document.getElementById('result-icon').textContent = '❓';
+            document.getElementById('result-text').textContent = "Resultat indisponible";
+            if (qType === 'mot') {
+                document.getElementById('result-answer').textContent = "Reponse : " + q.reponse;
+            } else {
+                document.getElementById('result-answer').textContent = "Reponse : " + q.choices[q.correct];
+            }
+            showScreen('result');
         });
     }
 
@@ -830,10 +853,17 @@
             const questions = cachedQuestions || [];
             const maxQuestions = totalQuestions || questions.length;
 
+            // Lire toutes les reponses en parallele (au lieu de sequentiel)
+            var respPromises = [];
+            for (var i = 0; i < maxQuestions; i++) {
+                respPromises.push(getDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + i)).catch(function() { return null; }));
+            }
+            var respSnaps = await Promise.all(respPromises);
+
             for (let i = 0; i < maxQuestions; i++) {
-                const respSnap = await getDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + i));
-                const wasCorrect = respSnap.exists() && respSnap.data().correct;
-                const didAnswer = respSnap.exists();
+                const respSnap = respSnaps[i];
+                const wasCorrect = respSnap && respSnap.exists() && respSnap.data().correct;
+                const didAnswer = respSnap && respSnap.exists();
                 if (wasCorrect) computedCorrect++;
 
                 const row = document.createElement('div');

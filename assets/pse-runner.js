@@ -50,6 +50,37 @@ const db = window.db || firebase.firestore();
 window.db = db;
 
 console.log("🚀 PSE Runner v7.4.0 RGPD (compat) - resultats/{eleveCode}/copies/");
+const RUNNER_TIMEOUT_MS = 15000;
+
+function withTimeout(promise, ms, context) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error((context || "Operation") + " : delai depasse")), ms);
+    })
+  ]);
+}
+
+function runnerToast(message, kind = "info") {
+  try {
+    let box = document.getElementById("pse-runner-toast");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "pse-runner-toast";
+      box.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;padding:10px 14px;border-radius:10px;color:#fff;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:88vw;text-align:center;display:none;";
+      document.body.appendChild(box);
+    }
+    if (kind === "error") box.style.background = "#b91c1c";
+    else if (kind === "success") box.style.background = "#166534";
+    else box.style.background = "#1d4ed8";
+    box.textContent = message;
+    box.style.display = "block";
+    clearTimeout(runnerToast._timer);
+    runnerToast._timer = setTimeout(() => {
+      box.style.display = "none";
+    }, kind === "error" ? 7000 : 3000);
+  } catch (_) {}
+}
 
 // ────────────────────────────────────────────────────────────────────────
 // UTIL : charger le blueprint (optionnel) pour l'embarquer dans la copie
@@ -65,7 +96,11 @@ async function tryLoadBlueprint(devoirId) {
 
   for (const url of candidates) {
     try {
-      const resp = await fetch(`${url}?ts=${Date.now()}`, { cache: "no-store" });
+      const resp = await withTimeout(
+        fetch(`${url}?ts=${Date.now()}`, { cache: "no-store" }),
+        7000,
+        "Chargement blueprint"
+      );
       if (!resp.ok) continue;
       const json = await resp.json();
       if (json && typeof json === "object") return json;
@@ -77,6 +112,13 @@ async function tryLoadBlueprint(devoirId) {
 
 window.envoyerCopie = async function (code, pasteStats, eleveData) {
   console.log("📤 Envoi...", { code, eleveData });
+
+  if (window.__PSE_SEND_IN_PROGRESS) {
+    runnerToast("Un envoi est deja en cours. Patientez quelques secondes.", "info");
+    throw new Error("Envoi deja en cours");
+  }
+  window.__PSE_SEND_IN_PROGRESS = true;
+  runnerToast("Envoi en cours...", "info");
 
   try {
     const eleveInfo = eleveData || { code: code, classe: "?" };
@@ -296,8 +338,12 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     let tentative = 1;
 
     // Vérifier si une copie existe déjà (copie_1)
-    const copie1Snap = await db.collection("resultats").doc(eleveCode)
-      .collection("copies").doc(`${devoirId}_copie_1`).get();
+    const copie1Snap = await withTimeout(
+      db.collection("resultats").doc(eleveCode)
+        .collection("copies").doc(`${devoirId}_copie_1`).get(),
+      RUNNER_TIMEOUT_MS,
+      "Verification copie existante"
+    );
 
     if (copie1Snap.exists && !isSecondeChance) {
       // Copie déjà envoyée et pas de 2ème chance validée → bloquer
@@ -307,8 +353,12 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     if (isSecondeChance) {
       // Compter les copies existantes pour numéroter
       try {
-        const copiesSnap = await db.collection("resultats").doc(eleveCode)
-          .collection("copies").where("devoirId", "==", devoirId).get();
+        const copiesSnap = await withTimeout(
+          db.collection("resultats").doc(eleveCode)
+            .collection("copies").where("devoirId", "==", devoirId).get(),
+          RUNNER_TIMEOUT_MS,
+          "Comptage des tentatives"
+        );
         tentative = copiesSnap.size + 1;
       } catch (countErr) {
         tentative = 2; // Fallback safe
@@ -374,17 +424,25 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
     // ════════════════════════════════════════════════════════════════
     const docPath = `resultats/${eleveCode}/copies/${stableDocId}`;
 
-    await db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data);
+    await withTimeout(
+      db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data),
+      RUNNER_TIMEOUT_MS,
+      "Ecriture de la copie"
+    );
 
     console.log("✅ Envoyé dans:", docPath);
+    runnerToast("Copie envoyee avec succes.", "success");
 
     // Nettoyage localStorage
     localStorage.removeItem("paste_log_" + devoirId);
     localStorage.removeItem(startKey);
   } catch (error) {
     console.error("❌ Erreur:", error);
+    runnerToast("Erreur d'envoi : " + (error && error.message ? error.message : "inconnue"), "error");
     // Ne pas afficher d'alert ici : le Master (envoyerDefinitivement) gère l'affichage
     throw error;
+  } finally {
+    window.__PSE_SEND_IN_PROGRESS = false;
   }
 };
 
