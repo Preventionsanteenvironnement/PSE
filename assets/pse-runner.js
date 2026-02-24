@@ -421,17 +421,51 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
 
     // ════════════════════════════════════════════════════════════════
     // ÉCRITURE resultats/{eleveCode}/copies/{stableDocId}
+    // (avec backup localStorage + retry)
     // ════════════════════════════════════════════════════════════════
     const docPath = `resultats/${eleveCode}/copies/${stableDocId}`;
 
-    await withTimeout(
-      db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data),
-      RUNNER_TIMEOUT_MS,
-      "Ecriture de la copie"
-    );
+    // Backup localStorage AVANT tentative Firebase
+    const backupKey = `devoir_backup_${eleveCode}_${devoirId}_${tentative}`;
+    try {
+      localStorage.setItem(backupKey, JSON.stringify({
+        eleveCode, devoirId, stableDocId, data, timestamp: Date.now()
+      }));
+    } catch(bkErr) {}
 
-    console.log("✅ Envoyé dans:", docPath);
-    runnerToast("Copie envoyee avec succes.", "success");
+    let writeSuccess = false;
+    try {
+      await withTimeout(
+        db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data),
+        RUNNER_TIMEOUT_MS,
+        "Ecriture de la copie"
+      );
+      writeSuccess = true;
+    } catch(writeErr) {
+      console.warn("❌ Ecriture copie echouee (tentative 1):", writeErr.message);
+      // Retry apres 3s
+      try {
+        await new Promise(r => setTimeout(r, 3000));
+        await withTimeout(
+          db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data),
+          RUNNER_TIMEOUT_MS,
+          "Ecriture de la copie (retry)"
+        );
+        writeSuccess = true;
+      } catch(retryErr) {
+        console.error("❌ Ecriture copie echouee (tentative 2):", retryErr.message);
+      }
+    }
+
+    // Nettoyer backup uniquement si Firebase a confirme
+    if (writeSuccess) {
+      try { localStorage.removeItem(backupKey); } catch(e) {}
+      console.log("✅ Envoyé dans:", docPath);
+      runnerToast("Copie envoyee avec succes.", "success");
+    } else {
+      console.warn("⚠️ Copie sauvegardee localement:", backupKey);
+      runnerToast("Copie sauvegardee localement. Elle sera envoyee des que la connexion revient.", "info");
+    }
 
     // Nettoyage localStorage
     localStorage.removeItem("paste_log_" + devoirId);
@@ -486,5 +520,39 @@ window.verifier2eChanceFirestore = async function (eleveCode, devoirId) {
   if (!snap.exists) return null;
   return snap.data().status; // "en_attente", "acceptee", "refusee"
 };
+
+// ════════════════════════════════════════════════════════════════
+// FLUSH : renvoyer les copies en attente (backup localStorage)
+// ════════════════════════════════════════════════════════════════
+window.flushPendingDevoirs = function() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith("devoir_backup_")) continue;
+      let raw;
+      try { raw = localStorage.getItem(k); } catch(e) { continue; }
+      if (!raw) continue;
+      let backup;
+      try { backup = JSON.parse(raw); } catch(e) { continue; }
+      if (!backup || !backup.eleveCode || !backup.stableDocId || !backup.data) continue;
+
+      console.log("🔄 [FLUSH] Renvoi copie backup:", backup.stableDocId);
+      (function(bk, storageKey) {
+        db.collection("resultats").doc(bk.eleveCode).collection("copies").doc(bk.stableDocId).set(bk.data)
+          .then(function() {
+            console.log("✅ [FLUSH] Copie backup envoyee:", bk.stableDocId);
+            try { localStorage.removeItem(storageKey); } catch(e) {}
+            runnerToast("Copie en attente envoyee avec succes.", "success");
+          })
+          .catch(function(err) {
+            console.warn("❌ [FLUSH] Echec renvoi copie:", err.message);
+          });
+      })(backup, k);
+    }
+  } catch(e) { console.warn("[FLUSH] Erreur flush devoirs:", e); }
+};
+
+// Auto-flush au chargement
+try { window.flushPendingDevoirs(); } catch(e) {}
 
 console.log("✅ window.envoyerCopie prêt (v7.4.0 RGPD compat - resultats/{eleveCode}/copies/)");

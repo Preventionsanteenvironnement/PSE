@@ -518,6 +518,8 @@
 
     function startListening() {
         if (unsubConfig) unsubConfig();
+        // Renvoyer les reponses en attente a chaque (re)connexion
+        flushPendingQuizAnswers();
         unsubConfig = onSnapshot(doc(db, "quiz_live_config", "global"),
             // Success callback
             function(snap) {
@@ -707,6 +709,48 @@
         }, 1000);
     }
 
+    // === FILET DE SECURITE : backup localStorage + retry ===
+    async function safeWriteQuizResponse(docId, data) {
+        var backupKey = 'quiz_pending_' + docId;
+        try { localStorage.setItem(backupKey, JSON.stringify(data)); } catch(e) {}
+        try {
+            await setDoc(doc(db, "quiz_live_reponses", docId), data);
+            try { localStorage.removeItem(backupKey); } catch(e) {}
+            return true;
+        } catch(e) {
+            console.warn("Firebase echoue, retry dans 2s...", e.message);
+            await new Promise(function(r) { setTimeout(r, 2000); });
+            try {
+                await setDoc(doc(db, "quiz_live_reponses", docId), data);
+                try { localStorage.removeItem(backupKey); } catch(e) {}
+                return true;
+            } catch(e2) {
+                console.error("Reponse sauvee localement:", backupKey);
+                return false;
+            }
+        }
+    }
+
+    // Renvoyer les reponses en attente au demarrage ou reconnexion
+    async function flushPendingQuizAnswers() {
+        try {
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (key && key.startsWith('quiz_pending_')) {
+                    var docId = key.replace('quiz_pending_', '');
+                    var data = JSON.parse(localStorage.getItem(key));
+                    if (data && data.sessionId === currentSessionId) {
+                        try {
+                            await setDoc(doc(db, "quiz_live_reponses", docId), data);
+                            localStorage.removeItem(key);
+                            console.log("Reponse en attente renvoyee:", docId);
+                        } catch(e) {}
+                    }
+                }
+            }
+        } catch(e) { console.warn("Flush pending:", e); }
+    }
+
     // === ENVOYER REPONSE QCM ===
     async function submitAnswer(answerIndex) {
         if (hasAnswered) return;
@@ -726,7 +770,6 @@
         document.getElementById('sent-msg').style.display = 'block';
 
         try {
-            // Fix 5 : utiliser le cache au lieu de relire le config entier
             const correct = cachedQuestions[currentQuestionIndex]?.correct;
             const isCorrect = answerIndex === correct;
             if (isCorrect) myScore++;
@@ -742,7 +785,9 @@
             };
             if (myTeamId) reponseDoc.teamId = myTeamId;
             if (currentGameMode !== 'solo') reponseDoc.gameMode = currentGameMode;
-            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), reponseDoc);
+
+            var docId = myVisitorId + '_q' + currentQuestionIndex;
+            await safeWriteQuizResponse(docId, reponseDoc);
         } catch(e) {
             console.error("Erreur envoi reponse:", e);
         }
@@ -763,7 +808,6 @@
         document.getElementById('mot-container').style.display = 'none';
 
         try {
-            // Fix 5 : utiliser le cache au lieu de relire le config entier
             const q = cachedQuestions[currentQuestionIndex];
             const expectedAnswer = q?.reponse || '';
             const isCorrect = normalizeText(userAnswer) === normalizeText(expectedAnswer);
@@ -773,7 +817,7 @@
                 visitorId: myVisitorId,
                 pseudo: myPseudo,
                 answerText: userAnswer,
-                answer: -1, // not a choice index
+                answer: -1,
                 questionIndex: currentQuestionIndex,
                 correct: isCorrect,
                 timestamp: Date.now(),
@@ -781,7 +825,9 @@
             };
             if (myTeamId) motReponseDoc.teamId = myTeamId;
             if (currentGameMode !== 'solo') motReponseDoc.gameMode = currentGameMode;
-            await setDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + currentQuestionIndex), motReponseDoc);
+
+            var docId = myVisitorId + '_q' + currentQuestionIndex;
+            await safeWriteQuizResponse(docId, motReponseDoc);
         } catch(e) {
             console.error("Erreur envoi reponse mot:", e);
         }

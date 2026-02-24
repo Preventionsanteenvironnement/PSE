@@ -648,6 +648,56 @@
     let isSubmitting = false;
     const SUBMIT_TIMEOUT_MS = 15000;
 
+    // === FILET DE SECURITE : auto-save localStorage ===
+    function autoSaveAnswers() {
+        if (!currentUser || !currentEvalId) return;
+        try {
+            var key = 'eval_autosave_' + currentUser.userCode + '_' + currentEvalId;
+            localStorage.setItem(key, JSON.stringify({
+                answers: answers,
+                evalId: currentEvalId,
+                userCode: currentUser.userCode,
+                questionIndex: currentQuestionIndex,
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
+    }
+
+    function clearAutoSave() {
+        if (!currentUser || !currentEvalId) return;
+        try {
+            localStorage.removeItem('eval_autosave_' + currentUser.userCode + '_' + currentEvalId);
+            localStorage.removeItem('eval_submit_backup_' + currentUser.userCode + '_' + currentEvalId);
+        } catch(e) {}
+    }
+
+    function flushPendingEval() {
+        if (!currentUser) return;
+        try {
+            var prefix = 'eval_submit_backup_' + currentUser.userCode + '_';
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k && k.indexOf(prefix) === 0) {
+                    var raw = localStorage.getItem(k);
+                    if (!raw) continue;
+                    var backup = JSON.parse(raw);
+                    if (!backup || !backup.evalId || !backup.respDocId) continue;
+                    console.log('[FLUSH] Renvoi backup eval:', backup.respDocId);
+                    (function(bk, storageKey) {
+                        setDoc(doc(db, "eval_reponses", bk.respDocId), bk.data)
+                            .then(function() {
+                                console.log('[FLUSH] Backup eval envoye:', bk.respDocId);
+                                try { localStorage.removeItem(storageKey); } catch(e) {}
+                            })
+                            .catch(function(err) {
+                                console.warn('[FLUSH] Echec renvoi backup eval:', err.message);
+                            });
+                    })(backup, k);
+                }
+            }
+        } catch(e) { console.warn('[FLUSH] Erreur flush eval:', e); }
+    }
+
     async function withSubmitTimeout(promise, context) {
         let timeoutId = null;
         const timeoutPromise = new Promise((_, reject) => {
@@ -750,6 +800,9 @@
 
         showScreen('list');
         loadAvailableEvals();
+
+        // Tenter de renvoyer les soumissions en attente
+        flushPendingEval();
     };
 
     window.doLogout = function() {
@@ -937,6 +990,20 @@
         isSubmitting = false;
         evalStartTime = Date.now();
 
+        // Restaurer les reponses sauvegardees si la page a ete rechargee
+        try {
+            var savedKey = 'eval_autosave_' + currentUser.userCode + '_' + evalId;
+            var saved = localStorage.getItem(savedKey);
+            if (saved) {
+                var parsed = JSON.parse(saved);
+                if (parsed && parsed.answers && parsed.evalId === evalId) {
+                    answers = parsed.answers;
+                    if (typeof parsed.questionIndex === 'number') currentQuestionIndex = parsed.questionIndex;
+                    console.log('[RESTORE] Reponses restaurees depuis localStorage:', Object.keys(answers).length, 'reponses');
+                }
+            }
+        } catch(e) { console.warn('[RESTORE] Echec restauration:', e); }
+
         // Protection fermeture onglet pendant l'eval
         window.onbeforeunload = function(e) {
             if (currentEval && !isSubmitting) {
@@ -1081,6 +1148,7 @@
             btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (answers[qs[i]?.id] !== undefined ? ' answered' : '');
         });
         updateProgress();
+        autoSaveAnswers();
     }
 
     function updateProgress() {
@@ -1646,23 +1714,51 @@
                 correctionResult = { questions: {}, competences: {}, totalPoints: 0, totalMax: 0, note: 0, bareme: (currentEval && currentEval.bareme) || 20 };
             }
 
-            // 2. Save raw answers to eval_reponses
+            // 2. Save raw answers to eval_reponses (avec backup localStorage + retry)
+            var respDocId = currentUser.userCode + '_' + currentEvalId;
+            var respData = {
+                eleveCode: currentUser.userCode,
+                evalId: currentEvalId,
+                classe: currentUser.classe,
+                reponses: answers,
+                submittedAt: new Date().toISOString(),
+                tabSwitchCount,
+                copyPasteCount,
+                rightClickCount,
+                screenshotCount,
+                tempsSecondes
+            };
+
+            // Backup localStorage AVANT tentative Firebase
+            var backupKey = 'eval_submit_backup_' + currentUser.userCode + '_' + currentEvalId;
             try {
-                const respDocId = currentUser.userCode + '_' + currentEvalId;
-                await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), {
-                    eleveCode: currentUser.userCode,
+                localStorage.setItem(backupKey, JSON.stringify({
                     evalId: currentEvalId,
-                    classe: currentUser.classe,
-                    reponses: answers,
-                    submittedAt: new Date().toISOString(),
-                    tabSwitchCount,
-                    copyPasteCount,
-                    rightClickCount,
-                    screenshotCount,
-                    tempsSecondes
-                }), 'Envoi des reponses');
+                    respDocId: respDocId,
+                    data: respData,
+                    timestamp: Date.now()
+                }));
+            } catch(e) {}
+
+            var evalReponsesSent = false;
+            try {
+                await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), respData), 'Envoi des reponses');
+                evalReponsesSent = true;
             } catch(e) {
-                console.error("Erreur envoi eval_reponses:", e);
+                console.error("Erreur envoi eval_reponses (tentative 1):", e);
+                // Retry apres 2s
+                try {
+                    await new Promise(function(r) { setTimeout(r, 2000); });
+                    await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), respData), 'Envoi des reponses (retry)');
+                    evalReponsesSent = true;
+                } catch(e2) {
+                    console.error("Erreur envoi eval_reponses (tentative 2):", e2);
+                }
+            }
+
+            // Nettoyer backup si envoye
+            if (evalReponsesSent) {
+                try { localStorage.removeItem(backupKey); } catch(e) {}
             }
 
             // 3. Write notes + copies to resultats (ne bloque pas l'affichage)
@@ -1675,10 +1771,16 @@
                 console.warn("Erreur writeResults:", e.message);
             }
 
+            // Nettoyer auto-save (soumission faite)
+            clearAutoSave();
+
             // Desactiver la protection fermeture (copie envoyee)
             window.onbeforeunload = null;
 
             // 4. TOUJOURS afficher les resultats a l'eleve (meme si Firebase a eu un souci)
+            if (!evalReponsesSent) {
+                alert("Tes reponses sont sauvegardees localement. Elles seront envoyees au prof des que la connexion revient.");
+            }
             showResults(correctionResult);
         } catch(fatalErr) {
             console.error("Erreur fatale submitEval:", fatalErr);
