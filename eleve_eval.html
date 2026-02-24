@@ -582,6 +582,21 @@
     let timerInterval = null;
     let timerRemaining = 0;
     let isSubmitting = false;
+    const SUBMIT_TIMEOUT_MS = 15000;
+
+    async function withSubmitTimeout(promise, context) {
+        let timeoutId = null;
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error((context || 'Operation') + ' : delai depasse'));
+            }, SUBMIT_TIMEOUT_MS);
+        });
+        try {
+            return await Promise.race([promise, timeoutPromise]);
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
 
     // === MOBILE DETECTION ===
     function isMobile() { return window.innerWidth <= 600; }
@@ -1426,7 +1441,7 @@
             // 2. Save raw answers to eval_reponses
             try {
                 const respDocId = currentUser.userCode + '_' + currentEvalId;
-                await setDoc(doc(db, "eval_reponses", respDocId), {
+                await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), {
                     eleveCode: currentUser.userCode,
                     evalId: currentEvalId,
                     classe: currentUser.classe,
@@ -1437,14 +1452,17 @@
                     rightClickCount,
                     screenshotCount,
                     tempsSecondes
-                });
+                }), 'Envoi des reponses');
             } catch(e) {
                 console.error("Erreur envoi eval_reponses:", e);
             }
 
             // 3. Write notes + copies to resultats (ne bloque pas l'affichage)
             try {
-                await writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes);
+                await withSubmitTimeout(
+                    writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes),
+                    'Enregistrement des resultats'
+                );
             } catch(e) {
                 console.warn("Erreur writeResults:", e.message);
             }
