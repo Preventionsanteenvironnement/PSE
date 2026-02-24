@@ -52,6 +52,7 @@
         }
         .pseudo-name { font-size: 1.5rem; color: white; font-weight: 800; margin-bottom: 30px; }
         .waiting-msg { color: rgba(255,255,255,0.7); font-size: 1.1rem; }
+        .lobby-status { margin-top: 10px; color: rgba(255,255,255,0.62); font-size: 0.82rem; min-height: 20px; }
         .dots::after { content: ''; animation: dots 1.5s infinite; }
         @keyframes dots {
             0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; }
@@ -243,6 +244,7 @@
         <div class="team-mates" id="team-mates-display"></div>
     </div>
     <div class="waiting-msg">En attente du prof<span class="dots"></span></div>
+    <div class="lobby-status" id="lobby-status"></div>
 </div>
 
 <!-- ECRAN 3 : QUESTION -->
@@ -350,28 +352,78 @@
     let myTeamId = null;
     let myTeam = null;
     let currentGameMode = 'solo';
+    let cachedQuestions = []; // Fix 5 : cache des questions pour eviter les relectures
+    let joinedSessionCode = localStorage.getItem('quiz_live_joinCode') || '';
 
-    // === REJOINDRE ===
+    // === UTILS : Promise avec timeout ===
+    function withTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error('TIMEOUT')); }, ms);
+            })
+        ]);
+    }
+
+    // === REJOINDRE (Fix 1 : timeout + retry) ===
+    let joinAttempts = 0;
+    const MAX_JOIN_ATTEMPTS = 3;
+
+    function setLobbyStatus(msg) {
+        const el = document.getElementById('lobby-status');
+        if (el) el.textContent = msg || '';
+    }
+
+    function forceRejoin(message) {
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (unsubConfig) { unsubConfig(); unsubConfig = null; }
+        currentSessionId = null;
+        currentQuestionIndex = -1;
+        hasAnswered = false;
+        cachedQuestions = [];
+        myTeamId = null;
+        myTeam = null;
+        setLobbyStatus('');
+        showScreen('join');
+
+        const input = document.getElementById('join-input');
+        if (input && joinedSessionCode) input.value = joinedSessionCode;
+
+        const err = document.getElementById('join-error');
+        if (err) err.textContent = message || "Session terminee. Redemande le code au prof.";
+
+        const btn = document.getElementById('btn-join');
+        if (btn) btn.disabled = false;
+    }
+
     window.joinSession = async function() {
         const code = document.getElementById('join-input').value.trim().toUpperCase();
         if (!code) {
             document.getElementById('join-error').textContent = "Entre un code !";
             return;
         }
-        document.getElementById('join-error').textContent = "Connexion...";
+        joinedSessionCode = code;
+        localStorage.setItem('quiz_live_joinCode', code);
+
+        joinAttempts++;
+        var attemptMsg = joinAttempts > 1 ? ' (tentative ' + joinAttempts + '/' + MAX_JOIN_ATTEMPTS + ')' : '';
+        document.getElementById('join-error').textContent = "Connexion..." + attemptMsg;
         document.getElementById('btn-join').disabled = true;
 
         try {
-            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
+            // Timeout de 8s sur la lecture config
+            const configSnap = await withTimeout(getDoc(doc(db, "quiz_live_config", "global")), 8000);
             if (!configSnap.exists() || configSnap.data().sessionCode !== code) {
                 document.getElementById('join-error').textContent = "Code introuvable. Verifie avec ton prof.";
                 document.getElementById('btn-join').disabled = false;
+                joinAttempts = 0;
                 return;
             }
 
             currentSessionId = configSnap.data().sessionId;
 
-            const presSnap = await getDocs(query(collection(db, "quiz_live_presence"), where("sessionId", "==", currentSessionId)));
+            // Timeout de 8s sur la lecture presence
+            const presSnap = await withTimeout(getDocs(query(collection(db, "quiz_live_presence"), where("sessionId", "==", currentSessionId))), 8000);
             const takenPseudos = [];
             let existingPseudo = null;
             presSnap.forEach(d => {
@@ -382,30 +434,49 @@
             if (existingPseudo) {
                 myPseudo = existingPseudo;
             } else {
+                // Fix 3 : pseudo unique via random + visitorId suffix si collision
                 const available = PSEUDOS.filter(p => !takenPseudos.includes(p));
-                myPseudo = available.length > 0 ? available[Math.floor(Math.random() * Math.min(5, available.length))] : "Joueur " + (takenPseudos.length + 1);
+                if (available.length > 0) {
+                    // Choisir parmi les 10 premiers disponibles (ou moins) pour reduire les collisions
+                    myPseudo = available[Math.floor(Math.random() * Math.min(10, available.length))];
+                } else {
+                    myPseudo = "Joueur " + myVisitorId.substr(-4).toUpperCase();
+                }
 
                 const numero = takenPseudos.length + 1;
-                await setDoc(doc(db, "quiz_live_presence", myVisitorId), {
+                await withTimeout(setDoc(doc(db, "quiz_live_presence", myVisitorId), {
                     visitorId: myVisitorId,
                     pseudo: myPseudo,
                     numero: numero,
                     timestamp: Date.now(),
                     sessionId: currentSessionId
-                });
+                }), 8000);
             }
 
+            joinAttempts = 0;
+            document.getElementById('join-error').textContent = '';
             showScreen('lobby');
             const parts = myPseudo.split(' ');
             document.getElementById('my-pseudo-emoji').textContent = parts[1] || '🎯';
             document.getElementById('my-pseudo-name').textContent = parts[0] || myPseudo;
             document.getElementById('my-pseudo-full').textContent = myPseudo;
+            setLobbyStatus('Session ' + joinedSessionCode + ' connectee');
 
             startListening();
 
         } catch(e) {
-            console.error(e);
-            document.getElementById('join-error').textContent = "Erreur de connexion.";
+            console.error("Erreur joinSession:", e);
+            if (e.message === 'TIMEOUT' && joinAttempts < MAX_JOIN_ATTEMPTS) {
+                // Retry automatique avec delai aleatoire (evite que 15 eleves retentent en meme temps)
+                var delay = 1000 + Math.random() * 2000;
+                document.getElementById('join-error').textContent = "Connexion lente... nouvelle tentative dans " + Math.ceil(delay / 1000) + "s";
+                setTimeout(function() { window.joinSession(); }, delay);
+                return;
+            }
+            joinAttempts = 0;
+            document.getElementById('join-error').textContent = e.message === 'TIMEOUT'
+                ? "Connexion trop lente. Verifie ton WiFi et reessaie."
+                : "Erreur de connexion. Reessaie.";
             document.getElementById('btn-join').disabled = false;
         }
     };
@@ -447,44 +518,70 @@
 
     function startListening() {
         if (unsubConfig) unsubConfig();
-        unsubConfig = onSnapshot(doc(db, "quiz_live_config", "global"), (snap) => {
-            if (!snap.exists()) return;
-            const d = snap.data();
-            if (d.sessionId !== currentSessionId) return;
-
-            // Update team info
-            updateTeamDisplay(d);
-
-            // Handle pause
-            if (d.paused) {
-                showScreen('paused');
-                if (timerInterval) clearInterval(timerInterval);
-                return;
-            }
-
-            const phase = d.phase || 'lobby';
-            const qIndex = d.currentQuestionIndex ?? -1;
-            const questions = d.questions || [];
-            totalQuestions = questions.length;
-
-            if (phase === 'lobby') {
-                showScreen('lobby');
-            } else if (phase === 'question') {
-                if (qIndex !== currentQuestionIndex) {
-                    currentQuestionIndex = qIndex;
-                    hasAnswered = false;
-                    const shuffleMap = d.shuffleMap || null;
-                    const isManual = d.mode === 'manual';
-                    showQuestion(questions[qIndex], isManual ? 0 : (d.timer || 15), shuffleMap);
+        unsubConfig = onSnapshot(doc(db, "quiz_live_config", "global"),
+            // Success callback
+            function(snap) {
+                if (!snap.exists()) return;
+                const d = snap.data();
+                if (d.sessionId !== currentSessionId) {
+                    if (joinedSessionCode && d.sessionCode && d.sessionCode !== joinedSessionCode) {
+                        forceRejoin("Le prof a change de session. Entre le nouveau code.");
+                    }
+                    return;
                 }
-            } else if (phase === 'results') {
-                if (!hasAnswered) hasAnswered = true;
-                const q = questions[qIndex];
-                showResult(q);
-            } else if (phase === 'summary') {
-                showSummary();
+
+                // Fix 5 : cacher les questions pour eviter les relectures dans submitAnswer
+                cachedQuestions = d.questions || [];
+
+                // Update team info
+                updateTeamDisplay(d);
+
+                // Handle pause
+                if (d.paused) {
+                    showScreen('paused');
+                    if (timerInterval) clearInterval(timerInterval);
+                    return;
+                }
+
+                const phase = d.phase || 'lobby';
+                const qIndex = d.currentQuestionIndex ?? -1;
+                totalQuestions = cachedQuestions.length;
+
+                if (phase === 'lobby') {
+                    showScreen('lobby');
+                    setLobbyStatus('Connecte au quiz ' + (joinedSessionCode || '') + ' — en attente du lancement');
+                } else if (phase === 'question') {
+                    if (qIndex !== currentQuestionIndex) {
+                        const q = cachedQuestions[qIndex];
+                        if (!q) {
+                            showScreen('lobby');
+                            setLobbyStatus('Question indisponible. Attends le prochain envoi du prof.');
+                            return;
+                        }
+                        currentQuestionIndex = qIndex;
+                        hasAnswered = false;
+                        const shuffleMap = d.shuffleMap || null;
+                        const isManual = d.mode === 'manual';
+                        showQuestion(q, isManual ? 0 : (d.timer || 15), shuffleMap);
+                    }
+                } else if (phase === 'results') {
+                    if (!hasAnswered) hasAnswered = true;
+                    const q = cachedQuestions[qIndex];
+                    if (!q) return;
+                    showResult(q);
+                } else if (phase === 'summary') {
+                    showSummary();
+                }
+            },
+            // Fix 2 : error callback — reconnexion auto si le listener plante
+            function(err) {
+                console.error("Listener erreur:", err);
+                // Retenter la connexion apres un delai
+                setTimeout(function() {
+                    if (currentSessionId) startListening();
+                }, 2000 + Math.random() * 2000);
             }
-        });
+        );
     }
 
     // === MEDIA HELPERS ===
@@ -618,9 +715,8 @@
         document.getElementById('sent-msg').style.display = 'block';
 
         try {
-            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
-            const questions = configSnap.data().questions || [];
-            const correct = questions[currentQuestionIndex]?.correct;
+            // Fix 5 : utiliser le cache au lieu de relire le config entier
+            const correct = cachedQuestions[currentQuestionIndex]?.correct;
             const isCorrect = answerIndex === correct;
             if (isCorrect) myScore++;
 
@@ -656,9 +752,8 @@
         document.getElementById('mot-container').style.display = 'none';
 
         try {
-            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
-            const questions = configSnap.data().questions || [];
-            const q = questions[currentQuestionIndex];
+            // Fix 5 : utiliser le cache au lieu de relire le config entier
+            const q = cachedQuestions[currentQuestionIndex];
             const expectedAnswer = q?.reponse || '';
             const isCorrect = normalizeText(userAnswer) === normalizeText(expectedAnswer);
             if (isCorrect) myScore++;
@@ -722,32 +817,24 @@
     async function showSummary() {
         if (timerInterval) clearInterval(timerInterval);
         showScreen('summary');
+        let computedCorrect = 0;
 
-        const pct = totalQuestions > 0 ? Math.round((myScore / totalQuestions) * 100) : 0;
-        document.getElementById('summary-score').textContent = myScore + ' / ' + totalQuestions;
-        document.getElementById('summary-detail').textContent = pct + '% de bonnes reponses';
-
-        let emoji, msg;
-        if (pct >= 80) { emoji = '🏆'; msg = 'Excellent travail !'; }
-        else if (pct >= 60) { emoji = '👏'; msg = 'Bien joue !'; }
-        else if (pct >= 40) { emoji = '💪'; msg = 'Continue comme ca !'; }
-        else { emoji = '📚'; msg = 'Revise bien pour la prochaine fois !'; }
-
-        document.getElementById('summary-emoji').textContent = emoji;
-        document.getElementById('summary-msg').textContent = msg;
+        document.getElementById('summary-score').textContent = '...';
+        document.getElementById('summary-detail').textContent = 'Calcul en cours...';
 
         // Build detailed question list
         const container = document.getElementById('summary-questions');
         container.innerHTML = '';
 
         try {
-            const configSnap = await getDoc(doc(db, "quiz_live_config", "global"));
-            const questions = configSnap.data().questions || [];
+            const questions = cachedQuestions || [];
+            const maxQuestions = totalQuestions || questions.length;
 
-            for (let i = 0; i < totalQuestions; i++) {
+            for (let i = 0; i < maxQuestions; i++) {
                 const respSnap = await getDoc(doc(db, "quiz_live_reponses", myVisitorId + '_q' + i));
                 const wasCorrect = respSnap.exists() && respSnap.data().correct;
                 const didAnswer = respSnap.exists();
+                if (wasCorrect) computedCorrect++;
 
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; margin-bottom:6px; background:rgba(255,255,255,0.1); border-radius:10px; animation:fadeIn 0.4s ease ' + (i * 0.1) + 's both;';
@@ -774,8 +861,23 @@
                     '</div>';
                 container.appendChild(row);
             }
+
+            const denominator = maxQuestions || totalQuestions || 0;
+            const pct = denominator > 0 ? Math.round((computedCorrect / denominator) * 100) : 0;
+            document.getElementById('summary-score').textContent = computedCorrect + ' / ' + denominator;
+            document.getElementById('summary-detail').textContent = pct + '% de bonnes reponses';
+
+            let emoji, msg;
+            if (pct >= 80) { emoji = '🏆'; msg = 'Excellent travail !'; }
+            else if (pct >= 60) { emoji = '👏'; msg = 'Bien joue !'; }
+            else if (pct >= 40) { emoji = '💪'; msg = 'Continue comme ca !'; }
+            else { emoji = '📚'; msg = 'Revise bien pour la prochaine fois !'; }
+            document.getElementById('summary-emoji').textContent = emoji;
+            document.getElementById('summary-msg').textContent = msg;
         } catch(e) {
             console.error("Erreur chargement bilan:", e);
+            document.getElementById('summary-score').textContent = '? / ' + totalQuestions;
+            document.getElementById('summary-detail').textContent = 'Erreur de chargement du bilan';
         }
     }
 
@@ -807,6 +909,9 @@
                 }, { merge: true });
             } catch(e) {}
         } else {
+            // Relancer le listener au retour (le onSnapshot peut avoir ete coupe pendant la mise en veille)
+            if (currentSessionId) startListening();
+
             const alertEl = document.getElementById('alert-tabswitch');
             document.getElementById('alert-count-msg').textContent = 'Sortie(s) detectee(s) : ' + tabSwitchCount;
             alertEl.style.display = 'flex';
