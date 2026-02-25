@@ -279,6 +279,25 @@
       margin-top: 8px;
     }
 
+    .completion-screen {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .completion-screen .completion-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+    .completion-screen h3 {
+      color: #22c55e;
+      font-size: 1.3rem;
+      margin: 0 0 10px;
+    }
+    .completion-screen p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin: 4px 0;
+    }
+
     .rem-list {
       margin-top: 8px;
       display: grid;
@@ -741,6 +760,17 @@
     }
 
     function renderStepDetail() {
+      // Show completion screen when all steps are validated
+      if (allStepsValidated() && (parcours.etapes || []).length > 0) {
+        document.getElementById("step-detail").innerHTML = '<div class="completion-screen">'
+          + '<div class="completion-icon">&#127881;</div>'
+          + '<h3>Parcours termine !</h3>'
+          + '<p>Vous avez valide toutes les etapes. Score global : ' + globalScore() + '%</p>'
+          + '<p>Vous pouvez maintenant lancer l auto-evaluation ci-dessous.</p>'
+          + '</div>';
+        return;
+      }
+
       const et = (parcours.etapes || [])[activeStepIndex];
       if (!et) {
         document.getElementById("step-detail").innerHTML = '<div class="err">Aucune etape.</div>';
@@ -749,7 +779,7 @@
 
       const unlocked = isStepUnlocked(activeStepIndex);
       const st = getStepState(et.id);
-      const maxAttempts = Number(parcours.regles.max_tentatives_par_exercice || 3);
+      const maxAttempts = Number(parcours?.regles?.max_tentatives_par_exercice || 3);
 
       const blocksHtml = (et.blocs || []).map((b) => {
         const attempts = getBlockAttemptCount(et.id, b.id);
@@ -772,7 +802,8 @@
 
       const canGoNext = st?.validated;
       const stepFeedback = ((et.remediation || {}).feedback_global || "").trim();
-      const showRem = unlocked && !st.validated && (et.blocs || []).some((b) => getBlockAttemptCount(et.id, b.id) > 0);
+      const allBlocksDone = (et.blocs || []).every((b) => getBlockAttemptCount(et.id, b.id) > 0);
+      const showRem = unlocked && !st?.validated && allBlocksDone;
 
       let remediationHtml = "";
       if (showRem) {
@@ -814,43 +845,11 @@
         ${feedbackBox}
         ${remediationHtml}
         <div class="actions">
-          <button class="btn-line" type="button" id="btn-next-step" ${canGoNext ? "" : "disabled"}>Etape suivante</button>
+          <button class="btn-line" type="button" id="btn-next-step" ${canGoNext ? "" : "disabled"}>Continuer</button>
         </div>
       `;
 
-      document.querySelectorAll("[data-run-block]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const blockId = btn.getAttribute("data-run-block");
-          const block = (et.blocs || []).find((b) => b.id === blockId);
-          if (!block) return;
-          await runBlock(et, block, false);
-        });
-      });
-
-      document.querySelectorAll("[data-run-rem]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const idx = Number(btn.getAttribute("data-run-rem"));
-          const rem = ((et.remediation || {}).si_echec || [])[idx];
-          if (!rem) return;
-          const fakeBlock = {
-            id: `REM_${idx + 1}`,
-            label: rem.message || "Remediation",
-            ref_exercice_id: rem.ref_exercice_id,
-            poids: 1
-          };
-          await runBlock(et, fakeBlock, true);
-        });
-      });
-
-      document.getElementById("btn-next-step").addEventListener("click", () => {
-        if (!st?.validated) return;
-        if (activeStepIndex < parcours.etapes.length - 1) {
-          activeStepIndex += 1;
-          renderAll();
-        } else {
-          showToast("Parcours termine. Vous pouvez lancer ou relancer l autoevaluation.");
-        }
-      });
+      // Event listeners handled via delegation in bindUIEvents()
     }
 
     function renderAutoEvalCard() {
@@ -864,7 +863,7 @@
       const currentGlobal = globalScore();
       const currentDone = totalValidatedSteps();
       const enough = currentGlobal >= recommendedScore && currentDone >= recommendedSteps;
-      const allowSkip = !!parcours.regles.autoriser_saut_autoevaluation;
+      const allowSkip = !!parcours?.regles?.autoriser_saut_autoevaluation;
 
       document.getElementById("ae-consigne").textContent = ae.consigne_prealable || "";
 
@@ -911,8 +910,8 @@
         </div>
       `;
 
-      document.getElementById("btn-ae-restart").style.display = parcours.regles.autoriser_recommencer_autoevaluation ? "inline-block" : "none";
-      document.getElementById("btn-ae-send").style.display = parcours.regles.autoriser_envoyer_autoevaluation ? "inline-block" : "none";
+      document.getElementById("btn-ae-restart").style.display = parcours?.regles?.autoriser_recommencer_autoevaluation ? "inline-block" : "none";
+      document.getElementById("btn-ae-send").style.display = parcours?.regles?.autoriser_envoyer_autoevaluation ? "inline-block" : "none";
       document.getElementById("btn-ae-back").style.display = "inline-block";
       document.getElementById("btn-ae-send").textContent = state.autoEval.sent ? "Autoevaluation envoyee" : "Envoyer l auto-evaluation";
       document.getElementById("btn-ae-send").disabled = state.autoEval.sent;
@@ -994,7 +993,7 @@
         const poll = setInterval(() => {
           if (tryLocalStorage()) return;
           if (popup && popup.closed) {
-            if (now() - started > 1200) finish(new Error("Fenetre fermee sans resultat."));
+            if (now() - started > 3000) finish(new Error("Fenetre fermee sans resultat."));
             return;
           }
           if (now() - started > timeoutMs) {
@@ -1034,7 +1033,7 @@
       }
 
       if (!isRemediation) {
-        const maxAttempts = Number(parcours.regles.max_tentatives_par_exercice || 3);
+        const maxAttempts = Number(parcours?.regles?.max_tentatives_par_exercice || 3);
         const attempts = stepState.blocks[block.id]?.attempts?.length || 0;
         if (attempts >= maxAttempts) {
           showToast("Nombre maximal de tentatives atteint pour ce bloc.", true);
@@ -1075,7 +1074,7 @@
         }
 
         if (!isRemediation) {
-          if (getStepState(step.id).validated) {
+          if (getStepState(step.id)?.validated) {
             showToast("Etape validee.");
             selectNextUnlockedStep();
           } else {
@@ -1098,7 +1097,7 @@
         ? Number(raw.points_obtenus)
         : Math.round((scorePct / 100) * pointsTotal * 100) / 100;
       return {
-        ref_autoeval_id: parcours.autoevaluation.ref_autoeval_id,
+        ref_autoeval_id: (parcours?.autoevaluation?.ref_autoeval_id || ""),
         score_pct: Math.max(0, Math.min(100, Math.round(scorePct * 10) / 10)),
         points_obtenus: pointsObtenus,
         points_total: pointsTotal,
@@ -1150,7 +1149,7 @@
     }
 
     function sendAutoEvalFlag() {
-      if (!parcours.regles.autoriser_envoyer_autoevaluation) return;
+      if (!parcours?.regles?.autoriser_envoyer_autoevaluation) return;
       state.autoEval.sent = true;
       saveState();
       renderAutoEvalCard();
@@ -1175,6 +1174,46 @@
         if (!isStepUnlocked(idx)) return;
         activeStepIndex = idx;
         renderAll();
+      });
+
+      // Delegated click handler for step-detail (avoids listener stacking on re-render)
+      document.getElementById("step-detail").addEventListener("click", async (e) => {
+        const runBtn = e.target.closest("[data-run-block]");
+        if (runBtn) {
+          const blockId = runBtn.getAttribute("data-run-block");
+          const et = (parcours.etapes || [])[activeStepIndex];
+          if (!et) return;
+          const block = (et.blocs || []).find((b) => b.id === blockId);
+          if (block) await runBlock(et, block, false);
+          return;
+        }
+        const remBtn = e.target.closest("[data-run-rem]");
+        if (remBtn) {
+          const idx = Number(remBtn.getAttribute("data-run-rem"));
+          const et = (parcours.etapes || [])[activeStepIndex];
+          if (!et) return;
+          const rem = ((et.remediation || {}).si_echec || [])[idx];
+          if (!rem) return;
+          const fakeBlock = {
+            id: "REM_" + (idx + 1),
+            label: rem.message || "Remediation",
+            ref_exercice_id: rem.ref_exercice_id,
+            poids: 1
+          };
+          await runBlock(et, fakeBlock, true);
+          return;
+        }
+        if (e.target.id === "btn-next-step" || e.target.closest("#btn-next-step")) {
+          const et = (parcours.etapes || [])[activeStepIndex];
+          const st = et ? getStepState(et.id) : null;
+          if (!st?.validated) return;
+          if (activeStepIndex < (parcours.etapes || []).length - 1) {
+            activeStepIndex += 1;
+            renderAll();
+          } else {
+            showToast("Parcours termine. Vous pouvez lancer ou relancer l autoevaluation.");
+          }
+        }
       });
 
       document.getElementById("btn-autoeval").addEventListener("click", launchAutoEval);
@@ -1215,7 +1254,7 @@
         return result;
       },
       startAutoEval: async function(refId) {
-        if (refId) parcours.autoevaluation.ref_autoeval_id = refId;
+        if (refId && parcours?.autoevaluation) parcours.autoevaluation.ref_autoeval_id = refId;
         await launchAutoEval();
         const last = state.autoEval.attempts[state.autoEval.attempts.length - 1] || null;
         return window.PSE_PARCOURS_BRIDGE.onAutoEvalCompleted(last);
