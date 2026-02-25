@@ -318,6 +318,55 @@
       color: var(--muted);
     }
 
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .catalog-item {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+
+    .catalog-item:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .catalog-item .ci-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .catalog-item .ci-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .catalog-item .ci-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .catalog-empty {
+      text-align: center;
+      padding: 30px 10px;
+      color: var(--muted);
+    }
+
     .loader,
     .err {
       text-align: center;
@@ -376,6 +425,12 @@
       </div>
     </section>
 
+    <section class="card" id="catalog-card" style="display:none;">
+      <h2 style="margin-bottom:4px;">Parcours disponibles</h2>
+      <div class="small" style="margin-bottom:8px;">Choisissez un parcours d entrainement pour commencer.</div>
+      <div id="catalog-grid" class="catalog-grid"></div>
+    </section>
+
     <section class="card" id="steps-card" style="display:none;">
       <h2 style="margin-bottom:8px;">Etapes du parcours</h2>
       <div class="steps" id="steps-grid"></div>
@@ -403,7 +458,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -1264,10 +1319,57 @@
       }
     };
 
+    async function loadCatalog() {
+      document.getElementById("head-loader").textContent = "Chargement des parcours...";
+      try {
+        const q = query(collection(db, "parcours_banque"), where("publie", "==", true));
+        const snap = await getDocs(q);
+        var items = [];
+        snap.forEach(function(d) { items.push({ id: d.id, ...d.data() }); });
+      } catch (_) {
+        // Fallback: load all and filter client-side (if index missing)
+        var allSnap = await getDocs(collection(db, "parcours_banque"));
+        var items = [];
+        allSnap.forEach(function(d) {
+          var data = d.data();
+          if (data.publie) items.push({ id: d.id, ...data });
+        });
+      }
+
+      document.getElementById("head-loader").style.display = "none";
+
+      if (!items.length) {
+        document.getElementById("catalog-card").style.display = "block";
+        document.getElementById("catalog-grid").innerHTML = '<div class="catalog-empty">Aucun parcours publie pour le moment.</div>';
+        return;
+      }
+
+      var gridHtml = items.map(function(p) {
+        var etapes = Array.isArray(p.etapes) ? p.etapes.length : 0;
+        return '<div class="catalog-item" data-parcours-id="' + esc(p.id) + '">'
+          + '<div class="ci-title">' + esc(p.titre || "Sans titre") + '</div>'
+          + '<div class="ci-desc">' + esc(p.description || "Parcours progressif d entrainement.") + '</div>'
+          + '<div class="ci-meta">'
+          + '<span class="badge">' + esc(p.module || "-") + '</span>'
+          + '<span class="badge">' + esc(p.niveau || "-") + '</span>'
+          + '<span class="badge">' + etapes + ' etape' + (etapes > 1 ? 's' : '') + '</span>'
+          + '</div></div>';
+      }).join("");
+
+      document.getElementById("catalog-card").style.display = "block";
+      document.getElementById("catalog-grid").innerHTML = gridHtml;
+
+      document.getElementById("catalog-grid").addEventListener("click", function(e) {
+        var card = e.target.closest(".catalog-item[data-parcours-id]");
+        if (!card) return;
+        var id = card.getAttribute("data-parcours-id");
+        window.location.href = "parcours.html?id=" + encodeURIComponent(id);
+      });
+    }
+
     async function loadParcours() {
       if (!parcoursId) {
-        document.getElementById("head-loader").textContent = "Parametre manquant: ?id=...";
-        document.getElementById("head-loader").className = "err";
+        await loadCatalog();
         return;
       }
 
