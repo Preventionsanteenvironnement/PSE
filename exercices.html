@@ -1118,6 +1118,28 @@ let currentNiveau = null;
 let currentModuleId = null;
 let currentExo = null;
 let corrected = false;
+const ROUTE_PARAMS = new URLSearchParams(window.location.search);
+const PARCOURS_MODE = ROUTE_PARAMS.get('parcours') === '1';
+const PARCOURS_EXO_ID = (ROUTE_PARAMS.get('exoId') || '').trim();
+const PARCOURS_CALLBACK_KEY = (ROUTE_PARAMS.get('callbackKey') || '').trim();
+let parcoursAutoStarted = false;
+
+function publishParcoursResult(result) {
+    if (!PARCOURS_MODE || !PARCOURS_CALLBACK_KEY) return;
+    try {
+        const payload = {
+            type: 'PSE_PARCOURS_RESULT',
+            callbackKey: PARCOURS_CALLBACK_KEY,
+            result: result
+        };
+        localStorage.setItem(PARCOURS_CALLBACK_KEY, JSON.stringify(payload));
+        if (window.opener && !window.opener.closed && typeof window.opener.postMessage === 'function') {
+            window.opener.postMessage(payload, '*');
+        }
+    } catch (e) {
+        console.warn('Parcours callback error:', e);
+    }
+}
 </script>
 
 <script>
@@ -1205,13 +1227,32 @@ async function loadExercices() {
     snap.forEach(d => allExercices.push({ id: d.id, ...d.data() }));
     console.log("✅ Exercices charges:", allExercices.length, allExercices.map(e => ({titre: e.titre, niveau: e.niveau, moduleId: e.moduleId})));
     renderNiveaux();
+    if (PARCOURS_MODE) {
+        var backHome = document.querySelector('.back-home');
+        if (backHome) backHome.style.display = 'none';
+    }
+
+    if (PARCOURS_MODE && PARCOURS_EXO_ID && !parcoursAutoStarted) {
+        parcoursAutoStarted = true;
+        var exo = allExercices.find(e => e.id === PARCOURS_EXO_ID);
+        if (exo) {
+            setTimeout(function() { startExercice(exo); }, 80);
+        } else {
+            var list = document.getElementById('exercices-list');
+            if (list) {
+                list.innerHTML = '<div class="empty-msg">Exercice introuvable pour ce parcours : <span class="mono">' + PARCOURS_EXO_ID + '</span></div>';
+                document.getElementById('zone-exercices').style.display = '';
+            }
+        }
+    }
 }
 
 window.loadExercices = loadExercices;
 loadExercices();
 
 // === GESTION HISTORIQUE NAVIGATEUR (bouton retour) ===
-history.replaceState({ screen: 'select' }, '', 'exercices.html');
+var BASE_ROUTE = location.pathname + location.search;
+history.replaceState({ screen: 'select' }, '', BASE_ROUTE);
 window.addEventListener('popstate', function(e) {
     if (e.state && e.state.screen === 'play') {
         showScreen('play');
@@ -1464,7 +1505,7 @@ function backToList(fromPopstate) {
     showScreen('select');
     currentExo = null;
     corrected = false;
-    if (!fromPopstate) history.pushState({ screen: 'select' }, '', 'exercices.html');
+    if (!fromPopstate) history.pushState({ screen: 'select' }, '', BASE_ROUTE);
 }
 
 function startExercice(ex) {
@@ -1522,7 +1563,7 @@ function startExercice(ex) {
     }
 
     showScreen('play');
-    history.pushState({ screen: 'play' }, '', 'exercices.html#play');
+    history.pushState({ screen: 'play' }, '', BASE_ROUTE + '#play');
     window.scrollTo(0, 0);
 }
 
@@ -4691,6 +4732,21 @@ function showResults(correct, total, details) {
     resultsZone.innerHTML = html;
     resultsZone.style.display = '';
     resultsZone.scrollIntoView({ behavior: 'smooth' });
+
+    publishParcoursResult({
+        source: 'exercices',
+        ref_exercice_id: (currentExo && currentExo.id) ? currentExo.id : PARCOURS_EXO_ID,
+        score_pct: pct,
+        points_obtenus: Number(correct) || 0,
+        points_total: Number(total) || 0,
+        tentative: 1,
+        timestamp: Date.now(),
+        details: {
+            type: currentExo && currentExo.type ? currentExo.type : '',
+            titre: currentExo && currentExo.titre ? currentExo.titre : '',
+            total_items: Array.isArray(details) ? details.length : 0
+        }
+    });
 }
 
 // =====================================================================

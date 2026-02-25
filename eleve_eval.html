@@ -583,6 +583,29 @@
     let timerRemaining = 0;
     let isSubmitting = false;
     const SUBMIT_TIMEOUT_MS = 15000;
+    const ROUTE_PARAMS = new URLSearchParams(window.location.search);
+    const PARCOURS_MODE = ROUTE_PARAMS.get('parcours') === '1';
+    const PARCOURS_EVAL_ID = (ROUTE_PARAMS.get('evalId') || '').trim();
+    const PARCOURS_CALLBACK_KEY = (ROUTE_PARAMS.get('callbackKey') || '').trim();
+    const PARCOURS_CODE = (ROUTE_PARAMS.get('code') || '').trim().toUpperCase();
+    const PARCOURS_CLASSE = (ROUTE_PARAMS.get('classe') || 'PARCOURS').trim();
+
+    function publishParcoursEvalResult(result) {
+        if (!PARCOURS_MODE || !PARCOURS_CALLBACK_KEY) return;
+        try {
+            var payload = {
+                type: 'PSE_PARCOURS_RESULT',
+                callbackKey: PARCOURS_CALLBACK_KEY,
+                result: result
+            };
+            localStorage.setItem(PARCOURS_CALLBACK_KEY, JSON.stringify(payload));
+            if (window.opener && !window.opener.closed && typeof window.opener.postMessage === 'function') {
+                window.opener.postMessage(payload, '*');
+            }
+        } catch(e) {
+            console.warn('Parcours callback autoeval error:', e);
+        }
+    }
 
     // === FILET DE SECURITE : auto-save localStorage ===
     function autoSaveAnswers() {
@@ -1862,6 +1885,22 @@
         container.innerHTML = html;
         showScreen('results');
         window.scrollTo(0, 0);
+
+        const scorePct = correction.totalMax > 0 ? Math.round((correction.totalPoints / correction.totalMax) * 1000) / 10 : 0;
+        publishParcoursEvalResult({
+            source: 'eleve_eval',
+            ref_autoeval_id: currentEvalId,
+            score_pct: scorePct,
+            points_obtenus: correction.totalPoints || 0,
+            points_total: correction.totalMax || 0,
+            tentative: 1,
+            timestamp: Date.now(),
+            details: {
+                note: correction.note,
+                bareme: correction.bareme,
+                mode_notation: getModeNotation(currentEval)
+            }
+        });
     }
 
     function formatAnswer(q, answer) {
@@ -1944,6 +1983,46 @@
         }
     });
 
+    async function bootParcoursMode() {
+        if (!PARCOURS_MODE || !PARCOURS_EVAL_ID) return;
+
+        const autoCode = PARCOURS_CODE || ('PRC' + Math.random().toString(36).slice(2, 8).toUpperCase());
+        currentUser = {
+            userCode: autoCode,
+            classe: PARCOURS_CLASSE || 'PARCOURS'
+        };
+        try {
+            localStorage.setItem('userCode', currentUser.userCode);
+            localStorage.setItem('userClasse', currentUser.classe);
+        } catch(e) {}
+
+        const infoEl = document.getElementById('sb-info');
+        const classEl = document.getElementById('sb-class');
+        if (infoEl) infoEl.textContent = '👤 ' + currentUser.userCode;
+        if (classEl) classEl.textContent = 'Classe : ' + currentUser.classe;
+
+        let evalSnap = null;
+        try {
+            evalSnap = await getDoc(doc(db, "eval_banque", PARCOURS_EVAL_ID));
+        } catch(e) {
+            console.error('Parcours mode get eval failed:', e);
+        }
+
+        if (!evalSnap || !evalSnap.exists()) {
+            showScreen('login');
+            const errEl = document.getElementById('login-error');
+            errEl.textContent = 'Autoevaluation introuvable : ' + PARCOURS_EVAL_ID;
+            errEl.classList.add('visible');
+            return;
+        }
+
+        const data = evalSnap.data() || {};
+        pendingEvalId = PARCOURS_EVAL_ID;
+        pendingEvalData = { id: PARCOURS_EVAL_ID, ...data };
+        // Parcours mode: direct start without warning flow
+        confirmStartEval();
+    }
+
     // === HISTORY BACK BUTTON ===
     history.replaceState({ screen: 'login' }, '', location.pathname + location.search);
     window.addEventListener('popstate', function(e) {
@@ -1955,6 +2034,8 @@
         }
         if (e.state && e.state.screen) { _fromPopstate = true; showScreen(e.state.screen); _fromPopstate = false; }
     });
+
+    bootParcoursMode();
 </script>
 </body>
 </html>
