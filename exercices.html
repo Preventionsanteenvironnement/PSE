@@ -1102,12 +1102,59 @@ const TYPE_ICONS = {
 const TYPE_LABELS = {
     texte_trous: 'Texte a trous', relier: 'Relier', ordre: 'Ordre', hierarchiser: 'Hierarchiser', intrus: 'Intrus',
     pendu: 'Pendu', mots_croises: 'Mots croises', swipe_vf: 'Vrai/Faux',
-    qcm_image: 'QCM Image', tableau: 'Tableau', tableau_selection: 'Tableau selection', etude_cas: 'Etude de cas', pad: 'PAD', prevention: 'Prevention', estimation_risque: 'Estimation du risque', duerp_ligne: 'Mission DUERP 1 risque', duerp_mini: 'Mission DUERP 4 risques', duer_mission_directeur: 'Mission DUERP Directeur',
+    qcm_image: 'QCM Image', tableau: 'Tableau', tableau_selection: 'Tableau selection', etude_cas: 'Etude de cas', pad: 'PAD', prevention: 'Prevention', estimation_risque: 'Estimation du risque', duerp_ligne: 'Mission DUERP 1', duerp_mini: 'Mission DUERP 2', duer_mission_directeur: 'Mission DUERP Directeur',
     qcm_classique: 'QCM Classique', qcm_series_multi: 'QCM Serie', quiz_chrono: 'Quiz Chrono', categoriser: 'Categoriser', memory: 'Memory', scenario: 'Scenario', pictogramme: 'Pictogrammes',
     analyse_copie: 'Analyse de copie'
 };
 const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini', 'duer_mission_directeur', 'pictogramme'];
 const AUTO_COMPETENCES_TYPES = ['analyse_copie'];
+
+const DOSSIERS_TRANSVERSAUX = [
+    { id: 'DUERP', label: '📋 DUERP', color: '#1e293b',
+      description: "Document Unique d'Evaluation des Risques Professionnels",
+      autoTypes: ['duerp_ligne', 'duerp_mini', 'duer_mission_directeur'] },
+    { id: 'PAD', label: '⚠️ PAD', color: '#f59e0b',
+      description: "Processus d'Apparition du Dommage",
+      autoTypes: ['pad'] },
+    { id: 'ESTIMATION', label: '📊 Estimation du risque', color: '#8b5cf6',
+      description: "Estimation du risque professionnel",
+      autoTypes: ['estimation_risque'] },
+    { id: 'PREVENTION', label: '🛡️ Prevention', color: '#22c55e',
+      description: "Mesures de prevention",
+      autoTypes: ['prevention'] },
+    { id: 'PICTOGRAMME', label: '⚠️ Pictogrammes', color: '#b45309',
+      description: "Pictogrammes de securite",
+      autoTypes: ['pictogramme'] },
+    { id: 'ACTEURS_PREV', label: '👥 Acteurs de prevention', color: '#0891b2',
+      description: "Les acteurs de prevention en entreprise",
+      autoTypes: [] },
+    { id: 'ANALYSE_RISQUES', label: '🔍 Analyse des risques pro.', color: '#dc2626',
+      description: "Analyse des risques professionnels",
+      autoTypes: [] },
+    { id: 'ANALYSE_SITUATION', label: '🏭 Analyse situation de travail', color: '#9333ea',
+      description: "Analyse d'une situation de travail",
+      autoTypes: [] },
+    { id: 'OUTILS_ANALYSE', label: '🛠️ Outils d\'analyse', color: '#0d9488',
+      description: "Outils d'analyse des risques",
+      autoTypes: [],
+      sousDossiers: [
+          { id: 'ITAMAMI', label: 'ITAMaMi' },
+          { id: '5M', label: 'Methode des 5M' },
+          { id: 'QQOQCP', label: 'QQOQCP' },
+          { id: 'ISHIKAWA', label: 'Diagramme d\'Ishikawa' }
+      ] },
+    { id: 'CARTE_MENTALE', label: '🧠 Carte mentale', color: '#ea580c',
+      description: "Cartes mentales",
+      autoTypes: [] }
+];
+
+function inferDossier(ex) {
+    if (ex.dossier) return ex.dossier;
+    for (var i = 0; i < DOSSIERS_TRANSVERSAUX.length; i++) {
+        if (DOSSIERS_TRANSVERSAUX[i].autoTypes.indexOf(ex.type) !== -1) return DOSSIERS_TRANSVERSAUX[i].id;
+    }
+    return null;
+}
 
 function isCompetencesExercice(e) {
     return e.categorie === 'competences' || AUTO_COMPETENCES_TYPES.includes(e.type);
@@ -1285,27 +1332,18 @@ function renderNiveaux() {
         grid.appendChild(btn);
     });
 
-    // Transversal buttons
+    // Transversal folder buttons
     const transGrid = document.getElementById('transversal-grid');
     if (!transGrid) return;
     transGrid.innerHTML = '';
-    const TRANSVERSAL_BTNS = [
-        { type: 'pad', label: '⚠️ PAD', color: '#f59e0b' },
-        { type: 'estimation_risque', label: '📊 Estimation du risque', color: '#8b5cf6' },
-        { type: 'prevention', label: '🛡️ Mesures de prevention', color: '#22c55e' },
-        { type: 'duerp_ligne', label: '📋 Mission DUERP 1 risque', color: '#1e293b' },
-        { type: 'duerp_mini', label: '📋 Mission DUERP 4 risques', color: '#1e293b' },
-        { type: 'duer_mission_directeur', label: '📋 Mission DUERP Directeur', color: '#0f172a' },
-        { type: 'pictogramme', label: '⚠️ Pictogrammes', color: '#b45309' }
-    ];
-    TRANSVERSAL_BTNS.forEach(t => {
-        const count = allExercices.filter(e => TRANSVERSAL_TYPES.includes(e.type) && e.type === t.type).length;
+    DOSSIERS_TRANSVERSAUX.forEach(folder => {
+        const count = allExercices.filter(e => inferDossier(e) === folder.id).length;
         const btn = document.createElement('div');
         btn.className = 'level-btn level-btn-trans';
-        btn.style.borderColor = t.color;
-        btn.style.color = t.color;
-        btn.innerHTML = t.label + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
-        btn.onclick = () => selectTransversal(t.type, btn);
+        btn.style.borderColor = folder.color;
+        btn.style.color = folder.color;
+        btn.innerHTML = folder.label + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
+        btn.onclick = () => selectTransversalFolder(folder.id, btn);
         if (count === 0) { btn.style.opacity = '0.4'; btn.style.cursor = 'default'; btn.onclick = null; }
         transGrid.appendChild(btn);
     });
@@ -1339,7 +1377,7 @@ function selectNiveau(niveauKey, btnEl) {
     setTimeout(() => { document.getElementById('zone-modules').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
-function selectTransversal(type, btnEl) {
+function selectTransversalFolder(dossierId, btnEl) {
     currentNiveau = null;
     currentModuleId = null;
     document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
@@ -1347,9 +1385,8 @@ function selectTransversal(type, btnEl) {
     document.getElementById('zone-modules').style.display = 'none';
     document.getElementById('zone-exercices').style.display = 'none';
     document.getElementById('zone-competences').style.display = 'none';
-    // Show transversal exercises zone
     document.getElementById('zone-transversal').style.display = '';
-    renderTransversal(type);
+    renderTransversalFolder(dossierId);
     setTimeout(() => { document.getElementById('zone-transversal').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
@@ -1386,29 +1423,114 @@ function renderModules(niveauKey) {
     });
 }
 
-function renderTransversal(type) {
+function renderTransversalFolder(dossierId, filterSousDossier) {
     const container = document.getElementById('transversal-list');
     if (!container) return;
     container.innerHTML = '';
-    var transExos = allExercices.filter(e => e.type === type);
+
+    var folder = DOSSIERS_TRANSVERSAUX.find(f => f.id === dossierId);
+    if (!folder) return;
+
+    // Get all exercises for this folder
+    var folderExos = allExercices.filter(e => inferDossier(e) === dossierId);
+
+    // If filtering by sous-dossier
+    if (filterSousDossier) {
+        folderExos = folderExos.filter(e => (e.sous_dossier || '') === filterSousDossier);
+    }
+
     var label = document.getElementById('transversal-label');
-    var typeNames = { pad: '⚠️ PAD — Analyse des risques', prevention: '🛡️ Mesures de prevention', estimation_risque: '📊 Estimation du risque', duerp_ligne: '📋 Mission DUERP — 1 risque', duerp_mini: '📋 Mission DUERP — 4 risques', duer_mission_directeur: '📋 Mission DUERP — Directeur', pictogramme: '⚠️ Pictogrammes — Securite' };
-    if (label) label.textContent = (typeNames[type] || type) + ' — ' + transExos.length + ' exercice' + (transExos.length > 1 ? 's' : '');
-    if (transExos.length === 0) {
-        container.innerHTML = '<div class="empty-msg">Aucun exercice de ce type pour le moment.</div>';
+    var sdLabel = filterSousDossier ? (folder.sousDossiers || []).find(s => s.id === filterSousDossier) : null;
+    var titleText = folder.label + (sdLabel ? ' > ' + sdLabel.label : '') + ' — ' + folderExos.length + ' exercice' + (folderExos.length !== 1 ? 's' : '');
+    if (label) label.textContent = titleText;
+    if (label) label.style.color = folder.color;
+
+    // If folder has sous-dossiers AND we're not filtering, show sous-dossier buttons
+    if (folder.sousDossiers && folder.sousDossiers.length > 0 && !filterSousDossier) {
+        var sdGrid = document.createElement('div');
+        sdGrid.className = 'level-grid';
+        sdGrid.style.marginBottom = '16px';
+
+        // "Tous" button
+        var allBtn = document.createElement('div');
+        allBtn.className = 'level-btn level-btn-trans';
+        allBtn.style.borderColor = folder.color;
+        allBtn.style.color = folder.color;
+        allBtn.innerHTML = '📂 Tous (' + folderExos.length + ')';
+        allBtn.style.fontWeight = 'bold';
+        sdGrid.appendChild(allBtn);
+
+        folder.sousDossiers.forEach(sd => {
+            var sdCount = folderExos.filter(e => (e.sous_dossier || '') === sd.id).length;
+            var sdBtn = document.createElement('div');
+            sdBtn.className = 'level-btn level-btn-trans';
+            sdBtn.style.borderColor = folder.color;
+            sdBtn.style.color = folder.color;
+            sdBtn.innerHTML = sd.label + (sdCount > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + sdCount + ')</span>' : '');
+            sdBtn.onclick = () => renderTransversalFolder(dossierId, sd.id);
+            if (sdCount === 0) { sdBtn.style.opacity = '0.4'; sdBtn.style.cursor = 'default'; sdBtn.onclick = null; }
+            sdGrid.appendChild(sdBtn);
+        });
+
+        // Non-classified exercises in this folder
+        var unclassifiedCount = folderExos.filter(e => !e.sous_dossier).length;
+        if (unclassifiedCount > 0 && unclassifiedCount < folderExos.length) {
+            var ucBtn = document.createElement('div');
+            ucBtn.className = 'level-btn level-btn-trans';
+            ucBtn.style.borderColor = '#94a3b8';
+            ucBtn.style.color = '#94a3b8';
+            ucBtn.innerHTML = 'Autres (' + unclassifiedCount + ')';
+            ucBtn.onclick = () => renderTransversalFolder(dossierId, '');
+            sdGrid.appendChild(ucBtn);
+        }
+        container.appendChild(sdGrid);
+    }
+
+    if (folderExos.length === 0) {
+        container.innerHTML += '<div class="empty-msg">Aucun exercice dans ce dossier pour le moment.</div>';
         return;
     }
-    transExos.forEach(ex => {
-        const card = document.createElement('div');
-        card.className = 'exo-card';
-        card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[ex.type] || '📌') + '</div>' +
-            '<div class="exo-info"><h3>' + (ex.titre || 'Sans titre') + '</h3>' +
-            '<div class="exo-meta">' +
-            '<span class="exo-badge badge-type">' + (TYPE_LABELS[ex.type] || ex.type) + '</span>' +
-            (ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '') +
-            '</div></div>';
-        card.onclick = () => startExercice(ex);
-        container.appendChild(card);
+
+    // Group exercises by type
+    var nativeTypes = folder.autoTypes || [];
+    var groups = {};
+    folderExos.forEach(ex => {
+        var t = ex.type;
+        if (!groups[t]) groups[t] = [];
+        groups[t].push(ex);
+    });
+
+    // Order: native types first, then others alphabetically
+    var orderedTypes = nativeTypes.filter(t => groups[t]);
+    Object.keys(groups).forEach(t => {
+        if (orderedTypes.indexOf(t) === -1) orderedTypes.push(t);
+    });
+
+    // If only one type group, skip sub-headings
+    var showSubHeadings = orderedTypes.length > 1;
+
+    orderedTypes.forEach(type => {
+        var exos = groups[type];
+        if (showSubHeadings) {
+            var subLabel = document.createElement('div');
+            subLabel.className = 'theme-label';
+            subLabel.style.fontSize = '0.9rem';
+            subLabel.style.marginTop = '12px';
+            subLabel.textContent = (TYPE_LABELS[type] || type) + ' (' + exos.length + ')';
+            container.appendChild(subLabel);
+        }
+        exos.forEach(ex => {
+            var card = document.createElement('div');
+            card.className = 'exo-card';
+            card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[ex.type] || '📌') + '</div>' +
+                '<div class="exo-info"><h3>' + (ex.titre || 'Sans titre') + '</h3>' +
+                '<div class="exo-meta">' +
+                '<span class="exo-badge badge-type">' + (TYPE_LABELS[ex.type] || ex.type) + '</span>' +
+                (ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '') +
+                '</div></div>';
+            card.onclick = () => startExercice(ex);
+            container.appendChild(card);
+        });
     });
 }
 
@@ -2711,7 +2833,7 @@ function renderDuerpLigne(zone, c) {
 
     // Header
     html += '<div class="duerp-header">';
-    html += '<div class="duerp-header-title">📋 Mission DUERP — 1 risque</div>';
+    html += '<div class="duerp-header-title">📋 Mission DUERP 1</div>';
     html += '<div class="duerp-header-sub">' + (c.titre || '') + '</div>';
     html += '</div>';
 
@@ -2782,7 +2904,7 @@ function renderDuerpMini(zone, c) {
 
     // Header
     html += '<div class="duerp-header">';
-    html += '<div class="duerp-header-title">📋 Mission DUERP — 4 risques</div>';
+    html += '<div class="duerp-header-title">📋 Mission DUERP 2</div>';
     html += '<div class="duerp-header-sub">' + (c.titre || '') + ' — ' + (c.entreprise || '') + '</div>';
     html += '</div>';
 
