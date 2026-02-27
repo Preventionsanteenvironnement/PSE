@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lire et Ecrire — PSE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8; color: #1e293b; min-height: 100vh;
+        }
+        .container { min-height: 100vh; padding: 20px; max-width: 800px; margin: 0 auto; }
+
+        /* === HEADER === */
+        .page-header {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white; padding: 20px 24px; border-radius: 16px;
+            margin-bottom: 24px; text-align: center;
+        }
+        .page-header h1 { font-size: 1.5rem; font-weight: 800; }
+        .page-header p { opacity: 0.85; font-size: 0.9rem; margin-top: 4px; }
+        .back-home {
+            display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none;
+            font-size: 0.85rem; opacity: 0.8; margin-bottom: 10px;
+        }
+        .back-home:hover { opacity: 1; }
+
+        /* === CATEGORY TABS === */
+        .cat-tabs {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            margin-bottom: 24px;
+        }
+        .cat-tab {
+            padding: 16px 12px; background: white; border: 2px solid #e2e8f0;
+            border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 1rem;
+            text-align: center; transition: 0.2s; color: #1e293b;
+        }
+        .cat-tab:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .cat-tab.active { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .cat-tab.active-images { border-color: #3b82f6; background: #eff6ff; color: #2563eb; }
+        .cat-tab.active-mots { border-color: #22c55e; background: #f0fdf4; color: #166534; }
+        .cat-tab.active-lecture { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+        .cat-tab .cat-count {
+            display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-top: 2px;
+        }
+
+        /* === EXERCISE LIST === */
+        .exo-list-section { margin-bottom: 24px; }
+        .exo-list-label {
+            font-size: 0.85rem; color: #64748b; margin-bottom: 10px; font-weight: 600;
+        }
+        .exo-card {
+            background: white; border-radius: 14px; padding: 16px 20px;
+            margin-bottom: 10px; cursor: pointer; transition: 0.2s;
+            border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 14px;
+        }
+        .exo-card:hover { border-color: #8b5cf6; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .exo-icon { font-size: 1.8rem; flex-shrink: 0; }
+        .exo-info { flex: 1; }
+        .exo-info h3 { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+        .exo-meta { font-size: 0.8rem; color: #64748b; display: flex; gap: 8px; flex-wrap: wrap; }
+        .exo-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .badge-facile { background: #dcfce7; color: #166534; }
+        .badge-moyen { background: #fef3c7; color: #92400e; }
+        .badge-difficile { background: #fee2e2; color: #991b1b; }
+        .badge-tpl { background: #f1f5f9; color: #475569; }
+        .empty-msg { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 1rem; }
+
+        /* === EXERCISE PLAY ZONE === */
+        #play-zone { display: none; }
+
+        .play-header {
+            background: white; border-radius: 14px; padding: 16px 20px;
+            margin-bottom: 16px; display: flex; align-items: center; gap: 14px;
+            border: 1px solid #e2e8f0;
+        }
+        .play-header .back-btn {
+            background: #e2e8f0; border: none; border-radius: 10px; width: 40px; height: 40px;
+            font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            color: #475569; transition: 0.2s; flex-shrink: 0;
+        }
+        .play-header .back-btn:hover { background: #cbd5e1; }
+        .play-header h2 { font-size: 1.05rem; font-weight: 700; flex: 1; }
+
+        .btn-audio {
+            background: #8b5cf6; color: white; border: none; border-radius: 10px;
+            padding: 8px 14px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+            transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-audio:hover { background: #7c3aed; }
+        .btn-audio:active { transform: scale(0.95); }
+
+        .consigne-box {
+            background: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 12px 16px;
+            border-radius: 0 10px 10px 0; margin-bottom: 16px; font-size: 0.95rem;
+            color: #5b21b6; font-weight: 600;
+        }
+
+        .game-zone {
+            background: white; border-radius: 16px; padding: 24px;
+            border: 1px solid #e2e8f0; min-height: 200px; margin-bottom: 16px;
+        }
+
+        /* Image display */
+        .exo-image {
+            display: block; max-width: 100%; max-height: 300px;
+            margin: 0 auto 20px; border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+
+        /* Choice buttons */
+        .choices-grid { display: flex; flex-direction: column; gap: 10px; }
+        .choice-btn {
+            padding: 16px 20px; background: #f8fafc; border: 2px solid #e2e8f0;
+            border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 1.1rem;
+            text-align: center; transition: 0.2s; color: #1e293b;
+        }
+        .choice-btn:hover { border-color: #8b5cf6; background: #f5f3ff; }
+        .choice-btn.selected { border-color: #8b5cf6; background: #ede9fe; color: #5b21b6; }
+        .choice-btn.correct { border-color: #22c55e; background: #f0fdf4; color: #166534; }
+        .choice-btn.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+        .choice-btn:disabled { cursor: default; opacity: 0.9; }
+
+        /* VF buttons */
+        .vf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .vf-btn {
+            padding: 20px; border: 2px solid #e2e8f0; border-radius: 14px;
+            background: white; cursor: pointer; font-weight: 800; font-size: 1.2rem;
+            text-align: center; transition: 0.2s;
+        }
+        .vf-btn:hover { transform: translateY(-2px); }
+        .vf-btn.selected { border-width: 3px; }
+        .vf-btn.correct { border-color: #22c55e; background: #f0fdf4; color: #166534; }
+        .vf-btn.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+
+        /* Text input */
+        .text-input-zone { text-align: center; }
+        .text-input-big {
+            width: 100%; max-width: 400px; padding: 16px; font-size: 1.3rem;
+            font-weight: 700; text-align: center; border: 2px solid #e2e8f0;
+            border-radius: 12px; outline: none; font-family: inherit;
+        }
+        .text-input-big:focus { border-color: #8b5cf6; }
+        .text-input-big.correct { border-color: #22c55e; background: #f0fdf4; }
+        .text-input-big.wrong { border-color: #ef4444; background: #fef2f2; }
+
+        /* Word completion */
+        .word-display {
+            font-size: 2.5rem; font-weight: 900; text-align: center;
+            letter-spacing: 8px; margin-bottom: 20px; color: #1e293b;
+        }
+        .word-display .letter-visible { color: #1e293b; }
+        .word-display .letter-hidden { color: #8b5cf6; border-bottom: 3px solid #8b5cf6; }
+
+        /* Reading text */
+        .reading-text {
+            font-size: 1.15rem; line-height: 1.8; padding: 16px; background: #fefce8;
+            border-radius: 12px; border: 1px solid #fde68a; margin-bottom: 16px;
+        }
+
+        /* Question text */
+        .question-text {
+            font-size: 1.1rem; font-weight: 700; text-align: center;
+            margin-bottom: 16px; color: #1e293b;
+        }
+
+        /* Context phrase */
+        .context-phrase {
+            font-size: 1rem; color: #64748b; text-align: center;
+            font-style: italic; margin-bottom: 16px; padding: 12px;
+            background: #f8fafc; border-radius: 10px;
+        }
+
+        /* Hint text */
+        .hint-text {
+            font-size: 0.85rem; color: #94a3b8; text-align: center;
+            font-style: italic; margin-top: 12px;
+        }
+
+        /* Feedback */
+        .feedback {
+            text-align: center; padding: 20px; border-radius: 14px; margin-top: 16px;
+            font-weight: 700; font-size: 1.1rem; display: none;
+        }
+        .feedback.show { display: block; animation: feedbackIn 0.3s ease-out; }
+        .feedback.success { background: #f0fdf4; border: 2px solid #22c55e; color: #166534; }
+        .feedback.error { background: #fef2f2; border: 2px solid #ef4444; color: #991b1b; }
+        .feedback .feedback-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+        .feedback .feedback-detail { font-size: 0.85rem; font-weight: 500; margin-top: 6px; color: #64748b; }
+
+        @keyframes feedbackIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        /* Validate button */
+        .btn-validate {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white; border: none; border-radius: 14px; font-size: 1.1rem;
+            font-weight: 800; cursor: pointer; transition: 0.2s; margin-top: 16px;
+        }
+        .btn-validate:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,92,246,0.3); }
+        .btn-validate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Next button */
+        .btn-next {
+            width: 100%; padding: 14px; background: #3b82f6; color: white;
+            border: none; border-radius: 14px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: 0.2s; margin-top: 12px; display: none;
+        }
+        .btn-next:hover { background: #2563eb; }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 600px) {
+            .container { padding: 12px; }
+            .page-header { padding: 16px; }
+            .page-header h1 { font-size: 1.3rem; }
+            .cat-tabs { gap: 8px; }
+            .cat-tab { padding: 12px 8px; font-size: 0.9rem; }
+            .game-zone { padding: 16px; }
+            .word-display { font-size: 2rem; letter-spacing: 5px; }
+            .choice-btn { font-size: 1rem; padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="page-header">
+        <a href="index.html" class="back-home">&larr; Retour a l'accueil</a>
+        <h1>📖 S'entrainer a lire et ecrire</h1>
+        <p>Exercices de lecture et d'ecriture</p>
+    </div>
+
+    <!-- LIST ZONE -->
+    <div id="list-zone">
+        <!-- Category tabs -->
+        <div class="cat-tabs" id="cat-tabs"></div>
+
+        <!-- Exercise list -->
+        <div class="exo-list-section">
+            <div class="exo-list-label" id="exo-list-label"></div>
+            <div id="exo-list"></div>
+        </div>
+    </div>
+
+    <!-- PLAY ZONE -->
+    <div id="play-zone">
+        <div class="play-header">
+            <button class="back-btn" onclick="backToList()">&larr;</button>
+            <h2 id="play-title"></h2>
+            <button class="btn-audio" onclick="parlerTitre()">🔊</button>
+        </div>
+        <div id="play-content"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, getDocs, getDoc, doc, collection, query, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
+        authDomain: "devoirs-pse.firebaseapp.com",
+        projectId: "devoirs-pse",
+        storageBucket: "devoirs-pse.firebasestorage.app",
+        messagingSenderId: "614730413904",
+        appId: "1:614730413904:web:a5dd478af5de30f6bede55"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // =============================================
+    // STATE
+    // =============================================
+    let allExercices = [];
+    let currentCategorie = 'images';
+    let currentExercice = null;
+    let attempts = 0;
+
+    const CATEGORIES = [
+        { key: "images", label: "🖼️ Images", color: "#3b82f6" },
+        { key: "mots",   label: "✏️ Mots",   color: "#22c55e" },
+        { key: "lecture", label: "📄 Lecture", color: "#f59e0b" }
+    ];
+
+    const TEMPLATE_ICONS = {
+        img_qcm_mot: "🖼️",
+        mot_completer: "✏️",
+        mot_phrase_trou: "📝",
+        mot_copier: "📋",
+        lec_vrai_faux: "✅",
+        lec_comprehension_qcm: "📖"
+    };
+
+    const TEMPLATE_LABELS = {
+        img_qcm_mot: "Image → Mot",
+        mot_completer: "Completer",
+        mot_phrase_trou: "Phrase a trous",
+        mot_copier: "Recopier",
+        lec_vrai_faux: "Vrai / Faux",
+        lec_comprehension_qcm: "Comprehension"
+    };
+
+    // =============================================
+    // TTS (Text-to-Speech)
+    // =============================================
+    function parler(texte) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(texte);
+        u.lang = 'fr-FR';
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+    }
+
+    window.parlerTitre = function() {
+        if (currentExercice) parler(currentExercice.titre || '');
+    };
+
+    window.parlerTexte = function(text) {
+        parler(text);
+    };
+
+    // =============================================
+    // LOAD DATA
+    // =============================================
+    const params = new URLSearchParams(window.location.search);
+    const previewId = params.get('preview');
+
+    if (previewId) {
+        // Preview mode from editor
+        loadPreview(previewId);
+    } else {
+        loadExercices();
+    }
+
+    async function loadPreview(id) {
+        try {
+            const snap = await getDoc(doc(db, "lire_ecrire_banque", id));
+            if (snap.exists()) {
+                const ex = { id: snap.id, ...snap.data() };
+                document.getElementById('list-zone').style.display = 'none';
+                startExercice(ex);
+            } else {
+                document.getElementById('exo-list').innerHTML = '<div class="empty-msg">Exercice non trouve (preview).</div>';
+            }
+        } catch(e) {
+            console.error("Erreur preview:", e);
+        }
+    }
+
+    async function loadExercices() {
+        try {
+            const q = query(
+                collection(db, "lire_ecrire_banque"),
+                where("publie", "==", true),
+                limit(30)
+            );
+            const snap = await getDocs(q);
+            allExercices = [];
+            snap.forEach(d => allExercices.push({ id: d.id, ...d.data() }));
+
+            // Check hash for initial category
+            const hash = window.location.hash.replace('#', '');
+            if (['images', 'mots', 'lecture'].includes(hash)) {
+                currentCategorie = hash;
+            }
+
+            renderCategories();
+            renderExerciceList();
+        } catch(e) {
+            console.error("Erreur chargement:", e);
+            document.getElementById('exo-list').innerHTML = '<div class="empty-msg">Erreur de chargement.</div>';
+        }
+    }
+
+    // =============================================
+    // RENDER CATEGORIES
+    // =============================================
+    function renderCategories() {
+        const container = document.getElementById('cat-tabs');
+        container.innerHTML = '';
+
+        CATEGORIES.forEach(cat => {
+            const count = allExercices.filter(e => e.categorie === cat.key).length;
+            const div = document.createElement('div');
+            div.className = 'cat-tab' + (currentCategorie === cat.key ? ' active active-' + cat.key : '');
+            div.innerHTML = cat.label + '<span class="cat-count">' + count + ' exercice' + (count > 1 ? 's' : '') + '</span>';
+            div.onclick = () => {
+                currentCategorie = cat.key;
+                window.location.hash = cat.key;
+                renderCategories();
+                renderExerciceList();
+            };
+            container.appendChild(div);
+        });
+    }
+
+    // =============================================
+    // RENDER EXERCISE LIST
+    // =============================================
+    function renderExerciceList() {
+        const list = document.getElementById('exo-list');
+        const label = document.getElementById('exo-list-label');
+        list.innerHTML = '';
+
+        const filtered = allExercices.filter(e => e.categorie === currentCategorie);
+        const catInfo = CATEGORIES.find(c => c.key === currentCategorie);
+        label.textContent = (catInfo ? catInfo.label : '') + ' — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="empty-msg">Aucun exercice dans cette categorie.</div>';
+            return;
+        }
+
+        filtered.forEach(ex => {
+            const card = document.createElement('div');
+            card.className = 'exo-card';
+            card.onclick = () => startExercice(ex);
+
+            const icon = TEMPLATE_ICONS[ex.template_id] || '📝';
+            const tplLabel = TEMPLATE_LABELS[ex.template_id] || ex.template_id;
+            const diffBadge = ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '';
+
+            card.innerHTML = '<div class="exo-icon">' + icon + '</div>' +
+                '<div class="exo-info"><h3>' + escapeHtml(ex.titre || 'Sans titre') + '</h3>' +
+                '<div class="exo-meta"><span class="exo-badge badge-tpl">' + tplLabel + '</span>' + diffBadge + '</div></div>';
+            list.appendChild(card);
+        });
+    }
+
+    // =============================================
+    // START EXERCISE
+    // =============================================
+    function startExercice(ex) {
+        currentExercice = ex;
+        attempts = 0;
+
+        document.getElementById('list-zone').style.display = 'none';
+        document.getElementById('play-zone').style.display = 'block';
+        document.getElementById('play-title').textContent = ex.titre || 'Exercice';
+
+        const content = document.getElementById('play-content');
+        content.innerHTML = '';
+
+        const data = ex.data || {};
+        const RENDERERS = {
+            img_qcm_mot: renderImgQcmMot,
+            mot_completer: renderMotCompleter,
+            mot_phrase_trou: renderMotPhraseTrou,
+            mot_copier: renderMotCopier,
+            lec_vrai_faux: renderLecVraiFaux,
+            lec_comprehension_qcm: renderLecComprehensionQcm
+        };
+
+        const renderer = RENDERERS[ex.template_id];
+        if (renderer) {
+            renderer(content, data, ex);
+        } else {
+            content.innerHTML = '<div class="empty-msg">Template "' + ex.template_id + '" non supporte.</div>';
+        }
+    }
+
+    window.backToList = function() {
+        document.getElementById('play-zone').style.display = 'none';
+        document.getElementById('list-zone').style.display = 'block';
+        currentExercice = null;
+        window.speechSynthesis && window.speechSynthesis.cancel();
+    };
+
+    // =============================================
+    // RENDERER: img_qcm_mot
+    // =============================================
+    function renderImgQcmMot(container, data, ex) {
+        const choices = shuffle([data.mot_correct, ...(data.distracteurs || [])]);
+
+        let html = '<div class="consigne-box">Quel mot correspond a cette image ? <button class="btn-audio" onclick="parlerTexte(\'Quel mot correspond a cette image ?\')">🔊</button></div>';
+        html += '<div class="game-zone">';
+
+        if (data.image) {
+            html += '<img src="' + escapeAttr(data.image) + '" class="exo-image" alt="Image de l\'exercice" onerror="this.style.display=\'none\'">';
+        }
+
+        html += '<div class="choices-grid" id="choices">';
+        choices.forEach((c, i) => {
+            html += '<button class="choice-btn" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' +
+                escapeHtml(c) + ' <button class="btn-audio" style="margin-left:8px;padding:4px 8px;font-size:0.8rem;" onclick="event.stopPropagation();parlerTexte(\'' + escapeAttr(c) + '\')">🔊</button></button>';
+        });
+        html += '</div></div>';
+        html += '<button class="btn-validate" id="btn-validate" onclick="validateChoice(\'' + escapeAttr(data.mot_correct) + '\')" disabled>Valider</button>';
+        html += '<div class="feedback" id="feedback"></div>';
+        html += '<button class="btn-next" id="btn-next" onclick="nextExercice()">Exercice suivant →</button>';
+
+        container.innerHTML = html;
+    }
+
+    // =============================================
+    // RENDERER: mot_completer
+    // =============================================
+    function renderMotCompleter(container, data, ex) {
+        const lettresVisibles = data.lettres_visibles || '';
+        let displayHtml = '';
+        for (let i = 0; i < lettresVisibles.length; i++) {
+            if (lettresVisibles[i] === '_') {
+                displayHtml += '<span class="letter-hidden">_</span>';
+            } else {
+                displayHtml += '<span class="letter-visible">' + escapeHtml(lettresVisibles[i]) + '</span>';
+            }
+        }
+
+        let html = '<div class="consigne-box">Complete le mot en tapant les lettres manquantes. <button class="btn-audio" onclick="parlerTexte(\'Complete le mot\')">🔊</button></div>';
+        html += '<div class="game-zone">';
+        html += '<div class="word-display">' + displayHtml + '</div>';
+        if (data.indice) {
+            html += '<div class="hint-text">Indice : ' + escapeHtml(data.indice) + '</div>';
+        }
+        html += '<div class="text-input-zone" style="margin-top:20px;">';
+        html += '<input type="text" class="text-input-big" id="answer-input" placeholder="Tape le mot complet..." autocomplete="off" autocapitalize="none">';
+        html += '</div></div>';
+        html += '<button class="btn-validate" onclick="validateTextAnswer(\'' + escapeAttr(data.mot) + '\')">Valider</button>';
+        html += '<div class="feedback" id="feedback"></div>';
+        html += '<button class="btn-next" id="btn-next" onclick="nextExercice()">Exercice suivant →</button>';
+
+        container.innerHTML = html;
+
+        // Focus input and listen for Enter
+        setTimeout(() => {
+            const inp = document.getElementById('answer-input');
+            if (inp) {
+                inp.focus();
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') window.validateTextAnswer(data.mot);
+                });
+            }
+        }, 100);
+    }
+
+    // =============================================
+    // RENDERER: mot_phrase_trou
+    // =============================================
+    function renderMotPhraseTrou(container, data, ex) {
+        const choices = shuffle([data.mot_correct, ...(data.distracteurs || [])]);
+        const phraseHtml = escapeHtml(data.phrase || '').replace('___', '<strong style="color:#8b5cf6;">______</strong>');
+
+        let html = '<div class="consigne-box">Choisis le mot qui complete la phrase. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.phrase || '').replace('___', 'trou') + '\')">🔊</button></div>';
+        html += '<div class="game-zone">';
+        html += '<div class="reading-text" style="text-align:center; font-size:1.2rem;">' + phraseHtml + '</div>';
+        html += '<div class="choices-grid" id="choices">';
+        choices.forEach(c => {
+            html += '<button class="choice-btn" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>';
+        });
+        html += '</div></div>';
+        html += '<button class="btn-validate" id="btn-validate" onclick="validateChoice(\'' + escapeAttr(data.mot_correct) + '\')" disabled>Valider</button>';
+        html += '<div class="feedback" id="feedback"></div>';
+        html += '<button class="btn-next" id="btn-next" onclick="nextExercice()">Exercice suivant →</button>';
+
+        container.innerHTML = html;
+    }
+
+    // =============================================
+    // RENDERER: mot_copier
+    // =============================================
+    function renderMotCopier(container, data, ex) {
+        let html = '<div class="consigne-box">Recopie le mot ci-dessous. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.mot || '') + '\')">🔊</button></div>';
+        html += '<div class="game-zone">';
+        html += '<div class="word-display" style="margin-bottom:10px;">' + escapeHtml(data.mot || '') + '</div>';
+        if (data.phrase_contexte) {
+            html += '<div class="context-phrase">' + escapeHtml(data.phrase_contexte) + '</div>';
+        }
+        html += '<div class="text-input-zone">';
+        html += '<input type="text" class="text-input-big" id="answer-input" placeholder="Recopie le mot ici..." autocomplete="off" autocapitalize="none">';
+        html += '</div></div>';
+        html += '<button class="btn-validate" onclick="validateTextAnswer(\'' + escapeAttr(data.mot) + '\')">Valider</button>';
+        html += '<div class="feedback" id="feedback"></div>';
+        html += '<button class="btn-next" id="btn-next" onclick="nextExercice()">Exercice suivant →</button>';
+
+        container.innerHTML = html;
+
+        setTimeout(() => {
+            const inp = document.getElementById('answer-input');
+            if (inp) {
+                inp.focus();
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') window.validateTextAnswer(data.mot);
+                });
+            }
+        }, 100);
+    }
+
+    // =============================================
+    // RENDERER: lec_vrai_faux
+    // =============================================
+    function renderLecVraiFaux(container, data, ex) {
+        let html = '<div class="consigne-box">Lis la phrase et dis si c\'est vrai ou faux. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.phrase || '') + '\')">🔊</button></div>';
+        html += '<div class="game-zone">';
+        html += '<div class="reading-text">' + escapeHtml(data.phrase || '') + '</div>';
+        html += '<div class="vf-grid">';
+        html += '<button class="vf-btn" id="vf-true" onclick="selectVF(true)">✅ Vrai</button>';
+        html += '<button class="vf-btn" id="vf-false" onclick="selectVF(false)">❌ Faux</button>';
+        html += '</div></div>';
+        html += '<button class="btn-validate" id="btn-validate" onclick="validateVF(' + (data.reponse === true) + ')" disabled>Valider</button>';
+        html += '<div class="feedback" id="feedback"></div>';
+        html += '<button class="btn-next" id="btn-next" onclick="nextExercice()">Exercice suivant →</button>';
+
+        container.innerHTML = html;
+    }
+
+    // =============================================
+    // RENDERER: lec_comprehension_qcm
+    // =============================================
+    function renderLecComprehensionQcm(container, data, ex) {
+        const choices = shuffle([data.reponse_correcte, ...(data.distracteurs || [])]);
+
+        let html = '<div class="consigne-box">Lis le texte et reponds a la question. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.texte || '') + '\')">🔊</button></div>';
+        html += '<div class="game-zone">';
+        html += '<div class="reading-text">' + escapeHtml(data.texte || '') + '</div>';
+        html += '<div class="question-text">' + escapeHtml(data.question || '') + '</div>';
+        html += '<div class="choices-grid" id="choices">';
+        choices.forEach(c => {
+            html += '<button class="choice-btn" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>';
+        });
+        html += '</div></div>';
+        html += '<button class="btn-validate" id="btn-validate" onclick="validateChoice(\'' + escapeAttr(data.reponse_correcte) + '\')" disabled>Valider</button>';
+        html += '<div class="feedback" id="feedback"></div>';
+        html += '<button class="btn-next" id="btn-next" onclick="nextExercice()">Exercice suivant →</button>';
+
+        container.innerHTML = html;
+    }
+
+    // =============================================
+    // INTERACTION HANDLERS
+    // =============================================
+    let selectedChoice = null;
+    let selectedVF = null;
+
+    window.selectChoice = function(btn) {
+        if (btn.disabled) return;
+        document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedChoice = btn.getAttribute('data-value');
+        const valBtn = document.getElementById('btn-validate');
+        if (valBtn) valBtn.disabled = false;
+    };
+
+    window.selectVF = function(val) {
+        selectedVF = val;
+        document.getElementById('vf-true').classList.toggle('selected', val === true);
+        document.getElementById('vf-false').classList.toggle('selected', val === false);
+        const valBtn = document.getElementById('btn-validate');
+        if (valBtn) valBtn.disabled = false;
+    };
+
+    window.validateChoice = function(correctAnswer) {
+        attempts++;
+        const isCorrect = selectedChoice === correctAnswer;
+
+        // Disable all choices
+        document.querySelectorAll('.choice-btn').forEach(btn => {
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+            if (btn.getAttribute('data-value') === correctAnswer) {
+                btn.classList.add('correct');
+            } else if (btn.classList.contains('selected') && !isCorrect) {
+                btn.classList.add('wrong');
+            }
+        });
+
+        showFeedback(isCorrect, correctAnswer);
+    };
+
+    window.validateVF = function(correctAnswer) {
+        attempts++;
+        const isCorrect = selectedVF === correctAnswer;
+
+        // Disable buttons
+        document.getElementById('vf-true').style.pointerEvents = 'none';
+        document.getElementById('vf-false').style.pointerEvents = 'none';
+
+        if (correctAnswer === true) {
+            document.getElementById('vf-true').classList.add('correct');
+            if (!isCorrect) document.getElementById('vf-false').classList.add('wrong');
+        } else {
+            document.getElementById('vf-false').classList.add('correct');
+            if (!isCorrect) document.getElementById('vf-true').classList.add('wrong');
+        }
+
+        const explication = currentExercice && currentExercice.data ? currentExercice.data.explication : '';
+        showFeedback(isCorrect, correctAnswer ? 'Vrai' : 'Faux', explication);
+    };
+
+    window.validateTextAnswer = function(correctAnswer) {
+        const inp = document.getElementById('answer-input');
+        if (!inp) return;
+
+        attempts++;
+        const userAnswer = inp.value.trim();
+        const isCorrect = normalize(userAnswer) === normalize(correctAnswer);
+
+        inp.disabled = true;
+        inp.classList.add(isCorrect ? 'correct' : 'wrong');
+
+        if (!isCorrect && attempts < 2) {
+            // Allow retry
+            const fb = document.getElementById('feedback');
+            fb.className = 'feedback show error shake';
+            fb.innerHTML = '<span class="feedback-icon">❌</span>Essaie encore !';
+            setTimeout(() => {
+                inp.disabled = false;
+                inp.classList.remove('wrong');
+                inp.value = '';
+                inp.focus();
+                fb.className = 'feedback';
+            }, 1500);
+        } else {
+            showFeedback(isCorrect, correctAnswer);
+        }
+    };
+
+    function showFeedback(isCorrect, correctAnswer, extra) {
+        const fb = document.getElementById('feedback');
+        const valBtn = document.getElementById('btn-validate');
+        const nextBtn = document.getElementById('btn-next');
+
+        if (valBtn) valBtn.style.display = 'none';
+
+        if (isCorrect) {
+            fb.className = 'feedback show success';
+            fb.innerHTML = '<span class="feedback-icon">🎉</span>Bravo !';
+            parler('Bravo !');
+        } else {
+            fb.className = 'feedback show error';
+            let detail = '<span class="feedback-detail">La bonne reponse etait : <strong>' + escapeHtml(String(correctAnswer)) + '</strong></span>';
+            if (extra) detail += '<br><span class="feedback-detail">' + escapeHtml(extra) + '</span>';
+            fb.innerHTML = '<span class="feedback-icon">😕</span>Pas tout a fait...' + detail;
+        }
+
+        if (nextBtn) nextBtn.style.display = 'block';
+    }
+
+    window.nextExercice = function() {
+        if (!currentExercice) return;
+
+        // Find next exercise in same category
+        const cat = currentExercice.categorie;
+        const filtered = allExercices.filter(e => e.categorie === cat);
+        const currentIdx = filtered.findIndex(e => e.id === currentExercice.id);
+        const nextIdx = (currentIdx + 1) % filtered.length;
+
+        if (filtered.length > 1 && nextIdx !== currentIdx) {
+            startExercice(filtered[nextIdx]);
+        } else if (filtered.length <= 1) {
+            backToList();
+        } else {
+            // Only one exercise, replay it
+            startExercice(currentExercice);
+        }
+    };
+
+    // =============================================
+    // HELPERS
+    // =============================================
+    function normalize(str) {
+        return String(str).toLowerCase().trim()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.replace('#', '');
+        if (['images', 'mots', 'lecture'].includes(hash) && hash !== currentCategorie) {
+            currentCategorie = hash;
+            renderCategories();
+            renderExerciceList();
+        }
+    });
+
+</script>
+</body>
+</html>
