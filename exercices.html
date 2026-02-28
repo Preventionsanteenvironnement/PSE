@@ -377,6 +377,11 @@
         .qcm-img-choice.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
         .qcm-img-expl { font-size: 0.85rem; color: #64748b; margin-top: 6px; display: none; font-style: italic; }
         .qcm-img-placeholder { padding: 30px; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px; text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; }
+        .exo-global-image-wrap { margin-bottom: 16px; text-align: center; }
+        .exo-global-image {
+            max-width: 100%; max-height: 280px; border-radius: 12px; border: 2px solid #e2e8f0;
+            object-fit: contain; display: inline-block; background: #fff;
+        }
 
         /* --- Tableau --- */
         .tableau-zone { overflow-x: auto; }
@@ -1678,6 +1683,7 @@ function startExercice(ex) {
     const renderer = renderers[ex.type];
     if (renderer) renderer(zone, ex.contenu);
     else zone.innerHTML = '<div class="empty-msg">Type d\'exercice non supporte.</div>';
+    injectGlobalIllustration(zone, ex.contenu);
 
     // Auto-validating types: hide Valider button
     if (ex.type === 'pendu' || ex.type === 'swipe_vf' || ex.type === 'quiz_chrono' || ex.type === 'memory' || ex.type === 'scenario' || (ex.type === 'pictogramme' && (ex.contenu.mode === 'memory' || ex.contenu.mode === 'speed' || ex.contenu.mode === 'quiz_image' || ex.contenu.mode === 'nom_vers_image' || ex.contenu.mode === 'escape_game'))) {
@@ -1694,6 +1700,33 @@ function startExercice(ex) {
 // =====================================================================
 function norm(t) {
     return (t || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+const EXO_ILLUSTRATION_BASE = 'images/exercices/';
+
+function resolveGlobalIllustrationSrc(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.startsWith('http') || raw.startsWith('data:') || raw.startsWith('/') || raw.startsWith('images/')) return raw;
+    if (raw.indexOf('/') !== -1) return raw;
+    return EXO_ILLUSTRATION_BASE + raw;
+}
+
+function injectGlobalIllustration(zone, contenu) {
+    if (!zone || !contenu || !contenu.image) return;
+    const src = resolveGlobalIllustrationSrc(contenu.image);
+    if (!src) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'exo-global-image-wrap';
+    const img = document.createElement('img');
+    img.className = 'exo-global-image';
+    img.alt = 'Illustration';
+    img.src = src;
+    img.onerror = function() {
+        wrap.style.display = 'none';
+    };
+    wrap.appendChild(img);
+    zone.insertBefore(wrap, zone.firstChild);
 }
 
 // =====================================================================
