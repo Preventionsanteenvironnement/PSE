@@ -94,6 +94,25 @@
         .btn-audio:hover { background: #7c3aed; }
         .btn-audio:active { transform: scale(0.95); }
 
+        /* Big audio button for word/phrase display */
+        .btn-audio-big {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;
+            border: none; border-radius: 14px; padding: 12px 24px; font-size: 1.1rem;
+            font-weight: 800; cursor: pointer; transition: 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 12px rgba(139,92,246,0.3); margin: 10px auto;
+        }
+        .btn-audio-big:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,92,246,0.4); }
+        .btn-audio-big:active { transform: scale(0.95); }
+
+        /* Small inline audio on choices */
+        .btn-audio-sm {
+            background: #ede9fe; color: #7c3aed; border: none; border-radius: 8px;
+            padding: 4px 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+            transition: 0.2s; margin-left: 8px; display: inline-flex; align-items: center;
+        }
+        .btn-audio-sm:hover { background: #ddd6fe; }
+
         .consigne-box {
             background: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 12px 16px;
             border-radius: 0 10px 10px 0; margin-bottom: 16px; font-size: 0.95rem;
@@ -231,9 +250,9 @@
 <div class="container">
     <!-- HEADER -->
     <div class="page-header">
-        <a href="index.html" class="back-home">&larr; Retour a l'accueil</a>
-        <h1>📖 S'entrainer a lire et ecrire</h1>
-        <p>Exercices de lecture et d'ecriture</p>
+        <a href="index.html" class="back-home">&larr; Retour à l'accueil</a>
+        <h1>📖 S'entraîner à lire et écrire</h1>
+        <p>Exercices de lecture et d'écriture</p>
     </div>
 
     <!-- LIST ZONE -->
@@ -299,11 +318,11 @@
 
     const TEMPLATE_LABELS = {
         img_qcm_mot: "Image → Mot",
-        mot_completer: "Completer",
-        mot_phrase_trou: "Phrase a trous",
+        mot_completer: "Compléter",
+        mot_phrase_trou: "Phrase à trous",
         mot_copier: "Recopier",
         lec_vrai_faux: "Vrai / Faux",
-        lec_comprehension_qcm: "Comprehension"
+        lec_comprehension_qcm: "Compréhension"
     };
 
     // =============================================
@@ -347,7 +366,7 @@
                 document.getElementById('list-zone').style.display = 'none';
                 startExercice(ex);
             } else {
-                document.getElementById('exo-list').innerHTML = '<div class="empty-msg">Exercice non trouve (preview).</div>';
+                document.getElementById('exo-list').innerHTML = '<div class="empty-msg">Exercice non trouvé (preview).</div>';
             }
         } catch(e) {
             console.error("Erreur preview:", e);
@@ -414,7 +433,7 @@
         label.textContent = (catInfo ? catInfo.label : '') + ' — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
 
         if (filtered.length === 0) {
-            list.innerHTML = '<div class="empty-msg">Aucun exercice dans cette categorie.</div>';
+            list.innerHTML = '<div class="empty-msg">Aucun exercice dans cette catégorie.</div>';
             return;
         }
 
@@ -479,7 +498,7 @@
     function renderImgQcmMot(container, data, ex) {
         const choices = shuffle([data.mot_correct, ...(data.distracteurs || [])]);
 
-        let html = '<div class="consigne-box">Quel mot correspond a cette image ? <button class="btn-audio" onclick="parlerTexte(\'Quel mot correspond a cette image ?\')">🔊</button></div>';
+        let html = '<div class="consigne-box">Quel mot correspond à cette image ? <button class="btn-audio" onclick="parlerTexte(\'Quel mot correspond à cette image ?\')">🔊</button></div>';
         html += '<div class="game-zone">';
 
         if (data.image) {
@@ -488,8 +507,10 @@
 
         html += '<div class="choices-grid" id="choices">';
         choices.forEach((c, i) => {
-            html += '<button class="choice-btn" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' +
-                escapeHtml(c) + ' <button class="btn-audio" style="margin-left:8px;padding:4px 8px;font-size:0.8rem;" onclick="event.stopPropagation();parlerTexte(\'' + escapeAttr(c) + '\')">🔊</button></button>';
+            html += '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<button class="choice-btn" style="flex:1;" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>' +
+                '<button class="btn-audio-sm" onclick="event.stopPropagation();parlerTexte(\'' + escapeAttr(c) + '\')">🔊</button>' +
+                '</div>';
         });
         html += '</div></div>';
         html += '<button class="btn-validate" id="btn-validate" onclick="validateChoice(\'' + escapeAttr(data.mot_correct) + '\')" disabled>Valider</button>';
@@ -513,14 +534,15 @@
             }
         }
 
-        let html = '<div class="consigne-box">Complete le mot en tapant les lettres manquantes. <button class="btn-audio" onclick="parlerTexte(\'Complete le mot\')">🔊</button></div>';
+        let html = '<div class="consigne-box">Complète le mot en tapant le mot entier. <button class="btn-audio" onclick="parlerTexte(\'Complète le mot\')">🔊</button></div>';
         html += '<div class="game-zone">';
         html += '<div class="word-display">' + displayHtml + '</div>';
+        html += '<div style="text-align:center;"><button class="btn-audio-big" onclick="parlerTexte(\'' + escapeAttr(data.mot || '') + '\')">🔊 Écouter le mot</button></div>';
         if (data.indice) {
             html += '<div class="hint-text">Indice : ' + escapeHtml(data.indice) + '</div>';
         }
         html += '<div class="text-input-zone" style="margin-top:20px;">';
-        html += '<input type="text" class="text-input-big" id="answer-input" placeholder="Tape le mot complet..." autocomplete="off" autocapitalize="none">';
+        html += '<input type="text" class="text-input-big" id="answer-input" placeholder="Écris le mot complet ici..." autocomplete="off" autocapitalize="none">';
         html += '</div></div>';
         html += '<button class="btn-validate" onclick="validateTextAnswer(\'' + escapeAttr(data.mot) + '\')">Valider</button>';
         html += '<div class="feedback" id="feedback"></div>';
@@ -546,13 +568,18 @@
     function renderMotPhraseTrou(container, data, ex) {
         const choices = shuffle([data.mot_correct, ...(data.distracteurs || [])]);
         const phraseHtml = escapeHtml(data.phrase || '').replace('___', '<strong style="color:#8b5cf6;">______</strong>');
+        const phraseTTS = (data.phrase || '').replace('___', '...');
 
-        let html = '<div class="consigne-box">Choisis le mot qui complete la phrase. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.phrase || '').replace('___', 'trou') + '\')">🔊</button></div>';
+        let html = '<div class="consigne-box">Choisis le mot qui complète la phrase. <button class="btn-audio" onclick="parlerTexte(\'Choisis le mot qui complète la phrase.\')">🔊</button></div>';
         html += '<div class="game-zone">';
-        html += '<div class="reading-text" style="text-align:center; font-size:1.2rem;">' + phraseHtml + '</div>';
+        html += '<div class="reading-text" style="text-align:center; font-size:1.2rem;">' + phraseHtml +
+            ' <button class="btn-audio-sm" onclick="parlerTexte(\'' + escapeAttr(phraseTTS) + '\')">🔊</button></div>';
         html += '<div class="choices-grid" id="choices">';
         choices.forEach(c => {
-            html += '<button class="choice-btn" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>';
+            html += '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<button class="choice-btn" style="flex:1;" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>' +
+                '<button class="btn-audio-sm" onclick="event.stopPropagation();parlerTexte(\'' + escapeAttr(c) + '\')">🔊</button>' +
+                '</div>';
         });
         html += '</div></div>';
         html += '<button class="btn-validate" id="btn-validate" onclick="validateChoice(\'' + escapeAttr(data.mot_correct) + '\')" disabled>Valider</button>';
@@ -566,11 +593,13 @@
     // RENDERER: mot_copier
     // =============================================
     function renderMotCopier(container, data, ex) {
-        let html = '<div class="consigne-box">Recopie le mot ci-dessous. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.mot || '') + '\')">🔊</button></div>';
+        let html = '<div class="consigne-box">Recopie le mot ci-dessous. <button class="btn-audio" onclick="parlerTexte(\'Recopie le mot ci-dessous.\')">🔊</button></div>';
         html += '<div class="game-zone">';
         html += '<div class="word-display" style="margin-bottom:10px;">' + escapeHtml(data.mot || '') + '</div>';
+        html += '<div style="text-align:center;"><button class="btn-audio-big" onclick="parlerTexte(\'' + escapeAttr(data.mot || '') + '\')">🔊 Écouter le mot</button></div>';
         if (data.phrase_contexte) {
-            html += '<div class="context-phrase">' + escapeHtml(data.phrase_contexte) + '</div>';
+            html += '<div class="context-phrase">' + escapeHtml(data.phrase_contexte) +
+                ' <button class="btn-audio-sm" onclick="parlerTexte(\'' + escapeAttr(data.phrase_contexte || '') + '\')">🔊</button></div>';
         }
         html += '<div class="text-input-zone">';
         html += '<input type="text" class="text-input-big" id="answer-input" placeholder="Recopie le mot ici..." autocomplete="off" autocapitalize="none">';
@@ -596,9 +625,11 @@
     // RENDERER: lec_vrai_faux
     // =============================================
     function renderLecVraiFaux(container, data, ex) {
-        let html = '<div class="consigne-box">Lis la phrase et dis si c\'est vrai ou faux. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.phrase || '') + '\')">🔊</button></div>';
+        let html = '<div class="consigne-box">Lis la phrase et dis si c\'est vrai ou faux. <button class="btn-audio" onclick="parlerTexte(\'Lis la phrase et dis si c\\\'est vrai ou faux.\')">🔊</button></div>';
         html += '<div class="game-zone">';
-        html += '<div class="reading-text">' + escapeHtml(data.phrase || '') + '</div>';
+        html += '<div class="reading-text">' + escapeHtml(data.phrase || '') +
+            ' <button class="btn-audio-sm" onclick="parlerTexte(\'' + escapeAttr(data.phrase || '') + '\')">🔊</button></div>';
+        html += '<div style="text-align:center; margin-bottom:12px;"><button class="btn-audio-big" onclick="parlerTexte(\'' + escapeAttr(data.phrase || '') + '\')">🔊 Écouter la phrase</button></div>';
         html += '<div class="vf-grid">';
         html += '<button class="vf-btn" id="vf-true" onclick="selectVF(true)">✅ Vrai</button>';
         html += '<button class="vf-btn" id="vf-false" onclick="selectVF(false)">❌ Faux</button>';
@@ -616,13 +647,19 @@
     function renderLecComprehensionQcm(container, data, ex) {
         const choices = shuffle([data.reponse_correcte, ...(data.distracteurs || [])]);
 
-        let html = '<div class="consigne-box">Lis le texte et reponds a la question. <button class="btn-audio" onclick="parlerTexte(\'' + escapeAttr(data.texte || '') + '\')">🔊</button></div>';
+        let html = '<div class="consigne-box">Lis le texte et réponds à la question. <button class="btn-audio" onclick="parlerTexte(\'Lis le texte et réponds à la question.\')">🔊</button></div>';
         html += '<div class="game-zone">';
-        html += '<div class="reading-text">' + escapeHtml(data.texte || '') + '</div>';
-        html += '<div class="question-text">' + escapeHtml(data.question || '') + '</div>';
+        html += '<div class="reading-text">' + escapeHtml(data.texte || '') +
+            ' <button class="btn-audio-sm" onclick="parlerTexte(\'' + escapeAttr(data.texte || '') + '\')">🔊</button></div>';
+        html += '<div style="text-align:center; margin-bottom:12px;"><button class="btn-audio-big" onclick="parlerTexte(\'' + escapeAttr(data.texte || '') + '\')">🔊 Écouter le texte</button></div>';
+        html += '<div class="question-text">' + escapeHtml(data.question || '') +
+            ' <button class="btn-audio-sm" onclick="parlerTexte(\'' + escapeAttr(data.question || '') + '\')">🔊</button></div>';
         html += '<div class="choices-grid" id="choices">';
         choices.forEach(c => {
-            html += '<button class="choice-btn" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>';
+            html += '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<button class="choice-btn" style="flex:1;" data-value="' + escapeAttr(c) + '" onclick="selectChoice(this)">' + escapeHtml(c) + '</button>' +
+                '<button class="btn-audio-sm" onclick="event.stopPropagation();parlerTexte(\'' + escapeAttr(c) + '\')">🔊</button>' +
+                '</div>';
         });
         html += '</div></div>';
         html += '<button class="btn-validate" id="btn-validate" onclick="validateChoice(\'' + escapeAttr(data.reponse_correcte) + '\')" disabled>Valider</button>';
@@ -734,9 +771,9 @@
             parler('Bravo !');
         } else {
             fb.className = 'feedback show error';
-            let detail = '<span class="feedback-detail">La bonne reponse etait : <strong>' + escapeHtml(String(correctAnswer)) + '</strong></span>';
+            let detail = '<span class="feedback-detail">La bonne réponse était : <strong>' + escapeHtml(String(correctAnswer)) + '</strong></span>';
             if (extra) detail += '<br><span class="feedback-detail">' + escapeHtml(extra) + '</span>';
-            fb.innerHTML = '<span class="feedback-icon">😕</span>Pas tout a fait...' + detail;
+            fb.innerHTML = '<span class="feedback-icon">😕</span>Pas tout à fait...' + detail;
         }
 
         if (nextBtn) nextBtn.style.display = 'block';
