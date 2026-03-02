@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <title>Exercices en ligne — PSE</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -75,6 +77,25 @@
         .badge-difficile { background: #fee2e2; color: #991b1b; }
         .badge-type { background: #dbeafe; color: #1e40af; }
         .empty-msg { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 1rem; }
+        .loading-hint {
+            text-align: center; padding: 12px 16px; margin-top: 10px;
+            color: #64748b; font-size: 0.9rem; background: #e2e8f0; border-radius: 10px;
+        }
+        .loading-hint.error {
+            color: #991b1b; background: #fee2e2;
+        }
+        .load-more-wrap {
+            display: flex; justify-content: center; margin: 20px 0 8px;
+        }
+        .btn-load-more {
+            padding: 12px 20px; border: none; border-radius: 12px;
+            background: #1d4ed8; color: #fff; font-weight: 700; cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-load-more:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-load-more:disabled {
+            opacity: 0.5; cursor: not-allowed; transform: none;
+        }
 
         /* === BREADCRUMB === */
         .breadcrumb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; font-size: 0.85rem; }
@@ -1063,7 +1084,6 @@
         .scen-end h3 { color: #166534; margin-bottom: 8px; }
     </style>
 </head>
-</head>
 <body>
 
 <!-- ============================== -->
@@ -1084,6 +1104,7 @@
         <div class="level-grid" id="transversal-grid"></div>
         <div class="theme-label" style="color:#6366f1; margin-top:8px;">Developper ses competences en PSE</div>
         <div class="level-grid" id="competences-grid"></div>
+        <div id="loading-hint" class="loading-hint">Chargement des exercices...</div>
     </div>
 
     <!-- Modules -->
@@ -1108,6 +1129,10 @@
         <div class="theme-label" id="exercices-label">Exercices disponibles</div>
         <div id="exercices-list"></div>
     </div>
+
+    <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
+        <button class="btn-load-more" id="load-more-btn" onclick="loadMoreExercices()">Charger plus d'exercices</button>
+    </div>
 </div>
 
 <!-- ============================== -->
@@ -1131,6 +1156,22 @@
 // =====================================================================
 // DATA
 // =====================================================================
+(() => {
+    const perfState = Object.create(null);
+    window.__psePerfStart = function(label) {
+        if (!label || perfState[label]) return;
+        perfState[label] = 'started';
+        try { console.time(label); } catch (_) {}
+    };
+    window.__psePerfEnd = function(label) {
+        if (!label || perfState[label] !== 'started') return;
+        perfState[label] = 'ended';
+        try { console.timeEnd(label); } catch (_) {}
+    };
+    window.__psePerfStart('chargement_page');
+})();
+window.PSE_DEBUG_MODE = false;
+
 const NIVEAUX = [
     { key: 'CAP', label: 'CAP' },
     { key: 'BAC_PRO_2NDE', label: '2nde Bac Pro' },
@@ -1298,7 +1339,7 @@ window.MODULES_PSE = {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, getDocs, getDoc, doc, collection, query, where, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -1308,39 +1349,192 @@ const firebaseConfig = {
     messagingSenderId: "614730413904",
     appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
+window.__psePerfStart('init_firebase');
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+window.__psePerfEnd('init_firebase');
 
-// Load all published exercises
-async function loadExercices() {
-    const q = query(collection(db, "exercices_banque"), where("publie", "==", true));
-    const snap = await getDocs(q);
-    allExercices = [];
-    snap.forEach(d => allExercices.push({ id: d.id, ...d.data() }));
-    console.log("✅ Exercices charges:", allExercices.length, allExercices.map(e => ({titre: e.titre, niveau: e.niveau, moduleId: e.moduleId})));
+const PAGE_SIZE = 40;
+let lastVisibleDoc = null;
+let hasMoreExercices = false;
+let isLoadingExercices = false;
+let paginationAvailable = true;
+let initialDisplayMarked = false;
+
+function setLoadingHint(message, isError) {
+    var hint = document.getElementById('loading-hint');
+    if (!hint) return;
+    if (!message) {
+        hint.style.display = 'none';
+        hint.textContent = '';
+        hint.classList.remove('error');
+        return;
+    }
+    hint.style.display = '';
+    hint.textContent = message;
+    hint.classList.toggle('error', !!isError);
+}
+
+function updateLoadMoreUI() {
+    var wrap = document.getElementById('load-more-wrap');
+    var btn = document.getElementById('load-more-btn');
+    if (!wrap || !btn) return;
+    var shouldShow = !PARCOURS_MODE && paginationAvailable && hasMoreExercices;
+    wrap.style.display = shouldShow ? '' : 'none';
+    btn.disabled = isLoadingExercices;
+    btn.textContent = isLoadingExercices ? 'Chargement...' : "Charger plus d'exercices";
+}
+
+function markInitialDisplay() {
+    if (initialDisplayMarked) return;
+    initialDisplayMarked = true;
+    window.__psePerfStart('affichage_final');
+    requestAnimationFrame(() => {
+        window.__psePerfEnd('affichage_final');
+        window.__psePerfEnd('chargement_page');
+    });
+}
+
+function buildQueryPage() {
+    if (!paginationAvailable) return query(collection(db, "exercices_banque"), where("publie", "==", true));
+    if (lastVisibleDoc) {
+        return query(
+            collection(db, "exercices_banque"),
+            where("publie", "==", true),
+            orderBy("updatedAt", "desc"),
+            startAfter(lastVisibleDoc),
+            limit(PAGE_SIZE)
+        );
+    }
+    return query(
+        collection(db, "exercices_banque"),
+        where("publie", "==", true),
+        orderBy("updatedAt", "desc"),
+        limit(PAGE_SIZE)
+    );
+}
+
+async function openParcoursExerciceIfNeeded() {
+    if (!(PARCOURS_MODE && PARCOURS_EXO_ID) || parcoursAutoStarted) return;
+    parcoursAutoStarted = true;
+
+    var exo = allExercices.find(e => e.id === PARCOURS_EXO_ID);
+    if (!exo) {
+        try {
+            const singleDoc = await getDoc(doc(db, "exercices_banque", PARCOURS_EXO_ID));
+            if (singleDoc.exists()) {
+                const data = singleDoc.data();
+                if (data && data.publie === true) {
+                    exo = { id: singleDoc.id, ...data };
+                }
+            }
+        } catch (e) {}
+    }
+
+    if (exo) {
+        setTimeout(function() { startExercice(exo); }, 80);
+        return;
+    }
+
+    var list = document.getElementById('exercices-list');
+    if (list) {
+        list.innerHTML = '<div class="empty-msg">Exercice introuvable pour ce parcours : <span class="mono">' + PARCOURS_EXO_ID + '</span></div>';
+        document.getElementById('zone-exercices').style.display = '';
+    }
+}
+
+async function loadExercices(options = {}) {
+    const append = !!options.append;
+    if (isLoadingExercices) return;
+    if (append && (!hasMoreExercices || !paginationAvailable)) return;
+    isLoadingExercices = true;
+    updateLoadMoreUI();
+
+    if (!append) {
+        setLoadingHint("Chargement des exercices...");
+    } else {
+        setLoadingHint("Chargement d'autres exercices...");
+    }
+
+    let snap;
+    try {
+        if (!append) window.__psePerfStart('requete_firebase');
+        snap = await getDocs(buildQueryPage());
+        if (!append) window.__psePerfEnd('requete_firebase');
+    } catch (error) {
+        const errMsg = String(error && error.message ? error.message : error);
+        const canFallback = !append && paginationAvailable && /index/i.test(errMsg);
+        if (canFallback) {
+            paginationAvailable = false;
+            lastVisibleDoc = null;
+            try {
+                if (!append) window.__psePerfStart('requete_firebase');
+                const qFallback = query(collection(db, "exercices_banque"), where("publie", "==", true));
+                snap = await getDocs(qFallback);
+                if (!append) window.__psePerfEnd('requete_firebase');
+            } catch (fallbackError) {
+                setLoadingHint("Erreur de chargement des exercices.", true);
+                isLoadingExercices = false;
+                updateLoadMoreUI();
+                console.error("Erreur Firestore (fallback):", fallbackError);
+                markInitialDisplay();
+                return;
+            }
+        } else {
+            setLoadingHint("Erreur de chargement des exercices.", true);
+            isLoadingExercices = false;
+            updateLoadMoreUI();
+            console.error("Erreur Firestore:", error);
+            markInitialDisplay();
+            return;
+        }
+    }
+
+    if (!append) window.__psePerfStart('reception_donnees');
+    const page = [];
+    snap.forEach(d => page.push({ id: d.id, ...d.data() }));
+    if (append) allExercices = allExercices.concat(page);
+    else allExercices = page;
+
+    if (paginationAvailable) {
+        lastVisibleDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : lastVisibleDoc;
+        hasMoreExercices = snap.docs.length === PAGE_SIZE;
+    } else {
+        hasMoreExercices = false;
+    }
+    if (!append) window.__psePerfEnd('reception_donnees');
+
+    if (window.PSE_DEBUG_MODE) {
+        console.log("✅ Exercices charges:", allExercices.length);
+    }
+
+    if (!append) window.__psePerfStart('rendu_dom');
     renderNiveaux();
+    if (!append) window.__psePerfEnd('rendu_dom');
+
     if (PARCOURS_MODE) {
         var backHome = document.querySelector('.back-home');
         if (backHome) backHome.style.display = 'none';
     }
 
-    if (PARCOURS_MODE && PARCOURS_EXO_ID && !parcoursAutoStarted) {
-        parcoursAutoStarted = true;
-        var exo = allExercices.find(e => e.id === PARCOURS_EXO_ID);
-        if (exo) {
-            setTimeout(function() { startExercice(exo); }, 80);
-        } else {
-            var list = document.getElementById('exercices-list');
-            if (list) {
-                list.innerHTML = '<div class="empty-msg">Exercice introuvable pour ce parcours : <span class="mono">' + PARCOURS_EXO_ID + '</span></div>';
-                document.getElementById('zone-exercices').style.display = '';
-            }
-        }
-    }
+    await openParcoursExerciceIfNeeded();
+    setLoadingHint('');
+    updateLoadMoreUI();
+    markInitialDisplay();
+    isLoadingExercices = false;
+    updateLoadMoreUI();
 }
 
-window.loadExercices = loadExercices;
-loadExercices();
+window.loadMoreExercices = function() {
+    loadExercices({ append: true });
+};
+window.loadExercices = function() {
+    lastVisibleDoc = null;
+    hasMoreExercices = false;
+    return loadExercices({ append: false });
+};
+
+window.loadExercices();
 </script>
 
 <script>
@@ -1675,7 +1869,9 @@ function backToList(fromPopstate) {
 }
 
 function startExercice(ex) {
-    console.log('🔍 DEBUG startExercice:', ex.titre, ex.type, 'contenu:', JSON.stringify(ex.contenu));
+    if (window.PSE_DEBUG_MODE) {
+        console.log('DEBUG startExercice:', ex.titre, ex.type);
+    }
     currentExo = ex;
     corrected = false;
     document.getElementById('play-title').textContent = ex.titre || 'Exercice';
@@ -1785,7 +1981,9 @@ function injectGlobalIllustration(zone, contenu) {
 
 // --- 1. TEXTE A TROUS ---
 function renderTexteTrous(zone, c) {
-    console.log('🔍 DEBUG renderTexteTrous contenu:', JSON.stringify(c));
+    if (window.PSE_DEBUG_MODE) {
+        console.log('DEBUG renderTexteTrous');
+    }
     // Robustesse : chercher le texte dans plusieurs emplacements possibles
     var texte = '';
     if (c && typeof c === 'object') {
