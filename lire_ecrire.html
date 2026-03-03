@@ -307,6 +307,7 @@
     let allExercices = [];
     let currentCategorie = 'images';
     let currentExercice = null;
+    let currentSerieIndex = 0;
     let attempts = 0;
 
     const CATEGORIES = [
@@ -332,6 +333,23 @@
         lec_vrai_faux: "Vrai / Faux",
         lec_comprehension_qcm: "Compréhension"
     };
+
+    function getSerieItems(ex) {
+        if (!ex || typeof ex !== 'object') return [];
+        if (Array.isArray(ex.series) && ex.series.length > 0) return ex.series;
+        return [];
+    }
+
+    function getActiveExerciceData(ex) {
+        const serie = getSerieItems(ex);
+        if (serie.length > 0) {
+            const safeIndex = Math.max(0, Math.min(currentSerieIndex, serie.length - 1));
+            const item = serie[safeIndex] || {};
+            if (item && typeof item.data === 'object') return item.data;
+            return item && typeof item === 'object' ? item : {};
+        }
+        return ex && ex.data ? ex.data : {};
+    }
 
     // =============================================
     // TTS (Text-to-Speech)
@@ -453,10 +471,12 @@
             const icon = TEMPLATE_ICONS[ex.template_id] || '📝';
             const tplLabel = TEMPLATE_LABELS[ex.template_id] || ex.template_id;
             const diffBadge = ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '';
+            const seriesCount = Number(ex.series_count || (Array.isArray(ex.series) ? ex.series.length : 0)) || 0;
+            const seriesBadge = seriesCount > 1 ? '<span class="exo-badge badge-tpl">Série x' + seriesCount + '</span>' : '';
 
             card.innerHTML = '<div class="exo-icon">' + icon + '</div>' +
                 '<div class="exo-info"><h3>' + escapeHtml(ex.titre || 'Sans titre') + '</h3>' +
-                '<div class="exo-meta"><span class="exo-badge badge-tpl">' + tplLabel + '</span>' + diffBadge + '</div></div>';
+                '<div class="exo-meta">' + seriesBadge + '<span class="exo-badge badge-tpl">' + tplLabel + '</span>' + diffBadge + '</div></div>';
             list.appendChild(card);
         });
     }
@@ -464,18 +484,29 @@
     // =============================================
     // START EXERCISE
     // =============================================
-    function startExercice(ex) {
+    function startExercice(ex, serieIndex) {
+        const switchingExercise = !currentExercice || currentExercice.id !== ex.id;
+        if (switchingExercise) currentSerieIndex = 0;
+        if (typeof serieIndex === 'number' && !Number.isNaN(serieIndex)) currentSerieIndex = serieIndex;
+
         currentExercice = ex;
         attempts = 0;
 
         document.getElementById('list-zone').style.display = 'none';
         document.getElementById('play-zone').style.display = 'block';
-        document.getElementById('play-title').textContent = ex.titre || 'Exercice';
+        const serieItems = getSerieItems(ex);
+        if (serieItems.length > 0) {
+            const safeIndex = Math.max(0, Math.min(currentSerieIndex, serieItems.length - 1));
+            currentSerieIndex = safeIndex;
+            document.getElementById('play-title').textContent = (ex.titre || 'Exercice') + ' (' + (safeIndex + 1) + '/' + serieItems.length + ')';
+        } else {
+            document.getElementById('play-title').textContent = ex.titre || 'Exercice';
+        }
 
         const content = document.getElementById('play-content');
         content.innerHTML = '';
 
-        const data = ex.data || {};
+        const data = getActiveExerciceData(ex);
         const RENDERERS = {
             img_qcm_mot: renderImgQcmMot,
             mot_completer: renderMotCompleter,
@@ -497,6 +528,7 @@
         document.getElementById('play-zone').style.display = 'none';
         document.getElementById('list-zone').style.display = 'block';
         currentExercice = null;
+        currentSerieIndex = 0;
         window.speechSynthesis && window.speechSynthesis.cancel();
     };
 
@@ -764,7 +796,8 @@
             if (!isCorrect) document.getElementById('vf-true').classList.add('wrong');
         }
 
-        const explication = currentExercice && currentExercice.data ? currentExercice.data.explication : '';
+        const activeData = getActiveExerciceData(currentExercice);
+        const explication = activeData && activeData.explication ? activeData.explication : '';
         showFeedback(isCorrect, correctAnswer ? 'Vrai' : 'Faux', explication);
     };
 
@@ -809,8 +842,10 @@
             parler('Bravo !');
         } else {
             fb.className = 'feedback show error';
+            const activeData = getActiveExerciceData(currentExercice);
+            const extraText = extra || (activeData && activeData.explication ? activeData.explication : '');
             let detail = '<span class="feedback-detail">La bonne réponse était : <strong>' + escapeHtml(String(correctAnswer)) + '</strong></span>';
-            if (extra) detail += '<br><span class="feedback-detail">' + escapeHtml(extra) + '</span>';
+            if (extraText) detail += '<br><span class="feedback-detail">' + escapeHtml(extraText) + '</span>';
             fb.innerHTML = '<span class="feedback-icon">😕</span>Pas tout à fait...' + detail;
         }
 
@@ -819,6 +854,12 @@
 
     window.nextExercice = function() {
         if (!currentExercice) return;
+
+        const serieItems = getSerieItems(currentExercice);
+        if (serieItems.length > 1 && currentSerieIndex < serieItems.length - 1) {
+            startExercice(currentExercice, currentSerieIndex + 1);
+            return;
+        }
 
         // Find next exercise in same category
         const cat = currentExercice.categorie;
