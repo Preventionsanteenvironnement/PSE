@@ -294,6 +294,59 @@
       textarea { border: 1px solid #ccc; }
       .section { page-break-inside: avoid; }
     }
+    /* ── Export bar ── */
+    .export-bar {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 2px solid var(--navy);
+      text-align: center;
+    }
+    .export-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 20px;
+    }
+    .export-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 28px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      letter-spacing: .2px;
+    }
+    .btn-export:active { transform: scale(.98); }
+    .btn-pdf {
+      background: var(--navy);
+      color: #fff;
+    }
+    .btn-pdf:hover { background: var(--navy-mid); }
+    .btn-word {
+      background: #1b4f8a;
+      color: #fff;
+    }
+    .btn-word:hover { background: #154070; }
+    .btn-word:disabled { background: #8899bb; cursor: not-allowed; }
+    .export-note {
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
   </style>
 </head>
 <body>
@@ -309,7 +362,7 @@
     <div class="modal-body">
       <div class="label">Objectif de l'entretien</div>
       <p>Cet entretien vise à faire le point sur ta scolarité, à clarifier ton projet et à définir les prochaines étapes concrètes de ton parcours. Il te permet de dresser le bilan de l'année en cours et de construire un plan d'action pour la suite.</p>
-      <p class="presence-line">Il se déroule en présence de ton professeur principal, <span class="dots"></span>, et d'un adulte de ton choix.</p>
+      <p class="presence-line">Il se déroule en présence de ton professeur principal, d'un membre de l'équipe éducative et d'un adulte de ton choix.</p>
     </div>
     <div class="modal-footer">
       <button class="btn-modal" onclick="showModal2()">Continuer &rarr;</button>
@@ -458,7 +511,23 @@
       <!-- Question finale -->
       <div class="question-finale">
         <div class="question-label">Y a-t-il quelque chose que tu souhaites porter à la connaissance de l'équipe pédagogique dans le cadre de cet entretien&nbsp;?</div>
-        <textarea rows="3"></textarea>
+        <textarea id="qfinal" rows="3"></textarea>
+      </div>
+
+      <!-- ══ EXPORT ══ -->
+      <div class="export-bar">
+        <div class="export-label">Exporter mon document</div>
+        <div class="export-buttons">
+          <button class="btn-export btn-pdf" onclick="window.print()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimer / PDF
+          </button>
+          <button class="btn-export btn-word" id="btn-word">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Télécharger en Word
+          </button>
+        </div>
+        <p class="export-note">Imprime ou sauvegarde ce document pour l'apporter à ton entretien.</p>
       </div>
 
     </form>
@@ -487,10 +556,202 @@
   }
 
   document.querySelectorAll('textarea').forEach(function(ta) {
-    // Taille initiale
     autoResize(ta);
-    // Resize à chaque frappe
     ta.addEventListener('input', function() { autoResize(this); });
+  });
+
+  // ── Export Word ──
+  document.getElementById('btn-word').addEventListener('click', async function() {
+    var btn = this;
+    btn.textContent = 'Génération…';
+    btn.disabled = true;
+
+    try {
+      // Charger docx depuis CDN si pas encore chargé
+      if (typeof docx === 'undefined') {
+        await new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/docx@8.0.4/build/index.js';
+          s.onload = resolve;
+          s.onerror = function() {
+            // fallback unpkg
+            var s2 = document.createElement('script');
+            s2.src = 'https://unpkg.com/docx@7.8.2/build/index.js';
+            s2.onload = resolve;
+            s2.onerror = reject;
+            document.head.appendChild(s2);
+          };
+          document.head.appendChild(s);
+        });
+      }
+
+      var D = docx;
+      var NAVY='1C2C4A', NAVY_MID='2E4068', ACCENT='B8912A';
+      var MUTED='5A6480', BRD='CED6E6', WHITE='FFFFFF', TEXT='1A1A2E';
+      var W = 9638;
+
+      var nb  = function() { return { style:D.BorderStyle.NONE, size:0, color:WHITE }; };
+      var nob = function() { return { top:nb(),bottom:nb(),left:nb(),right:nb() }; };
+      var sb  = function(c,s) { return { style:D.BorderStyle.SINGLE, size:s||6, color:c||BRD }; };
+      var allB= function(c,s) { return { top:sb(c,s),bottom:sb(c,s),left:sb(c,s),right:sb(c,s) }; };
+      var sp  = function(b,a) { return new D.Paragraph({children:[],spacing:{before:b||0,after:a||0}}); };
+      var txt = function(t,o) { return new D.TextRun(Object.assign({text:t},o)); };
+      var par = function(ch,o) { return new D.Paragraph(Object.assign({children:ch},o)); };
+
+      function tbl(w,cols,rows) {
+        return new D.Table({width:{size:w,type:D.WidthType.DXA},columnWidths:cols,rows:rows});
+      }
+      function cell(w,fill,borders,margins,children,valign) {
+        return new D.TableCell({
+          width:{size:w,type:D.WidthType.DXA},
+          shading:{fill:fill,type:D.ShadingType.CLEAR},
+          borders:borders,margins:margins,
+          verticalAlign:valign||D.VerticalAlign.TOP,
+          children:children
+        });
+      }
+
+      // Récupère toutes les textareas dans l'ordre
+      var textareas = Array.from(document.querySelectorAll('form textarea'));
+      var vals = textareas.map(function(t) { return t.value.trim() || ' '; });
+
+      // Index par section
+      // S1: 0-6, S2: 7-11, S3: 12-14, finale: 15
+      var s1 = vals.slice(0,7);
+      var s2 = vals.slice(7,12);
+      var s3 = vals.slice(12,15);
+      var fin = vals[15] || ' ';
+
+      function answerBox(text) {
+        var lines = text.split('\n');
+        return tbl(W,[W],[new D.TableRow({
+          height:{value:800,rule:'atLeast'},
+          children:[cell(W,'F9FAFC',allB(BRD,6),{top:100,bottom:100,left:160,right:160},
+            lines.map(function(l){ return par([txt(l||' ',{font:'Arial',size:20,color:TEXT})],{spacing:{before:0,after:20}}); })
+          )]
+        })]);
+      }
+
+      function qBlock(num, label, sub, answer) {
+        var items = [par([
+          txt(num+'.  ',{font:'Arial',size:20,bold:true,color:ACCENT}),
+          txt(label,{font:'Arial',size:20,bold:true,color:NAVY_MID})
+        ],{spacing:{before:260,after:sub?60:90}})];
+        if (sub) items.push(par([txt(sub,{font:'Arial',size:17,italics:true,color:MUTED})],{spacing:{before:0,after:80}}));
+        items.push(answerBox(answer), sp(0,40));
+        return items;
+      }
+
+      function secHeader(num, title) {
+        return tbl(W,[480,W-480],[new D.TableRow({children:[
+          cell(480,NAVY,nob(),{top:100,bottom:100,left:120,right:80},[
+            par([txt(num,{font:'Georgia',size:38,bold:true,color:WHITE})],{alignment:D.AlignmentType.CENTER})
+          ],D.VerticalAlign.CENTER),
+          cell(W-480,'E8EDF5',nob(),{top:100,bottom:100,left:200,right:80},[
+            par([txt(title,{font:'Georgia',size:25,bold:true,color:NAVY_MID})])
+          ],D.VerticalAlign.CENTER)
+        ]})]);
+      }
+
+      function divLine() {
+        return par([],{spacing:{before:200,after:200},border:{bottom:{style:D.BorderStyle.SINGLE,size:4,color:BRD}}});
+      }
+
+      // En-tête
+      var header = tbl(W,[W],[
+        new D.TableRow({children:[cell(W,NAVY,nob(),{top:240,bottom:0,left:400,right:400},[
+          par([txt('Entretien de parcours individuel',{font:'Georgia',size:46,bold:true,color:WHITE})],{alignment:D.AlignmentType.CENTER})
+        ])]}),
+        new D.TableRow({children:[cell(W,NAVY,nob(),{top:60,bottom:220,left:400,right:400},[
+          par([txt('Seconde Professionnelle  ·  Année scolaire 2024–2025',{font:'Arial',size:18,color:'8090B0'})],{alignment:D.AlignmentType.CENTER})
+        ])]})
+      ]);
+
+      var accentBar = par([],{spacing:{before:0,after:0},border:{top:{style:D.BorderStyle.SINGLE,size:14,color:ACCENT}}});
+
+      // Objectif
+      var objectif = [
+        par([txt('OBJECTIF DE L\'ENTRETIEN',{font:'Arial',size:15,bold:true,color:ACCENT,characterSpacing:40})],{spacing:{before:0,after:120}}),
+        par([txt("Cet entretien vise à faire le point sur ta scolarité, à clarifier ton projet et à définir les prochaines étapes concrètes de ton parcours.",{font:'Arial',size:19,color:MUTED})],{spacing:{before:0,after:100}}),
+        par([txt("Il se déroule en présence de ton professeur principal, d'un membre de l'équipe éducative et d'un adulte de ton choix.",{font:'Arial',size:19,color:MUTED})],{spacing:{before:0,after:0}})
+      ];
+
+      // Attestation
+      var attestation = tbl(W,[W],[new D.TableRow({children:[
+        cell(W,'EFF2F8',
+          {top:nb(),bottom:nb(),right:nb(),left:{style:D.BorderStyle.SINGLE,size:20,color:NAVY}},
+          {top:160,bottom:160,left:240,right:240},[
+            par([txt('ENGAGEMENT',{font:'Arial',size:14,bold:true,color:NAVY,characterSpacing:40})],{spacing:{before:0,after:120}}),
+            par([
+              txt('☑  ',{font:'Arial',size:20,bold:true,color:NAVY}),
+              txt("J'ai pris connaissance de l'objectif de cet entretien. Je m'engage à compléter ce document avec le sérieux requis dans le cadre de la construction de mon parcours.",{font:'Arial',size:19,color:TEXT})
+            ])
+          ])
+      ]})]);
+
+      var s1qs = [
+        ["1","Comment évalues-tu ton investissement scolaire depuis le début de l'année ?",null],
+        ["2","Quels sont les objectifs (petits, moyens ou grands) que tu t'es fixé(e) cette année ?",null],
+        ["3","Qu'est-ce qui te met dans de bonnes conditions pour réussir ? Et qu'est-ce qui peut te limiter dans ta progression ?",null],
+        ["4","Face à ces difficultés, as-tu sollicité de l'aide auprès d'un(e) enseignant(e) ou d'un adulte de l'établissement ?",null],
+        ["5","Que veux-tu comme soutien, si nécessaire, pour atteindre tes objectifs d'ici la fin de l'année ?",null],
+        ["6","Quelles actions, même petites au départ, peux-tu mettre en place dès maintenant pour progresser dans ton parcours ?",null],
+        ["7","Quels indicateurs te permettront de voir que tu avances ?","Présence, retards, attention, participation, travail personnel, résultats, autre…"]
+      ];
+
+      var s2qs = [
+        ["1","Pourquoi as-tu choisi cette filière ? Ce choix était-il réfléchi au départ ?",null],
+        ["2","Est-ce que cette formation correspond toujours à ce que tu veux faire ? Pourquoi ?",null],
+        ["3","Dans le cadre de ta PFMP (stage), as-tu une convention en cours ou déjà signée ?",null],
+        ["4","Si tu envisages un changement d'établissement ou de filière pour la rentrée 2026-2027, quelles démarches as-tu déjà engagées concrètement ?","Recherches effectuées, établissements contactés, journées portes ouvertes, dossiers déposés…"],
+        ["5","As-tu identifié les personnes ressources qui peuvent t'accompagner dans ces démarches ? As-tu pris contact ou rendez-vous ?",null]
+      ];
+
+      var s3qs = [
+        ["1","Quel est ton souhait pour la rentrée de septembre 2026 ?",null],
+        ["2","Dans le cas où aucun autre projet ne pourrait aboutir et où tu te retrouverais en Première dans cet établissement, comment envisages-tu de t'y engager ?",null],
+        ["3","Souhaites-tu participer à un accompagnement centré sur tes objectifs scolaires, afin de garder le cap et mesurer tes avancées ?",null]
+      ];
+
+      var children = [header, accentBar, sp(0,300)]
+        .concat(objectif)
+        .concat([sp(0,240), attestation, sp(0,380)])
+        .concat([secHeader('1','Ma situation scolaire cette année'), sp(0,180)])
+        .concat(s1qs.flatMap(function(q,i){ return qBlock(q[0],q[1],q[2],s1[i]); }))
+        .concat([sp(0,80), divLine(), secHeader('2','Ma filière et mon projet'), sp(0,180)])
+        .concat(s2qs.flatMap(function(q,i){ return qBlock(q[0],q[1],q[2],s2[i]); }))
+        .concat([sp(0,80), divLine(), secHeader('3','Mes perspectives'), sp(0,180)])
+        .concat(s3qs.flatMap(function(q,i){ return qBlock(q[0],q[1],q[2],s3[i]); }))
+        .concat([
+          sp(0,120), divLine(),
+          par([txt("Y a-t-il quelque chose que tu souhaites porter à la connaissance de l'équipe pédagogique ?",{font:'Arial',size:20,bold:true,italics:true,color:NAVY_MID})],{spacing:{before:0,after:100}}),
+          answerBox(fin)
+        ]);
+
+      var doc = new D.Document({
+        sections:[{
+          properties:{page:{size:{width:11906,height:16838},margin:{top:1134,right:1134,bottom:1134,left:1134}}},
+          children:children
+        }]
+      });
+
+      var blob = await D.Packer.toBlob(doc);
+      var url  = URL.createObjectURL(blob);
+      var a    = document.createElement('a');
+      a.href   = url;
+      a.download = 'entretien-parcours.docx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch(e) {
+      console.error(e);
+      alert('Erreur lors de la génération Word : ' + e.message + '\n\nUtilise le bouton Imprimer / PDF à la place.');
+    } finally {
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Télécharger en Word';
+      btn.disabled = false;
+    }
   });
 </script>
 </body>
