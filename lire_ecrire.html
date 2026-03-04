@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lire et Ecrire — PSE</title>
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -251,6 +253,18 @@
             .word-display { font-size: 2rem; letter-spacing: 5px; }
             .choice-btn { font-size: 1rem; padding: 14px; }
         }
+
+        /* Loading spinner */
+        .loading-wrap {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 60px 20px; color: #64748b;
+        }
+        .loading-wrap .spinner {
+            width: 36px; height: 36px; border: 4px solid #e2e8f0;
+            border-top-color: #8b5cf6; border-radius: 50%;
+            animation: spin .7s linear infinite; margin-bottom: 14px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -271,7 +285,12 @@
         <!-- Exercise list -->
         <div class="exo-list-section">
             <div class="exo-list-label" id="exo-list-label"></div>
-            <div id="exo-list"></div>
+            <div id="exo-list">
+                <div class="loading-wrap" id="loading-indicator">
+                    <div class="spinner"></div>
+                    <span>Chargement des exercices…</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -304,11 +323,14 @@
     // =============================================
     // STATE
     // =============================================
-    let allExercices = [];
+    let allExercices = [];       // lightweight metadata only (no series data)
     let currentCategorie = 'images';
-    let currentExercice = null;
+    let currentExercice = null;  // full document (with series) for current exercise
     let currentSerieIndex = 0;
     let attempts = 0;
+
+    const CACHE_KEY = 'lire_ecrire_list';
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
     const CATEGORIES = [
         { key: "images", label: "🖼️ Images", color: "#3b82f6" },
@@ -399,29 +421,77 @@
         }
     }
 
-    async function loadExercices() {
+    function getCachedList() {
         try {
-            const q = query(
-                collection(db, "lire_ecrire_banque"),
-                where("publie", "==", true),
-                limit(30)
-            );
-            const snap = await getDocs(q);
-            allExercices = [];
-            snap.forEach(d => allExercices.push({ id: d.id, ...d.data() }));
+            const raw = sessionStorage.getItem(CACHE_KEY);
+            if (!raw) return null;
+            const cached = JSON.parse(raw);
+            if (Date.now() - cached.ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
+            return cached.data;
+        } catch(e) { return null; }
+    }
 
-            // Check hash for initial category
-            const hash = window.location.hash.replace('#', '');
-            if (['images', 'mots', 'lecture'].includes(hash)) {
-                currentCategorie = hash;
-            }
+    function setCachedList(list) {
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: list })); } catch(e) {}
+    }
 
+    function extractMeta(d) {
+        // Extract only what the list view needs — no series data
+        const raw = d.data();
+        return {
+            id: d.id,
+            titre: raw.titre || '',
+            categorie: raw.categorie || '',
+            template_id: raw.template_id || '',
+            difficulte: raw.difficulte || '',
+            series_count: Number(raw.series_count || (Array.isArray(raw.series) ? raw.series.length : 0)) || 0
+        };
+    }
+
+    async function loadExercices() {
+        // Check hash for initial category
+        const hash = window.location.hash.replace('#', '');
+        if (['images', 'mots', 'lecture'].includes(hash)) {
+            currentCategorie = hash;
+        }
+
+        // Try cache first for instant display
+        const cached = getCachedList();
+        if (cached) {
+            allExercices = cached;
             renderCategories();
             renderExerciceList();
+            // Refresh in background (silent update)
+            fetchExercicesFromFirestore(true);
+            return;
+        }
+
+        try {
+            await fetchExercicesFromFirestore(false);
         } catch(e) {
             console.error("Erreur chargement:", e);
             document.getElementById('exo-list').innerHTML = '<div class="empty-msg">Erreur de chargement.</div>';
         }
+    }
+
+    async function fetchExercicesFromFirestore(silent) {
+        const q = query(
+            collection(db, "lire_ecrire_banque"),
+            where("publie", "==", true),
+            limit(100)
+        );
+        const snap = await getDocs(q);
+        allExercices = [];
+        snap.forEach(d => allExercices.push(extractMeta(d)));
+        setCachedList(allExercices);
+        renderCategories();
+        renderExerciceList();
+    }
+
+    async function loadFullExercice(exId) {
+        const snap = await getDoc(doc(db, "lire_ecrire_banque", exId));
+        if (!snap.exists()) return null;
+        return { id: snap.id, ...snap.data() };
     }
 
     // =============================================
@@ -484,7 +554,26 @@
     // =============================================
     // START EXERCISE
     // =============================================
-    function startExercice(ex, serieIndex) {
+    async function startExercice(exOrMeta, serieIndex) {
+        let ex = exOrMeta;
+
+        // If this is lightweight metadata (no series), fetch full document
+        const needsFetch = !ex.data && !ex.series;
+        if (needsFetch) {
+            const content = document.getElementById('play-content');
+            document.getElementById('list-zone').style.display = 'none';
+            document.getElementById('play-zone').style.display = 'block';
+            document.getElementById('play-title').textContent = ex.titre || 'Chargement…';
+            content.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><span>Chargement…</span></div>';
+
+            const full = await loadFullExercice(ex.id);
+            if (!full) {
+                content.innerHTML = '<div class="empty-msg">Exercice introuvable.</div>';
+                return;
+            }
+            ex = full;
+        }
+
         const switchingExercise = !currentExercice || currentExercice.id !== ex.id;
         if (switchingExercise) currentSerieIndex = 0;
         if (typeof serieIndex === 'number' && !Number.isNaN(serieIndex)) currentSerieIndex = serieIndex;
