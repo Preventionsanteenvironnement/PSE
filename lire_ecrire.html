@@ -210,16 +210,41 @@
             font-style: italic; margin-top: 12px;
         }
 
+        /* Mute button */
+        .btn-mute {
+            width: 36px; height: 36px; border-radius: 50%; border: 2px solid #e2e8f0;
+            background: white; font-size: 1.1rem; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .btn-mute:hover { background: #f1f5f9; }
+        .btn-mute.muted { background: #fef2f2; border-color: #fca5a5; }
+
         /* Feedback */
         .feedback {
-            text-align: center; padding: 20px; border-radius: 14px; margin-top: 16px;
-            font-weight: 700; font-size: 1.1rem; display: none;
+            text-align: center; padding: 10px 14px; border-radius: 14px; margin-top: 10px;
+            font-weight: 700; font-size: 1rem; display: none;
         }
         .feedback.show { display: block; animation: feedbackIn 0.3s ease-out; }
         .feedback.success { background: #f0fdf4; border: 2px solid #22c55e; color: #166534; }
         .feedback.error { background: #fef2f2; border: 2px solid #ef4444; color: #991b1b; }
-        .feedback .feedback-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
-        .feedback .feedback-detail { font-size: 0.85rem; font-weight: 500; margin-top: 6px; color: #64748b; }
+        .feedback .feedback-icon { font-size: 1.2rem; display: inline; margin-right: 6px; }
+        .feedback .feedback-detail { font-size: 0.85rem; font-weight: 500; margin-top: 4px; color: #64748b; }
+
+        /* Correction inline in word-display */
+        .word-display .letter-revealed {
+            color: #22c55e; font-weight: 900; text-decoration: none;
+            border-bottom: 3px solid #22c55e;
+        }
+        .word-display .letter-revealed-error {
+            color: #ef4444; font-weight: 900;
+            border-bottom: 3px solid #ef4444;
+        }
+        .word-correction-inline {
+            text-align: center; font-size: 1.3rem; font-weight: 800;
+            margin-top: 8px; padding: 8px; border-radius: 10px;
+        }
+        .word-correction-inline.correct { color: #166534; background: #f0fdf4; }
+        .word-correction-inline.wrong { color: #991b1b; background: #fef2f2; }
 
         @keyframes feedbackIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
@@ -238,7 +263,7 @@
         .btn-next {
             width: 100%; padding: 14px; background: #3b82f6; color: white;
             border: none; border-radius: 14px; font-size: 1rem; font-weight: 700;
-            cursor: pointer; transition: 0.2s; margin-top: 12px; display: none;
+            cursor: pointer; transition: 0.2s; margin-top: 6px; display: none;
         }
         .btn-next:hover { background: #2563eb; }
 
@@ -299,6 +324,7 @@
         <div class="play-header">
             <button class="back-btn" onclick="backToList()">&larr;</button>
             <h2 id="play-title"></h2>
+            <button class="btn-mute" id="btn-mute" onclick="toggleMute()" title="Couper/activer le son">🔊</button>
             <button class="btn-audio" onclick="parlerTitre()">🔊</button>
         </div>
         <div id="play-content"></div>
@@ -328,6 +354,7 @@
     let currentExercice = null;  // full document (with series) for current exercise
     let currentSerieIndex = 0;
     let attempts = 0;
+    let soundMuted = localStorage.getItem('lireEcrire_muted') === 'true';
 
     const CACHE_KEY = 'lire_ecrire_list';
     const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -377,6 +404,7 @@
     // TTS (Text-to-Speech)
     // =============================================
     function parler(texte) {
+        if (soundMuted) return;
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(texte);
@@ -392,6 +420,26 @@
     window.parlerTexte = function(text) {
         parler(text);
     };
+
+    window.toggleMute = function() {
+        soundMuted = !soundMuted;
+        localStorage.setItem('lireEcrire_muted', soundMuted);
+        const btn = document.getElementById('btn-mute');
+        if (btn) {
+            btn.textContent = soundMuted ? '🔇' : '🔊';
+            btn.classList.toggle('muted', soundMuted);
+        }
+        if (soundMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+    };
+
+    // Init mute button state on load
+    setTimeout(() => {
+        const btn = document.getElementById('btn-mute');
+        if (btn && soundMuted) {
+            btn.textContent = '🔇';
+            btn.classList.add('muted');
+        }
+    }, 50);
 
     // =============================================
     // LOAD DATA
@@ -929,27 +977,67 @@
         }
     };
 
+    function revealWordDisplay(correctAnswer, isCorrect) {
+        const wd = document.querySelector('.word-display');
+        if (!wd) return;
+        const mot = String(correctAnswer);
+        let html = '';
+        for (let i = 0; i < mot.length; i++) {
+            html += '<span class="letter-revealed' + (isCorrect ? '' : '-error') + '">' + escapeHtml(mot[i]) + '</span>';
+        }
+        wd.innerHTML = html;
+    }
+
+    function showInlineCorrection(correctAnswer, isCorrect) {
+        const gameZone = document.querySelector('.game-zone');
+        if (!gameZone) return;
+        const existing = gameZone.querySelector('.word-correction-inline');
+        if (existing) existing.remove();
+        const div = document.createElement('div');
+        div.className = 'word-correction-inline ' + (isCorrect ? 'correct' : 'wrong');
+        div.textContent = isCorrect ? '' : correctAnswer;
+        if (!isCorrect) gameZone.appendChild(div);
+    }
+
     function showFeedback(isCorrect, correctAnswer, extra) {
         const fb = document.getElementById('feedback');
-        const valBtn = document.getElementById('btn-validate');
         const nextBtn = document.getElementById('btn-next');
 
-        if (valBtn) valBtn.style.display = 'none';
+        // Hide ALL validate buttons (by class, not just by id)
+        document.querySelectorAll('.btn-validate').forEach(b => b.style.display = 'none');
+
+        // Hide unnecessary elements after validation to save space on mobile
+        document.querySelectorAll('.btn-audio-big, .hint-text, .text-input-zone, .context-phrase').forEach(el => el.style.display = 'none');
+
+        // Reveal correction in the word-display area (for mot_completer)
+        const wd = document.querySelector('.word-display');
+        if (wd) revealWordDisplay(correctAnswer, isCorrect);
 
         if (isCorrect) {
             fb.className = 'feedback show success';
-            fb.innerHTML = '<span class="feedback-icon">🎉</span>Bravo !';
+            fb.innerHTML = '<span class="feedback-icon">✅</span> Bravo !';
             parler('Bravo !');
         } else {
             fb.className = 'feedback show error';
             const activeData = getActiveExerciceData(currentExercice);
             const extraText = extra || (activeData && activeData.explication ? activeData.explication : '');
-            let detail = '<span class="feedback-detail">La bonne réponse était : <strong>' + escapeHtml(String(correctAnswer)) + '</strong></span>';
+            // If word-display exists, the correction is already shown inline — don't repeat
+            let detail = '';
+            if (!wd) {
+                detail = '<br><span class="feedback-detail">La bonne réponse était : <strong>' + escapeHtml(String(correctAnswer)) + '</strong></span>';
+            }
             if (extraText) detail += '<br><span class="feedback-detail">' + escapeHtml(extraText) + '</span>';
-            fb.innerHTML = '<span class="feedback-icon">😕</span>Pas tout à fait...' + detail;
+            fb.innerHTML = '<span class="feedback-icon">😕</span> Pas tout à fait...' + detail;
+            // Show correction inline in game-zone for templates without word-display
+            if (!wd) showInlineCorrection(correctAnswer, isCorrect);
         }
 
-        if (nextBtn) nextBtn.style.display = 'block';
+        if (nextBtn) {
+            nextBtn.style.display = 'block';
+            setTimeout(() => {
+                nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 350);
+        }
     }
 
     window.nextExercice = function() {
