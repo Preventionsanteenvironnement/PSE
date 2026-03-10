@@ -1120,7 +1120,9 @@
 
     <!-- Competences exercises list -->
     <div id="zone-competences" style="display:none;">
-        <div class="theme-label" id="competences-label" style="color:#6366f1;">Competences</div>
+        <div class="theme-label" id="competences-label" style="color:#6366f1;">Developper ses competences en PSE</div>
+        <div class="level-grid" id="competences-subfolder-grid" style="margin-bottom:12px;"></div>
+        <div class="theme-label" id="competences-exos-label" style="color:#6366f1; display:none;"></div>
         <div id="competences-list"></div>
     </div>
 
@@ -1775,6 +1777,7 @@ function renderTransversalFolder(dossierId, filterSousDossier) {
 function selectCompetences(btnEl) {
     currentNiveau = null;
     currentModuleId = null;
+    currentCompFilter = null; // Reset : afficher les sous-dossiers C1-C6
     document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
     document.getElementById('zone-modules').style.display = 'none';
@@ -1785,26 +1788,109 @@ function selectCompetences(btnEl) {
     setTimeout(() => { document.getElementById('zone-competences').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
+// ═══════ COMPÉTENCES : sous-dossiers C1-C6 + Toutes ═══════
+var COMP_DEFS = [
+    { id: 'C1', label: 'C1', color: '#ef4444' },
+    { id: 'C2', label: 'C2', color: '#f59e0b' },
+    { id: 'C3', label: 'C3', color: '#22c55e' },
+    { id: 'C4', label: 'C4', color: '#06b6d4' },
+    { id: 'C5', label: 'C5', color: '#6366f1' },
+    { id: 'C6', label: 'C6', color: '#8b5cf6' }
+];
+var currentCompFilter = null; // null = show subfolder buttons, '__ALL__' = all, 'C1'-'C6' = filter
+
 function renderCompetences() {
-    const container = document.getElementById('competences-list');
+    var container = document.getElementById('competences-list');
+    var subGrid = document.getElementById('competences-subfolder-grid');
+    var exosLabel = document.getElementById('competences-exos-label');
     if (!container) return;
     container.innerHTML = '';
-    var exos = allExercices.filter(e => isCompetencesExercice(e));
-    var label = document.getElementById('competences-label');
-    if (label) label.textContent = '📝 Competences PSE — ' + exos.length + ' exercice' + (exos.length > 1 ? 's' : '');
-    if (exos.length === 0) {
-        container.innerHTML = '<div class="empty-msg">Aucun exercice de competences pour le moment.</div>';
+
+    var allCompExos = allExercices.filter(e => isCompetencesExercice(e));
+
+    if (currentCompFilter === null) {
+        // ── MODE SOUS-DOSSIERS : afficher les boutons C1-C6 + Toutes ──
+        subGrid.innerHTML = '';
+        subGrid.style.display = '';
+        exosLabel.style.display = 'none';
+
+        // Bouton "Toutes les compétences"
+        var allBtn = document.createElement('button');
+        allBtn.className = 'level-btn';
+        allBtn.style.borderColor = '#6366f1';
+        allBtn.style.color = '#6366f1';
+        var totalCount = allCompExos.length;
+        allBtn.innerHTML = '🎯 Toutes <span style="font-size:0.75rem; opacity:0.7;">(' + totalCount + ')</span>';
+        allBtn.onclick = function() { currentCompFilter = '__ALL__'; renderCompetences(); };
+        subGrid.appendChild(allBtn);
+
+        // Boutons C1-C6
+        COMP_DEFS.forEach(function(comp) {
+            var count = allCompExos.filter(function(e) {
+                return e.competences_cibles && Array.isArray(e.competences_cibles) && e.competences_cibles.indexOf(comp.id) >= 0;
+            }).length;
+            var btn = document.createElement('button');
+            btn.className = 'level-btn';
+            btn.style.borderColor = comp.color;
+            btn.style.color = comp.color;
+            btn.innerHTML = '📝 ' + comp.label + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
+            if (count === 0) btn.style.opacity = '0.4';
+            btn.onclick = function() {
+                if (count > 0) { currentCompFilter = comp.id; renderCompetences(); }
+            };
+            subGrid.appendChild(btn);
+        });
         return;
     }
-    exos.forEach(ex => {
-        const card = document.createElement('div');
+
+    // ── MODE LISTE : afficher les exercices filtrés ──
+    subGrid.style.display = 'none';
+    exosLabel.style.display = '';
+
+    var filtered;
+    var filterLabel;
+    if (currentCompFilter === '__ALL__') {
+        filtered = allCompExos;
+        filterLabel = '🎯 Toutes les compétences — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
+    } else {
+        filtered = allCompExos.filter(function(e) {
+            return e.competences_cibles && Array.isArray(e.competences_cibles) && e.competences_cibles.indexOf(currentCompFilter) >= 0;
+        });
+        filterLabel = '📝 ' + currentCompFilter + ' — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
+    }
+    exosLabel.textContent = filterLabel;
+
+    // Bouton retour
+    var backBtn = document.createElement('button');
+    backBtn.style.cssText = 'background:none; border:2px solid var(--border,#e2e8f0); border-radius:12px; padding:8px 16px; font-size:0.85rem; font-weight:700; cursor:pointer; color:#6366f1; font-family:inherit; margin-bottom:12px;';
+    backBtn.textContent = '← Retour aux compétences';
+    backBtn.onclick = function() { currentCompFilter = null; renderCompetences(); };
+    container.appendChild(backBtn);
+
+    if (filtered.length === 0) {
+        container.innerHTML += '<div class="empty-msg">Aucun exercice pour cette compétence.</div>';
+        return;
+    }
+
+    filtered.forEach(function(ex) {
+        var card = document.createElement('div');
         card.className = 'exo-card';
+        // Badges compétences ciblées
+        var compBadges = '';
+        if (ex.competences_cibles && Array.isArray(ex.competences_cibles)) {
+            ex.competences_cibles.forEach(function(c) {
+                var def = COMP_DEFS.find(function(d) { return d.id === c; });
+                var col = def ? def.color : '#6366f1';
+                compBadges += '<span class="exo-badge" style="background:' + col + '22; color:' + col + '; border:1px solid ' + col + '44;">' + c + '</span>';
+            });
+        }
         card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[ex.type] || '📝') + '</div>' +
             '<div class="exo-info"><h3>' + (ex.titre || 'Sans titre') + '</h3>' +
             '<div class="exo-meta"><span class="exo-badge badge-type">' + (TYPE_LABELS[ex.type] || ex.type) + '</span>' +
             (ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '') +
+            compBadges +
             '</div></div>';
-        card.onclick = () => startExercice(ex);
+        card.onclick = function() { startExercice(ex); };
         container.appendChild(card);
     });
 }
