@@ -1777,7 +1777,8 @@ function renderTransversalFolder(dossierId, filterSousDossier) {
 function selectCompetences(btnEl) {
     currentNiveau = null;
     currentModuleId = null;
-    currentCompFilter = null; // Reset : afficher les sous-dossiers C1-C6
+    currentCompNiveau = null; // Reset : afficher choix CAP / Bac Pro
+    currentCompFilter = null;
     document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
     document.getElementById('zone-modules').style.display = 'none';
@@ -1788,16 +1789,26 @@ function selectCompetences(btnEl) {
     setTimeout(() => { document.getElementById('zone-competences').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
-// ═══════ COMPÉTENCES : sous-dossiers C1-C6 + Toutes ═══════
-var COMP_DEFS = [
-    { id: 'C1', label: 'C1', color: '#ef4444' },
-    { id: 'C2', label: 'C2', color: '#f59e0b' },
-    { id: 'C3', label: 'C3', color: '#22c55e' },
-    { id: 'C4', label: 'C4', color: '#06b6d4' },
-    { id: 'C5', label: 'C5', color: '#6366f1' },
-    { id: 'C6', label: 'C6', color: '#8b5cf6' }
+// ═══════ COMPÉTENCES : sous-dossiers CAP / Bac Pro → C1-C6 ═══════
+var COMP_COLORS = { C1: '#ef4444', C2: '#f59e0b', C3: '#22c55e', C4: '#06b6d4', C5: '#6366f1', C6: '#8b5cf6' };
+var COMP_DEFS_CAP = [
+    { id: 'C1', titre: 'Traiter une information', color: '#ef4444' },
+    { id: 'C2', titre: 'Appliquer une méthode d\'analyse', color: '#f59e0b' },
+    { id: 'C3', titre: 'Mettre en relation phénomène et prévention', color: '#22c55e' },
+    { id: 'C4', titre: 'Proposer une solution', color: '#06b6d4' },
+    { id: 'C5', titre: 'Argumenter un choix', color: '#6366f1' },
+    { id: 'C6', titre: 'Communiquer à l\'écrit et à l\'oral', color: '#8b5cf6' }
 ];
-var currentCompFilter = null; // null = show subfolder buttons, '__ALL__' = all, 'C1'-'C6' = filter
+var COMP_DEFS_BAC_PRO = [
+    { id: 'C1', titre: 'Traiter une information', color: '#ef4444' },
+    { id: 'C2', titre: 'Appliquer une démarche d\'analyse', color: '#f59e0b' },
+    { id: 'C3', titre: 'Expliquer un phénomène en lien avec la prévention', color: '#22c55e' },
+    { id: 'C4', titre: 'Proposer une solution', color: '#06b6d4' },
+    { id: 'C5', titre: 'Argumenter un choix', color: '#6366f1' },
+    { id: 'C6', titre: 'Communiquer à l\'écrit et à l\'oral', color: '#8b5cf6' }
+];
+var currentCompNiveau = null; // null = show CAP/Bac Pro choice, 'CAP' or 'BAC_PRO'
+var currentCompFilter = null; // null = show subfolder buttons C1-C6, '__ALL__' = all, 'C1'-'C6' = filter
 
 function renderCompetences() {
     var container = document.getElementById('competences-list');
@@ -1806,34 +1817,102 @@ function renderCompetences() {
     if (!container) return;
     container.innerHTML = '';
 
-    var allCompExos = allExercices.filter(e => isCompetencesExercice(e));
+    var allCompExos = allExercices.filter(function(e) { return isCompetencesExercice(e); });
 
-    if (currentCompFilter === null) {
-        // ── MODE SOUS-DOSSIERS : afficher les boutons C1-C6 + Toutes ──
+    // ── NIVEAU 1 : Choix CAP / Bac Pro ──
+    if (currentCompNiveau === null) {
         subGrid.innerHTML = '';
         subGrid.style.display = '';
         exosLabel.style.display = 'none';
 
-        // Bouton "Toutes les compétences"
+        var capExos = allCompExos.filter(function(e) { return e.niveau === 'CAP'; });
+        var bacExos = allCompExos.filter(function(e) { return e.niveau && e.niveau.indexOf('BAC_PRO') === 0; });
+
+        // Bouton CAP
+        var capBtn = document.createElement('button');
+        capBtn.className = 'level-btn';
+        capBtn.style.cssText = 'border-color:#3b82f6; color:#3b82f6; min-height:70px;';
+        capBtn.innerHTML = '🎓 CAP' + (capExos.length > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + capExos.length + ')</span>' : '');
+        capBtn.onclick = function() { currentCompNiveau = 'CAP'; currentCompFilter = null; renderCompetences(); };
+        if (capExos.length === 0) { capBtn.style.opacity = '0.4'; capBtn.style.cursor = 'default'; capBtn.onclick = null; }
+        subGrid.appendChild(capBtn);
+
+        // Bouton Bac Pro
+        var bacBtn = document.createElement('button');
+        bacBtn.className = 'level-btn';
+        bacBtn.style.cssText = 'border-color:#8b5cf6; color:#8b5cf6; min-height:70px;';
+        bacBtn.innerHTML = '🎓 Bac Pro' + (bacExos.length > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + bacExos.length + ')</span>' : '');
+        bacBtn.onclick = function() { currentCompNiveau = 'BAC_PRO'; currentCompFilter = null; renderCompetences(); };
+        if (bacExos.length === 0) { bacBtn.style.opacity = '0.4'; bacBtn.style.cursor = 'default'; bacBtn.onclick = null; }
+        subGrid.appendChild(bacBtn);
+
+        // Bouton Toutes (tous niveaux confondus)
         var allBtn = document.createElement('button');
         allBtn.className = 'level-btn';
-        allBtn.style.borderColor = '#6366f1';
-        allBtn.style.color = '#6366f1';
+        allBtn.style.cssText = 'border-color:#64748b; color:#64748b;';
         var totalCount = allCompExos.length;
-        allBtn.innerHTML = '🎯 Toutes <span style="font-size:0.75rem; opacity:0.7;">(' + totalCount + ')</span>';
+        allBtn.innerHTML = '🎯 Toutes' + (totalCount > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + totalCount + ')</span>' : '');
+        allBtn.onclick = function() { currentCompNiveau = '__ALL__'; currentCompFilter = '__ALL__'; renderCompetences(); };
+        if (totalCount === 0) { allBtn.style.opacity = '0.4'; allBtn.style.cursor = 'default'; allBtn.onclick = null; }
+        subGrid.appendChild(allBtn);
+        return;
+    }
+
+    // ── Filtrer les exercices par niveau sélectionné ──
+    var niveauExos;
+    var compDefs;
+    var niveauLabel;
+    var niveauColor;
+    if (currentCompNiveau === 'CAP') {
+        niveauExos = allCompExos.filter(function(e) { return e.niveau === 'CAP'; });
+        compDefs = COMP_DEFS_CAP;
+        niveauLabel = 'CAP';
+        niveauColor = '#3b82f6';
+    } else if (currentCompNiveau === 'BAC_PRO') {
+        niveauExos = allCompExos.filter(function(e) { return e.niveau && e.niveau.indexOf('BAC_PRO') === 0; });
+        compDefs = COMP_DEFS_BAC_PRO;
+        niveauLabel = 'Bac Pro';
+        niveauColor = '#8b5cf6';
+    } else {
+        // __ALL__ : tous niveaux
+        niveauExos = allCompExos;
+        compDefs = COMP_DEFS_BAC_PRO; // fallback titres Bac Pro
+        niveauLabel = 'Toutes';
+        niveauColor = '#64748b';
+    }
+
+    // ── NIVEAU 2 : Sous-dossiers C1-C6 ──
+    if (currentCompFilter === null) {
+        subGrid.innerHTML = '';
+        subGrid.style.display = '';
+        exosLabel.style.display = 'none';
+
+        // Bouton retour vers CAP / Bac Pro
+        var backNiv = document.createElement('button');
+        backNiv.style.cssText = 'background:none; border:2px solid #e2e8f0; border-radius:12px; padding:8px 16px; font-size:0.85rem; font-weight:700; cursor:pointer; color:' + niveauColor + '; font-family:inherit; margin-bottom:12px; grid-column:1/-1;';
+        backNiv.textContent = '← Retour';
+        backNiv.onclick = function() { currentCompNiveau = null; currentCompFilter = null; renderCompetences(); };
+        subGrid.appendChild(backNiv);
+
+        // Bouton "Toutes les compétences" de ce niveau
+        var allBtn = document.createElement('button');
+        allBtn.className = 'level-btn';
+        allBtn.style.cssText = 'border-color:' + niveauColor + '; color:' + niveauColor + ';';
+        allBtn.innerHTML = '🎯 Toutes ' + niveauLabel + ' <span style="font-size:0.75rem; opacity:0.7;">(' + niveauExos.length + ')</span>';
         allBtn.onclick = function() { currentCompFilter = '__ALL__'; renderCompetences(); };
         subGrid.appendChild(allBtn);
 
-        // Boutons C1-C6
-        COMP_DEFS.forEach(function(comp) {
-            var count = allCompExos.filter(function(e) {
+        // Boutons C1-C6 avec titre complet
+        compDefs.forEach(function(comp) {
+            var count = niveauExos.filter(function(e) {
                 return e.competences_cibles && Array.isArray(e.competences_cibles) && e.competences_cibles.indexOf(comp.id) >= 0;
             }).length;
             var btn = document.createElement('button');
             btn.className = 'level-btn';
-            btn.style.borderColor = comp.color;
-            btn.style.color = comp.color;
-            btn.innerHTML = '📝 ' + comp.label + (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + count + ')</span>' : '');
+            btn.style.cssText = 'border-color:' + comp.color + '; color:' + comp.color + '; text-align:left; padding:14px 16px;';
+            btn.innerHTML = '<div style="font-size:1.1rem; font-weight:800; margin-bottom:4px;">📝 ' + comp.id +
+                (count > 0 ? ' <span style="font-size:0.75rem; opacity:0.7; font-weight:600;">(' + count + ')</span>' : '') +
+                '</div><div style="font-size:0.78rem; font-weight:500; opacity:0.85; color:#475569;">' + comp.titre + '</div>';
             if (count === 0) btn.style.opacity = '0.4';
             btn.onclick = function() {
                 if (count > 0) { currentCompFilter = comp.id; renderCompetences(); }
@@ -1843,27 +1922,29 @@ function renderCompetences() {
         return;
     }
 
-    // ── MODE LISTE : afficher les exercices filtrés ──
+    // ── NIVEAU 3 : Liste des exercices filtrés ──
     subGrid.style.display = 'none';
     exosLabel.style.display = '';
 
     var filtered;
     var filterLabel;
     if (currentCompFilter === '__ALL__') {
-        filtered = allCompExos;
-        filterLabel = '🎯 Toutes les compétences — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
+        filtered = niveauExos;
+        filterLabel = '🎯 ' + niveauLabel + ' — Toutes les compétences — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
     } else {
-        filtered = allCompExos.filter(function(e) {
+        filtered = niveauExos.filter(function(e) {
             return e.competences_cibles && Array.isArray(e.competences_cibles) && e.competences_cibles.indexOf(currentCompFilter) >= 0;
         });
-        filterLabel = '📝 ' + currentCompFilter + ' — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
+        var compDef = compDefs.find(function(d) { return d.id === currentCompFilter; });
+        var compTitre = compDef ? compDef.titre : '';
+        filterLabel = '📝 ' + currentCompFilter + ' — ' + compTitre + ' — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
     }
     exosLabel.textContent = filterLabel;
 
-    // Bouton retour
+    // Bouton retour vers C1-C6
     var backBtn = document.createElement('button');
-    backBtn.style.cssText = 'background:none; border:2px solid var(--border,#e2e8f0); border-radius:12px; padding:8px 16px; font-size:0.85rem; font-weight:700; cursor:pointer; color:#6366f1; font-family:inherit; margin-bottom:12px;';
-    backBtn.textContent = '← Retour aux compétences';
+    backBtn.style.cssText = 'background:none; border:2px solid #e2e8f0; border-radius:12px; padding:8px 16px; font-size:0.85rem; font-weight:700; cursor:pointer; color:' + niveauColor + '; font-family:inherit; margin-bottom:12px;';
+    backBtn.textContent = '← Retour aux compétences ' + niveauLabel;
     backBtn.onclick = function() { currentCompFilter = null; renderCompetences(); };
     container.appendChild(backBtn);
 
@@ -1879,16 +1960,21 @@ function renderCompetences() {
         var compBadges = '';
         if (ex.competences_cibles && Array.isArray(ex.competences_cibles)) {
             ex.competences_cibles.forEach(function(c) {
-                var def = COMP_DEFS.find(function(d) { return d.id === c; });
-                var col = def ? def.color : '#6366f1';
+                var col = COMP_COLORS[c] || '#6366f1';
                 compBadges += '<span class="exo-badge" style="background:' + col + '22; color:' + col + '; border:1px solid ' + col + '44;">' + c + '</span>';
             });
+        }
+        // Badge niveau
+        var nivBadge = '';
+        if (currentCompNiveau === '__ALL__' && ex.niveau) {
+            var nivTxt = ex.niveau === 'CAP' ? 'CAP' : 'Bac Pro';
+            nivBadge = '<span class="exo-badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">' + nivTxt + '</span>';
         }
         card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[ex.type] || '📝') + '</div>' +
             '<div class="exo-info"><h3>' + (ex.titre || 'Sans titre') + '</h3>' +
             '<div class="exo-meta"><span class="exo-badge badge-type">' + (TYPE_LABELS[ex.type] || ex.type) + '</span>' +
             (ex.difficulte ? '<span class="exo-badge badge-' + ex.difficulte + '">' + ex.difficulte + '</span>' : '') +
-            compBadges +
+            nivBadge + compBadges +
             '</div></div>';
         card.onclick = function() { startExercice(ex); };
         container.appendChild(card);
