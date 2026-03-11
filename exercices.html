@@ -1878,17 +1878,28 @@ function renderCompetences() {
         backNiv.onclick = function() { currentCompNiveau = null; currentCompFilter = null; renderCompetences(); };
         subGrid.appendChild(backNiv);
 
-        // Bouton "Toutes les compétences" de ce niveau
+        // Helper : un exercice a les 6 compétences cochées ?
+        function hasAll6(e) {
+            if (!e.competences_cibles || !Array.isArray(e.competences_cibles)) return false;
+            return ['C1','C2','C3','C4','C5','C6'].every(function(c) { return e.competences_cibles.indexOf(c) >= 0; });
+        }
+
+        // Bouton "Toutes les compétences" (exercices avec les 6 cochées)
+        var allCompCount = niveauExos.filter(hasAll6).length;
         var allBtn = document.createElement('button');
         allBtn.className = 'level-btn';
-        allBtn.style.cssText = 'border-color:' + niveauColor + '; color:' + niveauColor + ';';
-        allBtn.innerHTML = '🎯 Toutes ' + niveauLabel + ' <span style="font-size:0.75rem; opacity:0.7;">(' + niveauExos.length + ')</span>';
+        allBtn.style.cssText = 'border-color:' + niveauColor + '; color:' + niveauColor + '; text-align:left; padding:14px 16px;';
+        allBtn.innerHTML = '<div style="font-size:1.1rem; font-weight:800; margin-bottom:4px;">🎯 Toutes les compétences' +
+            (allCompCount > 0 ? ' <span style="font-size:0.75rem; opacity:0.7; font-weight:600;">(' + allCompCount + ')</span>' : '') +
+            '</div><div style="font-size:0.78rem; font-weight:500; opacity:0.85; color:#475569;">Exercices travaillant les 6 compétences</div>';
         allBtn.onclick = function() { currentCompFilter = '__ALL__'; renderCompetences(); };
+        if (allCompCount === 0) allBtn.style.opacity = '0.4';
         subGrid.appendChild(allBtn);
 
-        // Boutons C1-C6 avec titre complet
+        // Boutons C1-C6 avec titre complet (exclut ceux qui ont les 6)
         compDefs.forEach(function(comp) {
             var count = niveauExos.filter(function(e) {
+                if (hasAll6(e)) return false;
                 return e.competences_cibles && Array.isArray(e.competences_cibles) && e.competences_cibles.indexOf(comp.id) >= 0;
             }).length;
             var btn = document.createElement('button');
@@ -1910,13 +1921,22 @@ function renderCompetences() {
     subGrid.style.display = 'none';
     exosLabel.style.display = '';
 
+    // Helper : un exercice a les 6 compétences cochées ?
+    function hasAll6(e) {
+        if (!e.competences_cibles || !Array.isArray(e.competences_cibles)) return false;
+        return ['C1','C2','C3','C4','C5','C6'].every(function(c) { return e.competences_cibles.indexOf(c) >= 0; });
+    }
+
     var filtered;
     var filterLabel;
     if (currentCompFilter === '__ALL__') {
-        filtered = niveauExos;
+        // "Toutes les compétences" = exercices avec les 6 cochées
+        filtered = niveauExos.filter(hasAll6);
         filterLabel = '🎯 ' + niveauLabel + ' — Toutes les compétences — ' + filtered.length + ' exercice' + (filtered.length > 1 ? 's' : '');
     } else {
+        // Compétence individuelle : exclure ceux qui ont les 6
         filtered = niveauExos.filter(function(e) {
+            if (hasAll6(e)) return false;
             return e.competences_cibles && Array.isArray(e.competences_cibles) && e.competences_cibles.indexOf(currentCompFilter) >= 0;
         });
         var compDef = compDefs.find(function(d) { return d.id === currentCompFilter; });
