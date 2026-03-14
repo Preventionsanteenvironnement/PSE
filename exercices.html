@@ -1615,6 +1615,7 @@ function isCompetencesExercice(e) {
 let allExercices = [];
 let currentNiveau = null;
 let currentModuleId = null;
+let currentSousThemeFilter = null;
 let currentExo = null;
 let corrected = false;
 const ROUTE_PARAMS = new URLSearchParams(window.location.search);
@@ -2354,6 +2355,7 @@ function renderCompetences() {
 
 function selectModule(moduleId, btnEl) {
     currentModuleId = moduleId;
+    currentSousThemeFilter = null;
     document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
     document.getElementById('zone-exercices').style.display = '';
@@ -2365,15 +2367,81 @@ function renderExercicesList() {
     const list = document.getElementById('exercices-list');
     list.innerHTML = '';
     const isAll = currentModuleId === '__ALL__';
-    const exos = isAll
+    let exos = isAll
         ? allExercices.filter(e => e.niveau === currentNiveau && exerciseMatchesRouteFilters(e) && !TRANSVERSAL_TYPES.includes(e.type) && !isCompetencesExercice(e))
         : allExercices.filter(e => e.niveau === currentNiveau && e.moduleId === currentModuleId && exerciseMatchesRouteFilters(e) && !TRANSVERSAL_TYPES.includes(e.type) && !isCompetencesExercice(e));
+
+    // === Navigation par sous-theme pour le module D2 (Budget) ===
+    if (currentModuleId === 'MD2' && !isAll) {
+        var allD2Exos = exos; // all D2 exercises before sous-theme filter
+        var stColor = '#f59e0b';
+        var stGrid = document.createElement('div');
+        stGrid.className = 'level-grid';
+        stGrid.style.marginBottom = '16px';
+
+        // Bouton "Tous"
+        var allBtn = document.createElement('div');
+        allBtn.className = 'level-btn level-btn-trans';
+        allBtn.style.borderColor = stColor;
+        allBtn.style.color = stColor;
+        if (currentSousThemeFilter === null) { allBtn.style.background = stColor; allBtn.style.color = '#fff'; }
+        allBtn.innerHTML = '📂 Tous (' + allD2Exos.length + ')';
+        allBtn.style.fontWeight = 'bold';
+        allBtn.style.cursor = 'pointer';
+        allBtn.onclick = function() { currentSousThemeFilter = null; renderExercicesList(); };
+        stGrid.appendChild(allBtn);
+
+        // Boutons par sous-theme
+        var stKeys = Object.keys(BUDGET_SOUS_THEME_LABELS);
+        stKeys.forEach(function(stId) {
+            var stCount = allD2Exos.filter(function(e) { return (e.sous_theme || '') === stId; }).length;
+            var stBtn = document.createElement('div');
+            stBtn.className = 'level-btn level-btn-trans';
+            stBtn.style.borderColor = stColor;
+            stBtn.style.color = stColor;
+            if (currentSousThemeFilter === stId) { stBtn.style.background = stColor; stBtn.style.color = '#fff'; }
+            stBtn.innerHTML = BUDGET_SOUS_THEME_LABELS[stId] + (stCount > 0 ? ' <span style="font-size:0.75rem; opacity:0.7;">(' + stCount + ')</span>' : '');
+            if (stCount > 0) {
+                stBtn.style.cursor = 'pointer';
+                stBtn.onclick = function() { currentSousThemeFilter = stId; renderExercicesList(); };
+            } else {
+                stBtn.style.opacity = '0.4';
+                stBtn.style.cursor = 'default';
+            }
+            stGrid.appendChild(stBtn);
+        });
+
+        // Bouton "Autres" (exercices sans sous-theme)
+        var autresCount = allD2Exos.filter(function(e) { return !e.sous_theme; }).length;
+        if (autresCount > 0 && autresCount < allD2Exos.length) {
+            var ucBtn = document.createElement('div');
+            ucBtn.className = 'level-btn level-btn-trans';
+            ucBtn.style.borderColor = '#94a3b8';
+            ucBtn.style.color = '#94a3b8';
+            if (currentSousThemeFilter === '__autres__') { ucBtn.style.background = '#94a3b8'; ucBtn.style.color = '#fff'; }
+            ucBtn.innerHTML = 'Autres (' + autresCount + ')';
+            ucBtn.style.cursor = 'pointer';
+            ucBtn.onclick = function() { currentSousThemeFilter = '__autres__'; renderExercicesList(); };
+            stGrid.appendChild(ucBtn);
+        }
+
+        list.appendChild(stGrid);
+
+        // Appliquer le filtre sous-theme
+        if (currentSousThemeFilter === '__autres__') {
+            exos = allD2Exos.filter(function(e) { return !e.sous_theme; });
+        } else if (currentSousThemeFilter !== null) {
+            exos = allD2Exos.filter(function(e) { return (e.sous_theme || '') === currentSousThemeFilter; });
+        }
+    }
+
     const label = document.getElementById('exercices-label');
     var routeLabel = getBudgetRouteSummary();
-    label.textContent = (routeLabel ? routeLabel + ' — ' : '') + (isAll ? 'Tous les exercices — ' : '') + exos.length + ' exercice' + (exos.length > 1 ? 's' : '') + ' disponible' + (exos.length > 1 ? 's' : '');
+    var stFilterLabel = (currentModuleId === 'MD2' && currentSousThemeFilter && currentSousThemeFilter !== '__autres__') ? BUDGET_SOUS_THEME_LABELS[currentSousThemeFilter] || '' : (currentSousThemeFilter === '__autres__' ? 'Autres' : '');
+    label.textContent = (routeLabel ? routeLabel + ' — ' : '') + (stFilterLabel ? stFilterLabel + ' — ' : '') + (isAll ? 'Tous les exercices — ' : '') + exos.length + ' exercice' + (exos.length > 1 ? 's' : '') + ' disponible' + (exos.length > 1 ? 's' : '');
 
     if (exos.length === 0) {
-        list.innerHTML = '<div class="empty-msg">Aucun exercice ' + (isAll ? 'pour ce niveau' : 'pour ce module') + '.</div>';
+        list.innerHTML += '<div class="empty-msg">Aucun exercice ' + (isAll ? 'pour ce niveau' : 'pour ce module') + '.</div>';
         return;
     }
     // Trouver les noms de modules pour affichage
