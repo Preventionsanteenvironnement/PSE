@@ -1955,6 +1955,11 @@ async function loadExercices(options = {}) {
 
     if (!append) window.__psePerfStart('rendu_dom');
     renderNiveaux();
+    // Auto-ouvrir CCF si on vient depuis l'index
+    if (!append && sessionStorage.getItem('pse_auto_ccf') === '1') {
+        sessionStorage.removeItem('pse_auto_ccf');
+        setTimeout(() => selectCCF(), 300);
+    }
     if (!append) applyRoutePreset();
     if (!append) window.__psePerfEnd('rendu_dom');
 
@@ -2017,6 +2022,21 @@ function renderNiveaux() {
         if (count === 0) { btn.style.opacity = '0.4'; btn.style.cursor = 'default'; btn.onclick = null; }
         grid.appendChild(btn);
     });
+
+    // === Bouton Révision CCF ===
+    const ccfCount = allExercices.filter(e => e.ccf && exerciseMatchesRouteFilters(e)).length;
+    if (ccfCount > 0) {
+        const ccfBtn = document.createElement('div');
+        ccfBtn.className = 'level-btn';
+        ccfBtn.style.cssText = 'background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:2px solid #b45309;font-weight:800;font-size:1.05rem;text-align:center;';
+        ccfBtn.innerHTML = '🎯 Révision CCF <span style="font-size:0.75rem;opacity:0.85;">(' + ccfCount + ')</span>';
+        ccfBtn.onclick = () => {
+            document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+            ccfBtn.classList.add('active');
+            selectCCF();
+        };
+        grid.appendChild(ccfBtn);
+    }
 
     // Transversal folder buttons
     const transGrid = document.getElementById('transversal-grid');
@@ -2424,6 +2444,67 @@ function renderCompetences() {
         card.onclick = function() { startExercice(ex); };
         container.appendChild(card);
     });
+}
+
+// === REVISION CCF ===
+function selectCCF() {
+    currentNiveau = null;
+    currentModuleId = null;
+    document.getElementById('zone-modules').style.display = 'none';
+    document.getElementById('zone-transversal').style.display = 'none';
+    document.getElementById('zone-competences').style.display = 'none';
+    document.getElementById('zone-exercices').style.display = '';
+
+    const list = document.getElementById('exercices-list');
+    list.innerHTML = '';
+
+    // Header attractif
+    const header = document.createElement('div');
+    header.style.cssText = 'background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:20px 24px;border-radius:16px;margin-bottom:20px;text-align:center;';
+    header.innerHTML = '<div style="font-size:1.5rem;font-weight:900;margin-bottom:4px;">🎯 Révision CCF</div><div style="opacity:0.9;font-size:0.9rem;">Entraîne-toi sur les exercices sélectionnés pour ton épreuve CCF</div>';
+    list.appendChild(header);
+
+    // Récupérer les exercices CCF
+    const ccfExos = allExercices.filter(e => e.ccf && exerciseMatchesRouteFilters(e));
+
+    if (ccfExos.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;padding:40px;color:#94a3b8;';
+        empty.innerHTML = '<div style="font-size:2rem;margin-bottom:8px;">📭</div>Aucun exercice CCF pour le moment.';
+        list.appendChild(empty);
+    } else {
+        // Grouper par module
+        const byModule = {};
+        ccfExos.forEach(e => {
+            const mod = e.moduleId || 'Divers';
+            if (!byModule[mod]) byModule[mod] = [];
+            byModule[mod].push(e);
+        });
+
+        Object.keys(byModule).sort().forEach(mod => {
+            const label = document.createElement('div');
+            label.className = 'theme-label';
+            label.style.cssText = 'color:#92400e;font-size:0.85rem;margin-top:16px;';
+            label.textContent = 'Module ' + mod;
+            list.appendChild(label);
+
+            byModule[mod].forEach(exo => {
+                const card = document.createElement('div');
+                card.className = 'exo-card';
+                card.innerHTML = '<div class="exo-icon">' + (TYPE_ICONS[exo.type] || '📌') + '</div>' +
+                    '<div class="exo-info"><h3>' + (exo.titre || 'Sans titre') + '</h3>' +
+                    '<div class="exo-meta">' +
+                    '<span class="exo-badge badge-type">' + (TYPE_LABELS[exo.type] || exo.type) + '</span>' +
+                    (exo.difficulte ? '<span class="exo-badge badge-' + exo.difficulte + '">' + exo.difficulte + '</span>' : '') +
+                    '<span class="exo-badge" style="background:#f59e0b;color:#fff;">🎯 CCF</span>' +
+                    '</div></div>';
+                card.onclick = () => startExercice(exo);
+                list.appendChild(card);
+            });
+        });
+    }
+
+    setTimeout(() => { document.getElementById('zone-exercices').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
 }
 
 function selectModule(moduleId, btnEl) {
