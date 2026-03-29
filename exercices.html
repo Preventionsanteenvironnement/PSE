@@ -1955,11 +1955,6 @@ async function loadExercices(options = {}) {
 
     if (!append) window.__psePerfStart('rendu_dom');
     renderNiveaux();
-    // Auto-ouvrir CCF si on vient depuis l'index
-    if (!append && sessionStorage.getItem('pse_auto_ccf') === '1') {
-        sessionStorage.removeItem('pse_auto_ccf');
-        setTimeout(() => selectCCF(), 300);
-    }
     if (!append) applyRoutePreset();
     if (!append) window.__psePerfEnd('rendu_dom');
 
@@ -2023,21 +2018,6 @@ function renderNiveaux() {
         grid.appendChild(btn);
     });
 
-    // === Bouton Révision CCF ===
-    const ccfCount = allExercices.filter(e => e.ccf && exerciseMatchesRouteFilters(e)).length;
-    if (ccfCount > 0) {
-        const ccfBtn = document.createElement('div');
-        ccfBtn.className = 'level-btn';
-        ccfBtn.style.cssText = 'background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:2px solid #b45309;font-weight:800;font-size:1.05rem;text-align:center;';
-        ccfBtn.innerHTML = '🎯 Révision CCF <span style="font-size:0.75rem;opacity:0.85;">(' + ccfCount + ')</span>';
-        ccfBtn.onclick = () => {
-            document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
-            ccfBtn.classList.add('active');
-            selectCCF();
-        };
-        grid.appendChild(ccfBtn);
-    }
-
     // Transversal folder buttons
     const transGrid = document.getElementById('transversal-grid');
     if (!transGrid) return;
@@ -2099,6 +2079,26 @@ function selectTransversalFolder(dossierId, btnEl) {
 function renderModules(niveauKey) {
     const container = document.getElementById('modules-container');
     container.innerHTML = '<div class="theme-label">Choisis ton module</div>';
+
+    // === Encart Révision CCF pour les CAP ===
+    if (niveauKey === 'CAP') {
+        const ccfCount = allExercices.filter(e => e.ccf && exerciseMatchesRouteFilters(e)).length;
+        if (ccfCount > 0) {
+            const ccfCard = document.createElement('div');
+            ccfCard.style.cssText = 'background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:16px;padding:20px 24px;margin-bottom:20px;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;';
+            ccfCard.innerHTML = '<div style="display:flex;align-items:center;gap:14px;">' +
+                '<div style="font-size:2.2rem;">🎯</div>' +
+                '<div>' +
+                '<div style="font-size:1.15rem;font-weight:900;color:white;">Révision CCF</div>' +
+                '<div style="font-size:0.85rem;color:rgba(255,255,255,0.9);margin-top:2px;">Entraîne-toi sur les exercices sélectionnés pour ton épreuve — ' + ccfCount + ' exercice' + (ccfCount > 1 ? 's' : '') + '</div>' +
+                '</div></div>';
+            ccfCard.onmouseenter = function() { this.style.transform = 'translateY(-3px)'; this.style.boxShadow = '0 8px 25px rgba(245,158,11,0.35)'; };
+            ccfCard.onmouseleave = function() { this.style.transform = ''; this.style.boxShadow = ''; };
+            ccfCard.onclick = () => selectCCF();
+            container.appendChild(ccfCard);
+        }
+    }
+
     const modules = window.MODULES_PSE[niveauKey] || [];
     const exosForNiveau = allExercices.filter(e => e.niveau === niveauKey && exerciseMatchesRouteFilters(e));
     let currentTheme = '';
