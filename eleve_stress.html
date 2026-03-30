@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thermomètre de Stress</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #f0f4f8; color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100dvh; }
+
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(180deg, #22c55e 0%, #eab308 50%, #ef4444 100%); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; }
+        #login-screen h1 { font-size: 2.5rem; margin-bottom: 5px; }
+        #display-pseudo { font-size: 1.5rem; font-weight: bold; margin-bottom: 20px; }
+        .btn-main { width: 100%; max-width: 300px; padding: 18px; border: none; border-radius: 12px; background: white; color: #0f172a; font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #ddd; }
+        .btn-main:active { transform: translateY(4px); box-shadow: none; }
+
+        #app-screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 420px; }
+
+        .card { background: white; border-radius: 16px; padding: 20px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .step-title { font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; font-weight: 900; margin-bottom: 12px; text-align: center; }
+
+        /* THERMOMETRE */
+        .thermo-container { display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+        .thermo-val { font-size: 4rem; font-weight: 900; transition: color 0.3s; }
+        .thermo-label { font-size: 1rem; font-weight: 700; margin-top: 5px; }
+        input[type=range] { width: 100%; height: 12px; border-radius: 6px; outline: none; -webkit-appearance: none; margin-top: 15px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; border-radius: 50%; background: white; border: 4px solid #333; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .thermo-scale { display: flex; justify-content: space-between; width: 100%; margin-top: 5px; font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+
+        /* SOURCES */
+        .source-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .source-btn { padding: 14px 10px; border: 2px solid #e2e8f0; border-radius: 10px; background: white; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .source-btn:hover { background: #f8fafc; }
+        .source-btn.selected { border-color: #ef4444; background: #fef2f2; }
+        .source-btn .src-emoji { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+        /* STRATEGIES */
+        .strat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .strat-btn { padding: 14px 10px; border: 2px solid #e2e8f0; border-radius: 10px; background: white; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .strat-btn.selected { border-color: #22c55e; background: #f0fdf4; }
+        .strat-btn .str-emoji { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+        #send-btn { width: 100%; padding: 18px; border: none; border-radius: 12px; background: #0f172a; color: white; font-size: 1.2rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #333; margin-top: 10px; }
+        #send-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        .footer { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 15px; }
+
+        #success-screen { display: none; text-align: center; margin-top: 60px; }
+        #success-screen .big-emoji { font-size: 5rem; }
+        .tip-card { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 15px; margin-top: 20px; text-align: left; font-size: 0.95rem; line-height: 1.5; color: #166534; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1>🌡️</h1>
+        <h2>Thermomètre de Stress</h2>
+        <p style="opacity:0.8;">Comment te sens-tu ?</p>
+        <div id="display-pseudo"></div>
+        <button class="btn-main" onclick="joinSession()">COMMENCER</button>
+    </div>
+
+    <div id="app-screen">
+        <div class="card">
+            <div class="step-title">1. Ton niveau de stress</div>
+            <div class="thermo-container">
+                <div class="thermo-val" id="thermo-val">5</div>
+                <div class="thermo-label" id="thermo-label">Modéré</div>
+                <input type="range" id="range-stress" min="1" max="10" value="5" oninput="updateStress(this.value)" style="background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);">
+                <div class="thermo-scale"><span>1 (Zen)</span><span>5 (Moyen)</span><span>10 (Max)</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="step-title">2. Ta source de stress principale</div>
+            <div class="source-grid">
+                <div class="source-btn" onclick="selectSource(this,'cours')"><span class="src-emoji">📚</span>Les cours</div>
+                <div class="source-btn" onclick="selectSource(this,'notes')"><span class="src-emoji">📝</span>Les notes</div>
+                <div class="source-btn" onclick="selectSource(this,'famille')"><span class="src-emoji">🏠</span>La famille</div>
+                <div class="source-btn" onclick="selectSource(this,'amis')"><span class="src-emoji">👥</span>Les amis</div>
+                <div class="source-btn" onclick="selectSource(this,'avenir')"><span class="src-emoji">🔮</span>L'avenir</div>
+                <div class="source-btn" onclick="selectSource(this,'corps')"><span class="src-emoji">🪞</span>Mon corps</div>
+                <div class="source-btn" onclick="selectSource(this,'ecrans')"><span class="src-emoji">📱</span>Les écrans</div>
+                <div class="source-btn" onclick="selectSource(this,'autre')"><span class="src-emoji">❓</span>Autre</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="step-title">3. Ta stratégie pour te calmer</div>
+            <div class="strat-grid">
+                <div class="strat-btn" onclick="selectStrat(this,'respirer')"><span class="str-emoji">🌬️</span>Respirer</div>
+                <div class="strat-btn" onclick="selectStrat(this,'musique')"><span class="str-emoji">🎵</span>Musique</div>
+                <div class="strat-btn" onclick="selectStrat(this,'sport')"><span class="str-emoji">🏃</span>Sport</div>
+                <div class="strat-btn" onclick="selectStrat(this,'parler')"><span class="str-emoji">🗣️</span>Parler</div>
+                <div class="strat-btn" onclick="selectStrat(this,'ecrire')"><span class="str-emoji">✍️</span>Écrire</div>
+                <div class="strat-btn" onclick="selectStrat(this,'repos')"><span class="str-emoji">😴</span>Me reposer</div>
+                <div class="strat-btn" onclick="selectStrat(this,'nature')"><span class="str-emoji">🌿</span>Nature</div>
+                <div class="strat-btn" onclick="selectStrat(this,'rien')"><span class="str-emoji">🤷</span>Je sais pas</div>
+            </div>
+        </div>
+
+        <button id="send-btn" onclick="envoyer()">ENVOYER 🚀</button>
+        <div class="footer">Connecté : <b id="display-name">...</b></div>
+    </div>
+
+    <div id="success-screen">
+        <div class="big-emoji">🌡️</div>
+        <h1>Merci !</h1>
+        <p style="color:#64748b;">Regarde le tableau pour voir le stress de la classe.</p>
+        <div class="tip-card" id="tip-card"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const PSEUDOS = ["Panda 🐼","Etoile ⭐","Fusee 🚀","Diamant 💎","Tigre 🐯","Dragon 🐉","Licorne 🦄","Phoenix 🔥","Ninja 🥷","Robot 🤖","Koala 🐨","Dauphin 🐬","Aigle 🦅","Papillon 🦋","Lion 🦁","Comete ☄️","Eclair ⚡","Flocon ❄️","Soleil ☀️","Lune 🌙","Galaxie 🌌","Hibou 🦉","Renard 🦊","Tornade 🌪️","Volcan 🌋","Cristal 💠","Trefle 🍀","Cerise 🍒","Arc-en-ciel 🌈","Pingouin 🐧"];
+        let myName = PSEUDOS[Math.floor(Math.random() * PSEUDOS.length)];
+        document.getElementById('display-pseudo').textContent = myName;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "stress_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
+        let selectedSource = null, selectedStrat = null;
+
+        const LABELS = {1:'Très zen',2:'Zen',3:'Tranquille',4:'Légèrement tendu',5:'Modéré',6:'Tendu',7:'Stressé',8:'Très stressé',9:'Alerte',10:'Maximum'};
+        const TIPS = {
+            respirer: "💡 Essaie la respiration 4-7-8 : inspire 4 sec, retiens 7 sec, expire 8 sec. Répète 3 fois.",
+            musique: "💡 La musique à 60 BPM ralentit le rythme cardiaque. Essaie de la musique calme pendant 10 min.",
+            sport: "💡 30 min d'activité physique libèrent des endorphines, l'hormone du bien-être.",
+            parler: "💡 Parler à quelqu'un de confiance réduit le cortisol (hormone du stress) de 50%.",
+            ecrire: "💡 Écrire ses pensées pendant 15 min réduit l'anxiété. Essaie un journal de gratitude.",
+            repos: "💡 Une micro-sieste de 20 min peut réduire le stress et améliorer la concentration.",
+            nature: "💡 20 min dans la nature réduisent significativement le cortisol. Même regarder des arbres aide.",
+            rien: "💡 Pas de souci ! Commence par respirer lentement 3 fois. C'est la stratégie la plus simple et efficace."
+        };
+
+        window.updateStress = (val) => {
+            const el = document.getElementById('thermo-val');
+            el.innerText = val;
+            el.style.color = val <= 3 ? '#22c55e' : (val <= 6 ? '#eab308' : '#ef4444');
+            document.getElementById('thermo-label').innerText = LABELS[val] || '';
+        };
+
+        window.selectSource = (el, src) => {
+            document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedSource = src;
+        };
+
+        window.selectStrat = (el, strat) => {
+            document.querySelectorAll('.strat-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedStrat = strat;
+        };
+
+        window.joinSession = async () => {
+            document.getElementById('display-name').innerText = myName;
+            await addDoc(collection(db, "stress_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+        };
+
+        window.envoyer = async () => {
+            if (!selectedSource || !selectedStrat) { alert("Remplis tout !"); return; }
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true; btn.innerText = "Envoi...";
+            const level = parseInt(document.getElementById('range-stress').value);
+            try {
+                await addDoc(collection(db, "stress_reponses"), {
+                    pseudo: myName,
+                    niveau: level,
+                    source: selectedSource,
+                    strategie: selectedStrat,
+                    sessionId: currentSessionId || null,
+                    timestamp: Date.now()
+                });
+                document.getElementById('app-screen').style.display = 'none';
+                document.getElementById('success-screen').style.display = 'block';
+                document.getElementById('tip-card').innerHTML = TIPS[selectedStrat] || '';
+            } catch(e) {
+                alert("Erreur : " + e.message);
+                btn.disabled = false; btn.innerText = "ENVOYER 🚀";
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dilemmes Moraux</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #0f172a; color: white; min-height: 100dvh; display: flex; flex-direction: column; }
+
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #login-screen h1 { font-size: 2.5rem; margin-bottom: 5px; }
+        #display-pseudo { font-size: 1.5rem; font-weight: bold; color: #06b6d4; margin-bottom: 20px; }
+        .btn-main { width: 100%; max-width: 300px; padding: 18px; border: none; border-radius: 12px; background: #06b6d4; color: white; font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #0891b2; }
+        .btn-main:active { transform: translateY(4px); box-shadow: none; }
+
+        #app-screen { display: none; flex-direction: column; height: 100%; max-width: 500px; margin: 0 auto; width: 100%; }
+
+        .scenario-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 25px; margin-bottom: 20px; text-align: center; }
+        .scenario-label { font-size: 0.7rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; font-weight: 900; margin-bottom: 10px; }
+        .scenario-text { font-size: 1.3rem; font-weight: 700; line-height: 1.5; color: #e2e8f0; }
+
+        .choices-zone { flex: 1; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+        .choice-btn { padding: 20px; border: 2px solid #334155; border-radius: 14px; background: #1e293b; cursor: pointer; text-align: left; font-size: 1.05rem; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 12px; color: white; }
+        .choice-btn:active { transform: scale(0.97); }
+        .choice-btn.selected { border-color: #06b6d4; background: rgba(6, 182, 212, 0.15); }
+        .choice-btn.disabled { pointer-events: none; opacity: 0.5; }
+        .choice-letter { width: 36px; height: 36px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1rem; flex-shrink: 0; }
+        .choice-btn.selected .choice-letter { background: #06b6d4; }
+
+        .status { text-align: center; font-weight: bold; font-size: 1rem; margin-top: 15px; color: #06b6d4; opacity: 0; transition: 0.3s; }
+        .footer { text-align: center; font-size: 0.8rem; color: #64748b; margin-top: auto; padding-top: 15px; }
+
+        #waiting-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+        #waiting-screen .wait-emoji { font-size: 4rem; margin-bottom: 15px; }
+
+        #result-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; backdrop-filter: blur(5px); }
+        .result-bars { width: 100%; max-width: 400px; margin-top: 20px; }
+        .res-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .res-bar-label { width: 35px; text-align: center; font-weight: 900; font-size: 1.1rem; }
+        .res-bar-bg { flex: 1; height: 35px; background: #334155; border-radius: 8px; overflow: hidden; }
+        .res-bar-fill { height: 100%; border-radius: 8px; transition: width 1s; display: flex; align-items: center; padding-left: 10px; font-weight: bold; font-size: 0.9rem; }
+        .res-bar-pct { width: 50px; text-align: right; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1>⚖️</h1>
+        <h2>Dilemmes Moraux</h2>
+        <p style="color:#94a3b8;">Qu'est-ce que tu ferais ?</p>
+        <div id="display-pseudo"></div>
+        <button class="btn-main" onclick="joinSession()">REJOINDRE</button>
+    </div>
+
+    <div id="app-screen">
+        <div id="game-zone" style="display:none; flex:1; flex-direction:column;">
+            <div class="scenario-card">
+                <div class="scenario-label">Situation</div>
+                <div class="scenario-text" id="scenario-text">...</div>
+            </div>
+            <div class="choices-zone" id="choices-zone"></div>
+            <div class="status" id="status-msg"></div>
+        </div>
+
+        <div id="waiting-screen">
+            <div class="wait-emoji">⚖️</div>
+            <div style="font-size:1.3rem; font-weight:bold;">En attente du dilemme...</div>
+            <div style="color:#64748b; margin-top:10px;">Le prof va lancer une situation</div>
+        </div>
+
+        <div id="result-overlay">
+            <div style="font-size:3rem;">📊</div>
+            <div style="font-size:1.5rem; font-weight:900; margin-top:10px;">Résultats de la classe</div>
+            <div class="result-bars" id="result-bars"></div>
+            <div style="color:#64748b; margin-top:20px; font-size:0.9rem;">Pas de bonne réponse : c'est un débat !</div>
+        </div>
+
+        <div class="footer">Connecté : <b id="display-name">...</b></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const PSEUDOS = ["Panda 🐼","Etoile ⭐","Fusee 🚀","Diamant 💎","Tigre 🐯","Dragon 🐉","Licorne 🦄","Phoenix 🔥","Ninja 🥷","Robot 🤖","Koala 🐨","Dauphin 🐬","Aigle 🦅","Papillon 🦋","Lion 🦁","Comete ☄️","Eclair ⚡","Flocon ❄️","Soleil ☀️","Lune 🌙","Galaxie 🌌","Hibou 🦉","Renard 🦊","Tornade 🌪️","Volcan 🌋","Cristal 💠","Trefle 🍀","Cerise 🍒","Arc-en-ciel 🌈","Pingouin 🐧"];
+        let myName = PSEUDOS[Math.floor(Math.random() * PSEUDOS.length)];
+        document.getElementById('display-pseudo').textContent = myName;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "dilemme_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
+        const COLORS = ['#06b6d4', '#f59e0b', '#ef4444', '#22c55e'];
+        const LETTERS = ['A', 'B', 'C', 'D'];
+        let myVote = null;
+
+        window.joinSession = async () => {
+            document.getElementById('display-name').innerText = myName;
+            await addDoc(collection(db, "dilemme_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+        };
+
+        onSnapshot(doc(db, "dilemme_config", "global"), (snap) => {
+            if (!snap.exists()) return;
+            const d = snap.data();
+
+            if (d.scenario && d.choices && d.choices.length > 0 && !d.showResult) {
+                myVote = null;
+                document.getElementById('scenario-text').innerText = d.scenario;
+                const zone = document.getElementById('choices-zone');
+                zone.innerHTML = '';
+                d.choices.forEach((c, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'choice-btn';
+                    btn.innerHTML = '<span class="choice-letter" style="color:' + COLORS[i] + '">' + LETTERS[i] + '</span><span>' + c + '</span>';
+                    btn.onclick = () => voteChoice(i, c, btn);
+                    zone.appendChild(btn);
+                });
+                document.getElementById('game-zone').style.display = 'flex';
+                document.getElementById('waiting-screen').style.display = 'none';
+                document.getElementById('result-overlay').style.display = 'none';
+            } else if (!d.scenario || d.scenario.length === 0) {
+                document.getElementById('game-zone').style.display = 'none';
+                document.getElementById('waiting-screen').style.display = 'flex';
+                document.getElementById('result-overlay').style.display = 'none';
+            }
+
+            if (d.showResult && d.choices) {
+                showResults(d.resultCounts || {}, d.choices);
+            }
+        });
+
+        async function voteChoice(idx, text, btn) {
+            if (myVote !== null) return;
+            myVote = idx;
+            document.querySelectorAll('.choice-btn').forEach(b => b.classList.add('disabled'));
+            btn.classList.remove('disabled');
+            btn.classList.add('selected');
+
+            try {
+                await addDoc(collection(db, "dilemme_reponses"), {
+                    pseudo: myName, choixIdx: idx, choixText: text,
+                    sessionId: currentSessionId || null, timestamp: Date.now()
+                });
+                showStatus("Vote envoyé ! En attente des résultats...");
+            } catch(e) { showStatus("Erreur..."); }
+        }
+
+        function showResults(counts, choices) {
+            const overlay = document.getElementById('result-overlay');
+            const bars = document.getElementById('result-bars');
+            bars.innerHTML = '';
+            let total = 0;
+            for (let v of Object.values(counts)) total += v;
+
+            choices.forEach((c, i) => {
+                const count = counts[i] || 0;
+                const pct = total > 0 ? Math.round(count / total * 100) : 0;
+                bars.innerHTML += '<div class="res-bar-row"><div class="res-bar-label" style="color:' + COLORS[i] + '">' + LETTERS[i] + '</div><div class="res-bar-bg"><div class="res-bar-fill" style="width:' + pct + '%;background:' + COLORS[i] + ';">' + count + '</div></div><div class="res-bar-pct">' + pct + '%</div></div>';
+            });
+            overlay.style.display = 'flex';
+        }
+
+        function showStatus(msg) {
+            const el = document.getElementById('status-msg');
+            el.innerText = msg; el.style.opacity = 1;
+        }
+    </script>
+</body>
+</html>

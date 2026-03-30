@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Roue des Émotions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #f0f4f8; color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100dvh; }
+
+        #login-screen { position: fixed; inset: 0; background: #f0f4f8; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #login-screen h1 { margin-bottom: 10px; color: #0f172a; }
+        #display-pseudo { font-size: 1.5rem; font-weight: bold; color: #e91e63; margin-bottom: 20px; }
+        .btn-main { width: 100%; max-width: 300px; padding: 18px; border: none; border-radius: 12px; background: #e91e63; color: white; font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #c2185b; }
+        .btn-main:active { transform: translateY(4px); box-shadow: none; }
+
+        #app-screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 420px; }
+
+        .step-title { font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; font-weight: 900; margin-bottom: 10px; text-align: center; }
+        .card { background: white; border-radius: 16px; padding: 20px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+
+        /* ROUE */
+        .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto 15px; }
+        .wheel-segment { position: absolute; width: 100%; height: 100%; cursor: pointer; transition: 0.2s; }
+        .famille-btn { display: flex; flex-direction: column; align-items: center; padding: 12px; border-radius: 12px; border: 3px solid transparent; cursor: pointer; transition: 0.2s; background: white; }
+        .famille-btn.selected { border-color: #333; transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .famille-btn .emoji { font-size: 2rem; }
+        .famille-btn .label { font-size: 0.75rem; font-weight: 700; margin-top: 4px; }
+        .familles-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .familles-row2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+
+        /* NUANCES */
+        .nuances-container { display: none; }
+        .nuances-container.active { display: block; }
+        .nuance-btn { display: block; width: 100%; padding: 12px; margin-bottom: 6px; border: 2px solid #e2e8f0; border-radius: 10px; background: white; cursor: pointer; text-align: left; font-size: 1rem; font-weight: 600; transition: 0.2s; }
+        .nuance-btn:hover { background: #f8fafc; }
+        .nuance-btn.selected { border-color: #e91e63; background: #fce4ec; }
+        .nuance-intensity { font-size: 0.75rem; color: #94a3b8; float: right; margin-top: 2px; }
+
+        /* CORPS */
+        .body-zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .zone-btn { padding: 15px 10px; border: 2px solid #e2e8f0; border-radius: 10px; background: white; cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .zone-btn.selected { border-color: #e91e63; background: #fce4ec; }
+        .zone-btn .zone-emoji { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+        /* SLIDER */
+        input[type=range] { width: 100%; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #22c55e, #eab308, #ef4444); outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: white; border: 3px solid #333; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .intensity-val { text-align: center; font-size: 2rem; font-weight: 900; margin-top: 5px; }
+
+        #send-btn { width: 100%; padding: 18px; border: none; border-radius: 12px; background: #e91e63; color: white; font-size: 1.2rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #c2185b; margin-top: 10px; }
+        #send-btn:active { transform: translateY(4px); box-shadow: none; }
+        #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .status { text-align: center; font-weight: bold; opacity: 0; transition: 0.3s; margin-top: 10px; color: #22c55e; }
+        .footer { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 15px; }
+
+        #success-screen { display: none; text-align: center; margin-top: 80px; }
+        #success-screen .big-emoji { font-size: 5rem; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1>🎯 Roue des Émotions</h1>
+        <p style="color:#64748b; margin-bottom:20px;">Identifie ce que tu ressens</p>
+        <div id="display-pseudo"></div>
+        <button class="btn-main" onclick="joinSession()">COMMENCER</button>
+    </div>
+
+    <div id="app-screen">
+        <div class="card">
+            <div class="step-title">1. Quelle famille d'émotion ?</div>
+            <div class="familles-grid">
+                <div class="famille-btn" onclick="selectFamille(this,'Joie')" style="border-bottom: 4px solid #22c55e;"><span class="emoji">😊</span><span class="label" style="color:#22c55e;">Joie</span></div>
+                <div class="famille-btn" onclick="selectFamille(this,'Amour')" style="border-bottom: 4px solid #ec4899;"><span class="emoji">❤️</span><span class="label" style="color:#ec4899;">Amour</span></div>
+                <div class="famille-btn" onclick="selectFamille(this,'Peur')" style="border-bottom: 4px solid #8b5cf6;"><span class="emoji">😨</span><span class="label" style="color:#8b5cf6;">Peur</span></div>
+                <div class="famille-btn" onclick="selectFamille(this,'Colère')" style="border-bottom: 4px solid #ef4444;"><span class="emoji">😡</span><span class="label" style="color:#ef4444;">Colère</span></div>
+            </div>
+            <div class="familles-row2">
+                <div class="famille-btn" onclick="selectFamille(this,'Tristesse')" style="border-bottom: 4px solid #3b82f6;"><span class="emoji">😢</span><span class="label" style="color:#3b82f6;">Tristesse</span></div>
+                <div class="famille-btn" onclick="selectFamille(this,'Dégoût')" style="border-bottom: 4px solid #84cc16;"><span class="emoji">🤢</span><span class="label" style="color:#84cc16;">Dégoût</span></div>
+                <div class="famille-btn" onclick="selectFamille(this,'Surprise')" style="border-bottom: 4px solid #f59e0b;"><span class="emoji">😲</span><span class="label" style="color:#f59e0b;">Surprise</span></div>
+            </div>
+        </div>
+
+        <div class="card nuances-container" id="nuances-card">
+            <div class="step-title">2. Plus précisément ?</div>
+            <div id="nuances-list"></div>
+        </div>
+
+        <div class="card" id="intensity-card" style="display:none;">
+            <div class="step-title">3. Quelle intensité ? (1 = faible, 10 = forte)</div>
+            <input type="range" id="range-intensity" min="1" max="10" value="5" oninput="updateIntensity(this.value)">
+            <div class="intensity-val" id="intensity-val">5</div>
+        </div>
+
+        <div class="card" id="body-card" style="display:none;">
+            <div class="step-title">4. Où le ressens-tu dans ton corps ?</div>
+            <div class="body-zones">
+                <div class="zone-btn" onclick="selectZone(this,'tete')"><span class="zone-emoji">🧠</span>Tête</div>
+                <div class="zone-btn" onclick="selectZone(this,'poitrine')"><span class="zone-emoji">💓</span>Poitrine</div>
+                <div class="zone-btn" onclick="selectZone(this,'ventre')"><span class="zone-emoji">🫄</span>Ventre</div>
+                <div class="zone-btn" onclick="selectZone(this,'gorge')"><span class="zone-emoji">😤</span>Gorge</div>
+                <div class="zone-btn" onclick="selectZone(this,'mains')"><span class="zone-emoji">🤲</span>Mains</div>
+                <div class="zone-btn" onclick="selectZone(this,'partout')"><span class="zone-emoji">🧍</span>Partout</div>
+            </div>
+        </div>
+
+        <button id="send-btn" onclick="envoyer()" style="display:none;">ENVOYER 🚀</button>
+        <div id="status-msg" class="status"></div>
+        <div class="footer">Connecté : <b id="display-name">...</b></div>
+    </div>
+
+    <div id="success-screen">
+        <div class="big-emoji">🎯</div>
+        <h1>Merci !</h1>
+        <p style="color:#64748b;">Regarde le tableau pour voir les émotions de la classe.</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const NUANCES = {
+            'Joie': [{e:'Satisfait',i:'Très faible'},{e:'Content',i:'Faible'},{e:'Joyeux',i:'Moyen'},{e:'Heureux',i:'Fort'},{e:'Émerveillé',i:'Très fort'},{e:'En extase',i:'Extrême'}],
+            'Amour': [{e:'Doux',i:'Très faible'},{e:'Tendre',i:'Faible'},{e:'Affectueux',i:'Moyen'},{e:'Amoureux',i:'Fort'},{e:'Passionné',i:'Très fort'},{e:'En adoration',i:'Extrême'}],
+            'Peur': [{e:'Préoccupé',i:'Très faible'},{e:'Inquiet',i:'Faible'},{e:'Anxieux',i:'Moyen'},{e:'Apeuré',i:'Fort'},{e:'Paniqué',i:'Très fort'},{e:'Terrifié',i:'Extrême'}],
+            'Colère': [{e:'Contrarié',i:'Très faible'},{e:'Irrité',i:'Faible'},{e:'Énervé',i:'Moyen'},{e:'En colère',i:'Fort'},{e:'Exaspéré',i:'Très fort'},{e:'Enragé',i:'Extrême'}],
+            'Tristesse': [{e:'Affecté',i:'Très faible'},{e:'Chagriné',i:'Faible'},{e:'Peiné',i:'Moyen'},{e:'Triste',i:'Fort'},{e:'Déprimé',i:'Très fort'},{e:'Anéanti',i:'Extrême'}],
+            'Dégoût': [{e:'Dérangé',i:'Très faible'},{e:'Incommodé',i:'Faible'},{e:'Amer',i:'Moyen'},{e:'Dégoûté',i:'Fort'},{e:'Écœuré',i:'Très fort'},{e:'Horripilé',i:'Extrême'}],
+            'Surprise': [{e:'En alerte',i:'Très faible'},{e:'Étonné',i:'Faible'},{e:'Embarrassé',i:'Moyen'},{e:'Surpris',i:'Fort'},{e:'Frappé',i:'Très fort'},{e:'Ébahi',i:'Extrême'}]
+        };
+
+        const PSEUDOS = ["Panda 🐼","Etoile ⭐","Fusee 🚀","Diamant 💎","Tigre 🐯","Dragon 🐉","Licorne 🦄","Phoenix 🔥","Ninja 🥷","Robot 🤖","Koala 🐨","Dauphin 🐬","Aigle 🦅","Papillon 🦋","Lion 🦁","Comete ☄️","Eclair ⚡","Flocon ❄️","Soleil ☀️","Lune 🌙","Galaxie 🌌","Hibou 🦉","Renard 🦊","Tornade 🌪️","Volcan 🌋","Cristal 💠","Trefle 🍀","Cerise 🍒","Arc-en-ciel 🌈","Pingouin 🐧"];
+        let myName = PSEUDOS[Math.floor(Math.random() * PSEUDOS.length)];
+        document.getElementById('display-pseudo').textContent = myName;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "roue_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
+        let selectedFamille = null, selectedNuance = null, selectedZone = null;
+
+        window.joinSession = async () => {
+            document.getElementById('display-name').innerText = myName;
+            await addDoc(collection(db, "roue_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+        };
+
+        window.selectFamille = (el, famille) => {
+            document.querySelectorAll('.famille-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedFamille = famille;
+            selectedNuance = null;
+
+            const list = document.getElementById('nuances-list');
+            list.innerHTML = '';
+            NUANCES[famille].forEach(n => {
+                const btn = document.createElement('button');
+                btn.className = 'nuance-btn';
+                btn.innerHTML = n.e + '<span class="nuance-intensity">' + n.i + '</span>';
+                btn.onclick = () => {
+                    list.querySelectorAll('.nuance-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedNuance = n.e;
+                    document.getElementById('intensity-card').style.display = 'block';
+                    document.getElementById('body-card').style.display = 'block';
+                    document.getElementById('send-btn').style.display = 'block';
+                    document.getElementById('body-card').scrollIntoView({ behavior: 'smooth' });
+                };
+                list.appendChild(btn);
+            });
+            document.getElementById('nuances-card').classList.add('active');
+            document.getElementById('nuances-card').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.updateIntensity = (val) => {
+            const el = document.getElementById('intensity-val');
+            el.innerText = val;
+            el.style.color = val <= 3 ? '#22c55e' : (val <= 6 ? '#eab308' : '#ef4444');
+        };
+
+        window.selectZone = (el, zone) => {
+            document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedZone = zone;
+        };
+
+        window.envoyer = async () => {
+            if (!selectedFamille || !selectedNuance) { alert("Choisis une famille et une nuance !"); return; }
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true; btn.innerText = "Envoi...";
+            try {
+                await addDoc(collection(db, "roue_reponses"), {
+                    pseudo: myName,
+                    famille: selectedFamille,
+                    emotion: selectedNuance,
+                    intensite: parseInt(document.getElementById('range-intensity').value),
+                    zone_corps: selectedZone || 'non_precise',
+                    sessionId: currentSessionId || null,
+                    timestamp: Date.now()
+                });
+                document.getElementById('app-screen').style.display = 'none';
+                document.getElementById('success-screen').style.display = 'block';
+            } catch(e) {
+                alert("Erreur : " + e.message);
+                btn.disabled = false; btn.innerText = "ENVOYER 🚀";
+            }
+        };
+
+        history.replaceState({ screen: 'login' }, '', location.pathname + location.search);
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.screen === 'login') {
+                document.getElementById('login-screen').style.display = '';
+                document.getElementById('app-screen').style.display = 'none';
+                document.getElementById('success-screen').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

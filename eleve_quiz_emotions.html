@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiz Émotions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; background: #f0f4f8; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        #login-screen { position: fixed; inset: 0; z-index: 100; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; }
+        #login-screen h1 { font-size: 2.5rem; margin-bottom: 8px; }
+        #display-pseudo { font-size: 1.5rem; font-weight: bold; margin-bottom: 20px; }
+        .btn-join { width: 100%; max-width: 300px; padding: 18px; border: none; border-radius: 16px; background: white; color: #ef4444; font-size: 1.3rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0 #ddd; }
+        .btn-join:active { transform: translateY(4px); box-shadow: none; }
+
+        #app-screen { display: none; flex-direction: column; height: 100%; }
+
+        .question-zone { text-align: center; margin-bottom: 15px; }
+        .q-label { font-size: 0.7rem; text-transform: uppercase; color: #94a3b8; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
+        .q-word { font-size: 2.5rem; font-weight: 900; color: #0f172a; padding: 20px; background: white; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); min-height: 80px; display: flex; align-items: center; justify-content: center; }
+
+        .familles-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; flex-grow: 1; align-content: center; }
+        .fam-btn { padding: 18px 10px; border: 3px solid #e2e8f0; border-radius: 14px; background: white; cursor: pointer; text-align: center; font-size: 1rem; font-weight: 700; transition: 0.15s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .fam-btn:active { transform: scale(0.95); }
+        .fam-btn .fam-emoji { font-size: 2rem; }
+        .fam-btn.selected { border-width: 4px; transform: scale(1.03); }
+        .fam-btn.correct { background: #dcfce7 !important; border-color: #22c55e !important; }
+        .fam-btn.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; opacity: 0.6; }
+        .fam-btn.disabled { pointer-events: none; }
+
+        .score-bar { text-align: center; padding: 10px; font-weight: bold; color: #64748b; font-size: 0.9rem; }
+        .score-bar .sc { color: #0f172a; font-size: 1.5rem; }
+
+        #result-overlay { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; animation: popIn 0.3s; }
+        .res-win { background: rgba(34, 197, 94, 0.95); }
+        .res-lose { background: rgba(239, 68, 68, 0.95); }
+        #result-overlay .res-icon { font-size: 5rem; color: white; }
+        #result-overlay .res-title { font-size: 2.5rem; font-weight: 900; color: white; margin-top: 10px; }
+        #result-overlay .res-sub { font-size: 1.2rem; color: rgba(255,255,255,0.8); margin-top: 5px; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        #waiting-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: #94a3b8; }
+        #waiting-screen .wait-emoji { font-size: 4rem; margin-bottom: 15px; }
+
+        #lock-overlay { position: fixed; inset: 0; background: rgba(240,244,248,0.95); z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1>🧠</h1>
+        <h2>Quiz Émotions</h2>
+        <p style="opacity:0.8;">7 familles, 49 nuances</p>
+        <div id="display-pseudo"></div>
+        <button class="btn-join" onclick="joinSession()">JOUER</button>
+    </div>
+
+    <div id="app-screen">
+        <div class="score-bar">Score : <span class="sc" id="score-display">0</span></div>
+
+        <div id="game-zone" style="display:none; flex:1; flex-direction:column;">
+            <div class="question-zone">
+                <div class="q-label">À quelle famille appartient...</div>
+                <div class="q-word" id="q-word">...</div>
+            </div>
+            <div class="familles-grid" id="familles-grid">
+                <div class="fam-btn" onclick="vote('Joie')" data-f="Joie" style="border-color:#22c55e;"><span class="fam-emoji">😊</span>Joie</div>
+                <div class="fam-btn" onclick="vote('Amour')" data-f="Amour" style="border-color:#ec4899;"><span class="fam-emoji">❤️</span>Amour</div>
+                <div class="fam-btn" onclick="vote('Peur')" data-f="Peur" style="border-color:#8b5cf6;"><span class="fam-emoji">😨</span>Peur</div>
+                <div class="fam-btn" onclick="vote('Colère')" data-f="Colère" style="border-color:#ef4444;"><span class="fam-emoji">😡</span>Colère</div>
+                <div class="fam-btn" onclick="vote('Tristesse')" data-f="Tristesse" style="border-color:#3b82f6;"><span class="fam-emoji">😢</span>Tristesse</div>
+                <div class="fam-btn" onclick="vote('Dégoût')" data-f="Dégoût" style="border-color:#84cc16;"><span class="fam-emoji">🤢</span>Dégoût</div>
+                <div class="fam-btn" onclick="vote('Surprise')" data-f="Surprise" style="border-color:#f59e0b;" colspan="2"><span class="fam-emoji">😲</span>Surprise</div>
+            </div>
+        </div>
+
+        <div id="waiting-screen">
+            <div class="wait-emoji">⏳</div>
+            <div style="font-size:1.3rem; font-weight:bold;">En attente de la question...</div>
+        </div>
+
+        <div id="result-overlay">
+            <div class="res-icon" id="res-icon"></div>
+            <div class="res-title" id="res-title"></div>
+            <div class="res-sub" id="res-sub"></div>
+        </div>
+
+        <div id="lock-overlay">
+            <div style="font-size:4rem;">🔒</div>
+            <div style="font-size:1.5rem; font-weight:900; color:#ef4444;">Votes clos</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI", authDomain: "devoirs-pse.firebaseapp.com", projectId: "devoirs-pse", storageBucket: "devoirs-pse.firebasestorage.app", messagingSenderId: "614730413904", appId: "1:614730413904:web:a5dd478af5de30f6bede55" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const PSEUDOS = ["Panda 🐼","Etoile ⭐","Fusee 🚀","Diamant 💎","Tigre 🐯","Dragon 🐉","Licorne 🦄","Phoenix 🔥","Ninja 🥷","Robot 🤖","Koala 🐨","Dauphin 🐬","Aigle 🦅","Papillon 🦋","Lion 🦁","Comete ☄️","Eclair ⚡","Flocon ❄️","Soleil ☀️","Lune 🌙","Galaxie 🌌","Hibou 🦉","Renard 🦊","Tornade 🌪️","Volcan 🌋","Cristal 💠","Trefle 🍀","Cerise 🍒","Arc-en-ciel 🌈","Pingouin 🐧"];
+        let myName = PSEUDOS[Math.floor(Math.random() * PSEUDOS.length)];
+        document.getElementById('display-pseudo').textContent = myName;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSessionId = urlParams.get('sessionId') || null;
+        if (!currentSessionId) {
+            onSnapshot(doc(db, "quiz_emo_config", "global"), (snap) => {
+                if (snap.exists() && snap.data().sessionId) currentSessionId = snap.data().sessionId;
+            });
+        }
+
+        let myScore = 0;
+        let myVote = null;
+        let currentCorrect = null;
+
+        window.joinSession = async () => {
+            await addDoc(collection(db, "quiz_emo_presence"), { name: myName, timestamp: Date.now(), sessionId: currentSessionId || null });
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+            document.getElementById('waiting-screen').style.display = 'flex';
+        };
+
+        onSnapshot(doc(db, "quiz_emo_config", "global"), (snap) => {
+            if (!snap.exists()) return;
+            const d = snap.data();
+
+            if (d.emotion && d.emotion.length > 0 && !d.showResult) {
+                document.getElementById('q-word').innerText = d.emotion;
+                currentCorrect = d.correctFamily;
+                myVote = null;
+                document.getElementById('game-zone').style.display = 'flex';
+                document.getElementById('waiting-screen').style.display = 'none';
+                document.getElementById('result-overlay').style.display = 'none';
+                resetButtons();
+            }
+
+            if (d.showResult && currentCorrect && myVote) {
+                showResult(myVote === currentCorrect);
+            }
+
+            const lock = document.getElementById('lock-overlay');
+            if (d.isLocked) { lock.style.display = 'flex'; } else { lock.style.display = 'none'; }
+        });
+
+        window.vote = async (famille) => {
+            if (myVote) return;
+            myVote = famille;
+            document.querySelectorAll('.fam-btn').forEach(b => {
+                b.classList.add('disabled');
+                if (b.dataset.f === famille) b.classList.add('selected');
+            });
+
+            try {
+                await addDoc(collection(db, "quiz_emo_reponses"), {
+                    pseudo: myName,
+                    reponse: famille,
+                    correct: famille === currentCorrect,
+                    sessionId: currentSessionId || null,
+                    timestamp: Date.now()
+                });
+            } catch(e) {}
+        };
+
+        function showResult(isCorrect) {
+            const overlay = document.getElementById('result-overlay');
+            overlay.style.display = 'flex';
+            overlay.className = isCorrect ? 'res-win' : 'res-lose';
+            document.getElementById('res-icon').innerText = isCorrect ? '🎉' : '🫠';
+            document.getElementById('res-title').innerText = isCorrect ? 'BRAVO !' : 'OUPS...';
+            document.getElementById('res-sub').innerText = isCorrect ? '+1 point' : 'C\'était : ' + currentCorrect;
+            if (isCorrect) { myScore++; document.getElementById('score-display').innerText = myScore; }
+
+            document.querySelectorAll('.fam-btn').forEach(b => {
+                if (b.dataset.f === currentCorrect) b.classList.add('correct');
+                else if (b.dataset.f === myVote && myVote !== currentCorrect) b.classList.add('wrong');
+            });
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                document.getElementById('game-zone').style.display = 'none';
+                document.getElementById('waiting-screen').style.display = 'flex';
+            }, 3000);
+        }
+
+        function resetButtons() {
+            document.querySelectorAll('.fam-btn').forEach(b => {
+                b.classList.remove('selected', 'correct', 'wrong', 'disabled');
+            });
+        }
+    </script>
+</body>
+</html>
