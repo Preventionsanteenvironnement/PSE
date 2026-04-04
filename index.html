@@ -2745,25 +2745,56 @@
         const hash = window.location.hash;
         if (!hash) return;
 
-        const target = document.querySelector(hash);
-        if (!target) return;
+        // Clean the hash for querySelector (handle special chars)
+        let selector;
+        try {
+            selector = hash;
+            const target = document.querySelector(selector);
+            if (!target) return;
 
-        // Open the target and all parent <details> elements
-        let el = target;
-        while (el) {
-            if (el.tagName === 'DETAILS') {
-                el.open = true;
+            // FIRST: Open the target itself (the module <details>)
+            if (target.tagName === 'DETAILS') {
+                target.open = true;
             }
-            el = el.parentElement;
-        }
 
-        // Scroll to target after a short delay (let DOM update)
-        setTimeout(() => {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+            // THEN: Open ALL parent <details> elements up to the root
+            let el = target.parentElement;
+            while (el) {
+                if (el.tagName === 'DETAILS') {
+                    el.open = true;
+                }
+                el = el.parentElement;
+            }
+
+            // Scroll to target after a delay (let all accordions render)
+            setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Highlight briefly
+                target.style.outline = '3px solid #3498db';
+                target.style.outlineOffset = '2px';
+                target.style.borderRadius = '8px';
+                setTimeout(() => {
+                    target.style.outline = '';
+                    target.style.outlineOffset = '';
+                }, 3000);
+            }, 400);
+
+        } catch(e) {
+            console.warn('Anchor target not found:', hash, e);
+        }
     }
 
-    // Run on page load
+    // Run on page load - with fallback delays for slow mobile rendering
+    if (document.readyState === 'complete') {
+        openAnchorTarget();
+    } else {
+        window.addEventListener('load', function() {
+            openAnchorTarget();
+            // Second attempt after a delay for mobile Safari
+            setTimeout(openAnchorTarget, 500);
+        });
+    }
+    // Also run immediately in case DOM is already ready
     openAnchorTarget();
 
     // Run when hash changes (e.g. clicking a link on the same page)
