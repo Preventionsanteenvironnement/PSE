@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module B4 : Le bruit au quotidien</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Bac Pro 1ère</h1>
+        <p>Module B4 — Le bruit au quotidien</p>
+        <span class="source-credit">D'après le programme Eduscol Bac Pro 1ère</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 22</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Catégorie</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Catégorie</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maîtrises les 22 notions essentielles du module B4 — Le bruit au quotidien.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+    <script>
+    const flashcards = [
+        { cat: "Son et bruit", q: "Quelle est la différence entre un son et un bruit ?", a: "Un son est une vibration organisée ; un bruit est un son non désiré ou gênant.", expl: "En physique, tout bruit est un son. Mais en santé, on parle de bruit quand le son devient désagréable, gênant ou dangereux pour l'oreille. C'est la perception qui fait la différence." },
+        { cat: "Son et bruit", q: "Qu'est-ce qu'une onde sonore ?", a: "Une vibration qui se propage dans l'air sous forme d'ondes.", expl: "Quand un objet vibre (corde de guitare, membrane de haut-parleur), il crée des variations de pression dans l'air. Ces variations se propagent jusqu'à notre oreille : c'est l'onde sonore." },
+        { cat: "Son et bruit", q: "En quelle unité mesure-t-on l'intensité sonore ?", a: "En décibels, noté dB(A).", expl: "Le dB(A) est l'unité qui tient compte de la sensibilité de l'oreille humaine. Le « A » signifie que la mesure est pondérée pour correspondre à ce que l'oreille perçoit réellement." },
+        { cat: "Son et bruit", q: "Qu'est-ce que la fréquence d'un son ?", a: "Le nombre de vibrations par seconde, exprimé en Hertz (Hz).", expl: "Plus la fréquence est élevée, plus le son est aigu. Plus elle est basse, plus le son est grave. L'oreille humaine perçoit les sons entre 20 Hz et 20 000 Hz." },
+        { cat: "Seuils", q: "Quel est le seuil d'audibilité ?", a: "0 dB(A) : c'est le son le plus faible perceptible par l'oreille.", expl: "Le seuil d'audibilité correspond à la limite inférieure de ce que l'oreille humaine peut détecter. En dessous de 0 dB(A), le son existe mais l'oreille ne le capte pas." },
+        { cat: "Seuils", q: "À partir de quel niveau sonore y a-t-il un risque pour l'audition ?", a: "À partir de 80 dB(A) en exposition prolongée.", expl: "80 dB(A) correspond au seuil de risque. Au-delà, une exposition prolongée peut provoquer des lésions irréversibles de l'oreille interne, même si on ne ressent pas de douleur immédiate." },
+        { cat: "Seuils", q: "À quel niveau sonore se situe le seuil de douleur ?", a: "120 dB(A).", expl: "À 120 dB(A), la douleur est immédiate. Les cellules ciliées de l'oreille interne peuvent être détruites en quelques secondes. Ce niveau correspond par exemple à un réacteur d'avion à proximité." },
+        { cat: "Seuils", q: "Pourquoi la durée d'exposition au bruit est-elle un facteur de risque ?", a: "Plus l'exposition est longue, plus les cellules ciliées sont endommagées.", expl: "Un bruit de 85 dB(A) pendant 8 heures est aussi dangereux qu'un bruit de 100 dB(A) pendant 15 minutes. C'est la combinaison intensité + durée qui détermine le risque réel pour l'audition." },
+        { cat: "L'oreille", q: "Quelles sont les 3 parties de l'appareil auditif ?", a: "L'oreille externe, l'oreille moyenne et l'oreille interne.", expl: "Chaque partie a un rôle précis : l'oreille externe capte les sons, l'oreille moyenne les amplifie, et l'oreille interne les transforme en signaux nerveux envoyés au cerveau." },
+        { cat: "L'oreille", q: "Quel est le rôle de l'oreille externe ?", a: "Capter et canaliser les ondes sonores vers le tympan.", expl: "L'oreille externe est composée du pavillon (la partie visible) et du conduit auditif. Le pavillon agit comme un entonnoir qui dirige les vibrations sonores vers le tympan." },
+        { cat: "L'oreille", q: "Quel est le rôle de l'oreille moyenne ?", a: "Amplifier les vibrations grâce à la chaîne des osselets.", expl: "L'oreille moyenne contient 3 osselets (marteau, enclume, étrier) qui transmettent et amplifient les vibrations du tympan vers l'oreille interne. C'est un système mécanique de transmission." },
+        { cat: "L'oreille", q: "Quel est le rôle de l'oreille interne ?", a: "Transformer les vibrations en influx nerveux grâce aux cellules ciliées.", expl: "La cochlée (en forme d'escargot) contient des cellules ciliées baignant dans un liquide. Les vibrations font bouger ce liquide, ce qui stimule les cellules ciliées et génère un influx nerveux envoyé au cerveau." },
+        { cat: "L'oreille", q: "Qu'est-ce qu'un influx nerveux dans le contexte de l'audition ?", a: "Un signal électrique transmis par le nerf auditif jusqu'au cerveau.", expl: "Les cellules ciliées de l'oreille interne convertissent les vibrations mécaniques en signaux électriques. Le nerf auditif transporte ces signaux jusqu'au cerveau, qui les interprète comme des sons." },
+        { cat: "Effets du bruit", q: "Quels sont les effets auditifs du bruit ?", a: "Fatigue auditive, acouphènes, surdité temporaire ou définitive.", expl: "La fatigue auditive est réversible après repos. Les acouphènes sont des sifflements ou bourdonnements permanents. La surdité définitive survient quand les cellules ciliées, qui ne se régénèrent pas, sont détruites." },
+        { cat: "Effets du bruit", q: "Quels sont les effets extra-auditifs du bruit ?", a: "Stress, troubles du sommeil, fatigue, problèmes cardiovasculaires.", expl: "Le bruit n'affecte pas que l'oreille. Il agit sur tout l'organisme : augmentation du rythme cardiaque, difficultés de concentration, irritabilité, troubles digestifs. Ce sont les effets extra-auditifs." },
+        { cat: "Effets du bruit", q: "Pourquoi les cellules ciliées endommagées ne se réparent-elles pas ?", a: "Parce que les cellules ciliées ne se régénèrent pas chez l'être humain.", expl: "Contrairement à la peau ou aux os, les cellules ciliées de la cochlée ne se renouvellent pas. Une fois détruites par un bruit excessif, la perte auditive est définitive et irréversible." },
+        { cat: "Effets du bruit", q: "Qu'est-ce qu'un acouphène ?", a: "Un bruit parasite (sifflement, bourdonnement) perçu sans source extérieure.", expl: "Les acouphènes résultent souvent de lésions des cellules ciliées. Le cerveau continue de recevoir des signaux anormaux et les interprète comme un son permanent. Ils peuvent devenir très invalidants au quotidien." },
+        { cat: "Réglementation", q: "Quelle est la limite réglementaire du bruit au travail en France ?", a: "80 dB(A) sur 8 heures (seuil déclenchant des actions de prévention).", expl: "Le Code du travail impose des mesures de prévention dès 80 dB(A) sur 8 heures. À 85 dB(A), le port de protections auditives devient obligatoire. L'employeur doit évaluer et réduire l'exposition." },
+        { cat: "Réglementation", q: "Quel est le niveau sonore maximal autorisé dans les lieux musicaux ?", a: "102 dB(A) en niveau moyen.", expl: "La réglementation limite le volume dans les discothèques, concerts et festivals à 102 dB(A) en moyenne. Des pauses et des zones calmes doivent être proposées pour protéger le public." },
+        { cat: "Prévention", q: "Citez 3 types de protecteurs individuels contre le bruit.", a: "Bouchons d'oreilles, casque antibruit, bouchons moulés.", expl: "Les bouchons d'oreilles jetables sont les plus courants. Le casque antibruit offre une meilleure atténuation. Les bouchons moulés sont fabriqués sur mesure par un audioprothésiste pour un confort optimal." },
+        { cat: "Prévention", q: "Qu'est-ce qu'un comportement civique face au bruit ?", a: "Respecter la tranquillité d'autrui et limiter les nuisances sonores.", expl: "Le comportement civique implique de baisser le volume de sa musique, éviter le bruit la nuit, utiliser des écouteurs, ne pas klaxonner inutilement. C'est une responsabilité individuelle envers la collectivité." },
+        { cat: "Prévention", q: "Quelle est la différence entre prévention et répression face au bruit ?", a: "La prévention protège avant le dommage ; la répression sanctionne après l'infraction.", expl: "La prévention passe par l'information, les protections, l'aménagement. La répression passe par des amendes et des sanctions (tapage nocturne, non-respect des normes). Les deux sont complémentaires." }
+    ];
+    let deck = [...flashcards];
+    deck.sort(() => Math.random() - 0.5);
+    let currentCardIndex = 0;
+    let totalCards = deck.length;
+    let isFlipped = false;
+    const cardElement = document.getElementById("flashcard");
+    const catFront = document.getElementById("category-front");
+    const catBack = document.getElementById("category-back");
+    const qText = document.getElementById("question-text");
+    const aText = document.getElementById("answer-text");
+    const explText = document.getElementById("explanation-text");
+    const controls = document.getElementById("controls");
+    const progressBar = document.getElementById("progress-bar");
+    const statsDisplay = document.getElementById("stats-display");
+    function loadCard() {
+        if (deck.length === 0) { showEndScreen(); return; }
+        let card = deck[0];
+        catFront.innerText = card.cat;
+        catBack.innerText = card.cat;
+        qText.innerHTML = card.q;
+        aText.innerHTML = card.a;
+        explText.innerHTML = card.expl;
+        cardElement.style.transition = "none";
+        cardElement.classList.remove("is-flipped");
+        cardElement.style.transform = "";
+        isFlipped = false;
+        controls.classList.remove("visible");
+        setTimeout(() => { cardElement.style.transition = "transform 0.6s cubic-bezier(0.4,0.2,0.2,1)"; }, 50);
+    }
+    function flipCard() {
+        if (deck.length === 0) return;
+        if (!isFlipped) { cardElement.classList.add("is-flipped"); controls.classList.add("visible"); isFlipped = true; }
+    }
+    function markKnown(event) {
+        event.stopPropagation();
+        deck.shift();
+        currentCardIndex++;
+        updateProgress();
+        cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function markReview(event) {
+        event.stopPropagation();
+        let missedCard = deck.shift();
+        deck.push(missedCard);
+        cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function updateProgress() {
+        let percent = (currentCardIndex / totalCards) * 100;
+        progressBar.style.width = percent + "%";
+        statsDisplay.innerText = "Validées : " + currentCardIndex + " / " + totalCards + " (Restantes : " + deck.length + ")";
+    }
+    function showEndScreen() {
+        document.getElementById("progress-wrapper").style.display = "none";
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("end-screen").style.display = "block";
+    }
+    window.onload = () => { loadCard(); updateProgress(); };
+    </script>
+</body>
+</html>

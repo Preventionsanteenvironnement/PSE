@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module C7 : Le suivi médical et la vaccination</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Bac Pro Terminale</h1>
+        <p>Module C7 — Le suivi médical et la vaccination</p>
+        <span class="source-credit">D'après le programme Eduscol Bac Pro Terminale</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 24</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Catégorie</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Catégorie</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maîtrises les 24 notions essentielles du module C7 — Le suivi médical et la vaccination.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+    <script>
+    const flashcards = [
+        { cat: "Suivi médical", q: "Qu'est-ce que l'aptitude au travail ?", a: "La capacité d'un salarié à occuper son poste sans risque pour sa santé.", expl: "L'aptitude est évaluée par le médecin du travail. Elle tient compte de l'état de santé du salarié et des contraintes du poste. Le médecin peut déclarer apte, apte avec restrictions ou inapte." },
+        { cat: "Suivi médical", q: "Quels sont les deux types de suivi médical individuel ?", a: "Le suivi individuel simple et le suivi individuel renforcé.", expl: "Le suivi simple concerne la majorité des salariés (VIP tous les 5 ans max). Le suivi renforcé s'applique aux postes à risques particuliers (amiante, plomb, travail en hauteur, etc.) avec un examen d'aptitude tous les 4 ans max." },
+        { cat: "Suivi médical", q: "Qui détermine le type de suivi médical d'un salarié ?", a: "Le médecin du travail, en fonction des risques liés au poste.", expl: "Le médecin du travail évalue les risques professionnels du poste et décide si le salarié relève du suivi simple ou renforcé. Les postes à risques sont définis par la réglementation (agents chimiques dangereux, bruit, etc.)." },
+        { cat: "Suivi médical", q: "Qu'est-ce qu'une inaptitude au travail ?", a: "L'impossibilité pour un salarié d'occuper son poste sans danger pour sa santé.", expl: "Seul le médecin du travail peut déclarer un salarié inapte, après avoir étudié le poste et échangé avec le salarié. L'employeur doit alors proposer un reclassement ou, si c'est impossible, engager un licenciement pour inaptitude." },
+        { cat: "Visites médicales", q: "Qu'est-ce que la VIP ?", a: "La Visite d'Information et de Prévention.", expl: "La VIP remplace l'ancienne visite médicale d'embauche pour les postes sans risque particulier. Elle est réalisée dans les 3 mois suivant la prise de poste par le médecin du travail ou un infirmier en santé au travail." },
+        { cat: "Visites médicales", q: "Que vérifie-t-on lors de la VIP ?", a: "L'état de santé du salarié, les risques du poste et le besoin éventuel d'un suivi adapté.", expl: "La VIP permet d'informer le salarié sur les risques de son poste, de l'interroger sur son état de santé et de l'orienter vers le médecin du travail si nécessaire. Elle n'aboutit pas à un avis d'aptitude mais à une attestation de suivi." },
+        { cat: "Visites médicales", q: "Qu'est-ce que l'examen médical d'aptitude ?", a: "Un examen réservé aux postes à risques, réalisé par le médecin du travail.", expl: "Cet examen concerne le suivi individuel renforcé. Le médecin du travail vérifie que le salarié est médicalement apte à occuper un poste dangereux. Il délivre un avis d'aptitude ou d'inaptitude." },
+        { cat: "Visites médicales", q: "Qu'est-ce que la visite de pré-reprise ?", a: "Une visite organisée pendant l'arrêt de travail pour préparer le retour du salarié.", expl: "La visite de pré-reprise est facultative mais recommandée pour les arrêts de plus de 30 jours. Elle permet au médecin du travail d'anticiper les aménagements nécessaires (adaptation du poste, reclassement, formation)." },
+        { cat: "Visites médicales", q: "Qu'est-ce que la visite de reprise ?", a: "Une visite obligatoire après certains arrêts de travail pour vérifier l'aptitude du salarié.", expl: "La visite de reprise est obligatoire après un arrêt pour maladie de plus de 60 jours, un accident du travail de plus de 30 jours ou un congé maternité. Le médecin du travail vérifie que le salarié peut reprendre son poste." },
+        { cat: "Visites médicales", q: "Quelle est la différence entre visite de pré-reprise et visite de reprise ?", a: "La pré-reprise a lieu pendant l'arrêt (facultative), la reprise a lieu au retour (obligatoire).", expl: "La pré-reprise prépare le retour en anticipant les aménagements. La reprise valide officiellement le retour au poste. Les deux sont réalisées par le médecin du travail mais à des moments différents." },
+        { cat: "Vaccination", q: "Qu'est-ce qu'un micro-organisme ?", a: "Un être vivant invisible à l'œil nu (bactérie, virus, champignon, parasite).", expl: "Les micro-organismes sont partout dans notre environnement. Certains sont utiles (flore intestinale), d'autres sont pathogènes et provoquent des maladies. Le système immunitaire nous protège contre les pathogènes." },
+        { cat: "Vaccination", q: "Qu'est-ce qu'un antigène ?", a: "Une substance étrangère reconnue par le système immunitaire comme un danger.", expl: "L'antigène se trouve à la surface des micro-organismes pathogènes. Quand il pénètre dans l'organisme, le système immunitaire le détecte et déclenche une réponse pour le neutraliser (production d'anticorps)." },
+        { cat: "Vaccination", q: "Qu'est-ce qu'un anticorps ?", a: "Une protéine produite par le système immunitaire pour neutraliser un antigène.", expl: "Les anticorps sont fabriqués par les lymphocytes B. Chaque anticorps est spécifique d'un antigène : il se fixe sur lui comme une clé dans une serrure pour le neutraliser. C'est le principe de la réponse immunitaire spécifique." },
+        { cat: "Immunité", q: "Qu'est-ce que le complexe antigène-anticorps ?", a: "L'association entre un anticorps et l'antigène qu'il reconnaît.", expl: "Quand l'anticorps se fixe sur l'antigène, il forme un complexe qui neutralise le pathogène. Ce complexe est ensuite éliminé par les phagocytes (cellules « mangeuses »). C'est une étape clé de la défense immunitaire." },
+        { cat: "Immunité", q: "Qu'est-ce que la mémoire immunitaire ?", a: "La capacité du système immunitaire à réagir plus vite lors d'un second contact avec le même antigène.", expl: "Lors du premier contact, le corps met plusieurs jours à produire des anticorps. Mais des lymphocytes mémoire sont conservés. Lors d'un second contact, la réponse est rapide et massive. C'est le principe de la vaccination." },
+        { cat: "Immunité", q: "Qu'est-ce que la virulence atténuée ?", a: "Un micro-organisme vivant dont le pouvoir pathogène a été affaibli.", expl: "Pour fabriquer certains vaccins, on utilise des micro-organismes vivants mais atténués : ils ne peuvent plus provoquer la maladie mais restent capables de stimuler le système immunitaire pour créer des anticorps et une mémoire immunitaire." },
+        { cat: "Vaccination", q: "De quoi est composé un vaccin ?", a: "D'antigènes affaiblis ou inactivés, parfois avec un adjuvant.", expl: "Le vaccin contient l'antigène (micro-organisme atténué, inactivé ou un fragment) qui stimule le système immunitaire sans provoquer la maladie. L'adjuvant (ex. : aluminium) renforce la réponse immunitaire pour une meilleure protection." },
+        { cat: "Vaccination", q: "Quel est le rôle d'un vaccin ?", a: "Préparer le système immunitaire à reconnaître et combattre un pathogène.", expl: "Le vaccin « entraîne » le système immunitaire : il provoque la production d'anticorps et de lymphocytes mémoire sans rendre malade. Lors d'un contact réel avec le pathogène, le corps réagit immédiatement et efficacement." },
+        { cat: "Vaccination", q: "Pourquoi faut-il faire des rappels de vaccination ?", a: "Pour relancer la mémoire immunitaire qui diminue avec le temps.", expl: "Avec les années, le nombre d'anticorps et de lymphocytes mémoire peut baisser. Le rappel réactive la réponse immunitaire en réexposant l'organisme à l'antigène, assurant ainsi une protection durable." },
+        { cat: "Protection", q: "Qu'est-ce que la protection individuelle par la vaccination ?", a: "La protection de la personne vaccinée contre la maladie.", expl: "En se vaccinant, l'individu développe ses propres défenses immunitaires. Il est protégé personnellement contre la maladie visée par le vaccin. C'est le bénéfice direct pour la personne vaccinée." },
+        { cat: "Protection", q: "Qu'est-ce que la protection collective par la vaccination ?", a: "La protection de l'ensemble de la population grâce à une couverture vaccinale élevée.", expl: "Quand suffisamment de personnes sont vaccinées (immunité de groupe), le micro-organisme ne peut plus circuler facilement. Les personnes non vaccinées (nourrissons, immunodéprimés) sont indirectement protégées." },
+        { cat: "Protection", q: "Qu'est-ce que l'immunité de groupe ?", a: "Un niveau de vaccination suffisant dans la population pour bloquer la circulation d'un pathogène.", expl: "L'immunité de groupe est atteinte quand un pourcentage élevé de la population est vacciné (souvent 90 à 95 %). Le pathogène ne trouve plus assez de personnes à infecter et la chaîne de transmission se brise." },
+        { cat: "Vaccins obligatoires", q: "Combien de vaccins sont obligatoires pour les enfants nés depuis 2018 ?", a: "11 vaccins obligatoires.", expl: "Depuis 2018, la France a élargi l'obligation vaccinale de 3 à 11 vaccins pour les nourrissons. Cela inclut notamment la diphtérie, le tétanos, la poliomyélite, la coqueluche, la rougeole, les oreillons et la rubéole." },
+        { cat: "Vaccins obligatoires", q: "Cite 3 maladies contre lesquelles la vaccination est obligatoire en France.", a: "Diphtérie, tétanos, poliomyélite (et 8 autres depuis 2018).", expl: "Le DTP (diphtérie-tétanos-polio) était historiquement le seul vaccin obligatoire. Depuis 2018, s'ajoutent : coqueluche, rougeole, oreillons, rubéole, hépatite B, méningocoque C, pneumocoque et Haemophilus influenzae b." }
+    ];
+    let deck = [...flashcards];
+    deck.sort(() => Math.random() - 0.5);
+    let currentCardIndex = 0;
+    let totalCards = deck.length;
+    let isFlipped = false;
+    const cardElement = document.getElementById("flashcard");
+    const catFront = document.getElementById("category-front");
+    const catBack = document.getElementById("category-back");
+    const qText = document.getElementById("question-text");
+    const aText = document.getElementById("answer-text");
+    const explText = document.getElementById("explanation-text");
+    const controls = document.getElementById("controls");
+    const progressBar = document.getElementById("progress-bar");
+    const statsDisplay = document.getElementById("stats-display");
+    function loadCard() {
+        if (deck.length === 0) { showEndScreen(); return; }
+        let card = deck[0];
+        catFront.innerText = card.cat;
+        catBack.innerText = card.cat;
+        qText.innerHTML = card.q;
+        aText.innerHTML = card.a;
+        explText.innerHTML = card.expl;
+        cardElement.style.transition = "none";
+        cardElement.classList.remove("is-flipped");
+        cardElement.style.transform = "";
+        isFlipped = false;
+        controls.classList.remove("visible");
+        setTimeout(() => { cardElement.style.transition = "transform 0.6s cubic-bezier(0.4,0.2,0.2,1)"; }, 50);
+    }
+    function flipCard() {
+        if (deck.length === 0) return;
+        if (!isFlipped) { cardElement.classList.add("is-flipped"); controls.classList.add("visible"); isFlipped = true; }
+    }
+    function markKnown(event) {
+        event.stopPropagation();
+        deck.shift();
+        currentCardIndex++;
+        updateProgress();
+        cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function markReview(event) {
+        event.stopPropagation();
+        let missedCard = deck.shift();
+        deck.push(missedCard);
+        cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function updateProgress() {
+        let percent = (currentCardIndex / totalCards) * 100;
+        progressBar.style.width = percent + "%";
+        statsDisplay.innerText = "Validées : " + currentCardIndex + " / " + totalCards + " (Restantes : " + deck.length + ")";
+    }
+    function showEndScreen() {
+        document.getElementById("progress-wrapper").style.display = "none";
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("end-screen").style.display = "block";
+    }
+    window.onload = () => { loadCard(); updateProgress(); };
+    </script>
+</body>
+</html>
