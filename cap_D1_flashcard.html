@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module D1 : L'assurance</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Pro</h1>
+        <p>Module D1 — L'assurance</p>
+        <span class="source-credit">D'après le programme Eduscol CAP PSE</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 22</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Catégorie</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Catégorie</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maîtrises les 22 notions essentielles du module D1 — L'assurance.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+    <script>
+    const flashcards = [
+        { cat: "Principes", q: "Qu'est-ce qu'un risque en assurance ?", a: "Un événement incertain pouvant causer un dommage.", expl: "Le risque est la probabilité qu'un événement dommageable survienne. L'assurance existe justement pour couvrir financièrement les conséquences de cet événement imprévisible." },
+        { cat: "Principes", q: "Qu'est-ce qu'un sinistre ?", a: "La réalisation effective du risque couvert par le contrat.", expl: "Le sinistre est le moment où le risque se concrétise : un incendie, un dégât des eaux, un accident de voiture. C'est l'événement qui déclenche la mise en jeu de la garantie d'assurance." },
+        { cat: "Principes", q: "Sur quel principe fondamental repose l'assurance ?", a: "Le principe de solidarité entre les assurés.", expl: "Chaque assuré verse une cotisation. L'ensemble de ces cotisations forme un fonds commun qui sert à indemniser ceux qui subissent un sinistre. Les nombreux cotisants financent les quelques sinistrés." },
+        { cat: "Principes", q: "Quelle est la différence entre cotisation et indemnisation ?", a: "La cotisation est ce qu'on paie ; l'indemnisation est ce qu'on reçoit.", expl: "La cotisation (ou prime) est la somme versée régulièrement par l'assuré à l'assureur. L'indemnisation est la somme versée par l'assureur à l'assuré lorsqu'un sinistre survient, pour compenser le dommage subi." },
+        { cat: "Le contrat", q: "Qu'est-ce qu'un contrat d'assurance ?", a: "Un accord entre l'assuré et l'assureur définissant les garanties et les obligations.", expl: "Le contrat d'assurance précise les risques couverts, le montant des cotisations, les conditions d'indemnisation et les exclusions. Il engage les deux parties : l'assuré paie ses cotisations, l'assureur indemnise en cas de sinistre." },
+        { cat: "Le contrat", q: "Qu'est-ce qu'une garantie dans un contrat d'assurance ?", a: "L'engagement de l'assureur à couvrir un risque précis.", expl: "Chaque garantie correspond à un type de sinistre couvert (vol, incendie, dégât des eaux...). Plus le contrat comporte de garanties, plus la protection est large, mais plus la cotisation est élevée." },
+        { cat: "Le contrat", q: "Qu'est-ce qu'une clause d'exclusion ?", a: "Une disposition du contrat qui exclut certains risques de la couverture.", expl: "Les clauses d'exclusion précisent les situations dans lesquelles l'assureur ne paiera pas. Par exemple, un sinistre causé volontairement par l'assuré ou un dommage survenu en état d'ivresse ne seront pas indemnisés." },
+        { cat: "Le contrat", q: "Pourquoi est-il important de bien lire son contrat d'assurance ?", a: "Pour connaître exactement les risques couverts et les exclusions.", expl: "Beaucoup de litiges viennent d'une méconnaissance du contrat. Lire les clauses d'exclusion et les conditions de garantie évite les mauvaises surprises au moment d'un sinistre." },
+        { cat: "Obligatoire vs facultatif", q: "Cite deux exemples d'assurances obligatoires.", a: "L'assurance automobile et l'assurance habitation (pour les locataires).", expl: "La loi impose certaines assurances pour protéger les tiers. L'assurance auto couvre les dommages causés aux autres usagers. L'assurance habitation du locataire couvre les risques locatifs (incendie, dégât des eaux)." },
+        { cat: "Obligatoire vs facultatif", q: "Qu'est-ce qu'une assurance facultative ?", a: "Une assurance que l'on choisit librement de souscrire.", expl: "Contrairement aux assurances obligatoires imposées par la loi, les assurances facultatives répondent à des besoins personnels : assurance voyage, assurance scolaire, garantie accidents de la vie, complémentaire santé individuelle." },
+        { cat: "Obligatoire vs facultatif", q: "Pourquoi certaines assurances sont-elles rendues obligatoires par la loi ?", a: "Pour protéger les victimes et garantir leur indemnisation.", expl: "Sans obligation d'assurance, une victime d'accident pourrait ne jamais être indemnisée si le responsable n'a pas les moyens de payer. La législation impose donc une couverture minimale pour protéger la société." },
+        { cat: "Obligatoire vs facultatif", q: "Quelle est la différence entre législation et réglementation en assurance ?", a: "La législation fixe les lois ; la réglementation précise les modalités d'application.", expl: "La législation (lois votées par le Parlement) définit les grands principes, par exemple l'obligation d'assurer son véhicule. La réglementation (décrets, arrêtés) détaille les conditions concrètes d'application de ces lois." },
+        { cat: "Responsabilite civile", q: "Qu'est-ce que la responsabilité civile ?", a: "L'obligation de réparer les dommages causés à autrui.", expl: "Toute personne qui cause un dommage à quelqu'un (blessure, dégât matériel) doit le réparer financièrement. L'assurance responsabilité civile prend en charge cette réparation à la place de l'assuré." },
+        { cat: "Responsabilite civile", q: "Quels types de dommages la responsabilité civile couvre-t-elle ?", a: "Les dommages corporels, matériels et immatériels causés à un tiers.", expl: "Un dommage corporel est une atteinte physique (blessure). Un dommage matériel est la détérioration d'un bien (voiture abîmée). Un dommage immatériel est une perte financière indirecte (perte de salaire suite à l'accident)." },
+        { cat: "Responsabilite civile", q: "L'assurance responsabilité civile est-elle incluse dans l'assurance habitation ?", a: "Oui, elle est généralement incluse dans le contrat multirisque habitation.", expl: "Le contrat multirisque habitation couvre à la fois les dommages au logement et la responsabilité civile de l'assuré et de sa famille dans la vie quotidienne (dégât causé par son enfant, son animal, etc.)." },
+        { cat: "En cas de sinistre", q: "Que doit faire l'assuré en premier lieu après un sinistre ?", a: "Déclarer le sinistre à son assureur dans les délais prévus.", expl: "La déclaration de sinistre est une étape obligatoire. Elle informe l'assureur de la survenue de l'événement et permet d'ouvrir le dossier d'indemnisation. Sans déclaration, pas de remboursement." },
+        { cat: "En cas de sinistre", q: "Quel est le délai général pour déclarer un sinistre ?", a: "5 jours ouvrés à compter de la connaissance du sinistre.", expl: "Ce délai est réduit à 2 jours ouvrés en cas de vol. Ne pas respecter le délai peut entraîner une réduction ou un refus d'indemnisation. Il est donc essentiel d'agir rapidement." },
+        { cat: "En cas de sinistre", q: "Qu'est-ce qu'un constat amiable ?", a: "Un formulaire rempli par les deux parties pour décrire les circonstances d'un accident.", expl: "Le constat amiable est un document officiel signé par les deux conducteurs lors d'un accident de la route. Il décrit les faits, les dégâts et les responsabilités. Il est transmis à chaque assureur pour accélérer l'indemnisation." },
+        { cat: "En cas de sinistre", q: "Pourquoi le constat amiable doit-il être rempli avec précision ?", a: "Parce qu'il sert de base pour déterminer les responsabilités.", expl: "Toute erreur ou imprécision sur le constat peut fausser l'analyse de l'accident. Les assureurs s'appuient sur ce document pour décider qui est responsable et dans quelle proportion. Un constat bien rempli protège les droits de l'assuré." },
+        { cat: "Demarches", q: "Quels documents faut-il fournir lors d'une déclaration de sinistre ?", a: "Le formulaire de déclaration, les preuves (photos, factures, témoignages).", expl: "L'assureur a besoin de pièces justificatives pour évaluer le montant du dommage : photos des dégâts, factures d'achat des biens endommagés, devis de réparation, éventuels témoignages. Plus le dossier est complet, plus le traitement est rapide." },
+        { cat: "Demarches", q: "Qu'est-ce qu'un formulaire de déclaration de sinistre ?", a: "Un document standardisé pour signaler un sinistre à l'assureur.", expl: "Ce formulaire recueille les informations essentielles : date, lieu, circonstances du sinistre, nature des dommages. Il peut être rempli en ligne ou en version papier. C'est la première étape administrative pour obtenir une indemnisation." },
+        { cat: "Demarches", q: "Que se passe-t-il si l'assuré ne respecte pas le délai de déclaration ?", a: "L'assureur peut réduire ou refuser l'indemnisation.", expl: "Le respect des délais est une obligation contractuelle. Un retard de déclaration peut être interprété comme une négligence et l'assureur peut invoquer la déchéance de garantie, c'est-à-dire le refus de prendre en charge le sinistre." },
+        { cat: "Demarches", q: "Quel délai spécifique s'applique pour déclarer un vol ?", a: "2 jours ouvrés après la découverte du vol.", expl: "Le délai est plus court pour le vol (2 jours) que pour les autres sinistres (5 jours), car les preuves peuvent disparaître rapidement. Il faut aussi déposer une plainte au commissariat ou à la gendarmerie pour appuyer la déclaration." }
+    ];
+    let deck = [...flashcards];
+    deck.sort(() => Math.random() - 0.5);
+    let currentCardIndex = 0;
+    let totalCards = deck.length;
+    let isFlipped = false;
+    const cardElement = document.getElementById("flashcard");
+    const catFront = document.getElementById("category-front");
+    const catBack = document.getElementById("category-back");
+    const qText = document.getElementById("question-text");
+    const aText = document.getElementById("answer-text");
+    const explText = document.getElementById("explanation-text");
+    const controls = document.getElementById("controls");
+    const progressBar = document.getElementById("progress-bar");
+    const statsDisplay = document.getElementById("stats-display");
+    function loadCard() {
+        if (deck.length === 0) { showEndScreen(); return; }
+        let card = deck[0];
+        catFront.innerText = card.cat;
+        catBack.innerText = card.cat;
+        qText.innerHTML = card.q;
+        aText.innerHTML = card.a;
+        explText.innerHTML = card.expl;
+        cardElement.style.transition = "none";
+        cardElement.classList.remove("is-flipped");
+        cardElement.style.transform = "";
+        isFlipped = false;
+        controls.classList.remove("visible");
+        setTimeout(() => { cardElement.style.transition = "transform 0.6s cubic-bezier(0.4,0.2,0.2,1)"; }, 50);
+    }
+    function flipCard() {
+        if (deck.length === 0) return;
+        if (!isFlipped) { cardElement.classList.add("is-flipped"); controls.classList.add("visible"); isFlipped = true; }
+    }
+    function markKnown(event) {
+        event.stopPropagation();
+        deck.shift();
+        currentCardIndex++;
+        updateProgress();
+        cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function markReview(event) {
+        event.stopPropagation();
+        let missedCard = deck.shift();
+        deck.push(missedCard);
+        cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function updateProgress() {
+        let percent = (currentCardIndex / totalCards) * 100;
+        progressBar.style.width = percent + "%";
+        statsDisplay.innerText = "Validées : " + currentCardIndex + " / " + totalCards + " (Restantes : " + deck.length + ")";
+    }
+    function showEndScreen() {
+        document.getElementById("progress-wrapper").style.display = "none";
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("end-screen").style.display = "block";
+    }
+    window.onload = () => { loadCard(); updateProgress(); };
+    </script>
+</body>
+</html>

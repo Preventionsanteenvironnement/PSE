@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module A4 : Les addictions</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Pro</h1>
+        <p>Module A4 — Les addictions</p>
+        <span class="source-credit">D'après le programme Eduscol CAP PSE</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 22</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Catégorie</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Catégorie</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maîtrises les 22 notions essentielles du module A4 — Les addictions.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+    <script>
+    const flashcards = [
+        { cat: "Définitions", q: "Qu'est-ce qu'une addiction ?", a: "Un comportement de dépendance vis-à-vis d'une substance ou d'une pratique.", expl: "L'addiction se caractérise par l'impossibilité de contrôler un comportement malgré ses conséquences négatives. Le cerveau développe un besoin irrépressible lié au circuit de la récompense." },
+        { cat: "Définitions", q: "Quelle est la différence entre usage, abus et dépendance ?", a: "Usage = consommation ponctuelle, abus = consommation excessive, dépendance = besoin irrépressible.", expl: "L'usage n'entraîne pas forcément de problème. L'abus provoque des dommages. La dépendance, c'est quand le cerveau ne peut plus fonctionner normalement sans la substance." },
+        { cat: "Définitions", q: "Qu'est-ce qu'une pratique addictive ?", a: "Un comportement répétitif qui peut mener à une addiction, avec ou sans substance.", expl: "Les pratiques addictives incluent la consommation de substances (alcool, tabac, drogues) mais aussi des comportements sans substance comme les jeux vidéo, les paris ou les réseaux sociaux." },
+        { cat: "Définitions", q: "Qu'est-ce que la polyconsommation ?", a: "La consommation simultanée ou alternée de plusieurs substances psychoactives.", expl: "Mélanger alcool et cannabis, par exemple, multiplie les risques car les effets se combinent et s'amplifient de manière imprévisible. C'est une pratique particulièrement dangereuse." },
+        { cat: "Substances", q: "Cite 3 exemples de substances psychoactives licites.", a: "L'alcool, le tabac, les médicaments psychotropes.", expl: "« Licite » signifie autorisé par la loi. Mais légal ne veut pas dire sans danger : l'alcool et le tabac sont les premières causes de mortalité évitable en France." },
+        { cat: "Substances", q: "Cite 3 exemples de substances psychoactives illicites.", a: "Le cannabis, la cocaïne, l'héroïne.", expl: "« Illicite » signifie interdit par la loi. Leur production, vente et consommation sont punies pénalement. Le cannabis reste la drogue illicite la plus consommée chez les jeunes en France." },
+        { cat: "Substances", q: "Quelle est la différence entre un produit licite et un produit illicite ?", a: "Licite = autorisé par la loi. Illicite = interdit par la loi.", expl: "Attention : un produit licite (alcool, tabac) peut être tout aussi dangereux qu'un produit illicite. La légalité n'est pas un indicateur de dangerosité pour la santé." },
+        { cat: "Substances", q: "Qu'est-ce qu'une substance psychoactive ?", a: "Une substance qui agit sur le cerveau en modifiant l'activité mentale et le comportement.", expl: "Les substances psychoactives stimulent le circuit de la récompense dans le cerveau (libération de dopamine), ce qui provoque une sensation de plaisir et peut conduire à la dépendance." },
+        { cat: "Effets", q: "Quels sont les effets immédiats de l'alcool sur l'organisme ?", a: "Euphorie, désinhibition, troubles de la coordination, ralentissement des réflexes.", expl: "L'alcool agit comme un dépresseur du système nerveux central. Il altère le jugement et les réflexes, ce qui explique l'interdiction de conduire au-delà de 0,5 g/L de sang." },
+        { cat: "Effets", q: "Quels sont les effets à long terme du tabac ?", a: "Cancers (poumon, gorge), maladies cardiovasculaires, insuffisance respiratoire.", expl: "La fumée de tabac contient plus de 4 000 substances chimiques dont 50 sont cancérigènes. La nicotine crée la dépendance, mais ce sont le goudron et les autres composés qui provoquent les maladies graves." },
+        { cat: "Effets", q: "Quels sont les facteurs de risque qui favorisent une addiction ?", a: "Facteurs individuels (stress, mal-être), environnementaux (entourage, accès) et liés au produit (pouvoir addictif).", expl: "L'addiction résulte de l'interaction entre 3 éléments : l'individu (vulnérabilité, âge), l'environnement (pression des pairs, disponibilité) et le produit (rapidité d'action, pouvoir addictif). C'est le triangle de Zinberg." },
+        { cat: "Effets", q: "Pourquoi les adolescents sont-ils plus vulnérables aux addictions ?", a: "Leur cerveau est encore en développement, notamment le cortex préfrontal.", expl: "Le cortex préfrontal, qui gère le contrôle des impulsions et la prise de décision, ne termine sa maturation que vers 25 ans. Les substances perturbent ce développement et créent plus facilement une dépendance." },
+        { cat: "Conséquences", q: "Quelles sont les conséquences personnelles d'une addiction ?", a: "Problèmes de santé, isolement, perte d'estime de soi, troubles psychologiques.", expl: "L'addiction dégrade progressivement la santé physique (organes abîmés) et mentale (anxiété, dépression). La personne s'isole car sa vie tourne autour de la consommation." },
+        { cat: "Conséquences", q: "Quelles sont les conséquences professionnelles d'une addiction ?", a: "Absentéisme, baisse de performance, accidents du travail, licenciement.", expl: "En milieu professionnel, l'addiction entraîne des retards, une baisse de concentration et un risque accru d'accidents. L'employeur a une obligation de sécurité et peut prendre des mesures disciplinaires." },
+        { cat: "Conséquences", q: "Quelles sont les conséquences sociales d'une addiction ?", a: "Conflits familiaux, endettement, marginalisation, délinquance.", expl: "L'addiction affecte l'entourage : tensions dans le couple, négligence des enfants, difficultés financières. Elle peut conduire à la marginalisation sociale et parfois à des actes délictueux pour se procurer le produit." },
+        { cat: "Conséquences", q: "Pourquoi la polyconsommation est-elle particulièrement dangereuse ?", a: "Les effets des substances se combinent et s'amplifient de façon imprévisible.", expl: "Mélanger alcool et médicaments, par exemple, peut provoquer un coma ou un arrêt respiratoire. Le corps ne peut pas gérer plusieurs substances toxiques en même temps, ce qui multiplie les risques de surdose." },
+        { cat: "Prévention", q: "Qu'est-ce que la prévention individuelle face aux addictions ?", a: "Les actions personnelles pour éviter ou réduire les conduites addictives.", expl: "Exemples : savoir dire non, gérer son stress autrement (sport, musique), s'informer sur les risques, limiter sa consommation, demander de l'aide en cas de difficulté." },
+        { cat: "Prévention", q: "Qu'est-ce que la prévention collective face aux addictions ?", a: "Les mesures mises en place par la société pour protéger la population.", expl: "Exemples : campagnes de sensibilisation, interdiction de vente d'alcool aux mineurs, augmentation du prix du tabac, lieux d'écoute et de soins (CSAPA), programmes en milieu scolaire." },
+        { cat: "Prévention", q: "Cite 2 structures d'aide pour les personnes en situation d'addiction.", a: "Les CSAPA (Centres de Soins, d'Accompagnement et de Prévention en Addictologie) et les CJC (Consultations Jeunes Consommateurs).", expl: "Les CSAPA accueillent gratuitement et anonymement toute personne en difficulté avec une addiction. Les CJC s'adressent spécifiquement aux jeunes et à leur entourage, sans obligation de soins." },
+        { cat: "Législation", q: "À partir de quel âge la vente d'alcool est-elle autorisée en France ?", a: "18 ans.", expl: "La loi interdit la vente d'alcool aux mineurs (moins de 18 ans). Le vendeur peut exiger une pièce d'identité. L'objectif est de protéger les jeunes dont le cerveau est particulièrement vulnérable." },
+        { cat: "Législation", q: "Quelle est la différence entre prévention et répression en matière d'addictions ?", a: "Prévention = informer et éviter les risques. Répression = sanctionner les infractions.", expl: "La prévention agit en amont (campagnes, éducation) pour éviter les comportements à risque. La répression agit en aval (amendes, peines) pour punir les infractions. Les deux approches sont complémentaires." },
+        { cat: "Législation", q: "Quelles sanctions risque-t-on pour consommation de cannabis en France ?", a: "Une amende forfaitaire de 200 € ou des poursuites pénales (jusqu'à 1 an d'emprisonnement et 3 750 € d'amende).", expl: "Depuis 2020, une amende forfaitaire de 200 € peut être appliquée pour usage simple. Mais le juge peut aussi prononcer des peines plus lourdes, notamment en cas de récidive ou de consommation au volant." }
+    ];
+    let deck = [...flashcards];
+    deck.sort(() => Math.random() - 0.5);
+    let currentCardIndex = 0;
+    let totalCards = deck.length;
+    let isFlipped = false;
+    const cardElement = document.getElementById("flashcard");
+    const catFront = document.getElementById("category-front");
+    const catBack = document.getElementById("category-back");
+    const qText = document.getElementById("question-text");
+    const aText = document.getElementById("answer-text");
+    const explText = document.getElementById("explanation-text");
+    const controls = document.getElementById("controls");
+    const progressBar = document.getElementById("progress-bar");
+    const statsDisplay = document.getElementById("stats-display");
+    function loadCard() {
+        if (deck.length === 0) { showEndScreen(); return; }
+        let card = deck[0];
+        catFront.innerText = card.cat;
+        catBack.innerText = card.cat;
+        qText.innerHTML = card.q;
+        aText.innerHTML = card.a;
+        explText.innerHTML = card.expl;
+        cardElement.style.transition = "none";
+        cardElement.classList.remove("is-flipped");
+        cardElement.style.transform = "";
+        isFlipped = false;
+        controls.classList.remove("visible");
+        setTimeout(() => { cardElement.style.transition = "transform 0.6s cubic-bezier(0.4,0.2,0.2,1)"; }, 50);
+    }
+    function flipCard() {
+        if (deck.length === 0) return;
+        if (!isFlipped) { cardElement.classList.add("is-flipped"); controls.classList.add("visible"); isFlipped = true; }
+    }
+    function markKnown(event) {
+        event.stopPropagation();
+        deck.shift();
+        currentCardIndex++;
+        updateProgress();
+        cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function markReview(event) {
+        event.stopPropagation();
+        let missedCard = deck.shift();
+        deck.push(missedCard);
+        cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function updateProgress() {
+        let percent = (currentCardIndex / totalCards) * 100;
+        progressBar.style.width = percent + "%";
+        statsDisplay.innerText = "Validées : " + currentCardIndex + " / " + totalCards + " (Restantes : " + deck.length + ")";
+    }
+    function showEndScreen() {
+        document.getElementById("progress-wrapper").style.display = "none";
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("end-screen").style.display = "block";
+    }
+    window.onload = () => { loadCard(); updateProgress(); };
+    </script>
+</body>
+</html>

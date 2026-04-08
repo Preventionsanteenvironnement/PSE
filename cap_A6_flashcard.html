@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module A6 : Prévenir les IST</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Pro</h1>
+        <p>Module A6 — Prévenir les IST</p>
+        <span class="source-credit">D'après le programme Eduscol CAP PSE</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 22</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Catégorie</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Catégorie</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maîtrises les 22 notions essentielles du module A6 — Prévenir les IST.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+    <script>
+    const flashcards = [
+        { cat: "Définitions", q: "Que signifie le sigle IST ?", a: "Infection Sexuellement Transmissible.", expl: "On parle d'IST et non plus de MST (Maladie Sexuellement Transmissible) car une infection peut exister sans symptômes visibles. Une personne infectée peut donc transmettre l'infection sans le savoir." },
+        { cat: "Définitions", q: "Quelle est la différence entre une infection et une maladie ?", a: "Une infection est la présence d'un agent pathogène dans l'organisme ; une maladie apparaît quand des symptômes se manifestent.", expl: "On peut être infecté sans être malade (porteur sain). C'est pourquoi le terme IST est plus juste : on peut transmettre l'infection même sans symptômes." },
+        { cat: "Définitions", q: "Qu'est-ce qu'un porteur sain ?", a: "Une personne infectée par un agent pathogène mais qui ne présente aucun symptôme.", expl: "Le porteur sain est dangereux sur le plan épidémiologique car il peut transmettre l'infection sans le savoir, puisqu'il se sent en bonne santé et ne consulte pas." },
+        { cat: "Définitions", q: "Qu'est-ce que la contamination ?", a: "Le passage d'un agent infectieux d'une personne à une autre.", expl: "Pour les IST, la contamination se fait principalement lors de rapports sexuels non protégés (voie sexuelle), mais aussi par le sang (voie sanguine) ou de la mère à l'enfant (voie materno-fœtale)." },
+        { cat: "Agents infectieux", q: "Quels sont les deux principaux types d'agents responsables des IST ?", a: "Les bactéries et les virus.", expl: "Les bactéries (chlamydia, gonocoque, syphilis) se soignent avec des antibiotiques. Les virus (VIH, hépatite B, HPV, herpès) ne peuvent généralement pas être éliminés, seulement contrôlés par des traitements." },
+        { cat: "Agents infectieux", q: "Cite 2 IST d'origine bactérienne.", a: "La chlamydiose et la gonorrhée (blennorragie).", expl: "Les IST bactériennes se traitent efficacement par antibiotiques si elles sont détectées tôt. Sans traitement, elles peuvent provoquer des complications graves comme la stérilité." },
+        { cat: "Agents infectieux", q: "Cite 2 IST d'origine virale.", a: "Le VIH/SIDA et l'hépatite B.", expl: "Les IST virales ne se guérissent généralement pas : le virus reste dans l'organisme. Les traitements antiviraux permettent de contrôler l'infection mais pas de l'éliminer. D'où l'importance de la prévention." },
+        { cat: "Agents infectieux", q: "Qu'est-ce que le HPV et pourquoi est-il dangereux ?", a: "Le papillomavirus humain, responsable de verrues génitales et de cancers (col de l'utérus).", expl: "Le HPV est l'IST la plus fréquente. La plupart des infections disparaissent seules, mais certaines souches peuvent provoquer un cancer du col de l'utérus. Un vaccin existe et est recommandé pour les filles et les garçons dès 11 ans." },
+        { cat: "VIH/SIDA", q: "Que signifient les sigles VIH et SIDA ?", a: "VIH = Virus de l'Immunodéficience Humaine. SIDA = Syndrome d'Immunodéficience Acquise.", expl: "Le VIH est le virus. Le SIDA est le stade avancé de l'infection, quand le système immunitaire est trop affaibli pour se défendre. On peut vivre des années avec le VIH sans développer le SIDA grâce aux traitements." },
+        { cat: "VIH/SIDA", q: "Qu'est-ce que la séropositivité au VIH ?", a: "Le fait d'avoir des anticorps anti-VIH dans le sang, ce qui signifie qu'on est infecté par le virus.", expl: "Être séropositif ne signifie pas avoir le SIDA. Une personne séropositive sous traitement peut avoir une charge virale indétectable et ne plus transmettre le virus (concept U=U : Indétectable = Intransmissible)." },
+        { cat: "VIH/SIDA", q: "Quels sont les modes de transmission du VIH ?", a: "Voie sexuelle (rapports non protégés), voie sanguine (partage de seringues) et voie materno-fœtale.", expl: "Le VIH ne se transmet PAS par la salive, la sueur, les poignées de main ou le partage de couverts. Il faut un contact avec du sang, du sperme, des sécrétions vaginales ou du lait maternel." },
+        { cat: "VIH/SIDA", q: "Quel type de cellules le VIH attaque-t-il ?", a: "Les lymphocytes T4 (CD4), cellules clés du système immunitaire.", expl: "Les lymphocytes T4 coordonnent la réponse immunitaire. En les détruisant, le VIH affaiblit progressivement les défenses de l'organisme, qui devient vulnérable aux infections opportunistes." },
+        { cat: "Prévention", q: "Quel est le moyen de prévention le plus efficace contre les IST ?", a: "Le préservatif (masculin ou féminin).", expl: "Le préservatif est le seul moyen de protection qui empêche à la fois la transmission des IST et une grossesse non désirée. Il doit être utilisé à chaque rapport sexuel et de manière correcte." },
+        { cat: "Prévention", q: "Contre quelles IST existe-t-il un vaccin ?", a: "L'hépatite B et le HPV (papillomavirus).", expl: "Le vaccin contre l'hépatite B est obligatoire chez le nourrisson. Le vaccin contre le HPV est recommandé pour les filles et les garçons dès 11 ans. Ce sont des mesures de prévention collective très efficaces." },
+        { cat: "Prévention", q: "Qu'est-ce que la PrEP ?", a: "Un traitement préventif pris avant l'exposition au VIH pour éviter la contamination.", expl: "La PrEP (Prophylaxie Pré-Exposition) est un médicament prescrit aux personnes à haut risque d'infection. Elle réduit considérablement le risque de contamination mais ne protège pas des autres IST : le préservatif reste indispensable." },
+        { cat: "Prévention", q: "Qu'est-ce que le traitement post-exposition (TPE) au VIH ?", a: "Un traitement d'urgence à prendre dans les 48 heures après un risque d'exposition au VIH.", expl: "Le TPE est disponible aux urgences hospitalières. Il dure 28 jours et doit être commencé le plus tôt possible (idéalement dans les 4 heures). Plus on attend, moins il est efficace." },
+        { cat: "Dépistage", q: "Pourquoi le dépistage des IST est-il essentiel ?", a: "Car de nombreuses IST sont asymptomatiques et le porteur peut transmettre l'infection sans le savoir.", expl: "Sans dépistage, une personne infectée sans symptômes continue de transmettre l'IST. Le dépistage permet un traitement précoce, limite les complications et brise la chaîne de transmission." },
+        { cat: "Dépistage", q: "Comment se fait le dépistage du VIH ?", a: "Par une prise de sang ou un test rapide (TROD) qui détecte les anticorps anti-VIH.", expl: "Le test est fiable à partir de 6 semaines après le risque. Les TROD (Tests Rapides d'Orientation Diagnostique) donnent un résultat en 30 minutes. Le dépistage est gratuit et anonyme dans les CeGIDD." },
+        { cat: "Dépistage", q: "Qu'est-ce qu'un CeGIDD ?", a: "Un Centre Gratuit d'Information, de Dépistage et de Diagnostic des IST.", expl: "Les CeGIDD remplacent les anciens CDAG. Ils proposent un dépistage gratuit et anonyme de toutes les IST, ainsi que des consultations de prévention et d'accompagnement. On peut s'y rendre sans ordonnance." },
+        { cat: "Conduite à tenir", q: "Que doit-on faire en cas de rapport sexuel non protégé ?", a: "Consulter rapidement un médecin, se rendre aux urgences pour un éventuel TPE, et faire un dépistage.", expl: "Il faut agir vite : le TPE contre le VIH doit être pris dans les 48 heures. Un dépistage complet (VIH, hépatites, chlamydia, etc.) doit être réalisé dans les semaines suivantes pour détecter toute infection." },
+        { cat: "Conduite à tenir", q: "Que signifie un traitement curatif pour une IST ?", a: "Un traitement qui vise à guérir l'infection (possible pour les IST bactériennes, pas pour la plupart des virales).", expl: "Les antibiotiques guérissent les IST bactériennes (chlamydia, syphilis, gonorrhée). Pour les IST virales (VIH, herpès), les traitements contrôlent le virus mais ne l'éliminent pas. D'où l'importance capitale de la prévention." },
+        { cat: "Conduite à tenir", q: "Pourquoi faut-il prévenir son ou ses partenaires en cas d'IST ?", a: "Pour qu'ils se fassent dépister et traiter, et pour briser la chaîne de transmission.", expl: "Si un seul partenaire est traité, l'autre peut le réinfecter (effet ping-pong). Prévenir ses partenaires est un acte de responsabilité qui protège la santé de tous et limite la propagation de l'IST." }
+    ];
+    let deck = [...flashcards];
+    deck.sort(() => Math.random() - 0.5);
+    let currentCardIndex = 0;
+    let totalCards = deck.length;
+    let isFlipped = false;
+    const cardElement = document.getElementById("flashcard");
+    const catFront = document.getElementById("category-front");
+    const catBack = document.getElementById("category-back");
+    const qText = document.getElementById("question-text");
+    const aText = document.getElementById("answer-text");
+    const explText = document.getElementById("explanation-text");
+    const controls = document.getElementById("controls");
+    const progressBar = document.getElementById("progress-bar");
+    const statsDisplay = document.getElementById("stats-display");
+    function loadCard() {
+        if (deck.length === 0) { showEndScreen(); return; }
+        let card = deck[0];
+        catFront.innerText = card.cat;
+        catBack.innerText = card.cat;
+        qText.innerHTML = card.q;
+        aText.innerHTML = card.a;
+        explText.innerHTML = card.expl;
+        cardElement.style.transition = "none";
+        cardElement.classList.remove("is-flipped");
+        cardElement.style.transform = "";
+        isFlipped = false;
+        controls.classList.remove("visible");
+        setTimeout(() => { cardElement.style.transition = "transform 0.6s cubic-bezier(0.4,0.2,0.2,1)"; }, 50);
+    }
+    function flipCard() {
+        if (deck.length === 0) return;
+        if (!isFlipped) { cardElement.classList.add("is-flipped"); controls.classList.add("visible"); isFlipped = true; }
+    }
+    function markKnown(event) {
+        event.stopPropagation();
+        deck.shift();
+        currentCardIndex++;
+        updateProgress();
+        cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function markReview(event) {
+        event.stopPropagation();
+        let missedCard = deck.shift();
+        deck.push(missedCard);
+        cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)";
+        setTimeout(() => { loadCard(); }, 400);
+    }
+    function updateProgress() {
+        let percent = (currentCardIndex / totalCards) * 100;
+        progressBar.style.width = percent + "%";
+        statsDisplay.innerText = "Validées : " + currentCardIndex + " / " + totalCards + " (Restantes : " + deck.length + ")";
+    }
+    function showEndScreen() {
+        document.getElementById("progress-wrapper").style.display = "none";
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("end-screen").style.display = "block";
+    }
+    window.onload = () => { loadCard(); updateProgress(); };
+    </script>
+</body>
+</html>
