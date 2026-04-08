@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE - Contrats de Travail</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        /* Animation du fond Ultra-Moderne */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; color: #fff; overflow-x: hidden;
+        }
+
+        /* En-tête Glassmorphism */
+        header {
+            width: 100%; padding: 15px 20px; text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;}
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+
+        /* Barre de progression */
+        .progress-wrapper {
+            width: 85vw; max-width: 400px; margin: 20px 0 10px 0;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container {
+            width: 100%; height: 8px; background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px; overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .progress-bar {
+            height: 100%; width: 0%; border-radius: 10px;
+            background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.8);
+        }
+
+        /* SCÈNE 3D & CARTE (Adaptée Mobile) */
+        #game-container {
+            display: flex; flex-direction: column; align-items: center;
+            width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px;
+        }
+
+        .scene {
+            width: 85vw; max-width: 380px;
+            height: 55vh; max-height: 450px; min-height: 320px;
+            perspective: 1000px; cursor: pointer; position: relative;
+        }
+
+        .card {
+            width: 100%; height: 100%; position: absolute;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d; -webkit-transform-style: preserve-3d;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg); -webkit-transform: rotateY(180deg);
+        }
+
+        /* Faces de la carte en Verre (Glassmorphism) */
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 25px; text-align: center;
+        }
+
+        .card-back {
+            transform: rotateY(180deg); -webkit-transform: rotateY(180deg);
+            background: rgba(10, 10, 10, 0.4); border: 1px solid rgba(0, 242, 254, 0.5);
+        }
+
+        .category-badge {
+            position: absolute; top: 15px;
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+
+        /* Boutons d'action */
+        .controls {
+            display: flex; justify-content: space-between; gap: 15px;
+            width: 85vw; max-width: 380px; margin-top: 25px;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+
+        .controls.visible { opacity: 1; pointer-events: auto; }
+
+        .btn {
+            flex: 1; padding: 16px 10px; border: none; border-radius: 50px;
+            font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase;
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-wrong {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4); border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-correct {
+            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.4); border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Écran de fin */
+        #end-screen {
+            display: none; width: 90vw; max-width: 400px; text-align: center;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        
+        .btn-restart {
+            background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white;
+            border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px;
+            cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Flashcards Pro</h1>
+        <p>Module C1 : Différencier les contrats</p>
+    </header>
+
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 25</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Catégorie</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Catégorie</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explications détaillées...</div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size: 1rem; opacity: 0.9;">Tu as maîtrisé les notions sur les enjeux de la santé et sécurité au travail.</p>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; text-align: left; margin-top: 20px;">
+            <strong style="color: #00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size: 0.85rem; color: #ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+
+    <script>
+        // BASE DE DONNÉES EXACTE - 25 NOTIONS DU CAP (Âges, Spécificités, Droits)
+        const flashcards = [
+            { cat: "Âge & Durée", q: "À partir de quel âge minimum légal peut-on signer un CDI, un CDD ou un contrat d'intérim ?", a: "Dès 16 ans.", expl: "Un jeune peut travailler dès 16 ans sous certaines conditions strictes." },
+            { cat: "Âge & Durée", q: "Quel est l'âge requis pour signer un Contrat d'Apprentissage ?", a: "De 16 à 29 ans révolus.", expl: "Prévu pour une durée de 6 mois à 3 ans, il permet de préparer un diplôme en alternance." },
+            { cat: "Âge & Durée", q: "Quel est l'âge requis pour un Contrat de Professionnalisation ?", a: "Dès 16 ans.", expl: "Il s'adresse aux 16-25 ans (et 26 ans et + pour les demandeurs d'emploi) pour acquérir une qualification." },
+            { cat: "Spécificités CDI", q: "Le CDI (Contrat à Durée Indéterminée) indique-t-il une date de fin de contrat ?", a: "NON.", expl: "C'est un contrat sans limitation de durée. Seule la date d'embauche est inscrite." },
+            { cat: "Spécificités CDI", q: "Comment un salarié peut-il rompre un CDI de son plein gré ?", a: "En démissionnant, avec un préavis.", expl: "Le préavis est un délai légal de travail à respecter avant de quitter définitivement le poste." },
+            { cat: "Spécificités CDD", q: "Pourquoi un employeur signe-t-il un CDD avec un salarié ?", a: "Pour une tâche précise et temporaire.", expl: "Exemples légaux : remplacer un salarié absent ou faire face à un pic d'activité (Noël, soldes)." },
+            { cat: "Spécificités CDD", q: "Quelles sont les 2 indemnités versées obligatoirement à la fin d'un CDD ?", a: "L'indemnité de fin de contrat ET les congés payés.", expl: "L'indemnité de fin de contrat (prime de précarité) compense l'instabilité de ce type d'emploi." },
+            { cat: "L'Intérim", q: "Quelles sont les 3 parties impliquées dans un contrat d'Intérim (Temporaire) ?", a: "L'intérimaire, l'agence (ETT) et l'entreprise utilisatrice.", expl: "L'Entreprise de Travail Temporaire (ex: Adecco) est ton véritable employeur et te met à disposition." },
+            { cat: "L'Intérim", q: "Comment s'appelle la prime touchée à la fin d'une mission d'Intérim ?", a: "Les indemnités de fin de mission.", expl: "Elles ont le même objectif que la prime de précarité du CDD." },
+            { cat: "L'Alternance", q: "Où se déroule la formation d'un apprenti ?", a: "En alternance : au CFA et en Entreprise.", expl: "CFA signifie : Centre de Formation d'Apprentis." },
+            { cat: "Mentions Obligatoires", q: "Quel est le SEUL contrat de travail qui n'est pas obligatoirement écrit ?", a: "Le CDI à temps plein.", expl: "Il peut être oral. En revanche, le CDD, l'Apprentissage et l'Intérim doivent TOUJOURS être rédigés par écrit." },
+            { cat: "Mentions Obligatoires", q: "Cite 4 informations qui doivent obligatoirement figurer sur le contrat.", a: "Identités, Date d'embauche, Rémunération, Lieu/Horaires.", expl: "Il faut aussi la désignation de l'emploi (qualification)." },
+            { cat: "Mentions Obligatoires", q: "Qu'est-ce que la Période d'Essai ?", a: "Une période au début du contrat pour tester le salarié.", expl: "Durant cette période, l'employeur OU l'employé peut rompre le contrat sans préavis ni indemnité." },
+            { cat: "Obligations Salarié", q: "Quelles sont les obligations du salarié face à son travail et ses horaires ?", a: "Réaliser le travail demandé et respecter les horaires.", expl: "C'est la contrepartie logique au salaire qu'il perçoit." },
+            { cat: "Obligations Salarié", q: "Quelle est l'obligation du salarié par rapport aux règles de l'entreprise ?", a: "Respecter le règlement intérieur.", expl: "Ce règlement inclut toutes les consignes de sécurité." },
+            { cat: "Droits Salarié", q: "En plus du salaire, de quel droit majeur bénéficie un salarié déclaré ?", a: "Bénéficier d'une couverture sociale.", expl: "Il cotise pour la maladie, le chômage et la retraite." },
+            { cat: "Obligations Employeur", q: "Quelle est l'obligation principale de l'employeur à la fin du mois ?", a: "Verser le salaire correspondant au travail effectué.", expl: "Il doit aussi respecter les clauses du contrat et le Code du travail." },
+            { cat: "Droits Employeur", q: "Quel droit possède l'employeur si le salarié commet une faute ?", a: "Le droit de le sanctionner.", expl: "C'est le pouvoir disciplinaire de l'employeur." },
+            { cat: "Législation", q: "Un patron a-t-il le droit de faire payer une AMENDE à un salarié en retard ?", a: "NON. C'est strictement illégal.", expl: "Les sanctions financières (retenues sur salaire) sont interdites. Il faut utiliser une sanction disciplinaire (ex: avertissement)." },
+            { cat: "Législation", q: "Que signifie le sigle SMIC ?", a: "Salaire Minimum Interprofessionnel de Croissance.", expl: "Il est illégal de rémunérer un employé majeur en dessous de ce seuil." },
+            { cat: "Prévention (C3)", q: "Que signifie le sigle EPI ?", a: "Équipement de Protection Individuelle.", expl: "Exemples : casque, gants, lunettes, chaussures de sécurité." },
+            { cat: "Prévention (C3)", q: "Le port des EPI est-il un choix ou une obligation ?", a: "Une obligation.", expl: "Ne pas les porter est une faute professionnelle sanctionnable." },
+            { cat: "Prévention (C3)", q: "Quelle est la structure (les 2 mots) pour lier un risque à une prévention ?", a: "« Parce que... donc... »", expl: "Exemple : 'Parce que le sol est glissant, donc je dois porter mes chaussures de sécurité.'" },
+            { cat: "Analyse (C2)", q: "Une agence immobilière exige un emploi stable sans date de fin pour louer un appartement. Quel contrat choisir ?", a: "Un CDI.", expl: "Seul le CDI garantit cette sécurité à long terme." },
+            { cat: "Analyse (C2)", q: "Peut-on signer un CDD pour remplacer une employée en congé maternité ?", a: "OUI. C'est le contrat obligatoire pour ça.", expl: "Le remplacement est une situation temporaire, le CDD est donc parfaitement adapté." }
+        ];
+
+        // LOGIQUE JAVASCRIPT CORRIGÉE
+        let deck = [...flashcards];
+        // Mélange aléatoire des cartes
+        deck.sort(() => Math.random() - 0.5); 
+        
+        let currentCardIndex = 0;
+        let totalCards = deck.length;
+        let isFlipped = false;
+
+        const cardElement = document.getElementById("flashcard");
+        const catFront = document.getElementById("category-front");
+        const catBack = document.getElementById("category-back");
+        const qText = document.getElementById("question-text");
+        const aText = document.getElementById("answer-text");
+        const explText = document.getElementById("explanation-text");
+        const controls = document.getElementById("controls");
+        const progressBar = document.getElementById("progress-bar");
+        const statsDisplay = document.getElementById("stats-display");
+
+        // Charge la carte en haut du paquet
+        function loadCard() {
+            if (deck.length === 0) {
+                showEndScreen();
+                return;
+            }
+
+            let card = deck[0];
+            catFront.innerText = card.cat;
+            catBack.innerText = card.cat;
+            qText.innerHTML = card.q;
+            aText.innerHTML = card.a;
+            explText.innerHTML = card.expl;
+
+            // Assurer que la carte est bien de face sans transition parasite
+            cardElement.style.transition = "none";
+            cardElement.classList.remove("is-flipped");
+            cardElement.style.transform = ""; 
+            isFlipped = false;
+            controls.classList.remove("visible");
+
+            // Réactiver les transitions après un micro-délai
+            setTimeout(() => {
+                cardElement.style.transition = "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)";
+            }, 50);
+        }
+
+        // Action de retourner la carte
+        function flipCard() {
+            if(deck.length === 0) return;
+            if (!isFlipped) {
+                cardElement.classList.add("is-flipped");
+                controls.classList.add("visible");
+                isFlipped = true;
+            }
+        }
+
+        // Bouton "Acquis"
+        function markKnown(event) {
+            event.stopPropagation(); // Empêche de déclencher le clic de la carte
+            deck.shift(); // Supprime la carte sue du paquet
+            currentCardIndex++;
+            updateProgress();
+            
+            // Animation d'évacuation
+            cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)";
+            
+            setTimeout(() => { loadCard(); }, 400);
+        }
+
+        // Bouton "À revoir"
+        function markReview(event) {
+            event.stopPropagation();
+            let missedCard = deck.shift();
+            deck.push(missedCard); // Remet la carte à la fin du paquet
+            
+            // Animation d'évacuation vers la gauche
+            cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)";
+            
+            setTimeout(() => { loadCard(); }, 400);
+        }
+
+        function updateProgress() {
+            let percent = (currentCardIndex / totalCards) * 100;
+            progressBar.style.width = percent + "%";
+            statsDisplay.innerText = `Validées : ${currentCardIndex} / ${totalCards} (Restantes : ${deck.length})`;
+        }
+
+        function showEndScreen() {
+            document.getElementById("progress-wrapper").style.display = "none";
+            document.getElementById("game-container").style.display = "none";
+            document.getElementById("end-screen").style.display = "block";
+        }
+
+        // Initialisation
+        window.onload = () => {
+            loadCard();
+            updateProgress();
+        };
+    </script>
+</body>
+</html>

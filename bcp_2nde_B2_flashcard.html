@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module B2 : Les risques majeurs</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Pro</h1>
+        <p>Bac Pro 2nde — Module B2 : Les risques majeurs</p>
+        <span class="source-credit">D'après Foucher CAP PSE, éd. 2024 + programme Eduscol</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 22</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Cat.</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Cat.</div>
+                    <div class="answer-text" id="answer-text">Réponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 À revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Félicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maîtrises les 22 notions essentielles du module B2 — Les risques majeurs.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entraînement</button>
+    </div>
+    <script>
+    const flashcards = [
+        { cat: "Risque majeur", q: "Qu'est-ce qu'un risque majeur ?", a: "Un événement grave qui dépasse les capacités de réaction de la société.", expl: "Un risque majeur combine un aléa (phénomène dangereux) et des enjeux (personnes/biens exposés). Il se caractérise par une faible fréquence mais une forte gravité." },
+        { cat: "Risque majeur", q: "Quels sont les deux éléments qui composent un risque majeur ?", a: "L'aléa + les enjeux.", expl: "L'aléa est l'événement dangereux (séisme, explosion). Les enjeux sont les personnes et biens exposés. Sans enjeux, pas de risque majeur : un séisme dans un désert inhabité n'est pas un risque majeur." },
+        { cat: "Risque majeur", q: "Qu'est-ce qu'un aléa ?", a: "Un événement potentiellement dangereux, naturel ou technologique.", expl: "Exemples d'aléas naturels : séisme, inondation, tempête. Exemples d'aléas technologiques : explosion industrielle, fuite radioactive. L'aléa est le « déclencheur » du risque." },
+        { cat: "Risque majeur", q: "Que représentent les enjeux dans un risque majeur ?", a: "Les personnes et les biens pouvant être affectés.", expl: "Plus il y a de personnes et de biens dans la zone de l'aléa, plus les enjeux sont importants. C'est pourquoi les zones densément peuplées sont plus vulnérables." },
+        { cat: "Caractéristiques", q: "Quelles sont les deux caractéristiques du risque majeur ?", a: "Faible fréquence et forte gravité.", expl: "C'est la courbe de Farmer : le risque majeur est rare (faible fréquence) mais ses conséquences sont catastrophiques quand il survient (forte gravité). C'est l'inverse du risque quotidien (fréquent mais peu grave)." },
+        { cat: "Caractéristiques", q: "Quelle est la différence entre un risque majeur et un risque quotidien ?", a: "Le risque quotidien est fréquent et peu grave, le risque majeur est rare et très grave.", expl: "Exemple : se couper en cuisinant = risque quotidien (fréquent, peu grave). Un séisme = risque majeur (rare, conséquences catastrophiques)." },
+        { cat: "Familles", q: "Quelles sont les deux familles de risques majeurs ?", a: "Risques d'origine naturelle et risques d'origine technologique.", expl: "Naturels = liés à l'environnement (météo, géologie). Technologiques = liés à l'activité humaine (industrie, transport, nucléaire)." },
+        { cat: "Familles", q: "Cite 4 exemples de risques majeurs d'origine naturelle.", a: "Inondation, séisme, éruption volcanique, tempête.", expl: "On peut aussi citer : avalanche, cyclone, tsunami, mouvement de terrain, feu de forêt. Ce sont des phénomènes naturels incontrôlables par l'homme." },
+        { cat: "Familles", q: "Cite 4 exemples de risques majeurs d'origine technologique.", a: "Risque industriel, risque nucléaire, TMD, rupture de barrage.", expl: "TMD = Transport de Matières Dangereuses. Ces risques sont causés par l'activité humaine. Exemple célèbre : l'explosion de l'usine AZF à Toulouse en 2001." },
+        { cat: "Familles", q: "L'explosion d'une usine chimique est un risque d'origine...", a: "Technologique.", expl: "C'est lié à une activité industrielle humaine, pas à un phénomène naturel. L'usine AZF (2001) : explosion d'un stock de nitrate d'ammonium = 31 morts, 2 500 blessés." },
+        { cat: "Familles", q: "Une tempête qui dévaste une région est un risque d'origine...", a: "Naturelle.", expl: "Une tempête est un phénomène météorologique. Exemple : la tempête Xynthia (2010) a causé 47 morts et des milliards de dégâts en France." },
+        { cat: "DICRIM", q: "Que signifie le sigle DICRIM ?", a: "Document d'Information Communal sur les Risques Majeurs.", expl: "Le DICRIM est consultable en mairie. Il informe les habitants sur les risques de leur commune et les réflexes à adopter en cas de danger." },
+        { cat: "DICRIM", q: "Où peut-on consulter le DICRIM ?", a: "À la mairie de la commune.", expl: "Le DICRIM est un document public, accessible à tout citoyen. Il est aussi souvent disponible sur le site internet de la mairie ou sur georisques.gouv.fr." },
+        { cat: "DICRIM", q: "Quel site internet permet de connaître les risques de sa commune ?", a: "georisques.gouv.fr", expl: "Ce site gouvernemental recense tous les risques naturels et technologiques identifiés pour chaque commune de France. Très utile pour les élèves qui veulent faire la Q8 du cours !" },
+        { cat: "Alerte", q: "Comment s'appelle le système qui alerte la population en cas de danger ?", a: "Le SAIP (Système d'Alerte et d'Information aux Populations).", expl: "Le SAIP utilise plusieurs outils : sirènes, radio/TV, véhicules avec haut-parleurs, et depuis 2022, le dispositif FR-Alert sur les téléphones mobiles." },
+        { cat: "Alerte", q: "Décris le signal national d'alerte.", a: "3 cycles de 1 min 41 s de son modulé, séparés par 5 s de silence.", expl: "Le son modulé = le son monte et descend. Il dure au total environ 5 minutes. Ce signal signifie DANGER : il faut se mettre à l'abri immédiatement." },
+        { cat: "Alerte", q: "Que signifie un son continu de 30 secondes ?", a: "C'est le signal de fin d'alerte : le danger est écarté.", expl: "Contrairement au signal d'alerte (son modulé qui monte et descend), le signal de fin d'alerte est un son continu et uniforme de 30 secondes. On peut alors sortir." },
+        { cat: "Alerte", q: "Qu'est-ce que FR-Alert ?", a: "Un système de notification géolocalisée sur les téléphones mobiles.", expl: "FR-Alert envoie automatiquement une notification à toutes les personnes présentes dans une zone de danger, même sans application. C'est plus rapide et ciblé que les sirènes." },
+        { cat: "Conduite à tenir", q: "Faut-il aller chercher ses enfants à l'école en cas d'alerte ?", a: "NON. Les enfants sont en sécurité grâce au PPMS.", expl: "Se déplacer pendant un risque majeur met en danger. Les écoles ont un PPMS (Plan Particulier de Mise en Sûreté) qui protège les élèves. Les parents ne doivent PAS venir." },
+        { cat: "Conduite à tenir", q: "Peut-on téléphoner en cas de risque majeur ?", a: "NON. Il faut libérer les lignes pour les secours.", expl: "Si tout le monde téléphone en même temps, le réseau sature et les secours ne peuvent plus communiquer. Seul moyen d'info : écouter la radio (France Info, France Bleu)." },
+        { cat: "PPMS", q: "Que signifie le sigle PPMS ?", a: "Plan Particulier de Mise en Sûreté.", expl: "Le PPMS est un plan d'organisation interne à chaque établissement scolaire. Il définit les zones de mise à l'abri, les rôles de chacun et les procédures en cas de risque majeur." },
+        { cat: "PPMS", q: "Qui déclenche le PPMS dans un établissement scolaire ?", a: "Le chef d'établissement.", expl: "C'est le proviseur ou le principal qui prend la décision. Un exercice de simulation doit être réalisé chaque année pour tester le dispositif et que chacun connaisse son rôle." }
+    ];
+    let deck = [...flashcards];
+    deck.sort(() => Math.random() - 0.5);
+    let currentCardIndex = 0, totalCards = deck.length, isFlipped = false;
+    const cardElement = document.getElementById("flashcard"), catFront = document.getElementById("category-front"), catBack = document.getElementById("category-back"), qText = document.getElementById("question-text"), aText = document.getElementById("answer-text"), explText = document.getElementById("explanation-text"), controls = document.getElementById("controls"), progressBar = document.getElementById("progress-bar"), statsDisplay = document.getElementById("stats-display");
+    function loadCard() { if (deck.length === 0) { showEndScreen(); return; } let card = deck[0]; catFront.innerText = card.cat; catBack.innerText = card.cat; qText.innerHTML = card.q; aText.innerHTML = card.a; explText.innerHTML = card.expl; cardElement.style.transition = "none"; cardElement.classList.remove("is-flipped"); cardElement.style.transform = ""; isFlipped = false; controls.classList.remove("visible"); setTimeout(() => { cardElement.style.transition = "transform 0.6s cubic-bezier(0.4,0.2,0.2,1)"; }, 50); }
+    function flipCard() { if (deck.length === 0) return; if (!isFlipped) { cardElement.classList.add("is-flipped"); controls.classList.add("visible"); isFlipped = true; } }
+    function markKnown(event) { event.stopPropagation(); deck.shift(); currentCardIndex++; updateProgress(); cardElement.style.transform = "translateX(120vw) rotateY(180deg) rotateZ(10deg)"; setTimeout(() => { loadCard(); }, 400); }
+    function markReview(event) { event.stopPropagation(); let missedCard = deck.shift(); deck.push(missedCard); cardElement.style.transform = "translateX(-120vw) rotateY(180deg) rotateZ(-10deg)"; setTimeout(() => { loadCard(); }, 400); }
+    function updateProgress() { let percent = (currentCardIndex / totalCards) * 100; progressBar.style.width = percent + "%"; statsDisplay.innerText = "Validées : " + currentCardIndex + " / " + totalCards + " (Restantes : " + deck.length + ")"; }
+    function showEndScreen() { document.getElementById("progress-wrapper").style.display = "none"; document.getElementById("game-container").style.display = "none"; document.getElementById("end-screen").style.display = "block"; }
+    window.onload = () => { loadCard(); updateProgress(); };
+    </script>
+</body>
+</html>
