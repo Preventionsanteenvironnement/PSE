@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Flashcards – Module A5</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g1:#1b5e20; --g2:#43a047; --g3:#a5d6a7;
+  --b1:#0d47a1; --b2:#1976d2; --b3:#90caf9;
+  --o1:#e65100; --o2:#fb8c00; --o3:#ffcc80;
+  --p1:#4a148c; --p2:#7b1fa2; --p3:#ce93d8;
+  --r1:#b71c1c; --r2:#e53935; --r3:#ffcdd2;
+  --gold:#f9a825; --dark:#0f172a; --card-r:20px; --btn-r:50px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'Nunito',sans-serif}
+body{background:var(--dark);color:#fff;display:flex;flex-direction:column}
+
+/* ══ INTRO ══ */
+#s-intro{
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100%;padding:28px 20px 36px;
+  background:linear-gradient(155deg,#0d1b2a,#1a2d4a 55%,#0d2818);
+  overflow-y:auto;text-align:center;
+}
+.badge{
+  background:rgba(67,160,71,.22);border:1.5px solid var(--g2);
+  color:var(--g3);border-radius:20px;padding:5px 16px;
+  font-size:.72rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:16px;
+}
+#s-intro h1{
+  font-size:clamp(1.35rem,5vw,1.9rem);font-weight:900;line-height:1.2;
+  background:linear-gradient(135deg,#fff 30%,var(--g3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;
+}
+.obj-box{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:14px 18px;margin:14px 0 20px;
+  text-align:left;max-width:400px;width:100%;
+}
+.obj-box .ot{font-size:.7rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--g3);margin-bottom:8px;font-weight:800}
+.obj-box li{font-size:.86rem;line-height:1.7;color:#ccc;padding-left:18px;
+  position:relative;list-style:none}
+.obj-box li::before{content:"→";position:absolute;left:0;color:var(--g2)}
+.modes-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  max-width:400px;width:100%;margin-bottom:18px}
+.mc{
+  border-radius:16px;padding:16px 10px;cursor:pointer;
+  transition:transform .18s;text-align:center;
+}
+.mc:active{transform:scale(.95)}
+.mc-icon{font-size:1.9rem;margin-bottom:6px}
+.mc-name{font-size:.83rem;font-weight:800}
+.mc-desc{font-size:.68rem;opacity:.8;margin-top:3px}
+.mc.m1{background:linear-gradient(135deg,#1b3a6b,#1976d2)}
+.mc.m2{background:linear-gradient(135deg,#1b4d1e,#43a047)}
+.mc.m3{background:linear-gradient(135deg,#4a148c,#9c27b0)}
+.mc.m4{background:linear-gradient(135deg,#b23a00,#fb8c00)}
+.btn-mix{
+  width:100%;max-width:400px;padding:15px;
+  background:linear-gradient(135deg,var(--g1),var(--g2));
+  border:none;border-radius:var(--btn-r);color:#fff;
+  font-size:1rem;font-weight:800;font-family:'Nunito',sans-serif;
+  cursor:pointer;box-shadow:0 6px 22px rgba(67,160,71,.4);
+  transition:transform .15s;
+}
+.btn-mix:active{transform:scale(.97)}
+.total-lbl{font-size:.76rem;color:#666;margin-top:10px}
+
+/* ══ GAME ══ */
+#s-game{display:none;flex-direction:column;height:100%;background:var(--dark)}
+
+.g-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px 8px;flex-shrink:0;
+}
+.btn-back{
+  background:rgba(255,255,255,.1);border:none;border-radius:50%;
+  width:38px;height:38px;color:#fff;font-size:1.1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Nunito',sans-serif;
+}
+.mode-lbl{
+  font-size:.7rem;font-weight:800;letter-spacing:1.5px;
+  text-transform:uppercase;padding:5px 14px;border-radius:20px;
+}
+.score-lbl{font-size:.9rem;font-weight:800}
+
+.prog-wrap{padding:0 18px 10px;flex-shrink:0}
+.prog-track{height:6px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden}
+.prog-fill{height:100%;border-radius:6px;transition:width .4s ease;width:0%}
+
+.card-area{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:8px 18px;overflow:hidden;
+}
+
+/* ── FLASH CARD ── */
+.flip-wrap{
+  width:100%;max-width:460px;
+  perspective:1000px;cursor:pointer;user-select:none;
+}
+.flip-inner{
+  position:relative;transform-style:preserve-3d;
+  transition:transform .5s cubic-bezier(.4,0,.2,1);
+}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.flip-front,.flip-back{
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:var(--card-r);padding:32px 24px;min-height:210px;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;width:100%;
+}
+.flip-back{
+  position:absolute;top:0;left:0;
+  transform:rotateY(180deg);
+}
+.flip-front{background:linear-gradient(135deg,#0d1b4a,#1565c0)}
+.flip-back{background:linear-gradient(135deg,#0d2010,#1b5e20)}
+.card-theme{
+  font-size:.65rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  opacity:.65;margin-bottom:12px;align-self:flex-start;
+}
+.card-emoji{font-size:2.4rem;margin-bottom:12px}
+.card-q{font-size:clamp(.92rem,3.5vw,1.12rem);font-weight:700;line-height:1.5}
+.flip-tap{font-size:.7rem;opacity:.5;margin-top:14px}
+.flip-ans{font-size:1.08rem;font-weight:800;line-height:1.5;margin-bottom:10px}
+.flip-exp{font-size:.82rem;opacity:.82;line-height:1.55}
+
+/* ── FLASH ACTIONS – FIXED: use flex directly ── */
+#zone-flash-btns{
+  display:none; /* shown via JS style.display = 'flex' */
+  gap:12px;padding:0 18px 16px;flex-shrink:0;
+}
+.btn-knew{
+  flex:1;padding:14px;background:linear-gradient(135deg,#1b5e20,#43a047);
+  border:none;border-radius:var(--btn-r);color:#fff;font-size:.93rem;
+  font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;
+}
+.btn-retry{
+  flex:1;padding:14px;background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);border-radius:var(--btn-r);
+  color:#fff;font-size:.93rem;font-weight:800;
+  font-family:'Nunito',sans-serif;cursor:pointer;
+}
+
+/* ── QCM ── */
+.qcm-card{
+  width:100%;max-width:460px;border-radius:var(--card-r);
+  padding:26px 22px;min-height:160px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;background:linear-gradient(135deg,#1e0a35,#4a148c);
+}
+.qcm-opts{
+  display:none; /* shown as grid via JS */
+  gap:9px;padding:0 18px 16px;flex-shrink:0;
+}
+.qopt{
+  display:flex;align-items:center;gap:12px;
+  width:100%;padding:13px 16px;text-align:left;
+  background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.13);
+  border-radius:12px;color:#fff;font-size:.88rem;font-weight:700;
+  font-family:'Nunito',sans-serif;cursor:pointer;
+  transition:background .18s,border-color .18s;
+}
+.qopt:active{transform:scale(.98)}
+.qopt-l{
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(255,255,255,.15);display:flex;
+  align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:800;flex-shrink:0;
+}
+.qopt.correct{background:rgba(67,160,71,.3);border-color:#43a047}
+.qopt.wrong  {background:rgba(229,57,53,.3);border-color:#e53935}
+.qopt.dim    {opacity:.5;pointer-events:none}
+
+/* ── VF ── */
+.vf-card{
+  width:100%;max-width:460px;border-radius:var(--card-r);
+  padding:26px 22px;min-height:160px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;background:linear-gradient(135deg,#2d1200,#bf360c);
+}
+.vf-feedback{
+  display:none;
+  text-align:center;padding:10px 18px;margin:0 18px 6px;
+  border-radius:10px;font-size:.88rem;font-weight:700;flex-shrink:0;
+}
+.vf-feedback.ok {background:rgba(67,160,71,.25);color:#a5d6a7;display:block}
+.vf-feedback.nok{background:rgba(229,57,53,.25);color:#ffcdd2;display:block}
+.vf-btns{display:none;gap:12px;padding:0 18px 16px;flex-shrink:0}
+.btn-vrai{
+  flex:1;padding:15px;background:linear-gradient(135deg,#1b5e20,#43a047);
+  border:none;border-radius:var(--btn-r);color:#fff;font-size:1rem;
+  font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;
+}
+.btn-faux{
+  flex:1;padding:15px;background:linear-gradient(135deg,#b71c1c,#e53935);
+  border:none;border-radius:var(--btn-r);color:#fff;font-size:1rem;
+  font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;
+}
+
+/* ── FILL ── */
+.fill-card{
+  width:100%;max-width:460px;border-radius:var(--card-r);
+  padding:26px 22px;min-height:160px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;background:linear-gradient(135deg,#0a1a20,#01579b);
+}
+.fill-zone{display:none;padding:0 18px 16px;flex-shrink:0}
+.fill-fb{
+  text-align:center;padding:9px 14px;border-radius:10px;
+  font-size:.88rem;font-weight:700;margin-bottom:10px;display:none;
+}
+.fill-fb.ok {background:rgba(67,160,71,.25);color:#a5d6a7;display:block}
+.fill-fb.nok{background:rgba(229,57,53,.25);color:#ffcdd2;display:block}
+.fill-input{
+  width:100%;padding:13px 16px;background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);border-radius:12px;
+  color:#fff;font-size:1rem;font-family:'Nunito',sans-serif;
+  outline:none;font-weight:700;
+}
+.fill-input:focus{border-color:var(--b3)}
+.fill-input::placeholder{color:rgba(255,255,255,.38)}
+.fill-sub{
+  width:100%;margin-top:9px;padding:13px;
+  background:linear-gradient(135deg,var(--b1),var(--b2));
+  border:none;border-radius:var(--btn-r);color:#fff;
+  font-size:.93rem;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;
+}
+
+/* ── FEEDBACK OVERLAY ── */
+#fb-ov{
+  position:fixed;inset:0;display:flex;align-items:center;
+  justify-content:center;z-index:200;pointer-events:none;
+  opacity:0;transition:opacity .15s;
+}
+#fb-ov.show{opacity:1}
+#fb-bubble{font-size:5rem;animation:none}
+.pop{animation:pop .4s cubic-bezier(.4,0,.2,1)!important}
+@keyframes pop{0%{transform:scale(.2) rotate(-20deg)}70%{transform:scale(1.25) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+
+/* ── STREAK ── */
+#streak{
+  position:fixed;top:66px;right:16px;z-index:100;
+  background:var(--gold);color:#1a1a2e;border-radius:20px;
+  padding:5px 13px;font-size:.78rem;font-weight:900;
+  display:none;
+}
+
+/* ── END ── */
+#s-end{
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;padding:28px 22px;text-align:center;
+  background:linear-gradient(155deg,#0d1b2a,#1a2d4a);
+  overflow-y:auto;
+}
+#end-trophy{font-size:5rem;margin-bottom:14px}
+.end-score{font-size:3.4rem;font-weight:900;
+  background:linear-gradient(135deg,var(--gold),#fff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.end-lbl{font-size:.9rem;color:#aaa;margin-bottom:4px}
+.end-stars{font-size:2rem;letter-spacing:4px;margin:8px 0}
+.end-msg{font-size:.95rem;color:#ccc;max-width:320px;line-height:1.6;margin:12px 0 22px}
+.end-btn{
+  width:100%;max-width:320px;padding:14px;border:none;
+  border-radius:var(--btn-r);font-size:.97rem;font-weight:800;
+  font-family:'Nunito',sans-serif;cursor:pointer;margin:5px 0;
+}
+.end-btn.p{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;
+  box-shadow:0 6px 20px rgba(67,160,71,.35)}
+.end-btn.s{background:rgba(255,255,255,.1);color:#fff;
+  border:1.5px solid rgba(255,255,255,.2)}
+
+/* ── COLORS PER MODE ── */
+.mode-flash .mode-lbl{background:rgba(25,118,210,.3);color:var(--b3)}
+.mode-flash .prog-fill{background:linear-gradient(90deg,var(--b2),var(--b3))}
+.mode-qcm   .mode-lbl{background:rgba(123,31,162,.3);color:var(--p3)}
+.mode-qcm   .prog-fill{background:linear-gradient(90deg,var(--p2),var(--p3))}
+.mode-vf    .mode-lbl{background:rgba(230,81,0,.3);color:var(--o3)}
+.mode-vf    .prog-fill{background:linear-gradient(90deg,var(--o2),var(--o3))}
+.mode-fill  .mode-lbl{background:rgba(13,71,161,.3);color:var(--b3)}
+.mode-fill  .prog-fill{background:linear-gradient(90deg,var(--b2),var(--b3))}
+.mode-mix   .mode-lbl{background:rgba(249,168,37,.2);color:var(--gold)}
+.mode-mix   .prog-fill{background:linear-gradient(90deg,var(--gold),#fff176)}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ INTRO ════════════════════ -->
+<div id="s-intro">
+  <div class="badge">PSE – Module A5</div>
+  <h1>La sexualité<br>La contraception</h1>
+  <div class="obj-box">
+    <div class="ot">🎯 Objectifs</div>
+    <ul>
+      <li>Décrire les étapes de la reproduction sexuée jusqu'à la nidation</li>
+      <li>Distinguer les différents moyens de contraception préventive</li>
+      <li>Choisir une contraception adaptée à une situation</li>
+      <li>Connaître la conduite à tenir après un rapport non protégé</li>
+    </ul>
+  </div>
+  <p style="font-size:.8rem;color:#aaa;margin-bottom:12px">Choisis ton mode d'entraînement :</p>
+  <div class="modes-grid">
+    <div class="mc m1" onclick="startMode('flash')">
+      <div class="mc-icon">🃏</div>
+      <div class="mc-name">Flashcards</div>
+      <div class="mc-desc">Retourne la carte</div>
+    </div>
+    <div class="mc m2" onclick="startMode('qcm')">
+      <div class="mc-icon">🎯</div>
+      <div class="mc-name">QCM</div>
+      <div class="mc-desc">4 choix possibles</div>
+    </div>
+    <div class="mc m3" onclick="startMode('vf')">
+      <div class="mc-icon">⚡</div>
+      <div class="mc-name">Vrai / Faux</div>
+      <div class="mc-desc">Rapide et dynamique</div>
+    </div>
+    <div class="mc m4" onclick="startMode('fill')">
+      <div class="mc-icon">✍️</div>
+      <div class="mc-name">Compléter</div>
+      <div class="mc-desc">Tape le mot manquant</div>
+    </div>
+  </div>
+  <button class="btn-mix" onclick="startMode('mix')">🔀 Mode Mix – Tout mélangé !</button>
+  <div class="total-lbl">40 cartes · 5 thèmes · 4 modes</div>
+</div>
+
+<!-- ════════════════════ GAME ════════════════════ -->
+<div id="s-game">
+  <div class="g-header">
+    <button class="btn-back" onclick="goHome()">←</button>
+    <div class="mode-lbl" id="mode-lbl">Mode</div>
+    <div class="score-lbl">⭐ <span id="score-txt">0</span></div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+
+  <!-- FLASH -->
+  <div class="card-area" id="zone-flash" style="display:none">
+    <div class="flip-wrap" onclick="flipCard()">
+      <div class="flip-inner" id="flip-inner">
+        <div class="flip-front">
+          <div class="card-theme" id="fl-theme"></div>
+          <div class="card-emoji" id="fl-emoji"></div>
+          <div class="card-q"    id="fl-q"></div>
+          <div class="flip-tap">👆 Appuie pour voir la réponse</div>
+        </div>
+        <div class="flip-back">
+          <div class="card-emoji" id="fl-emoji-b"></div>
+          <div class="flip-ans"   id="fl-a"></div>
+          <div class="flip-exp"   id="fl-exp"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="zone-flash-btns" style="display:none">
+    <button class="btn-retry" onclick="markFlash(false)">🔁 À revoir</button>
+    <button class="btn-knew"  onclick="markFlash(true)">✓ Je savais !</button>
+  </div>
+
+  <!-- QCM -->
+  <div class="card-area" id="zone-qcm" style="display:none">
+    <div class="qcm-card" id="qcm-card">
+      <div class="card-theme" id="qcm-theme"></div>
+      <div class="card-emoji" id="qcm-emoji"></div>
+      <div class="card-q"     id="qcm-q"></div>
+    </div>
+  </div>
+  <div class="qcm-opts" id="zone-qcm-opts">
+    <button class="qopt" id="qo0" onclick="answerQCM(0)"><span class="qopt-l">A</span><span id="qt0"></span></button>
+    <button class="qopt" id="qo1" onclick="answerQCM(1)"><span class="qopt-l">B</span><span id="qt1"></span></button>
+    <button class="qopt" id="qo2" onclick="answerQCM(2)"><span class="qopt-l">C</span><span id="qt2"></span></button>
+    <button class="qopt" id="qo3" onclick="answerQCM(3)"><span class="qopt-l">D</span><span id="qt3"></span></button>
+  </div>
+
+  <!-- VF -->
+  <div class="card-area" id="zone-vf" style="display:none">
+    <div class="vf-card">
+      <div class="card-theme" id="vf-theme"></div>
+      <div class="card-emoji" id="vf-emoji"></div>
+      <div class="card-q"     id="vf-q"></div>
+    </div>
+  </div>
+  <div class="vf-feedback" id="vf-fb"></div>
+  <div class="vf-btns" id="zone-vf-btns">
+    <button class="btn-faux" onclick="answerVF(false)">✗ Faux</button>
+    <button class="btn-vrai" onclick="answerVF(true)">✓ Vrai</button>
+  </div>
+
+  <!-- FILL -->
+  <div class="card-area" id="zone-fill" style="display:none">
+    <div class="fill-card">
+      <div class="card-theme" id="fill-theme"></div>
+      <div class="card-emoji" id="fill-emoji"></div>
+      <div class="card-q"     id="fill-q"></div>
+    </div>
+  </div>
+  <div class="fill-zone" id="zone-fill-inp">
+    <div class="fill-fb" id="fill-fb"></div>
+    <input class="fill-input" id="fill-ans" type="text" placeholder="Tape ta réponse…"
+      autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="fill-sub" onclick="answerFill()">Valider →</button>
+  </div>
+</div>
+
+<!-- Feedback overlay -->
+<div id="fb-ov"><div id="fb-bubble"></div></div>
+<!-- Streak -->
+<div id="streak">🔥 ×<span id="streak-val">0</span></div>
+
+<!-- ════════════════════ END ════════════════════ -->
+<div id="s-end">
+  <div id="end-trophy"></div>
+  <div class="end-lbl">Ton score</div>
+  <div class="end-score" id="end-score"></div>
+  <div class="end-stars" id="end-stars"></div>
+  <p class="end-msg" id="end-msg"></p>
+  <button class="end-btn p" onclick="restartSame()">🔄 Rejouer ce mode</button>
+  <button class="end-btn s" onclick="goHome()">🏠 Choisir un autre mode</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   DONNÉES – 40 cartes
+═══════════════════════════════════════════════ */
+const CARDS = [
+
+  /* ─── 🧬 GAMÈTES ─────────────────────────── */
+  { id:1, th:"🧬 Gamètes", em:"🧬",
+    q:"Quel est le nom de la cellule reproductrice mâle ?",
+    a:"Le spermatozoïde",
+    exp:"Les spermatozoïdes sont produits dans les testicules dès la puberté, de façon continue.",
+    qcm:["Le spermatozoïde","L'ovule","L'embryon","L'hormone"], ci:0,
+    vf:"Les spermatozoïdes sont produits dans les testicules.", vfa:true,
+    fil:"Le spermatozoïde et l'ovule sont des ___.", fans:["gamètes","gametes","gamete","gamète"]},
+
+  { id:2, th:"🧬 Gamètes", em:"🥚",
+    q:"Dans quel organe est produit l'ovule ?",
+    a:"Dans les ovaires",
+    exp:"Chaque mois depuis la puberté, un ovule est libéré alternativement par l'un des deux ovaires.",
+    qcm:["L'utérus","Les ovaires","Les trompes","Le vagin"], ci:1,
+    vf:"L'ovule est fabriqué dans l'utérus.", vfa:false,
+    fil:"L'ovule est produit dans les ___.", fans:["ovaires","ovaire"]},
+
+  { id:3, th:"🧬 Gamètes", em:"⏱️",
+    q:"Combien de temps vit un ovule après l'ovulation ?",
+    a:"12 à 24 heures",
+    exp:"L'ovule est très fragile. Les spermatozoïdes vivent eux 2 à 5 jours — bien plus longtemps.",
+    qcm:["12 à 24 heures","2 à 5 jours","1 semaine","3 jours"], ci:0,
+    vf:"Un ovule vit plus longtemps qu'un spermatozoïde.", vfa:false,
+    fil:"La durée de vie d'un ovule est d'environ ___ heures.", fans:["12","24","12 à 24","12-24"]},
+
+  { id:4, th:"🧬 Gamètes", em:"💪",
+    q:"Quelle hormone masculine stimule la production de spermatozoïdes ?",
+    a:"La testostérone",
+    exp:"La testostérone est produite par les testicules. Elle est l'hormone sexuelle masculine principale.",
+    qcm:["La progestérone","Les œstrogènes","La testostérone","L'adrénaline"], ci:2,
+    vf:"La testostérone est produite par les ovaires.", vfa:false,
+    fil:"L'hormone produite par les testicules est la ___.", fans:["testostérone","testosterone"]},
+
+  { id:5, th:"🧬 Gamètes", em:"🌸",
+    q:"Quelles hormones sont produites par les ovaires ?",
+    a:"La progestérone et les œstrogènes",
+    exp:"Ces deux hormones régulent le cycle et préparent l'utérus à accueillir un embryon si fécondation.",
+    qcm:["Testostérone et adrénaline","Progestérone et œstrogènes","Insuline et glucagon","Cortisol et mélatonine"], ci:1,
+    vf:"Les ovaires produisent la progestérone et les œstrogènes.", vfa:true,
+    fil:"Les ovaires produisent la ___ et les œstrogènes.", fans:["progestérone","progesterone"]},
+
+  { id:6, th:"🧬 Gamètes", em:"⏳",
+    q:"Combien de temps les spermatozoïdes survivent-ils dans l'organisme féminin ?",
+    a:"2 à 5 jours",
+    exp:"Cette longue survie crée une 'fenêtre de fécondation' : même un rapport avant l'ovulation peut mener à une grossesse.",
+    qcm:["Quelques minutes","12 à 24 heures","2 à 5 jours","1 semaine"], ci:2,
+    vf:"Les spermatozoïdes survivent 2 à 5 jours dans l'organisme féminin.", vfa:true,
+    fil:"Les spermatozoïdes survivent ___ jours dans l'organisme féminin.", fans:["2 à 5","2-5","5","2"]},
+
+  { id:7, th:"🧬 Gamètes", em:"📅",
+    q:"Par où passent les spermatozoïdes lors de l'éjaculation ?",
+    a:"Canaux déférents → urètre → pénis",
+    exp:"Le trajet est : testicules → canaux déférents → urètre. Ils se mélangent aux sécrétions pour former le sperme.",
+    qcm:["Ovaires → utérus","Canaux déférents → urètre","Trompes → vagin","Prostate → trompes"], ci:1,
+    vf:"Les spermatozoïdes passent par l'urètre lors de l'éjaculation.", vfa:true,
+    fil:"Lors de l'éjaculation, les spermatozoïdes passent dans les canaux ___.", fans:["déférents","deferents"]},
+
+  /* ─── 🔄 CYCLE & REPRODUCTION ──────────────── */
+  { id:8, th:"🔄 Cycle", em:"📅",
+    q:"À quel moment du cycle a lieu l'ovulation ?",
+    a:"Vers la moitié du cycle (environ jour 14)",
+    exp:"L'ovulation ne se produit ni au début ni à la fin : c'est le moment de fécondité maximale.",
+    qcm:["Au début du cycle","À la fin du cycle","Vers la moitié","N'importe quand"], ci:2,
+    vf:"L'ovulation a lieu au début du cycle menstruel.", vfa:false,
+    fil:"L'ovulation a lieu vers la ___ du cycle menstruel.", fans:["moitié","milieu"]},
+
+  { id:9, th:"🔄 Cycle", em:"🔬",
+    q:"Qu'est-ce que la fécondation ?",
+    a:"La rencontre d'un spermatozoïde et d'un ovule, formant une cellule-œuf",
+    exp:"La fécondation se produit dans la trompe utérine. Elle donne naissance à la cellule-œuf (zygote).",
+    qcm:["L'implantation dans l'utérus","La sortie de l'ovule","La rencontre spermatozoïde-ovule","La formation des règles"], ci:2,
+    vf:"La fécondation a lieu dans l'utérus.", vfa:false,
+    fil:"La ___ est la rencontre entre un spermatozoïde et un ovule.", fans:["fécondation","fecondation"]},
+
+  { id:10, th:"🔄 Cycle", em:"🏠",
+    q:"Qu'est-ce que la nidation ?",
+    a:"L'implantation de l'embryon dans la paroi de l'utérus",
+    exp:"Après la fécondation, la cellule-œuf migre vers l'utérus et s'y implante : c'est la nidation. La grossesse commence.",
+    qcm:["La rencontre des gamètes","L'expulsion de l'ovule","L'implantation de l'embryon dans l'utérus","L'éjaculation"], ci:2,
+    vf:"La nidation, c'est l'implantation de l'embryon dans l'utérus.", vfa:true,
+    fil:"La ___ est l'implantation de l'embryon dans l'utérus.", fans:["nidation"]},
+
+  { id:11, th:"🔄 Cycle", em:"➡️",
+    q:"Dans quel ordre : ovulation, fécondation, nidation ?",
+    a:"Ovulation → Fécondation → Nidation",
+    exp:"L'ovule est d'abord libéré, puis rencontré par un spermatozoïde, puis l'embryon s'implante dans l'utérus.",
+    qcm:["Fécondation → Ovulation → Nidation","Ovulation → Nidation → Fécondation","Nidation → Fécondation → Ovulation","Ovulation → Fécondation → Nidation"], ci:3,
+    vf:"La nidation se produit avant la fécondation.", vfa:false,
+    fil:"L'ordre est : ovulation → fécondation → ___.", fans:["nidation"]},
+
+  { id:12, th:"🔄 Cycle", em:"🌱",
+    q:"Qu'est-ce qu'un embryon ?",
+    a:"L'œuf fécondé en cours de développement (résultat de la fécondation)",
+    exp:"L'embryon se forme dès la fécondation. Il devient fœtus à partir de la 8e semaine de grossesse.",
+    qcm:["Un gamète mâle","Une hormone féminine","L'œuf fécondé en développement","Un ovule non fécondé"], ci:2,
+    vf:"L'embryon est le résultat de la fécondation.", vfa:true,
+    fil:"L'embryon est le résultat de la ___.", fans:["fécondation","fecondation"]},
+
+  { id:13, th:"🔄 Cycle", em:"🔁",
+    q:"Qu'est-ce que l'ovulation ?",
+    a:"L'expulsion d'un ovule par l'ovaire dans la trompe utérine",
+    exp:"L'ovulation est le moment de fécondité. Après l'ovulation, l'ovule ne survit que 12 à 24h.",
+    qcm:["Les règles","L'implantation d'un embryon","La fécondation","L'expulsion d'un ovule par l'ovaire"], ci:3,
+    vf:"L'ovulation est l'expulsion d'un ovule par l'ovaire.", vfa:true,
+    fil:"Lors de l'___, l'ovaire libère un ovule.", fans:["ovulation"]},
+
+  /* ─── 🛡️ CONTRACEPTION ──────────────────────── */
+  { id:14, th:"🛡️ Contraception", em:"🛡️",
+    q:"Quel contraceptif protège aussi des IST ?",
+    a:"Le préservatif (masculin ou féminin)",
+    exp:"Le préservatif est le SEUL contraceptif qui protège à la fois des grossesses ET des infections sexuellement transmissibles.",
+    qcm:["La pilule","Le stérilet","Le préservatif","L'implant"], ci:2,
+    vf:"La pilule protège aussi des IST.", vfa:false,
+    fil:"Le ___ est le seul contraceptif qui protège aussi des IST.", fans:["préservatif","preservatif"]},
+
+  { id:15, th:"🛡️ Contraception", em:"💊",
+    q:"Comment agit la pilule contraceptive ?",
+    a:"Elle empêche l'ovulation grâce à des hormones",
+    exp:"Sans ovule = pas de fécondation possible. La pilule bloque la production d'ovules via des hormones synthétiques.",
+    qcm:["Elle détruit les spermatozoïdes","Elle empêche la nidation","Elle empêche l'ovulation","Elle bloque les trompes"], ci:2,
+    vf:"La pilule contraceptive contient des hormones.", vfa:true,
+    fil:"La pilule empêche l'___ grâce à des hormones.", fans:["ovulation"]},
+
+  { id:16, th:"🛡️ Contraception", em:"📌",
+    q:"Que signifie DIU ?",
+    a:"Dispositif Intra-Utérin (= stérilet)",
+    exp:"Le DIU / stérilet est un petit dispositif posé dans l'utérus par un médecin ou sage-femme.",
+    qcm:["Dose Interne Unique","Dispositif Intra-Utérin","Dépôt Indirect d'Uretère","Diffuseur Interne Utérin"], ci:1,
+    vf:"Le stérilet au cuivre contient des hormones.", vfa:false,
+    fil:"Le stérilet est aussi appelé DIU : ___ intra-utérin.", fans:["dispositif"]},
+
+  { id:17, th:"🛡️ Contraception", em:"⏳",
+    q:"Combien de temps est efficace un stérilet au cuivre ?",
+    a:"5 ans",
+    exp:"Le stérilet au cuivre est posé par un médecin ou une sage-femme et dure 5 ans. Il n'est pas hormonal.",
+    qcm:["1 an","3 ans","5 ans","10 ans"], ci:2,
+    vf:"Le stérilet au cuivre est efficace pendant 5 ans.", vfa:true,
+    fil:"Le stérilet au cuivre est efficace pendant ___ ans.", fans:["5","cinq"]},
+
+  { id:18, th:"🛡️ Contraception", em:"💉",
+    q:"Combien de temps est efficace l'implant contraceptif ?",
+    a:"3 ans",
+    exp:"L'implant est une tige sous la peau du bras, posée par un professionnel. Il libère des hormones 3 ans.",
+    qcm:["1 an","2 ans","3 ans","5 ans"], ci:2,
+    vf:"L'implant contraceptif est efficace pendant 3 ans.", vfa:true,
+    fil:"L'implant contraceptif est efficace pendant ___ ans.", fans:["3","trois"]},
+
+  { id:19, th:"🛡️ Contraception", em:"🩹",
+    q:"Quelle est la fréquence d'utilisation du patch contraceptif ?",
+    a:"1 fois par mois",
+    exp:"Le patch adhère sur la peau et libère des hormones en continu. Il se change une fois par mois.",
+    qcm:["Chaque jour","Chaque rapport","1 fois par semaine","1 fois par mois"], ci:3,
+    vf:"Le patch contraceptif se change toutes les semaines.", vfa:false,
+    fil:"Le patch contraceptif se change ___ fois par mois.", fans:["1","une","1 fois"]},
+
+  { id:20, th:"🛡️ Contraception", em:"🧑‍⚕️",
+    q:"Quels contraceptifs doivent être posés par un professionnel de santé ?",
+    a:"Le stérilet et l'implant",
+    exp:"Ces deux méthodes sont insérées dans le corps et nécessitent un acte médical. Ils durent plusieurs années.",
+    qcm:["Pilule et préservatif","Stérilet et implant","Patch et pilule","Préservatif et patch"], ci:1,
+    vf:"Le préservatif doit être posé par un professionnel de santé.", vfa:false,
+    fil:"Le stérilet et l'___ doivent être posés par un professionnel.", fans:["implant"]},
+
+  { id:21, th:"🛡️ Contraception", em:"♀️",
+    q:"Quel est l'avantage du préservatif féminin ?",
+    a:"Il peut être posé AVANT le rapport, en toute autonomie",
+    exp:"Le préservatif féminin est inséré par la femme elle-même, avant ou pendant le rapport. Cela lui donne une autonomie totale.",
+    qcm:["Il contient des hormones","Il est posé par un médecin","Il peut être mis avant le rapport","Il dure 5 ans"], ci:2,
+    vf:"Le préservatif féminin peut être inséré avant le rapport sexuel.", vfa:true,
+    fil:"Le préservatif féminin peut être posé ___ le rapport.", fans:["avant"]},
+
+  { id:22, th:"🛡️ Contraception", em:"🔄",
+    q:"Quel est le mode d'action du stérilet au cuivre ?",
+    a:"Il empêche la nidation (implantation de l'embryon)",
+    exp:"Contrairement à la pilule qui bloque l'ovulation, le stérilet au cuivre agit sur la nidation. Il est sans hormones.",
+    qcm:["Empêcher l'ovulation","Empêcher la fécondation","Empêcher la nidation","Détruire les spermatozoïdes"], ci:2,
+    vf:"Le stérilet au cuivre empêche l'ovulation.", vfa:false,
+    fil:"Le stérilet au cuivre empêche la ___.", fans:["nidation"]},
+
+  { id:23, th:"🛡️ Contraception", em:"📋",
+    q:"Quelle contraception est prise chaque jour par voie orale ?",
+    a:"La pilule",
+    exp:"La pilule doit être prise tous les jours à la même heure pour être efficace. Un oubli peut réduire l'efficacité.",
+    qcm:["L'implant","Le patch","La pilule","Le stérilet"], ci:2,
+    vf:"La pilule se prend tous les jours par voie orale.", vfa:true,
+    fil:"La ___ se prend par voie orale tous les jours.", fans:["pilule"]},
+
+  { id:24, th:"🛡️ Contraception", em:"♂️",
+    q:"Le préservatif masculin : qui le porte et quand ?",
+    a:"L'homme, sur le pénis en érection, à chaque rapport",
+    exp:"Le préservatif doit être utilisé à chaque rapport. C'est le seul contraceptif masculin courant.",
+    qcm:["La femme, posé à l'avance","L'homme, à chaque rapport","L'homme, une fois par semaine","L'homme, une fois par mois"], ci:1,
+    vf:"Le préservatif masculin doit être utilisé à chaque rapport sexuel.", vfa:true,
+    fil:"Le préservatif masculin doit être utilisé à ___ rapport.", fans:["chaque"]},
+
+  /* ─── ⚠️ URGENCE & IVG ──────────────────────── */
+  { id:25, th:"⚠️ Urgence", em:"⚡",
+    q:"Qu'est-ce que la contraception d'urgence ?",
+    a:"Une méthode de 'rattrapage' après un rapport non ou mal protégé",
+    exp:"Ce n'est pas un contraceptif habituel. Elle est prise en cas d'accident (préservatif déchiré, oubli de pilule…).",
+    qcm:["Un vaccin contre les IST","Une méthode de rattrapage après rapport à risque","Un DIU d'urgence","Une intervention chirurgicale"], ci:1,
+    vf:"La contraception d'urgence se prend AVANT le rapport sexuel.", vfa:false,
+    fil:"La contraception d'urgence est une méthode de ___.", fans:["rattrapage"]},
+
+  { id:26, th:"⚠️ Urgence", em:"💊",
+    q:"Sous quelle forme se présente la contraception d'urgence hormonale ?",
+    a:"Un comprimé unique",
+    exp:"C'est un seul comprimé à avaler le plus tôt possible. Disponible sans ordonnance en pharmacie.",
+    qcm:["Un sirop à boire","Deux comprimés","Un comprimé unique","Une injection"], ci:2,
+    vf:"La contraception d'urgence hormonale se présente sous forme de comprimé unique.", vfa:true,
+    fil:"La contraception d'urgence est un ___ unique.", fans:["comprimé"]},
+
+  { id:27, th:"⚠️ Urgence", em:"⏰",
+    q:"Quand faut-il prendre la contraception d'urgence ?",
+    a:"Le plus tôt possible après le rapport à risque",
+    exp:"Plus elle est prise rapidement, plus elle est efficace. Le délai maximum est de 3 à 5 jours selon le type.",
+    qcm:["Le lendemain soir","Le plus tôt possible","Dans la semaine","N'importe quand"], ci:1,
+    vf:"Plus la contraception d'urgence est prise tôt, plus elle est efficace.", vfa:true,
+    fil:"La contraception d'urgence doit être prise le plus ___ possible.", fans:["tôt","tot","vite"]},
+
+  { id:28, th:"⚠️ Urgence", em:"🏪",
+    q:"Où peut-on se procurer la contraception d'urgence ?",
+    a:"En pharmacie, sans ordonnance — gratuit et confidentiel pour les mineurs",
+    exp:"Pas besoin de médecin ! Elle est accessible directement en pharmacie et gratuite pour les personnes mineures.",
+    qcm:["Uniquement sur ordonnance médicale","En pharmacie sans ordonnance","Uniquement à l'hôpital","Sur internet uniquement"], ci:1,
+    vf:"La contraception d'urgence nécessite une ordonnance médicale.", vfa:false,
+    fil:"La contraception d'urgence est disponible en ___, sans ordonnance.", fans:["pharmacie"]},
+
+  { id:29, th:"⚠️ Urgence", em:"⚖️",
+    q:"Jusqu'à quelle semaine de grossesse l'IVG est-elle légale en France ?",
+    a:"14 semaines de grossesse (soit 16 semaines depuis les dernières règles)",
+    exp:"Depuis 2022, le délai légal de l'IVG a été allongé de 12 à 14 semaines de grossesse.",
+    qcm:["8 semaines","10 semaines","12 semaines","14 semaines"], ci:3,
+    vf:"En France, l'IVG est autorisée jusqu'à 14 semaines de grossesse.", vfa:true,
+    fil:"L'IVG est possible jusqu'à ___ semaines de grossesse en France.", fans:["14","quatorze"]},
+
+  { id:30, th:"⚠️ Urgence", em:"🏛️",
+    q:"Que signifie IVG ?",
+    a:"Interruption Volontaire de Grossesse",
+    exp:"L'IVG est un droit légal en France depuis la loi Veil de 1975, constitutionnalisé en 2024.",
+    qcm:["Implantation Volontaire en Grossesse","Interruption Violente de Gestation","Interruption Volontaire de Grossesse","Intervention Validée en Gynécologie"], ci:2,
+    vf:"IVG signifie Interruption Volontaire de Grossesse.", vfa:true,
+    fil:"IVG = Interruption ___ de Grossesse.", fans:["volontaire","Volontaire"]},
+
+  /* ─── 🏥 SANTÉ SEXUELLE ──────────────────────── */
+  { id:31, th:"🏥 Santé sexuelle", em:"🏥",
+    q:"Qu'est-ce qu'un centre de santé sexuelle ?",
+    a:"Un lieu d'accueil, d'écoute et de consultation sur la sexualité et la contraception",
+    exp:"Anciennement CPEF. C'est un lieu neutre, ouvert à tous, gratuit et confidentiel.",
+    qcm:["Un cabinet médical privé","Un hôpital spécialisé","Un lieu d'accueil sur la sexualité et la contraception","Une association bénévole"], ci:2,
+    vf:"Les centres de santé sexuelle sont uniquement réservés aux adultes.", vfa:false,
+    fil:"Un centre de santé sexuelle est un lieu d'accueil et d'___.", fans:["écoute","ecoute","information"]},
+
+  { id:32, th:"🏥 Santé sexuelle", em:"🆓",
+    q:"Le centre de santé sexuelle est-il payant pour les mineurs ?",
+    a:"Non — c'est gratuit et confidentiel, sans autorisation parentale",
+    exp:"Les mineurs peuvent y aller seuls. C'est gratuit, confidentiel. Pas besoin d'autorisation des parents.",
+    qcm:["Oui, payant","Gratuit mais sur rendez-vous uniquement","Gratuit et confidentiel pour les mineurs","Payant mais remboursé"], ci:2,
+    vf:"Il faut une autorisation parentale pour aller au centre de santé sexuelle quand on est mineur.", vfa:false,
+    fil:"Le centre de santé sexuelle est ___ et confidentiel pour les mineurs.", fans:["gratuit"]},
+
+  { id:33, th:"🏥 Santé sexuelle", em:"🩺",
+    q:"Quel professionnel de santé peut poser le stérilet ?",
+    a:"Un médecin ou une sage-femme",
+    exp:"Seuls les médecins et les sages-femmes sont habilités à poser un stérilet ou un implant contraceptif.",
+    qcm:["Un infirmier","Un pharmacien","Un médecin ou une sage-femme","Un gynécologue uniquement"], ci:2,
+    vf:"Un pharmacien peut poser un stérilet.", vfa:false,
+    fil:"Le stérilet est posé par un médecin ou une ___.", fans:["sage-femme","sage femme","sages-femmes"]},
+
+  /* ─── 📖 VOCABULAIRE ─────────────────────────── */
+  { id:34, th:"📖 Vocabulaire", em:"📖",
+    q:"Qu'est-ce qu'un gamète ?",
+    a:"Une cellule reproductrice (ovule ou spermatozoïde)",
+    exp:"Gamète = cellule sexuelle. Il en existe deux : l'ovule (gamète femelle) et le spermatozoïde (gamète mâle).",
+    qcm:["Un embryon","Une hormone","Un organe","Une cellule reproductrice"], ci:3,
+    vf:"Un gamète est une cellule reproductrice.", vfa:true,
+    fil:"L'ovule et le spermatozoïde sont des ___.", fans:["gamètes","gametes","gamète","gamete"]},
+
+  { id:35, th:"📖 Vocabulaire", em:"🔤",
+    q:"Que veut dire le mot « contraception » ?",
+    a:"Méthodes pour éviter une grossesse non désirée",
+    exp:"'Contra' = contre, 'ception' = conception. La contraception agit contre la conception.",
+    qcm:["Méthodes pour tomber enceinte","Traitement des IST","Méthodes pour éviter une grossesse","Méthodes pour accoucher"], ci:2,
+    vf:"La contraception sert à éviter une grossesse non désirée.", vfa:true,
+    fil:"La contraception permet d'éviter une ___ non désirée.", fans:["grossesse"]},
+
+  { id:36, th:"📖 Vocabulaire", em:"🔬",
+    q:"Qu'est-ce qu'une hormone ?",
+    a:"Un messager chimique produit par une glande, qui agit sur l'organisme",
+    exp:"Exemple : les testicules produisent la testostérone, les ovaires produisent la progestérone et les œstrogènes.",
+    qcm:["Un os","Un aliment","Un virus","Un messager chimique du corps"], ci:3,
+    vf:"Une hormone est un messager chimique produit par une glande.", vfa:true,
+    fil:"Une hormone est un ___ chimique produit par une glande.", fans:["messager"]},
+
+  { id:37, th:"📖 Vocabulaire", em:"🔗",
+    q:"Qu'est-ce qu'une IST ?",
+    a:"Une Infection Sexuellement Transmissible (ex : VIH, chlamydia, herpès)",
+    exp:"Les IST se transmettent lors de rapports sexuels non protégés. Seul le préservatif protège contre elles.",
+    qcm:["Infection Sanitaire Temporaire","Infection Sexuellement Transmissible","Implant Sous-cutané Temporaire","Intervention Sexuelle Thérapeutique"], ci:1,
+    vf:"IST signifie Infection Sexuellement Transmissible.", vfa:true,
+    fil:"IST = ___ Sexuellement Transmissible.", fans:["infection","Infection"]},
+
+  { id:38, th:"📖 Vocabulaire", em:"🌀",
+    q:"Qu'est-ce que le cycle menstruel ?",
+    a:"Le processus mensuel qui prépare l'organisme à une éventuelle grossesse (~28 jours)",
+    exp:"Le cycle comprend : préparation de l'endomètre, ovulation, puis règles si pas de fécondation.",
+    qcm:["La grossesse","La puberté","Le processus mensuel préparant à une grossesse","La ménopause"], ci:2,
+    vf:"Le cycle menstruel dure en moyenne 28 jours.", vfa:true,
+    fil:"Le cycle menstruel dure en moyenne ___ jours.", fans:["28","vingt-huit"]},
+
+  { id:39, th:"📖 Vocabulaire", em:"🎓",
+    q:"Depuis quand la production de spermatozoïdes commence-t-elle ?",
+    a:"Dès la puberté, et de façon continue jusqu'à la fin de vie",
+    exp:"Contrairement aux femmes, les hommes produisent des spermatozoïdes en continu et sans interruption.",
+    qcm:["Dès la naissance","À la puberté, de façon continue","À la puberté, jusqu'à 40 ans","Seulement lors des rapports sexuels"], ci:1,
+    vf:"La production de spermatozoïdes s'arrête vers 40 ans.", vfa:false,
+    fil:"La production de spermatozoïdes commence à la ___ et est continue.", fans:["puberté","puberte"]},
+
+  { id:40, th:"📖 Vocabulaire", em:"❓",
+    q:"Quel est le terme médical pour désigner la rencontre de l'ovule et du spermatozoïde ?",
+    a:"La fécondation",
+    exp:"Fécondation = formation de la cellule-œuf (zygote). Elle a lieu dans la trompe utérine, pas dans l'utérus.",
+    qcm:["La nidation","La gestation","L'ovulation","La fécondation"], ci:3,
+    vf:"La fécondation a lieu dans la trompe utérine.", vfa:true,
+    fil:"La rencontre entre ovule et spermatozoïde s'appelle la ___.", fans:["fécondation","fecondation"]},
+];
+
+/* ═══════════════════════════════════════════════
+   ÉTAT DU JEU
+═══════════════════════════════════════════════ */
+let mode='', deck=[], idx=0, score=0, streak=0, total=0, answered=false;
+
+const MIX_MODES = ['flash','qcm','vf','fill'];
+
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+
+/* ── START ─────────────────────────────────────── */
+function startMode(m){
+  mode=m; deck=shuffle(CARDS); idx=0; score=0; streak=0; total=deck.length; answered=false;
+  $('s-intro').style.display='none';
+  $('s-end').style.display='none';
+  const sg=$('s-game');
+  sg.style.display='flex';
+  $('score-txt').textContent='0';
+  $('streak').style.display='none';
+  $('prog-fill').style.width='0%';
+
+  // Assign random mode per card for mix
+  if(m==='mix') deck.forEach(c=>c._mixMode=MIX_MODES[0|Math.random()*4]);
+
+  // Screen mode class
+  sg.className='';
+  if(m!=='mix') sg.classList.add('mode-'+m);
+  else sg.classList.add('mode-mix');
+
+  renderCard();
+}
+
+function $(id){return document.getElementById(id);}
+
+function getMode(card){return mode==='mix'?card._mixMode:mode;}
+
+/* ── RENDER CARD ────────────────────────────────── */
+function renderCard(){
+  if(idx>=deck.length){showEnd();return;}
+  answered=false;
+  const card=deck[idx], m=getMode(card);
+
+  // Mode label
+  const labels={flash:'🃏 Flashcard',qcm:'🎯 QCM',vf:'⚡ Vrai / Faux',fill:'✍️ Compléter'};
+  $('mode-lbl').textContent=labels[m];
+
+  // Dynamic class for mix
+  if(mode==='mix'){
+    const sg=$('s-game');
+    sg.className='mode-'+m;
+  }
+
+  // Progress: (idx+1)/total reaches 100% on last card
+  $('prog-fill').style.width=((idx+1)/total*100)+'%';
+
+  // Hide ALL zones
+  ['zone-flash','zone-flash-btns','zone-qcm','zone-qcm-opts',
+   'zone-vf','vf-fb','zone-vf-btns','zone-fill','zone-fill-inp'].forEach(id=>{
+    $(id).style.display='none';
+  });
+  $('vf-fb').className='vf-feedback';
+
+  if(m==='flash') showFlash(card);
+  else if(m==='qcm') showQCM(card);
+  else if(m==='vf') showVF(card);
+  else showFill(card);
+}
+
+/* ══════════════════════════════════════════════
+   MODE FLASHCARD
+   BUG FIX: utilise style.display directement,
+   pas de class toggle qui serait écrasée.
+══════════════════════════════════════════════ */
+function showFlash(card){
+  $('zone-flash').style.display='flex';
+  // Reset flip
+  const fi=$('flip-inner');
+  fi.classList.remove('flipped');
+  $('zone-flash-btns').style.display='none';
+
+  $('fl-theme').textContent=card.th;
+  $('fl-emoji').textContent=card.em;
+  $('fl-q').textContent=card.q;
+  $('fl-emoji-b').textContent=card.em;
+  $('fl-a').textContent=card.a;
+  $('fl-exp').textContent=card.exp;
+}
+
+function flipCard(){
+  if(answered) return;
+  const fi=$('flip-inner');
+  if(fi.classList.contains('flipped')) return; // already flipped
+  fi.classList.add('flipped');
+  // BUG FIX: style.display directement, pas class
+  setTimeout(()=>{ $('zone-flash-btns').style.display='flex'; }, 260);
+}
+
+function markFlash(knew){
+  answered=true;
+  if(knew){ score++; addStreak(); showFB('✅'); }
+  else { streak=0; updateStreak(); showFB('🔁'); }
+  $('score-txt').textContent=score;
+  setTimeout(next,500);
+}
+
+/* ══════════════════════════════════════════════
+   MODE QCM
+══════════════════════════════════════════════ */
+function showQCM(card){
+  $('zone-qcm').style.display='flex';
+  $('qcm-theme').textContent=card.th;
+  $('qcm-emoji').textContent=card.em;
+  $('qcm-q').textContent=card.q;
+
+  // Mélange les options en gardant trace de la bonne
+  const opts=card.qcm.map((t,i)=>({t,ok:i===card.ci}));
+  const sh=shuffle(opts);
+  sh.forEach((o,i)=>{
+    $('qt'+i).textContent=o.t;
+    const b=$('qo'+i);
+    b.className='qopt';
+    b.dataset.ok=o.ok;
+    b.style.display='flex';
+  });
+
+  $('zone-qcm-opts').style.display='grid';
+}
+
+function answerQCM(i){
+  if(answered) return;
+  answered=true;
+  const ok=$('qo'+i).dataset.ok==='true';
+
+  // Colore toutes les options
+  for(let j=0;j<4;j++){
+    const b=$('qo'+j);
+    b.classList.add('dim');
+    if(b.dataset.ok==='true') b.classList.add('correct');
+  }
+  if(ok){ $('qo'+i).classList.add('correct'); score++; addStreak(); showFB('🎉'); }
+  else   { $('qo'+i).classList.add('wrong'); streak=0; updateStreak(); showFB('💔'); }
+
+  $('score-txt').textContent=score;
+  setTimeout(next,1200);
+}
+
+/* ══════════════════════════════════════════════
+   MODE VRAI/FAUX
+   BUG FIX: affiche la bonne réponse après erreur
+══════════════════════════════════════════════ */
+function showVF(card){
+  $('zone-vf').style.display='flex';
+  $('vf-theme').textContent=card.th;
+  $('vf-emoji').textContent=card.em;
+  $('vf-q').textContent=card.vf;
+  $('zone-vf-btns').style.display='flex';
+}
+
+function answerVF(ans){
+  if(answered) return;
+  answered=true;
+  const card=deck[idx];
+  const ok=(ans===card.vfa);
+
+  // Désactive les boutons
+  $('zone-vf-btns').style.display='none';
+
+  const fb=$('vf-fb');
+  fb.style.display='block';
+  if(ok){
+    fb.className='vf-feedback ok';
+    fb.textContent='✓ Bonne réponse !';
+    score++; addStreak(); showFB('⚡');
+  } else {
+    fb.className='vf-feedback nok';
+    const correct=card.vfa ? 'VRAI ✓' : 'FAUX ✗';
+    fb.textContent='✗ Mauvaise réponse — La bonne réponse était : '+correct;
+    streak=0; updateStreak(); showFB('❌');
+  }
+  $('score-txt').textContent=score;
+  setTimeout(next,1400);
+}
+
+/* ══════════════════════════════════════════════
+   MODE COMPLÉTER
+   BUG FIX: logique de vérification robuste
+══════════════════════════════════════════════ */
+function showFill(card){
+  $('zone-fill').style.display='flex';
+  $('zone-fill-inp').style.display='block';
+  $('fill-theme').textContent=card.th;
+  $('fill-emoji').textContent=card.em;
+  $('fill-q').textContent=card.fil;
+  $('fill-ans').value='';
+  const fb=$('fill-fb');
+  fb.style.display='none';
+  fb.className='fill-fb';
+  setTimeout(()=>$('fill-ans').focus(),180);
+}
+
+function answerFill(){
+  if(answered) return;
+  const val=$('fill-ans').value.trim();
+  if(!val) return;
+
+  const card=deck[idx];
+  const v=normalize(val);
+  // BUG FIX: vérification stricte – la réponse doit matcher ou être contenue
+  const ok=card.fans.some(a=>{
+    const an=normalize(a);
+    return v===an || an.includes(v) && v.length>=3;
+  });
+
+  answered=true;
+  const fb=$('fill-fb');
+  if(ok){
+    fb.className='fill-fb ok';
+    fb.textContent='✓ Bonne réponse !';
+    score++; addStreak(); showFB('✨');
+  } else {
+    fb.className='fill-fb nok';
+    fb.textContent='✗ Réponse attendue : '+card.fans[0];
+    streak=0; updateStreak(); showFB('❌');
+  }
+  fb.style.display='block';
+  $('score-txt').textContent=score;
+  setTimeout(next,1300);
+}
+
+function normalize(s){
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s\-]/g,'').trim();
+}
+
+/* ── NEXT CARD ─────────────────────────────────── */
+function next(){ idx++; renderCard(); }
+
+/* ── FEEDBACK EMOJI ────────────────────────────── */
+function showFB(e){
+  const ov=$('fb-ov'), bb=$('fb-bubble');
+  bb.textContent=e;
+  bb.className='pop';
+  ov.classList.add('show');
+  setTimeout(()=>{ ov.classList.remove('show'); bb.className=''; }, 650);
+}
+
+/* ── STREAK ─────────────────────────────────────── */
+function addStreak(){
+  streak++;
+  updateStreak();
+  if(streak>=3){ $('streak').style.display='block'; $('streak-val').textContent=streak; }
+}
+function updateStreak(){
+  if(streak<3) $('streak').style.display='none';
+  else $('streak-val').textContent=streak;
+}
+
+/* ── FIN ─────────────────────────────────────────── */
+function showEnd(){
+  $('s-game').style.display='none';
+  $('s-end').style.display='flex';
+  const pct=score/total;
+  $('end-score').textContent=score+' / '+total;
+
+  let trophy,stars,msg;
+  if(pct>=.9)     {trophy='🏆';stars='⭐⭐⭐';msg='Excellent ! Tu maîtrises ce module à la perfection. Bravo !';}
+  else if(pct>=.7){trophy='🥇';stars='⭐⭐';msg='Très bien ! Encore un effort sur les points ratés et ce sera parfait.';}
+  else if(pct>=.5){trophy='🥈';stars='⭐';msg='Pas mal ! Relis les documents A, B et D puis refais les flashcards.';}
+  else            {trophy='📚';stars='💪';msg='Continue ! Relis le cours sur mapse.fr puis retente les cartes.';}
+
+  $('end-trophy').textContent=trophy;
+  $('end-stars').textContent=stars;
+  $('end-msg').textContent=msg;
+
+  // Confettis si bon score
+  if(pct>=.7){
+    const cols=['#43a047','#1976d2','#f9a825','#e53935','#9c27b0','#fff'];
+    for(let i=0;i<22;i++){
+      const d=document.createElement('div');
+      d.style.cssText=`position:fixed;width:9px;height:9px;border-radius:${Math.random()>.5?'50%':'2px'};
+        background:${cols[i%6]};top:${-10+Math.random()*20}%;left:${Math.random()*100}%;
+        animation:fall${Math.random()>.5?'A':'B'} ${1.2+Math.random()*1.8}s linear ${Math.random()*.5}s forwards;
+        z-index:300;pointer-events:none`;
+      document.body.appendChild(d);
+      setTimeout(()=>d.remove(),3500);
+    }
+  }
+}
+
+function restartSame(){ $('s-end').style.display='none'; startMode(mode); }
+function goHome(){
+  $('s-game').style.display='none';
+  $('s-end').style.display='none';
+  $('s-intro').style.display='flex';
+}
+
+// Touche Entrée pour valider fill
+document.getElementById('fill-ans').addEventListener('keydown',e=>{
+  if(e.key==='Enter') answerFill();
+});
+</script>
+<style>
+@keyframes fallA{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(540deg);opacity:0}}
+@keyframes fallB{0%{transform:translateY(0) rotate(0) scaleX(1);opacity:1}100%{transform:translateY(110vh) rotate(-360deg) scaleX(-1);opacity:0}}
+</style>
+</body>
+</html>
