@@ -1050,6 +1050,7 @@
             .pad-chain { flex-direction: column; }
             .pad-arrow { transform: rotate(90deg); }
             .pad-step { min-width: unset; }
+            .pad-step select { font-size: 0.95rem; padding: 12px 8px; }
             .picto-quiz-img { width: 140px; height: 140px; }
             .picto-choices { grid-template-columns: 1fr; }
             .picto-mem-board { grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -1085,8 +1086,9 @@
             color: #64748b; margin-bottom: 8px;
         }
         .pad-step select {
-            width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 8px;
-            font-size: 0.85rem; color: #1e293b; background: #f8fafc; cursor: pointer;
+            width: 100%; padding: 10px 8px; border: 2px solid #e2e8f0; border-radius: 8px;
+            font-size: 0.9rem; color: #1e293b; background: #f8fafc; cursor: pointer;
+            white-space: normal; word-wrap: break-word; line-height: 1.4;
         }
         .pad-step select:focus { border-color: #3b82f6; outline: none; }
         .pad-step.correct { background: #f0fdf4; border-color: #22c55e; }
@@ -1094,6 +1096,7 @@
         .pad-step.wrong { background: #fef2f2; border-color: #ef4444; }
         .pad-step.wrong select { border-color: #ef4444; background: #fef2f2; }
         .pad-correction { font-size: 0.8rem; color: #166534; margin-top: 6px; font-weight: 600; }
+        .pad-explication { font-size: 0.78rem; color: #6b7280; margin-top: 4px; font-style: italic; line-height: 1.4; }
 
         /* === ITAMAMI (Analyse situation de travail) === */
         .ita-situation {
@@ -3702,7 +3705,14 @@ function renderPad(zone, c) {
     html += '</div>';
 
     // Instruction
-    html += '<div class="pad-instruction">Completez le processus d\'apparition du dommage :</div>';
+    html += '<div class="pad-instruction">Complétez le processus d\'apparition du dommage :</div>';
+
+    // Opérateur (affiché en fixe, pas de dropdown)
+    html += '<div style="text-align:center; margin-bottom:12px;">';
+    html += '<div style="display:inline-block; background:#dbeafe; border:2px solid #3b82f6; border-radius:12px; padding:10px 20px;">';
+    html += '<div style="font-weight:800; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; color:#1e40af; margin-bottom:4px;">👷 Opérateur</div>';
+    html += '<div style="font-weight:700; color:#1e293b; font-size:0.95rem;">' + (c.operateur || 'Le salarié') + '</div>';
+    html += '</div></div>';
 
     // PAD Chain: 4 steps with arrows
     html += '<div class="pad-chain">';
@@ -3712,6 +3722,7 @@ function renderPad(zone, c) {
     html += '<div class="pad-step-label">⚠️ Danger</div>';
     html += buildOptions(c.danger, c.distracteurs_danger, 'pad-sel-danger');
     html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '<div class="pad-explication" style="display:none;">' + (c.explication_danger || 'Le danger est la source du risque : une propriété intrinsèque d\'un produit, d\'une machine ou d\'une situation.') + '</div>';
     html += '</div>';
 
     html += '<div class="pad-arrow">→</div>';
@@ -3721,15 +3732,17 @@ function renderPad(zone, c) {
     html += '<div class="pad-step-label">🔶 Situation dangereuse</div>';
     html += buildOptions(c.situation_dangereuse, c.distracteurs_situation_dangereuse, 'pad-sel-sitdang');
     html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '<div class="pad-explication" style="display:none;">' + (c.explication_situation || 'La situation dangereuse = l\'opérateur est exposé au danger dans son activité de travail.') + '</div>';
     html += '</div>';
 
     html += '<div class="pad-arrow">→</div>';
 
-    // Step 3: Evenement declencheur
+    // Step 3: Événement déclencheur
     html += '<div class="pad-step" id="pad-step-event">';
-    html += '<div class="pad-step-label">⚡ Evenement declencheur</div>';
+    html += '<div class="pad-step-label">⚡ Événement déclencheur</div>';
     html += buildOptions(c.evenement_declencheur, c.distracteurs_evenement_declencheur, 'pad-sel-event');
     html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '<div class="pad-explication" style="display:none;">' + (c.explication_evenement || 'L\'événement déclencheur est ce qui provoque le passage de la situation dangereuse au dommage.') + '</div>';
     html += '</div>';
 
     html += '<div class="pad-arrow">→</div>';
@@ -3739,6 +3752,7 @@ function renderPad(zone, c) {
     html += '<div class="pad-step-label">🩹 Dommage</div>';
     html += buildOptions(c.dommage, c.distracteurs_dommage, 'pad-sel-dommage');
     html += '<div class="pad-correction" style="display:none;"></div>';
+    html += '<div class="pad-explication" style="display:none;">' + (c.explication_dommage || 'Le dommage est l\'atteinte à la santé de l\'opérateur (lésion, maladie, blessure).') + '</div>';
     html += '</div>';
 
     html += '</div>'; // end pad-chain
@@ -5831,7 +5845,7 @@ function validateExercice() {
         const steps = [
             { id: 'danger', label: 'Danger', answer: c.danger },
             { id: 'sitdang', label: 'Situation dangereuse', answer: c.situation_dangereuse },
-            { id: 'event', label: 'Evenement declencheur', answer: c.evenement_declencheur },
+            { id: 'event', label: 'Événement déclencheur', answer: c.evenement_declencheur },
             { id: 'dommage', label: 'Dommage', answer: c.dommage }
         ];
         steps.forEach(step => {
@@ -5844,10 +5858,13 @@ function validateExercice() {
             else {
                 stepEl.classList.add('wrong');
                 const corr = stepEl.querySelector('.pad-correction');
-                if (corr) { corr.textContent = '✓ ' + step.answer; corr.style.display = ''; }
+                if (corr) { corr.textContent = '✅ ' + step.answer; corr.style.display = ''; }
             }
+            // Toujours afficher l'explication pédagogique
+            const expl = stepEl.querySelector('.pad-explication');
+            if (expl) { expl.style.display = ''; }
             if (sel) sel.disabled = true;
-            details.push({ ok, label: step.label, detail: ok ? 'Correct' : 'Reponse : "' + given + '"' });
+            details.push({ ok, label: step.label, detail: ok ? 'Correct' : 'Réponse : "' + given + '"' });
         });
     }
 
@@ -6941,7 +6958,7 @@ function validateExercice() {
                 categoriser: 'Le tri se fait par categorie : compare la definition de chaque categorie avant de classer.',
                 scenario: 'Une bonne decision en prevention est celle qui protege d\'abord et réduit le risque a la source.',
                 budget: 'Repere d\'abord la nature de chaque poste, puis calcule les totaux avant de conclure sur le budget.',
-                pad: 'Rappel PAD : Danger → Situation dangereuse → Evenement declencheur → Dommage.',
+                pad: 'Rappel PAD : Opérateur → Danger → Situation dangereuse → Événement déclencheur → Dommage.',
                 prevention: 'Hierarchie de prevention : Supprimer > Reduire > Protection collective > EPI > Formation.',
                 estimation_risque: 'Le niveau de risque depend du croisement Gravite × Probabilite (Exposition + Declencheur).',
                 pictogramme: 'Identifie d\'abord la famille visuelle du pictogramme (obligation, interdiction, danger, secours...).'
