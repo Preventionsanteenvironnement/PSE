@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards — Risques Professionnels</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f0f2f5;min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none}
+
+/* Header */
+.header{background:linear-gradient(135deg,#1e3a5f,#2d6a9f,#4a90d9);color:#fff;padding:1.2rem 1.5rem;text-align:center;position:relative}
+.header h1{font-size:1.5rem;font-weight:700;letter-spacing:.5px}
+.header .subtitle{font-size:.85rem;opacity:.8;margin-top:.25rem}
+.back-btn{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:#fff;background:rgba(255,255,255,.15);border:none;padding:.45rem .9rem;border-radius:8px;font-size:.9rem;cursor:pointer;transition:.2s}
+.back-btn:hover{background:rgba(255,255,255,.3)}
+
+/* Progress */
+.progress-wrap{background:#e0e0e0;height:6px;width:100%}
+.progress-bar{height:100%;background:linear-gradient(90deg,#4a90d9,#34c759);transition:width .4s ease}
+.progress-text{text-align:center;padding:.5rem;font-size:.85rem;color:#555}
+
+/* Mode selector */
+.mode-selector{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;padding:1rem}
+.mode-btn{padding:.6rem 1rem;border:2px solid #4a90d9;background:#fff;color:#1e3a5f;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}
+.mode-btn:hover{background:#e8f0fe}
+.mode-btn.active{background:#4a90d9;color:#fff}
+
+/* Card area */
+.card-area{flex:1;display:flex;align-items:center;justify-content:center;padding:1rem;perspective:1200px}
+.card-container{width:100%;max-width:520px;height:320px;cursor:pointer;position:relative}
+.card-inner{width:100%;height:100%;position:relative;transition:transform .6s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d}
+.card-container.flipped .card-inner{transform:rotateY(180deg)}
+.card-front,.card-back{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;box-shadow:0 8px 30px rgba(0,0,0,.12)}
+.card-front{background:linear-gradient(145deg,#1e3a5f,#2d6a9f);color:#fff}
+.card-front .card-icon{font-size:3rem;margin-bottom:.8rem}
+.card-front .card-label{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;opacity:.7;margin-bottom:.5rem}
+.card-front .card-question{font-size:1.15rem;text-align:center;line-height:1.6;font-weight:500}
+.card-back{background:#fff;color:#1e3a5f;transform:rotateY(180deg);text-align:left;justify-content:flex-start;padding-top:1.8rem}
+.card-back .back-title{font-size:1.1rem;font-weight:700;margin-bottom:1rem;text-align:center;width:100%;color:#2d6a9f}
+.card-back ul{list-style:none;padding:0;width:100%}
+.card-back ul li{padding:.45rem 0;padding-left:1.4rem;position:relative;font-size:.92rem;line-height:1.5;color:#333}
+.card-back ul li::before{content:'';position:absolute;left:0;top:.75rem;width:8px;height:8px;background:#4a90d9;border-radius:50%}
+.card-hint{font-size:.8rem;opacity:.6;margin-top:1rem;text-align:center}
+
+/* Nav buttons */
+.nav-buttons{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;padding:.8rem 1rem 1.2rem}
+.nav-btn{padding:.6rem 1.2rem;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;color:#fff}
+.nav-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.nav-btn.prev{background:#78909c}
+.nav-btn.knew{background:#34c759}
+.nav-btn.review{background:#ff3b30}
+.nav-btn.next{background:#4a90d9}
+.nav-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* End screen */
+.end-screen{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;flex:1}
+.end-screen .trophy{font-size:4rem;margin-bottom:1rem}
+.end-screen h2{font-size:1.6rem;color:#1e3a5f;margin-bottom:.5rem}
+.end-screen .score-text{font-size:1.1rem;color:#555;margin-bottom:.3rem;line-height:1.7}
+.end-screen .score-bar{width:80%;max-width:300px;height:14px;background:#e0e0e0;border-radius:7px;margin:1rem auto;overflow:hidden}
+.end-screen .score-fill{height:100%;background:linear-gradient(90deg,#34c759,#30d158);border-radius:7px;transition:width 1s ease}
+.retry-btn{margin-top:1rem;padding:.7rem 1.5rem;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;color:#fff;transition:.2s}
+.retry-btn.all{background:#4a90d9}
+.retry-btn.failed{background:#ff9500}
+.retry-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+
+/* Footer */
+.footer{text-align:center;padding:.8rem;font-size:.75rem;color:#999}
+
+/* Responsive */
+@media(max-width:600px){
+  .header h1{font-size:1.15rem}
+  .back-btn{position:static;transform:none;margin-bottom:.5rem;display:inline-block}
+  .card-container{height:300px}
+  .card-front .card-question{font-size:1rem}
+  .mode-btn{font-size:.78rem;padding:.5rem .7rem}
+  .nav-buttons{gap:.35rem}
+  .nav-btn{padding:.5rem .8rem;font-size:.82rem}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="back-btn">&#8592; Retour</a>
+  <h1>Flashcards — Risques Professionnels</h1>
+  <div class="subtitle">Les 20 risques professionnels (INRS ED 840)</div>
+</div>
+
+<div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+<div class="progress-text" id="progressText">0 / 0</div>
+
+<div class="mode-selector" id="modeSelector">
+  <button class="mode-btn active" data-mode="1">&#x1F0CF; Risque &rarr; Pr&eacute;vention</button>
+  <button class="mode-btn" data-mode="2">&#x26A0;&#xFE0F; Situation &rarr; Risque</button>
+  <button class="mode-btn" data-mode="3">&#x1F504; Tout m&eacute;lang&eacute;</button>
+</div>
+
+<div class="card-area" id="cardArea">
+  <div class="card-container" id="cardContainer">
+    <div class="card-inner" id="cardInner">
+      <div class="card-front">
+        <div class="card-label" id="cardLabel">Risque</div>
+        <div class="card-icon" id="cardIcon"></div>
+        <div class="card-question" id="cardQuestion"></div>
+        <div class="card-hint">Clique pour retourner</div>
+      </div>
+      <div class="card-back">
+        <div class="back-title" id="backTitle"></div>
+        <ul id="backList"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav-buttons" id="navButtons">
+  <button class="nav-btn prev" id="btnPrev" onclick="prevCard()">&#8592; Pr&eacute;c&eacute;dent</button>
+  <button class="nav-btn knew" id="btnKnew" onclick="markCard(true)">Je savais &#x2705;</button>
+  <button class="nav-btn review" id="btnReview" onclick="markCard(false)">&Agrave; revoir &#x274C;</button>
+  <button class="nav-btn next" id="btnNext" onclick="nextCard()">Suivant &#8594;</button>
+</div>
+
+<div class="end-screen" id="endScreen">
+  <div class="trophy">&#x1F3C6;</div>
+  <h2 id="endTitle"></h2>
+  <div class="score-text" id="endScore"></div>
+  <div class="score-bar"><div class="score-fill" id="scoreFill"></div></div>
+  <div class="score-text" id="endReview"></div>
+  <button class="retry-btn failed" id="btnRetryFailed" onclick="retryFailed()" style="display:none">&#x1F504; Revoir les cartes rat&eacute;es</button>
+  <button class="retry-btn all" onclick="startGame()">&#x1F501; Recommencer tout</button>
+</div>
+
+<div class="footer">D'apr&egrave;s INRS ED 840, octobre 2023</div>
+
+<script>
+// ============ DATA ============
+const mode1Cards = [
+  {icon:"&#x1FA78;",name:"Chute de plain-pied",prevention:["Entretenir les sols (nettoyage, r\u00e9paration)","Signaler les sols mouill\u00e9s avec des panneaux","Installer un \u00e9clairage suffisant","Porter des chaussures antid\u00e9rapantes"]},
+  {icon:"&#x1FA9C;",name:"Chute de hauteur",prevention:["Installer des garde-corps et rambardes","Utiliser un harnais de s\u00e9curit\u00e9","V\u00e9rifier la stabilit\u00e9 des \u00e9chafaudages","Privil\u00e9gier le travail au sol quand c'est possible"]},
+  {icon:"&#x1F69B;",name:"Circulations internes v\u00e9hicules/engins",prevention:["S\u00e9parer les flux pi\u00e9tons et v\u00e9hicules","Installer une signalisation au sol","Former les conducteurs d'engins","\u00c9quiper les engins de dispositifs de recul (bip, cam\u00e9ra)"]},
+  {icon:"&#x1F697;",name:"Risques routiers en mission",prevention:["Entretenir r\u00e9guli\u00e8rement les v\u00e9hicules","Am\u00e9nager les horaires pour \u00e9viter la fatigue","Former les salari\u00e9s \u00e0 la conduite pr\u00e9ventive","Limiter les d\u00e9placements (visioconf\u00e9rence)"]},
+  {icon:"&#x1F4AA;",name:"Charge physique de travail",prevention:["Fournir des aides \u00e0 la manutention (l\u00e8ve-personne)","Alterner les t\u00e2ches pour r\u00e9duire la r\u00e9p\u00e9titivit\u00e9","Former aux gestes et postures","Am\u00e9nager les postes de travail (hauteur, accessibilit\u00e9)"]},
+  {icon:"&#x1F4E6;",name:"Manutention m\u00e9canique",prevention:["V\u00e9rifier l'arrimage des charges","Respecter la capacit\u00e9 maximale de l'engin","Former et habiliter les caristes","Entretenir r\u00e9guli\u00e8rement les \u00e9quipements"]},
+  {icon:"&#x2697;&#xFE0F;",name:"Produits chimiques",prevention:["Remplacer les produits dangereux par des moins nocifs","Porter les EPI adapt\u00e9s (masque, gants, lunettes)","Assurer une ventilation efficace des locaux","Stocker les produits selon les r\u00e8gles de compatibilit\u00e9"]},
+  {icon:"&#x1F9A0;",name:"Agents biologiques",prevention:["Respecter les r\u00e8gles d'hygi\u00e8ne (lavage des mains)","Porter des gants et v\u00eatements de protection","Vacciner les salari\u00e9s expos\u00e9s","Mettre \u00e0 disposition des solutions hydroalcooliques"]},
+  {icon:"&#x2699;&#xFE0F;",name:"\u00c9quipements de travail",prevention:["Maintenir les dispositifs de protection en place (carter)","Former les op\u00e9rateurs \u00e0 l'utilisation","V\u00e9rifier p\u00e9riodiquement les machines","Consigner les \u00e9quipements lors des interventions"]},
+  {icon:"&#x1F4E5;",name:"Effondrements et chutes d'objets",prevention:["Fixer les \u00e9tag\u00e8res et racks au mur","Respecter les limites de charge de stockage","Porter un casque de protection dans les zones \u00e0 risque","Ranger et empiler correctement les mat\u00e9riaux"]},
+  {icon:"&#x1F50A;",name:"Bruit",prevention:["Remplacer par des machines moins bruyantes","Limiter le temps d'exposition","Installer des barri\u00e8res acoustiques (capotage, encoffrement)","Porter des protections auditives (casque, bouchons)"]},
+  {icon:"&#x1F321;&#xFE0F;",name:"Ambiances thermiques",prevention:["Fournir des v\u00eatements adapt\u00e9s au froid ou \u00e0 la chaleur","Am\u00e9nager des pauses r\u00e9guli\u00e8res en zone temp\u00e9r\u00e9e","Limiter le temps d'exposition aux temp\u00e9ratures extr\u00eames","Mettre \u00e0 disposition des boissons (chaudes ou fra\u00eeches)"]},
+  {icon:"&#x1F525;",name:"Incendie et explosion",prevention:["Stocker les produits inflammables dans des locaux adapt\u00e9s","\u00c9loigner les sources d'ignition des zones \u00e0 risque","Installer des d\u00e9tecteurs et extincteurs","Former le personnel \u00e0 l'\u00e9vacuation et aux premiers secours"]},
+  {icon:"&#x26A1;",name:"\u00c9lectricit\u00e9",prevention:["Consigner les installations avant intervention","Habiliter le personnel intervenant","V\u00e9rifier r\u00e9guli\u00e8rement les installations \u00e9lectriques","Utiliser du mat\u00e9riel isol\u00e9 et des EPI adapt\u00e9s"]},
+  {icon:"&#x1F4A1;",name:"Ambiances lumineuses",prevention:["Assurer un \u00e9clairage adapt\u00e9 \u00e0 la t\u00e2che (minimum 300 lux)","Privil\u00e9gier la lumi\u00e8re naturelle","\u00c9viter les \u00e9blouissements et reflets","Entretenir et remplacer les luminaires d\u00e9fectueux"]},
+  {icon:"&#x2622;&#xFE0F;",name:"Rayonnements",prevention:["Limiter le temps d'exposition","Utiliser des \u00e9crans de protection (tablier plomb\u00e9)","Baliser les zones d'exposition","Contr\u00f4ler r\u00e9guli\u00e8rement les doses re\u00e7ues (dosim\u00e8tre)"]},
+  {icon:"&#x1F9E0;",name:"Risques psychosociaux",prevention:["Adapter la charge de travail","Stabiliser les plannings et horaires","Mettre en place une cellule d'\u00e9coute","Former l'encadrement \u00e0 la d\u00e9tection des signaux faibles"]},
+  {icon:"&#x1F4F3;",name:"Vibrations",prevention:["Entretenir les engins et amortir les vibrations","Limiter la dur\u00e9e d'exposition journali\u00e8re","Niveler les pistes de circulation","Utiliser des si\u00e8ges et poign\u00e9es anti-vibrations"]},
+  {icon:"&#x1F6D1;",name:"Heurt, cognement",prevention:["D\u00e9gager les zones de circulation","Signaler les obstacles fixes (poteaux, \u00e9tag\u00e8res basses)","Porter un casque dans les zones \u00e0 risque","Am\u00e9nager l'espace de travail (hauteur suffisante)"]},
+  {icon:"&#x1F377;",name:"Pratiques addictives",prevention:["Inscrire l'interdiction dans le r\u00e8glement int\u00e9rieur","Sensibiliser les salari\u00e9s aux risques","Proposer un accompagnement m\u00e9dical","Former les managers au rep\u00e9rage des situations \u00e0 risque"]}
+];
+
+const mode2Cards = [
+  {situation:"Le sol de la cuisine d'un restaurant est glissant \u00e0 cause de projections d'eau et de graisse.",answer:"Chute de plain-pied",icon:"&#x1FA78;",num:1},
+  {situation:"Un couvreur r\u00e9pare une toiture sans garde-corps ni harnais.",answer:"Chute de hauteur",icon:"&#x1FA9C;",num:2},
+  {situation:"Un pi\u00e9ton traverse une zone de circulation o\u00f9 un chariot \u00e9l\u00e9vateur man\u0153uvre en marche arri\u00e8re.",answer:"Circulations internes v\u00e9hicules/engins",icon:"&#x1F69B;",num:3},
+  {situation:"Un livreur effectue sa tourn\u00e9e sous la pluie avec un v\u00e9hicule dont les pneus sont us\u00e9s.",answer:"Risques routiers en mission",icon:"&#x1F697;",num:4},
+  {situation:"Une aide-soignante soul\u00e8ve des patients toute la journ\u00e9e sans aide m\u00e9canique.",answer:"Charge physique de travail",icon:"&#x1F4AA;",num:5},
+  {situation:"Un cariste transporte une palette instable sans l'avoir arrim\u00e9e.",answer:"Manutention m\u00e9canique",icon:"&#x1F4E6;",num:6},
+  {situation:"Un peintre en b\u00e2timent applique un d\u00e9capant chimique sans masque ni gants dans un local mal ventil\u00e9.",answer:"Produits chimiques",icon:"&#x2697;&#xFE0F;",num:7},
+  {situation:"Une auxiliaire de pu\u00e9riculture change des couches souill\u00e9es sans se laver les mains avant de manger.",answer:"Agents biologiques",icon:"&#x1F9A0;",num:8},
+  {situation:"Un menuisier utilise une scie circulaire dont le carter de protection a \u00e9t\u00e9 retir\u00e9.",answer:"\u00c9quipements de travail",icon:"&#x2699;&#xFE0F;",num:9},
+  {situation:"Des cartons sont empil\u00e9s jusqu'au plafond sur des \u00e9tag\u00e8res non fix\u00e9es au mur.",answer:"Effondrements et chutes d'objets",icon:"&#x1F4E5;",num:10},
+  {situation:"Un op\u00e9rateur travaille 8 heures par jour \u00e0 c\u00f4t\u00e9 d'une presse bruyante sans bouchons d'oreilles.",answer:"Bruit",icon:"&#x1F50A;",num:11},
+  {situation:"Un boucher d\u00e9coupe de la viande dans une chambre froide \u00e0 \u221218\u00b0C pendant 4 heures sans v\u00eatement adapt\u00e9.",answer:"Ambiances thermiques",icon:"&#x1F321;&#xFE0F;",num:12},
+  {situation:"Un soudeur travaille \u00e0 proximit\u00e9 de bidons de solvant dans un atelier mal ventil\u00e9.",answer:"Incendie et explosion",icon:"&#x1F525;",num:13},
+  {situation:"Un agent de maintenance intervient sur une armoire \u00e9lectrique sans avoir coup\u00e9 le courant.",answer:"\u00c9lectricit\u00e9",icon:"&#x26A1;",num:14},
+  {situation:"Un horloger effectue des r\u00e9parations de pr\u00e9cision dans un atelier dont l'\u00e9clairage est de 150 lux.",answer:"Ambiances lumineuses",icon:"&#x1F4A1;",num:15},
+  {situation:"Un radiologue utilise un appareil de radiographie sans tablier plomb\u00e9.",answer:"Rayonnements",icon:"&#x2622;&#xFE0F;",num:16},
+  {situation:"Une vendeuse subit des insultes quotidiennes de clients m\u00e9contents et ses horaires changent chaque semaine.",answer:"Risques psychosociaux",icon:"&#x1F9E0;",num:17},
+  {situation:"Un conducteur d'engin de chantier ressent des douleurs au dos apr\u00e8s des ann\u00e9es sur des pistes non nivel\u00e9es.",answer:"Vibrations",icon:"&#x1F4F3;",num:18},
+  {situation:"Un magasinier se cogne r\u00e9guli\u00e8rement la t\u00eate contre des \u00e9tag\u00e8res basses dans un espace de stockage \u00e9troit.",answer:"Heurt, cognement",icon:"&#x1F6D1;",num:19},
+  {situation:"Un chef de rang dans un restaurant consomme r\u00e9guli\u00e8rement de l'alcool pendant le service pour g\u00e9rer la pression.",answer:"Pratiques addictives",icon:"&#x1F377;",num:20}
+];
+
+// ============ STATE ============
+let currentMode = 1;
+let deck = [];
+let currentIndex = 0;
+let results = {}; // index -> true/false
+let isFlipped = false;
+
+// ============ FUNCTIONS ============
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildDeck() {
+  deck = [];
+  if (currentMode === 1) {
+    mode1Cards.forEach((c, i) => deck.push({type:1, idx:i}));
+  } else if (currentMode === 2) {
+    mode2Cards.forEach((c, i) => deck.push({type:2, idx:i}));
+  } else {
+    mode1Cards.forEach((c, i) => deck.push({type:1, idx:i}));
+    mode2Cards.forEach((c, i) => deck.push({type:2, idx:i}));
+  }
+  shuffle(deck);
+}
+
+function startGame(subset) {
+  if (subset) {
+    deck = subset;
+    shuffle(deck);
+  } else {
+    buildDeck();
+  }
+  currentIndex = 0;
+  results = {};
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('cardArea').style.display = 'flex';
+  document.getElementById('navButtons').style.display = 'flex';
+  document.getElementById('modeSelector').style.display = 'flex';
+  renderCard();
+}
+
+function renderCard() {
+  if (currentIndex >= deck.length) { showEnd(); return; }
+  const entry = deck[currentIndex];
+  const container = document.getElementById('cardContainer');
+  container.classList.remove('flipped');
+  isFlipped = false;
+
+  if (entry.type === 1) {
+    const c = mode1Cards[entry.idx];
+    document.getElementById('cardLabel').textContent = 'Quel est la pr\u00e9vention ?';
+    document.getElementById('cardIcon').innerHTML = c.icon;
+    document.getElementById('cardQuestion').textContent = c.name;
+    document.getElementById('backTitle').innerHTML = c.icon + ' ' + c.name;
+    const list = document.getElementById('backList');
+    list.innerHTML = '';
+    c.prevention.forEach(p => { const li = document.createElement('li'); li.textContent = p; list.appendChild(li); });
+  } else {
+    const c = mode2Cards[entry.idx];
+    document.getElementById('cardLabel').textContent = 'Quel risque professionnel ?';
+    document.getElementById('cardIcon').innerHTML = '&#x26A0;&#xFE0F;';
+    document.getElementById('cardQuestion').textContent = c.situation;
+    document.getElementById('backTitle').innerHTML = c.icon + ' Risque n\u00b0' + c.num + ' : ' + c.answer;
+    const list = document.getElementById('backList');
+    list.innerHTML = '';
+  }
+
+  updateProgress();
+  updateButtons();
+}
+
+function updateProgress() {
+  const done = Object.keys(results).length;
+  const total = deck.length;
+  document.getElementById('progressText').textContent = done + ' / ' + total;
+  document.getElementById('progressBar').style.width = (total ? (done / total * 100) : 0) + '%';
+}
+
+function updateButtons() {
+  document.getElementById('btnPrev').disabled = currentIndex === 0;
+  const answered = results.hasOwnProperty(currentIndex);
+  document.getElementById('btnKnew').disabled = false;
+  document.getElementById('btnReview').disabled = false;
+}
+
+function flipCard() {
+  const container = document.getElementById('cardContainer');
+  isFlipped = !isFlipped;
+  container.classList.toggle('flipped', isFlipped);
+}
+
+document.getElementById('cardContainer').addEventListener('click', flipCard);
+
+function markCard(knew) {
+  results[currentIndex] = knew;
+  updateProgress();
+  setTimeout(() => {
+    currentIndex++;
+    renderCard();
+  }, 200);
+}
+
+function nextCard() {
+  if (currentIndex < deck.length - 1) {
+    currentIndex++;
+    renderCard();
+  } else if (Object.keys(results).length === deck.length) {
+    showEnd();
+  }
+}
+
+function prevCard() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    renderCard();
+  }
+}
+
+function showEnd() {
+  document.getElementById('cardArea').style.display = 'none';
+  document.getElementById('navButtons').style.display = 'none';
+  const endScreen = document.getElementById('endScreen');
+  endScreen.style.display = 'flex';
+
+  const total = deck.length;
+  const knew = Object.values(results).filter(v => v).length;
+  const toReview = total - knew;
+  const pct = total ? Math.round(knew / total * 100) : 0;
+
+  document.getElementById('endTitle').textContent = pct >= 80 ? 'Bravo !' : pct >= 50 ? 'Pas mal !' : 'Continue tes efforts !';
+  document.getElementById('endScore').innerHTML = 'Tu as su <strong>' + knew + ' / ' + total + '</strong> cartes (' + pct + ' %)';
+  document.getElementById('endReview').textContent = toReview > 0 ? toReview + ' carte' + (toReview > 1 ? 's' : '') + ' \u00e0 revoir.' : 'Aucune carte \u00e0 revoir. Parfait !';
+  document.getElementById('scoreFill').style.width = pct + '%';
+
+  const retryBtn = document.getElementById('btnRetryFailed');
+  retryBtn.style.display = toReview > 0 ? 'inline-block' : 'none';
+
+  // full progress
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('progressText').textContent = total + ' / ' + total;
+}
+
+function retryFailed() {
+  const failed = [];
+  for (const [idx, val] of Object.entries(results)) {
+    if (!val) failed.push(deck[parseInt(idx)]);
+  }
+  startGame(failed);
+}
+
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentMode = parseInt(this.dataset.mode);
+    startGame();
+  });
+});
+
+// Keyboard controls
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+  if (e.key === 'ArrowRight') nextCard();
+  if (e.key === 'ArrowLeft') prevCard();
+});
+
+// Init
+startGame();
+</script>
+</body>
+</html>
