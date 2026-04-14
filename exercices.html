@@ -1603,14 +1603,14 @@ const NIVEAUX = [
 
 const TYPE_ICONS = {
     texte_trous: '📝', relier: '🔗', ordre: '📋', hierarchiser: '↕️', intrus: '🔍', pendu: '🎯',
-    mots_croises: '✏️', swipe_vf: '👆', qcm_image: '🖼️', tableau: '📊', tableau_selection: '✅', etude_cas: '📖', pad: '⚠️', prevention: '🛡️', estimation_risque: '📊', duerp_ligne: '📋', duerp_mini: '📋', duer_mission_directeur: '📋',
+    mots_croises: '✏️', swipe_vf: '👆', qcm_image: '🖼️', tableau: '📊', tableau_selection: '✅', etude_cas: '📖', pad: '⚠️', prevention: '🛡️', estimation_risque: '📊', parcours_risques_inrs: '🏭', duerp_ligne: '📋', duerp_mini: '📋', duer_mission_directeur: '📋',
     qcm_classique: '🎯', qcm_series_multi: '🧠', quiz_chrono: '⏱️', categoriser: '📂', memory: '🃏', scenario: '🎬', pictogramme: '⚠️',
     analyse_copie: '📝', itamami: '🔬', budget: '💶', clic_deposer: '🖱️', calcul_guide: '🧮', reperage_clique: '🔍', comparaison: '⚖️'
 };
 const TYPE_LABELS = {
     texte_trous: 'Texte a trous', relier: 'Relier', ordre: 'Ordre', hierarchiser: 'Hierarchiser', intrus: 'Intrus',
     pendu: 'Pendu', mots_croises: 'Mots croises', swipe_vf: 'Vrai/Faux',
-    qcm_image: 'QCM Image', tableau: 'Tableau', tableau_selection: 'Tableau selection', etude_cas: 'Etude de cas', pad: 'PAD', prevention: 'Prevention', estimation_risque: 'Estimation du risque', duerp_ligne: 'Mission DUERP 1', duerp_mini: 'Mission DUERP 2', duer_mission_directeur: 'Mission DUERP Directeur',
+    qcm_image: 'QCM Image', tableau: 'Tableau', tableau_selection: 'Tableau selection', etude_cas: 'Etude de cas', pad: 'PAD', prevention: 'Prevention', estimation_risque: 'Estimation du risque', parcours_risques_inrs: 'Parcours Risques INRS', duerp_ligne: 'Mission DUERP 1', duerp_mini: 'Mission DUERP 2', duer_mission_directeur: 'Mission DUERP Directeur',
     qcm_classique: 'QCM Classique', qcm_series_multi: 'QCM Serie', quiz_chrono: 'Quiz Chrono', categoriser: 'Categoriser', memory: 'Memory', scenario: 'Scenario', pictogramme: 'Pictogrammes',
     analyse_copie: 'Analyse de copie', itamami: 'ITaMaMi', budget: 'Budget CAP', clic_deposer: 'Clic & Deposer', calcul_guide: 'Calcul guide', reperage_clique: 'Reperage & clic', comparaison: 'Comparaison'
 };
@@ -1634,7 +1634,7 @@ const BUDGET_SOUS_THEME_LABELS = {
     taux_endettement: 'Taux d\'endettement',
     cas_complets: 'Cas complets'
 };
-const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'duerp_ligne', 'duerp_mini', 'duer_mission_directeur', 'pictogramme', 'itamami'];
+const TRANSVERSAL_TYPES = ['pad', 'prevention', 'estimation_risque', 'parcours_risques_inrs', 'duerp_ligne', 'duerp_mini', 'duer_mission_directeur', 'pictogramme', 'itamami'];
 const AUTO_COMPETENCES_TYPES = ['analyse_copie'];
 
 const DOSSIERS_TRANSVERSAUX = [
@@ -2686,6 +2686,7 @@ function startExercice(ex) {
         pad: renderPad,
         prevention: renderPrevention,
         estimation_risque: renderEstimation,
+        parcours_risques_inrs: renderParcoursRisquesINRS,
         duerp_ligne: renderDuerpLigne,
         duerp_mini: renderDuerpMini,
         duer_mission_directeur: renderDuerMissionDirecteur,
@@ -4171,6 +4172,249 @@ function buildDuerpEstimationHTML(prefix) {
     // Priorite display
     html += '<div class="duerp-prio-display empty" id="' + prefix + '-prio-display">En attente...</div>';
     return html;
+}
+
+// ═══════════════════════════════════════════════
+// PARCOURS RISQUES PROFESSIONNELS INRS
+// ═══════════════════════════════════════════════
+function renderParcoursRisquesINRS(ex, zone) {
+    const c = ex.contenu || ex;
+    let currentStep = 1;
+    let score = { identification: null, prevention: {}, evaluation: {} };
+
+    // Step titles
+    const STEP_TITLES = {
+        1: '📋 Étape 1 — Identifier les risques professionnels',
+        2: '🛡️ Étape 2 — Proposer des mesures de prévention',
+        3: '📊 Étape 3 — Évaluer le risque principal'
+    };
+
+    function render() {
+        let html = '<div style="max-width:750px; margin:0 auto;">';
+
+        // Situation card (always visible)
+        html += '<div style="background:linear-gradient(135deg,#1e3a5f,#2d5986); color:#fff; padding:20px; border-radius:12px; margin-bottom:20px;">';
+        html += '<h3 style="margin:0 0 5px; font-size:1.1rem;">🏭 ' + (c.titre || 'Parcours Risques Professionnels') + '</h3>';
+        if (c.entreprise) html += '<div style="font-size:0.85rem; opacity:0.8; margin-bottom:10px;">🏢 ' + c.entreprise + '</div>';
+        html += '<div style="background:rgba(255,255,255,0.1); padding:12px; border-radius:8px; font-size:0.95rem; line-height:1.5;">' + c.situation + '</div>';
+        html += '</div>';
+
+        // Progress bar
+        html += '<div style="display:flex; gap:4px; margin-bottom:15px;">';
+        for (let s = 1; s <= 3; s++) {
+            const bg = s < currentStep ? '#22c55e' : s === currentStep ? '#3b82f6' : '#e2e8f0';
+            const col = s <= currentStep ? '#fff' : '#94a3b8';
+            html += '<div style="flex:1; background:' + bg + '; color:' + col + '; text-align:center; padding:8px; border-radius:6px; font-size:0.75rem; font-weight:700;">Étape ' + s + '</div>';
+        }
+        html += '</div>';
+
+        // Step title
+        html += '<h4 style="color:#1e293b; margin-bottom:12px;">' + STEP_TITLES[currentStep] + '</h4>';
+
+        // ── STEP 1: Identify risks ──
+        if (currentStep === 1 && c.identification_risques) {
+            const ir = c.identification_risques;
+            html += '<p style="color:#64748b; font-size:0.9rem; margin-bottom:12px;">' + (ir.consigne || 'Cochez les risques présents dans cette situation.') + '</p>';
+            const shuffled = [...ir.choix].sort(() => Math.random() - 0.5);
+            shuffled.forEach(ch => {
+                html += '<label style="display:flex; align-items:center; gap:10px; padding:10px 14px; margin-bottom:6px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:0.2s;" ' +
+                    'onmouseover="this.style.borderColor=\'#3b82f6\'" onmouseout="this.style.borderColor=\'#e2e8f0\'">' +
+                    '<input type="checkbox" name="pri-risk" value="' + ch.id + '" style="width:18px; height:18px;"> ' +
+                    '<span style="font-size:0.95rem;">' + ch.texte + '</span></label>';
+            });
+            html += '<button onclick="priValidateStep1()" style="margin-top:15px; width:100%; padding:12px; background:#3b82f6; color:#fff; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer;">Valider l\'étape 1 ✓</button>';
+        }
+
+        // ── STEP 2: Prevention measures ──
+        if (currentStep === 2 && c.prevention) {
+            c.prevention.forEach((prev, idx) => {
+                html += '<div style="background:#f0fdf4; border:2px solid #86efac; border-radius:10px; padding:14px; margin-bottom:12px;">';
+                html += '<div style="font-weight:700; color:#166534; margin-bottom:8px;">🛡️ Risque : ' + prev.risque + '</div>';
+                html += '<p style="color:#64748b; font-size:0.85rem; margin-bottom:8px;">Quelle mesure de prévention est la plus adaptée ?</p>';
+                const allMeasures = [prev.bonne_reponse, ...prev.distracteurs].sort(() => Math.random() - 0.5);
+                allMeasures.forEach(m => {
+                    html += '<label style="display:flex; align-items:center; gap:8px; padding:8px 12px; margin-bottom:4px; background:#fff; border:1px solid #d1d5db; border-radius:6px; cursor:pointer; font-size:0.9rem;">' +
+                        '<input type="radio" name="pri-prev-' + idx + '" value="' + m.replace(/"/g, '&quot;') + '"> ' + m + '</label>';
+                });
+                html += '</div>';
+            });
+            html += '<button onclick="priValidateStep2()" style="margin-top:15px; width:100%; padding:12px; background:#22c55e; color:#fff; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer;">Valider l\'étape 2 ✓</button>';
+        }
+
+        // ── STEP 3: Risk evaluation ──
+        if (currentStep === 3 && c.evaluation) {
+            const ev = c.evaluation;
+            html += '<div style="background:#fef3c7; border:2px solid #f59e0b; border-radius:10px; padding:14px; margin-bottom:12px;">';
+            html += '<div style="font-weight:700; color:#92400e; margin-bottom:8px;">📊 Risque à évaluer : ' + ev.risque_principal + '</div>';
+
+            // Gravite
+            html += '<div style="margin-bottom:10px;"><label style="font-weight:600; font-size:0.85rem; color:#1e293b; display:block; margin-bottom:4px;">Gravité du dommage :</label>';
+            html += '<select id="pri-eval-grav" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d1d5db;">';
+            html += '<option value="">— Choisir —</option><option value="1">1 - Faible (sans arrêt)</option><option value="2">2 - Moyenne (avec arrêt)</option><option value="3">3 - Grave (IPP)</option><option value="4">4 - Très grave (décès)</option></select></div>';
+
+            // Exposition
+            html += '<div style="margin-bottom:10px;"><label style="font-weight:600; font-size:0.85rem; color:#1e293b; display:block; margin-bottom:4px;">Fréquence/durée d\'exposition :</label>';
+            html += '<select id="pri-eval-expo" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d1d5db;">';
+            html += '<option value="">— Choisir —</option><option value="rare_courte">Rare et/ou courte</option><option value="frequente_longue">Fréquente et/ou longue</option></select></div>';
+
+            // Declencheur
+            html += '<div style="margin-bottom:10px;"><label style="font-weight:600; font-size:0.85rem; color:#1e293b; display:block; margin-bottom:4px;">Probabilité du déclencheur :</label>';
+            html += '<select id="pri-eval-decl" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d1d5db;">';
+            html += '<option value="">— Choisir —</option><option value="faible">Faible</option><option value="eleve">Élevée</option></select></div>';
+
+            html += '</div>';
+            html += '<button onclick="priValidateStep3()" style="margin-top:15px; width:100%; padding:12px; background:#f59e0b; color:#fff; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer;">Valider l\'étape 3 ✓</button>';
+        }
+
+        html += '</div>';
+        zone.innerHTML = html;
+    }
+
+    // Probability calc (same as editor)
+    function calcProba(expo, decl) {
+        if (expo === 'rare_courte' && decl === 'faible') return 1;
+        if (expo === 'rare_courte' && decl === 'eleve') return 2;
+        if (expo === 'frequente_longue' && decl === 'faible') return 3;
+        if (expo === 'frequente_longue' && decl === 'eleve') return 4;
+        return 0;
+    }
+
+    // Priority matrix (3 levels, Eduscol)
+    const MATRICE = {
+        '4-1':'a_planifier','4-2':'prioritaire','4-3':'prioritaire','4-4':'prioritaire',
+        '3-1':'sous_surveillance','3-2':'a_planifier','3-3':'prioritaire','3-4':'prioritaire',
+        '2-1':'sous_surveillance','2-2':'sous_surveillance','2-3':'a_planifier','2-4':'a_planifier',
+        '1-1':'sous_surveillance','1-2':'sous_surveillance','1-3':'sous_surveillance','1-4':'a_planifier'
+    };
+    const PRIO_INFO = {
+        'prioritaire': { label: 'PRIORITAIRE', color: '#dc2626', bg: '#fef2f2', desc: 'Agir immédiatement' },
+        'a_planifier': { label: 'À PLANIFIER', color: '#d97706', bg: '#fffbeb', desc: 'Planifier des actions et suivre' },
+        'sous_surveillance': { label: 'SOUS SURVEILLANCE', color: '#16a34a', bg: '#f0fdf4', desc: 'Surveiller et réévaluer' }
+    };
+
+    // Step 1 validation
+    window.priValidateStep1 = function() {
+        const ir = c.identification_risques;
+        const checked = [...document.querySelectorAll('input[name="pri-risk"]:checked')].map(cb => cb.value);
+        if (checked.length === 0) { alert('Cochez au moins un risque.'); return; }
+        const corrects = ir.reponse;
+        const ok = checked.filter(id => corrects.includes(id));
+        const wrong = checked.filter(id => !corrects.includes(id));
+        const missed = corrects.filter(id => !checked.includes(id));
+        score.identification = { ok: ok.length, wrong: wrong.length, missed: missed.length, total: corrects.length };
+
+        // Show feedback
+        document.querySelectorAll('input[name="pri-risk"]').forEach(cb => {
+            const label = cb.parentElement;
+            cb.disabled = true;
+            if (corrects.includes(cb.value)) {
+                label.style.borderColor = '#22c55e';
+                label.style.background = '#f0fdf4';
+                if (!cb.checked) label.innerHTML += ' <span style="color:#dc2626; font-size:0.8rem;">(manqué)</span>';
+            } else if (cb.checked) {
+                label.style.borderColor = '#ef4444';
+                label.style.background = '#fef2f2';
+                label.innerHTML += ' <span style="color:#dc2626; font-size:0.8rem;">(incorrect)</span>';
+            }
+        });
+
+        // Next button
+        const btn = document.querySelector('button[onclick="priValidateStep1()"]');
+        btn.textContent = ok.length + '/' + corrects.length + ' risques identifiés — Étape suivante →';
+        btn.style.background = '#22c55e';
+        btn.onclick = function() { currentStep = 2; render(); };
+    };
+
+    // Step 2 validation
+    window.priValidateStep2 = function() {
+        let allAnswered = true;
+        c.prevention.forEach((prev, idx) => {
+            const sel = document.querySelector('input[name="pri-prev-' + idx + '"]:checked');
+            if (!sel) allAnswered = false;
+        });
+        if (!allAnswered) { alert('Répondez à toutes les questions.'); return; }
+
+        let correctCount = 0;
+        c.prevention.forEach((prev, idx) => {
+            const sel = document.querySelector('input[name="pri-prev-' + idx + '"]:checked');
+            const isCorrect = sel.value === prev.bonne_reponse;
+            if (isCorrect) correctCount++;
+            score.prevention[idx] = isCorrect;
+
+            document.querySelectorAll('input[name="pri-prev-' + idx + '"]').forEach(radio => {
+                radio.disabled = true;
+                const label = radio.parentElement;
+                if (radio.value === prev.bonne_reponse) {
+                    label.style.borderColor = '#22c55e';
+                    label.style.background = '#f0fdf4';
+                } else if (radio.checked) {
+                    label.style.borderColor = '#ef4444';
+                    label.style.background = '#fef2f2';
+                }
+            });
+        });
+
+        const btn = document.querySelector('button[onclick="priValidateStep2()"]');
+        btn.textContent = correctCount + '/' + c.prevention.length + ' mesures correctes — Étape suivante →';
+        btn.style.background = '#22c55e';
+        btn.onclick = function() { currentStep = 3; render(); };
+    };
+
+    // Step 3 validation
+    window.priValidateStep3 = function() {
+        const ev = c.evaluation;
+        const grav = parseInt(document.getElementById('pri-eval-grav').value);
+        const expo = document.getElementById('pri-eval-expo').value;
+        const decl = document.getElementById('pri-eval-decl').value;
+        if (!grav || !expo || !decl) { alert('Complétez tous les champs.'); return; }
+
+        const proba = calcProba(expo, decl);
+        const attenduProba = calcProba(ev.exposition, ev.declencheur);
+        const userPrio = MATRICE[grav + '-' + proba] || 'sous_surveillance';
+        const attenduPrio = MATRICE[ev.gravite + '-' + attenduProba] || 'sous_surveillance';
+
+        score.evaluation = { gravOk: grav === ev.gravite, expoOk: expo === ev.exposition, declOk: decl === ev.declencheur, prioOk: userPrio === attenduPrio };
+
+        const pInfo = PRIO_INFO[attenduPrio];
+        let html = '<div style="max-width:750px; margin:0 auto;">';
+        html += '<h3 style="text-align:center; margin-bottom:15px;">📊 Résultats du parcours</h3>';
+
+        // Recap step 1
+        const s1 = score.identification;
+        html += '<div style="background:#eff6ff; border:2px solid #3b82f6; border-radius:10px; padding:14px; margin-bottom:10px;">';
+        html += '<strong>Étape 1 — Identification :</strong> ' + s1.ok + '/' + s1.total + ' risques correctement identifiés';
+        if (s1.wrong > 0) html += ', ' + s1.wrong + ' erreur(s)';
+        html += '</div>';
+
+        // Recap step 2
+        const prevOk = Object.values(score.prevention).filter(v => v).length;
+        html += '<div style="background:#f0fdf4; border:2px solid #22c55e; border-radius:10px; padding:14px; margin-bottom:10px;">';
+        html += '<strong>Étape 2 — Prévention :</strong> ' + prevOk + '/' + c.prevention.length + ' mesures correctes</div>';
+
+        // Recap step 3
+        html += '<div style="background:' + pInfo.bg + '; border:2px solid ' + pInfo.color + '; border-radius:10px; padding:14px; margin-bottom:10px;">';
+        html += '<strong>Étape 3 — Évaluation :</strong><br>';
+        html += 'Gravité attendue : ' + ev.gravite + ' — Votre réponse : ' + grav + ' ' + (score.evaluation.gravOk ? '✅' : '❌') + '<br>';
+        html += 'Probabilité attendue : ' + attenduProba + ' — Votre probabilité : ' + proba + ' ' + (score.evaluation.expoOk && score.evaluation.declOk ? '✅' : '❌') + '<br>';
+        html += '<div style="margin-top:8px; padding:10px; background:' + pInfo.bg + '; border-radius:8px; text-align:center;">';
+        html += '<span style="font-size:1.2rem; font-weight:800; color:' + pInfo.color + ';">' + pInfo.label + '</span><br>';
+        html += '<span style="font-size:0.85rem; color:#64748b;">' + pInfo.desc + '</span></div>';
+        html += '</div>';
+
+        // Total score
+        const totalPoints = s1.ok + prevOk + (score.evaluation.gravOk ? 1 : 0) + (score.evaluation.expoOk && score.evaluation.declOk ? 1 : 0) + (score.evaluation.prioOk ? 1 : 0);
+        const maxPoints = s1.total + c.prevention.length + 3;
+        const pct = Math.round(totalPoints / maxPoints * 100);
+        html += '<div style="text-align:center; padding:20px; background:#f8fafc; border-radius:12px; margin-top:15px;">';
+        html += '<div style="font-size:2rem; font-weight:900; color:' + (pct >= 70 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444') + ';">' + pct + '%</div>';
+        html += '<div style="color:#64748b;">Score : ' + totalPoints + ' / ' + maxPoints + '</div>';
+        html += '</div>';
+
+        html += '</div>';
+        zone.innerHTML = html;
+    };
+
+    render();
 }
 
 // --- renderDuerpLigne ---
