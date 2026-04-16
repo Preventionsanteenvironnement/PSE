@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAP PSE - Module A1 : Le système de santé - Parcours Différencié</title>
+    <style>
+        @import url('https://fonts.cdnfonts.com/css/opendyslexic');
+
+        :root {
+            --font-size: 20px;
+            --line-height: 1.8;
+            --bg-color: #FFFFFF;
+            --text-color: #2D2D2D;
+            --primary: #5B8BD4;
+            --primary-light: #E8F0FE;
+            --success: #4CAF50;
+            --success-light: #E8F5E9;
+            --warning: #FF9800;
+            --warning-light: #FFF3E0;
+            --card-bg: #FAFAFA;
+            --border-color: #E0E0E0;
+            --border-width: 2px;
+            --radius: 14px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-family);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding-bottom: 60px;
+        }
+
+        /* ---- PROGRESS BAR ---- */
+        .progress-bar-container {
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            z-index: 50;
+            padding: 12px 0;
+            border-bottom: var(--border-width) solid var(--border-color);
+            margin-bottom: 24px;
+        }
+        .progress-label {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .progress-track {
+            width: 100%;
+            height: 14px;
+            background: #E0E0E0;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            border-radius: 7px;
+            transition: width 0.5s ease;
+        }
+
+        /* ---- SETTINGS PANEL ---- */
+        .settings-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 200;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: var(--border-width) solid var(--border-color);
+            background: var(--card-bg);
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+        .settings-btn:hover { transform: scale(1.1); }
+
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 300;
+        }
+        .settings-overlay.open { display: flex; align-items: center; justify-content: center; }
+
+        .settings-panel {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 28px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .settings-panel h2 { margin-bottom: 20px; font-size: 1.2em; }
+        .setting-row {
+            margin-bottom: 18px;
+        }
+        .setting-row label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.95em;
+        }
+        .setting-row input[type="range"] {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+        }
+        .setting-row .range-val {
+            display: inline-block;
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 54px;
+            height: 30px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #CCC;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 24px; height: 24px;
+            left: 3px; bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: var(--primary); }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(24px); }
+
+        .color-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .color-swatch {
+            width: 48px; height: 48px;
+            border-radius: 10px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .color-swatch.active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+        .color-swatch:hover { transform: scale(1.1); }
+
+        .settings-close {
+            display: block;
+            width: 100%;
+            margin-top: 16px;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            background: var(--primary);
+            color: #fff;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ---- SECTION / CARDS ---- */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .welcome-card {
+            text-align: center;
+            padding: 40px 24px;
+        }
+        .welcome-card h1 {
+            font-size: 1.5em;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+        .welcome-card p {
+            margin-bottom: 16px;
+        }
+
+        .seance-card {
+            background: var(--card-bg);
+            border: var(--border-width) solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .seance-card h2 {
+            color: var(--primary);
+            margin-bottom: 16px;
+            font-size: 1.25em;
+        }
+        .seance-card h3 {
+            margin: 16px 0 10px;
+            font-size: 1.1em;
+        }
+        .seance-card p {
+            margin-bottom: 12px;
+        }
+
+        .key-point {
+            background: var(--primary-light);
+            border-left: 5px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 16px 0;
+        }
+
+        .retiens-box {
+            background: var(--success-light);
+            border: var(--border-width) solid var(--success);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .retiens-box h3 {
+            color: var(--success);
+            margin-bottom: 10px;
+        }
+
+        /* ---- BUTTONS ---- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 52px;
+            padding: 14px 28px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            line-height: 1.3;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-outline {
+            background: transparent;
+            border: var(--border-width) solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-audio {
+            min-height: 40px;
+            min-width: 40px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            background: var(--primary-light);
+            border: var(--border-width) solid var(--primary);
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-audio:hover { background: var(--primary); color: #fff; }
+
+        .text-with-audio {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .text-with-audio .btn-audio { margin-top: 2px; }
+
+        /* ---- QUESTIONS ---- */
+        .question-block { margin: 20px 0; }
+        .question-text {
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .options-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .option-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 52px;
+            padding: 14px 20px;
+            border: var(--border-width) solid var(--border-color);
+            border-radius: var(--radius);
+            background: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+        }
+        .option-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .option-btn.correct {
+            border-color: var(--success);
+            background: var(--success-light);
+        }
+        .option-btn.incorrect {
+            border-color: #E57373;
+            background: #FFEBEE;
+        }
+        .option-btn.disabled { pointer-events: none; opacity: 0.7; }
+
+        .feedback-box {
+            margin-top: 14px;
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            display: none;
+        }
+        .feedback-box.show { display: block; }
+        .feedback-correct {
+            background: var(--success-light);
+            border: var(--border-width) solid var(--success);
+        }
+        .feedback-incorrect {
+            background: var(--warning-light);
+            border: var(--border-width) solid var(--warning);
+        }
+
+        .btn-next {
+            display: none;
+            margin-top: 18px;
+        }
+        .btn-next.show { display: inline-flex; }
+
+        /* ---- EVAL ---- */
+        .eval-score {
+            text-align: center;
+            padding: 30px;
+        }
+        .score-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .score-message {
+            font-size: 1.1em;
+            margin: 12px 0;
+        }
+        .review-item {
+            background: var(--warning-light);
+            border-left: 5px solid var(--warning);
+            padding: 14px 18px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 10px 0;
+        }
+
+        /* ---- FINAL ---- */
+        .final-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .final-screen h2 {
+            font-size: 1.4em;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        /* ---- HIGH CONTRAST ---- */
+        body.high-contrast {
+            --text-color: #111111;
+            --border-width: 3px;
+            --border-color: #999;
+        }
+        body.high-contrast .option-btn { border-width: 3px; }
+
+        /* ---- DYSLEXIC FONT ---- */
+        body.dyslexic-font {
+            font-family: 'OpenDyslexic', 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        /* ---- FOOTER ---- */
+        .footer {
+            text-align: center;
+            padding: 30px 10px;
+            font-size: 0.85em;
+            color: #888;
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        /* ---- NAV BUTTONS ---- */
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 500px) {
+            body { padding: 10px; }
+            .settings-panel { padding: 20px; }
+            .seance-card { padding: 18px; }
+            .btn { padding: 12px 20px; font-size: 0.95em; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SETTINGS BUTTON -->
+<button class="settings-btn" onclick="toggleSettings()" aria-label="Paramètres d'accessibilité">&#9881;&#65039;</button>
+
+<!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettingsOutside(event)">
+    <div class="settings-panel" onclick="event.stopPropagation()">
+        <h2>&#9881;&#65039; Paramètres d'affichage</h2>
+
+        <div class="setting-row">
+            <label>Taille du texte : <span class="range-val" id="fontSizeVal">20px</span></label>
+            <input type="range" min="16" max="28" value="20" id="fontSizeRange" oninput="updateFontSize(this.value)">
+        </div>
+
+        <div class="setting-row">
+            <label>Espacement des lignes : <span class="range-val" id="lineHeightVal">1.8</span></label>
+            <input type="range" min="14" max="22" value="18" id="lineHeightRange" oninput="updateLineHeight(this.value)">
+        </div>
+
+        <div class="toggle-row">
+            <label>Police Dyslexie</label>
+            <div class="toggle-switch">
+                <input type="checkbox" id="dyslexicToggle" onchange="toggleDyslexic(this.checked)">
+                <span class="toggle-slider"></span>
+            </div>
+        </div>
+
+        <div class="toggle-row">
+            <label>Contraste élevé</label>
+            <div class="toggle-switch">
+                <input type="checkbox" id="contrastToggle" onchange="toggleContrast(this.checked)">
+                <span class="toggle-slider"></span>
+            </div>
+        </div>
+
+        <div class="setting-row">
+            <label>Couleur de fond</label>
+            <div class="color-options">
+                <div class="color-swatch active" style="background:#FFFFFF;border:2px solid #ccc;" onclick="setBg('#FFFFFF', this)" title="Blanc"></div>
+                <div class="color-swatch" style="background:#FFF8E7;" onclick="setBg('#FFF8E7', this)" title="Crème"></div>
+                <div class="color-swatch" style="background:#E8F4FD;" onclick="setBg('#E8F4FD', this)" title="Bleu clair"></div>
+                <div class="color-swatch" style="background:#E8F5E9;" onclick="setBg('#E8F5E9', this)" title="Vert clair"></div>
+            </div>
+        </div>
+
+        <button class="settings-close" onclick="toggleSettings()">Fermer</button>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-bar-container">
+        <div class="progress-label" id="progressLabel">Bienvenue !</div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 0 : WELCOME -->
+    <!-- ============================================================ -->
+    <div class="screen active" id="screen-0">
+        <div class="welcome-card">
+            <h1>&#128214; Module A1 : Le système de santé</h1>
+            <p>Bienvenue dans ton parcours de PSE !</p>
+
+            <div class="text-with-audio" style="justify-content:center;">
+                <button class="btn-audio" onclick="parler('Bienvenue ! Ce cours est fait pour toi. Tu vas apprendre à ton rythme. Chaque question est expliquée. Tu peux écouter les textes en cliquant sur le bouton son. Tu peux aussi changer la taille du texte et les couleurs avec le bouton réglages en haut à droite. Pas de stress, prends ton temps !')">&#128266;</button>
+            </div>
+
+            <div class="key-point" style="text-align:left; margin-top:20px;">
+                <p>&#127919; <strong>Ce cours est fait pour toi.</strong></p>
+                <p>Tu vas apprendre à ton rythme.</p>
+                <p>Chaque question est expliquée.</p>
+                <p>&#128266; Clique sur le bouton son pour écouter les textes.</p>
+                <p>&#9881;&#65039; Clique sur la roue en haut à droite pour changer l'affichage.</p>
+                <p>&#10024; Pas de stress, prends ton temps !</p>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-primary" onclick="goTo(1)">Commencer &#10145;&#65039;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 1 : SEANCE 1 - COURS -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-1">
+        <div class="seance-card">
+            <h2>&#128214; Séance 1 : La santé selon l'OMS</h2>
+
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('L\'Organisation Mondiale de la Santé, ou OMS, a donné une définition de la santé. La santé, ce n\'est pas seulement ne pas être malade. C\'est se sentir bien dans son corps, dans sa tête, et avec les autres.')">&#128266;</button>
+                <div>
+                    <p>L'<strong>Organisation Mondiale de la Santé</strong> (OMS) a donné une définition de la santé.</p>
+                    <p>La santé, ce n'est pas seulement <em>ne pas être malade</em>.</p>
+                    <p>C'est se sentir bien dans son corps, dans sa tête, et avec les autres.</p>
+                </div>
+            </div>
+
+            <h3>&#127919; Les 3 composantes de la santé</h3>
+
+            <div class="key-point">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Les 3 composantes de la santé sont : 1. Le bien-être physique : ton corps fonctionne bien, tu n\'as pas mal. 2. Le bien-être mental : tu te sens bien dans ta tête, tu es tranquille. 3. Le bien-être social : tu as de bonnes relations avec les autres.')">&#128266;</button>
+                    <div>
+                        <p>&#10024; <strong>Bien-être physique</strong> : ton corps fonctionne bien, tu n'as pas mal.</p>
+                        <p>&#10024; <strong>Bien-être mental</strong> : tu te sens bien dans ta tête, tu es tranquille.</p>
+                        <p>&#10024; <strong>Bien-être social</strong> : tu as de bonnes relations avec les autres.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-with-audio" style="margin-top:16px;">
+                <button class="btn-audio" onclick="parler('Le capital santé, c\'est comme un trésor. À la naissance, chacun a un capital santé. Si on en prend soin, il reste bon toute la vie. Si on ne fait pas attention, il peut diminuer.')">&#128266;</button>
+                <div>
+                    <h3>&#11088; Le capital santé</h3>
+                    <p>Le <strong>capital santé</strong>, c'est comme un trésor.</p>
+                    <p>À la naissance, chacun a un capital santé.</p>
+                    <p>Si on en prend soin, il reste bon toute la vie.</p>
+                    <p>Si on ne fait pas attention, il peut diminuer.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUESTION 1.1 -->
+        <div class="question-block" id="q1-1">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 1. D\'après l\'OMS, la santé c\'est : être en bonne santé physique seulement, ou bien être bien dans son corps, sa tête et avec les autres ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 1. D'après l'OMS, la santé c'est :</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q1-1')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Être en bonne santé physique seulement')">&#128266;</button>
+                        Être en bonne santé physique seulement
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q1-1')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Être bien dans son corps, sa tête et avec les autres')">&#128266;</button>
+                        Être bien dans son corps, sa tête et avec les autres
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q1-1-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Bravo ! C\'est exactement ça ! La santé, c\'est le bien-être physique, mental et social.')">&#128266;</button>
+                    <p>&#9989; Bravo ! C'est exactement ça ! La santé = bien-être physique + mental + social.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q1-1-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Pas tout à fait, mais ce n\'est pas grave ! La santé selon l\'OMS, c\'est les 3 ensemble : physique, mental et social. Ce n\'est pas seulement le corps.')">&#128266;</button>
+                    <p>&#128161; Pas tout à fait, mais ce n'est pas grave ! La santé selon l'OMS, c'est les 3 ensemble : physique, mental et social.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q1-1-next" onclick="showQuestion('q1-2')">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- QUESTION 1.2 -->
+        <div class="question-block" id="q1-2" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 2. Le capital santé, c\'est quoi ? Un médicament spécial, ou un trésor de santé qu\'on a depuis la naissance ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 2. Le capital santé, c'est quoi ?</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q1-2')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Un médicament spécial')">&#128266;</button>
+                        Un médicament spécial
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q1-2')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Un trésor de santé qu\'on a depuis la naissance')">&#128266;</button>
+                        Un trésor de santé qu'on a depuis la naissance
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q1-2-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Super, tu as bien compris ! Le capital santé est un trésor à protéger toute la vie.')">&#128266;</button>
+                    <p>&#11088; Super, tu as bien compris ! Le capital santé est un trésor à protéger toute la vie.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q1-2-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Ce n\'est pas ça, mais ne t\'inquiète pas ! Le capital santé, c\'est l\'état de santé avec lequel on naît. On doit en prendre soin.')">&#128266;</button>
+                    <p>&#128161; Ce n'est pas ça, mais ne t'inquiète pas ! Le capital santé, c'est l'état de santé avec lequel on naît. On doit en prendre soin.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q1-2-next" onclick="showRetiens1()">Voir le résumé &#10145;&#65039;</button>
+        </div>
+
+        <!-- JE RETIENS 1 -->
+        <div class="retiens-box" id="retiens1" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Je retiens séance 1. La santé selon l\'OMS, c\'est le bien-être physique, mental et social. Le capital santé est un trésor à protéger. Il faut en prendre soin chaque jour.')">&#128266;</button>
+                <div>
+                    <h3>&#128214; Je retiens - Séance 1</h3>
+                    <p>&#10024; La santé selon l'OMS = bien-être physique + mental + social.</p>
+                    <p>&#10024; Le capital santé est un trésor à protéger.</p>
+                    <p>&#10024; Il faut en prendre soin chaque jour.</p>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn btn-primary" onclick="goTo(2)">Séance suivante &#10145;&#65039;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 2 : SEANCE 2 - COURS -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-2">
+        <div class="seance-card">
+            <h2>&#128214; Séance 2 : Les facteurs qui influencent la santé</h2>
+
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Plusieurs choses influencent ta santé. Certaines viennent de toi, d\'autres viennent de ton environnement.')">&#128266;</button>
+                <p>Plusieurs choses influencent ta santé. Certaines viennent de toi. D'autres viennent de ton environnement.</p>
+            </div>
+
+            <h3>&#127919; Les facteurs internes (en toi)</h3>
+            <div class="key-point">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Les facteurs internes sont : L\'hérédité, c\'est ce que tes parents t\'ont transmis. L\'âge, car la santé change en vieillissant. Le sexe, car certaines maladies touchent plus les hommes ou les femmes.')">&#128266;</button>
+                    <div>
+                        <p>&#10024; <strong>L'hérédité</strong> : ce que tes parents t'ont transmis.</p>
+                        <p>&#10024; <strong>L'âge</strong> : la santé change en vieillissant.</p>
+                        <p>&#10024; <strong>Le sexe</strong> : certaines maladies touchent plus les hommes ou les femmes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>&#127919; Les facteurs externes (autour de toi)</h3>
+            <div class="key-point">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Les facteurs externes sont : L\'environnement, comme la pollution ou le bruit. Le mode de vie, comme le sport, le sommeil. L\'alimentation, manger équilibré ou pas.')">&#128266;</button>
+                    <div>
+                        <p>&#10024; <strong>L'environnement</strong> : la pollution, le bruit...</p>
+                        <p>&#10024; <strong>Le mode de vie</strong> : le sport, le sommeil...</p>
+                        <p>&#10024; <strong>L'alimentation</strong> : manger équilibré ou pas.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUESTION 2.1 -->
+        <div class="question-block" id="q2-1">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 1. L\'hérédité, c\'est un facteur : interne ou externe ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 1. L'hérédité, c'est un facteur :</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q2-1')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Interne')">&#128266;</button>
+                        Interne (en moi)
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q2-1')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Externe')">&#128266;</button>
+                        Externe (autour de moi)
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q2-1-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Bravo ! L\'hérédité vient de tes parents. C\'est un facteur interne.')">&#128266;</button>
+                    <p>&#9989; Bravo ! L'hérédité vient de tes parents. C'est un facteur interne.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q2-1-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Pas tout à fait ! L\'hérédité, c\'est ce que tes parents t\'ont transmis. C\'est donc interne, ça vient de toi.')">&#128266;</button>
+                    <p>&#128161; Pas tout à fait ! L'hérédité = ce que tes parents t'ont transmis. C'est interne, ça vient de toi.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q2-1-next" onclick="showQuestion('q2-2')">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- QUESTION 2.2 -->
+        <div class="question-block" id="q2-2" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 2. La pollution est un facteur : interne ou externe ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 2. La pollution est un facteur :</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q2-2')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Interne')">&#128266;</button>
+                        Interne (en moi)
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q2-2')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Externe')">&#128266;</button>
+                        Externe (autour de moi)
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q2-2-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Excellent travail ! La pollution est autour de toi. C\'est un facteur externe.')">&#128266;</button>
+                    <p>&#128079; Excellent travail ! La pollution est autour de toi. C'est un facteur externe.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q2-2-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Ce n\'est pas ça, mais ce n\'est pas grave ! La pollution vient de l\'extérieur. C\'est un facteur externe.')">&#128266;</button>
+                    <p>&#128161; Ce n'est pas ça, mais ce n'est pas grave ! La pollution vient de l'extérieur. C'est un facteur externe.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q2-2-next" onclick="showQuestion('q2-3')">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- QUESTION 2.3 -->
+        <div class="question-block" id="q2-3" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 3. Parmi ces facteurs, lequel est externe ? L\'âge, le sexe, ou l\'alimentation ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 3. Parmi ces facteurs, lequel est externe ?</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q2-3')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('L\'âge')">&#128266;</button>
+                        L'âge
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q2-3')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Le sexe')">&#128266;</button>
+                        Le sexe
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q2-3')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('L\'alimentation')">&#128266;</button>
+                        L'alimentation
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q2-3-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Super ! L\'alimentation est un facteur externe. On peut choisir ce qu\'on mange.')">&#128266;</button>
+                    <p>&#11088; Super ! L'alimentation est un facteur externe. On peut choisir ce qu'on mange.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q2-3-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Pas tout à fait ! L\'âge et le sexe sont internes. L\'alimentation est externe, car c\'est un choix de mode de vie.')">&#128266;</button>
+                    <p>&#128161; Pas tout à fait ! L'âge et le sexe sont internes. L'alimentation est externe, car c'est un choix de mode de vie.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q2-3-next" onclick="showRetiens2()">Voir le résumé &#10145;&#65039;</button>
+        </div>
+
+        <!-- JE RETIENS 2 -->
+        <div class="retiens-box" id="retiens2" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Je retiens séance 2. Facteurs internes : hérédité, âge, sexe. Facteurs externes : environnement, mode de vie, alimentation. On peut agir sur les facteurs externes pour protéger sa santé.')">&#128266;</button>
+                <div>
+                    <h3>&#128214; Je retiens - Séance 2</h3>
+                    <p>&#10024; Facteurs internes : hérédité, âge, sexe.</p>
+                    <p>&#10024; Facteurs externes : environnement, mode de vie, alimentation.</p>
+                    <p>&#10024; On peut agir sur les facteurs externes pour protéger sa santé.</p>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn btn-primary" onclick="goTo(3)">Séance suivante &#10145;&#65039;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 3 : SEANCE 3 - COURS -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-3">
+        <div class="seance-card">
+            <h2>&#128214; Séance 3 : La Sécurité sociale et le parcours de soins</h2>
+
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('La Sécurité sociale, c\'est un système de solidarité. Quand tu travailles, tu paies des cotisations. En échange, la Sécurité sociale t\'aide à payer tes soins de santé.')">&#128266;</button>
+                <div>
+                    <p>La <strong>Sécurité sociale</strong>, c'est un système de solidarité.</p>
+                    <p>Quand tu travailles, tu paies des <strong>cotisations</strong>.</p>
+                    <p>En échange, la Sécurité sociale t'aide à payer tes soins de santé.</p>
+                </div>
+            </div>
+
+            <h3>&#127919; Les mots importants</h3>
+            <div class="key-point">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Les cotisations, c\'est l\'argent prélevé sur ton salaire. Les prestations, c\'est l\'aide que tu reçois : remboursement de médicaments, d\'examens médicaux.')">&#128266;</button>
+                    <div>
+                        <p>&#10024; <strong>Cotisations</strong> = argent prélevé sur ton salaire.</p>
+                        <p>&#10024; <strong>Prestations</strong> = aide que tu reçois (remboursement de médicaments, d'examens...).</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>&#127919; Le parcours de soins coordonnés</h3>
+            <div class="key-point">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Pour être bien remboursé, il faut respecter le parcours de soins. D\'abord, tu choisis un médecin traitant. Ensuite, tu le consultes en premier. C\'est lui qui t\'envoie voir un spécialiste si besoin. La carte Vitale permet le remboursement automatique. Le DMP, ou dossier médical partagé, regroupe toutes tes informations médicales.')">&#128266;</button>
+                    <div>
+                        <p>Pour être bien remboursé, il faut respecter le parcours de soins :</p>
+                        <p>1. Tu choisis un <strong>médecin traitant</strong>.</p>
+                        <p>2. Tu le consultes en premier.</p>
+                        <p>3. C'est lui qui t'envoie vers un spécialiste si besoin.</p>
+                        <p style="margin-top:10px;">&#10024; <strong>Carte Vitale</strong> = remboursement automatique.</p>
+                        <p>&#10024; <strong>DMP</strong> (Dossier Médical Partagé) = toutes tes informations médicales au même endroit.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUESTION 3.1 -->
+        <div class="question-block" id="q3-1">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 1. La Sécurité sociale fonctionne grâce à : la solidarité et les cotisations, ou les dons des entreprises ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 1. La Sécurité sociale fonctionne grâce à :</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q3-1')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('La solidarité et les cotisations')">&#128266;</button>
+                        La solidarité et les cotisations
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q3-1')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Les dons des entreprises')">&#128266;</button>
+                        Les dons des entreprises
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q3-1-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Bravo ! La Sécurité sociale repose sur la solidarité. Tout le monde cotise pour aider tout le monde.')">&#128266;</button>
+                    <p>&#9989; Bravo ! La Sécurité sociale repose sur la solidarité. Tout le monde cotise pour aider tout le monde.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q3-1-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Pas tout à fait ! Ce n\'est pas un don. C\'est un système obligatoire. Les travailleurs paient des cotisations. C\'est la solidarité.')">&#128266;</button>
+                    <p>&#128161; Pas tout à fait ! Ce n'est pas un don. Les travailleurs paient des cotisations. C'est la solidarité.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q3-1-next" onclick="showQuestion('q3-2')">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- QUESTION 3.2 -->
+        <div class="question-block" id="q3-2" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 2. Quel médecin dois-tu consulter en premier ? Le spécialiste, ou le médecin traitant ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 2. Quel médecin dois-tu consulter en premier ?</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q3-2')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Le spécialiste')">&#128266;</button>
+                        Le spécialiste
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q3-2')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('Le médecin traitant')">&#128266;</button>
+                        Le médecin traitant
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q3-2-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Super ! Le médecin traitant est le premier contact. C\'est lui qui t\'oriente vers un spécialiste si besoin.')">&#128266;</button>
+                    <p>&#11088; Super ! Le médecin traitant est le premier contact. C'est lui qui t'oriente si besoin.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q3-2-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Ce n\'est pas ça, mais ce n\'est pas grave ! Il faut d\'abord voir le médecin traitant. C\'est lui qui décide si tu as besoin d\'un spécialiste.')">&#128266;</button>
+                    <p>&#128161; Ce n'est pas ça, mais ce n'est pas grave ! Il faut d'abord voir le médecin traitant. C'est lui qui décide si tu as besoin d'un spécialiste.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q3-2-next" onclick="showQuestion('q3-3')">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- QUESTION 3.3 -->
+        <div class="question-block" id="q3-3" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 3. À quoi sert la carte Vitale ? À prouver ton identité, ou à être remboursé automatiquement ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 3. À quoi sert la carte Vitale ?</p>
+            </div>
+            <ul class="options-list">
+                <li>
+                    <button class="option-btn" onclick="repondre(this, false, 'q3-3')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('À prouver ton identité')">&#128266;</button>
+                        À prouver ton identité
+                    </button>
+                </li>
+                <li>
+                    <button class="option-btn" onclick="repondre(this, true, 'q3-3')">
+                        <button class="btn-audio" onclick="event.stopPropagation(); parler('À être remboursé automatiquement')">&#128266;</button>
+                        À être remboursé automatiquement
+                    </button>
+                </li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="q3-3-ok">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Excellent travail ! La carte Vitale permet le remboursement rapide et automatique des soins.')">&#128266;</button>
+                    <p>&#128079; Excellent travail ! La carte Vitale permet le remboursement rapide et automatique.</p>
+                </div>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="q3-3-ko">
+                <div class="text-with-audio">
+                    <button class="btn-audio" onclick="parler('Pas tout à fait ! La carte Vitale, c\'est pour le remboursement automatique des soins par la Sécurité sociale.')">&#128266;</button>
+                    <p>&#128161; Pas tout à fait ! La carte Vitale, c'est pour le remboursement automatique des soins.</p>
+                </div>
+            </div>
+            <button class="btn btn-success btn-next" id="q3-3-next" onclick="showRetiens3()">Voir le résumé &#10145;&#65039;</button>
+        </div>
+
+        <!-- JE RETIENS 3 -->
+        <div class="retiens-box" id="retiens3" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Je retiens séance 3. La Sécurité sociale repose sur la solidarité et les cotisations. Le parcours de soins : médecin traitant d\'abord. La carte Vitale permet le remboursement automatique. Le DMP regroupe toutes tes informations médicales.')">&#128266;</button>
+                <div>
+                    <h3>&#128214; Je retiens - Séance 3</h3>
+                    <p>&#10024; La Sécurité sociale = solidarité + cotisations.</p>
+                    <p>&#10024; Parcours de soins : médecin traitant d'abord.</p>
+                    <p>&#10024; Carte Vitale = remboursement automatique.</p>
+                    <p>&#10024; DMP = toutes tes infos médicales au même endroit.</p>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn btn-primary" onclick="goTo(4)">Passer à l'auto-évaluation &#10145;&#65039;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 4 : AUTO-EVALUATION -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-4">
+        <div class="seance-card">
+            <h2>&#127942; Auto-évaluation finale</h2>
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('C\'est l\'heure de vérifier ce que tu as appris ! 6 questions. Prends ton temps. Tu peux recommencer autant de fois que tu veux.')">&#128266;</button>
+                <p>&#127919; C'est l'heure de vérifier ce que tu as appris !</p>
+                <p>6 questions. Prends ton temps.</p>
+                <p>Tu peux recommencer autant de fois que tu veux ! &#128260;</p>
+            </div>
+        </div>
+
+        <!-- EVAL Q1 -->
+        <div class="question-block eval-q" id="eval-1">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 1 sur 6. Combien de composantes a la santé selon l\'OMS ? 2, 3 ou 4 ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 1 sur 6. Combien de composantes a la santé selon l'OMS ?</p>
+            </div>
+            <ul class="options-list">
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-1')"><button class="btn-audio" onclick="event.stopPropagation(); parler('2')">&#128266;</button> 2</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, true, 'eval-1')"><button class="btn-audio" onclick="event.stopPropagation(); parler('3')">&#128266;</button> 3</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-1')"><button class="btn-audio" onclick="event.stopPropagation(); parler('4')">&#128266;</button> 4</button></li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="eval-1-ok">
+                <p>&#9989; Bravo ! 3 composantes : physique, mental, social.</p>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="eval-1-ko">
+                <p>&#128161; La bonne réponse est 3 : physique, mental et social.</p>
+            </div>
+            <button class="btn btn-success btn-next" id="eval-1-next" onclick="showEvalQuestion(2)">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- EVAL Q2 -->
+        <div class="question-block eval-q" id="eval-2" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 2 sur 6. Le capital santé est : un trésor à protéger, ou un examen médical ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 2 sur 6. Le capital santé est :</p>
+            </div>
+            <ul class="options-list">
+                <li><button class="option-btn" onclick="evalRepondre(this, true, 'eval-2')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Un trésor à protéger')">&#128266;</button> Un trésor à protéger</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-2')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Un examen médical')">&#128266;</button> Un examen médical</button></li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="eval-2-ok">
+                <p>&#9989; Super ! Le capital santé est un trésor qu'on a à la naissance.</p>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="eval-2-ko">
+                <p>&#128161; Le capital santé est un trésor de santé qu'on a à la naissance. Il faut en prendre soin.</p>
+            </div>
+            <button class="btn btn-success btn-next" id="eval-2-next" onclick="showEvalQuestion(3)">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- EVAL Q3 -->
+        <div class="question-block eval-q" id="eval-3" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 3 sur 6. L\'âge est un facteur : interne ou externe ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 3 sur 6. L'âge est un facteur :</p>
+            </div>
+            <ul class="options-list">
+                <li><button class="option-btn" onclick="evalRepondre(this, true, 'eval-3')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Interne')">&#128266;</button> Interne</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-3')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Externe')">&#128266;</button> Externe</button></li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="eval-3-ok">
+                <p>&#9989; Bien joué ! L'âge est un facteur interne.</p>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="eval-3-ko">
+                <p>&#128161; L'âge est un facteur interne. On ne peut pas le choisir.</p>
+            </div>
+            <button class="btn btn-success btn-next" id="eval-3-next" onclick="showEvalQuestion(4)">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- EVAL Q4 -->
+        <div class="question-block eval-q" id="eval-4" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 4 sur 6. L\'alimentation est un facteur : interne ou externe ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 4 sur 6. L'alimentation est un facteur :</p>
+            </div>
+            <ul class="options-list">
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-4')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Interne')">&#128266;</button> Interne</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, true, 'eval-4')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Externe')">&#128266;</button> Externe</button></li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="eval-4-ok">
+                <p>&#9989; Exact ! L'alimentation est un facteur externe. On peut agir dessus.</p>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="eval-4-ko">
+                <p>&#128161; L'alimentation est un facteur externe. C'est un choix de mode de vie.</p>
+            </div>
+            <button class="btn btn-success btn-next" id="eval-4-next" onclick="showEvalQuestion(5)">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- EVAL Q5 -->
+        <div class="question-block eval-q" id="eval-5" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 5 sur 6. Qui dois-tu consulter en premier dans le parcours de soins ? Le spécialiste, le pharmacien, ou le médecin traitant ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 5 sur 6. Qui dois-tu consulter en premier ?</p>
+            </div>
+            <ul class="options-list">
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-5')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Le spécialiste')">&#128266;</button> Le spécialiste</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-5')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Le pharmacien')">&#128266;</button> Le pharmacien</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, true, 'eval-5')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Le médecin traitant')">&#128266;</button> Le médecin traitant</button></li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="eval-5-ok">
+                <p>&#9989; Bravo ! Le médecin traitant est le premier contact.</p>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="eval-5-ko">
+                <p>&#128161; C'est le médecin traitant qu'il faut voir en premier. C'est lui qui coordonne tes soins.</p>
+            </div>
+            <button class="btn btn-success btn-next" id="eval-5-next" onclick="showEvalQuestion(6)">Question suivante &#10145;&#65039;</button>
+        </div>
+
+        <!-- EVAL Q6 -->
+        <div class="question-block eval-q" id="eval-6" style="display:none;">
+            <div class="text-with-audio">
+                <button class="btn-audio" onclick="parler('Question 6 sur 6. La carte Vitale sert à : payer le médecin, ou être remboursé automatiquement ?')">&#128266;</button>
+                <p class="question-text">&#128221; Question 6 sur 6. La carte Vitale sert à :</p>
+            </div>
+            <ul class="options-list">
+                <li><button class="option-btn" onclick="evalRepondre(this, false, 'eval-6')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Payer le médecin')">&#128266;</button> Payer le médecin</button></li>
+                <li><button class="option-btn" onclick="evalRepondre(this, true, 'eval-6')"><button class="btn-audio" onclick="event.stopPropagation(); parler('Être remboursé automatiquement')">&#128266;</button> Être remboursé automatiquement</button></li>
+            </ul>
+            <div class="feedback-box feedback-correct" id="eval-6-ok">
+                <p>&#9989; Excellent ! La carte Vitale permet le remboursement automatique.</p>
+            </div>
+            <div class="feedback-box feedback-incorrect" id="eval-6-ko">
+                <p>&#128161; La carte Vitale sert au remboursement automatique des soins, pas à payer directement.</p>
+            </div>
+            <button class="btn btn-success btn-next" id="eval-6-next" onclick="showResults()">Voir mes résultats &#127942;</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 5 : RESULTS -->
+    <!-- ============================================================ -->
+    <div class="screen" id="screen-5">
+        <div class="eval-score">
+            <div class="score-number" id="scoreDisplay">0 / 6</div>
+            <div class="score-message" id="scoreMessage"></div>
+            <div class="text-with-audio" style="justify-content:center; margin:16px 0;">
+                <button class="btn-audio" id="scoreAudio">&#128266;</button>
+            </div>
+        </div>
+
+        <div id="reviewSection"></div>
+
+        <div style="text-align:center; margin-top:24px;">
+            <p style="margin-bottom:16px;">Tu peux recommencer autant de fois que tu veux ! &#128260;</p>
+            <div class="nav-buttons">
+                <button class="btn btn-outline" onclick="resetEval()">Recommencer l'évaluation &#128260;</button>
+                <button class="btn btn-outline" onclick="goTo(0)">Retour à l'accueil &#128214;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        Ressource pédagogique adaptée &mdash; M. MECHERI &mdash; mapse.fr
+    </div>
+
+</div>
+
+<script>
+// ============================================================
+// SPEECH SYNTHESIS
+// ============================================================
+function parler(texte) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(texte);
+        u.lang = 'fr-FR';
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+    }
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function toggleSettings() {
+    const overlay = document.getElementById('settingsOverlay');
+    overlay.classList.toggle('open');
+}
+function closeSettingsOutside(e) {
+    if (e.target === e.currentTarget) toggleSettings();
+}
+function updateFontSize(val) {
+    document.documentElement.style.setProperty('--font-size', val + 'px');
+    document.getElementById('fontSizeVal').textContent = val + 'px';
+    savePrefs();
+}
+function updateLineHeight(val) {
+    const lh = (val / 10).toFixed(1);
+    document.documentElement.style.setProperty('--line-height', lh);
+    document.getElementById('lineHeightVal').textContent = lh;
+    savePrefs();
+}
+function toggleDyslexic(on) {
+    document.body.classList.toggle('dyslexic-font', on);
+    savePrefs();
+}
+function toggleContrast(on) {
+    document.body.classList.toggle('high-contrast', on);
+    savePrefs();
+}
+function setBg(color, el) {
+    document.documentElement.style.setProperty('--bg-color', color);
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    savePrefs();
+}
+function savePrefs() {
+    const prefs = {
+        fontSize: document.getElementById('fontSizeRange').value,
+        lineHeight: document.getElementById('lineHeightRange').value,
+        dyslexic: document.getElementById('dyslexicToggle').checked,
+        contrast: document.getElementById('contrastToggle').checked,
+        bg: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim()
+    };
+    localStorage.setItem('cap_a1_dp_prefs', JSON.stringify(prefs));
+}
+function loadPrefs() {
+    const saved = localStorage.getItem('cap_a1_dp_prefs');
+    if (!saved) return;
+    try {
+        const p = JSON.parse(saved);
+        if (p.fontSize) { document.getElementById('fontSizeRange').value = p.fontSize; updateFontSize(p.fontSize); }
+        if (p.lineHeight) { document.getElementById('lineHeightRange').value = p.lineHeight; updateLineHeight(p.lineHeight); }
+        if (p.dyslexic) { document.getElementById('dyslexicToggle').checked = true; toggleDyslexic(true); }
+        if (p.contrast) { document.getElementById('contrastToggle').checked = true; toggleContrast(true); }
+        if (p.bg) {
+            document.documentElement.style.setProperty('--bg-color', p.bg);
+            document.querySelectorAll('.color-swatch').forEach(s => {
+                s.classList.toggle('active', s.style.background === p.bg || rgbToHex(s.style.backgroundColor).toUpperCase() === p.bg.toUpperCase());
+            });
+        }
+    } catch(e) {}
+}
+function rgbToHex(rgb) {
+    if (rgb.startsWith('#')) return rgb;
+    const m = rgb.match(/\d+/g);
+    if (!m) return rgb;
+    return '#' + m.slice(0,3).map(x => parseInt(x).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const totalScreens = 6; // 0=welcome, 1=s1, 2=s2, 3=s3, 4=eval, 5=results
+let currentScreen = 0;
+
+const progressMap = {
+    0: { label: 'Bienvenue !', pct: 0 },
+    1: { label: 'Étape 1 sur 5 - Séance 1', pct: 15 },
+    2: { label: 'Étape 2 sur 5 - Séance 2', pct: 35 },
+    3: { label: 'Étape 3 sur 5 - Séance 3', pct: 55 },
+    4: { label: 'Étape 4 sur 5 - Auto-évaluation', pct: 75 },
+    5: { label: 'Étape 5 sur 5 - Résultats', pct: 100 }
+};
+
+function goTo(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + n).classList.add('active');
+    currentScreen = n;
+    const info = progressMap[n];
+    document.getElementById('progressLabel').textContent = info.label;
+    document.getElementById('progressFill').style.width = info.pct + '%';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+// SEANCE QUESTIONS (guided, one at a time)
+// ============================================================
+function repondre(btn, correct, qId) {
+    const block = document.getElementById(qId);
+    block.querySelectorAll('.option-btn').forEach(b => {
+        b.classList.add('disabled');
+    });
+    if (correct) {
+        btn.classList.add('correct');
+        document.getElementById(qId + '-ok').classList.add('show');
+    } else {
+        btn.classList.add('incorrect');
+        // highlight correct
+        block.querySelectorAll('.option-btn').forEach(b => {
+            if (b.onclick && b.onclick.toString().includes('true')) b.classList.add('correct');
+        });
+        document.getElementById(qId + '-ko').classList.add('show');
+    }
+    document.getElementById(qId + '-next').classList.add('show');
+}
+
+function showQuestion(qId) {
+    document.getElementById(qId).style.display = 'block';
+    document.getElementById(qId).scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function showRetiens1() {
+    document.getElementById('retiens1').style.display = 'block';
+    document.getElementById('retiens1').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function showRetiens2() {
+    document.getElementById('retiens2').style.display = 'block';
+    document.getElementById('retiens2').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function showRetiens3() {
+    document.getElementById('retiens3').style.display = 'block';
+    document.getElementById('retiens3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ============================================================
+// AUTO-EVALUATION
+// ============================================================
+let evalScore = 0;
+let evalAnswers = {};
+
+const evalExplanations = {
+    1: 'Revois la séance 1 : la santé selon l\'OMS a 3 composantes (physique, mental, social).',
+    2: 'Revois la séance 1 : le capital santé est un trésor qu\'on a à la naissance.',
+    3: 'Revois la séance 2 : l\'âge est un facteur interne.',
+    4: 'Revois la séance 2 : l\'alimentation est un facteur externe.',
+    5: 'Revois la séance 3 : le médecin traitant est le premier contact dans le parcours de soins.',
+    6: 'Revois la séance 3 : la carte Vitale sert au remboursement automatique.'
+};
+
+function evalRepondre(btn, correct, qId) {
+    const num = parseInt(qId.split('-')[1]);
+    const block = document.getElementById(qId);
+    block.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+
+    if (correct) {
+        btn.classList.add('correct');
+        document.getElementById(qId + '-ok').classList.add('show');
+        evalAnswers[num] = true;
+    } else {
+        btn.classList.add('incorrect');
+        block.querySelectorAll('.option-btn').forEach(b => {
+            if (b.onclick && b.onclick.toString().includes('true')) b.classList.add('correct');
+        });
+        document.getElementById(qId + '-ko').classList.add('show');
+        evalAnswers[num] = false;
+    }
+    document.getElementById(qId + '-next').classList.add('show');
+}
+
+function showEvalQuestion(n) {
+    document.getElementById('eval-' + n).style.display = 'block';
+    document.getElementById('eval-' + n).scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function showResults() {
+    evalScore = Object.values(evalAnswers).filter(v => v === true).length;
+    document.getElementById('scoreDisplay').textContent = evalScore + ' / 6';
+
+    let msg = '';
+    let audioMsg = '';
+    if (evalScore === 6) {
+        msg = '&#127942; Parfait ! Tu as tout compris ! Félicitations ! &#128079;';
+        audioMsg = 'Parfait ! Tu as 6 sur 6 ! Tu as tout compris ! Félicitations !';
+    } else if (evalScore >= 4) {
+        msg = '&#11088; Très bien ! Tu as bien travaillé. Revois les points ci-dessous pour progresser encore.';
+        audioMsg = 'Très bien ! Tu as ' + evalScore + ' sur 6. Revois les points ci-dessous pour progresser encore.';
+    } else if (evalScore >= 2) {
+        msg = '&#128170; C\'est un bon début ! N\'hésite pas à relire les séances et à recommencer.';
+        audioMsg = 'C\'est un bon début ! Tu as ' + evalScore + ' sur 6. N\'hésite pas à relire les séances et à recommencer.';
+    } else {
+        msg = '&#128161; Ce n\'est pas grave, tu vas y arriver ! Relis les séances et recommence quand tu es prêt.';
+        audioMsg = 'Ce n\'est pas grave, tu vas y arriver ! Relis les séances et recommence quand tu es prêt.';
+    }
+
+    document.getElementById('scoreMessage').innerHTML = msg;
+    document.getElementById('scoreAudio').onclick = function() { parler(audioMsg); };
+
+    // Review section
+    let reviewHTML = '';
+    for (let i = 1; i <= 6; i++) {
+        if (evalAnswers[i] === false) {
+            reviewHTML += '<div class="review-item"><div class="text-with-audio"><button class="btn-audio" onclick="parler(\'' + evalExplanations[i].replace(/'/g, "\\'") + '\')">&#128266;</button><p>' + evalExplanations[i] + '</p></div></div>';
+        }
+    }
+    document.getElementById('reviewSection').innerHTML = reviewHTML;
+
+    goTo(5);
+}
+
+function resetEval() {
+    evalScore = 0;
+    evalAnswers = {};
+    // Reset all eval questions
+    for (let i = 1; i <= 6; i++) {
+        const block = document.getElementById('eval-' + i);
+        if (i > 1) block.style.display = 'none';
+        else block.style.display = 'block';
+        block.querySelectorAll('.option-btn').forEach(b => {
+            b.classList.remove('correct', 'incorrect', 'disabled');
+        });
+        const ok = document.getElementById('eval-' + i + '-ok');
+        const ko = document.getElementById('eval-' + i + '-ko');
+        if (ok) ok.classList.remove('show');
+        if (ko) ko.classList.remove('show');
+        const next = document.getElementById('eval-' + i + '-next');
+        if (next) next.classList.remove('show');
+    }
+    document.getElementById('reviewSection').innerHTML = '';
+    goTo(4);
+}
+
+// ============================================================
+// CORRECT ANSWER HIGHLIGHTING FIX
+// ============================================================
+// The inline onclick check doesn't work reliably. Let's mark correct buttons with a data attribute.
+document.addEventListener('DOMContentLoaded', function() {
+    loadPrefs();
+    // Mark correct options with data-correct
+    document.querySelectorAll('.option-btn').forEach(btn => {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(', true,')) {
+            btn.setAttribute('data-correct', 'true');
+        }
+    });
+});
+
+// Override repondre to use data-correct
+(function() {
+    const origRepondre = repondre;
+    repondre = function(btn, correct, qId) {
+        const block = document.getElementById(qId);
+        block.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+        if (correct) {
+            btn.classList.add('correct');
+            document.getElementById(qId + '-ok').classList.add('show');
+        } else {
+            btn.classList.add('incorrect');
+            block.querySelectorAll('.option-btn').forEach(b => {
+                if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
+            });
+            document.getElementById(qId + '-ko').classList.add('show');
+        }
+        document.getElementById(qId + '-next').classList.add('show');
+    };
+
+    const origEvalRepondre = evalRepondre;
+    evalRepondre = function(btn, correct, qId) {
+        const num = parseInt(qId.split('-')[1]);
+        const block = document.getElementById(qId);
+        block.querySelectorAll('.option-btn').forEach(b => b.classList.add('disabled'));
+        if (correct) {
+            btn.classList.add('correct');
+            document.getElementById(qId + '-ok').classList.add('show');
+            evalAnswers[num] = true;
+        } else {
+            btn.classList.add('incorrect');
+            block.querySelectorAll('.option-btn').forEach(b => {
+                if (b.getAttribute('data-correct') === 'true') b.classList.add('correct');
+            });
+            document.getElementById(qId + '-ko').classList.add('show');
+            evalAnswers[num] = false;
+        }
+        document.getElementById(qId + '-next').classList.add('show');
+    };
+})();
+</script>
+
+</body>
+</html>
