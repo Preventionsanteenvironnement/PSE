@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashcards PSE — Module C8 : Le secourisme</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { margin: 0; padding: 0; background: linear-gradient(-45deg, #1A2980, #26D0CE, #6a11cb, #2575fc); background-size: 400% 400%; animation: gradientBG 15s ease infinite; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        header { width: 100%; padding: 15px 20px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 30px rgba(0,0,0,0.1); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        header p { margin: 2px 0 0 0; font-size: 0.85rem; opacity: 0.8; }
+        .progress-wrapper { width: 85vw; max-width: 400px; margin: 20px 0 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .stats { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; opacity: 0.9; }
+        .progress-container { width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(79,172,254,0.8); }
+        #game-container { display: flex; flex-direction: column; align-items: center; width: 100%; flex-grow: 1; justify-content: center; padding-bottom: 20px; }
+        .scene { width: 85vw; max-width: 380px; height: 55vh; max-height: 450px; min-height: 320px; perspective: 1000px; cursor: pointer; position: relative; }
+        .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.4,0.2,0.2,1); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center; }
+        .card-back { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); background: rgba(10,10,10,0.4); border: 1px solid rgba(0,242,254,0.5); }
+        .category-badge { position: absolute; top: 15px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .answer-text { font-size: 1.3rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .explanation-text { font-size: 0.95rem; font-weight: 300; line-height: 1.5; color: #e2e8f0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
+        .flip-icon { position: absolute; bottom: 20px; font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7; }
+        @keyframes bounce { 0%,20%,50%,80%,100% {transform:translateY(0);} 40% {transform:translateY(-10px);} 60% {transform:translateY(-5px);} }
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 85vw; max-width: 380px; margin-top: 25px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .controls.visible { opacity: 1; pointer-events: auto; }
+        .btn { flex: 1; padding: 16px 10px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; color: white; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-wrong { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); box-shadow: 0 4px 15px rgba(255,75,43,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-correct { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); box-shadow: 0 4px 15px rgba(0,176,155,0.4); border: 1px solid rgba(255,255,255,0.2); }
+        #end-screen { display: none; width: 90vw; max-width: 400px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); padding: 30px 20px; border-radius: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #end-screen h2 { color: #4ade80; font-size: 1.8rem; margin-top: 0; }
+        .btn-restart { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer; margin-top: 25px; font-weight: bold; width: 100%; box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+        .source-credit { position: absolute; bottom: 5px; right: 10px; font-size: 9px; opacity: 0.4; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Flashcards Pro</h1>
+        <p>Module C8 — Le secourisme</p>
+        <span class="source-credit">D'apres le programme Eduscol CAP PSE</span>
+    </header>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="stats" id="stats-display">Carte 1 / 18</div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+    <div id="game-container">
+        <div class="scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="category-badge" id="category-front">Cat.</div>
+                    <div class="question-text" id="question-text">Chargement...</div>
+                    <div class="flip-icon">👆</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="category-badge" id="category-back">Cat.</div>
+                    <div class="answer-text" id="answer-text">Reponse</div>
+                    <div class="explanation-text" id="explanation-text">Explication...</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls" id="controls">
+            <button class="btn btn-wrong" onclick="markReview(event)">🔴 A revoir</button>
+            <button class="btn btn-correct" onclick="markKnown(event)">🟢 Acquis</button>
+        </div>
+    </div>
+    <div id="end-screen">
+        <h2>🎉 Felicitations !</h2>
+        <p style="font-size:1rem; opacity:0.9;">Tu maitrises les 18 notions essentielles du module C8 — Le secourisme.</p>
+        <div id="end-stats" style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:20px;"></div>
+        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; text-align:left; margin-top:15px;">
+            <strong style="color:#00f2fe;">⏱️ Mode Speedrun</strong><br>
+            <span style="font-size:0.85rem; color:#ccc;">Rejoue pour battre ton record de vitesse sans te tromper !</span>
+        </div>
+        <button class="btn-restart" onclick="location.reload()">Recommencer l'entrainement</button>
+    </div>
+    <script>
+    const flashcards = [
+        // Alerter (3)
+        { cat: "Alerter", q: "Quels sont les principaux numeros d'urgence en France et en Europe ?", a: "15 (SAMU), 18 (Pompiers), 112 (urgence europeenne), 114 (SMS pour sourds et malentendants).", expl: "Le 15 est le SAMU pour les urgences medicales. Le 18 appelle les sapeurs-pompiers. Le 112 fonctionne partout en Europe depuis un telephone portable, meme sans carte SIM. Le 114 permet d'envoyer un SMS en cas de surdite ou de situation ne permettant pas de parler." },
+        { cat: "Alerter", q: "Quel est le contenu du message d'alerte a transmettre aux secours ?", a: "Nature du probleme, localisation precise, nombre et etat des victimes, gestes deja effectues.", expl: "Le temoin doit indiquer ce qui s'est passe, le lieu exact (adresse, etage, point de repere), combien de personnes sont concernees et dans quel etat elles se trouvent, ainsi que les gestes de premiers secours deja realises. Il ne raccroche jamais en premier." },
+        { cat: "Alerter", q: "Pourquoi faut-il proteger avant d'alerter ?", a: "Pour eviter un suraccident et garantir la securite du temoin et de la victime.", expl: "Le premier reflexe est de PROTEGER : supprimer ou ecarter le danger (couper le courant, baliser un accident sur la route). On ne deplace la victime que si un danger immediat menace. Ensuite on ALERTE les secours, puis on SECOURT la victime." },
+
+        // Etouffement (3)
+        { cat: "Etouffement", q: "Quelle est la premiere action face a un etouffement total chez l'adulte ?", a: "Donner 5 claques vigoureuses dans le dos, entre les omoplates.", expl: "L'adulte ou l'enfant qui s'etouffe ne peut plus parler, ni tousser, ni respirer. On se place sur le cote, on penche la victime en avant et on donne jusqu'a 5 claques entre les omoplates avec le talon de la main. L'objectif est de provoquer un reflexe de toux pour expulser le corps etranger." },
+        { cat: "Etouffement", q: "En quoi consiste la manoeuvre de Heimlich ?", a: "Des compressions abdominales sous le sternum pour expulser le corps etranger.", expl: "Si les claques dans le dos sont inefficaces, on se place derriere la victime debout, on positionne un poing au-dessus du nombril, l'autre main par-dessus, et on effectue jusqu'a 5 compressions vers soi et vers le haut. On alterne 5 claques / 5 compressions jusqu'a la desobstruction." },
+        { cat: "Etouffement", q: "Comment reagir face a l'etouffement d'un nourrisson ?", a: "5 claques dans le dos puis, si inefficaces, 5 compressions thoraciques (et non abdominales).", expl: "On retourne le nourrisson (moins d'1 an) face vers le sol sur l'avant-bras, tete plus basse que le corps. On donne 5 claques dans le dos. Si cela ne suffit pas, on le retourne sur le dos et on effectue 5 compressions thoraciques avec 2 doigts au milieu du sternum. On ne fait jamais de Heimlich sur un nourrisson." },
+
+        // Hemorragie (2)
+        { cat: "Hemorragie", q: "Comment arreter une hemorragie externe ?", a: "Par une compression directe : appuyer fermement sur la plaie avec un tissu propre.", expl: "Une hemorragie est un saignement abondant qui ne s'arrete pas spontanement. Le temoin doit allonger la victime, appuyer fortement sur la plaie avec un linge propre ou la main (protegee si possible) et maintenir la pression sans relacher jusqu'a l'arrivee des secours." },
+        { cat: "Hemorragie", q: "Dans quelles circonstances utilise-t-on un garrot ?", a: "Quand la compression directe est impossible ou inefficace, ou si le temoin doit s'occuper d'autres victimes.", expl: "Le garrot est un moyen exceptionnel. Il se pose en amont de la plaie (entre la plaie et le coeur), sur un membre uniquement. Une fois pose, il ne doit jamais etre desserre par le temoin. Il faut noter l'heure exacte de la pose et la transmettre aux secours." },
+
+        // Inconscience (3)
+        { cat: "Inconscience", q: "Comment verifier si une victime est consciente ?", a: "Lui poser des questions simples et lui demander de serrer la main ou de bouger les doigts.", expl: "On s'approche de la victime, on lui parle fort ('Vous m'entendez ? Serrez-moi la main.'). Si elle ne repond pas et ne reagit a aucun ordre simple, elle est inconsciente. On appelle alors a l'aide et on verifie sa respiration." },
+        { cat: "Inconscience", q: "Comment liberer les voies aeriennes d'une victime inconsciente ?", a: "Basculer doucement la tete en arriere et elever le menton.", expl: "Chez une personne inconsciente allongee sur le dos, la langue peut tomber en arriere et bloquer les voies aeriennes. La bascule de la tete en arriere (une main sur le front, deux doigts sous le menton) degage le passage de l'air et permet de verifier la respiration." },
+        { cat: "Inconscience", q: "Qu'est-ce que la PLS et quand la pratiquer ?", a: "La Position Laterale de Securite : on place sur le cote une victime inconsciente qui respire.", expl: "La PLS empeche la langue d'obstruer les voies aeriennes et permet aux liquides (vomissements, sang) de s'ecouler hors de la bouche. On la pratique quand la victime est inconsciente mais respire normalement, apres avoir alerte les secours. On surveille la respiration en attendant leur arrivee." },
+
+        // Arret cardiaque (4)
+        { cat: "Arret cardiaque", q: "Comment reconnaitre un arret cardiaque ?", a: "La victime est inconsciente, ne respire pas ou presente une respiration anormale (gasps).", expl: "Apres avoir constate l'inconscience, on libere les voies aeriennes et on regarde, ecoute et sent pendant 10 secondes maximum. Si la victime ne respire pas du tout ou ne fait que des mouvements respiratoires inefficaces (gasps), c'est un arret cardiaque. Il faut agir immediatement." },
+        { cat: "Arret cardiaque", q: "Quel est le rythme de la RCP (Reanimation Cardio-Pulmonaire) ?", a: "30 compressions thoraciques suivies de 2 insufflations (rapport 30:2).", expl: "On place les mains au centre de la poitrine, bras tendus. On comprime fort (5 cm chez l'adulte) et vite (100 a 120 compressions/min). Apres 30 compressions, on realise 2 insufflations (bouche-a-bouche). Si le sauveteur ne veut pas insuffler, il continue les compressions seules sans s'arreter." },
+        { cat: "Arret cardiaque", q: "Comment utiliser un DAE (Defibrillateur Automatise Externe) ?", a: "Allumer l'appareil, coller les electrodes sur la poitrine nue et suivre les instructions vocales.", expl: "Le DAE analyse le rythme cardiaque et decide seul s'il faut delivrer un choc electrique. On colle une electrode sous la clavicule droite et l'autre sous l'aisselle gauche. Pendant l'analyse et le choc, personne ne doit toucher la victime. Le DAE peut etre utilise par tout le monde, meme sans formation." },
+        { cat: "Arret cardiaque", q: "Quels sont les 4 maillons de la chaine de survie ?", a: "1) Alerte precoce, 2) RCP precoce, 3) Defibrillation precoce, 4) Prise en charge medicale.", expl: "Chaque minute sans RCP reduit les chances de survie de 10 %. L'alerte rapide permet l'envoi des secours. La RCP par le temoin maintient le sang oxygene en circulation. Le DAE peut retablir un rythme cardiaque normal. L'equipe medicale (SAMU) assure la prise en charge specialisee." },
+
+        // Brulures et plaies (3)
+        { cat: "Brulures et plaies", q: "Quel est le premier geste face a une brulure thermique ?", a: "Arroser la zone brulee a l'eau tiede (15-25°C) pendant au moins 10 minutes.", expl: "L'arrosage immediat et prolonge a l'eau tiede (pas glacee) stoppe la progression de la brulure en profondeur et calme la douleur. On retire les vetements non colles a la peau. Toute brulure etendue, profonde, ou situee sur le visage, les mains ou les articulations necessite un avis medical." },
+        { cat: "Brulures et plaies", q: "Quelle est la difference entre une plaie simple et une plaie grave ?", a: "Une plaie simple est superficielle et peu etendue ; une plaie grave est profonde, etendue, hemorragique ou situee dans une zone a risque.", expl: "Une plaie simple se nettoie a l'eau et au savon, puis se protege avec un pansement. Une plaie grave (profonde, souillée, au thorax, a l'abdomen, a l'oeil) necessite d'alerter les secours, d'allonger la victime et de ne pas retirer un objet plante dans la plaie." },
+        { cat: "Brulures et plaies", q: "En quoi consiste l'obligation de porter secours ?", a: "Toute personne temoin d'un danger doit appeler les secours et porter assistance, sous peine de sanctions penales.", expl: "L'article 223-6 du Code penal punit de 5 ans d'emprisonnement et 75 000 euros d'amende le fait de ne pas porter assistance a une personne en peril. Porter secours signifie au minimum alerter les secours. Nul n'est oblige de prendre des risques pour sa propre securite." }
+    ];
+
+    let deck = [], current = 0, known = 0, review = 0, flipped = false;
+
+    function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+    function init() {
+        deck = shuffle([...flashcards]);
+        current = 0; known = 0; review = 0; flipped = false;
+        showCard();
+    }
+
+    function showCard() {
+        if (current >= deck.length) { endGame(); return; }
+        const c = deck[current];
+        document.getElementById('category-front').textContent = c.cat;
+        document.getElementById('category-back').textContent = c.cat;
+        document.getElementById('question-text').textContent = c.q;
+        document.getElementById('answer-text').textContent = c.a;
+        document.getElementById('explanation-text').textContent = c.expl;
+        document.getElementById('flashcard').classList.remove('is-flipped');
+        document.getElementById('controls').classList.remove('visible');
+        flipped = false;
+        updateProgress();
+    }
+
+    function flipCard() {
+        if (flipped) return;
+        flipped = true;
+        document.getElementById('flashcard').classList.add('is-flipped');
+        document.getElementById('controls').classList.add('visible');
+    }
+
+    function markReview(e) { e.stopPropagation(); review++; current++; showCard(); }
+    function markKnown(e) { e.stopPropagation(); known++; current++; showCard(); }
+
+    function updateProgress() {
+        const total = deck.length;
+        const pct = Math.round((current / total) * 100);
+        document.getElementById('progress-bar').style.width = pct + '%';
+        document.getElementById('stats-display').textContent = 'Carte ' + (current + 1) + ' / ' + total;
+    }
+
+    function endGame() {
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('progress-wrapper').style.display = 'none';
+        const endScreen = document.getElementById('end-screen');
+        endScreen.style.display = 'block';
+        document.getElementById('end-stats').innerHTML =
+            '<strong style="color:#4ade80;">🟢 Acquis : ' + known + ' / ' + deck.length + '</strong><br>' +
+            '<strong style="color:#ff416c;">🔴 A revoir : ' + review + ' / ' + deck.length + '</strong>';
+    }
+
+    init();
+    </script>
+</body>
+</html>

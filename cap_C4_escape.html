@@ -3,144 +3,474 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escape Game PSE — Module C4 : Le risque specifique</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>Escape Game — Module C4 : Risques spécifiques</title>
     <style>
-        :root { --bg-color:#0a0a0a; --term-green:#0f0; --term-red:#f33; --term-dim:#555; }
-        * { box-sizing:border-box; }
-        body { margin:0; padding:0; background:var(--bg-color); color:var(--term-green); font-family:'Share Tech Mono',monospace; min-height:100vh; }
-        body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2; background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 2px); }
-        .container { max-width:800px; margin:0 auto; padding:20px; position:relative; z-index:3; }
-        h1 { text-align:center; font-size:1.8rem; color:var(--term-green); text-shadow:0 0 10px rgba(0,255,0,0.5); border-bottom:1px solid var(--term-green); padding-bottom:15px; }
-        .progress-bar { width:100%; height:10px; background:#1a1a1a; border:1px solid var(--term-dim); border-radius:5px; margin:15px 0; overflow:hidden; }
-        .progress-fill { height:100%; width:0%; background:var(--term-green); transition:width 0.5s ease; box-shadow:0 0 10px rgba(0,255,0,0.5); }
-        #status-text { text-align:center; color:var(--term-dim); font-size:0.85rem; margin-bottom:20px; }
-        .terminal-box { display:none; border:1px solid var(--term-green); background:rgba(0,255,0,0.03); padding:20px; border-radius:4px; box-shadow:inset 0 0 20px rgba(0,255,0,0.05); margin-bottom:20px; }
-        .terminal-box.active-terminal { display:block; animation:fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-        .story { color:#aaa; line-height:1.6; margin:10px 0; font-size:0.95rem; }
-        .sys-msg { font-weight:bold; text-shadow:0 0 5px currentColor; line-height:1.5; }
-        .source { text-align:center; font-size:10px; color:var(--term-dim); margin-top:20px; font-style:italic; }
-        @media (max-width:600px) { .container { padding:12px; } h1 { font-size:1.3rem; } .terminal-box { padding:14px; } }
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0a0a0a;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Scanline overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.03) 0px,
+                rgba(0, 255, 0, 0.03) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Header bar */
+        .hud {
+            width: 100%;
+            padding: 12px 20px;
+            background: rgba(0, 255, 0, 0.05);
+            border-bottom: 1px solid #0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+        }
+
+        .hud .status { color: #0f0; text-shadow: 0 0 5px #0f0; }
+
+        /* Progress bar */
+        .progress-wrapper {
+            width: 100%; max-width: 600px;
+            margin: 20px auto 0; padding: 0 20px;
+        }
+        .progress-track {
+            width: 100%; height: 6px;
+            background: #1a1a1a; border: 1px solid #333;
+            border-radius: 3px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 10%;
+            background: #0f0;
+            box-shadow: 0 0 8px #0f0;
+            transition: width 0.6s ease;
+        }
+
+        /* Container */
+        .container {
+            max-width: 600px; width: 100%;
+            padding: 20px; flex-grow: 1;
+        }
+
+        /* Terminal boxes */
+        .terminal-box {
+            display: none;
+            background: rgba(0, 20, 0, 0.6);
+            border: 1px solid #0f0;
+            border-radius: 4px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.08);
+            animation: fadeIn 0.5s ease;
+        }
+        .terminal-box.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .terminal-title {
+            font-size: 1.4rem;
+            color: #0f0;
+            text-transform: uppercase;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 8px #0f0;
+        }
+
+        .terminal-text {
+            color: #8f8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .question-label {
+            color: #0f0;
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        /* Radio options */
+        .options-group label {
+            display: block;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #8f8;
+            transition: all 0.2s;
+        }
+        .options-group label:hover {
+            border-color: #0f0;
+            background: rgba(0, 255, 0, 0.05);
+        }
+        .options-group input[type="radio"] {
+            margin-right: 10px;
+            accent-color: #0f0;
+        }
+
+        /* Text input */
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            border-radius: 4px;
+            outline: none;
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s;
+        }
+        input[type="text"]:focus {
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+        }
+        input[type="text"]::placeholder { color: #363; }
+
+        /* Submit button */
+        .btn-hack {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: #0f0;
+            border: 2px solid #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .btn-hack:hover {
+            background: #0f0;
+            color: #0a0a0a;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Feedback */
+        .feedback {
+            margin-top: 18px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .feedback.success {
+            border-left: 4px solid #0f0;
+            background: rgba(0, 255, 0, 0.05);
+            color: #8f8;
+        }
+        .feedback.error {
+            border-left: 4px solid #f00;
+            background: rgba(255, 0, 0, 0.05);
+            color: #f88;
+        }
+        .fb-title {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .feedback.success .fb-title { color: #0f0; }
+        .feedback.error .fb-title { color: #f00; }
+
+        .btn-next {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            background: #0f0;
+            color: #0a0a0a;
+            border: 2px solid #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .btn-next:hover {
+            background: transparent;
+            color: #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        /* End screen */
+        .end-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .end-screen h1 {
+            font-size: 2rem;
+            color: #0f0;
+            text-shadow: 0 0 20px #0f0;
+            margin-bottom: 15px;
+        }
+        .end-screen p {
+            color: #8f8;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake {
+            10%, 90% { transform: translateX(-2px); }
+            20%, 80% { transform: translateX(3px); }
+            30%, 50%, 70% { transform: translateX(-5px); }
+            40%, 60% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 10px; }
+            .terminal-box { padding: 15px; }
+            .terminal-title { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>ESCAPE GAME — C4</h1>
-    <div class="progress-bar"><div id="p-bar" class="progress-fill"></div></div>
-    <div id="status-text">Initialisation du système...</div>
 
-    <div id="intro" class="terminal-box active-terminal">
-        <h2 style="margin-top:0;">Protocole A.R.G.U.S. — Le risque specifique</h2>
-        <div class="story">ALERTE : Le diagnostic de risque est bloque. Prouve ta maitrise de l'analyse d'un risque specifique.</div>
-        <button onclick="startHack()" style="width:100%;padding:14px;margin-top:15px;background:var(--term-green);color:#000;border:none;font-family:monospace;font-size:1.1rem;font-weight:bold;cursor:pointer;text-transform:uppercase;">Démarrer le protocole</button>
+    <div class="hud">
+        <div class="status" id="status-text">TERMINAL 1 / 4</div>
+        <div class="status" id="hud-state">EN COURS...</div>
     </div>
 
-    <div id="term1" class="terminal-box">
-        <h2 style="margin-top:0;">Terminal 1/4 — Definition</h2>
-        <div class="story">Chaque metier a un risque predominant.</div>
-        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Un risque specifique est :</p>
-                    <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t1" value="a" style="margin-right:8px;accent-color:var(--term-green);"> Le risque le plus frequent dans un secteur professionnel donne</label>
-            <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t1" value="b" style="margin-right:8px;accent-color:var(--term-green);"> Un risque tres rare</label>
-            <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t1" value="c" style="margin-right:8px;accent-color:var(--term-green);"> Un risque uniquement en bureau</label>
-        <div id="err1" class="sys-msg" style="margin-top:10px;"></div>
-        <button onclick="checkT1()" style="width:100%;padding:12px;margin-top:15px;background:transparent;border:1px solid var(--term-green);color:var(--term-green);font-family:monospace;font-size:1rem;cursor:pointer;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.background='var(--term-green)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--term-green)'">Valider</button>
-    </div>
-    <div id="term2" class="terminal-box">
-        <h2 style="margin-top:0;">Terminal 2/4 — Voies</h2>
-        <div class="story">Les produits chimiques penetrent dans le corps par 3 voies.</div>
-        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Les 3 voies sont :</p>
-                    <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t2" value="a" style="margin-right:8px;accent-color:var(--term-green);"> Respiratoire, cutanee et digestive</label>
-            <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t2" value="b" style="margin-right:8px;accent-color:var(--term-green);"> Orale, nasale et auriculaire</label>
-            <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t2" value="c" style="margin-right:8px;accent-color:var(--term-green);"> Visuelle, tactile et olfactive</label>
-        <div id="err2" class="sys-msg" style="margin-top:10px;"></div>
-        <button onclick="checkT2()" style="width:100%;padding:12px;margin-top:15px;background:transparent;border:1px solid var(--term-green);color:var(--term-green);font-family:monospace;font-size:1rem;cursor:pointer;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.background='var(--term-green)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--term-green)'">Valider</button>
-    </div>
-    <div id="term3" class="terminal-box">
-        <h2 style="margin-top:0;">Terminal 3/4 — Priorite</h2>
-        <div class="story">Les mesures de prevention suivent un ordre strict.</div>
-        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">En premier, il faut :</p>
-                    <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t3" value="a" style="margin-right:8px;accent-color:var(--term-green);"> Donner des EPI</label>
-            <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t3" value="b" style="margin-right:8px;accent-color:var(--term-green);"> Supprimer le danger si possible</label>
-            <label style="display:block;padding:8px;margin:4px 0;border:1px dashed var(--term-green);border-radius:4px;cursor:pointer;"><input type="radio" name="t3" value="c" style="margin-right:8px;accent-color:var(--term-green);"> Afficher une pancarte</label>
-        <div id="err3" class="sys-msg" style="margin-top:10px;"></div>
-        <button onclick="checkT3()" style="width:100%;padding:12px;margin-top:15px;background:transparent;border:1px solid var(--term-green);color:var(--term-green);font-family:monospace;font-size:1rem;cursor:pointer;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.background='var(--term-green)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--term-green)'">Valider</button>
-    </div>
-    <div id="term4" class="terminal-box">
-        <h2 style="margin-top:0;">Terminal 4/4 — Effets</h2>
-        <div class="story">L'exposition prolongee a un risque peut provoquer des effets progressifs.</div>
-        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Comment appelle-t-on ces effets qui apparaissent lentement sur des mois ou annees ?</p>
-        <input type="text" id="t4_input" class="input-code" placeholder="Tapez le type d'effets..." style="width:100%;background:transparent;border:none;border-bottom:2px solid var(--term-green);color:var(--term-green);font-family:monospace;padding:8px;font-size:1rem;text-align:center;margin-top:10px;" autocomplete="off">
-        <div id="err4" class="sys-msg" style="margin-top:10px;"></div>
-        <button onclick="checkT4()" style="width:100%;padding:12px;margin-top:15px;background:transparent;border:1px solid var(--term-green);color:var(--term-green);font-family:monospace;font-size:1rem;cursor:pointer;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.background='var(--term-green)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--term-green)'">Valider</button>
-    </div>
-    <div id="success" class="terminal-box">
-        <h2 style="color:#fff;margin-top:0;">SYSTÈME RESTAURÉ</h2>
-        <p style="color:#fff;font-size:1.1rem;">Félicitations, agent ! Tu as prouvé ta maîtrise du module C4 — Le risque specifique.</p>
-        <p style="color:var(--term-green);">Tous les terminaux ont été déverrouillés. Le système est sécurisé.</p>
-        <button onclick="location.reload()" style="width:100%;padding:14px;margin-top:20px;background:transparent;border:1px solid #fff;color:#fff;font-family:monospace;font-size:1rem;cursor:pointer;">Recommencer</button>
+    <div class="progress-wrapper">
+        <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
     </div>
 
-    <div class="source">D'après programme Eduscol CAP PSE + Foucher, éd. 2024</div>
-</div>
-<script>
-function setProgress(pct) { document.getElementById('p-bar').style.width = pct + '%'; }
-function show(id) { document.querySelectorAll('.terminal-box').forEach(t => t.classList.remove('active-terminal')); document.getElementById(id).classList.add('active-terminal'); }
-function startHack() { show('term1'); setProgress(10); document.getElementById('status-text').textContent = 'Terminal 1/4 en cours...'; }
+    <div class="container">
 
-function checkT1() {
-    const sel = document.querySelector('input[name="t1"]:checked');
-    const err = document.getElementById('err1');
-    if (!sel) { err.innerText = '> ERREUR : SÉLECTION REQUISE'; err.style.color = 'var(--term-red)'; return; }
-    if (sel.value === 'a') {
-        err.innerText = '> ✅ ACCÈS AUTORISÉ — Definition validee.';
-        err.style.color = 'var(--term-green)';
-        setTimeout(() => { show('term2'); setProgress(25); }, 1500);
-    } else {
-        err.innerHTML = '> ❌ ACCÈS REFUSÉ<br>> Chaque secteur a son risque principal : bruit en menuiserie, chimique en coiffure, mecanique en industrie.';
-        err.style.color = 'var(--term-red)';
-    }
-}
-function checkT2() {
-    const sel = document.querySelector('input[name="t2"]:checked');
-    const err = document.getElementById('err2');
-    if (!sel) { err.innerText = '> ERREUR : SÉLECTION REQUISE'; err.style.color = 'var(--term-red)'; return; }
-    if (sel.value === 'a') {
-        err.innerText = '> ✅ ACCÈS AUTORISÉ — Voies identifiees.';
-        err.style.color = 'var(--term-green)';
-        setTimeout(() => { show('term3'); setProgress(50); }, 1500);
-    } else {
-        err.innerHTML = '> ❌ ACCÈS REFUSÉ<br>> RESPIRATOIRE (inhalation), CUTANEE (contact peau) et DIGESTIVE (ingestion). La voie respiratoire est la plus frequente.';
-        err.style.color = 'var(--term-red)';
-    }
-}
-function checkT3() {
-    const sel = document.querySelector('input[name="t3"]:checked');
-    const err = document.getElementById('err3');
-    if (!sel) { err.innerText = '> ERREUR : SÉLECTION REQUISE'; err.style.color = 'var(--term-red)'; return; }
-    if (sel.value === 'b') {
-        err.innerText = '> ✅ ACCÈS AUTORISÉ — Ordre de priorite valide.';
-        err.style.color = 'var(--term-green)';
-        setTimeout(() => { show('term4'); setProgress(75); }, 1500);
-    } else {
-        err.innerHTML = '> ❌ ACCÈS REFUSÉ<br>> Supprimer > Reduire > Collectif > Individuel. Toujours commencer par essayer de SUPPRIMER le danger.';
-        err.style.color = 'var(--term-red)';
-    }
-}
-function checkT4() {
-    const val = document.getElementById('t4_input').value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-    const err = document.getElementById('err4');
-    if (!val) { err.innerText = '> ERREUR : SAISIE REQUISE'; err.style.color = 'var(--term-red)'; return; }
-    const accepted = ["chronique","chroniques"];
-    if (accepted.some(a => val.includes(a))) {
-        err.innerText = '> ✅ ACCÈS AUTORISÉ — Effets identifies. DIAGNOSTIC DEBLOQUE.';
-        err.style.color = 'var(--term-green)';
-        setTimeout(() => { show('success'); setProgress(100); }, 1500);
-    } else {
-        err.innerHTML = '> ❌ ACCÈS REFUSÉ<br>> Les effets CHRONIQUES apparaissent progressivement apres une exposition prolongee. Les effets AIGUS sont immediats.';
-        err.style.color = 'var(--term-red)';
-    }
-}
-</script>
+        <!-- INTRO -->
+        <div class="terminal-box active" id="intro">
+            <div class="terminal-title">// ALERTE SYSTÈME</div>
+            <div class="terminal-text">
+                Bienvenue, Agent.<br><br>
+                Le serveur de prévention des risques professionnels de votre entreprise a été verrouillé suite à une intrusion.<br><br>
+                Pour restaurer le système, vous devez valider vos connaissances sur la <strong style="color:#0f0;">démarche de prévention appliquée aux risques spécifiques au métier</strong> (Module C4).<br><br>
+                4 terminaux sécurisés vous attendent. Chaque bonne réponse déverrouille le suivant.<br><br>
+                Bonne chance.
+            </div>
+            <button class="btn-hack" onclick="show('t1')">[ LANCER LA RESTAURATION ]</button>
+        </div>
+
+        <!-- TERMINAL 1 : Radio -->
+        <div class="terminal-box" id="t1">
+            <div class="terminal-title">Terminal 1 — Identification du risque</div>
+            <div class="terminal-text">Le système demande : quelle est la catégorie de risque professionnel la plus fréquente en France, représentant plus de 85 % des maladies professionnelles reconnues ?</div>
+            <div class="question-label">> Quel est le risque professionnel le plus fréquent en France ?</div>
+            <div class="options-group">
+                <label><input type="radio" name="q1" value="chimique"> Risques chimiques</label>
+                <label><input type="radio" name="q1" value="tms"> TMS (Troubles Musculo-Squelettiques)</label>
+                <label><input type="radio" name="q1" value="psycho"> Risques psychosociaux</label>
+                <label><input type="radio" name="q1" value="bruit"> Risques liés au bruit</label>
+            </div>
+            <button class="btn-hack" onclick="checkT1()">[ VALIDER ]</button>
+            <div class="feedback" id="fb1">
+                <div class="fb-title" id="fb1-title"></div>
+                <div id="fb1-text"></div>
+                <button class="btn-next" id="btn-next1" onclick="show('t2')">[ TERMINAL SUIVANT ]</button>
+            </div>
+        </div>
+
+        <!-- TERMINAL 2 : Text input -->
+        <div class="terminal-box" id="t2">
+            <div class="terminal-title">Terminal 2 — Analyse du processus accidentel</div>
+            <div class="terminal-text">Dans le processus d'apparition d'un dommage, entre la situation dangereuse et le dommage, il se produit un fait soudain et imprévu.</div>
+            <div class="question-label">> Quel terme désigne un événement soudain qui transforme une situation dangereuse en accident ?</div>
+            <input type="text" id="input2" placeholder="Tapez votre réponse ici..." autocomplete="off">
+            <button class="btn-hack" onclick="checkT2()">[ VALIDER ]</button>
+            <div class="feedback" id="fb2">
+                <div class="fb-title" id="fb2-title"></div>
+                <div id="fb2-text"></div>
+                <button class="btn-next" id="btn-next2" onclick="show('t3')">[ TERMINAL SUIVANT ]</button>
+            </div>
+        </div>
+
+        <!-- TERMINAL 3 : Radio -->
+        <div class="terminal-box" id="t3">
+            <div class="terminal-title">Terminal 3 — Hiérarchie de prévention</div>
+            <div class="terminal-text">La démarche de prévention repose sur un ordre de priorité précis. Le système vous interroge sur cette logique fondamentale.</div>
+            <div class="question-label">> Quelle mesure de prévention est prioritaire ?</div>
+            <div class="options-group">
+                <label><input type="radio" name="q3" value="individuelle"> La protection individuelle (EPI)</label>
+                <label><input type="radio" name="q3" value="collective"> La protection collective (EPC)</label>
+                <label><input type="radio" name="q3" value="formation"> La formation des salariés</label>
+            </div>
+            <button class="btn-hack" onclick="checkT3()">[ VALIDER ]</button>
+            <div class="feedback" id="fb3">
+                <div class="fb-title" id="fb3-title"></div>
+                <div id="fb3-text"></div>
+                <button class="btn-next" id="btn-next3" onclick="show('t4')">[ TERMINAL SUIVANT ]</button>
+            </div>
+        </div>
+
+        <!-- TERMINAL 4 : Text input -->
+        <div class="terminal-box" id="t4">
+            <div class="terminal-title">Terminal 4 — Équipements de protection</div>
+            <div class="terminal-text">Dernier verrou. Les casques, gants, lunettes et chaussures de sécurité font partie d'une même catégorie d'équipements obligatoires sur certains postes de travail.</div>
+            <div class="question-label">> Quel sigle désigne les Équipements de Protection Individuelle ?</div>
+            <input type="text" id="input4" placeholder="Tapez le sigle ici..." autocomplete="off">
+            <button class="btn-hack" onclick="checkT4()">[ VALIDER ]</button>
+            <div class="feedback" id="fb4">
+                <div class="fb-title" id="fb4-title"></div>
+                <div id="fb4-text"></div>
+                <button class="btn-next" id="btn-next4" onclick="show('end')">[ RESTAURER LE SYSTÈME ]</button>
+            </div>
+        </div>
+
+        <!-- END SCREEN -->
+        <div class="end-screen" id="end">
+            <h1>SYSTÈME RESTAURÉ</h1>
+            <p>
+                Tous les terminaux ont été déverrouillés avec succès.<br><br>
+                Vous avez prouvé votre maîtrise de la démarche de prévention appliquée aux risques spécifiques au métier.<br><br>
+                Le serveur de prévention est de nouveau opérationnel.
+            </p>
+            <div style="font-size: 3rem; margin: 20px 0;">🛡️</div>
+            <button class="btn-hack" onclick="location.reload()" style="margin-top:10px;">[ RELANCER LA SIMULATION ]</button>
+        </div>
+
+    </div>
+
+    <script>
+        function normalize(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        function show(id) {
+            document.querySelectorAll('.terminal-box, .end-screen').forEach(el => {
+                el.style.display = 'none';
+                el.classList.remove('active');
+            });
+            const target = document.getElementById(id);
+            if (target) {
+                target.style.display = 'block';
+                target.classList.add('active');
+            }
+
+            const progressMap = { t1: 10, t2: 25, t3: 50, t4: 75, end: 100 };
+            const statusMap = { t1: 'TERMINAL 1 / 4', t2: 'TERMINAL 2 / 4', t3: 'TERMINAL 3 / 4', t4: 'TERMINAL 4 / 4', end: 'TERMINÉ' };
+            document.getElementById('progress-fill').style.width = (progressMap[id] || 10) + '%';
+            document.getElementById('status-text').innerText = statusMap[id] || '';
+            if (id === 'end') {
+                document.getElementById('hud-state').innerText = 'RESTAURÉ';
+                document.getElementById('hud-state').style.color = '#0f0';
+            }
+        }
+
+        function showFeedback(fbId, titleId, textId, btnId, success, hint) {
+            const fb = document.getElementById(fbId);
+            const title = document.getElementById(titleId);
+            const text = document.getElementById(textId);
+            const btn = document.getElementById(btnId);
+
+            fb.style.display = 'block';
+            fb.className = 'feedback ' + (success ? 'success' : 'error');
+            title.innerText = success ? '✅ ACCÈS AUTORISÉ' : '❌ ACCÈS REFUSÉ';
+            text.innerHTML = hint;
+
+            if (success) {
+                btn.style.display = 'block';
+            }
+        }
+
+        // Terminal 1 — Radio: TMS
+        function checkT1() {
+            const selected = document.querySelector('input[name="q1"]:checked');
+            if (!selected) { alert('Sélectionnez une réponse.'); return; }
+
+            if (selected.value === 'tms') {
+                showFeedback('fb1', 'fb1-title', 'fb1-text', 'btn-next1', true,
+                    'Correct ! Les <strong>TMS (Troubles Musculo-Squelettiques)</strong> représentent plus de 85 % des maladies professionnelles reconnues en France. Ils touchent les muscles, tendons et articulations.');
+            } else {
+                document.getElementById('t1').classList.add('shake');
+                setTimeout(() => document.getElementById('t1').classList.remove('shake'), 400);
+                showFeedback('fb1', 'fb1-title', 'fb1-text', 'btn-next1', false,
+                    'Mauvaise réponse. Indice : ce risque touche les muscles, les tendons et les articulations, et il est causé par des gestes répétitifs ou des postures contraignantes.');
+            }
+        }
+
+        // Terminal 2 — Text: événement déclencheur
+        function checkT2() {
+            const val = normalize(document.getElementById('input2').value);
+            const acceptees = ['evenement declencheur', 'evenement dangereux', 'l\'evenement declencheur', 'l\'evenement dangereux'];
+
+            if (acceptees.some(a => val.includes(normalize(a))) || val === 'evenement declencheur' || val === 'evenement dangereux') {
+                showFeedback('fb2', 'fb2-title', 'fb2-text', 'btn-next2', true,
+                    'Correct ! L\'<strong>événement déclencheur</strong> (ou événement dangereux) est le fait soudain qui transforme une situation dangereuse en accident, provoquant le dommage.');
+            } else {
+                document.getElementById('t2').classList.add('shake');
+                setTimeout(() => document.getElementById('t2').classList.remove('shake'), 400);
+                showFeedback('fb2', 'fb2-title', 'fb2-text', 'btn-next2', false,
+                    'Mauvaise réponse. Indice : c\'est un « événement » composé de deux mots. Le second mot signifie « qui provoque, qui met en route ».');
+            }
+        }
+
+        // Terminal 3 — Radio: protection collective
+        function checkT3() {
+            const selected = document.querySelector('input[name="q3"]:checked');
+            if (!selected) { alert('Sélectionnez une réponse.'); return; }
+
+            if (selected.value === 'collective') {
+                showFeedback('fb3', 'fb3-title', 'fb3-text', 'btn-next3', true,
+                    'Correct ! Dans la hiérarchie de prévention, la <strong>protection collective</strong> (EPC) est toujours prioritaire sur la protection individuelle (EPI). On protège d\'abord tout le monde avant de protéger individuellement.');
+            } else {
+                document.getElementById('t3').classList.add('shake');
+                setTimeout(() => document.getElementById('t3').classList.remove('shake'), 400);
+                showFeedback('fb3', 'fb3-title', 'fb3-text', 'btn-next3', false,
+                    'Mauvaise réponse. Indice : entre protéger UNE personne et protéger TOUTES les personnes, laquelle est prioritaire ? Pensez à la logique : le « collectif » avant « l\'individuel ».');
+            }
+        }
+
+        // Terminal 4 — Text: EPI
+        function checkT4() {
+            const val = normalize(document.getElementById('input4').value);
+
+            if (val === 'epi' || val === 'e.p.i.' || val === 'e.p.i') {
+                showFeedback('fb4', 'fb4-title', 'fb4-text', 'btn-next4', true,
+                    'Correct ! <strong>EPI</strong> signifie <strong>Équipement de Protection Individuelle</strong>. Exemples : casque, gants, lunettes de sécurité, chaussures de sécurité, bouchons d\'oreilles.');
+            } else {
+                document.getElementById('t4').classList.add('shake');
+                setTimeout(() => document.getElementById('t4').classList.remove('shake'), 400);
+                showFeedback('fb4', 'fb4-title', 'fb4-text', 'btn-next4', false,
+                    'Mauvaise réponse. Indice : c\'est un sigle de 3 lettres. É... P... I... Chaque lettre correspond à un mot : Équipement, Protection, Individuelle.');
+            }
+        }
+    </script>
+
 </body>
 </html>

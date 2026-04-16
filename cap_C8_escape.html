@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Game PSE — Module C8 : Le secourisme</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color:#0a0a0a; --term-green:#0f0; --term-red:#f33; --term-dim:#555; }
+        * { box-sizing:border-box; }
+        body { margin:0; padding:0; background:var(--bg-color); color:var(--term-green); font-family:'Share Tech Mono',monospace; min-height:100vh; }
+        body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2; background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 2px); }
+        .container { max-width:800px; margin:0 auto; padding:20px; position:relative; z-index:3; }
+        h1 { text-align:center; font-size:1.8rem; color:var(--term-green); text-shadow:0 0 10px rgba(0,255,0,0.5); border-bottom:1px solid var(--term-green); padding-bottom:15px; }
+        .progress-bar { width:100%; height:10px; background:#1a1a1a; border:1px solid var(--term-dim); border-radius:5px; margin:15px 0; overflow:hidden; }
+        .progress-fill { height:100%; width:0%; background:var(--term-green); transition:width 0.5s ease; box-shadow:0 0 10px rgba(0,255,0,0.5); }
+        #status-text { text-align:center; color:var(--term-dim); font-size:0.85rem; margin-bottom:20px; }
+        .terminal-box { display:none; border:1px solid var(--term-green); background:rgba(0,255,0,0.03); padding:20px; border-radius:4px; box-shadow:inset 0 0 20px rgba(0,255,0,0.05); margin-bottom:20px; }
+        .terminal-box.active-terminal { display:block; animation:fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        .story { color:#aaa; line-height:1.6; margin:10px 0; font-size:0.95rem; }
+        .sys-msg { font-weight:bold; text-shadow:0 0 5px currentColor; line-height:1.5; }
+        .source { text-align:center; font-size:10px; color:var(--term-dim); margin-top:20px; font-style:italic; }
+        label { display:block; padding:8px; margin:4px 0; border:1px dashed var(--term-green); border-radius:4px; cursor:pointer; transition:background 0.2s; }
+        label:hover { background:rgba(0,255,0,0.08); }
+        input[type="radio"] { margin-right:8px; accent-color:var(--term-green); }
+        .input-code { width:100%; background:transparent; border:none; border-bottom:2px solid var(--term-green); color:var(--term-green); font-family:monospace; padding:8px; font-size:1rem; text-align:center; margin-top:10px; outline:none; }
+        .input-code::placeholder { color:var(--term-dim); }
+        .btn-validate { width:100%; padding:12px; margin-top:15px; background:transparent; border:1px solid var(--term-green); color:var(--term-green); font-family:monospace; font-size:1rem; cursor:pointer; text-transform:uppercase; transition:all 0.2s; }
+        .btn-validate:hover { background:var(--term-green); color:#000; }
+        .btn-start { width:100%; padding:14px; margin-top:15px; background:var(--term-green); color:#000; border:none; font-family:monospace; font-size:1.1rem; font-weight:bold; cursor:pointer; text-transform:uppercase; }
+        .btn-restart { width:100%; padding:14px; margin-top:20px; background:transparent; border:1px solid #fff; color:#fff; font-family:monospace; font-size:1rem; cursor:pointer; }
+        @media (max-width:600px) { .container { padding:12px; } h1 { font-size:1.3rem; } .terminal-box { padding:14px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ESCAPE GAME — C8</h1>
+    <div class="progress-bar"><div id="p-bar" class="progress-fill"></div></div>
+    <div id="status-text">Initialisation du systeme...</div>
+
+    <!-- INTRO -->
+    <div id="intro" class="terminal-box active-terminal">
+        <h2 style="margin-top:0;">Protocole S.O.S. — Le secourisme</h2>
+        <div class="story">ALERTE CRITIQUE : Un accident vient de se produire sur le site. Les protocoles de secours sont verrouilles. Prouve tes connaissances en secourisme pour debloquer chaque terminal et sauver la victime.</div>
+        <button class="btn-start" onclick="startHack()">Demarrer le protocole</button>
+    </div>
+
+    <!-- TERMINAL 1 — Radio (QCM) -->
+    <div id="term1" class="terminal-box">
+        <h2 style="margin-top:0;">Terminal 1/4 — Frequence radio</h2>
+        <div class="story">La radio d'urgence est brouillée. Tu dois identifier le bon numero pour contacter les secours depuis n'importe quel pays d'Europe.</div>
+        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Quel numero appeler en Europe pour les urgences ?</p>
+        <label><input type="radio" name="t1" value="15"> 15 — SAMU</label>
+        <label><input type="radio" name="t1" value="18"> 18 — Sapeurs-pompiers</label>
+        <label><input type="radio" name="t1" value="112"> 112 — Numero d'urgence europeen</label>
+        <label><input type="radio" name="t1" value="114"> 114 — Urgence par SMS</label>
+        <div id="err1" class="sys-msg" style="margin-top:10px;"></div>
+        <button class="btn-validate" onclick="checkT1()">Valider</button>
+    </div>
+
+    <!-- TERMINAL 2 — Texte -->
+    <div id="term2" class="terminal-box">
+        <h2 style="margin-top:0;">Terminal 2/4 — Protocole RCP</h2>
+        <div class="story">Le defibrillateur est bloque. Pour le reactiver, entre le nombre exact de compressions thoraciques a effectuer avant les insufflations lors d'un massage cardiaque.</div>
+        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Combien de compressions thoraciques avant les insufflations lors d'un massage cardiaque ?</p>
+        <input type="text" id="t2_input" class="input-code" placeholder="Tape le nombre..." autocomplete="off">
+        <div id="err2" class="sys-msg" style="margin-top:10px;"></div>
+        <button class="btn-validate" onclick="checkT2()">Valider</button>
+    </div>
+
+    <!-- TERMINAL 3 — Radio (QCM) -->
+    <div id="term3" class="terminal-box">
+        <h2 style="margin-top:0;">Terminal 3/4 — Position de securite</h2>
+        <div class="story">La victime est inconsciente mais respire. Le systeme exige le code de la position de securite pour debloquer le brancard automatique.</div>
+        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Quelle position adopter pour une victime inconsciente qui respire ?</p>
+        <label><input type="radio" name="t3" value="pls"> PLS — Position Laterale de Securite</label>
+        <label><input type="radio" name="t3" value="assis"> Position assise</label>
+        <label><input type="radio" name="t3" value="ventre"> Position sur le ventre</label>
+        <div id="err3" class="sys-msg" style="margin-top:10px;"></div>
+        <button class="btn-validate" onclick="checkT3()">Valider</button>
+    </div>
+
+    <!-- TERMINAL 4 — Texte -->
+    <div id="term4" class="terminal-box">
+        <h2 style="margin-top:0;">Terminal 4/4 — Defibrillation</h2>
+        <div class="story">Dernier verrou : l'appareil de defibrillation doit etre identifie par son sigle officiel pour s'activer.</div>
+        <p style="color:var(--term-green);font-weight:bold;margin-top:15px;">Quel est le sigle du Defibrillateur Automatise Externe ?</p>
+        <input type="text" id="t4_input" class="input-code" placeholder="Tape le sigle..." autocomplete="off">
+        <div id="err4" class="sys-msg" style="margin-top:10px;"></div>
+        <button class="btn-validate" onclick="checkT4()">Valider</button>
+    </div>
+
+    <!-- SUCCES -->
+    <div id="success" class="terminal-box">
+        <h2 style="color:#fff;margin-top:0;">SYSTEME RESTAURE</h2>
+        <p style="color:#fff;font-size:1.1rem;">Felicitations, agent ! Tu as prouve ta maitrise du module C8 — Le secourisme.</p>
+        <p style="color:var(--term-green);">Tous les terminaux ont ete deverrouilles. La victime est prise en charge par les secours.</p>
+        <button class="btn-restart" onclick="location.reload()">Recommencer</button>
+    </div>
+
+    <div class="source">D'apres programme Eduscol CAP PSE + referentiel secourisme</div>
+</div>
+<script>
+function setProgress(pct) { document.getElementById('p-bar').style.width = pct + '%'; }
+function show(id) {
+    document.querySelectorAll('.terminal-box').forEach(function(t) { t.classList.remove('active-terminal'); });
+    document.getElementById(id).classList.add('active-terminal');
+}
+function startHack() {
+    show('term1');
+    setProgress(10);
+    document.getElementById('status-text').textContent = 'Terminal 1/4 en cours...';
+}
+
+/* Terminal 1 — QCM : 112 */
+function checkT1() {
+    var sel = document.querySelector('input[name="t1"]:checked');
+    var err = document.getElementById('err1');
+    if (!sel) { err.innerText = '> ERREUR : SELECTION REQUISE'; err.style.color = 'var(--term-red)'; return; }
+    if (sel.value === '112') {
+        err.innerText = '> ACCES AUTORISE — Le 112 est le numero d\'urgence europeen.';
+        err.style.color = 'var(--term-green)';
+        setTimeout(function() { show('term2'); setProgress(25); document.getElementById('status-text').textContent = 'Terminal 2/4 en cours...'; }, 1500);
+    } else {
+        err.innerHTML = '> ACCES REFUSE<br>> Le numero d\'urgence valable dans toute l\'Europe est le 112. Il fonctionne meme sans carte SIM.';
+        err.style.color = 'var(--term-red)';
+    }
+}
+
+/* Terminal 2 — Texte : 30 */
+function checkT2() {
+    var val = document.getElementById('t2_input').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    var err = document.getElementById('err2');
+    if (!val) { err.innerText = '> ERREUR : SAISIE REQUISE'; err.style.color = 'var(--term-red)'; return; }
+    var accepted = ['30', 'trente'];
+    if (accepted.some(function(a) { return val === a; })) {
+        err.innerText = '> ACCES AUTORISE — Le rythme est bien 30 compressions pour 2 insufflations.';
+        err.style.color = 'var(--term-green)';
+        setTimeout(function() { show('term3'); setProgress(50); document.getElementById('status-text').textContent = 'Terminal 3/4 en cours...'; }, 1500);
+    } else {
+        err.innerHTML = '> ACCES REFUSE<br>> Lors de la RCP, on effectue 30 compressions thoraciques suivies de 2 insufflations (rapport 30:2).';
+        err.style.color = 'var(--term-red)';
+    }
+}
+
+/* Terminal 3 — QCM : PLS */
+function checkT3() {
+    var sel = document.querySelector('input[name="t3"]:checked');
+    var err = document.getElementById('err3');
+    if (!sel) { err.innerText = '> ERREUR : SELECTION REQUISE'; err.style.color = 'var(--term-red)'; return; }
+    if (sel.value === 'pls') {
+        err.innerText = '> ACCES AUTORISE — La PLS empeche l\'obstruction des voies aeriennes.';
+        err.style.color = 'var(--term-green)';
+        setTimeout(function() { show('term4'); setProgress(75); document.getElementById('status-text').textContent = 'Terminal 4/4 en cours...'; }, 1500);
+    } else {
+        err.innerHTML = '> ACCES REFUSE<br>> Une victime inconsciente qui respire doit etre placee en PLS (Position Laterale de Securite) pour proteger ses voies aeriennes.';
+        err.style.color = 'var(--term-red)';
+    }
+}
+
+/* Terminal 4 — Texte : DAE */
+function checkT4() {
+    var val = document.getElementById('t4_input').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    var err = document.getElementById('err4');
+    if (!val) { err.innerText = '> ERREUR : SAISIE REQUISE'; err.style.color = 'var(--term-red)'; return; }
+    if (val === 'dae') {
+        err.innerText = '> ACCES AUTORISE — DAE : Defibrillateur Automatise Externe.';
+        err.style.color = 'var(--term-green)';
+        setTimeout(function() { show('success'); setProgress(100); document.getElementById('status-text').textContent = 'Protocole termine — 4/4 terminaux deverrouilles'; }, 1500);
+    } else {
+        err.innerHTML = '> ACCES REFUSE<br>> Le sigle est DAE : Defibrillateur Automatise Externe. Il peut etre utilise par tout le monde, meme sans formation.';
+        err.style.color = 'var(--term-red)';
+    }
+}
+</script>
+</body>
+</html>
