@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module C7 — Le suivi médical des salariés et la vaccination</title>
+<style>
+  :root {
+    --c1: #1a6fa8;
+    --c2: #e07b00;
+    --c3: #2d9e5c;
+    --c4: #8b3fa8;
+    --c6: #555;
+    --s1: #c0392b;
+    --s2: #2d9e5c;
+    --s3: #8b3fa8;
+    --bg: #f5f6fa;
+    --card: #fff;
+    --border: #dde3ed;
+    --text: #1a1f2e;
+    --muted: #6b7280;
+    --accent: #c0392b;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'Segoe UI', 'Calibri', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-tap-highlight-color: transparent;
+  }
+  input[type=radio] { accent-color: var(--accent); cursor: pointer; }
+  label { cursor: pointer; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #7b1a1a 0%, #c0392b 60%, #e74c3c 100%);
+    color: #fff;
+    padding: 28px 32px 20px;
+    position: relative;
+  }
+  header .module-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  header .objectif {
+    font-size: 13px;
+    color: rgba(255,255,255,0.82);
+    max-width: 750px;
+    border-left: 3px solid rgba(255,255,255,0.4);
+    padding-left: 12px;
+    margin-top: 10px;
+  }
+  header .thematique {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* PRINT BUTTON */
+  .print-btn {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+  .print-btn:hover { background: rgba(255,255,255,0.28); }
+
+  /* MAIN */
+  main { max-width: 900px; margin: 28px auto; padding: 0 16px 60px; }
+
+  /* ACCORDION */
+  .seance-block { margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); background: var(--card); }
+  .seance-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    border-left: 5px solid;
+    background: var(--card);
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .seance-header:hover { background: #f0f4f8; }
+  .seance-block[data-s="1"] .seance-header { border-color: var(--s1); }
+  .seance-block[data-s="2"] .seance-header { border-color: var(--s2); }
+  .seance-block[data-s="3"] .seance-header { border-color: var(--s3); }
+  .seance-num {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0;
+  }
+  .seance-block[data-s="1"] .seance-num { background: var(--s1); }
+  .seance-block[data-s="2"] .seance-num { background: var(--s2); }
+  .seance-block[data-s="3"] .seance-num { background: var(--s3); }
+  .seance-header-text { flex: 1; }
+  .seance-header-text h2 { font-size: 1rem; font-weight: 700; }
+  .seance-header-text .seance-obj { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .seance-chevron { font-size: 20px; color: var(--muted); transition: transform 0.25s; }
+  .seance-body { display: none; padding: 0 22px 24px; border-top: 1px solid var(--border); }
+  .seance-block.open .seance-body { display: block; }
+  .seance-block.open .seance-chevron { transform: rotate(180deg); }
+
+  /* INDEX TABLE */
+  .index-table {
+    background: #f8f9fc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0 20px;
+    font-size: 13px;
+  }
+  .index-table h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .index-table ul { list-style: none; }
+  .index-table li { padding: 3px 0; display: flex; align-items: baseline; gap: 8px; }
+
+  /* COMPETENCE BADGE */
+  .badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+  .badge-c1 { background: var(--c1); }
+  .badge-c2 { background: var(--c2); }
+  .badge-c3 { background: var(--c3); }
+  .badge-c4 { background: var(--c4); }
+  .badge-c6 { background: var(--c6); }
+
+  /* NOTIONS */
+  .notions-box {
+    background: linear-gradient(135deg, #fff8e7 0%, #fff3cd 100%);
+    border: 1px solid #f0c040;
+    border-left: 4px solid #f0c040;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 20px 0;
+    font-size: 13px;
+  }
+  .notions-box strong { display: block; margin-bottom: 6px; color: #8a6500; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  .notions-box span { display: inline-block; background: #fff; border: 1px solid #ddb830; border-radius: 12px; padding: 2px 10px; margin: 2px; font-size: 12px; color: #5a4000; }
+
+  /* SITUATION / DOC BLOCK */
+  .situation-block {
+    background: #fff5f5;
+    border: 1px solid #f0c5c5;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+  }
+  .situation-block h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #c0392b; margin-bottom: 10px; font-weight: 700; }
+  .doc-block {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-left: 4px solid #888;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13.5px;
+  }
+  .doc-block h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 8px; font-weight: 700; }
+  .doc-block[data-doc="A"] { border-left-color: var(--s1); }
+  .doc-block[data-doc="B"] { border-left-color: #5a3; }
+  .doc-block[data-doc="C"] { border-left-color: #a73; }
+  .doc-block[data-doc="D"] { border-left-color: #73a; }
+  .doc-block[data-doc="E"] { border-left-color: #c07000; }
+  .doc-block[data-doc="F"] { border-left-color: #2d9e5c; }
+  .doc-block[data-doc="G"] { border-left-color: #1a6fa8; }
+
+  /* QUESTION BLOCK */
+  .question-block { margin: 22px 0; }
+  .question-label {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-weight: 600; margin-bottom: 8px; font-size: 14.5px;
+  }
+  .question-num {
+    background: #e8eaf6; color: #3949ab;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  textarea.reponse {
+    width: 100%;
+    min-height: 64px;
+    border: 1.5px solid #c5cde0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    resize: none;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  textarea.reponse:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,57,43,0.12); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-aide {
+    padding: 6px 14px;
+    border: 1.5px solid;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+    letter-spacing: 0.3px;
+  }
+  .btn-indice { color: #c07000; border-color: #c07000; }
+  .btn-indice:hover, .btn-indice.active { background: #fff8e7; }
+  .btn-corrige { color: #2d7a45; border-color: #2d7a45; }
+  .btn-corrige:hover, .btn-corrige.active { background: #e8f5ec; }
+  .btn-pourquoi { color: #6738a8; border-color: #6738a8; }
+  .btn-pourquoi:hover, .btn-pourquoi.active { background: #f3eeff; }
+  .aide-box {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    animation: fadeIn 0.2s ease;
+  }
+  .aide-box.show { display: block; }
+  .aide-indice { background: #fff8e7; border-left: 3px solid #c07000; color: #6b4400; }
+  .aide-corrige { background: #e8f5ec; border-left: 3px solid #2d7a45; color: #1a4e2c; }
+  .aide-pourquoi { background: #f3eeff; border-left: 3px solid #6738a8; color: #3b1f6a; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; }
+  th { background: #e8edf5; padding: 9px 12px; text-align: left; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #c5cde0; }
+  td { padding: 8px 12px; border: 1px solid #dde3ed; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8f9fc; }
+
+  /* CHECKBOXES / RADIO */
+  .choix-liste { list-style: none; margin: 8px 0 8px 4px; }
+  .choix-liste li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14px; cursor: pointer; }
+  .choix-liste li input[type=radio], .choix-liste li input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+
+  /* AUTO-EVAL */
+  .autoeval-block {
+    margin-top: 32px;
+    border: 2px solid;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .seance-block[data-s="1"] .autoeval-block { border-color: var(--s1); }
+  .seance-block[data-s="2"] .autoeval-block { border-color: var(--s2); }
+  .seance-block[data-s="3"] .autoeval-block { border-color: var(--s3); }
+  .autoeval-header {
+    padding: 12px 18px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .seance-block[data-s="1"] .autoeval-header { background: var(--s1); }
+  .seance-block[data-s="2"] .autoeval-header { background: var(--s2); }
+  .seance-block[data-s="3"] .autoeval-header { background: var(--s3); }
+  .autoeval-body { padding: 16px 18px; }
+  .eval-question { margin-bottom: 18px; }
+  .eval-question p { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .eval-question p span.qtype { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; background: #e8edf5; color: #444; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+  .eval-options { list-style: none; }
+  .eval-options li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.1s; }
+  .eval-options li:hover { background: #f0f4f8; }
+  .eval-options li input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; }
+  .vf-options { display: flex; gap: 12px; margin-top: 6px; }
+  .vf-options label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; padding: 6px 14px; border: 1.5px solid #c5cde0; border-radius: 20px; transition: all 0.15s; }
+  .vf-options label:hover { background: #f0f4f8; }
+  .vf-options input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .court-input { width: 100%; border: 1.5px solid #c5cde0; border-radius: 6px; padding: 8px 12px; font-family: inherit; font-size: 14px; margin-top: 6px; }
+  .court-input:focus { outline: none; border-color: var(--accent); }
+  .btn-valider {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, #c0392b, #962d22);
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 12px;
+    transition: opacity 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .seance-block[data-s="2"] .btn-valider { background: linear-gradient(135deg, #2d9e5c, #1e6e3e); }
+  .seance-block[data-s="3"] .btn-valider { background: linear-gradient(135deg, #8b3fa8, #6a2d82); }
+  .btn-valider:hover { opacity: 0.9; }
+  .score-block {
+    display: none;
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .score-block.show { display: block; }
+  .score-block .score-num { font-size: 2.5rem; font-weight: 900; }
+  .score-block .score-label { font-size: 13px; margin-top: 4px; }
+  .remediation-block {
+    display: none;
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    border-left: 4px solid;
+  }
+  .remediation-block.show { display: block; }
+
+  /* JE RETIENS L'ESSENTIEL */
+  .retiens-block {
+    background: linear-gradient(135deg, #fff5f5 0%, #fce8e8 100%);
+    border: 2px solid #e0a0a0;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 30px;
+  }
+  .retiens-block h2 { font-size: 1rem; font-weight: 800; color: #7b1a1a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .retiens-section { margin-bottom: 16px; }
+  .retiens-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #c0392b; margin-bottom: 8px; font-weight: 700; border-bottom: 1px solid #e0a0a0; padding-bottom: 4px; }
+  .retiens-section p, .retiens-section ul { font-size: 13.5px; line-height: 1.65; }
+  .retiens-section ul { padding-left: 18px; }
+
+  /* SECTION DIVIDER */
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 24px 0 16px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted);
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 18px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── RESPONSIVE MOBILE ── */
+  @media (max-width: 680px) {
+    header { padding: 16px 14px 48px; }
+    header h1 { font-size: 1.2rem; }
+    header .thematique { font-size: 10px; }
+    .print-btn { bottom: 10px; right: 10px; font-size: 11px; padding: 5px 10px; }
+    main { padding: 0 8px 40px; margin: 14px auto; }
+    .seance-header { padding: 12px 12px; gap: 10px; }
+    .seance-num { width: 36px; height: 36px; font-size: 15px; }
+    .seance-header-text h2 { font-size: 0.88rem; }
+    .seance-body { padding: 0 10px 18px; }
+    .index-table { padding: 10px 12px; font-size: 12px; }
+    .notions-box { padding: 10px 12px; }
+    .notions-box span { font-size: 11px; padding: 2px 8px; }
+    .question-label { font-size: 13.5px; flex-wrap: wrap; }
+    textarea.reponse { font-size: 15px; min-height: 70px; }
+    .btn-row { gap: 6px; margin-top: 10px; }
+    .btn-aide { padding: 9px 14px; font-size: 13px; border-radius: 22px; flex: 1; text-align: center; min-width: 80px; }
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 12.5px; }
+    th { font-size: 11px; padding: 7px 9px; }
+    td { padding: 7px 9px; }
+    td textarea.reponse { min-height: 55px; font-size: 13px; }
+    .doc-block { padding: 10px 12px; font-size: 13px; }
+    .autoeval-header { padding: 10px 14px; font-size: 13px; }
+    .autoeval-body { padding: 12px 12px; }
+    .eval-question p { font-size: 13.5px; }
+    .eval-options li { font-size: 13px; padding: 7px 6px; }
+    .vf-options label { font-size: 13.5px; padding: 8px 16px; flex: 1; justify-content: center; }
+    .court-input { font-size: 15px; padding: 10px 12px; }
+    .btn-valider { font-size: 14px; padding: 13px; }
+    .score-block .score-num { font-size: 2rem; }
+    .retiens-block { padding: 14px 12px; }
+    .retiens-block h2 { font-size: 0.95rem; }
+  }
+  @media (max-width: 380px) {
+    header h1 { font-size: 1.05rem; }
+    .seance-header-text h2 { font-size: 0.8rem; }
+    .btn-aide { font-size: 12px; padding: 8px 10px; }
+  }
+  @media print {
+    body { background: #fff; font-size: 12pt; }
+    header { background: #7b1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 14px 18px; }
+    .print-btn, .btn-aide, .btn-valider, .score-block, .remediation-block, .autoeval-block { display: none !important; }
+    .seance-body { display: block !important; }
+    .seance-block { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    textarea.reponse { border: 1pt solid #999; min-height: 40pt; }
+    .doc-block, .situation-block, .notions-box { break-inside: avoid; }
+    main { max-width: 100%; margin: 10px; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="thematique">Thématique C — L'individu dans son milieu professionnel</div>
+  <div class="module-tag">Module C7</div>
+  <h1>Le suivi médical des salariés et la vaccination</h1>
+  <p class="objectif">
+    <strong>Objectif :</strong> Énoncer les intérêts des visites médicales du salarié, expliquer le principe de la vaccination et son intérêt pour l'individu et la collectivité.
+  </p>
+  <button class="print-btn" onclick="window.print()">Imprimer</button>
+</header>
+
+<main>
+
+<!-- ═══════════════════════════════════════════ SÉANCE 1 ═══ -->
+<div class="seance-block open" data-s="1">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="true">
+    <div class="seance-num">1</div>
+    <div class="seance-header-text">
+      <h2>Séance 1 — Le suivi médical du salarié</h2>
+      <div class="seance-obj">Objectif : Énoncer les intérêts des visites médicales au cours de la vie professionnelle.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+
+    <div class="index-table">
+      <h3>Compétences travaillées dans cette séance</h3>
+      <ul>
+        <li><span class="badge badge-c2">C2</span> Q1 — Identifier le problème posé dans la situation.</li>
+        <li><span class="badge badge-c2">C2</span> Q2 — Relever les éléments de la situation de Nathan.</li>
+        <li><span class="badge badge-c3">C3</span> Q3 — Identifier les différentes visites médicales.</li>
+        <li><span class="badge badge-c3">C3</span> Q4 — Distinguer le suivi individuel simple du suivi individuel renforcé.</li>
+        <li><span class="badge badge-c3">C3</span> Q5 — Expliquer l'intérêt des visites médicales pour le salarié.</li>
+      </ul>
+    </div>
+
+    <div class="notions-box">
+      <strong>Notions à retenir — Séance 1</strong>
+      <span>Aptitude au travail</span><span>Suivi médical individuel</span><span>Protection de la santé</span>
+      <span>Visite d'information et de prévention (VIP)</span><span>Suivi individuel renforcé (SIR)</span>
+      <span>Médecin du travail</span><span>Avis d'aptitude</span>
+    </div>
+
+    <!-- Situation de départ -->
+    <div class="section-divider">Situation de départ</div>
+    <div class="situation-block">
+      <h3>Situation — Nathan, apprenti peintre en bâtiment</h3>
+      <p style="margin-top:10px; font-size:13.5px;">Nathan, <strong>17 ans</strong>, vient de signer un contrat d'apprentissage dans une entreprise de peinture en bâtiment. Avant de commencer à travailler sur les chantiers, son employeur lui indique qu'il doit passer une <strong>visite médicale d'embauche</strong>. Nathan est surpris : il se sent en pleine forme et ne comprend pas pourquoi cette visite est obligatoire. De plus, comme il sera exposé à des <strong>produits chimiques</strong> (peintures, solvants), son suivi médical sera particulier.</p>
+    </div>
+
+    <!-- Doc A -->
+    <div class="doc-block" data-doc="A">
+      <h3>Doc. A — Les visites médicales du salarié</h3>
+      <table>
+        <tr><th>Type de visite</th><th>Quand ?</th><th>Objectif</th></tr>
+        <tr>
+          <td><strong>Visite d'information et de prévention (VIP)</strong></td>
+          <td>Dans les 3 mois suivant l'embauche</td>
+          <td>Informer le salarié sur les risques liés à son poste, le sensibiliser à la prévention, ouvrir son dossier médical en santé au travail.</td>
+        </tr>
+        <tr>
+          <td><strong>Examen médical d'aptitude</strong> (suivi renforcé)</td>
+          <td>Avant l'affectation au poste</td>
+          <td>Vérifier que le salarié est médicalement apte à occuper un poste à risques particuliers. Délivrer un avis d'aptitude.</td>
+        </tr>
+        <tr>
+          <td><strong>Visite périodique</strong></td>
+          <td>Tous les 5 ans (suivi simple) ou tous les 2 à 4 ans (suivi renforcé)</td>
+          <td>S'assurer que l'état de santé du salarié est compatible avec son poste de travail.</td>
+        </tr>
+        <tr>
+          <td><strong>Visite de reprise</strong></td>
+          <td>Après un arrêt maladie de plus de 60 jours, un accident du travail ou un congé maternité</td>
+          <td>Vérifier l'aptitude du salarié à reprendre son poste ou proposer un aménagement.</td>
+        </tr>
+        <tr>
+          <td><strong>Visite de pré-reprise</strong></td>
+          <td>Pendant un arrêt de plus de 30 jours</td>
+          <td>Anticiper et préparer le retour au travail, envisager un reclassement si nécessaire.</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Q1 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c2">C2</span>
+        <span class="question-num">Q1</span>
+        <span><strong>Identifiez</strong> le problème posé dans la situation en cochant la proposition exacte.</span>
+      </div>
+      <ul class="choix-liste">
+        <li><input type="radio" name="q1s1" value="A"> <label>Nathan ne veut pas travailler sur les chantiers.</label></li>
+        <li><input type="radio" name="q1s1" value="B"> <label>Nathan ne comprend pas pourquoi il doit passer une visite médicale avant de travailler.</label></li>
+        <li><input type="radio" name="q1s1" value="C"> <label>Nathan a un problème de santé qui l'empêche de travailler.</label></li>
+      </ul>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q1s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q1s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q1s1')">Pourquoi</button>
+      </div>
+      <div id="i-q1s1" class="aide-box aide-indice">Relisez la situation : quel est l'étonnement de Nathan ?</div>
+      <div id="c-q1s1" class="aide-box aide-corrige"><strong>Réponse B.</strong> Nathan ne comprend pas pourquoi la visite médicale est obligatoire alors qu'il se sent en forme.</div>
+      <div id="p-q1s1" class="aide-box aide-pourquoi">La visite médicale d'embauche est une obligation légale. Elle ne dépend pas de l'état de santé ressenti par le salarié, mais vise à vérifier l'aptitude au poste et à prévenir les risques professionnels.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c2">C2</span>
+        <span class="question-num">Q2</span>
+        <span>À partir de la situation, <strong>relevez</strong> les éléments suivants concernant Nathan.</span>
+      </div>
+      <table>
+        <tr><th>Élément</th><th>Votre réponse</th></tr>
+        <tr><td>Âge</td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td>Métier / poste</td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td>Type de contrat</td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td>Risques identifiés</td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q2s1')">Corrigé</button>
+      </div>
+      <div id="c-q2s1" class="aide-box aide-corrige">
+        <strong>Âge :</strong> 17 ans. <strong>Métier :</strong> Apprenti peintre en bâtiment. <strong>Contrat :</strong> Contrat d'apprentissage. <strong>Risques :</strong> Exposition à des produits chimiques (peintures, solvants).
+      </div>
+    </div>
+
+    <!-- Doc B -->
+    <div class="section-divider">Suivi simple et suivi renforcé</div>
+
+    <div class="doc-block" data-doc="B">
+      <h3>Doc. B — Les deux types de suivi médical</h3>
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:10px;">
+        <div style="background:#e8f5e9; padding:12px; border-radius:6px; font-size:13px;">
+          <strong style="color:#2d9e5c;">Suivi individuel simple</strong><br>
+          Concerne les salariés qui n'occupent pas de poste à risques particuliers.<br><br>
+          <strong>Visite :</strong> VIP dans les 3 mois suivant l'embauche.<br>
+          <strong>Périodicité :</strong> Tous les 5 ans maximum.<br>
+          <strong>Réalisée par :</strong> Médecin du travail, collaborateur médecin, interne ou infirmier.<br>
+          <strong>Document délivré :</strong> Attestation de suivi.
+        </div>
+        <div style="background:#ffebee; padding:12px; border-radius:6px; font-size:13px;">
+          <strong style="color:#c0392b;">Suivi individuel renforcé (SIR)</strong><br>
+          Concerne les salariés exposés à des <strong>risques particuliers</strong> : amiante, plomb, agents chimiques dangereux, travail en hauteur, travail de nuit, etc.<br><br>
+          <strong>Visite :</strong> Examen médical d'aptitude <strong>avant</strong> l'affectation au poste.<br>
+          <strong>Périodicité :</strong> Tous les 2 à 4 ans maximum.<br>
+          <strong>Réalisée par :</strong> Médecin du travail uniquement.<br>
+          <strong>Document délivré :</strong> Avis d'aptitude ou d'inaptitude.
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q3</span>
+        <span>À partir du Doc. A, <strong>identifiez</strong> le type de visite médicale que Nathan doit passer avant de commencer à travailler. Justifiez votre réponse.</span>
+      </div>
+      <textarea class="reponse" placeholder="Quel type de visite ? Pourquoi ?" oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q3s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q3s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q3s1')">Pourquoi</button>
+      </div>
+      <div id="i-q3s1" class="aide-box aide-indice">Nathan est exposé à des produits chimiques. Regardez dans le Doc. B quel type de suivi cela impose.</div>
+      <div id="c-q3s1" class="aide-box aide-corrige">Nathan doit passer un <strong>examen médical d'aptitude</strong> (suivi individuel renforcé) car il est exposé à des <strong>agents chimiques dangereux</strong> (peintures, solvants). Cet examen a lieu <strong>avant</strong> l'affectation au poste.</div>
+      <div id="p-q3s1" class="aide-box aide-pourquoi">Les salariés exposés à des risques particuliers (produits chimiques, amiante, plomb, travail de nuit...) bénéficient d'un suivi renforcé. Le médecin du travail doit vérifier leur aptitude avant qu'ils ne commencent à travailler.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q4</span>
+        <span>À l'aide du Doc. B, <strong>complétez</strong> le tableau comparatif des deux types de suivi médical.</span>
+      </div>
+      <table>
+        <tr><th></th><th>Suivi individuel simple</th><th>Suivi individuel renforcé</th></tr>
+        <tr><td><strong>Salariés concernés</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Visite d'embauche</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Périodicité</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Document délivré</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q4s1')">Corrigé</button>
+      </div>
+      <div id="c-q4s1" class="aide-box aide-corrige">
+        <strong>Simple :</strong> Salariés sans risques particuliers / VIP dans les 3 mois / Tous les 5 ans / Attestation de suivi.<br>
+        <strong>Renforcé :</strong> Salariés exposés à des risques particuliers / Examen d'aptitude avant l'affectation / Tous les 2 à 4 ans / Avis d'aptitude ou d'inaptitude.
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q5</span>
+        <span><strong>Expliquez</strong> en quoi les visites médicales protègent la santé du salarié. Donnez au moins 3 intérêts.</span>
+      </div>
+      <textarea class="reponse" placeholder="Les intérêts des visites médicales pour le salarié..." oninput="autoResize(this)" style="min-height:90px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q5s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q5s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q5s1')">Pourquoi</button>
+      </div>
+      <div id="i-q5s1" class="aide-box aide-indice">Pensez à la prévention, au dépistage précoce, à l'adaptation du poste et au suivi dans le temps.</div>
+      <div id="c-q5s1" class="aide-box aide-corrige">Les visites médicales permettent de : <strong>1)</strong> Vérifier l'aptitude du salarié au poste de travail. <strong>2)</strong> Dépister précocement des maladies professionnelles. <strong>3)</strong> Informer le salarié sur les risques liés à son poste. <strong>4)</strong> Adapter le poste de travail si nécessaire. <strong>5)</strong> Assurer un suivi régulier de l'état de santé tout au long de la carrière.</div>
+      <div id="p-q5s1" class="aide-box aide-pourquoi">Le suivi médical est un outil essentiel de <strong>prévention</strong>. Il ne sert pas uniquement à constater un problème, mais à anticiper les risques, informer le salarié et proposer des solutions (aménagement de poste, reclassement) pour protéger sa santé durablement.</div>
+    </div>
+
+    <!-- Auto-éval S1 -->
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 1 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> La visite d'information et de prévention (VIP) a lieu :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es1q1" value="A"> <label>Dans les 3 mois suivant l'embauche</label></li>
+            <li><input type="radio" name="es1q1" value="B"> <label>Avant l'affectation au poste</label></li>
+            <li><input type="radio" name="es1q1" value="C"> <label>Après un an de travail</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le suivi individuel renforcé concerne les salariés exposés à des risques particuliers.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q2" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q2" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> L'examen médical d'aptitude est réalisé par :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es1q3" value="A"> <label>Le médecin du travail uniquement</label></li>
+            <li><input type="radio" name="es1q3" value="B"> <label>Un infirmier</label></li>
+            <li><input type="radio" name="es1q3" value="C"> <label>Le médecin traitant</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La visite de reprise a lieu après un arrêt maladie de plus de 60 jours.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q4" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q4" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> La périodicité du suivi individuel simple est de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es1q5" value="A"> <label>Tous les ans</label></li>
+            <li><input type="radio" name="es1q5" value="B"> <label>Tous les 5 ans maximum</label></li>
+            <li><input type="radio" name="es1q5" value="C"> <label>Tous les 10 ans</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le suivi individuel renforcé délivre un avis d'aptitude ou d'inaptitude.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q6" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q6" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La visite de pré-reprise a lieu après la reprise du travail.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q7" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q7" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> Que signifie le sigle VIP en santé au travail ?</p>
+          <input type="text" class="court-input" id="es1q8-input" placeholder="Votre réponse...">
+        </div>
+        <button class="btn-valider" onclick="validerSeance(1)">Valider mes réponses</button>
+        <div class="score-block" id="score-s1"><div class="score-num" id="score-num-s1"></div><div class="score-label" id="score-detail-s1"></div></div>
+        <div class="remediation-block" id="remed-s1"><div id="remed-text-s1"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SÉANCE 2 ═══ -->
+<div class="seance-block" data-s="2">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="false">
+    <div class="seance-num">2</div>
+    <div class="seance-header-text">
+      <h2>Séance 2 — Le principe de la vaccination</h2>
+      <div class="seance-obj">Objectif : Expliquer le principe de la vaccination en distinguant antigène et anticorps.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+
+    <div class="index-table">
+      <h3>Compétences travaillées dans cette séance</h3>
+      <ul>
+        <li><span class="badge badge-c2">C2</span> Q6 — Identifier le lien entre la situation de Nathan et la vaccination.</li>
+        <li><span class="badge badge-c3">C3</span> Q7 — Distinguer antigène et anticorps.</li>
+        <li><span class="badge badge-c3">C3</span> Q8 — Expliquer le complexe antigène-anticorps.</li>
+        <li><span class="badge badge-c3">C3</span> Q9 — Décrire la composition d'un vaccin et la réaction de l'organisme.</li>
+      </ul>
+    </div>
+
+    <div class="notions-box">
+      <strong>Notions à retenir — Séance 2</strong>
+      <span>Micro-organisme</span><span>Virulence atténuée</span><span>Antigène</span>
+      <span>Anticorps</span><span>Complexe antigène-anticorps</span><span>Mémoire immunitaire</span>
+      <span>Composition d'un vaccin</span>
+    </div>
+
+    <div class="section-divider">La vaccination : pourquoi ?</div>
+
+    <div class="situation-block">
+      <h3>Suite de la situation — Nathan et la vaccination</h3>
+      <p style="margin-top:10px; font-size:13.5px;">Lors de sa visite médicale, le médecin du travail vérifie le carnet de vaccination de Nathan. Il lui indique que certains <strong>vaccins sont obligatoires</strong> pour travailler dans le bâtiment (notamment le <strong>DTP : diphtérie, tétanos, poliomyélite</strong>). Nathan se demande comment un vaccin peut le protéger contre une maladie.</p>
+    </div>
+
+    <!-- Doc C -->
+    <div class="doc-block" data-doc="C">
+      <h3>Doc. C — Antigène et anticorps</h3>
+      <p><strong>Antigène :</strong> Substance étrangère à l'organisme (virus, bactérie, toxine) qui déclenche une réaction du système immunitaire. Chaque micro-organisme possède des antigènes spécifiques à sa surface.</p>
+      <p style="margin-top:8px;"><strong>Anticorps :</strong> Protéine produite par les <strong>lymphocytes B</strong> (globules blancs) en réponse à la présence d'un antigène. Chaque anticorps est <strong>spécifique</strong> d'un antigène donné.</p>
+      <p style="margin-top:8px;"><strong>Complexe antigène-anticorps :</strong> L'anticorps se fixe sur l'antigène comme une <strong>clé dans une serrure</strong>. Cette fixation permet de <strong>neutraliser</strong> le micro-organisme pathogène, qui sera ensuite détruit par d'autres cellules immunitaires.</p>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c2">C2</span>
+        <span class="question-num">Q6</span>
+        <span>À partir de la situation, <strong>indiquez</strong> pourquoi le médecin du travail vérifie le carnet de vaccination de Nathan.</span>
+      </div>
+      <textarea class="reponse" placeholder="Pourquoi le médecin vérifie-t-il les vaccins de Nathan ?" oninput="autoResize(this)"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q6s2')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q6s2')">Corrigé</button>
+      </div>
+      <div id="i-q6s2" class="aide-box aide-indice">Pensez aux risques liés au métier de peintre en bâtiment (travail sur chantier, blessures possibles...).</div>
+      <div id="c-q6s2" class="aide-box aide-corrige">Le médecin du travail vérifie le carnet de vaccination de Nathan car certains <strong>vaccins sont obligatoires</strong> pour exercer dans le bâtiment. Nathan est exposé à des risques d'infection (blessures sur chantier, contact avec des matériaux contaminés), notamment le <strong>tétanos</strong>.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q7</span>
+        <span>À partir du Doc. C, <strong>distinguez</strong> un antigène et un anticorps en complétant le tableau.</span>
+      </div>
+      <table>
+        <tr><th></th><th>Antigène</th><th>Anticorps</th></tr>
+        <tr><td><strong>Définition</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Origine</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Rôle</strong></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q7s2')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q7s2')">Pourquoi</button>
+      </div>
+      <div id="c-q7s2" class="aide-box aide-corrige">
+        <strong>Antigène :</strong> Substance étrangère à l'organisme / Présent à la surface des micro-organismes / Déclenche la réaction immunitaire.<br>
+        <strong>Anticorps :</strong> Protéine de défense / Produit par les lymphocytes B / Neutralise l'antigène en se fixant dessus (spécificité).
+      </div>
+      <div id="p-q7s2" class="aide-box aide-pourquoi">L'antigène est « l'agresseur » et l'anticorps est « le défenseur ». Chaque anticorps est fabriqué sur mesure pour un antigène précis : c'est le principe de la <strong>spécificité</strong>.</div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q8</span>
+        <span><strong>Expliquez</strong> le principe du complexe antigène-anticorps et son intérêt pour l'organisme.</span>
+      </div>
+      <textarea class="reponse" placeholder="Comment fonctionne le complexe antigène-anticorps ?" oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q8s2')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q8s2')">Corrigé</button>
+      </div>
+      <div id="i-q8s2" class="aide-box aide-indice">Pensez à l'image de la clé et de la serrure. Que se passe-t-il quand l'anticorps se fixe sur l'antigène ?</div>
+      <div id="c-q8s2" class="aide-box aide-corrige">L'anticorps se fixe spécifiquement sur l'antigène (comme une <strong>clé dans une serrure</strong>). Cette fixation forme le <strong>complexe antigène-anticorps</strong> qui <strong>neutralise</strong> le micro-organisme pathogène. Celui-ci est ensuite détruit par d'autres cellules immunitaires. L'intérêt est d'<strong>éliminer l'agent infectieux</strong> et de protéger l'organisme.</div>
+    </div>
+
+    <!-- Doc D -->
+    <div class="section-divider">Composition et fonctionnement d'un vaccin</div>
+
+    <div class="doc-block" data-doc="D">
+      <h3>Doc. D — La composition d'un vaccin et la réaction de l'organisme</h3>
+      <p>Un vaccin contient :</p>
+      <ul style="padding-left:18px; margin:8px 0;">
+        <li>Un <strong>micro-organisme</strong> (virus ou bactérie) <strong>atténué</strong> (affaibli) ou <strong>inactivé</strong> (tué), ou un fragment de celui-ci (protéine de surface).</li>
+        <li>Des <strong>adjuvants</strong> (substances qui renforcent la réponse immunitaire).</li>
+        <li>Des <strong>conservateurs</strong> et des <strong>stabilisants</strong>.</li>
+      </ul>
+      <div style="background:#e8f0fe; border-radius:8px; padding:12px; margin-top:12px; font-size:13px;">
+        <strong>Principe de la vaccination :</strong><br>
+        <strong>1.</strong> On injecte un antigène à <strong>virulence atténuée</strong> (qui ne rend pas malade).<br>
+        <strong>2.</strong> L'organisme reconnaît l'antigène et produit des <strong>anticorps spécifiques</strong>.<br>
+        <strong>3.</strong> Des <strong>lymphocytes mémoire</strong> sont créés et restent dans l'organisme.<br>
+        <strong>4.</strong> Lors d'un contact ultérieur avec le vrai micro-organisme, la réponse immunitaire est <strong>plus rapide et plus efficace</strong> grâce à la mémoire immunitaire.
+      </div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q9</span>
+        <span>À partir du Doc. D, <strong>décrivez</strong> les 4 étapes de la réaction de l'organisme après la vaccination.</span>
+      </div>
+      <table>
+        <tr><th>Étape</th><th>Ce qui se passe</th></tr>
+        <tr><td><strong>1. Injection</strong></td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>2. Reconnaissance</strong></td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>3. Mémorisation</strong></td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>4. Protection</strong></td><td><textarea class="reponse" placeholder="..." oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q9s2')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q9s2')">Pourquoi</button>
+      </div>
+      <div id="c-q9s2" class="aide-box aide-corrige">
+        <strong>1.</strong> On injecte un antigène à virulence atténuée (le vaccin).<br>
+        <strong>2.</strong> L'organisme reconnaît l'antigène et produit des anticorps spécifiques.<br>
+        <strong>3.</strong> Des lymphocytes mémoire sont créés et restent dans l'organisme.<br>
+        <strong>4.</strong> Lors d'un vrai contact avec le micro-organisme, la réponse est plus rapide et plus efficace grâce à la mémoire immunitaire.
+      </div>
+      <div id="p-q9s2" class="aide-box aide-pourquoi">Le vaccin « entraîne » le système immunitaire sans rendre malade. C'est comme un exercice d'entraînement : le corps apprend à se défendre pour être prêt le jour où le vrai danger se présente.</div>
+    </div>
+
+    <!-- Auto-éval S2 -->
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 2 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> Un antigène est :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es2q1" value="A"> <label>Une substance étrangère à l'organisme qui déclenche une réaction immunitaire</label></li>
+            <li><input type="radio" name="es2q1" value="B"> <label>Une protéine fabriquée par les globules blancs</label></li>
+            <li><input type="radio" name="es2q1" value="C"> <label>Un médicament contre les infections</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Un anticorps est spécifique d'un antigène donné.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q2" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q2" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Un vaccin contient :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es2q3" value="A"> <label>Un micro-organisme atténué ou inactivé</label></li>
+            <li><input type="radio" name="es2q3" value="B"> <label>Des anticorps prêts à l'emploi</label></li>
+            <li><input type="radio" name="es2q3" value="C"> <label>Des antibiotiques</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le vaccin rend malade car il contient un micro-organisme.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q4" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q4" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Le complexe antigène-anticorps permet de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es2q5" value="A"> <label>Neutraliser le micro-organisme pathogène</label></li>
+            <li><input type="radio" name="es2q5" value="B"> <label>Renforcer le micro-organisme</label></li>
+            <li><input type="radio" name="es2q5" value="C"> <label>Détruire les globules blancs</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Les lymphocytes mémoire permettent une réponse immunitaire plus rapide lors d'un second contact.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q6" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q6" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La virulence atténuée signifie que le micro-organisme du vaccin est très dangereux.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q7" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q7" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> Les anticorps sont produits par quelles cellules ?</p>
+          <input type="text" class="court-input" id="es2q8-input" placeholder="Votre réponse...">
+        </div>
+        <button class="btn-valider" onclick="validerSeance(2)">Valider mes réponses</button>
+        <div class="score-block" id="score-s2"><div class="score-num" id="score-num-s2"></div><div class="score-label" id="score-detail-s2"></div></div>
+        <div class="remediation-block" id="remed-s2"><div id="remed-text-s2"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SÉANCE 3 ═══ -->
+<div class="seance-block" data-s="3">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="false">
+    <div class="seance-num">3</div>
+    <div class="seance-header-text">
+      <h2>Séance 3 — L'intérêt de la vaccination pour l'individu et la collectivité</h2>
+      <div class="seance-obj">Objectif : Expliquer l'intérêt de la vaccination individuelle et collective, identifier les vaccins obligatoires.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+
+    <div class="index-table">
+      <h3>Compétences travaillées dans cette séance</h3>
+      <ul>
+        <li><span class="badge badge-c3">C3</span> Q10 — Expliquer l'intérêt de la vaccination et des rappels pour l'individu.</li>
+        <li><span class="badge badge-c3">C3</span> Q11 — Expliquer l'intérêt de la vaccination pour la collectivité.</li>
+        <li><span class="badge badge-c3">C3</span> Q12 — Identifier les vaccins obligatoires en France.</li>
+        <li><span class="badge badge-c4">C4</span> Q13 — Proposer les vaccinations nécessaires pour Nathan.</li>
+      </ul>
+    </div>
+
+    <div class="notions-box">
+      <strong>Notions à retenir — Séance 3</strong>
+      <span>Protection individuelle</span><span>Protection collective</span><span>Immunité de groupe</span>
+      <span>Vaccins obligatoires</span><span>Rappels vaccinaux</span><span>Vaccins professionnels</span>
+    </div>
+
+    <div class="section-divider">Protection individuelle et rappels</div>
+
+    <!-- Doc E -->
+    <div class="doc-block" data-doc="E">
+      <h3>Doc. E — L'intérêt des rappels vaccinaux</h3>
+      <p>Après une vaccination, le taux d'anticorps augmente puis <strong>diminue progressivement</strong> avec le temps. Les <strong>rappels vaccinaux</strong> permettent de relancer la production d'anticorps et de maintenir la <strong>mémoire immunitaire</strong> à un niveau suffisant pour protéger l'individu.</p>
+      <div style="background:#fff8e7; padding:10px; border-radius:6px; margin-top:10px; font-size:13px;">
+        <strong>Exemple :</strong> Le vaccin contre le tétanos nécessite des rappels à <strong>25, 45 et 65 ans</strong>, puis tous les <strong>10 ans</strong>. Sans rappel, la protection diminue et l'individu redevient vulnérable.
+      </div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q10</span>
+        <span>À partir du Doc. E, <strong>expliquez</strong> pourquoi les rappels vaccinaux sont nécessaires pour la protection individuelle.</span>
+      </div>
+      <textarea class="reponse" placeholder="Pourquoi faut-il faire des rappels ?" oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q10s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q10s3')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q10s3')">Pourquoi</button>
+      </div>
+      <div id="i-q10s3" class="aide-box aide-indice">Que se passe-t-il avec le taux d'anticorps au fil du temps si on ne fait pas de rappel ?</div>
+      <div id="c-q10s3" class="aide-box aide-corrige">Les rappels sont nécessaires car le taux d'anticorps <strong>diminue avec le temps</strong> après la vaccination. Les rappels permettent de <strong>relancer la production d'anticorps</strong> et de maintenir la mémoire immunitaire active, assurant ainsi une <strong>protection durable</strong> de l'individu.</div>
+      <div id="p-q10s3" class="aide-box aide-pourquoi">Sans rappel, le corps « oublie » progressivement comment se défendre contre le micro-organisme. Le rappel est comme une « piqûre de rappel » au sens propre : il rappelle au système immunitaire comment fabriquer les bons anticorps.</div>
+    </div>
+
+    <!-- Doc F -->
+    <div class="section-divider">Protection collective</div>
+
+    <div class="doc-block" data-doc="F">
+      <h3>Doc. F — La vaccination : une protection collective</h3>
+      <p>Lorsqu'un nombre suffisant de personnes est vacciné dans une population (en général <strong>plus de 95 %</strong>), on parle d'<strong>immunité de groupe</strong> (ou immunité collective). Le micro-organisme ne peut plus circuler facilement car il rencontre trop de personnes protégées. Cela protège également les personnes qui <strong>ne peuvent pas être vaccinées</strong> : nourrissons trop jeunes, personnes immunodéprimées, femmes enceintes.</p>
+      <div style="background:#e8f5e9; padding:10px; border-radius:6px; margin-top:10px; font-size:13px;">
+        <strong>Exemple concret :</strong> Grâce à la vaccination obligatoire, la <strong>variole</strong> a été complètement éradiquée dans le monde en 1980. La <strong>poliomyélite</strong> est en voie d'éradication.
+      </div>
+    </div>
+
+    <!-- Q11 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q11</span>
+        <span>À partir du Doc. F, <strong>expliquez</strong> en quoi la vaccination protège la collectivité. Citez les personnes protégées indirectement.</span>
+      </div>
+      <textarea class="reponse" placeholder="Comment la vaccination protège-t-elle la collectivité ?" oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q11s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q11s3')">Corrigé</button>
+      </div>
+      <div id="i-q11s3" class="aide-box aide-indice">Pensez à l'immunité de groupe : que se passe-t-il si 95 % de la population est vaccinée ? Qui en bénéficie sans être vacciné ?</div>
+      <div id="c-q11s3" class="aide-box aide-corrige">Quand un nombre suffisant de personnes est vacciné (environ 95 %), on obtient l'<strong>immunité de groupe</strong> : le micro-organisme ne peut plus circuler facilement. Cela protège indirectement les personnes qui ne peuvent pas être vaccinées : les <strong>nourrissons</strong>, les <strong>personnes immunodéprimées</strong> et les <strong>femmes enceintes</strong>.</div>
+    </div>
+
+    <!-- Doc G -->
+    <div class="section-divider">Les vaccins obligatoires</div>
+
+    <div class="doc-block" data-doc="G">
+      <h3>Doc. G — Les vaccins obligatoires en France</h3>
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:10px;">
+        <div style="background:#e8f0fe; padding:12px; border-radius:6px; font-size:13px;">
+          <strong style="color:#1a6fa8;">Vaccins obligatoires pour tous (depuis 2018)</strong><br>
+          11 vaccins obligatoires pour les nourrissons :<br>
+          Diphtérie, Tétanos, Poliomyélite (DTP), Coqueluche, Haemophilus influenzae b, Hépatite B, Pneumocoque, Méningocoque C, Rougeole, Oreillons, Rubéole.
+        </div>
+        <div style="background:#fff5f5; padding:12px; border-radius:6px; font-size:13px;">
+          <strong style="color:#c0392b;">Vaccins obligatoires selon le secteur professionnel</strong><br>
+          <strong>Bâtiment / BTP :</strong> DTP (diphtérie, tétanos, poliomyélite) — le tétanos est un risque majeur sur les chantiers.<br>
+          <strong>Santé :</strong> Hépatite B, DTP, et selon les postes : grippe, varicelle, tuberculose (BCG).<br>
+          <strong>Petite enfance :</strong> DTP, coqueluche.<br>
+          <strong>Assainissement :</strong> Hépatite A, leptospirose.
+        </div>
+      </div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q12</span>
+        <span>À partir du Doc. G, <strong>identifiez</strong> les vaccins obligatoires pour Nathan et expliquez pourquoi le tétanos est particulièrement important pour son métier.</span>
+      </div>
+      <textarea class="reponse" placeholder="Quels vaccins pour Nathan ? Pourquoi le tétanos ?" oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q12s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q12s3')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q12s3')">Pourquoi</button>
+      </div>
+      <div id="i-q12s3" class="aide-box aide-indice">Nathan travaille dans le bâtiment. Regardez la colonne « BTP » du Doc. G. Pourquoi les blessures sur chantier rendent le tétanos dangereux ?</div>
+      <div id="c-q12s3" class="aide-box aide-corrige">Nathan doit être vacciné contre la <strong>diphtérie, le tétanos et la poliomyélite (DTP)</strong>. Le tétanos est particulièrement important car sur les chantiers, les risques de <strong>blessures par des objets métalliques rouillés ou souillés de terre</strong> sont fréquents, et la bactérie du tétanos (Clostridium tetani) se trouve dans le sol.</div>
+      <div id="p-q12s3" class="aide-box aide-pourquoi">Le tétanos est une maladie mortelle causée par une bactérie présente dans la terre. Les ouvriers du bâtiment sont très exposés car ils se blessent fréquemment avec des clous, des morceaux de métal, etc. La vaccination est le seul moyen de prévention efficace.</div>
+    </div>
+
+    <!-- Q13 — Proposer des solutions -->
+    <div class="section-divider">Proposer des solutions</div>
+
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c4">C4</span>
+        <span class="question-num">Q13</span>
+        <span>En reprenant l'ensemble de la situation de Nathan, <strong>proposez</strong> un bilan complet de son suivi médical et de ses obligations vaccinales.</span>
+      </div>
+      <table>
+        <tr><th>Élément</th><th>Votre réponse</th></tr>
+        <tr><td><strong>Type de suivi médical</strong></td>
+          <td><textarea class="reponse" placeholder="Simple ou renforcé ? Pourquoi ?" oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Visite à passer</strong></td>
+          <td><textarea class="reponse" placeholder="Quel type de visite ?" oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Vaccins obligatoires</strong></td>
+          <td><textarea class="reponse" placeholder="Lesquels ?" oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Intérêt pour Nathan</strong></td>
+          <td><textarea class="reponse" placeholder="En quoi cela le protège ?" oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Intérêt pour ses collègues</strong></td>
+          <td><textarea class="reponse" placeholder="En quoi cela protège les autres ?" oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q13s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q13s3')">Corrigé</button>
+      </div>
+      <div id="i-q13s3" class="aide-box aide-indice">Reprenez les réponses des Q3, Q4, Q5 et Q12. Combinez suivi médical + vaccination + protection individuelle et collective.</div>
+      <div id="c-q13s3" class="aide-box aide-corrige">
+        <strong>Suivi :</strong> Suivi individuel renforcé (exposition aux produits chimiques).<br>
+        <strong>Visite :</strong> Examen médical d'aptitude avant l'affectation au poste.<br>
+        <strong>Vaccins :</strong> DTP (diphtérie, tétanos, poliomyélite) obligatoire pour le BTP.<br>
+        <strong>Intérêt individuel :</strong> Vérifier son aptitude, dépister d'éventuels problèmes, le protéger contre le tétanos et les maladies infectieuses.<br>
+        <strong>Intérêt collectif :</strong> En étant vacciné, Nathan ne transmet pas de maladies à ses collègues et contribue à l'immunité de groupe sur le chantier.
+      </div>
+    </div>
+
+    <!-- Je retiens l'essentiel -->
+    <div class="retiens-block">
+      <h2>Je retiens l'essentiel — Module C7</h2>
+      <div class="retiens-section">
+        <h3>1. Le suivi médical du salarié</h3>
+        <ul>
+          <li>Le <strong>suivi individuel simple</strong> (VIP dans les 3 mois, tous les 5 ans) concerne les salariés sans risques particuliers.</li>
+          <li>Le <strong>suivi individuel renforcé</strong> (examen d'aptitude avant l'affectation, tous les 2 à 4 ans) concerne les salariés exposés à des risques particuliers.</li>
+          <li>Les visites médicales protègent la santé du salarié : <strong>aptitude au poste, dépistage, prévention, adaptation</strong>.</li>
+        </ul>
+      </div>
+      <div class="retiens-section">
+        <h3>2. Le principe de la vaccination</h3>
+        <ul>
+          <li><strong>Antigène</strong> = substance étrangère qui déclenche la réaction immunitaire.</li>
+          <li><strong>Anticorps</strong> = protéine de défense spécifique produite par les lymphocytes B.</li>
+          <li>Le vaccin contient un antigène à <strong>virulence atténuée</strong> qui permet au corps de fabriquer des anticorps et des <strong>lymphocytes mémoire</strong>.</li>
+        </ul>
+      </div>
+      <div class="retiens-section">
+        <h3>3. L'intérêt de la vaccination</h3>
+        <ul>
+          <li><strong>Protection individuelle :</strong> le vaccin protège l'individu contre une maladie. Les rappels maintiennent cette protection.</li>
+          <li><strong>Protection collective :</strong> l'immunité de groupe (environ 95 % de vaccinés) empêche la circulation du micro-organisme et protège les personnes non vaccinées.</li>
+          <li><strong>Vaccins obligatoires :</strong> 11 vaccins pour tous les nourrissons + vaccins spécifiques selon le secteur professionnel.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Auto-éval S3 -->
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 3 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">V/F</span> Les rappels vaccinaux sont inutiles car le corps garde les anticorps toute la vie.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q1" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q1" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> L'immunité de groupe est atteinte quand environ :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es3q2" value="A"> <label>95 % de la population est vaccinée</label></li>
+            <li><input type="radio" name="es3q2" value="B"> <label>50 % de la population est vaccinée</label></li>
+            <li><input type="radio" name="es3q2" value="C"> <label>100 % de la population est vaccinée</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Le vaccin obligatoire pour les travailleurs du bâtiment est :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es3q3" value="A"> <label>DTP (diphtérie, tétanos, poliomyélite)</label></li>
+            <li><input type="radio" name="es3q3" value="B"> <label>Hépatite B</label></li>
+            <li><input type="radio" name="es3q3" value="C"> <label>BCG (tuberculose)</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La vaccination protège uniquement la personne vaccinée.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q4" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q4" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Depuis 2018, 11 vaccins sont obligatoires pour les nourrissons en France.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q5" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q5" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Les personnes protégées indirectement par l'immunité de groupe sont :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es3q6" value="A"> <label>Les nourrissons, les immunodéprimés, les femmes enceintes</label></li>
+            <li><input type="radio" name="es3q6" value="B"> <label>Les sportifs de haut niveau</label></li>
+            <li><input type="radio" name="es3q6" value="C"> <label>Les personnes déjà vaccinées</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La variole a été éradiquée grâce à la vaccination.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q7" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q7" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> Complétez : Le rappel du vaccin contre le tétanos se fait à 25, 45 et 65 ans, puis tous les ______ ans.</p>
+          <input type="text" class="court-input" id="es3q8-input" placeholder="Votre réponse...">
+        </div>
+        <button class="btn-valider" onclick="validerSeance(3)">Valider mes réponses</button>
+        <div class="score-block" id="score-s3"><div class="score-num" id="score-num-s3"></div><div class="score-label" id="score-detail-s3"></div></div>
+        <div class="remediation-block" id="remed-s3"><div id="remed-text-s3"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Ressource pédagogique — M. MECHERI — mapse.fr
+</footer>
+
+<script>
+/* === ACCORDION === */
+function toggleSeance(el) {
+  const block = el.closest('.seance-block');
+  block.classList.toggle('open');
+  el.setAttribute('aria-expanded', block.classList.contains('open'));
+}
+
+/* === AUTO-RESIZE TEXTAREA === */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+/* === TOGGLE AIDE (INDICE / CORRIGÉ / POURQUOI) === */
+function toggle(btn, type, id) {
+  const box = document.getElementById(id);
+  const isVisible = box.classList.contains('show');
+  const qBlock = btn.closest('.question-block');
+  if (qBlock) {
+    qBlock.querySelectorAll('.aide-box').forEach(b => b.classList.remove('show'));
+    qBlock.querySelectorAll('.btn-aide').forEach(b => b.classList.remove('active'));
+  }
+  if (!isVisible) {
+    box.classList.add('show');
+    btn.classList.add('active');
+  }
+}
+
+/* === ANSWERS === */
+const answers = {
+  1: { es1q1:'A', es1q2:'V', es1q3:'A', es1q4:'V', es1q5:'B', es1q6:'V', es1q7:'F', es1q8:['visite','information','prévention','prevention'] },
+  2: { es2q1:'A', es2q2:'V', es2q3:'A', es2q4:'F', es2q5:'A', es2q6:'V', es2q7:'F', es2q8:['lymphocyte','lymphocytes b','globule','globules blancs'] },
+  3: { es3q1:'F', es3q2:'A', es3q3:'A', es3q4:'F', es3q5:'V', es3q6:'A', es3q7:'V', es3q8:['10','dix'] }
+};
+
+const remediations = {
+  1: {
+    low: '<strong>Reprends la séance 1 depuis le début.</strong> Relis attentivement le Doc. A (les visites médicales) et le Doc. B (suivi simple vs renforcé). Retiens : VIP = 3 mois, SIR = avant l\'affectation.',
+    mid: '<strong>Tu as les bases !</strong> Revois la différence entre suivi simple et suivi renforcé (Doc. B). Pense aux documents délivrés : attestation de suivi vs avis d\'aptitude.',
+    good: '<strong>Bon travail !</strong> Vérifie les points qui t\'ont posé problème, notamment la périodicité des visites.',
+    top: '<strong>Excellent !</strong> Tu maîtrises parfaitement le suivi médical du salarié. Tu peux passer à la séance 2.'
+  },
+  2: {
+    low: '<strong>Reprends la séance 2.</strong> Concentre-toi sur les définitions : antigène = agresseur, anticorps = défenseur. Relis le Doc. D sur le fonctionnement du vaccin.',
+    mid: '<strong>Encourageant !</strong> Revois le principe du complexe antigène-anticorps (clé/serrure) et la mémoire immunitaire.',
+    good: '<strong>Très bien !</strong> Quelques détails à revoir. Relis la composition du vaccin si besoin.',
+    top: '<strong>Parfait !</strong> Tu comprends le principe de la vaccination. Passe à la séance 3.'
+  },
+  3: {
+    low: '<strong>Reprends la séance 3.</strong> Relis le Doc. E (rappels) et le Doc. F (immunité de groupe). Retiens : 95 % de vaccinés = protection collective.',
+    mid: '<strong>Tu progresses !</strong> Revois les vaccins obligatoires selon le secteur professionnel (Doc. G) et l\'intérêt des rappels.',
+    good: '<strong>Bravo !</strong> Tu connais bien les enjeux de la vaccination. Vérifie les derniers détails.',
+    top: '<strong>Félicitations !</strong> Tu maîtrises le module C7 ! Tu es prêt(e) pour l\'évaluation.'
+  }
+};
+
+function validerSeance(s) {
+  const A = answers[s];
+  let score = 0, total = 8;
+  const errors = [];
+
+  if (s === 1) {
+    const q1 = document.querySelector('input[name="es1q1"]:checked');
+    if (q1 && q1.value === A.es1q1) score++; else errors.push('Q1 (réponse : A — dans les 3 mois)');
+    const q2 = document.querySelector('input[name="es1q2"]:checked');
+    if (q2 && q2.value === A.es1q2) score++; else errors.push('Q2 (réponse : Vrai)');
+    const q3 = document.querySelector('input[name="es1q3"]:checked');
+    if (q3 && q3.value === A.es1q3) score++; else errors.push('Q3 (réponse : A — médecin du travail)');
+    const q4 = document.querySelector('input[name="es1q4"]:checked');
+    if (q4 && q4.value === A.es1q4) score++; else errors.push('Q4 (réponse : Vrai)');
+    const q5 = document.querySelector('input[name="es1q5"]:checked');
+    if (q5 && q5.value === A.es1q5) score++; else errors.push('Q5 (réponse : B — tous les 5 ans)');
+    const q6 = document.querySelector('input[name="es1q6"]:checked');
+    if (q6 && q6.value === A.es1q6) score++; else errors.push('Q6 (réponse : Vrai)');
+    const q7 = document.querySelector('input[name="es1q7"]:checked');
+    if (q7 && q7.value === A.es1q7) score++; else errors.push('Q7 (réponse : Faux — elle a lieu pendant l\'arrêt)');
+    const q8v = (document.getElementById('es1q8-input').value || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    if (A.es1q8.some(k => q8v.includes(k.normalize("NFD").replace(/[\u0300-\u036f]/g,"")))) score++; else errors.push('Q8 (réponse : Visite d\'Information et de Prévention)');
+  } else if (s === 2) {
+    const q1 = document.querySelector('input[name="es2q1"]:checked');
+    if (q1 && q1.value === A.es2q1) score++; else errors.push('Q1 (réponse : A — substance étrangère)');
+    const q2 = document.querySelector('input[name="es2q2"]:checked');
+    if (q2 && q2.value === A.es2q2) score++; else errors.push('Q2 (réponse : Vrai)');
+    const q3 = document.querySelector('input[name="es2q3"]:checked');
+    if (q3 && q3.value === A.es2q3) score++; else errors.push('Q3 (réponse : A — micro-organisme atténué)');
+    const q4 = document.querySelector('input[name="es2q4"]:checked');
+    if (q4 && q4.value === A.es2q4) score++; else errors.push('Q4 (réponse : Faux — virulence atténuée)');
+    const q5 = document.querySelector('input[name="es2q5"]:checked');
+    if (q5 && q5.value === A.es2q5) score++; else errors.push('Q5 (réponse : A — neutraliser le pathogène)');
+    const q6 = document.querySelector('input[name="es2q6"]:checked');
+    if (q6 && q6.value === A.es2q6) score++; else errors.push('Q6 (réponse : Vrai)');
+    const q7 = document.querySelector('input[name="es2q7"]:checked');
+    if (q7 && q7.value === A.es2q7) score++; else errors.push('Q7 (réponse : Faux — virulence atténuée = affaibli)');
+    const q8v = (document.getElementById('es2q8-input').value || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    if (A.es2q8.some(k => q8v.includes(k.normalize("NFD").replace(/[\u0300-\u036f]/g,"")))) score++; else errors.push('Q8 (réponse : lymphocytes B)');
+  } else if (s === 3) {
+    const q1 = document.querySelector('input[name="es3q1"]:checked');
+    if (q1 && q1.value === A.es3q1) score++; else errors.push('Q1 (réponse : Faux — les anticorps diminuent)');
+    const q2 = document.querySelector('input[name="es3q2"]:checked');
+    if (q2 && q2.value === A.es3q2) score++; else errors.push('Q2 (réponse : A — 95 %)');
+    const q3 = document.querySelector('input[name="es3q3"]:checked');
+    if (q3 && q3.value === A.es3q3) score++; else errors.push('Q3 (réponse : A — DTP)');
+    const q4 = document.querySelector('input[name="es3q4"]:checked');
+    if (q4 && q4.value === A.es3q4) score++; else errors.push('Q4 (réponse : Faux — aussi la collectivité)');
+    const q5 = document.querySelector('input[name="es3q5"]:checked');
+    if (q5 && q5.value === A.es3q5) score++; else errors.push('Q5 (réponse : Vrai)');
+    const q6 = document.querySelector('input[name="es3q6"]:checked');
+    if (q6 && q6.value === A.es3q6) score++; else errors.push('Q6 (réponse : A — nourrissons, immunodéprimés, enceintes)');
+    const q7 = document.querySelector('input[name="es3q7"]:checked');
+    if (q7 && q7.value === A.es3q7) score++; else errors.push('Q7 (réponse : Vrai)');
+    const q8v = (document.getElementById('es3q8-input').value || '').trim().toLowerCase();
+    if (A.es3q8.some(k => q8v.includes(k))) score++; else errors.push('Q8 (réponse : 10 ans)');
+  }
+
+  const colors = { low: '#fff3e0', mid: '#e3f2fd', good: '#e8f5e9', top: '#f3e5f5' };
+  const borderC = { low: '#ff9800', mid: '#2196f3', good: '#4caf50', top: '#9c27b0' };
+  let level = score <= 2 ? 'low' : score <= 5 ? 'mid' : score <= 7 ? 'good' : 'top';
+
+  const scoreBlock = document.getElementById('score-s' + s);
+  scoreBlock.style.background = colors[level];
+  scoreBlock.style.border = '2px solid ' + borderC[level];
+  document.getElementById('score-num-s' + s).textContent = score + ' / ' + total;
+  document.getElementById('score-detail-s' + s).innerHTML = errors.length > 0
+    ? '<strong>À revoir :</strong> ' + errors.join(' — ')
+    : '<strong>Toutes les réponses sont correctes !</strong>';
+  scoreBlock.classList.add('show');
+
+  const R = remediations[s];
+  const remedBlock = document.getElementById('remed-s' + s);
+  remedBlock.style.background = colors[level];
+  remedBlock.style.borderColor = borderC[level];
+  document.getElementById('remed-text-s' + s).innerHTML = R[level];
+  remedBlock.classList.add('show');
+
+  scoreBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module D3 — Les achats</title>
+<style>
+  :root {
+    --c1: #1a6fa8;
+    --c2: #e07b00;
+    --c3: #2d9e5c;
+    --c4: #8b3fa8;
+    --c6: #555;
+    --s1: #c0392b;
+    --s2: #2d9e5c;
+    --s3: #8b3fa8;
+    --bg: #f5f6fa;
+    --card: #fff;
+    --border: #dde3ed;
+    --text: #1a1f2e;
+    --muted: #6b7280;
+    --accent: #c0392b;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'Segoe UI', 'Calibri', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-tap-highlight-color: transparent;
+  }
+  input[type=radio] { accent-color: var(--accent); cursor: pointer; }
+  label { cursor: pointer; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #7b1a1a 0%, #c0392b 60%, #e74c3c 100%);
+    color: #fff;
+    padding: 28px 32px 20px;
+    position: relative;
+  }
+  header .module-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  header .objectif {
+    font-size: 13px;
+    color: rgba(255,255,255,0.82);
+    max-width: 750px;
+    border-left: 3px solid rgba(255,255,255,0.4);
+    padding-left: 12px;
+    margin-top: 10px;
+  }
+  header .thematique {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* PRINT BUTTON */
+  .print-btn {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+  .print-btn:hover { background: rgba(255,255,255,0.28); }
+
+  /* MAIN */
+  main { max-width: 900px; margin: 28px auto; padding: 0 16px 60px; }
+
+  /* ACCORDION */
+  .seance-block { margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); background: var(--card); }
+  .seance-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    border-left: 5px solid;
+    background: var(--card);
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .seance-header:hover { background: #f0f4f8; }
+  .seance-block[data-s="1"] .seance-header { border-color: var(--s1); }
+  .seance-block[data-s="2"] .seance-header { border-color: var(--s2); }
+  .seance-block[data-s="3"] .seance-header { border-color: var(--s3); }
+  .seance-num {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0;
+  }
+  .seance-block[data-s="1"] .seance-num { background: var(--s1); }
+  .seance-block[data-s="2"] .seance-num { background: var(--s2); }
+  .seance-block[data-s="3"] .seance-num { background: var(--s3); }
+  .seance-header-text { flex: 1; }
+  .seance-header-text h2 { font-size: 1rem; font-weight: 700; }
+  .seance-header-text .seance-obj { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .seance-chevron { font-size: 20px; color: var(--muted); transition: transform 0.25s; }
+  .seance-body { display: none; padding: 0 22px 24px; border-top: 1px solid var(--border); }
+  .seance-block.open .seance-body { display: block; }
+  .seance-block.open .seance-chevron { transform: rotate(180deg); }
+
+  /* INDEX TABLE */
+  .index-table {
+    background: #f8f9fc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0 20px;
+    font-size: 13px;
+  }
+  .index-table h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .index-table ul { list-style: none; }
+  .index-table li { padding: 3px 0; display: flex; align-items: baseline; gap: 8px; }
+
+  /* COMPETENCE BADGE */
+  .badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+  .badge-c1 { background: var(--c1); }
+  .badge-c2 { background: var(--c2); }
+  .badge-c3 { background: var(--c3); }
+  .badge-c4 { background: var(--c4); }
+  .badge-c6 { background: var(--c6); }
+
+  /* NOTIONS */
+  .notions-box {
+    background: linear-gradient(135deg, #fff8e7 0%, #fff3cd 100%);
+    border: 1px solid #f0c040;
+    border-left: 4px solid #f0c040;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 20px 0;
+    font-size: 13px;
+  }
+  .notions-box strong { display: block; margin-bottom: 6px; color: #8a6500; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  .notions-box span { display: inline-block; background: #fff; border: 1px solid #ddb830; border-radius: 12px; padding: 2px 10px; margin: 2px; font-size: 12px; color: #5a4000; }
+
+  /* SITUATION / DOC BLOCK */
+  .situation-block {
+    background: #fff5f5;
+    border: 1px solid #f0c5c5;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+  }
+  .situation-block h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #c0392b; margin-bottom: 10px; font-weight: 700; }
+  .doc-block {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-left: 4px solid #888;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13.5px;
+  }
+  .doc-block h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 8px; font-weight: 700; }
+  .doc-block[data-doc="A"] { border-left-color: var(--s1); }
+  .doc-block[data-doc="B"] { border-left-color: #5a3; }
+  .doc-block[data-doc="C"] { border-left-color: #a73; }
+  .doc-block[data-doc="D"] { border-left-color: #73a; }
+  .doc-block[data-doc="E"] { border-left-color: #c07000; }
+  .doc-block[data-doc="F"] { border-left-color: #2d9e5c; }
+  .doc-block[data-doc="G"] { border-left-color: #1a6fa8; }
+
+  /* QUESTION BLOCK */
+  .question-block { margin: 22px 0; }
+  .question-label {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-weight: 600; margin-bottom: 8px; font-size: 14.5px;
+  }
+  .question-num {
+    background: #e8eaf6; color: #3949ab;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  textarea.reponse {
+    width: 100%;
+    min-height: 64px;
+    border: 1.5px solid #c5cde0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    resize: none;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  textarea.reponse:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,57,43,0.12); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-aide {
+    padding: 6px 14px;
+    border: 1.5px solid;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+    letter-spacing: 0.3px;
+  }
+  .btn-indice { color: #c07000; border-color: #c07000; }
+  .btn-indice:hover, .btn-indice.active { background: #fff8e7; }
+  .btn-corrige { color: #2d7a45; border-color: #2d7a45; }
+  .btn-corrige:hover, .btn-corrige.active { background: #e8f5ec; }
+  .btn-pourquoi { color: #6738a8; border-color: #6738a8; }
+  .btn-pourquoi:hover, .btn-pourquoi.active { background: #f3eeff; }
+  .aide-box {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    animation: fadeIn 0.2s ease;
+  }
+  .aide-box.show { display: block; }
+  .aide-indice { background: #fff8e7; border-left: 3px solid #c07000; color: #6b4400; }
+  .aide-corrige { background: #e8f5ec; border-left: 3px solid #2d7a45; color: #1a4e2c; }
+  .aide-pourquoi { background: #f3eeff; border-left: 3px solid #6738a8; color: #3b1f6a; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; }
+  th { background: #e8edf5; padding: 9px 12px; text-align: left; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #c5cde0; }
+  td { padding: 8px 12px; border: 1px solid #dde3ed; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8f9fc; }
+
+  /* CHECKBOXES / RADIO */
+  .choix-liste { list-style: none; margin: 8px 0 8px 4px; }
+  .choix-liste li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14px; cursor: pointer; }
+  .choix-liste li input[type=radio], .choix-liste li input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+
+  /* AUTO-EVAL */
+  .autoeval-block {
+    margin-top: 32px;
+    border: 2px solid;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .seance-block[data-s="1"] .autoeval-block { border-color: var(--s1); }
+  .seance-block[data-s="2"] .autoeval-block { border-color: var(--s2); }
+  .seance-block[data-s="3"] .autoeval-block { border-color: var(--s3); }
+  .autoeval-header {
+    padding: 12px 18px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .seance-block[data-s="1"] .autoeval-header { background: var(--s1); }
+  .seance-block[data-s="2"] .autoeval-header { background: var(--s2); }
+  .seance-block[data-s="3"] .autoeval-header { background: var(--s3); }
+  .autoeval-body { padding: 16px 18px; }
+  .eval-question { margin-bottom: 18px; }
+  .eval-question p { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .eval-question p span.qtype { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; background: #e8edf5; color: #444; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+  .eval-options { list-style: none; }
+  .eval-options li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.1s; }
+  .eval-options li:hover { background: #f0f4f8; }
+  .eval-options li input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; }
+  .vf-options { display: flex; gap: 12px; margin-top: 6px; }
+  .vf-options label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; padding: 6px 14px; border: 1.5px solid #c5cde0; border-radius: 20px; transition: all 0.15s; }
+  .vf-options label:hover { background: #f0f4f8; }
+  .vf-options input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .court-input { width: 100%; border: 1.5px solid #c5cde0; border-radius: 6px; padding: 8px 12px; font-family: inherit; font-size: 14px; margin-top: 6px; }
+  .court-input:focus { outline: none; border-color: var(--accent); }
+  .btn-valider {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, #c0392b, #962d22);
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 12px;
+    transition: opacity 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .seance-block[data-s="2"] .btn-valider { background: linear-gradient(135deg, #2d9e5c, #1e6e3e); }
+  .seance-block[data-s="3"] .btn-valider { background: linear-gradient(135deg, #8b3fa8, #6a2d82); }
+  .btn-valider:hover { opacity: 0.9; }
+  .score-block {
+    display: none;
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .score-block.show { display: block; }
+  .score-block .score-num { font-size: 2.5rem; font-weight: 900; }
+  .score-block .score-label { font-size: 13px; margin-top: 4px; }
+  .remediation-block {
+    display: none;
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    border-left: 4px solid;
+  }
+  .remediation-block.show { display: block; }
+
+  /* JE RETIENS L'ESSENTIEL */
+  .retiens-block {
+    background: linear-gradient(135deg, #fff5f5 0%, #fce8e8 100%);
+    border: 2px solid #e0a0a0;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 30px;
+  }
+  .retiens-block h2 { font-size: 1rem; font-weight: 800; color: #7b1a1a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .retiens-section { margin-bottom: 16px; }
+  .retiens-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #c0392b; margin-bottom: 8px; font-weight: 700; border-bottom: 1px solid #e0a0a0; padding-bottom: 4px; }
+  .retiens-section p, .retiens-section ul { font-size: 13.5px; line-height: 1.65; }
+  .retiens-section ul { padding-left: 18px; }
+
+  /* SECTION DIVIDER */
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 24px 0 16px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted);
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 18px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── RESPONSIVE MOBILE ── */
+  @media (max-width: 680px) {
+    header { padding: 16px 14px 48px; }
+    header h1 { font-size: 1.2rem; }
+    header .thematique { font-size: 10px; }
+    .print-btn { bottom: 10px; right: 10px; font-size: 11px; padding: 5px 10px; }
+    main { padding: 0 8px 40px; margin: 14px auto; }
+    .seance-header { padding: 12px 12px; gap: 10px; }
+    .seance-num { width: 36px; height: 36px; font-size: 15px; }
+    .seance-header-text h2 { font-size: 0.88rem; }
+    .seance-body { padding: 0 10px 18px; }
+    .index-table { padding: 10px 12px; font-size: 12px; }
+    .notions-box { padding: 10px 12px; }
+    .notions-box span { font-size: 11px; padding: 2px 8px; }
+    .question-label { font-size: 13.5px; flex-wrap: wrap; }
+    textarea.reponse { font-size: 15px; min-height: 70px; }
+    .btn-row { gap: 6px; margin-top: 10px; }
+    .btn-aide { padding: 9px 14px; font-size: 13px; border-radius: 22px; flex: 1; text-align: center; min-width: 80px; }
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 12.5px; }
+    th { font-size: 11px; padding: 7px 9px; }
+    td { padding: 7px 9px; }
+    td textarea.reponse { min-height: 55px; font-size: 13px; }
+    .doc-block { padding: 10px 12px; font-size: 13px; }
+    .autoeval-header { padding: 10px 14px; font-size: 13px; }
+    .autoeval-body { padding: 12px 12px; }
+    .eval-question p { font-size: 13.5px; }
+    .eval-options li { font-size: 13px; padding: 7px 6px; }
+    .vf-options label { font-size: 13.5px; padding: 8px 16px; flex: 1; justify-content: center; }
+    .court-input { font-size: 15px; padding: 10px 12px; }
+    .btn-valider { font-size: 14px; padding: 13px; }
+    .score-block .score-num { font-size: 2rem; }
+    .retiens-block { padding: 14px 12px; }
+    .retiens-block h2 { font-size: 0.95rem; }
+  }
+  @media (max-width: 380px) {
+    header h1 { font-size: 1.05rem; }
+    .seance-header-text h2 { font-size: 0.8rem; }
+    .btn-aide { font-size: 12px; padding: 8px 10px; }
+  }
+  @media print {
+    body { background: #fff; font-size: 12pt; }
+    header { background: #7b1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 14px 18px; }
+    .print-btn, .btn-aide, .btn-valider, .score-block, .remediation-block, .autoeval-block { display: none !important; }
+    .seance-body { display: block !important; }
+    .seance-block { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    textarea.reponse { border: 1pt solid #999; min-height: 40pt; }
+    .doc-block, .situation-block, .notions-box { break-inside: avoid; }
+    main { max-width: 100%; margin: 10px; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="thematique">Thématique D — L'individu dans ses actes de consommation</div>
+  <div class="module-tag">Module D3</div>
+  <h1>Les achats</h1>
+  <p class="objectif">
+    <strong>Objectif :</strong> Identifier les droits du consommateur, les différents modes d'achat et les recours en cas de litige pour adopter un comportement responsable lors de ses achats.
+  </p>
+  <button class="print-btn" onclick="window.print()">Imprimer</button>
+</header>
+
+<main>
+
+<!-- ═══════════════════════════════════════════ SÉANCE 1 ═══ -->
+<div class="seance-block open" data-s="1">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="true">
+    <div class="seance-num">1</div>
+    <div class="seance-header-text">
+      <h2>Séance 1 — Les droits du consommateur</h2>
+      <div class="seance-obj">Objectif : Identifier les principaux droits qui protègent le consommateur lors de ses achats.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+
+    <div class="index-table">
+      <h3>Compétences travaillées dans cette séance</h3>
+      <ul>
+        <li><span class="badge badge-c2">C2</span> Q1 — Identifier le problème posé dans la situation.</li>
+        <li><span class="badge badge-c2">C2</span> Q2 — Relever les éléments de la situation.</li>
+        <li><span class="badge badge-c3">C3</span> Q3 — Identifier le droit à l'information du consommateur.</li>
+        <li><span class="badge badge-c3">C3</span> Q4 — Distinguer les garanties légales.</li>
+        <li><span class="badge badge-c3">C3</span> Q5 — Identifier le droit de rétractation.</li>
+        <li><span class="badge badge-c3">C3</span> Q6 — Repérer les pratiques commerciales trompeuses.</li>
+      </ul>
+    </div>
+
+    <div class="notions-box">
+      <strong>Notions à retenir — Séance 1</strong>
+      <span>Droit à l'information</span><span>Étiquetage</span><span>Affichage des prix</span>
+      <span>Garantie de conformité</span><span>Garantie des vices cachés</span>
+      <span>Droit de rétractation</span><span>14 jours</span>
+      <span>Pratiques commerciales trompeuses</span>
+    </div>
+
+    <!-- Situation de départ -->
+    <div class="section-divider">Situation de départ</div>
+    <div class="situation-block">
+      <h3>Situation — Inès et le téléphone défectueux</h3>
+      <p style="margin-top:10px; font-size:13.5px;">Inès, <strong>18 ans</strong>, est apprentie vendeuse dans un magasin de prêt-à-porter. Pour son anniversaire, elle décide de s'acheter un nouveau téléphone portable sur un site internet. Elle compare les prix, lit les caractéristiques et passe commande. Le téléphone arrive <strong>5 jours plus tard</strong>, mais dès la première utilisation, l'écran présente des <strong>lignes colorées</strong> et le haut-parleur ne fonctionne pas. Inès est déçue et se demande quels sont ses droits en tant que consommatrice.</p>
+    </div>
+
+    <!-- Q1 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c2">C2</span>
+        <span class="question-num">Q1</span>
+        <span><strong>Identifiez</strong> le problème posé dans la situation en cochant la proposition exacte.</span>
+      </div>
+      <ul class="choix-liste">
+        <li><input type="radio" name="q1s1" id="q1s1a"> <label for="q1s1a">Le choix du site internet pour acheter un téléphone.</label></li>
+        <li><input type="radio" name="q1s1" id="q1s1b"> <label for="q1s1b">La réception d'un produit défectueux et la méconnaissance de ses droits de consommatrice.</label></li>
+        <li><input type="radio" name="q1s1" id="q1s1c"> <label for="q1s1c">Le délai de livraison trop long du téléphone.</label></li>
+      </ul>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q1s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q1s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q1s1')">Pourquoi</button>
+      </div>
+      <div id="i-q1s1" class="aide-box aide-indice">Relis la fin de la situation : quel est le vrai problème d'Inès ? Ce n'est ni le site, ni le délai.</div>
+      <div id="c-q1s1" class="aide-box aide-corrige"><strong>La réception d'un produit défectueux et la méconnaissance de ses droits de consommatrice.</strong></div>
+      <div id="p-q1s1" class="aide-box aide-pourquoi">Inès a reçu un téléphone qui ne fonctionne pas correctement (écran défectueux, haut-parleur en panne). Le problème central est qu'elle ne sait pas quels sont ses droits pour faire face à cette situation.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c2">C2</span>
+        <span class="question-num">Q2</span>
+        <span><strong>Relevez</strong> les éléments de la situation en renseignant le tableau.</span>
+      </div>
+      <table>
+        <tr><th style="width:35%;">Élément</th><th>Votre réponse</th></tr>
+        <tr><td><strong>Qui est concerné ?</strong></td><td><textarea class="reponse" placeholder="Identifiez la personne..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Quel est le mode d'achat ?</strong></td><td><textarea class="reponse" placeholder="Comment a-t-elle acheté ?" oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Quel est le problème rencontré ?</strong></td><td><textarea class="reponse" placeholder="Décrivez le problème..." oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q2s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q2s1')">Corrigé</button>
+      </div>
+      <div id="i-q2s1" class="aide-box aide-indice">Toutes les réponses se trouvent dans le texte de la situation. Repère les mots en gras.</div>
+      <div id="c-q2s1" class="aide-box aide-corrige">
+        <strong>Qui :</strong> Inès, 18 ans, apprentie vendeuse.<br>
+        <strong>Mode d'achat :</strong> Achat à distance sur un site internet (e-commerce).<br>
+        <strong>Problème :</strong> Le téléphone reçu est défectueux (lignes colorées sur l'écran, haut-parleur en panne).
+      </div>
+    </div>
+
+    <!-- Activité 1 — Le droit à l'information -->
+    <div class="section-divider">Activité 1 — Le droit à l'information</div>
+
+    <div class="doc-block" data-doc="A">
+      <h3>Doc. A — Le droit à l'information du consommateur</h3>
+      <p>Avant tout achat, le consommateur a le droit d'être <strong>informé de manière claire et compréhensible</strong> sur le produit ou le service qu'il souhaite acheter. Ce droit est garanti par le <strong>Code de la consommation</strong>.</p>
+      <p style="margin-top:10px;">Les obligations d'information comprennent :</p>
+      <ul style="margin-top:6px; padding-left:18px;">
+        <li><strong>L'étiquetage</strong> : composition, origine, date limite de consommation (pour les produits alimentaires), mode d'emploi, précautions d'utilisation.</li>
+        <li><strong>L'affichage des prix</strong> : le prix doit être affiché de manière visible et en euros TTC (toutes taxes comprises). Le prix au kilogramme ou au litre doit aussi être indiqué.</li>
+        <li><strong>L'information précontractuelle</strong> : avant la signature d'un contrat (abonnement, crédit...), le professionnel doit fournir les caractéristiques essentielles du bien ou du service, le prix total, les conditions de résiliation.</li>
+      </ul>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q3</span>
+        <span>À partir du Doc. A, <strong>identifiez</strong> les trois formes du droit à l'information du consommateur.</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+        <div>
+          <label style="font-size:12px; font-weight:700; color:#c0392b;">Forme 1 :</label>
+          <textarea class="reponse" placeholder="Première forme..." oninput="autoResize(this)" style="margin-top:4px;"></textarea>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:700; color:#2d9e5c;">Forme 2 :</label>
+          <textarea class="reponse" placeholder="Deuxième forme..." oninput="autoResize(this)" style="margin-top:4px;"></textarea>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:700; color:#8b3fa8;">Forme 3 :</label>
+          <textarea class="reponse" placeholder="Troisième forme..." oninput="autoResize(this)" style="margin-top:4px;"></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q3s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q3s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q3s1')">Pourquoi</button>
+      </div>
+      <div id="i-q3s1" class="aide-box aide-indice">Cherche les trois termes en gras dans le Doc. A : ce sont les trois formes du droit à l'information.</div>
+      <div id="c-q3s1" class="aide-box aide-corrige"><strong>L'étiquetage</strong> (composition, origine, DLC...), <strong>l'affichage des prix</strong> (prix visible en euros TTC) et <strong>l'information précontractuelle</strong> (caractéristiques essentielles, prix total, conditions de résiliation).</div>
+      <div id="p-q3s1" class="aide-box aide-pourquoi">Le droit à l'information permet au consommateur de comparer les produits et de faire un choix éclairé. Sans ces informations, le consommateur pourrait être trompé sur la qualité ou le prix réel d'un produit.</div>
+    </div>
+
+    <!-- Activité 2 — Les garanties légales -->
+    <div class="section-divider">Activité 2 — Les garanties légales</div>
+
+    <div class="doc-block" data-doc="B">
+      <h3>Doc. B — Les garanties légales du consommateur</h3>
+      <p>Lorsqu'un consommateur achète un produit, il bénéficie automatiquement de <strong>deux garanties légales</strong> (gratuites et obligatoires) :</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:10px;">
+        <div style="background:#e8f5ec; border:1px solid #a0d0b0; border-radius:8px; padding:12px;">
+          <h4 style="color:#2d9e5c; font-size:13px; margin-bottom:8px;">Garantie légale de conformité</h4>
+          <ul style="font-size:12.5px; padding-left:16px; margin-top:4px;">
+            <li>Durée : <strong>2 ans</strong> à compter de la livraison</li>
+            <li>S'applique si le produit ne correspond pas à la description ou présente un défaut</li>
+            <li>Le vendeur doit <strong>réparer ou remplacer</strong> le produit gratuitement</li>
+            <li>Si impossible : <strong>remboursement</strong></li>
+          </ul>
+        </div>
+        <div style="background:#fff5f5; border:1px solid #e0a0a0; border-radius:8px; padding:12px;">
+          <h4 style="color:#c0392b; font-size:13px; margin-bottom:8px;">Garantie légale des vices cachés</h4>
+          <ul style="font-size:12.5px; padding-left:16px; margin-top:4px;">
+            <li>Durée : <strong>2 ans</strong> à compter de la découverte du vice</li>
+            <li>S'applique si un défaut <strong>caché</strong> rend le produit impropre à l'usage</li>
+            <li>Le consommateur peut demander le <strong>remboursement</strong> ou une <strong>réduction du prix</strong></li>
+          </ul>
+        </div>
+      </div>
+      <div style="background:#e8f0fe; border-radius:8px; padding:12px; margin-top:12px; font-size:13px;">
+        <strong>Attention :</strong> ces garanties légales sont <strong>différentes</strong> de la garantie commerciale (facultative) proposée par le vendeur ou le fabricant. Les garanties légales sont <strong>gratuites et obligatoires</strong>.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q4</span>
+        <span>À partir du Doc. B, <strong>complétez</strong> le tableau comparatif des deux garanties légales.</span>
+      </div>
+      <table>
+        <tr><th>Critère</th><th>Garantie de conformité</th><th>Garantie des vices cachés</th></tr>
+        <tr><td><strong>Durée</strong></td><td><textarea class="reponse" placeholder="Durée..." oninput="autoResize(this)"></textarea></td><td><textarea class="reponse" placeholder="Durée..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Quand s'applique-t-elle ?</strong></td><td><textarea class="reponse" placeholder="Dans quel cas..." oninput="autoResize(this)"></textarea></td><td><textarea class="reponse" placeholder="Dans quel cas..." oninput="autoResize(this)"></textarea></td></tr>
+        <tr><td><strong>Solution pour le consommateur</strong></td><td><textarea class="reponse" placeholder="Que peut-il obtenir..." oninput="autoResize(this)"></textarea></td><td><textarea class="reponse" placeholder="Que peut-il obtenir..." oninput="autoResize(this)"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q4s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q4s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q4s1')">Pourquoi</button>
+      </div>
+      <div id="i-q4s1" class="aide-box aide-indice">Les informations sont dans les deux encadrés du Doc. B. Compare les éléments point par point.</div>
+      <div id="c-q4s1" class="aide-box aide-corrige">
+        <strong>Conformité :</strong> 2 ans après livraison / produit non conforme ou défectueux / réparation, remplacement ou remboursement.<br>
+        <strong>Vices cachés :</strong> 2 ans après la découverte du vice / défaut caché rendant le produit impropre à l'usage / remboursement ou réduction du prix.
+      </div>
+      <div id="p-q4s1" class="aide-box aide-pourquoi">La garantie de conformité protège le consommateur quand le produit ne correspond pas à ce qui était promis. La garantie des vices cachés protège contre un défaut invisible au moment de l'achat. Dans le cas d'Inès, c'est la garantie de conformité qui s'applique car le défaut est apparu dès la réception.</div>
+    </div>
+
+    <!-- Activité 3 — Droit de rétractation -->
+    <div class="section-divider">Activité 3 — Le droit de rétractation</div>
+
+    <div class="doc-block" data-doc="C">
+      <h3>Doc. C — Le droit de rétractation</h3>
+      <p>Pour tout achat <strong>à distance</strong> (internet, téléphone, courrier) ou suite à un <strong>démarchage</strong>, le consommateur dispose d'un <strong>délai de 14 jours</strong> pour changer d'avis et retourner le produit <strong>sans avoir à se justifier</strong>.</p>
+      <ul style="margin-top:8px; padding-left:18px;">
+        <li>Le délai de 14 jours court à partir de la <strong>réception du produit</strong> (ou de la signature du contrat pour un service).</li>
+        <li>Le vendeur doit <strong>rembourser</strong> le consommateur dans un délai de <strong>14 jours</strong> après la demande de rétractation.</li>
+        <li>Les frais de retour peuvent être à la charge du consommateur, sauf si le vendeur accepte de les prendre en charge.</li>
+      </ul>
+      <div style="background:#ffebee; border-radius:8px; padding:12px; margin-top:12px; font-size:13px;">
+        <strong>Exceptions :</strong> le droit de rétractation ne s'applique <strong>pas</strong> aux produits personnalisés, aux denrées périssables, aux journaux et magazines, ni aux contenus numériques téléchargés.
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q5</span>
+        <span>À partir du Doc. C et de la situation d'Inès, <strong>répondez</strong> aux questions suivantes.</span>
+      </div>
+      <p style="font-size:14px; margin-bottom:6px;"><strong>5.1</strong> Indiquez le délai dont dispose Inès pour se rétracter.</p>
+      <textarea class="reponse" placeholder="Quel délai ?" oninput="autoResize(this)"></textarea>
+      <p style="font-size:14px; margin:12px 0 6px;"><strong>5.2</strong> Précisez à partir de quelle date ce délai commence à courir.</p>
+      <textarea class="reponse" placeholder="À partir de quand ?" oninput="autoResize(this)"></textarea>
+      <p style="font-size:14px; margin:12px 0 6px;"><strong>5.3</strong> Indiquez si Inès doit justifier son choix de se rétracter.</p>
+      <textarea class="reponse" placeholder="Doit-elle se justifier ?" oninput="autoResize(this)"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q5s1')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q5s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q5s1')">Pourquoi</button>
+      </div>
+      <div id="i-q5s1" class="aide-box aide-indice">Inès a acheté sur internet, c'est donc un achat à distance. Toutes les réponses sont dans le Doc. C.</div>
+      <div id="c-q5s1" class="aide-box aide-corrige">
+        <strong>5.1 :</strong> 14 jours.<br>
+        <strong>5.2 :</strong> À partir de la réception du produit (le jour où elle a reçu le téléphone).<br>
+        <strong>5.3 :</strong> Non, Inès n'a pas besoin de justifier son choix de se rétracter.
+      </div>
+      <div id="p-q5s1" class="aide-box aide-pourquoi">Le droit de rétractation existe car lors d'un achat à distance, le consommateur ne peut pas voir ni tester le produit avant l'achat. Ce délai de 14 jours permet de changer d'avis sans motif, ce qui compense l'absence de contact physique avec le produit.</div>
+    </div>
+
+    <!-- Activité 4 — Pratiques commerciales trompeuses -->
+    <div class="section-divider">Activité 4 — Les pratiques commerciales trompeuses</div>
+
+    <div class="doc-block" data-doc="D">
+      <h3>Doc. D — Les pratiques commerciales trompeuses</h3>
+      <p>Une <strong>pratique commerciale trompeuse</strong> consiste à induire le consommateur en erreur par des informations fausses ou de nature à le tromper. Ces pratiques sont <strong>interdites par la loi</strong> et punies d'amendes et de peines de prison.</p>
+      <p style="margin-top:8px;">Exemples de pratiques trompeuses :</p>
+      <ul style="padding-left:18px; margin-top:4px;">
+        <li><strong>Faux prix barré</strong> : afficher un prix de référence gonflé pour faire croire à une réduction importante.</li>
+        <li><strong>Fausse promotion</strong> : annoncer "-50 %" alors que le prix n'a jamais été plus élevé.</li>
+        <li><strong>Publicité mensongère</strong> : vanter des qualités que le produit ne possède pas.</li>
+        <li><strong>Avis clients fictifs</strong> : publier de faux avis positifs sur internet.</li>
+        <li><strong>Vente forcée</strong> : envoyer un produit non commandé et réclamer le paiement.</li>
+      </ul>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q6</span>
+        <span>À partir du Doc. D, <strong>identifiez</strong> la pratique commerciale trompeuse pour chaque situation.</span>
+      </div>
+      <table>
+        <tr><th style="width:60%;">Situation</th><th>Pratique trompeuse</th></tr>
+        <tr>
+          <td>Un site internet affiche un téléphone à 299 € au lieu de 599 €, mais le prix de 599 € n'a jamais été pratiqué.</td>
+          <td><textarea class="reponse" placeholder="Quelle pratique ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+        <tr>
+          <td>Une crème de beauté promet de faire disparaître les rides en 24 heures.</td>
+          <td><textarea class="reponse" placeholder="Quelle pratique ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+        <tr>
+          <td>Un vendeur en ligne publie des commentaires élogieux écrits par lui-même.</td>
+          <td><textarea class="reponse" placeholder="Quelle pratique ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q6s1')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q6s1')">Pourquoi</button>
+      </div>
+      <div id="c-q6s1" class="aide-box aide-corrige">
+        <strong>Situation 1 :</strong> Faux prix barré.<br>
+        <strong>Situation 2 :</strong> Publicité mensongère.<br>
+        <strong>Situation 3 :</strong> Avis clients fictifs.
+      </div>
+      <div id="p-q6s1" class="aide-box aide-pourquoi">Ces pratiques sont interdites car elles trompent le consommateur et faussent son choix. Les entreprises qui les utilisent risquent des amendes pouvant aller jusqu'à 300 000 euros et 2 ans de prison.</div>
+    </div>
+
+    <!-- Auto-eval S1 -->
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 1 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> La garantie légale de conformité dure :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es1q1" value="A"> <label>1 an</label></li>
+            <li><input type="radio" name="es1q1" value="B"> <label>2 ans à compter de la livraison</label></li>
+            <li><input type="radio" name="es1q1" value="C"> <label>6 mois</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Le droit de rétractation pour un achat à distance est de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es1q2" value="A"> <label>7 jours</label></li>
+            <li><input type="radio" name="es1q2" value="B"> <label>14 jours</label></li>
+            <li><input type="radio" name="es1q2" value="C"> <label>30 jours</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le consommateur doit justifier son choix lorsqu'il exerce son droit de rétractation.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q3" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q3" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Les garanties légales sont gratuites et obligatoires.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q4" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q4" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Afficher un faux prix barré est une pratique :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es1q5" value="A"> <label>Commerciale trompeuse, interdite par la loi</label></li>
+            <li><input type="radio" name="es1q5" value="B"> <label>Autorisée sous conditions</label></li>
+            <li><input type="radio" name="es1q5" value="C"> <label>Normale en période de soldes</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le prix affiché en magasin doit être en euros TTC.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q6" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q6" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le droit de rétractation s'applique aux denrées périssables.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es1q7" value="V"> Vrai</label>
+            <label><input type="radio" name="es1q7" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> Complétez : La garantie légale des vices _______ protège contre un défaut invisible au moment de l'achat.</p>
+          <input type="text" class="court-input" id="es1q8-input" placeholder="Votre réponse...">
+        </div>
+        <button class="btn-valider" onclick="validerSeance(1)">Valider mes réponses</button>
+        <div class="score-block" id="score-s1"><div class="score-num" id="score-num-s1"></div><div class="score-label" id="score-detail-s1"></div></div>
+        <div class="remediation-block" id="remed-s1"><div id="remed-text-s1"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SÉANCE 2 ═══ -->
+<div class="seance-block" data-s="2">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="false">
+    <div class="seance-num">2</div>
+    <div class="seance-header-text">
+      <h2>Séance 2 — Les différents modes d'achat</h2>
+      <div class="seance-obj">Objectif : Distinguer les modes d'achat et les moyens de paiement pour consommer de manière responsable.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+
+    <div class="index-table">
+      <h3>Compétences travaillées dans cette séance</h3>
+      <ul>
+        <li><span class="badge badge-c3">C3</span> Q7 — Identifier les caractéristiques de l'achat en magasin.</li>
+        <li><span class="badge badge-c3">C3</span> Q8-9 — Analyser l'achat à distance et le démarchage.</li>
+        <li><span class="badge badge-c3">C3</span> Q10 — Comparer les différents moyens de paiement.</li>
+        <li><span class="badge badge-c4">C4</span> Q11 — Conseiller Inès sur le mode d'achat le plus adapté.</li>
+      </ul>
+    </div>
+
+    <div class="notions-box">
+      <strong>Notions à retenir — Séance 2</strong>
+      <span>Achat en magasin</span><span>Achat à distance</span><span>E-commerce</span>
+      <span>Démarchage à domicile</span><span>Vente hors établissement</span>
+      <span>Espèces</span><span>Carte bancaire</span><span>Chèque</span><span>Prélèvement</span>
+    </div>
+
+    <!-- Activité 5 — Les modes d'achat -->
+    <div class="section-divider">Activité 5 — Les modes d'achat</div>
+
+    <div class="doc-block" data-doc="E">
+      <h3>Doc. E — Les différents modes d'achat</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:10px;">
+        <div style="background:#e8f5ec; border:1px solid #a0d0b0; border-radius:8px; padding:12px;">
+          <h4 style="color:#2d9e5c; font-size:13px; margin-bottom:8px;">Achat en magasin</h4>
+          <ul style="font-size:12.5px; padding-left:16px; margin-top:4px;">
+            <li>Le consommateur peut <strong>voir et tester</strong> le produit</li>
+            <li><strong>Pas de droit de rétractation</strong> (sauf politique commerciale du magasin)</li>
+            <li>Paiement immédiat</li>
+            <li>Garanties légales identiques</li>
+          </ul>
+        </div>
+        <div style="background:#e8f0fe; border:1px solid #a0b0d0; border-radius:8px; padding:12px;">
+          <h4 style="color:#1a6fa8; font-size:13px; margin-bottom:8px;">Achat à distance (e-commerce)</h4>
+          <ul style="font-size:12.5px; padding-left:16px; margin-top:4px;">
+            <li>Achat par internet, téléphone ou courrier</li>
+            <li><strong>Droit de rétractation de 14 jours</strong></li>
+            <li>Délai de livraison maximal de <strong>30 jours</strong></li>
+            <li>Obligation d'information renforcée</li>
+          </ul>
+        </div>
+      </div>
+      <div style="background:#fff8e7; border:1px solid #f0c040; border-radius:8px; padding:12px; margin-top:12px;">
+        <h4 style="color:#c07000; font-size:13px; margin-bottom:8px;">Démarchage à domicile / Vente hors établissement</h4>
+        <ul style="font-size:12.5px; padding-left:16px; margin-top:4px;">
+          <li>Le vendeur se déplace <strong>chez le consommateur</strong> ou dans un lieu qui n'est pas son commerce</li>
+          <li><strong>Droit de rétractation de 14 jours</strong></li>
+          <li>Le consommateur est souvent sollicité <strong>sans l'avoir demandé</strong></li>
+          <li>Interdiction de percevoir un paiement avant <strong>7 jours</strong> après la signature du contrat</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q7</span>
+        <span>À partir du Doc. E, <strong>indiquez</strong> la principale différence entre un achat en magasin et un achat à distance concernant le droit de rétractation.</span>
+      </div>
+      <textarea class="reponse" placeholder="Quelle est la différence ?" oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q7s2')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q7s2')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q7s2')">Pourquoi</button>
+      </div>
+      <div id="i-q7s2" class="aide-box aide-indice">Compare les deux encadrés du Doc. E : l'un mentionne un droit de rétractation, l'autre pas. Pourquoi ?</div>
+      <div id="c-q7s2" class="aide-box aide-corrige">En magasin, il n'y a <strong>pas de droit de rétractation légal</strong> car le consommateur peut voir et tester le produit avant l'achat. À distance, le consommateur dispose d'un <strong>droit de rétractation de 14 jours</strong> car il n'a pas pu examiner le produit.</div>
+      <div id="p-q7s2" class="aide-box aide-pourquoi">Le droit de rétractation compense l'impossibilité de voir le produit. En magasin, le consommateur peut toucher, essayer et vérifier avant d'acheter, ce qui justifie l'absence de ce droit. Attention : certains magasins proposent des échanges par politique commerciale, mais ce n'est pas une obligation légale.</div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q8</span>
+        <span>À partir du Doc. E, <strong>complétez</strong> le tableau comparatif des modes d'achat.</span>
+      </div>
+      <table>
+        <tr><th>Critère</th><th>En magasin</th><th>À distance</th><th>Démarchage</th></tr>
+        <tr>
+          <td><strong>Droit de rétractation</strong></td>
+          <td><textarea class="reponse" placeholder="Oui / Non ?" oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="Oui / Non ?" oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="Oui / Non ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+        <tr>
+          <td><strong>Contact avec le produit</strong></td>
+          <td><textarea class="reponse" placeholder="Oui / Non ?" oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="Oui / Non ?" oninput="autoResize(this)"></textarea></td>
+          <td><textarea class="reponse" placeholder="Oui / Non ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q8s2')">Corrigé</button>
+      </div>
+      <div id="c-q8s2" class="aide-box aide-corrige">
+        <strong>Rétractation :</strong> Magasin = Non (sauf geste commercial) / À distance = Oui (14 jours) / Démarchage = Oui (14 jours).<br>
+        <strong>Contact avec le produit :</strong> Magasin = Oui / À distance = Non / Démarchage = Possible (démonstration).
+      </div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q9</span>
+        <span>À partir du Doc. E, <strong>expliquez</strong> pourquoi le démarchage à domicile interdit le paiement avant 7 jours.</span>
+      </div>
+      <textarea class="reponse" placeholder="Expliquez la raison de cette règle..." oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q9s2')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q9s2')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q9s2')">Pourquoi</button>
+      </div>
+      <div id="i-q9s2" class="aide-box aide-indice">Le consommateur est sollicité sans l'avoir demandé. La loi lui laisse du temps pour réfléchir. Quel risque y aurait-il si le vendeur encaissait immédiatement ?</div>
+      <div id="c-q9s2" class="aide-box aide-corrige">Cette règle protège le consommateur contre les <strong>décisions prises sous pression</strong>. Le démarcheur se présente sans invitation et peut exercer une pression commerciale. Le délai de 7 jours avant paiement permet au consommateur de <strong>réfléchir et de se rétracter</strong> sans avoir déjà payé.</div>
+      <div id="p-q9s2" class="aide-box aide-pourquoi">De nombreux consommateurs, notamment les personnes âgées, ont été victimes de vendeurs à domicile pressants. Cette protection évite les abus en empêchant le professionnel de récupérer l'argent avant que le consommateur ait eu le temps de réfléchir.</div>
+    </div>
+
+    <!-- Activité 6 — Les moyens de paiement -->
+    <div class="section-divider">Activité 6 — Les moyens de paiement</div>
+
+    <div class="doc-block" data-doc="F">
+      <h3>Doc. F — Les moyens de paiement</h3>
+      <table>
+        <tr><th>Moyen de paiement</th><th>Description</th><th>Avantages</th><th>Limites</th></tr>
+        <tr>
+          <td><strong>Espèces</strong></td>
+          <td>Pièces et billets</td>
+          <td>Anonyme, immédiat, pas de frais</td>
+          <td>Risque de perte ou de vol, plafond légal (1 000 €)</td>
+        </tr>
+        <tr>
+          <td><strong>Carte bancaire</strong></td>
+          <td>Paiement par carte (CB, Visa, Mastercard...)</td>
+          <td>Pratique, sécurisé, traçabilité</td>
+          <td>Plafond de paiement, risque de piratage en ligne</td>
+        </tr>
+        <tr>
+          <td><strong>Chèque</strong></td>
+          <td>Ordre de paiement écrit</td>
+          <td>Preuve de paiement, pas de frais</td>
+          <td>Risque de chèque sans provision, en voie de disparition</td>
+        </tr>
+        <tr>
+          <td><strong>Prélèvement</strong></td>
+          <td>Autorisation de débit automatique sur le compte</td>
+          <td>Pratique pour les paiements réguliers (abonnements)</td>
+          <td>Nécessite une autorisation (mandat), surveiller les montants</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Q10 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q10</span>
+        <span>À partir du Doc. F, <strong>identifiez</strong> le moyen de paiement le plus adapté pour chaque situation.</span>
+      </div>
+      <table>
+        <tr><th style="width:60%;">Situation</th><th>Moyen de paiement</th></tr>
+        <tr>
+          <td>Inès achète un sandwich à 5 € à la boulangerie.</td>
+          <td><textarea class="reponse" placeholder="Quel moyen ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+        <tr>
+          <td>Inès paie son abonnement téléphonique chaque mois.</td>
+          <td><textarea class="reponse" placeholder="Quel moyen ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+        <tr>
+          <td>Inès achète un téléphone à 350 € sur internet.</td>
+          <td><textarea class="reponse" placeholder="Quel moyen ?" oninput="autoResize(this)"></textarea></td>
+        </tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q10s2')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q10s2')">Pourquoi</button>
+      </div>
+      <div id="c-q10s2" class="aide-box aide-corrige">
+        <strong>Sandwich :</strong> Espèces (petit montant, paiement immédiat).<br>
+        <strong>Abonnement :</strong> Prélèvement automatique (paiement régulier mensuel).<br>
+        <strong>Téléphone sur internet :</strong> Carte bancaire (paiement sécurisé à distance, traçabilité).
+      </div>
+      <div id="p-q10s2" class="aide-box aide-pourquoi">Chaque moyen de paiement est adapté à un usage particulier. Les espèces conviennent pour les petits achats du quotidien. Le prélèvement est idéal pour les paiements récurrents. La carte bancaire est le moyen le plus adapté pour les achats en ligne grâce à la sécurisation (3D Secure).</div>
+    </div>
+
+    <!-- Q11 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c4">C4</span>
+        <span class="question-num">Q11</span>
+        <span>Si Inès devait racheter un téléphone, <strong>conseillez-la</strong> sur le mode d'achat le plus protecteur et justifiez votre réponse.</span>
+      </div>
+      <textarea class="reponse" placeholder="Quel mode d'achat conseilleriez-vous à Inès ? Pourquoi ?" oninput="autoResize(this)" style="min-height:100px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q11s2')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q11s2')">Corrigé</button>
+      </div>
+      <div id="i-q11s2" class="aide-box aide-indice">Compare les avantages de chaque mode d'achat : lequel offre le plus de protections (rétractation, contact avec le produit) ?</div>
+      <div id="c-q11s2" class="aide-box aide-corrige">L'achat <strong>à distance</strong> offre le plus de protections car Inès bénéficie du <strong>droit de rétractation de 14 jours</strong>, de la <strong>garantie de conformité</strong> et d'une <strong>obligation d'information renforcée</strong>. Cependant, l'achat <strong>en magasin</strong> permet de tester le produit avant l'achat, ce qui peut éviter de recevoir un produit défectueux. Le choix dépend de la priorité d'Inès : tester sur place ou bénéficier du droit de rétractation.</div>
+    </div>
+
+    <!-- Auto-eval S2 -->
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 2 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> En magasin, le consommateur bénéficie d'un droit de rétractation de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es2q1" value="A"> <label>14 jours</label></li>
+            <li><input type="radio" name="es2q1" value="B"> <label>30 jours</label></li>
+            <li><input type="radio" name="es2q1" value="C"> <label>Aucun droit de rétractation légal</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le démarchage à domicile interdit le paiement avant 7 jours.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q2" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q2" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Le moyen de paiement le plus adapté pour un achat en ligne est :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es2q3" value="A"> <label>Le chèque</label></li>
+            <li><input type="radio" name="es2q3" value="B"> <label>La carte bancaire</label></li>
+            <li><input type="radio" name="es2q3" value="C"> <label>Les espèces</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le prélèvement automatique est adapté pour les paiements réguliers.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q4" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q4" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Le délai maximal de livraison pour un achat à distance est de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es2q5" value="A"> <label>14 jours</label></li>
+            <li><input type="radio" name="es2q5" value="B"> <label>30 jours</label></li>
+            <li><input type="radio" name="es2q5" value="C"> <label>60 jours</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le paiement en espèces est limité à 1 000 euros.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q6" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q6" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> L'achat à distance donne droit à un délai de rétractation de 14 jours.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es2q7" value="V"> Vrai</label>
+            <label><input type="radio" name="es2q7" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> Complétez : Lors d'un démarchage, le vendeur ne peut pas percevoir de paiement avant _______ jours.</p>
+          <input type="text" class="court-input" id="es2q8-input" placeholder="Votre réponse...">
+        </div>
+        <button class="btn-valider" onclick="validerSeance(2)">Valider mes réponses</button>
+        <div class="score-block" id="score-s2"><div class="score-num" id="score-num-s2"></div><div class="score-label" id="score-detail-s2"></div></div>
+        <div class="remediation-block" id="remed-s2"><div id="remed-text-s2"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SÉANCE 3 ═══ -->
+<div class="seance-block" data-s="3">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="false">
+    <div class="seance-num">3</div>
+    <div class="seance-header-text">
+      <h2>Séance 3 — Résoudre un litige de consommation</h2>
+      <div class="seance-obj">Objectif : Identifier les démarches et les recours possibles en cas de litige avec un professionnel.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+
+    <div class="index-table">
+      <h3>Compétences travaillées dans cette séance</h3>
+      <ul>
+        <li><span class="badge badge-c3">C3</span> Q12 — Identifier les démarches amiables (réclamation, médiation).</li>
+        <li><span class="badge badge-c3">C3</span> Q13 — Identifier le rôle des associations de consommateurs.</li>
+        <li><span class="badge badge-c3">C3</span> Q14 — Identifier le rôle de la DGCCRF.</li>
+        <li><span class="badge badge-c4">C4</span> Q15 — Proposer une démarche complète pour résoudre le litige d'Inès.</li>
+      </ul>
+    </div>
+
+    <div class="notions-box">
+      <strong>Notions à retenir — Séance 3</strong>
+      <span>Réclamation</span><span>Mise en demeure</span><span>Médiation</span>
+      <span>Associations de consommateurs</span><span>DGCCRF</span>
+      <span>Recours judiciaire</span><span>Tribunal</span><span>Procédure simplifiée</span>
+    </div>
+
+    <!-- Activité 7 — Les démarches amiables -->
+    <div class="section-divider">Activité 7 — Les démarches amiables</div>
+
+    <div class="doc-block" data-doc="E">
+      <h3>Doc. E — Les étapes de résolution d'un litige</h3>
+      <p>Lorsqu'un consommateur rencontre un problème avec un achat, il doit suivre des <strong>étapes progressives</strong> pour résoudre le litige :</p>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#c0392b; color:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">1</div>
+          <div style="background:#fff5f5; border:1px solid #e0a0a0; border-radius:8px; padding:10px 14px; flex:1;">
+            <strong>Réclamation auprès du vendeur</strong> : contacter le service client par téléphone, e-mail ou courrier pour exposer le problème et demander une solution (réparation, remplacement, remboursement).
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#e07b00; color:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">2</div>
+          <div style="background:#fff8e7; border:1px solid #f0c040; border-radius:8px; padding:10px 14px; flex:1;">
+            <strong>Mise en demeure</strong> : si le vendeur ne répond pas, envoyer un <strong>courrier recommandé avec accusé de réception</strong> pour exiger une solution dans un délai précis.
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#2d9e5c; color:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">3</div>
+          <div style="background:#e8f5ec; border:1px solid #a0d0b0; border-radius:8px; padding:10px 14px; flex:1;">
+            <strong>Médiation de la consommation</strong> : faire appel à un <strong>médiateur</strong> (tiers neutre et indépendant) pour trouver un accord amiable. Le recours au médiateur est <strong>gratuit</strong> pour le consommateur.
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#8b3fa8; color:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">4</div>
+          <div style="background:#f3eeff; border:1px solid #c0a0e0; border-radius:8px; padding:10px 14px; flex:1;">
+            <strong>Recours judiciaire</strong> : en dernier recours, saisir le <strong>tribunal</strong> (procédure simplifiée pour les litiges inférieurs à 5 000 €). Cette étape n'intervient que si toutes les démarches amiables ont échoué.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q12</span>
+        <span>À partir du Doc. E, <strong>ordonnez</strong> les étapes de résolution d'un litige en numérotant de 1 à 4.</span>
+      </div>
+      <table>
+        <tr><th style="width:65%;">Étape</th><th style="width:35%;">Numéro d'ordre</th></tr>
+        <tr><td>Saisir le tribunal</td><td><textarea class="reponse" placeholder="N°..." oninput="autoResize(this)" style="min-height:40px;"></textarea></td></tr>
+        <tr><td>Contacter le service client du vendeur</td><td><textarea class="reponse" placeholder="N°..." oninput="autoResize(this)" style="min-height:40px;"></textarea></td></tr>
+        <tr><td>Faire appel à un médiateur</td><td><textarea class="reponse" placeholder="N°..." oninput="autoResize(this)" style="min-height:40px;"></textarea></td></tr>
+        <tr><td>Envoyer un courrier recommandé de mise en demeure</td><td><textarea class="reponse" placeholder="N°..." oninput="autoResize(this)" style="min-height:40px;"></textarea></td></tr>
+      </table>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q12s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q12s3')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q12s3')">Pourquoi</button>
+      </div>
+      <div id="i-q12s3" class="aide-box aide-indice">On commence toujours par la démarche la plus simple (contacter le vendeur) et on termine par la plus contraignante (le tribunal).</div>
+      <div id="c-q12s3" class="aide-box aide-corrige">
+        Saisir le tribunal : <strong>4</strong>. Contacter le service client : <strong>1</strong>. Faire appel à un médiateur : <strong>3</strong>. Envoyer un courrier recommandé : <strong>2</strong>.
+      </div>
+      <div id="p-q12s3" class="aide-box aide-pourquoi">Les démarches doivent être progressives : on tente d'abord de résoudre le problème directement avec le vendeur, puis on formalise la demande par écrit, puis on fait intervenir un tiers neutre. Le tribunal est le dernier recours car la procédure est plus longue et plus contraignante.</div>
+    </div>
+
+    <!-- Activité 8 — Les aides et organismes -->
+    <div class="section-divider">Activité 8 — Les organismes de protection</div>
+
+    <div class="doc-block" data-doc="F">
+      <h3>Doc. F — Les associations de consommateurs</h3>
+      <p>Les <strong>associations de consommateurs</strong> sont des organismes agréés par l'État qui défendent les intérêts des consommateurs. Elles peuvent :</p>
+      <ul style="padding-left:18px; margin-top:6px;">
+        <li><strong>Informer</strong> les consommateurs sur leurs droits</li>
+        <li><strong>Accompagner</strong> dans les démarches de réclamation</li>
+        <li><strong>Négocier</strong> avec les professionnels au nom du consommateur</li>
+        <li><strong>Agir en justice</strong> au nom des consommateurs (action de groupe)</li>
+      </ul>
+      <p style="margin-top:8px; font-size:12.5px; color:var(--muted); font-style:italic;">Exemples : UFC-Que Choisir, 60 Millions de consommateurs, CLCV...</p>
+    </div>
+
+    <div class="doc-block" data-doc="G">
+      <h3>Doc. G — La DGCCRF</h3>
+      <p>La <strong>DGCCRF</strong> (Direction Générale de la Concurrence, de la Consommation et de la Répression des Fraudes) est un organisme d'État qui :</p>
+      <ul style="padding-left:18px; margin-top:6px;">
+        <li><strong>Contrôle</strong> le respect des règles par les professionnels (étiquetage, prix, sécurité des produits)</li>
+        <li><strong>Enquête</strong> sur les pratiques commerciales trompeuses et les fraudes</li>
+        <li><strong>Sanctionne</strong> les entreprises en infraction (amendes, fermeture)</li>
+        <li><strong>Informe</strong> les consommateurs via le site <strong>signal.conso.gouv.fr</strong></li>
+      </ul>
+      <div style="background:#e8f0fe; border-radius:8px; padding:12px; margin-top:12px; font-size:13px;">
+        <strong>SignalConso :</strong> ce site permet à tout consommateur de <strong>signaler un problème</strong> rencontré avec un professionnel. La DGCCRF analyse les signalements et peut déclencher des contrôles.
+      </div>
+    </div>
+
+    <!-- Q13 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q13</span>
+        <span>À partir du Doc. F, <strong>identifiez</strong> les quatre rôles des associations de consommateurs.</span>
+      </div>
+      <textarea class="reponse" placeholder="Listez les quatre rôles..." oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q13s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q13s3')">Corrigé</button>
+      </div>
+      <div id="i-q13s3" class="aide-box aide-indice">Les quatre rôles sont en gras dans le Doc. F. Ils commencent tous par un verbe d'action.</div>
+      <div id="c-q13s3" class="aide-box aide-corrige">Les associations de consommateurs peuvent : <strong>informer</strong> les consommateurs sur leurs droits, <strong>accompagner</strong> dans les démarches de réclamation, <strong>négocier</strong> avec les professionnels et <strong>agir en justice</strong> au nom des consommateurs.</div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c3">C3</span>
+        <span class="question-num">Q14</span>
+        <span>À partir du Doc. G, <strong>répondez</strong> aux questions suivantes.</span>
+      </div>
+      <p style="font-size:14px; margin-bottom:6px;"><strong>14.1</strong> Indiquez la signification du sigle DGCCRF.</p>
+      <textarea class="reponse" placeholder="Signification..." oninput="autoResize(this)"></textarea>
+      <p style="font-size:14px; margin:12px 0 6px;"><strong>14.2</strong> Nommez le site internet qui permet de signaler un problème à la DGCCRF.</p>
+      <textarea class="reponse" placeholder="Nom du site..." oninput="autoResize(this)"></textarea>
+      <p style="font-size:14px; margin:12px 0 6px;"><strong>14.3</strong> Citez deux missions de la DGCCRF.</p>
+      <textarea class="reponse" placeholder="Deux missions..." oninput="autoResize(this)" style="min-height:80px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q14s3')">Corrigé</button>
+      </div>
+      <div id="c-q14s3" class="aide-box aide-corrige">
+        <strong>14.1 :</strong> Direction Générale de la Concurrence, de la Consommation et de la Répression des Fraudes.<br>
+        <strong>14.2 :</strong> signal.conso.gouv.fr (SignalConso).<br>
+        <strong>14.3 :</strong> Contrôler le respect des règles par les professionnels et enquêter sur les pratiques commerciales trompeuses (ou sanctionner les entreprises en infraction / informer les consommateurs).
+      </div>
+    </div>
+
+    <!-- Q15 — Proposer des solutions -->
+    <div class="section-divider">Proposer des solutions</div>
+
+    <div class="question-block">
+      <div class="question-label">
+        <span class="badge badge-c4">C4</span>
+        <span class="question-num">Q15</span>
+        <span>Inès souhaite résoudre son problème de téléphone défectueux. <strong>Proposez</strong> la démarche complète qu'elle doit suivre, étape par étape.</span>
+      </div>
+      <textarea class="reponse" placeholder="Décrivez les étapes qu'Inès doit suivre pour résoudre son litige..." oninput="autoResize(this)" style="min-height:120px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q15s3')">Indice</button>
+        <button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q15s3')">Corrigé</button>
+        <button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q15s3')">Pourquoi</button>
+      </div>
+      <div id="i-q15s3" class="aide-box aide-indice">Combine les connaissances des 3 séances : quels droits a Inès (séance 1) ? Quel est son mode d'achat (séance 2) ? Quelles démarches suivre (séance 3) ?</div>
+      <div id="c-q15s3" class="aide-box aide-corrige">
+        <strong>Étape 1 :</strong> Inès contacte le service client du site internet pour signaler le défaut et demander la réparation ou le remplacement du téléphone (garantie de conformité, 2 ans).<br>
+        <strong>Étape 2 :</strong> Si le vendeur ne répond pas, Inès peut aussi exercer son droit de rétractation (14 jours) puisqu'il s'agit d'un achat à distance.<br>
+        <strong>Étape 3 :</strong> En cas de refus du vendeur, Inès envoie un courrier recommandé avec accusé de réception (mise en demeure).<br>
+        <strong>Étape 4 :</strong> Si le litige persiste, Inès peut faire appel à un médiateur (gratuit) ou contacter une association de consommateurs.<br>
+        <strong>Étape 5 :</strong> En dernier recours, Inès peut signaler le problème sur signal.conso.gouv.fr et saisir le tribunal (procédure simplifiée si le litige est inférieur à 5 000 €).
+      </div>
+      <div id="p-q15s3" class="aide-box aide-pourquoi">Inès bénéficie de plusieurs protections : la garantie de conformité (produit défectueux), le droit de rétractation (achat en ligne dans les 14 jours) et les démarches de résolution de litige. En combinant ces droits, elle a toutes les chances d'obtenir réparation.</div>
+    </div>
+
+    <!-- Je retiens l'essentiel -->
+    <div class="retiens-block">
+      <h2>Je retiens l'essentiel — Module D3</h2>
+      <div class="retiens-section">
+        <h3>1. Les droits du consommateur</h3>
+        <ul>
+          <li><strong>Droit à l'information :</strong> étiquetage, affichage des prix (TTC), information précontractuelle.</li>
+          <li><strong>Garantie de conformité :</strong> 2 ans, réparation / remplacement / remboursement.</li>
+          <li><strong>Garantie des vices cachés :</strong> 2 ans après la découverte, remboursement ou réduction du prix.</li>
+          <li><strong>Droit de rétractation :</strong> 14 jours pour les achats à distance et le démarchage.</li>
+          <li><strong>Protection</strong> contre les pratiques commerciales trompeuses.</li>
+        </ul>
+      </div>
+      <div class="retiens-section">
+        <h3>2. Les modes d'achat</h3>
+        <ul>
+          <li><strong>En magasin :</strong> pas de rétractation légale, contact direct avec le produit.</li>
+          <li><strong>À distance :</strong> rétractation 14 jours, livraison max 30 jours.</li>
+          <li><strong>Démarchage :</strong> rétractation 14 jours, paiement interdit avant 7 jours.</li>
+          <li><strong>Moyens de paiement :</strong> espèces, carte bancaire, chèque, prélèvement.</li>
+        </ul>
+      </div>
+      <div class="retiens-section">
+        <h3>3. Résoudre un litige</h3>
+        <ul>
+          <li><strong>Démarches amiables :</strong> réclamation, mise en demeure (courrier recommandé), médiation (gratuite).</li>
+          <li><strong>Associations de consommateurs :</strong> informent, accompagnent, négocient, agissent en justice.</li>
+          <li><strong>DGCCRF :</strong> contrôle, enquête, sanctionne (signal.conso.gouv.fr).</li>
+          <li><strong>Recours judiciaire :</strong> tribunal, procédure simplifiée (litiges &lt; 5 000 €).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Auto-eval S3 -->
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 3 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> La première démarche en cas de litige est de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es3q1" value="A"> <label>Contacter le service client du vendeur</label></li>
+            <li><input type="radio" name="es3q1" value="B"> <label>Saisir le tribunal</label></li>
+            <li><input type="radio" name="es3q1" value="C"> <label>Porter plainte à la police</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La médiation de la consommation est gratuite pour le consommateur.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q2" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q2" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> La DGCCRF signifie :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es3q3" value="A"> <label>Direction Générale de la Concurrence, de la Consommation et de la Répression des Fraudes</label></li>
+            <li><input type="radio" name="es3q3" value="B"> <label>Direction Générale du Commerce et de la Consommation en France</label></li>
+            <li><input type="radio" name="es3q3" value="C"> <label>Direction Générale de la Communication et de la Consommation Française</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Le recours au tribunal est la première étape de résolution d'un litige.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q4" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q4" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> Le site signal.conso.gouv.fr permet de :</p>
+          <ul class="eval-options">
+            <li><input type="radio" name="es3q5" value="A"> <label>Signaler un problème avec un professionnel à la DGCCRF</label></li>
+            <li><input type="radio" name="es3q5" value="B"> <label>Acheter des produits en ligne</label></li>
+            <li><input type="radio" name="es3q5" value="C"> <label>Comparer les prix des produits</label></li>
+          </ul>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> Les associations de consommateurs peuvent agir en justice au nom des consommateurs.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q6" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q6" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> La mise en demeure s'envoie par courrier recommandé avec accusé de réception.</p>
+          <div class="vf-options">
+            <label><input type="radio" name="es3q7" value="V"> Vrai</label>
+            <label><input type="radio" name="es3q7" value="F"> Faux</label>
+          </div>
+        </div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> Complétez : La procédure simplifiée s'applique aux litiges inférieurs à _______ euros.</p>
+          <input type="text" class="court-input" id="es3q8-input" placeholder="Votre réponse...">
+        </div>
+        <button class="btn-valider" onclick="validerSeance(3)">Valider mes réponses</button>
+        <div class="score-block" id="score-s3"><div class="score-num" id="score-num-s3"></div><div class="score-label" id="score-detail-s3"></div></div>
+        <div class="remediation-block" id="remed-s3"><div id="remed-text-s3"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Ressource pédagogique — M. MECHERI — mapse.fr
+</footer>
+
+<script>
+/* === ACCORDION === */
+function toggleSeance(el) {
+  const block = el.closest('.seance-block');
+  block.classList.toggle('open');
+  el.setAttribute('aria-expanded', block.classList.contains('open'));
+}
+
+/* === AUTO-RESIZE TEXTAREA === */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+/* === TOGGLE AIDE (INDICE / CORRIGÉ / POURQUOI) === */
+function toggle(btn, type, id) {
+  const box = document.getElementById(id);
+  const isVisible = box.classList.contains('show');
+  const qBlock = btn.closest('.question-block');
+  if (qBlock) {
+    qBlock.querySelectorAll('.aide-box').forEach(b => b.classList.remove('show'));
+    qBlock.querySelectorAll('.btn-aide').forEach(b => b.classList.remove('active'));
+  }
+  if (!isVisible) {
+    box.classList.add('show');
+    btn.classList.add('active');
+  }
+}
+
+/* === ANSWERS === */
+const answers = {
+  1: { es1q1:'B', es1q2:'B', es1q3:'F', es1q4:'V', es1q5:'A', es1q6:'V', es1q7:'F', es1q8:['cach','cache','cachés','caches'] },
+  2: { es2q1:'C', es2q2:'V', es2q3:'B', es2q4:'V', es2q5:'B', es2q6:'V', es2q7:'V', es2q8:['7','sept'] },
+  3: { es3q1:'A', es3q2:'V', es3q3:'A', es3q4:'F', es3q5:'A', es3q6:'V', es3q7:'V', es3q8:['5000','5 000'] }
+};
+
+const remediations = {
+  1: {
+    low: '<strong>Reprends la séance 1 depuis le début.</strong> Relis attentivement les documents sur le droit à l\'information (Doc. A), les garanties légales (Doc. B) et le droit de rétractation (Doc. C). Retiens : garantie de conformité = 2 ans, rétractation = 14 jours.',
+    mid: '<strong>Tu as les bases !</strong> Revois la différence entre garantie de conformité et garantie des vices cachés (Doc. B). Retiens aussi les exceptions au droit de rétractation.',
+    good: '<strong>Bon travail !</strong> Vérifie les points qui t\'ont posé problème. Revois les pratiques commerciales trompeuses si besoin.',
+    top: '<strong>Excellent !</strong> Tu maîtrises parfaitement les droits du consommateur. Tu peux passer à la séance 2.'
+  },
+  2: {
+    low: '<strong>Reprends la séance 2.</strong> Concentre-toi sur les différences entre achat en magasin, à distance et démarchage (Doc. E). Retiens : rétractation = 14 jours pour la vente à distance et le démarchage.',
+    mid: '<strong>Encourageant !</strong> Revois les moyens de paiement (Doc. F) et leurs avantages. Retiens : démarchage = paiement interdit avant 7 jours.',
+    good: '<strong>Très bien !</strong> Quelques détails à revoir sur les modes d\'achat. Relis le Doc. E si besoin.',
+    top: '<strong>Parfait !</strong> Tu connais bien les modes d\'achat et les moyens de paiement. Passe à la séance 3.'
+  },
+  3: {
+    low: '<strong>Reprends la séance 3.</strong> Relis les étapes de résolution d\'un litige (Doc. E) et le rôle de la DGCCRF (Doc. G). Retiens l\'ordre : réclamation, mise en demeure, médiation, tribunal.',
+    mid: '<strong>Tu progresses !</strong> Revois le rôle des associations de consommateurs et de la DGCCRF. N\'oublie pas le site signal.conso.gouv.fr.',
+    good: '<strong>Bravo !</strong> Tu connais bien les démarches de résolution de litige. Vérifie les derniers détails.',
+    top: '<strong>Félicitations !</strong> Tu maîtrises le module D3 ! Tu es prêt(e) pour l\'évaluation.'
+  }
+};
+
+function validerSeance(s) {
+  const A = answers[s];
+  let score = 0, total = 8;
+  const errors = [];
+
+  if (s === 1) {
+    const q1 = document.querySelector('input[name="es1q1"]:checked');
+    if (q1 && q1.value === A.es1q1) score++; else errors.push('Q1 (réponse : B — 2 ans)');
+    const q2 = document.querySelector('input[name="es1q2"]:checked');
+    if (q2 && q2.value === A.es1q2) score++; else errors.push('Q2 (réponse : B — 14 jours)');
+    const q3 = document.querySelector('input[name="es1q3"]:checked');
+    if (q3 && q3.value === A.es1q3) score++; else errors.push('Q3 (réponse : Faux — pas besoin de justifier)');
+    const q4 = document.querySelector('input[name="es1q4"]:checked');
+    if (q4 && q4.value === A.es1q4) score++; else errors.push('Q4 (réponse : Vrai)');
+    const q5 = document.querySelector('input[name="es1q5"]:checked');
+    if (q5 && q5.value === A.es1q5) score++; else errors.push('Q5 (réponse : A — interdite par la loi)');
+    const q6 = document.querySelector('input[name="es1q6"]:checked');
+    if (q6 && q6.value === A.es1q6) score++; else errors.push('Q6 (réponse : Vrai)');
+    const q7 = document.querySelector('input[name="es1q7"]:checked');
+    if (q7 && q7.value === A.es1q7) score++; else errors.push('Q7 (réponse : Faux — exception)');
+    const q8v = (document.getElementById('es1q8-input').value || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    if (A.es1q8.some(k => q8v.includes(k.normalize("NFD").replace(/[\u0300-\u036f]/g,"")))) score++; else errors.push('Q8 (réponse : cachés)');
+  } else if (s === 2) {
+    const q1 = document.querySelector('input[name="es2q1"]:checked');
+    if (q1 && q1.value === A.es2q1) score++; else errors.push('Q1 (réponse : C — aucun droit légal)');
+    const q2 = document.querySelector('input[name="es2q2"]:checked');
+    if (q2 && q2.value === A.es2q2) score++; else errors.push('Q2 (réponse : Vrai)');
+    const q3 = document.querySelector('input[name="es2q3"]:checked');
+    if (q3 && q3.value === A.es2q3) score++; else errors.push('Q3 (réponse : B — carte bancaire)');
+    const q4 = document.querySelector('input[name="es2q4"]:checked');
+    if (q4 && q4.value === A.es2q4) score++; else errors.push('Q4 (réponse : Vrai)');
+    const q5 = document.querySelector('input[name="es2q5"]:checked');
+    if (q5 && q5.value === A.es2q5) score++; else errors.push('Q5 (réponse : B — 30 jours)');
+    const q6 = document.querySelector('input[name="es2q6"]:checked');
+    if (q6 && q6.value === A.es2q6) score++; else errors.push('Q6 (réponse : Vrai)');
+    const q7 = document.querySelector('input[name="es2q7"]:checked');
+    if (q7 && q7.value === A.es2q7) score++; else errors.push('Q7 (réponse : Vrai)');
+    const q8v = (document.getElementById('es2q8-input').value || '').trim().toLowerCase();
+    if (A.es2q8.some(k => q8v.includes(k))) score++; else errors.push('Q8 (réponse : 7)');
+  } else if (s === 3) {
+    const q1 = document.querySelector('input[name="es3q1"]:checked');
+    if (q1 && q1.value === A.es3q1) score++; else errors.push('Q1 (réponse : A — contacter le service client)');
+    const q2 = document.querySelector('input[name="es3q2"]:checked');
+    if (q2 && q2.value === A.es3q2) score++; else errors.push('Q2 (réponse : Vrai)');
+    const q3 = document.querySelector('input[name="es3q3"]:checked');
+    if (q3 && q3.value === A.es3q3) score++; else errors.push('Q3 (réponse : A)');
+    const q4 = document.querySelector('input[name="es3q4"]:checked');
+    if (q4 && q4.value === A.es3q4) score++; else errors.push('Q4 (réponse : Faux — c\'est le dernier recours)');
+    const q5 = document.querySelector('input[name="es3q5"]:checked');
+    if (q5 && q5.value === A.es3q5) score++; else errors.push('Q5 (réponse : A — signaler un problème)');
+    const q6 = document.querySelector('input[name="es3q6"]:checked');
+    if (q6 && q6.value === A.es3q6) score++; else errors.push('Q6 (réponse : Vrai)');
+    const q7 = document.querySelector('input[name="es3q7"]:checked');
+    if (q7 && q7.value === A.es3q7) score++; else errors.push('Q7 (réponse : Vrai)');
+    const q8v = (document.getElementById('es3q8-input').value || '').trim().replace(/\s/g,'');
+    if (A.es3q8.some(k => q8v.includes(k.replace(/\s/g,'')))) score++; else errors.push('Q8 (réponse : 5 000)');
+  }
+
+  const colors = { low: '#fff3e0', mid: '#e3f2fd', good: '#e8f5e9', top: '#f3e5f5' };
+  const borderC = { low: '#ff9800', mid: '#2196f3', good: '#4caf50', top: '#9c27b0' };
+  let level = score <= 2 ? 'low' : score <= 5 ? 'mid' : score <= 7 ? 'good' : 'top';
+
+  const scoreBlock = document.getElementById('score-s' + s);
+  scoreBlock.style.background = colors[level];
+  scoreBlock.style.border = '2px solid ' + borderC[level];
+  document.getElementById('score-num-s' + s).textContent = score + ' / ' + total;
+  document.getElementById('score-detail-s' + s).innerHTML = errors.length > 0
+    ? '<strong>À revoir :</strong> ' + errors.join(' — ')
+    : '<strong>Toutes les réponses sont correctes !</strong>';
+  scoreBlock.classList.add('show');
+
+  const R = remediations[s];
+  const remedBlock = document.getElementById('remed-s' + s);
+  remedBlock.style.background = colors[level];
+  remedBlock.style.borderColor = borderC[level];
+  document.getElementById('remed-text-s' + s).innerHTML = R[level];
+  remedBlock.classList.add('show');
+
+  scoreBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
