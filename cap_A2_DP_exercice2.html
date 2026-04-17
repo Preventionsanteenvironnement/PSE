@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — Module A2 — Le sommeil (Parcours Différencié)</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --fg:#1a2233; --card:#ffffff; --accent:#3b6cd9; --accent2:#2a4fa0;
+    --ok:#2e8b57; --warn:#b8860b; --err:#c0392b; --border:#c9d4e5; --muted:#5a6b87;
+    --focus:#ffbf00;
+  }
+  [data-theme="dark"]{
+    --bg:#0e1420; --fg:#e8eefc; --card:#182236; --accent:#6d9dff; --accent2:#4a7dd8;
+    --border:#3a4a66; --muted:#a8b5cc;
+  }
+  [data-theme="highcontrast"]{
+    --bg:#000000; --fg:#ffffff; --card:#000000; --accent:#ffff00; --accent2:#ffff00;
+    --border:#ffffff; --muted:#ffffff; --ok:#00ff00; --err:#ff6060;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:'Atkinson Hyperlegible','Segoe UI',Tahoma,sans-serif;line-height:1.6}
+  body.dyslexia{font-family:'OpenDyslexic','Comic Sans MS',sans-serif;letter-spacing:0.03em;word-spacing:0.15em}
+  body.size-large{font-size:1.15rem}
+  body.size-xlarge{font-size:1.3rem}
+  .container{max-width:700px;margin:0 auto;padding:16px}
+  header{background:var(--accent);color:#fff;padding:18px 16px;border-radius:12px;margin-bottom:16px}
+  header h1{margin:0 0 6px 0;font-size:1.4rem}
+  header p{margin:0;opacity:.95;font-size:0.95rem}
+  .settings-btn{position:fixed;top:12px;right:12px;background:var(--accent2);color:#fff;border:2px solid #fff;border-radius:50%;width:48px;height:48px;font-size:1.4rem;cursor:pointer;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+  .settings-btn:focus{outline:3px solid var(--focus);outline-offset:2px}
+  .settings-panel{position:fixed;top:70px;right:12px;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:14px;z-index:999;max-width:280px;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:none}
+  .settings-panel.open{display:block}
+  .settings-panel h3{margin-top:0;font-size:1rem}
+  .settings-panel label{display:block;margin:8px 0;font-size:0.9rem}
+  .settings-panel select, .settings-panel button{width:100%;padding:6px;margin-top:3px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg)}
+  .card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+  .card h2{margin:0 0 10px 0;color:var(--accent2);font-size:1.15rem}
+  .tag{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:2px 8px;font-size:0.8rem;margin-right:6px}
+  .tag.c1{background:#2e8b57}.tag.c2{background:#b8860b}.tag.c3{background:#8e44ad}.tag.c5{background:#c0392b}
+  .audio-btn{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:0.9rem;margin:6px 0;display:inline-flex;align-items:center;gap:6px}
+  .audio-btn:focus{outline:3px solid var(--focus);outline-offset:2px}
+  .audio-btn:hover{background:var(--accent)}
+  .situation{background:#fff8e1;border-left:5px solid #b8860b;padding:12px;border-radius:8px;margin-bottom:12px}
+  [data-theme="dark"] .situation{background:#2a2410}
+  [data-theme="highcontrast"] .situation{background:#000;border-color:#ffff00}
+  .doc{background:#eef4ff;border-left:5px solid var(--accent);padding:12px;border-radius:8px;margin:10px 0}
+  [data-theme="dark"] .doc{background:#18243a}
+  [data-theme="highcontrast"] .doc{background:#000}
+  .doc h3{margin:0 0 8px 0;font-size:1rem;color:var(--accent2)}
+  [data-theme="highcontrast"] .doc h3{color:#ffff00}
+  textarea, input[type="text"]{width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:1rem;background:var(--card);color:var(--fg)}
+  textarea:focus, input:focus{outline:3px solid var(--focus);border-color:var(--accent)}
+  textarea{min-height:90px;resize:vertical}
+  .check-item{display:block;padding:8px 10px;margin:6px 0;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:var(--card)}
+  .check-item:hover{border-color:var(--accent)}
+  .check-item input{margin-right:8px;transform:scale(1.2)}
+  .classif-zone{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+  @media(min-width:520px){.classif-zone{grid-template-columns:repeat(2,1fr)}}
+  .classif-zone.three{grid-template-columns:1fr}
+  @media(min-width:520px){.classif-zone.three{grid-template-columns:repeat(3,1fr)}}
+  .cat-box{border:2px dashed var(--border);border-radius:8px;padding:10px;min-height:90px;background:var(--card)}
+  .cat-box h4{margin:0 0 6px 0;font-size:0.95rem;text-align:center}
+  .cat-box.sante{border-color:#2e8b57}
+  .cat-box.pro{border-color:var(--accent)}
+  .cat-box.sociale{border-color:#8e44ad}
+  .cat-box.fav{border-color:#2e8b57}
+  .cat-box.defav{border-color:#c0392b}
+  .items-pool{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;padding:10px;background:var(--bg);border-radius:8px;border:2px solid var(--border);min-height:50px}
+  .item-chip{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:6px 12px;cursor:pointer;font-size:0.95rem;user-select:none}
+  .item-chip:hover{border-color:var(--accent)}
+  .item-chip.selected{background:var(--accent);color:#fff;border-color:var(--accent2)}
+  .item-chip.placed{opacity:0.95}
+  .item-chip.placed.sante{background:#d4f1de;border-color:#2e8b57}
+  .item-chip.placed.pro{background:#dae7ff;border-color:var(--accent)}
+  .item-chip.placed.sociale{background:#e9d7f5;border-color:#8e44ad}
+  .item-chip.placed.fav{background:#d4f1de;border-color:#2e8b57}
+  .item-chip.placed.defav{background:#f9d7d3;border-color:#c0392b}
+  [data-theme="dark"] .item-chip.placed.sante{background:#1a3826;color:#d4f1de}
+  [data-theme="dark"] .item-chip.placed.pro{background:#1c2e55;color:#dae7ff}
+  [data-theme="dark"] .item-chip.placed.sociale{background:#3a2550;color:#e9d7f5}
+  [data-theme="dark"] .item-chip.placed.fav{background:#1a3826;color:#d4f1de}
+  [data-theme="dark"] .item-chip.placed.defav{background:#4a1a16;color:#f9d7d3}
+  .validate-btn{background:var(--ok);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:1rem;margin-top:10px;font-weight:bold}
+  .validate-btn:focus{outline:3px solid var(--focus);outline-offset:2px}
+  .validate-btn:hover{filter:brightness(1.1)}
+  .next-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:1rem;margin-top:10px;font-weight:bold}
+  .next-btn:focus{outline:3px solid var(--focus);outline-offset:2px}
+  .feedback{margin-top:10px;padding:10px;border-radius:8px;font-weight:500;display:none}
+  .feedback.show{display:block}
+  .feedback.ok{background:#d4f1de;border-left:5px solid var(--ok);color:#1a5a36}
+  .feedback.ko{background:#fde4e1;border-left:5px solid var(--err);color:#8a2a1e}
+  [data-theme="dark"] .feedback.ok{background:#1a3826;color:#a8e6b8}
+  [data-theme="dark"] .feedback.ko{background:#4a1a16;color:#f9b3ad}
+  .model-answer{margin-top:10px;background:#fffbe6;border-left:5px solid #b8860b;padding:10px;border-radius:8px;display:none}
+  .model-answer.show{display:block}
+  [data-theme="dark"] .model-answer{background:#2a2410;color:#f5e4a8}
+  .model-answer h4{margin:0 0 6px 0;font-size:0.95rem}
+  .progress-wrap{background:var(--card);border:2px solid var(--border);border-radius:8px;padding:8px;margin-bottom:14px;position:sticky;top:0;z-index:10}
+  .progress-bar{height:14px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+  .progress-fill{height:100%;background:var(--accent);width:0%;transition:width 0.4s ease}
+  .progress-text{font-size:0.85rem;color:var(--muted);margin-top:4px;text-align:center}
+  .question{display:none}
+  .question.active{display:block}
+  .nav-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .auto-eval{background:#eef4ff;border:2px solid var(--accent);border-radius:10px;padding:14px;margin-top:14px}
+  [data-theme="dark"] .auto-eval{background:#18243a}
+  .auto-eval h3{margin-top:0;color:var(--accent2)}
+  .smileys{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .smiley{font-size:1.8rem;cursor:pointer;padding:6px;border:2px solid transparent;border-radius:50%;background:none}
+  .smiley:focus, .smiley.picked{outline:3px solid var(--focus);border-color:var(--accent)}
+  footer{margin-top:20px;padding:14px;text-align:center;color:var(--muted);font-size:0.9rem;border-top:1px solid var(--border)}
+  .placeholder-hint{color:var(--muted);font-style:italic;font-size:0.88rem;margin-top:4px}
+  .skip-link{position:absolute;left:-9999px}
+  .skip-link:focus{left:12px;top:12px;background:var(--focus);color:#000;padding:8px;z-index:2000;border-radius:6px}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Aller au contenu principal</a>
+
+<button class="settings-btn" id="settingsBtn" aria-label="Ouvrir les réglages d'accessibilité" aria-expanded="false">⚙️</button>
+<div class="settings-panel" id="settingsPanel" role="dialog" aria-label="Réglages d'accessibilité">
+  <h3>Réglages</h3>
+  <label>Thème
+    <select id="themeSel">
+      <option value="light">Clair</option>
+      <option value="dark">Sombre</option>
+      <option value="highcontrast">Contraste élevé</option>
+    </select>
+  </label>
+  <label>Taille du texte
+    <select id="sizeSel">
+      <option value="normal">Normale</option>
+      <option value="large">Grande</option>
+      <option value="xlarge">Très grande</option>
+    </select>
+  </label>
+  <label>Police
+    <select id="fontSel">
+      <option value="normal">Standard (lisible)</option>
+      <option value="dyslexia">Adaptée dyslexie</option>
+    </select>
+  </label>
+  <label>Vitesse de lecture audio
+    <select id="rateSel">
+      <option value="0.8">Lente</option>
+      <option value="1" selected>Normale</option>
+      <option value="1.2">Rapide</option>
+    </select>
+  </label>
+  <button id="resetBtn">Réinitialiser la progression</button>
+</div>
+
+<div class="container" id="main">
+  <header>
+    <h1>Module A2 — Le sommeil</h1>
+    <p>CAP PSE — Parcours Différencié — Exercice 2</p>
+    <p><strong>Sujet :</strong> Conséquences du manque de sommeil et hygiène du sommeil</p>
+  </header>
+
+  <div class="progress-wrap" aria-label="Progression">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">Question 1 sur 6</div>
+  </div>
+
+  <section class="card">
+    <h2>Situation</h2>
+    <button class="audio-btn" data-audio="situation" aria-label="Écouter la situation">🔊 Écouter</button>
+    <div class="situation" id="situation">
+      <p><strong>Léna, 17 ans, est en première année de CAP.</strong> Depuis plusieurs semaines, elle ne dort que 5 heures par nuit car elle regarde son téléphone tard le soir.</p>
+      <p>En stage, elle a de grosses baisses d'attention. La semaine dernière, elle a failli se blesser à la main en manipulant un outil coupant. Elle se dispute aussi souvent avec ses amis et se sent tendue.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Documents ressources</h2>
+
+    <div class="doc">
+      <h3>Document A — Effets du manque de sommeil sur la santé</h3>
+      <button class="audio-btn" data-audio="docA" aria-label="Écouter le document A">🔊 Écouter</button>
+      <p id="docA">Quand on dort trop peu, le corps et la tête sont fatigués. Les principaux effets sur la santé sont : une grande fatigue, une baisse des défenses immunitaires (on tombe plus souvent malade), une prise de poids (on a plus faim de sucre et de gras), des troubles de la concentration et de la mémoire, ainsi que de l'anxiété ou de la tristesse.</p>
+    </div>
+
+    <div class="doc">
+      <h3>Document B — Conséquences professionnelles et sociales</h3>
+      <button class="audio-btn" data-audio="docB" aria-label="Écouter le document B">🔊 Écouter</button>
+      <p id="docB">Au travail, le manque de sommeil augmente le risque d'accidents (mauvais gestes, chutes, blessures avec les outils) et fait baisser la productivité (on travaille moins bien, moins vite). Au volant, la somnolence multiplie par 8 le risque d'accident. Sur le plan social, on s'isole, on est plus irritable, on a plus de conflits avec les amis et la famille.</p>
+    </div>
+
+    <div class="doc">
+      <h3>Document C — Bien dormir : ce qui aide et ce qui gêne</h3>
+      <button class="audio-btn" data-audio="docC" aria-label="Écouter le document C">🔊 Écouter</button>
+      <p id="docC"><strong>Favorables au sommeil :</strong> une chambre dans l'obscurité, une température entre 18 et 20 °C, le silence, des horaires de coucher réguliers, arrêter les écrans au moins 1 heure avant de dormir.<br>
+      <strong>Défavorables au sommeil :</strong> la caféine (café, thé, cola, énergisants), l'alcool, la lumière bleue des écrans, un repas lourd le soir, le stress et les écrans au lit.</p>
+    </div>
+  </section>
+
+  <!-- EXERCICE 1 -->
+  <section class="card question active" data-q="1">
+    <h2><span class="tag c1">C1</span> Exercice 1 — Relever</h2>
+    <button class="audio-btn" data-audio="q1" aria-label="Écouter la consigne">🔊 Écouter la consigne</button>
+    <p id="q1"><strong>Consigne :</strong> Dans le <strong>document A</strong>, relève <strong>deux effets</strong> du manque de sommeil sur la santé.</p>
+    <label for="ans1" class="placeholder-hint">Écris tes deux effets (un par ligne) :</label>
+    <textarea id="ans1" placeholder="Exemple : - fatigue&#10;- ..."></textarea>
+    <button class="validate-btn" data-validate="1">Valider</button>
+    <div class="feedback" id="fb1" role="status" aria-live="polite"></div>
+    <div class="model-answer" id="model1">
+      <h4>Réponse attendue :</h4>
+      <p>Deux effets parmi : la fatigue, la baisse des défenses immunitaires, la prise de poids, les troubles de concentration ou de mémoire, l'anxiété.</p>
+    </div>
+    <div class="nav-btns"><button class="next-btn" data-next="2" style="display:none" id="next1">Question suivante →</button></div>
+  </section>
+
+  <!-- EXERCICE 2 -->
+  <section class="card question" data-q="2">
+    <h2><span class="tag c1">C1</span> Exercice 2 — Classer (santé / pro / sociale)</h2>
+    <button class="audio-btn" data-audio="q2" aria-label="Écouter la consigne">🔊 Écouter la consigne</button>
+    <p id="q2"><strong>Consigne :</strong> Pour chaque conséquence, clique sur l'étiquette puis sur la bonne catégorie.</p>
+    <div class="items-pool" id="pool2" aria-label="Étiquettes à classer">
+      <button class="item-chip" data-cat="sante">Fatigue intense</button>
+      <button class="item-chip" data-cat="sante">Prise de poids</button>
+      <button class="item-chip" data-cat="pro">Accident avec un outil</button>
+      <button class="item-chip" data-cat="pro">Baisse de productivité</button>
+      <button class="item-chip" data-cat="sociale">Isolement</button>
+      <button class="item-chip" data-cat="sociale">Conflits avec les amis</button>
+    </div>
+    <div class="classif-zone three">
+      <div class="cat-box sante" data-zone="sante"><h4>Santé</h4></div>
+      <div class="cat-box pro" data-zone="pro"><h4>Professionnelle</h4></div>
+      <div class="cat-box sociale" data-zone="sociale"><h4>Sociale</h4></div>
+    </div>
+    <button class="validate-btn" data-validate="2">Valider</button>
+    <div class="feedback" id="fb2" role="status" aria-live="polite"></div>
+    <div class="nav-btns"><button class="next-btn" data-next="3" style="display:none" id="next2">Question suivante →</button></div>
+  </section>
+
+  <!-- EXERCICE 3 -->
+  <section class="card question" data-q="3">
+    <h2><span class="tag c2">C2</span> Exercice 3 — Identifier</h2>
+    <button class="audio-btn" data-audio="q3" aria-label="Écouter la consigne">🔊 Écouter la consigne</button>
+    <p id="q3"><strong>Consigne :</strong> Dans la situation de Léna, <strong>coche toutes les conséquences</strong> dont elle souffre.</p>
+    <label class="check-item"><input type="checkbox" data-correct="true"> Des baisses d'attention en stage</label>
+    <label class="check-item"><input type="checkbox" data-correct="true"> Un risque d'accident (outil coupant)</label>
+    <label class="check-item"><input type="checkbox" data-correct="false"> Une excellente concentration</label>
+    <label class="check-item"><input type="checkbox" data-correct="true"> Des conflits avec ses amis</label>
+    <label class="check-item"><input type="checkbox" data-correct="true"> De la tension / du stress</label>
+    <label class="check-item"><input type="checkbox" data-correct="false"> Une prise de poids vérifiée</label>
+    <button class="validate-btn" data-validate="3">Valider</button>
+    <div class="feedback" id="fb3" role="status" aria-live="polite"></div>
+    <div class="nav-btns"><button class="next-btn" data-next="4" style="display:none" id="next3">Question suivante →</button></div>
+  </section>
+
+  <!-- EXERCICE 4 -->
+  <section class="card question" data-q="4">
+    <h2><span class="tag c1">C1</span> Exercice 4 — Classer (favorable / défavorable)</h2>
+    <button class="audio-btn" data-audio="q4" aria-label="Écouter la consigne">🔊 Écouter la consigne</button>
+    <p id="q4"><strong>Consigne :</strong> Classe chaque élément selon qu'il est <strong>favorable</strong> (aide à dormir) ou <strong>défavorable</strong> (gêne le sommeil).</p>
+    <div class="items-pool" id="pool4" aria-label="Étiquettes à classer">
+      <button class="item-chip" data-cat="fav">Obscurité</button>
+      <button class="item-chip" data-cat="defav">Café</button>
+      <button class="item-chip" data-cat="defav">Écrans au lit</button>
+      <button class="item-chip" data-cat="fav">Température à 19 °C</button>
+      <button class="item-chip" data-cat="defav">Alcool</button>
+      <button class="item-chip" data-cat="fav">Silence</button>
+      <button class="item-chip" data-cat="defav">Repas lourd le soir</button>
+      <button class="item-chip" data-cat="fav">Horaires réguliers</button>
+    </div>
+    <div class="classif-zone">
+      <div class="cat-box fav" data-zone="fav"><h4>✓ Favorable</h4></div>
+      <div class="cat-box defav" data-zone="defav"><h4>✗ Défavorable</h4></div>
+    </div>
+    <button class="validate-btn" data-validate="4">Valider</button>
+    <div class="feedback" id="fb4" role="status" aria-live="polite"></div>
+    <div class="nav-btns"><button class="next-btn" data-next="5" style="display:none" id="next4">Question suivante →</button></div>
+  </section>
+
+  <!-- EXERCICE 5 -->
+  <section class="card question" data-q="5">
+    <h2><span class="tag c3">C3</span> Exercice 5 — Expliquer</h2>
+    <button class="audio-btn" data-audio="q5" aria-label="Écouter la consigne">🔊 Écouter la consigne</button>
+    <p id="q5"><strong>Consigne :</strong> Explique le lien entre le <strong>manque de sommeil de Léna</strong> et son <strong>accident évité</strong> avec l'outil. Propose <strong>une mesure de prévention</strong>.</p>
+    <label for="ans5" class="placeholder-hint">Rédige 2 à 4 phrases :</label>
+    <textarea id="ans5" placeholder="Parce que Léna dort peu, elle... Pour éviter cela, elle peut..."></textarea>
+    <button class="validate-btn" data-validate="5">Valider et voir le modèle</button>
+    <div class="feedback" id="fb5" role="status" aria-live="polite"></div>
+    <div class="model-answer" id="model5">
+      <h4>Proposition de réponse :</h4>
+      <p>Léna ne dort que 5 heures par nuit. Ce manque de sommeil provoque des baisses d'attention et ralentit ses réflexes. En manipulant un outil coupant, elle a failli se blesser parce qu'elle n'était pas assez concentrée. <strong>Mesure de prévention :</strong> se coucher plus tôt, viser 8 heures de sommeil, arrêter le téléphone au moins 1 heure avant de dormir pour mieux récupérer et rester vigilante en stage.</p>
+    </div>
+    <div class="nav-btns"><button class="next-btn" data-next="6" style="display:none" id="next5">Question suivante →</button></div>
+  </section>
+
+  <!-- EXERCICE 6 -->
+  <section class="card question" data-q="6">
+    <h2><span class="tag c5">C5</span> Exercice 6 — Argumenter</h2>
+    <button class="audio-btn" data-audio="q6" aria-label="Écouter la consigne">🔊 Écouter la consigne</button>
+    <p id="q6"><strong>Consigne :</strong> Un camarade te dit : « <em>Moi, je dors 4 heures par nuit, ça me suffit.</em> » Rédige <strong>2 arguments</strong> pour le convaincre du contraire.</p>
+    <label for="ans6" class="placeholder-hint">Commence par : « Je ne suis pas d'accord car... »</label>
+    <textarea id="ans6" placeholder="Argument 1 : ...&#10;Argument 2 : ..."></textarea>
+    <button class="validate-btn" data-validate="6">Valider et voir le modèle</button>
+    <div class="feedback" id="fb6" role="status" aria-live="polite"></div>
+    <div class="model-answer" id="model6">
+      <h4>Proposition de réponse :</h4>
+      <p>Je ne suis pas d'accord, dormir 4 heures n'est pas suffisant pour un adolescent.<br>
+      <strong>Argument 1 :</strong> Le manque de sommeil fait baisser la concentration et augmente fortement le risque d'accident au travail ou sur la route (risque multiplié par 8 au volant).<br>
+      <strong>Argument 2 :</strong> Sur la santé, dormir peu affaiblit les défenses immunitaires, fait grossir et provoque de l'anxiété. Un ado doit dormir environ 8 à 9 heures par nuit pour rester en forme.</p>
+    </div>
+    <div class="nav-btns"><button class="next-btn" data-next="eval" style="display:none" id="next6">Terminer l'exercice →</button></div>
+  </section>
+
+  <!-- AUTO-EVALUATION -->
+  <section class="card question" data-q="eval">
+    <h2>Mini auto-évaluation</h2>
+    <button class="audio-btn" data-audio="evalText" aria-label="Écouter l'auto-évaluation">🔊 Écouter</button>
+    <p id="evalText">Bravo, tu as terminé l'exercice. Réponds honnêtement à ces 3 questions pour voir où tu en es.</p>
+    <div class="auto-eval">
+      <p><strong>1. J'ai compris les effets du manque de sommeil sur la santé.</strong></p>
+      <div class="smileys" role="radiogroup" aria-label="Question 1">
+        <button class="smiley" data-ev="1" data-v="1" role="radio" aria-label="Non">😕</button>
+        <button class="smiley" data-ev="1" data-v="2" role="radio" aria-label="Un peu">😐</button>
+        <button class="smiley" data-ev="1" data-v="3" role="radio" aria-label="Bien">🙂</button>
+        <button class="smiley" data-ev="1" data-v="4" role="radio" aria-label="Très bien">😃</button>
+      </div>
+      <p><strong>2. Je sais distinguer ce qui aide et ce qui gêne le sommeil.</strong></p>
+      <div class="smileys" role="radiogroup" aria-label="Question 2">
+        <button class="smiley" data-ev="2" data-v="1" role="radio" aria-label="Non">😕</button>
+        <button class="smiley" data-ev="2" data-v="2" role="radio" aria-label="Un peu">😐</button>
+        <button class="smiley" data-ev="2" data-v="3" role="radio" aria-label="Bien">🙂</button>
+        <button class="smiley" data-ev="2" data-v="4" role="radio" aria-label="Très bien">😃</button>
+      </div>
+      <p><strong>3. Je saurais expliquer à un camarade pourquoi bien dormir est important.</strong></p>
+      <div class="smileys" role="radiogroup" aria-label="Question 3">
+        <button class="smiley" data-ev="3" data-v="1" role="radio" aria-label="Non">😕</button>
+        <button class="smiley" data-ev="3" data-v="2" role="radio" aria-label="Un peu">😐</button>
+        <button class="smiley" data-ev="3" data-v="3" role="radio" aria-label="Bien">🙂</button>
+        <button class="smiley" data-ev="3" data-v="4" role="radio" aria-label="Très bien">😃</button>
+      </div>
+      <div class="feedback ok show" style="margin-top:14px">
+        <strong>Félicitations !</strong> Tu as terminé le parcours différencié sur le sommeil. Continue à prendre soin de toi : un bon sommeil, c'est aussi de la prévention santé et sécurité au travail.
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Ressource pédagogique adaptée — M. MECHERI — mapse.fr
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const STORAGE_KEY = 'cap_a2_dp_ex2';
+
+  // ===== SETTINGS =====
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const themeSel = document.getElementById('themeSel');
+  const sizeSel = document.getElementById('sizeSel');
+  const fontSel = document.getElementById('fontSel');
+  const rateSel = document.getElementById('rateSel');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function loadState(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }catch(e){ return {}; }
+  }
+  function saveState(s){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }catch(e){}
+  }
+  let state = loadState();
+
+  function applySettings(){
+    document.documentElement.setAttribute('data-theme', state.theme || 'light');
+    document.body.classList.remove('size-large','size-xlarge');
+    if(state.size === 'large') document.body.classList.add('size-large');
+    if(state.size === 'xlarge') document.body.classList.add('size-xlarge');
+    document.body.classList.toggle('dyslexia', state.font === 'dyslexia');
+    themeSel.value = state.theme || 'light';
+    sizeSel.value = state.size || 'normal';
+    fontSel.value = state.font || 'normal';
+    rateSel.value = state.rate || '1';
+  }
+  applySettings();
+
+  settingsBtn.addEventListener('click', ()=>{
+    const open = settingsPanel.classList.toggle('open');
+    settingsBtn.setAttribute('aria-expanded', open);
+  });
+  document.addEventListener('click', (e)=>{
+    if(!settingsPanel.contains(e.target) && e.target !== settingsBtn && settingsPanel.classList.contains('open')){
+      settingsPanel.classList.remove('open');
+      settingsBtn.setAttribute('aria-expanded','false');
+    }
+  });
+
+  themeSel.addEventListener('change', ()=>{ state.theme = themeSel.value; saveState(state); applySettings(); });
+  sizeSel.addEventListener('change', ()=>{ state.size = sizeSel.value; saveState(state); applySettings(); });
+  fontSel.addEventListener('change', ()=>{ state.font = fontSel.value; saveState(state); applySettings(); });
+  rateSel.addEventListener('change', ()=>{ state.rate = rateSel.value; saveState(state); });
+  resetBtn.addEventListener('click', ()=>{
+    if(confirm('Réinitialiser toute la progression ?')){
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  });
+
+  // ===== AUDIO (Web Speech API) =====
+  let currentUtterance = null;
+  let currentBtn = null;
+  function toggleAudio(text, btn){
+    if(!('speechSynthesis' in window)){
+      alert('La lecture audio n\'est pas disponible sur ce navigateur.');
+      return;
+    }
+    if(currentUtterance && speechSynthesis.speaking && currentBtn === btn){
+      speechSynthesis.cancel();
+      btn.textContent = '🔊 Écouter';
+      currentUtterance = null; currentBtn = null;
+      return;
+    }
+    speechSynthesis.cancel();
+    if(currentBtn){ currentBtn.textContent = '🔊 Écouter'; }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    u.rate = parseFloat(state.rate || '1');
+    u.onend = ()=>{ btn.textContent = '🔊 Écouter'; currentUtterance = null; currentBtn = null; };
+    u.onerror = ()=>{ btn.textContent = '🔊 Écouter'; };
+    speechSynthesis.speak(u);
+    currentUtterance = u; currentBtn = btn;
+    btn.textContent = '⏹ Stop';
+  }
+  document.querySelectorAll('.audio-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.audio;
+      const el = document.getElementById(key);
+      const text = el ? el.innerText : '';
+      toggleAudio(text, btn);
+    });
+  });
+
+  // ===== PROGRESSION =====
+  const questions = document.querySelectorAll('.question');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+  const totalQ = 6;
+
+  function showQuestion(key){
+    questions.forEach(q=>q.classList.remove('active'));
+    const target = document.querySelector('.question[data-q="'+key+'"]');
+    if(target){
+      target.classList.add('active');
+      target.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    const num = parseInt(key, 10);
+    if(!isNaN(num)){
+      progressFill.style.width = ((num-1)/totalQ*100) + '%';
+      progressText.textContent = 'Question ' + num + ' sur ' + totalQ;
+    } else if(key === 'eval'){
+      progressFill.style.width = '100%';
+      progressText.textContent = 'Terminé — auto-évaluation';
+    }
+    state.current = key;
+    saveState(state);
+  }
+
+  // Restore progression
+  if(state.current){ showQuestion(state.current); } else { showQuestion('1'); }
+
+  document.querySelectorAll('.next-btn').forEach(b=>{
+    b.addEventListener('click', ()=> showQuestion(b.dataset.next));
+  });
+
+  // ===== RESTORE ANSWERS =====
+  ['ans1','ans5','ans6'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(state.answers && state.answers[id]) el.value = state.answers[id];
+    el.addEventListener('input', ()=>{
+      state.answers = state.answers || {};
+      state.answers[id] = el.value;
+      saveState(state);
+    });
+  });
+
+  // ===== FEEDBACK HELPER =====
+  function feedback(n, ok, msg){
+    const fb = document.getElementById('fb'+n);
+    fb.className = 'feedback show ' + (ok ? 'ok' : 'ko');
+    fb.textContent = msg;
+    if(ok){
+      const next = document.getElementById('next'+n);
+      if(next) next.style.display = 'inline-block';
+    }
+  }
+
+  // ===== EX 1 =====
+  document.querySelector('[data-validate="1"]').addEventListener('click', ()=>{
+    const v = document.getElementById('ans1').value.toLowerCase();
+    const keys = ['fatigue','immunitaire','défense','poids','concentration','mémoire','anxiété','anxiete','tristesse','maladie'];
+    const found = keys.filter(k=>v.includes(k));
+    const lineCount = v.split(/\n|,|;/).map(s=>s.trim()).filter(s=>s.length>2).length;
+    if(found.length >= 2 || (lineCount >= 2 && v.length > 10)){
+      feedback(1, true, 'Bravo ! Tu as bien relevé plusieurs effets du manque de sommeil.');
+      document.getElementById('model1').classList.add('show');
+    } else if(v.length < 5){
+      feedback(1, false, 'Essaie d\'écrire au moins deux effets. Relis le document A.');
+    } else {
+      feedback(1, false, 'Presque ! Cherche deux effets précis dans le document A (fatigue, concentration, poids...).');
+      document.getElementById('model1').classList.add('show');
+      document.getElementById('next1').style.display = 'inline-block';
+    }
+  });
+
+  // ===== CLASSIFICATION (Ex 2 et 4) =====
+  function setupClassification(qNum){
+    const pool = document.getElementById('pool'+qNum);
+    const zones = document.querySelectorAll('.question[data-q="'+qNum+'"] .cat-box');
+    let selected = null;
+
+    pool.querySelectorAll('.item-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        if(chip.classList.contains('placed')) return;
+        if(selected === chip){
+          chip.classList.remove('selected');
+          selected = null;
+        } else {
+          pool.querySelectorAll('.item-chip.selected').forEach(c=>c.classList.remove('selected'));
+          chip.classList.add('selected');
+          selected = chip;
+        }
+      });
+    });
+
+    zones.forEach(zone=>{
+      zone.addEventListener('click', ()=>{
+        if(!selected) return;
+        const zoneCat = zone.dataset.zone;
+        selected.classList.remove('selected');
+        selected.classList.add('placed', zoneCat);
+        selected.dataset.placed = zoneCat;
+        zone.appendChild(selected);
+        selected = null;
+      });
+    });
+
+    document.querySelector('[data-validate="'+qNum+'"]').addEventListener('click', ()=>{
+      const chips = pool.parentElement.querySelectorAll('.item-chip');
+      let allPlaced = true; let allCorrect = true; let correctCount = 0;
+      chips.forEach(c=>{
+        if(!c.dataset.placed){ allPlaced = false; }
+        else if(c.dataset.placed === c.dataset.cat){ correctCount++; }
+        else { allCorrect = false; }
+      });
+      if(!allPlaced){
+        feedback(qNum, false, 'Classe toutes les étiquettes avant de valider.');
+        return;
+      }
+      if(allCorrect){
+        feedback(qNum, true, 'Excellent ! Toutes les étiquettes sont bien classées.');
+      } else {
+        feedback(qNum, false, 'Il y a '+(chips.length-correctCount)+' erreur(s). Les étiquettes mal placées ont été replacées, réessaie !');
+        // Reset wrong ones back to pool
+        chips.forEach(c=>{
+          if(c.dataset.placed && c.dataset.placed !== c.dataset.cat){
+            c.classList.remove('placed','sante','pro','sociale','fav','defav');
+            delete c.dataset.placed;
+            pool.appendChild(c);
+          }
+        });
+      }
+    });
+  }
+  setupClassification(2);
+  setupClassification(4);
+
+  // ===== EX 3 (checkboxes) =====
+  document.querySelector('[data-validate="3"]').addEventListener('click', ()=>{
+    const boxes = document.querySelectorAll('.question[data-q="3"] input[type=checkbox]');
+    let score = 0; let total = 0;
+    boxes.forEach(b=>{
+      const correct = b.dataset.correct === 'true';
+      if(correct) total++;
+      if(b.checked === correct) score++;
+    });
+    if(score === boxes.length){
+      feedback(3, true, 'Parfait ! Tu as identifié toutes les conséquences vécues par Léna.');
+    } else {
+      feedback(3, false, 'Il reste des erreurs. Relis la situation : que vit Léna exactement ? Les mauvaises cases ont été corrigées.');
+      boxes.forEach(b=>{ b.checked = (b.dataset.correct === 'true'); });
+      setTimeout(()=> document.getElementById('next3').style.display='inline-block', 800);
+    }
+  });
+
+  // ===== EX 5 (rédactionnel C3) =====
+  document.querySelector('[data-validate="5"]').addEventListener('click', ()=>{
+    const v = document.getElementById('ans5').value.trim();
+    document.getElementById('model5').classList.add('show');
+    if(v.length < 20){
+      feedback(5, false, 'Rédige un peu plus (2 à 4 phrases). Regarde la proposition de réponse ci-dessous pour t\'aider.');
+      document.getElementById('next5').style.display = 'inline-block';
+    } else {
+      feedback(5, true, 'Bien joué ! Compare ta réponse avec la proposition ci-dessous pour l\'améliorer.');
+    }
+  });
+
+  // ===== EX 6 (argumenter C5) =====
+  document.querySelector('[data-validate="6"]').addEventListener('click', ()=>{
+    const v = document.getElementById('ans6').value.trim();
+    document.getElementById('model6').classList.add('show');
+    if(v.length < 30){
+      feedback(6, false, 'Développe un peu plus : deux arguments clairs. Inspire-toi du modèle ci-dessous.');
+      document.getElementById('next6').style.display = 'inline-block';
+    } else {
+      feedback(6, true, 'Super argumentation ! Compare avec le modèle pour enrichir tes idées.');
+    }
+  });
+
+  // ===== AUTO-EVAL =====
+  document.querySelectorAll('.smiley').forEach(s=>{
+    s.addEventListener('click', ()=>{
+      const ev = s.dataset.ev;
+      document.querySelectorAll('.smiley[data-ev="'+ev+'"]').forEach(x=>x.classList.remove('picked'));
+      s.classList.add('picked');
+      state.eval = state.eval || {};
+      state.eval[ev] = s.dataset.v;
+      saveState(state);
+    });
+  });
+  // Restore smiley picks
+  if(state.eval){
+    Object.keys(state.eval).forEach(ev=>{
+      const v = state.eval[ev];
+      const el = document.querySelector('.smiley[data-ev="'+ev+'"][data-v="'+v+'"]');
+      if(el) el.classList.add('picked');
+    });
+  }
+
+  // Stop audio when leaving
+  window.addEventListener('beforeunload', ()=>{ if('speechSynthesis' in window) speechSynthesis.cancel(); });
+})();
+</script>
+</body>
+</html>
