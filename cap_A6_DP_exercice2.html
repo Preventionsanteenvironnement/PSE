@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — A6 Prévenir les IST — Exercice 2 — Parcours Différencié</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --primary: #0ea5e9;
+    --primary-dark: #0369a1;
+    --success: #16a34a;
+    --warn: #d97706;
+    --err: #dc2626;
+    --card: #f0f9ff;
+    --border: #cbd5e1;
+    --font-size: 20px;
+    --line-height: 1.7;
+    --font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  }
+  body.theme-cream { --bg: #fdf6e3; --fg: #202020; --card: #f5ecd5; }
+  body.theme-blue  { --bg: #e6f0fb; --fg: #0b1d3a; --card: #d5e6f7; }
+  body.theme-green { --bg: #e6f7ea; --fg: #0b2d14; --card: #d0ecd6; }
+  body.theme-contrast { --bg: #000000; --fg: #ffff00; --card: #111111; --border: #ffff00; --primary: #ffff00; --primary-dark: #ffd000; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--font-family); font-size: var(--font-size); line-height: var(--line-height); }
+  body.dyslexic { --font-family: 'OpenDyslexic', 'Comic Sans MS', 'Segoe UI', sans-serif; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 16px; }
+
+  header { background: var(--primary); color: #fff; padding: 20px 16px; border-radius: 12px; margin-bottom: 16px; }
+  header h1 { margin: 0 0 6px 0; font-size: 1.3em; }
+  header p { margin: 0; font-size: 0.95em; opacity: 0.95; }
+
+  .progress-wrap { background: var(--card); border: 2px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+  .progress-label { font-weight: bold; margin-bottom: 6px; }
+  .progress-bar { background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; }
+  .progress-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s; }
+
+  .card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .doc-title { color: var(--primary-dark); margin-top: 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+
+  .situation { background: #fff7ed; border-left: 6px solid var(--warn); padding: 14px; border-radius: 10px; margin-bottom: 16px; }
+  body.theme-contrast .situation { background: #1a1a00; }
+
+  .comp-badge { display: inline-block; background: var(--primary); color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-right: 6px; }
+
+  button, .btn { min-height: 48px; padding: 12px 18px; font-size: 1em; border: 2px solid var(--primary-dark); background: var(--primary); color: #fff; border-radius: 10px; cursor: pointer; font-family: inherit; margin: 4px 2px; }
+  button:hover { background: var(--primary-dark); }
+  button.secondary { background: #fff; color: var(--primary-dark); }
+  button.audio-btn { background: transparent; color: var(--primary-dark); border: 2px solid var(--primary-dark); padding: 6px 10px; min-height: 40px; font-size: 1em; margin-left: 6px; }
+  body.theme-contrast button.audio-btn { color: var(--primary); }
+
+  input[type="text"], textarea { width: 100%; padding: 12px; font-size: 1em; font-family: inherit; border: 2px solid var(--border); border-radius: 8px; background: #fff; color: #111; margin-top: 6px; }
+  textarea { min-height: 110px; resize: vertical; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .option { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; }
+  body.theme-contrast .option { background: #111; color: #ffff00; }
+  .option input { transform: scale(1.5); margin-right: 6px; }
+  .option label { flex: 1; cursor: pointer; }
+
+  .vf-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  body.theme-contrast .vf-row { background: #111; }
+  .vf-row .statement { flex: 1 1 100%; margin-bottom: 6px; }
+  .vf-row .vf-buttons { display: flex; gap: 8px; }
+  .vf-row button.vf { min-height: 40px; padding: 6px 14px; font-size: 0.95em; }
+  .vf-row button.vf.chosen { background: var(--success); border-color: var(--success); }
+  .vf-row button.vf.wrong { background: var(--err); border-color: var(--err); }
+
+  .feedback { margin-top: 10px; padding: 12px; border-radius: 10px; border: 2px solid; display: none; }
+  .feedback.good { background: #dcfce7; border-color: var(--success); color: #064e3b; display: block; }
+  .feedback.bad  { background: #fee2e2; border-color: var(--err); color: #7f1d1d; display: block; }
+  body.theme-contrast .feedback.good, body.theme-contrast .feedback.bad { background: #111; color: #ffff00; }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .nav-row { display: flex; justify-content: space-between; margin-top: 16px; gap: 8px; }
+
+  .settings-fab { position: fixed; top: 12px; right: 12px; z-index: 50; min-height: 48px; min-width: 48px; border-radius: 50%; font-size: 1.3em; padding: 6px 10px; }
+  .settings-panel { position: fixed; top: 68px; right: 12px; background: var(--card); color: var(--fg); border: 2px solid var(--border); border-radius: 12px; padding: 14px; width: 300px; max-width: 92vw; display: none; z-index: 49; box-shadow: 0 6px 24px rgba(0,0,0,0.15); }
+  .settings-panel.open { display: block; }
+  .settings-panel h3 { margin-top: 0; }
+  .settings-panel label { display: block; margin: 8px 0 4px; font-weight: bold; }
+  .settings-panel input[type="range"] { width: 100%; }
+  .settings-panel .themes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .settings-panel .themes button { min-height: 40px; padding: 6px 10px; font-size: 0.85em; }
+
+  .mini-eval .q { margin-bottom: 12px; }
+
+  .score-card { background: var(--card); border: 2px solid var(--primary); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  .score-card .comp-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .score-card .comp-line:last-child { border-bottom: none; }
+
+  footer { text-align: center; padding: 18px 8px; margin-top: 24px; color: var(--fg); opacity: 0.75; font-size: 0.9em; }
+
+  ul { padding-left: 22px; }
+  ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<button class="settings-fab" id="settingsBtn" aria-label="Réglages" title="Réglages">⚙️</button>
+
+<div class="settings-panel" id="settingsPanel" role="dialog" aria-label="Réglages d'accessibilité">
+  <h3>⚙️ Réglages</h3>
+
+  <label for="fontSize">Taille du texte : <span id="fontSizeVal">20</span> px</label>
+  <input type="range" id="fontSize" min="16" max="28" step="1" value="20">
+
+  <label for="lineHeight">Interligne : <span id="lineHeightVal">1.7</span></label>
+  <input type="range" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.7">
+
+  <label>
+    <input type="checkbox" id="dyslexicToggle"> Police OpenDyslexic
+  </label>
+
+  <label>Couleur de fond :</label>
+  <div class="themes">
+    <button data-theme="">Blanc</button>
+    <button data-theme="cream">Crème</button>
+    <button data-theme="blue">Bleu</button>
+    <button data-theme="green">Vert</button>
+    <button data-theme="contrast">Contraste élevé</button>
+  </div>
+
+  <div style="margin-top:12px; text-align:right;">
+    <button class="secondary" id="closeSettings">Fermer</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <h1>🛡️ CAP PSE — Module A6 : Prévenir les IST</h1>
+    <p>Exercice 2 — Prévention et dépistage ✨</p>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">Étape <span id="stepNum">1</span> sur <span id="stepTotal">10</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- ÉTAPE 1 : Situation -->
+  <section class="step active" data-step="1">
+    <div class="situation">
+      <h2 class="doc-title">📖 Situation
+        <button class="audio-btn" onclick="toggleAudio(this,'situationTxt')">🔊</button>
+      </h2>
+      <p id="situationTxt">Théo, 18 ans, est en deuxième année de CAP. Sa petite amie lui dit qu'elle a eu une IST il y a un an, soignée avec un traitement. Ils veulent commencer à avoir des rapports. Théo ne sait pas comment bien se protéger, il a entendu parler des vaccins et du dépistage mais il ne sait pas où aller. Il voudrait aussi savoir quoi faire si un jour il y avait un accident de préservatif.</p>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button onclick="nextStep()">Commencer ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 2 : Documents -->
+  <section class="step" data-step="2">
+    <div class="card">
+      <h2 class="doc-title">📖 Document A — Le préservatif
+        <button class="audio-btn" onclick="toggleAudio(this,'docA')">🔊</button>
+      </h2>
+      <p id="docA">Le <strong>préservatif</strong> est le <strong>seul moyen de protection</strong> contre les IST lors des rapports sexuels. Il existe :</p>
+      <ul>
+        <li>Le <strong>préservatif masculin</strong> (externe), en latex ou polyuréthane.</li>
+        <li>Le <strong>préservatif féminin</strong> (interne), en polyuréthane.</li>
+      </ul>
+      <p>Depuis 2023, les préservatifs masculins sont <strong>gratuits en pharmacie pour les moins de 26 ans</strong> sur présentation d'une carte vitale (ou anonymement). ⚠️ La <strong>pilule</strong> protège d'une grossesse mais <strong>PAS des IST</strong>.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="doc-title">📖 Document B — Les vaccins
+        <button class="audio-btn" onclick="toggleAudio(this,'docB')">🔊</button>
+      </h2>
+      <p id="docB">Deux IST peuvent être évitées par la <strong>vaccination</strong> :</p>
+      <ul>
+        <li><strong>Vaccin contre l'hépatite B</strong> : recommandé dès le nourrisson, souvent fait en CAP.</li>
+        <li><strong>Vaccin contre le papillomavirus (HPV)</strong> : recommandé aux filles <strong>et aux garçons</strong> dès 11 ans, rattrapage possible jusqu'à 19 ans. Il protège contre certains cancers (col de l'utérus, gorge, anus).</li>
+      </ul>
+      <p>Les vaccins sont <strong>gratuits</strong> au centre de vaccination ou pris en charge par la Sécurité sociale.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="doc-title">📖 Document C — Le dépistage et les CeGIDD
+        <button class="audio-btn" onclick="toggleAudio(this,'docC')">🔊</button>
+      </h2>
+      <p id="docC">Le <strong>dépistage</strong> est un test (prise de sang ou prélèvement) qui permet de savoir si on est infecté par une IST. On peut se faire dépister :</p>
+      <ul>
+        <li>Chez son <strong>médecin traitant</strong>.</li>
+        <li>Dans un <strong>CeGIDD</strong> (Centre Gratuit d'Information, de Dépistage et de Diagnostic) : <strong>gratuit, anonyme, sans rendez-vous</strong>.</li>
+        <li>Au <strong>Planning Familial</strong>.</li>
+        <li>En laboratoire (prise de sang VIH gratuite sans ordonnance).</li>
+      </ul>
+      <p>⚡ <strong>En cas de prise de risque</strong> (rapport non protégé, accident de préservatif) : aller dans les <strong>48 heures maximum</strong> aux urgences ou au CeGIDD pour un <strong>Traitement Post-Exposition (TPE)</strong> contre le VIH.</p>
+    </div>
+
+    <div class="nav-row">
+      <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+      <button onclick="nextStep()">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 3 : Exercice 1 -->
+  <section class="step" data-step="3">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 1 — Relever
+        <button class="audio-btn" onclick="toggleAudio(this,'ex1Q')">🔊</button>
+      </h2>
+      <p id="ex1Q">👉 Dans le Document A, <strong>relève</strong> le seul moyen de protection contre les IST lors des rapports sexuels.</p>
+      <label for="ex1Input">Ta réponse :</label>
+      <input type="text" id="ex1Input" placeholder="Écris ta réponse ici...">
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx1()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex1Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex1Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 4 : Exercice 2 -->
+  <section class="step" data-step="4">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 2 — Identifier
+        <button class="audio-btn" onclick="toggleAudio(this,'ex2Q')">🔊</button>
+      </h2>
+      <p id="ex2Q">👉 Coche la <strong>bonne définition</strong> d'un CeGIDD.</p>
+      <div class="options">
+        <label class="option"><input type="radio" name="ex2" value="a"><span>A. Un centre de contraception payant.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Option A. Un centre de contraception payant.')">🔊</button>
+        </label>
+        <label class="option"><input type="radio" name="ex2" value="b"><span>B. Un centre de dépistage gratuit et anonyme des IST.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Option B. Un centre de dépistage gratuit et anonyme des IST.')">🔊</button>
+        </label>
+        <label class="option"><input type="radio" name="ex2" value="c"><span>C. Un hôpital qui soigne seulement le SIDA.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Option C. Un hôpital qui soigne seulement le SIDA.')">🔊</button>
+        </label>
+      </div>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx2()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex2Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex2Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 5 : Exercice 3 V/F -->
+  <section class="step" data-step="5">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 3 — Vrai ou Faux
+        <button class="audio-btn" onclick="toggleAudio(this,'ex3Q')">🔊</button>
+      </h2>
+      <p id="ex3Q">👉 Pour chaque phrase, clique sur <strong>Vrai</strong> ou <strong>Faux</strong>.</p>
+      <div id="vfList"></div>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx3()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex3Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex3Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 6 : Exercice 4 -->
+  <section class="step" data-step="6">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C2</span> Exercice 4 — Identifier les IST évitables par la vaccination
+        <button class="audio-btn" onclick="toggleAudio(this,'ex4Q')">🔊</button>
+      </h2>
+      <p id="ex4Q">👉 Coche les IST pour lesquelles un <strong>vaccin existe</strong> (plusieurs réponses).</p>
+      <div class="options" id="ex4Opts">
+        <label class="option"><input type="checkbox" value="a"><span>A. Chlamydia</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'A. Chlamydia')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="b"><span>B. Papillomavirus (HPV)</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'B. Papillomavirus.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="c"><span>C. Hépatite B</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'C. Hépatite B.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="d"><span>D. Syphilis</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'D. Syphilis.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="e"><span>E. VIH/SIDA</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'E. V I H SIDA.')">🔊</button></label>
+      </div>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx4()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex4Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex4Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 7 : Exercice 5 -->
+  <section class="step" data-step="7">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C3</span> Exercice 5 — Expliquer
+        <button class="audio-btn" onclick="toggleAudio(this,'ex5Q')">🔊</button>
+      </h2>
+      <p id="ex5Q">👉 En 1 ou 2 phrases, <strong>explique</strong> pourquoi la pilule contraceptive ne suffit pas à se protéger des IST.</p>
+      <textarea id="ex5Input" placeholder="Rédige ta réponse..."></textarea>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx5()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex5Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex5Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 8 : Exercice 6 -->
+  <section class="step" data-step="8">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C4</span> Exercice 6 — Agir
+        <button class="audio-btn" onclick="toggleAudio(this,'ex6Q')">🔊</button>
+      </h2>
+      <p id="ex6Q">👉 Théo a un accident de préservatif. <strong>Propose 2 actions</strong> à faire rapidement.</p>
+      <textarea id="ex6Input" placeholder="Rédige ta réponse..."></textarea>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx6()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex6Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex6Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 9 : Mini auto-évaluation -->
+  <section class="step" data-step="9">
+    <div class="card mini-eval">
+      <h2 class="doc-title">⭐ Mini auto-évaluation
+        <button class="audio-btn" onclick="toggleAudio(this,null,'Mini auto-évaluation. Réponds aux trois questions.')">🔊</button>
+      </h2>
+
+      <div class="q">
+        <p><strong>Q1.</strong> Le seul moyen de protection contre les IST est...
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 1. Le seul moyen de protection contre les IST est ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me1" value="a"><span>A. La pilule contraceptive</span></label>
+          <label class="option"><input type="radio" name="me1" value="b"><span>B. Le préservatif</span></label>
+          <label class="option"><input type="radio" name="me1" value="c"><span>C. Le stérilet</span></label>
+        </div>
+      </div>
+
+      <div class="q">
+        <p><strong>Q2.</strong> En cas de prise de risque (rapport non protégé), on doit agir dans un délai maximum de...
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 2. Délai maximum dintervention ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me2" value="a"><span>A. 7 jours</span></label>
+          <label class="option"><input type="radio" name="me2" value="b"><span>B. 48 heures</span></label>
+          <label class="option"><input type="radio" name="me2" value="c"><span>C. 3 mois</span></label>
+        </div>
+      </div>
+
+      <div class="q">
+        <p><strong>Q3.</strong> Le vaccin HPV est recommandé...
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 3. Le vaccin HPV est recommandé ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me3" value="a"><span>A. Seulement aux filles</span></label>
+          <label class="option"><input type="radio" name="me3" value="b"><span>B. Seulement aux garçons</span></label>
+          <label class="option"><input type="radio" name="me3" value="c"><span>C. Aux filles et aux garçons dès 11 ans</span></label>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="finish()">Terminer 🎯</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 10 : Bilan -->
+  <section class="step" data-step="10">
+    <div class="card">
+      <h2 class="doc-title">👏 Bilan
+        <button class="audio-btn" onclick="toggleAudio(this,'bilanTxt')">🔊</button>
+      </h2>
+      <p id="bilanTxt">Bravo ! Tu as terminé l'exercice 2 sur la prévention et le dépistage. Voici ton score par compétences.</p>
+
+      <div class="score-card" id="scoreCard"></div>
+
+      <div class="nav-row" style="margin-top:12px;">
+        <button class="secondary" onclick="location.reload()">🔁 Recommencer</button>
+        <button onclick="window.print()">🖨️ Imprimer mon bilan</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Ressource pédagogique adaptée — M. MECHERI — mapse.fr
+  </footer>
+
+</div>
+
+<script>
+let currentUtterance = null;
+let currentBtn = null;
+function toggleAudio(btn, textId, rawText) {
+  const synth = window.speechSynthesis;
+  if (!synth) { alert("La synthèse vocale n'est pas disponible."); return; }
+  if (currentBtn === btn && synth.speaking) {
+    synth.cancel();
+    if (currentBtn) currentBtn.textContent = '🔊';
+    currentBtn = null;
+    return;
+  }
+  synth.cancel();
+  if (currentBtn) currentBtn.textContent = '🔊';
+
+  let text = rawText;
+  if (!text && textId) {
+    const el = document.getElementById(textId);
+    if (el) text = el.innerText;
+  }
+  if (!text) return;
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'fr-FR';
+  u.rate = 0.85;
+  u.onend = () => { if (currentBtn) currentBtn.textContent = '🔊'; currentBtn = null; };
+  currentUtterance = u;
+  currentBtn = btn;
+  btn.textContent = '🔇';
+  synth.speak(u);
+}
+
+const settingsBtn = document.getElementById('settingsBtn');
+const panel = document.getElementById('settingsPanel');
+settingsBtn.addEventListener('click', () => panel.classList.toggle('open'));
+document.getElementById('closeSettings').addEventListener('click', () => panel.classList.remove('open'));
+
+const fontSize = document.getElementById('fontSize');
+const fontSizeVal = document.getElementById('fontSizeVal');
+const lineHeight = document.getElementById('lineHeight');
+const lineHeightVal = document.getElementById('lineHeightVal');
+const dys = document.getElementById('dyslexicToggle');
+
+function applySettings(s) {
+  document.documentElement.style.setProperty('--font-size', s.fontSize + 'px');
+  document.documentElement.style.setProperty('--line-height', s.lineHeight);
+  fontSize.value = s.fontSize; fontSizeVal.textContent = s.fontSize;
+  lineHeight.value = s.lineHeight; lineHeightVal.textContent = s.lineHeight;
+  dys.checked = !!s.dyslexic;
+  document.body.classList.toggle('dyslexic', !!s.dyslexic);
+  document.body.classList.remove('theme-cream','theme-blue','theme-green','theme-contrast');
+  if (s.theme) document.body.classList.add('theme-' + s.theme);
+}
+function saveSettings() {
+  const s = {
+    fontSize: parseInt(fontSize.value,10),
+    lineHeight: parseFloat(lineHeight.value),
+    dyslexic: dys.checked,
+    theme: (document.body.className.match(/theme-(\w+)/) || [,''])[1]
+  };
+  localStorage.setItem('pse_a6_ex2_settings', JSON.stringify(s));
+}
+fontSize.addEventListener('input', () => { fontSizeVal.textContent = fontSize.value; document.documentElement.style.setProperty('--font-size', fontSize.value + 'px'); saveSettings(); });
+lineHeight.addEventListener('input', () => { lineHeightVal.textContent = lineHeight.value; document.documentElement.style.setProperty('--line-height', lineHeight.value); saveSettings(); });
+dys.addEventListener('change', () => { document.body.classList.toggle('dyslexic', dys.checked); saveSettings(); });
+document.querySelectorAll('.settings-panel .themes button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.body.classList.remove('theme-cream','theme-blue','theme-green','theme-contrast');
+    const t = b.dataset.theme;
+    if (t) document.body.classList.add('theme-' + t);
+    saveSettings();
+  });
+});
+(function loadSettings(){
+  try {
+    const s = JSON.parse(localStorage.getItem('pse_a6_ex2_settings') || '{}');
+    applySettings({
+      fontSize: s.fontSize || 20,
+      lineHeight: s.lineHeight || 1.7,
+      dyslexic: s.dyslexic || false,
+      theme: s.theme || ''
+    });
+  } catch(e) {}
+})();
+
+let step = 1;
+const totalSteps = document.querySelectorAll('.step').length;
+document.getElementById('stepTotal').textContent = totalSteps;
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const cur = document.querySelector('.step[data-step="'+n+'"]');
+  if (cur) cur.classList.add('active');
+  document.getElementById('stepNum').textContent = n;
+  document.getElementById('progressFill').style.width = (n/totalSteps*100) + '%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+function nextStep() { if (step < totalSteps) { step++; showStep(step); } }
+function prevStep() { if (step > 1) { step--; showStep(step); } }
+showStep(1);
+
+const vfItems = [
+  { t: "Le préservatif protège à la fois d'une grossesse et des IST.", a: true },
+  { t: "Le vaccin HPV est réservé aux filles.", a: false },
+  { t: "Le dépistage au CeGIDD est gratuit et anonyme.", a: true },
+  { t: "Après une prise de risque, on a 1 semaine pour agir.", a: false },
+  { t: "Les préservatifs sont gratuits en pharmacie pour les moins de 26 ans.", a: true }
+];
+const vfList = document.getElementById('vfList');
+vfItems.forEach((it, i) => {
+  const row = document.createElement('div');
+  row.className = 'vf-row';
+  row.innerHTML = `
+    <div class="statement"><strong>${i+1}.</strong> ${it.t}
+      <button class="audio-btn" onclick="toggleAudio(this,null,'${it.t.replace(/'/g,"\\'")}')">🔊</button>
+    </div>
+    <div class="vf-buttons">
+      <button class="vf" data-i="${i}" data-v="true">Vrai ✅</button>
+      <button class="vf" data-i="${i}" data-v="false">Faux ❌</button>
+    </div>`;
+  vfList.appendChild(row);
+});
+vfList.addEventListener('click', (e) => {
+  if (e.target.classList.contains('vf')) {
+    const i = e.target.dataset.i;
+    document.querySelectorAll(`.vf[data-i="${i}"]`).forEach(b => b.classList.remove('chosen'));
+    e.target.classList.add('chosen');
+  }
+});
+
+const score = { C1:{ok:0,tot:3}, C2:{ok:0,tot:1}, C3:{ok:0,tot:1}, C4:{ok:0,tot:1}, C5:{ok:0,tot:3} };
+
+function showFeedback(id, good, msg) {
+  const f = document.getElementById(id);
+  f.className = 'feedback ' + (good ? 'good' : 'bad');
+  f.innerHTML = msg;
+}
+function revealNext(id) { document.getElementById(id).style.display = 'inline-block'; }
+
+function checkEx1() {
+  const v = (document.getElementById('ex1Input').value || '').toLowerCase().trim();
+  const ok = v.includes('préservatif') || v.includes('preservatif');
+  if (ok) { score.C1.ok++; showFeedback('ex1Fb', true, "Bravo ✅ ! Le <strong>préservatif</strong> est le seul moyen de protection contre les IST."); }
+  else { showFeedback('ex1Fb', false, "Pas tout à fait 💡. La réponse est le <strong>préservatif</strong> (masculin ou féminin)."); }
+  revealNext('ex1Next');
+}
+function checkEx2() {
+  const sel = document.querySelector('input[name="ex2"]:checked');
+  if (!sel) { showFeedback('ex2Fb', false, "💡 Choisis une proposition avant de valider."); return; }
+  const ok = sel.value === 'b';
+  if (ok) { score.C1.ok++; showFeedback('ex2Fb', true, "Bravo ✅ ! Un CeGIDD est un <strong>centre gratuit et anonyme de dépistage des IST</strong>."); }
+  else { showFeedback('ex2Fb', false, "Pas tout à fait 💡. La bonne réponse est : <strong>B — Un centre de dépistage gratuit et anonyme</strong>."); }
+  revealNext('ex2Next');
+}
+function checkEx3() {
+  let correct = 0, answered = 0;
+  vfItems.forEach((it, i) => {
+    const chosen = document.querySelector(`.vf.chosen[data-i="${i}"]`);
+    if (chosen) {
+      answered++;
+      const v = chosen.dataset.v === 'true';
+      if (v === it.a) correct++;
+      else chosen.classList.add('wrong');
+    }
+  });
+  if (answered < vfItems.length) {
+    showFeedback('ex3Fb', false, "💡 Réponds à toutes les phrases avant de valider.");
+    return;
+  }
+  if (correct === vfItems.length) {
+    score.C1.ok++;
+    showFeedback('ex3Fb', true, `Bravo ✅ ! Tu as ${correct}/${vfItems.length} bonnes réponses.`);
+  } else {
+    showFeedback('ex3Fb', false, `Pas tout à fait 💡. Tu as <strong>${correct}/${vfItems.length}</strong>. Phrases fausses : 2 (le HPV est recommandé aussi aux <em>garçons</em>) et 4 (le délai est de <em>48h maximum</em>).`);
+  }
+  revealNext('ex3Next');
+}
+function checkEx4() {
+  const checks = document.querySelectorAll('#ex4Opts input[type="checkbox"]');
+  const sel = [...checks].filter(c => c.checked).map(c => c.value).sort().join(',');
+  const expected = 'b,c';
+  if (sel === expected) {
+    score.C2.ok++;
+    showFeedback('ex4Fb', true, "Bravo ✅ ! Les vaccins existent contre : <strong>B (HPV)</strong> et <strong>C (hépatite B)</strong>.");
+  } else {
+    showFeedback('ex4Fb', false, "Pas tout à fait 💡. Bonnes réponses : <strong>B (HPV) et C (hépatite B)</strong>. Il n'existe <em>pas</em> de vaccin contre la chlamydia, la syphilis ou le VIH.");
+  }
+  revealNext('ex4Next');
+}
+function checkEx5() {
+  const txt = (document.getElementById('ex5Input').value || '').toLowerCase();
+  const hasPilule = /(pilule|contracept|grossesse|b[eé]b[eé]|enfant)/.test(txt);
+  const hasIst = /(ist|microbe|virus|bact[eé]rie|infect|pr[eé]servatif|prot[eé]g)/.test(txt);
+  const len = txt.trim().length;
+  if (hasPilule && hasIst && len > 25) {
+    score.C3.ok++;
+    showFeedback('ex5Fb', true, "Bravo ✅ ! Tu as bien expliqué : la pilule empêche la grossesse mais pas la transmission des IST.");
+  } else {
+    showFeedback('ex5Fb', false, "Pas tout à fait 💡. <strong>Réponse modèle :</strong> « La <strong>pilule</strong> empêche une grossesse mais elle ne bloque pas les microbes (bactéries, virus) qui transmettent les IST. Seul le <strong>préservatif</strong> crée une barrière physique qui protège des IST. »");
+  }
+  revealNext('ex5Next');
+}
+function checkEx6() {
+  const txt = (document.getElementById('ex6Input').value || '').toLowerCase();
+  const keywords = ['urgence','cegidd','48','h[oô]pital','m[eé]decin','d[eé]pist','tpe','traitement','rapide','vite','parler'];
+  const hits = keywords.filter(k => new RegExp(k).test(txt)).length;
+  if (hits >= 2 && txt.trim().length > 30) {
+    score.C4.ok++;
+    showFeedback('ex6Fb', true, "Bravo ✅ ! Tu as proposé 2 actions rapides et adaptées.");
+  } else {
+    showFeedback('ex6Fb', false, "Pas tout à fait 💡. <strong>Réponse modèle :</strong> « 1) Se rendre <strong>rapidement (dans les 48h)</strong> aux urgences ou dans un <strong>CeGIDD</strong> pour demander un <strong>Traitement Post-Exposition (TPE)</strong>. 2) Faire un <strong>dépistage</strong> des IST 4 à 6 semaines plus tard, et en parler à sa partenaire. »");
+  }
+  revealNext('ex6Next');
+}
+
+function finish() {
+  const expected = { me1: 'b', me2: 'b', me3: 'c' };
+  Object.entries(expected).forEach(([name, val]) => {
+    const sel = document.querySelector(`input[name="${name}"]:checked`);
+    if (sel && sel.value === val) score.C5.ok++;
+  });
+
+  const labels = {
+    C1: "C1 — S'informer / relever",
+    C2: "C2 — Identifier / analyser",
+    C3: "C3 — Expliquer / mobiliser",
+    C4: "C4 — Proposer / agir",
+    C5: "C5 — Auto-évaluation"
+  };
+  const card = document.getElementById('scoreCard');
+  let html = '<h3 style="margin-top:0">🎯 Mon score par compétences</h3>';
+  let totalOk = 0, totalTot = 0;
+  Object.keys(score).forEach(k => {
+    const s = score[k];
+    totalOk += s.ok; totalTot += s.tot;
+    const emoji = s.ok === s.tot ? '⭐' : (s.ok === 0 ? '💡' : '✨');
+    html += `<div class="comp-line"><span>${emoji} ${labels[k]}</span><strong>${s.ok} / ${s.tot}</strong></div>`;
+  });
+  const pct = Math.round(totalOk/totalTot*100);
+  html += `<div class="comp-line" style="margin-top:8px;border-top:2px solid var(--border)"><span>🏆 <strong>Total</strong></span><strong>${totalOk} / ${totalTot} (${pct} %)</strong></div>`;
+  let niveau = "Non atteint (NT)";
+  if (pct >= 80) niveau = "Maîtrisé (M) ⭐";
+  else if (pct >= 60) niveau = "Atteint (A) ✅";
+  else if (pct >= 40) niveau = "Intermédiaire (I) ✨";
+  html += `<p style="margin-top:12px"><strong>Niveau global :</strong> ${niveau}</p>`;
+  card.innerHTML = html;
+
+  nextStep();
+}
+</script>
+</body>
+</html>

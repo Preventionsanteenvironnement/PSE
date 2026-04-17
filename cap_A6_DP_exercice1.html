@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — A6 Prévenir les IST — Exercice 1 — Parcours Différencié</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --success: #16a34a;
+    --warn: #d97706;
+    --err: #dc2626;
+    --card: #f8fafc;
+    --border: #cbd5e1;
+    --font-size: 20px;
+    --line-height: 1.7;
+    --font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  }
+  body.theme-cream { --bg: #fdf6e3; --fg: #202020; --card: #f5ecd5; }
+  body.theme-blue  { --bg: #e6f0fb; --fg: #0b1d3a; --card: #d5e6f7; }
+  body.theme-green { --bg: #e6f7ea; --fg: #0b2d14; --card: #d0ecd6; }
+  body.theme-contrast { --bg: #000000; --fg: #ffff00; --card: #111111; --border: #ffff00; --primary: #ffff00; --primary-dark: #ffd000; }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+  }
+  body.dyslexic { --font-family: 'OpenDyslexic', 'Comic Sans MS', 'Segoe UI', sans-serif; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 16px; }
+
+  header { background: var(--primary); color: #fff; padding: 20px 16px; border-radius: 12px; margin-bottom: 16px; }
+  header h1 { margin: 0 0 6px 0; font-size: 1.3em; }
+  header p { margin: 0; font-size: 0.95em; opacity: 0.95; }
+
+  .progress-wrap { background: var(--card); border: 2px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+  .progress-label { font-weight: bold; margin-bottom: 6px; }
+  .progress-bar { background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; }
+  .progress-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s; }
+
+  .card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .doc-title { color: var(--primary-dark); margin-top: 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+
+  .situation { background: #fff7ed; border-left: 6px solid var(--warn); padding: 14px; border-radius: 10px; margin-bottom: 16px; }
+  body.theme-contrast .situation { background: #1a1a00; }
+
+  .comp-badge { display: inline-block; background: var(--primary); color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-right: 6px; }
+
+  button, .btn {
+    min-height: 48px; padding: 12px 18px; font-size: 1em;
+    border: 2px solid var(--primary-dark); background: var(--primary); color: #fff;
+    border-radius: 10px; cursor: pointer; font-family: inherit; margin: 4px 2px;
+  }
+  button:hover { background: var(--primary-dark); }
+  button.secondary { background: #fff; color: var(--primary-dark); }
+  button.audio-btn { background: transparent; color: var(--primary-dark); border: 2px solid var(--primary-dark); padding: 6px 10px; min-height: 40px; font-size: 1em; margin-left: 6px; }
+  body.theme-contrast button.audio-btn { color: var(--primary); }
+
+  input[type="text"], textarea { width: 100%; padding: 12px; font-size: 1em; font-family: inherit; border: 2px solid var(--border); border-radius: 8px; background: #fff; color: #111; margin-top: 6px; }
+  textarea { min-height: 110px; resize: vertical; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .option { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; }
+  body.theme-contrast .option { background: #111; color: #ffff00; }
+  .option input { transform: scale(1.5); margin-right: 6px; }
+  .option label { flex: 1; cursor: pointer; }
+
+  .vf-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  body.theme-contrast .vf-row { background: #111; }
+  .vf-row .statement { flex: 1 1 100%; margin-bottom: 6px; }
+  .vf-row .vf-buttons { display: flex; gap: 8px; }
+  .vf-row button.vf { min-height: 40px; padding: 6px 14px; font-size: 0.95em; }
+  .vf-row button.vf.chosen { background: var(--success); border-color: var(--success); }
+  .vf-row button.vf.wrong { background: var(--err); border-color: var(--err); }
+
+  .feedback { margin-top: 10px; padding: 12px; border-radius: 10px; border: 2px solid; display: none; }
+  .feedback.good { background: #dcfce7; border-color: var(--success); color: #064e3b; display: block; }
+  .feedback.bad  { background: #fee2e2; border-color: var(--err); color: #7f1d1d; display: block; }
+  body.theme-contrast .feedback.good, body.theme-contrast .feedback.bad { background: #111; color: #ffff00; }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .nav-row { display: flex; justify-content: space-between; margin-top: 16px; gap: 8px; }
+
+  .settings-fab { position: fixed; top: 12px; right: 12px; z-index: 50; min-height: 48px; min-width: 48px; border-radius: 50%; font-size: 1.3em; padding: 6px 10px; }
+  .settings-panel { position: fixed; top: 68px; right: 12px; background: var(--card); color: var(--fg); border: 2px solid var(--border); border-radius: 12px; padding: 14px; width: 300px; max-width: 92vw; display: none; z-index: 49; box-shadow: 0 6px 24px rgba(0,0,0,0.15); }
+  .settings-panel.open { display: block; }
+  .settings-panel h3 { margin-top: 0; }
+  .settings-panel label { display: block; margin: 8px 0 4px; font-weight: bold; }
+  .settings-panel input[type="range"] { width: 100%; }
+  .settings-panel .themes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .settings-panel .themes button { min-height: 40px; padding: 6px 10px; font-size: 0.85em; }
+
+  .mini-eval .q { margin-bottom: 12px; }
+
+  .score-card { background: var(--card); border: 2px solid var(--primary); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  .score-card .comp-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .score-card .comp-line:last-child { border-bottom: none; }
+
+  footer { text-align: center; padding: 18px 8px; margin-top: 24px; color: var(--fg); opacity: 0.75; font-size: 0.9em; }
+
+  ul { padding-left: 22px; }
+  ul li { margin: 4px 0; }
+
+  .tag { display: inline-block; background: var(--primary-dark); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.8em; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<button class="settings-fab" id="settingsBtn" aria-label="Réglages" title="Réglages">⚙️</button>
+
+<div class="settings-panel" id="settingsPanel" role="dialog" aria-label="Réglages d'accessibilité">
+  <h3>⚙️ Réglages</h3>
+
+  <label for="fontSize">Taille du texte : <span id="fontSizeVal">20</span> px</label>
+  <input type="range" id="fontSize" min="16" max="28" step="1" value="20">
+
+  <label for="lineHeight">Interligne : <span id="lineHeightVal">1.7</span></label>
+  <input type="range" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.7">
+
+  <label>
+    <input type="checkbox" id="dyslexicToggle"> Police OpenDyslexic
+  </label>
+
+  <label>Couleur de fond :</label>
+  <div class="themes">
+    <button data-theme="">Blanc</button>
+    <button data-theme="cream">Crème</button>
+    <button data-theme="blue">Bleu</button>
+    <button data-theme="green">Vert</button>
+    <button data-theme="contrast">Contraste élevé</button>
+  </div>
+
+  <div style="margin-top:12px; text-align:right;">
+    <button class="secondary" id="closeSettings">Fermer</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <h1>🎯 CAP PSE — Module A6 : Prévenir les IST</h1>
+    <p>Exercice 1 — Les IST et le VIH/SIDA ✨</p>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">Étape <span id="stepNum">1</span> sur <span id="stepTotal">10</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- ÉTAPE 1 : Situation -->
+  <section class="step active" data-step="1">
+    <div class="situation">
+      <h2 class="doc-title">📖 Situation
+        <button class="audio-btn" onclick="toggleAudio(this,'situationTxt')">🔊</button>
+      </h2>
+      <p id="situationTxt">Léa a 17 ans, elle est en CAP. Il y a deux semaines, elle a eu un rapport sexuel non protégé avec son nouveau copain. Elle s'inquiète car une amie lui a parlé de la chlamydia et du VIH. Elle ne sait pas très bien la différence entre une infection, une maladie et le SIDA. Elle a un peu honte d'en parler, mais elle veut comprendre et se faire dépister.</p>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button onclick="nextStep()">Commencer ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 2 : Documents -->
+  <section class="step" data-step="2">
+    <div class="card">
+      <h2 class="doc-title">📖 Document A — Infection et maladie
+        <button class="audio-btn" onclick="toggleAudio(this,'docA')">🔊</button>
+      </h2>
+      <p id="docA">Une <strong>infection</strong>, c'est la pénétration d'un <strong>agent pathogène</strong> (microbe) dans le corps. Il existe plusieurs types d'agents : <strong>bactéries</strong>, <strong>virus</strong>, parasites, champignons. Une <strong>maladie</strong>, c'est quand cette infection provoque des <strong>symptômes</strong> (fièvre, douleurs, boutons...). On peut être infecté <strong>sans être malade</strong> : on est alors porteur sain, et on peut quand même transmettre l'infection à d'autres personnes.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="doc-title">📖 Document B — Les principales IST
+        <button class="audio-btn" onclick="toggleAudio(this,'docB')">🔊</button>
+      </h2>
+      <p id="docB">Une <strong>IST</strong> (Infection Sexuellement Transmissible) se transmet lors de rapports sexuels <strong>non protégés</strong>. Les principales IST sont :</p>
+      <ul>
+        <li><strong>Chlamydia</strong> (bactérie) — la plus fréquente chez les jeunes, souvent sans symptôme.</li>
+        <li><strong>Gonorrhée</strong> (bactérie) — brûlures, écoulements.</li>
+        <li><strong>Syphilis</strong> (bactérie) — boutons, puis graves complications.</li>
+        <li><strong>Herpès génital</strong> (virus) — vésicules douloureuses.</li>
+        <li><strong>Papillomavirus / HPV</strong> (virus) — peut causer des cancers (col de l'utérus).</li>
+        <li><strong>Hépatite B</strong> (virus) — attaque le foie.</li>
+        <li><strong>VIH / SIDA</strong> (virus) — attaque les défenses immunitaires.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2 class="doc-title">📖 Document C — Le VIH et le SIDA
+        <button class="audio-btn" onclick="toggleAudio(this,'docC')">🔊</button>
+      </h2>
+      <p id="docC">Le <strong>VIH</strong> (Virus de l'Immunodéficience Humaine) est un <strong>virus</strong>. Il détruit petit à petit les défenses immunitaires du corps. Une personne infectée est dite <strong>séropositive</strong>. Elle peut rester longtemps sans symptômes, mais elle peut transmettre le virus. Le <strong>SIDA</strong> (Syndrome d'Immuno-Déficience Acquise) est le <strong>stade avancé</strong> de l'infection : le corps ne se défend plus, des maladies graves apparaissent. Grâce aux traitements, un séropositif peut vivre normalement <strong>sans développer le SIDA</strong>.</p>
+    </div>
+
+    <div class="nav-row">
+      <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+      <button onclick="nextStep()">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 3 : Exercice 1 -->
+  <section class="step" data-step="3">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 1 — Relever
+        <button class="audio-btn" onclick="toggleAudio(this,'ex1Q')">🔊</button>
+      </h2>
+      <p id="ex1Q">👉 Dans le Document B, <strong>relève</strong> le nom de l'IST la plus fréquente chez les jeunes.</p>
+      <label for="ex1Input">Ta réponse :</label>
+      <input type="text" id="ex1Input" placeholder="Écris ta réponse ici...">
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx1()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex1Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex1Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 4 : Exercice 2 -->
+  <section class="step" data-step="4">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 2 — Identifier
+        <button class="audio-btn" onclick="toggleAudio(this,'ex2Q')">🔊</button>
+      </h2>
+      <p id="ex2Q">👉 Coche la <strong>bonne définition</strong> du VIH.</p>
+      <div class="options">
+        <label class="option"><input type="radio" name="ex2" value="a"><span>A. Une bactérie qui attaque les poumons.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Option A. Une bactérie qui attaque les poumons.')">🔊</button>
+        </label>
+        <label class="option"><input type="radio" name="ex2" value="b"><span>B. Un virus qui attaque les défenses immunitaires.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Option B. Un virus qui attaque les défenses immunitaires.')">🔊</button>
+        </label>
+        <label class="option"><input type="radio" name="ex2" value="c"><span>C. Une maladie de peau qui se guérit avec une crème.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Option C. Une maladie de peau qui se guérit avec une crème.')">🔊</button>
+        </label>
+      </div>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx2()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex2Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex2Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 5 : Exercice 3 V/F -->
+  <section class="step" data-step="5">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 3 — Vrai ou Faux
+        <button class="audio-btn" onclick="toggleAudio(this,'ex3Q')">🔊</button>
+      </h2>
+      <p id="ex3Q">👉 Pour chaque phrase, clique sur <strong>Vrai</strong> ou <strong>Faux</strong>.</p>
+      <div id="vfList"></div>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx3()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex3Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex3Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 6 : Exercice 4 -->
+  <section class="step" data-step="6">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C2</span> Exercice 4 — Identifier les modes de transmission
+        <button class="audio-btn" onclick="toggleAudio(this,'ex4Q')">🔊</button>
+      </h2>
+      <p id="ex4Q">👉 Coche les <strong>modes de transmission</strong> du VIH (plusieurs réponses possibles).</p>
+      <div class="options" id="ex4Opts">
+        <label class="option"><input type="checkbox" value="a"><span>A. Rapport sexuel non protégé.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'A. Rapport sexuel non protégé.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="b"><span>B. Contact avec du sang contaminé (seringues).</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'B. Contact avec du sang contaminé.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="c"><span>C. Serrer la main d'une personne séropositive.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'C. Serrer la main dune personne séropositive.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="d"><span>D. Partager un verre ou un repas.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'D. Partager un verre ou un repas.')">🔊</button></label>
+        <label class="option"><input type="checkbox" value="e"><span>E. De la mère à l'enfant pendant la grossesse.</span>
+          <button class="audio-btn" onclick="toggleAudio(this,null,'E. De la mère à lenfant pendant la grossesse.')">🔊</button></label>
+      </div>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx4()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex4Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex4Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 7 : Exercice 5 -->
+  <section class="step" data-step="7">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C3</span> Exercice 5 — Expliquer
+        <button class="audio-btn" onclick="toggleAudio(this,'ex5Q')">🔊</button>
+      </h2>
+      <p id="ex5Q">👉 En 1 ou 2 phrases, <strong>explique</strong> la différence entre être <strong>séropositif</strong> et avoir le <strong>SIDA</strong>.</p>
+      <textarea id="ex5Input" placeholder="Rédige ta réponse..."></textarea>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx5()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex5Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex5Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 8 : Exercice 6 -->
+  <section class="step" data-step="8">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C4</span> Exercice 6 — Conseiller
+        <button class="audio-btn" onclick="toggleAudio(this,'ex6Q')">🔊</button>
+      </h2>
+      <p id="ex6Q">👉 <strong>Propose 2 conseils</strong> à Léa qui a eu un rapport non protégé il y a 2 semaines.</p>
+      <textarea id="ex6Input" placeholder="Rédige ta réponse..."></textarea>
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="checkEx6()">Valider ✅</button>
+      </div>
+      <div class="feedback" id="ex6Fb"></div>
+    </div>
+    <div class="nav-row">
+      <span></span>
+      <button id="ex6Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 9 : Mini auto-évaluation -->
+  <section class="step" data-step="9">
+    <div class="card mini-eval">
+      <h2 class="doc-title">⭐ Mini auto-évaluation
+        <button class="audio-btn" onclick="toggleAudio(this,null,'Mini auto-évaluation. Réponds aux trois questions.')">🔊</button>
+      </h2>
+
+      <div class="q">
+        <p><strong>Q1.</strong> Que signifie IST ?
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 1. Que signifie I S T ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me1" value="a"><span>A. Injection Sans Traitement</span></label>
+          <label class="option"><input type="radio" name="me1" value="b"><span>B. Infection Sexuellement Transmissible</span></label>
+          <label class="option"><input type="radio" name="me1" value="c"><span>C. Intolérance Sexuelle Totale</span></label>
+        </div>
+      </div>
+
+      <div class="q">
+        <p><strong>Q2.</strong> Le VIH est...
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 2. Le V I H est ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me2" value="a"><span>A. Une bactérie</span></label>
+          <label class="option"><input type="radio" name="me2" value="b"><span>B. Un virus</span></label>
+          <label class="option"><input type="radio" name="me2" value="c"><span>C. Un champignon</span></label>
+        </div>
+      </div>
+
+      <div class="q">
+        <p><strong>Q3.</strong> Une personne séropositive...
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 3. Une personne séropositive ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me3" value="a"><span>A. Est toujours gravement malade</span></label>
+          <label class="option"><input type="radio" name="me3" value="b"><span>B. Porte le VIH et peut le transmettre</span></label>
+          <label class="option"><input type="radio" name="me3" value="c"><span>C. Ne peut rien transmettre</span></label>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="secondary" onclick="prevStep()">⬅️ Retour</button>
+        <button onclick="finish()">Terminer 🎯</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAPE 10 : Bilan -->
+  <section class="step" data-step="10">
+    <div class="card">
+      <h2 class="doc-title">👏 Bilan
+        <button class="audio-btn" onclick="toggleAudio(this,'bilanTxt')">🔊</button>
+      </h2>
+      <p id="bilanTxt">Bravo ! Tu as terminé l'exercice 1 sur les IST et le VIH. Voici ton score par compétences.</p>
+
+      <div class="score-card" id="scoreCard"></div>
+
+      <div class="nav-row" style="margin-top:12px;">
+        <button class="secondary" onclick="location.reload()">🔁 Recommencer</button>
+        <button onclick="window.print()">🖨️ Imprimer mon bilan</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Ressource pédagogique adaptée — M. MECHERI — mapse.fr
+  </footer>
+
+</div>
+
+<script>
+let currentUtterance = null;
+let currentBtn = null;
+function toggleAudio(btn, textId, rawText) {
+  const synth = window.speechSynthesis;
+  if (!synth) { alert("La synthèse vocale n'est pas disponible."); return; }
+  if (currentBtn === btn && synth.speaking) {
+    synth.cancel();
+    if (currentBtn) currentBtn.textContent = '🔊';
+    currentBtn = null;
+    return;
+  }
+  synth.cancel();
+  if (currentBtn) currentBtn.textContent = '🔊';
+
+  let text = rawText;
+  if (!text && textId) {
+    const el = document.getElementById(textId);
+    if (el) text = el.innerText;
+  }
+  if (!text) return;
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'fr-FR';
+  u.rate = 0.85;
+  u.onend = () => { if (currentBtn) currentBtn.textContent = '🔊'; currentBtn = null; };
+  currentUtterance = u;
+  currentBtn = btn;
+  btn.textContent = '🔇';
+  synth.speak(u);
+}
+
+const settingsBtn = document.getElementById('settingsBtn');
+const panel = document.getElementById('settingsPanel');
+settingsBtn.addEventListener('click', () => panel.classList.toggle('open'));
+document.getElementById('closeSettings').addEventListener('click', () => panel.classList.remove('open'));
+
+const fontSize = document.getElementById('fontSize');
+const fontSizeVal = document.getElementById('fontSizeVal');
+const lineHeight = document.getElementById('lineHeight');
+const lineHeightVal = document.getElementById('lineHeightVal');
+const dys = document.getElementById('dyslexicToggle');
+
+function applySettings(s) {
+  document.documentElement.style.setProperty('--font-size', s.fontSize + 'px');
+  document.documentElement.style.setProperty('--line-height', s.lineHeight);
+  fontSize.value = s.fontSize; fontSizeVal.textContent = s.fontSize;
+  lineHeight.value = s.lineHeight; lineHeightVal.textContent = s.lineHeight;
+  dys.checked = !!s.dyslexic;
+  document.body.classList.toggle('dyslexic', !!s.dyslexic);
+  document.body.classList.remove('theme-cream','theme-blue','theme-green','theme-contrast');
+  if (s.theme) document.body.classList.add('theme-' + s.theme);
+}
+function saveSettings() {
+  const s = {
+    fontSize: parseInt(fontSize.value,10),
+    lineHeight: parseFloat(lineHeight.value),
+    dyslexic: dys.checked,
+    theme: (document.body.className.match(/theme-(\w+)/) || [,''])[1]
+  };
+  localStorage.setItem('pse_a6_settings', JSON.stringify(s));
+}
+fontSize.addEventListener('input', () => { fontSizeVal.textContent = fontSize.value; document.documentElement.style.setProperty('--font-size', fontSize.value + 'px'); saveSettings(); });
+lineHeight.addEventListener('input', () => { lineHeightVal.textContent = lineHeight.value; document.documentElement.style.setProperty('--line-height', lineHeight.value); saveSettings(); });
+dys.addEventListener('change', () => { document.body.classList.toggle('dyslexic', dys.checked); saveSettings(); });
+document.querySelectorAll('.settings-panel .themes button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.body.classList.remove('theme-cream','theme-blue','theme-green','theme-contrast');
+    const t = b.dataset.theme;
+    if (t) document.body.classList.add('theme-' + t);
+    saveSettings();
+  });
+});
+(function loadSettings(){
+  try {
+    const s = JSON.parse(localStorage.getItem('pse_a6_settings') || '{}');
+    applySettings({
+      fontSize: s.fontSize || 20,
+      lineHeight: s.lineHeight || 1.7,
+      dyslexic: s.dyslexic || false,
+      theme: s.theme || ''
+    });
+  } catch(e) {}
+})();
+
+let step = 1;
+const totalSteps = document.querySelectorAll('.step').length;
+document.getElementById('stepTotal').textContent = totalSteps;
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const cur = document.querySelector('.step[data-step="'+n+'"]');
+  if (cur) cur.classList.add('active');
+  document.getElementById('stepNum').textContent = n;
+  document.getElementById('progressFill').style.width = (n/totalSteps*100) + '%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+function nextStep() { if (step < totalSteps) { step++; showStep(step); } }
+function prevStep() { if (step > 1) { step--; showStep(step); } }
+showStep(1);
+
+const vfItems = [
+  { t: "La chlamydia est causée par une bactérie.", a: true },
+  { t: "Le VIH se transmet en serrant la main.", a: false },
+  { t: "On peut être infecté par une IST sans avoir de symptôme.", a: true },
+  { t: "Le SIDA est un stade avancé de l'infection par le VIH.", a: true },
+  { t: "La pilule contraceptive protège des IST.", a: false }
+];
+const vfList = document.getElementById('vfList');
+vfItems.forEach((it, i) => {
+  const row = document.createElement('div');
+  row.className = 'vf-row';
+  row.innerHTML = `
+    <div class="statement"><strong>${i+1}.</strong> ${it.t}
+      <button class="audio-btn" onclick="toggleAudio(this,null,'${it.t.replace(/'/g,"\\'")}')">🔊</button>
+    </div>
+    <div class="vf-buttons">
+      <button class="vf" data-i="${i}" data-v="true">Vrai ✅</button>
+      <button class="vf" data-i="${i}" data-v="false">Faux ❌</button>
+    </div>`;
+  vfList.appendChild(row);
+});
+vfList.addEventListener('click', (e) => {
+  if (e.target.classList.contains('vf')) {
+    const i = e.target.dataset.i;
+    document.querySelectorAll(`.vf[data-i="${i}"]`).forEach(b => b.classList.remove('chosen'));
+    e.target.classList.add('chosen');
+  }
+});
+
+const score = { C1:{ok:0,tot:3}, C2:{ok:0,tot:1}, C3:{ok:0,tot:1}, C4:{ok:0,tot:1}, C5:{ok:0,tot:3} };
+
+function showFeedback(id, good, msg) {
+  const f = document.getElementById(id);
+  f.className = 'feedback ' + (good ? 'good' : 'bad');
+  f.innerHTML = msg;
+}
+function revealNext(id) { document.getElementById(id).style.display = 'inline-block'; }
+
+function checkEx1() {
+  const v = (document.getElementById('ex1Input').value || '').toLowerCase().trim();
+  const ok = v.includes('chlamydia');
+  if (ok) { score.C1.ok++; showFeedback('ex1Fb', true, "Bravo ✅ ! La <strong>chlamydia</strong> est l'IST la plus fréquente chez les jeunes."); }
+  else { showFeedback('ex1Fb', false, "Pas tout à fait 💡. Relis le Document B : l'IST la plus fréquente chez les jeunes est la <strong>chlamydia</strong>."); }
+  revealNext('ex1Next');
+}
+function checkEx2() {
+  const sel = document.querySelector('input[name="ex2"]:checked');
+  if (!sel) { showFeedback('ex2Fb', false, "💡 Choisis une proposition avant de valider."); return; }
+  const ok = sel.value === 'b';
+  if (ok) { score.C1.ok++; showFeedback('ex2Fb', true, "Bravo ✅ ! Le VIH est un <strong>virus qui attaque les défenses immunitaires</strong>."); }
+  else { showFeedback('ex2Fb', false, "Pas tout à fait 💡. La bonne réponse est : <strong>B — Un virus qui attaque les défenses immunitaires</strong>."); }
+  revealNext('ex2Next');
+}
+function checkEx3() {
+  let correct = 0, answered = 0;
+  vfItems.forEach((it, i) => {
+    const chosen = document.querySelector(`.vf.chosen[data-i="${i}"]`);
+    if (chosen) {
+      answered++;
+      const v = chosen.dataset.v === 'true';
+      if (v === it.a) correct++;
+      else chosen.classList.add('wrong');
+    }
+  });
+  if (answered < vfItems.length) {
+    showFeedback('ex3Fb', false, "💡 Réponds à toutes les phrases avant de valider.");
+    return;
+  }
+  if (correct === vfItems.length) {
+    score.C1.ok++;
+    showFeedback('ex3Fb', true, `Bravo ✅ ! Tu as ${correct}/${vfItems.length} bonnes réponses.`);
+  } else {
+    showFeedback('ex3Fb', false, `Pas tout à fait 💡. Tu as <strong>${correct}/${vfItems.length}</strong>. Phrases fausses : 2 (le VIH ne se transmet pas par la main) et 5 (la pilule ne protège <em>pas</em> des IST, seul le préservatif le fait).`);
+  }
+  revealNext('ex3Next');
+}
+function checkEx4() {
+  const checks = document.querySelectorAll('#ex4Opts input[type="checkbox"]');
+  const sel = [...checks].filter(c => c.checked).map(c => c.value).sort().join(',');
+  const expected = 'a,b,e';
+  if (sel === expected) {
+    score.C2.ok++;
+    showFeedback('ex4Fb', true, "Bravo ✅ ! Le VIH se transmet par : <strong>A (rapport non protégé)</strong>, <strong>B (sang contaminé)</strong>, <strong>E (mère-enfant)</strong>.");
+  } else {
+    showFeedback('ex4Fb', false, "Pas tout à fait 💡. Bonnes réponses : <strong>A, B et E</strong>. Le VIH ne se transmet <em>pas</em> par la main (C) ni par un verre partagé (D).");
+  }
+  revealNext('ex4Next');
+}
+function checkEx5() {
+  const txt = (document.getElementById('ex5Input').value || '').toLowerCase();
+  const hasSero = /(s[eé]ropos|porte|infect[eé]|vih)/.test(txt);
+  const hasSida = /(sida|stade|avanc|d[eé]fens|maladie)/.test(txt);
+  const len = txt.trim().length;
+  if (hasSero && hasSida && len > 30) {
+    score.C3.ok++;
+    showFeedback('ex5Fb', true, "Bravo ✅ ! Tu as bien expliqué la différence entre séropositivité (porteur du VIH) et SIDA (stade avancé).");
+  } else {
+    showFeedback('ex5Fb', false, "Pas tout à fait 💡. <strong>Réponse modèle :</strong> « Être <strong>séropositif</strong>, c'est être porteur du VIH (parfois sans symptômes). Avoir le <strong>SIDA</strong>, c'est le stade avancé où les défenses immunitaires sont détruites et où des maladies graves apparaissent. »");
+  }
+  revealNext('ex5Next');
+}
+function checkEx6() {
+  const txt = (document.getElementById('ex6Input').value || '').toLowerCase();
+  const keywords = ['d[eé]pist','cegidd','m[eé]decin','test','planning','urgence','pr[eé]servatif','parler','prot[eé]g','tpe','traitement'];
+  const hits = keywords.filter(k => new RegExp(k).test(txt)).length;
+  if (hits >= 2 && txt.trim().length > 30) {
+    score.C4.ok++;
+    showFeedback('ex6Fb', true, "Bravo ✅ ! Deux conseils utiles et bienveillants.");
+  } else {
+    showFeedback('ex6Fb', false, "Pas tout à fait 💡. <strong>Réponse modèle :</strong> « 1) Aller se faire <strong>dépister</strong> gratuitement dans un <strong>CeGIDD</strong> ou chez un médecin. 2) Utiliser un <strong>préservatif</strong> lors des prochains rapports et en parler à son partenaire pour qu'il se fasse aussi dépister. »");
+  }
+  revealNext('ex6Next');
+}
+
+function finish() {
+  const expected = { me1: 'b', me2: 'b', me3: 'b' };
+  Object.entries(expected).forEach(([name, val]) => {
+    const sel = document.querySelector(`input[name="${name}"]:checked`);
+    if (sel && sel.value === val) score.C5.ok++;
+  });
+
+  const labels = {
+    C1: "C1 — S'informer / relever",
+    C2: "C2 — Identifier / analyser",
+    C3: "C3 — Expliquer / mobiliser",
+    C4: "C4 — Proposer / agir",
+    C5: "C5 — Auto-évaluation"
+  };
+  const card = document.getElementById('scoreCard');
+  let html = '<h3 style="margin-top:0">🎯 Mon score par compétences</h3>';
+  let totalOk = 0, totalTot = 0;
+  Object.keys(score).forEach(k => {
+    const s = score[k];
+    totalOk += s.ok; totalTot += s.tot;
+    const emoji = s.ok === s.tot ? '⭐' : (s.ok === 0 ? '💡' : '✨');
+    html += `<div class="comp-line"><span>${emoji} ${labels[k]}</span><strong>${s.ok} / ${s.tot}</strong></div>`;
+  });
+  const pct = Math.round(totalOk/totalTot*100);
+  html += `<div class="comp-line" style="margin-top:8px;border-top:2px solid var(--border)"><span>🏆 <strong>Total</strong></span><strong>${totalOk} / ${totalTot} (${pct} %)</strong></div>`;
+  let niveau = "Non atteint (NT)";
+  if (pct >= 80) niveau = "Maîtrisé (M) ⭐";
+  else if (pct >= 60) niveau = "Atteint (A) ✅";
+  else if (pct >= 40) niveau = "Intermédiaire (I) ✨";
+  html += `<p style="margin-top:12px"><strong>Niveau global :</strong> ${niveau}</p>`;
+  card.innerHTML = html;
+
+  nextStep();
+}
+</script>
+</body>
+</html>

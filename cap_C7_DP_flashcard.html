@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — C7 Flashcards</title>
+<style>
+:root{--bg:#fdfcfb;--text:#2a2a2a;--primary:#7ab4a8;--primary-dark:#558c81;--accent:#f4b183;--success:#8cc78a;--error:#d98a8a;--card:#f5f1eb;--border:#d4c8b8;--font-size:18px;--line-height:1.7;--font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-family);font-size:var(--font-size);line-height:var(--line-height);background:var(--bg);color:var(--text)}
+body.dyslexic{font-family:'OpenDyslexic','Comic Sans MS',sans-serif;letter-spacing:0.05em}
+body.high-contrast{--bg:#000;--text:#fff;--card:#1a1a1a;--border:#fff;--primary:#ffff00;--primary-dark:#ffd700}
+body.bg-creme{--bg:#fdf6e3;--card:#faeed0}
+body.bg-bleu{--bg:#e6f3f7;--card:#cde7ee}
+body.bg-vert{--bg:#e8f5e8;--card:#d1ead1}
+body.bg-rose{--bg:#fce8ec;--card:#f7d5dc}
+.container{max-width:700px;margin:0 auto;padding:20px}
+header{background:var(--primary);color:white;padding:20px;border-radius:12px;margin-bottom:20px;text-align:center}
+header h1{margin:0 0 8px 0;font-size:1.5em}
+.top-bar{display:flex;gap:10px;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap}
+button{font-family:inherit;font-size:inherit;min-height:48px;padding:12px 20px;border:2px solid var(--primary);background:var(--primary);color:white;border-radius:10px;cursor:pointer;font-weight:600}
+button:hover{background:var(--primary-dark)}
+button.secondary{background:white;color:var(--primary-dark)}
+.icon-btn{min-width:48px;min-height:48px;padding:8px 14px;font-size:1.3em}
+.settings-panel{display:none;background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.settings-panel.open{display:block}
+.settings-row{margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.settings-row label{font-weight:600;min-width:130px}
+.color-btn{width:40px;height:40px;border-radius:50%;border:3px solid var(--border);cursor:pointer}
+.color-btn.active{border-color:var(--primary);box-shadow:0 0 0 3px rgba(122,180,168,0.3)}
+.progress{background:var(--border);border-radius:10px;height:16px;overflow:hidden;margin:15px 0}
+.progress-bar{background:var(--primary);height:100%;transition:width 0.4s}
+.progress-label{text-align:center;font-weight:600;margin-bottom:8px}
+.flashcard-wrap{perspective:1200px;margin:30px 0}
+.flashcard{background:var(--card);border:3px solid var(--primary);border-radius:18px;padding:40px 30px;min-height:260px;display:flex;flex-direction:column;justify-content:center;text-align:center;cursor:pointer;font-size:1.2em;transition:transform 0.4s;position:relative}
+.flashcard.flipped{background:#fef5d3;border-color:var(--accent)}
+body.high-contrast .flashcard{background:#1a1a1a}
+body.high-contrast .flashcard.flipped{background:#333}
+.flashcard .label{font-size:0.8em;color:var(--primary-dark);font-weight:700;text-transform:uppercase;margin-bottom:10px}
+.flashcard.flipped .label{color:#8a5a2a}
+.flashcard .content{font-size:1.1em;font-weight:600}
+.tap-hint{text-align:center;font-size:0.9em;color:#64748b;margin-top:10px}
+.nav-buttons{display:flex;justify-content:space-between;gap:10px;margin:20px 0;flex-wrap:wrap}
+.mark-buttons{display:flex;gap:10px;justify-content:center;margin:15px 0;flex-wrap:wrap}
+.btn-know{background:var(--success);border-color:var(--success)}
+.btn-know:hover{background:#6ba86a}
+.btn-review{background:var(--error);border-color:var(--error)}
+.btn-review:hover{background:#b57272}
+.stats{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;margin:20px 0;text-align:center}
+.stats strong{color:var(--primary-dark);font-size:1.3em}
+.score-box{background:var(--primary);color:white;padding:20px;border-radius:12px;text-align:center;font-size:1.3em;margin:20px 0}
+.hidden{display:none !important}
+footer{text-align:center;padding:20px;margin-top:40px;border-top:2px solid var(--border);font-size:0.9em;color:#64748b}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>🃏 CAP PSE — C7 Flashcards</h1>
+  <p>Suivi médical et vaccination — 15 cartes</p>
+</header>
+
+<div class="top-bar">
+  <button class="icon-btn secondary" id="audioBtn" onclick="toggleAudio()">🔊</button>
+  <button class="icon-btn secondary" onclick="toggleSettings()">⚙️</button>
+</div>
+
+<div id="settingsPanel" class="settings-panel">
+  <h3>⚙️ Réglages d'affichage</h3>
+  <div class="settings-row"><label>Taille texte</label><input type="range" id="fontSize" min="16" max="28" value="18" oninput="setFontSize(this.value)"><span id="fontSizeVal">18px</span></div>
+  <div class="settings-row"><label>Interligne</label><input type="range" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.7" oninput="setLineHeight(this.value)"><span id="lineHeightVal">1.7</span></div>
+  <div class="settings-row"><label>Police DYS</label><button class="secondary" onclick="toggleDyslexic()" id="dysBtn">Activer OpenDyslexic</button></div>
+  <div class="settings-row"><label>Contraste</label><button class="secondary" onclick="toggleContrast()" id="contrastBtn">Activer</button></div>
+  <div class="settings-row"><label>Fond</label>
+    <button class="color-btn active" style="background:#fdfcfb" data-bg="" onclick="setBg('')"></button>
+    <button class="color-btn" style="background:#fdf6e3" data-bg="bg-creme" onclick="setBg('bg-creme')"></button>
+    <button class="color-btn" style="background:#e6f3f7" data-bg="bg-bleu" onclick="setBg('bg-bleu')"></button>
+    <button class="color-btn" style="background:#e8f5e8" data-bg="bg-vert" onclick="setBg('bg-vert')"></button>
+    <button class="color-btn" style="background:#fce8ec" data-bg="bg-rose" onclick="setBg('bg-rose')"></button>
+  </div>
+</div>
+
+<div class="progress-label"><span id="prog-label">Carte 1 sur 15</span></div>
+<div class="progress"><div class="progress-bar" id="prog-bar" style="width:6.6%"></div></div>
+
+<div class="flashcard-wrap">
+  <div class="flashcard" id="card" onclick="flip()">
+    <div class="label" id="card-label">Question</div>
+    <div class="content" id="card-content">Clique pour commencer</div>
+  </div>
+  <p class="tap-hint">👆 Clique la carte pour voir la réponse</p>
+</div>
+
+<div class="mark-buttons">
+  <button class="btn-review" onclick="mark(false)">❌ À revoir</button>
+  <button class="btn-know" onclick="mark(true)">✅ Je sais</button>
+</div>
+
+<div class="nav-buttons">
+  <button class="secondary" onclick="prev()">⬅️ Précédente</button>
+  <button class="secondary" onclick="next()">Suivante ➡️</button>
+</div>
+
+<div id="finalScore" class="score-box hidden"></div>
+
+<div class="stats">
+  <p>✅ Sues : <strong id="known">0</strong> · ❌ À revoir : <strong id="unknown">0</strong></p>
+  <button class="secondary" onclick="reset()">🔄 Recommencer</button>
+</div>
+
+<footer><p>Ressource pédagogique adaptée — M. MECHERI — mapse.fr</p></footer>
+</div>
+
+<script>
+const cards=[
+  {q:"Que veut dire VIP ?",a:"Visite d'Information et de Prévention — organisée dans les 3 mois après l'embauche."},
+  {q:"Qui réalise la VIP ?",a:"Le médecin du travail ou l'infirmière de santé au travail."},
+  {q:"Quand passe la VIP un apprenti mineur ?",a:"AVANT l'embauche (pas dans les 3 mois)."},
+  {q:"Qu'est-ce que l'aptitude au travail ?",a:"Le médecin déclare : apte, apte avec aménagement, ou inapte au poste."},
+  {q:"Qu'est-ce que le SIR ?",a:"Suivi Individuel Renforcé — pour postes à risques (amiante, plomb, hauteur). Visite tous les 2 ans max."},
+  {q:"Qu'est-ce qu'un antigène ?",a:"L'« étiquette » du microbe qui permet au corps de le reconnaître comme ennemi."},
+  {q:"Qu'est-ce qu'un anticorps ?",a:"Une protéine fabriquée par le corps pour détruire l'antigène."},
+  {q:"Qu'est-ce que le complexe antigène-anticorps ?",a:"La liaison entre l'antigène et l'anticorps qui aboutit à la destruction du microbe."},
+  {q:"Que contient un vaccin ?",a:"Un microbe affaibli ou inactivé + adjuvant + conservateurs + eau stérile."},
+  {q:"Qu'est-ce que l'immunité ?",a:"La capacité du corps à se protéger d'un microbe grâce à la mémoire des anticorps."},
+  {q:"Qu'est-ce qu'un rappel ?",a:"Une nouvelle injection pour maintenir/renforcer l'immunité (ex: DTP à 25, 45, 65 ans)."},
+  {q:"Combien de vaccins obligatoires en France depuis 2018 ?",a:"11 vaccins obligatoires pour les enfants nés après le 1er janvier 2018."},
+  {q:"Que signifie DTP ?",a:"Diphtérie, Tétanos, Poliomyélite — vaccin obligatoire avec rappels à 25, 45 et 65 ans."},
+  {q:"Intérêt individuel vs intérêt collectif ?",a:"Individuel : me protéger. Collectif : protéger les autres (immunité de groupe)."},
+  {q:"Vaccins conseillés en milieu de soin ?",a:"Hépatite B, grippe saisonnière, DTP, ROR."}
+];
+
+let idx=0,flipped=false,known=0,unknown=0,marked=new Array(cards.length).fill(null);
+
+function render(){
+  flipped=false;
+  const c=cards[idx];
+  const card=document.getElementById('card');
+  card.classList.remove('flipped');
+  document.getElementById('card-label').textContent='Question '+(idx+1);
+  document.getElementById('card-content').textContent=c.q;
+  document.getElementById('prog-label').textContent='Carte '+(idx+1)+' sur '+cards.length;
+  document.getElementById('prog-bar').style.width=((idx+1)/cards.length*100)+'%';
+}
+function flip(){
+  const c=cards[idx];const card=document.getElementById('card');
+  flipped=!flipped;
+  if(flipped){card.classList.add('flipped');document.getElementById('card-label').textContent='Réponse';document.getElementById('card-content').textContent=c.a;}
+  else{card.classList.remove('flipped');document.getElementById('card-label').textContent='Question '+(idx+1);document.getElementById('card-content').textContent=c.q;}
+}
+function next(){if(idx<cards.length-1){idx++;render();}else showFinal();}
+function prev(){if(idx>0){idx--;render();}}
+function mark(good){
+  if(marked[idx]===null){if(good)known++;else unknown++;}
+  else if(marked[idx]===true&&!good){known--;unknown++;}
+  else if(marked[idx]===false&&good){unknown--;known++;}
+  marked[idx]=good;
+  document.getElementById('known').textContent=known;
+  document.getElementById('unknown').textContent=unknown;
+  next();
+}
+function showFinal(){
+  const box=document.getElementById('finalScore');box.classList.remove('hidden');
+  let msg;
+  if(known>=13)msg='🏆 Bravo ! '+known+'/15 — Tu maîtrises le module C7 !';
+  else if(known>=10)msg='👏 Bien joué ! '+known+'/15 — Revois les '+unknown+' cartes marquées.';
+  else msg='💡 Encore un effort : '+known+'/15 — Refais les flashcards tranquillement.';
+  box.innerHTML=msg;box.scrollIntoView({behavior:'smooth'});
+}
+function reset(){idx=0;known=0;unknown=0;marked=new Array(cards.length).fill(null);document.getElementById('known').textContent=0;document.getElementById('unknown').textContent=0;document.getElementById('finalScore').classList.add('hidden');render();}
+
+let speaking=false,currentUtterance=null;
+function toggleAudio(){const btn=document.getElementById('audioBtn');if(speaking){window.speechSynthesis.cancel();speaking=false;btn.textContent='🔊';return;}const c=cards[idx];const text=(flipped?'Réponse. '+c.a:'Question. '+c.q);currentUtterance=new SpeechSynthesisUtterance(text);currentUtterance.lang='fr-FR';currentUtterance.rate=0.95;currentUtterance.onend=()=>{speaking=false;btn.textContent='🔊';};window.speechSynthesis.speak(currentUtterance);speaking=true;btn.textContent='🔇';}
+function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
+function setFontSize(v){document.documentElement.style.setProperty('--font-size',v+'px');document.getElementById('fontSizeVal').textContent=v+'px';localStorage.setItem('pse_fontSize',v);}
+function setLineHeight(v){document.documentElement.style.setProperty('--line-height',v);document.getElementById('lineHeightVal').textContent=v;localStorage.setItem('pse_lineHeight',v);}
+function toggleDyslexic(){document.body.classList.toggle('dyslexic');const on=document.body.classList.contains('dyslexic');document.getElementById('dysBtn').textContent=on?'Désactiver OpenDyslexic':'Activer OpenDyslexic';localStorage.setItem('pse_dys',on?'1':'0');}
+function toggleContrast(){document.body.classList.toggle('high-contrast');const on=document.body.classList.contains('high-contrast');document.getElementById('contrastBtn').textContent=on?'Désactiver':'Activer';localStorage.setItem('pse_contrast',on?'1':'0');}
+function setBg(cls){document.body.classList.remove('bg-creme','bg-bleu','bg-vert','bg-rose');if(cls)document.body.classList.add(cls);document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));const btn=document.querySelector('.color-btn[data-bg="'+cls+'"]');if(btn)btn.classList.add('active');localStorage.setItem('pse_bg',cls);}
+window.addEventListener('DOMContentLoaded',()=>{const fs=localStorage.getItem('pse_fontSize');if(fs){document.getElementById('fontSize').value=fs;setFontSize(fs);}const lh=localStorage.getItem('pse_lineHeight');if(lh){document.getElementById('lineHeight').value=lh;setLineHeight(lh);}if(localStorage.getItem('pse_dys')==='1')toggleDyslexic();if(localStorage.getItem('pse_contrast')==='1')toggleContrast();const bg=localStorage.getItem('pse_bg');if(bg)setBg(bg);render();});
+</script>
+</body>
+</html>
