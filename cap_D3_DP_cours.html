@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — D3 Les achats — Parcours Différencié</title>
+<style>
+:root{
+  --bg:#ffffff; --text:#1a1a1a; --primary:#2563eb; --primary-dark:#1d4ed8;
+  --accent:#f59e0b; --success:#16a34a; --error:#dc2626;
+  --card:#f8fafc; --border:#cbd5e1;
+  --font-size:18px; --line-height:1.7;
+  --font-family:'Segoe UI', Tahoma, Arial, sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:var(--font-family);font-size:var(--font-size);line-height:var(--line-height);background:var(--bg);color:var(--text);}
+body.dyslexic{font-family:'OpenDyslexic','Comic Sans MS',sans-serif;letter-spacing:0.05em}
+body.high-contrast{--bg:#000;--text:#fff;--card:#1a1a1a;--border:#fff;--primary:#ffff00;--primary-dark:#ffd700}
+body.bg-creme{--bg:#fdf6e3;--card:#faeed0}
+body.bg-bleu{--bg:#e0f2fe;--card:#bae6fd}
+body.bg-vert{--bg:#dcfce7;--card:#bbf7d0}
+.container{max-width:700px;margin:0 auto;padding:20px}
+header{background:var(--primary);color:white;padding:20px;border-radius:12px;margin-bottom:20px;text-align:center;}
+header h1{margin:0 0 8px 0;font-size:1.5em}
+header p{margin:0;font-size:0.95em;opacity:0.95}
+.top-bar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+button{font-family:inherit;font-size:inherit;min-height:48px;padding:12px 20px;border:2px solid var(--primary);background:var(--primary);color:white;border-radius:10px;cursor:pointer;font-weight:600;}
+button:hover{background:var(--primary-dark)}
+button.secondary{background:white;color:var(--primary)}
+button.secondary:hover{background:#eff6ff}
+body.high-contrast button.secondary{background:#000;color:#fff}
+.icon-btn{min-width:48px;min-height:48px;padding:8px 14px;font-size:1.3em;}
+.card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.doc{background:#fef3c7;border-left:6px solid var(--accent);padding:16px;border-radius:8px;margin:15px 0;}
+body.high-contrast .doc{background:#333;color:#fff}
+.doc h3{margin-top:0;color:#92400e}
+body.high-contrast .doc h3{color:#ffff00}
+.situation{background:#ede9fe;border-left:6px solid #7c3aed;padding:16px;border-radius:8px;margin:15px 0;}
+body.high-contrast .situation{background:#222;color:#fff}
+.competence-tag{display:inline-block;background:var(--primary);color:white;padding:3px 10px;border-radius:12px;font-size:0.85em;font-weight:700;margin-right:8px;}
+.question{background:white;border:2px solid var(--border);border-radius:12px;padding:20px;margin:15px 0;}
+body.high-contrast .question{background:#1a1a1a}
+.question-title{font-weight:700;margin-bottom:12px}
+.verb{color:var(--primary-dark);font-weight:700;text-transform:uppercase}
+body.high-contrast .verb{color:#ffff00}
+input[type="text"],textarea,select{font-family:inherit;font-size:inherit;width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);}
+textarea{min-height:100px;resize:vertical}
+input[type="text"]:focus,textarea:focus,select:focus{outline:3px solid var(--primary);border-color:var(--primary)}
+.option{display:block;padding:12px 16px;margin:8px 0;background:var(--bg);border:2px solid var(--border);border-radius:8px;cursor:pointer;min-height:48px;}
+.option:hover{background:#eff6ff;border-color:var(--primary)}
+body.high-contrast .option:hover{background:#333}
+.option input{margin-right:10px;transform:scale(1.3)}
+.feedback{margin-top:14px;padding:14px;border-radius:8px;display:none;font-weight:600;}
+.feedback.ok{background:#dcfce7;color:#166534;border:2px solid var(--success);display:block}
+.feedback.ko{background:#fee2e2;color:#991b1b;border:2px solid var(--error);display:block}
+body.high-contrast .feedback.ok{background:#003300;color:#00ff00}
+body.high-contrast .feedback.ko{background:#330000;color:#ff6666}
+.progress{background:var(--border);border-radius:10px;height:16px;overflow:hidden;margin:15px 0;}
+.progress-bar{background:var(--primary);height:100%;transition:width 0.4s;width:0%;}
+.progress-label{text-align:center;font-weight:600;margin-bottom:8px}
+.settings-panel{display:none;background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.settings-panel.open{display:block}
+.settings-row{margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.settings-row label{font-weight:600;min-width:130px}
+.color-btn{width:40px;height:40px;border-radius:50%;border:3px solid var(--border);cursor:pointer}
+.color-btn.active{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.3)}
+.je-retiens{background:#fef9c3;border:3px solid var(--accent);border-radius:12px;padding:20px;margin:20px 0;}
+body.high-contrast .je-retiens{background:#333;color:#fff}
+.je-retiens h3{margin-top:0;color:#854d0e}
+body.high-contrast .je-retiens h3{color:#ffff00}
+.nav-buttons{display:flex;justify-content:space-between;gap:10px;margin:20px 0;flex-wrap:wrap;}
+.hidden{display:none !important}
+.seance-menu{display:grid;grid-template-columns:1fr;gap:12px;margin:20px 0;}
+.seance-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;text-align:left;min-height:48px;color:var(--text);font-weight:600;}
+.seance-card:hover{border-color:var(--primary);background:#eff6ff}
+body.high-contrast .seance-card:hover{background:#333}
+table{width:100%;border-collapse:collapse;margin:15px 0;}
+th,td{border:2px solid var(--border);padding:10px;text-align:left;}
+th{background:var(--primary);color:white}
+.vf-item{display:flex;gap:10px;align-items:center;margin:10px 0;flex-wrap:wrap;}
+.vf-item span{flex:1;min-width:200px}
+.vf-item select{max-width:150px}
+.classify-zone{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:14px;margin:8px 0;min-height:60px;}
+.classify-item{display:inline-block;background:var(--primary);color:white;padding:8px 14px;margin:4px;border-radius:20px;cursor:pointer;min-height:40px;}
+.classify-item.used{opacity:0.4;text-decoration:line-through}
+.score-box{background:var(--primary);color:white;padding:20px;border-radius:12px;text-align:center;font-size:1.3em;margin:20px 0;}
+footer{text-align:center;padding:20px;margin-top:40px;border-top:2px solid var(--border);font-size:0.9em;color:#64748b;}
+body.high-contrast footer{color:#aaa}
+.badge{display:inline-block;background:var(--success);color:white;padding:4px 10px;border-radius:12px;font-size:0.85em;margin-left:6px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>🛒 CAP PSE — Module D3</h1>
+  <p>Les achats — Parcours Différencié</p>
+</header>
+
+<div class="top-bar">
+  <button class="icon-btn secondary" id="audioBtn" onclick="toggleAudio()" aria-label="Lire à voix haute">🔊</button>
+  <button class="icon-btn secondary" onclick="toggleSettings()" aria-label="Réglages">⚙️</button>
+</div>
+
+<div id="settingsPanel" class="settings-panel">
+  <h3>⚙️ Réglages d'affichage</h3>
+  <div class="settings-row">
+    <label for="fontSize">Taille du texte</label>
+    <input type="range" id="fontSize" min="16" max="28" value="18" oninput="setFontSize(this.value)">
+    <span id="fontSizeVal">18px</span>
+  </div>
+  <div class="settings-row">
+    <label for="lineHeight">Espace entre lignes</label>
+    <input type="range" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.7" oninput="setLineHeight(this.value)">
+    <span id="lineHeightVal">1.7</span>
+  </div>
+  <div class="settings-row">
+    <label>Police DYS</label>
+    <button class="secondary" onclick="toggleDyslexic()" id="dysBtn">Activer OpenDyslexic</button>
+  </div>
+  <div class="settings-row">
+    <label>Contraste élevé</label>
+    <button class="secondary" onclick="toggleContrast()" id="contrastBtn">Activer</button>
+  </div>
+  <div class="settings-row">
+    <label>Couleur de fond</label>
+    <button class="color-btn active" style="background:#fff" data-bg="" onclick="setBg('')" aria-label="Blanc"></button>
+    <button class="color-btn" style="background:#fdf6e3" data-bg="bg-creme" onclick="setBg('bg-creme')" aria-label="Crème"></button>
+    <button class="color-btn" style="background:#e0f2fe" data-bg="bg-bleu" onclick="setBg('bg-bleu')" aria-label="Bleu"></button>
+    <button class="color-btn" style="background:#dcfce7" data-bg="bg-vert" onclick="setBg('bg-vert')" aria-label="Vert"></button>
+  </div>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="card">
+  <h2>🎯 Ton parcours</h2>
+  <p>Ce cours dure environ <strong>3 heures</strong>. Tu peux le faire en plusieurs fois. À la fin de chaque séance, il y a une auto-évaluation.</p>
+  <div class="seance-menu">
+    <button class="seance-card" onclick="showSection('seance1')">📖 Séance 1 — Les droits du consommateur <span class="badge">1h</span></button>
+    <button class="seance-card" onclick="showSection('seance2')">💳 Séance 2 — Les modes d'achat <span class="badge">1h</span></button>
+    <button class="seance-card" onclick="showSection('seance3')">⚖️ Séance 3 — Résoudre un litige <span class="badge">1h</span></button>
+    <button class="seance-card" onclick="showSection('eval')">🏆 Évaluation finale <span class="badge">8 questions</span></button>
+  </div>
+</div>
+
+<!-- SÉANCE 1 -->
+<div id="seance1" class="hidden">
+  <div class="card">
+    <h2>📖 Séance 1 — Les droits du consommateur</h2>
+    <p><strong>Objectif :</strong> Identifier les principaux droits du consommateur lors d'un achat.</p>
+    <p><strong>Durée :</strong> 1 heure environ</p>
+  </div>
+
+  <div class="situation">
+    <h3>🧑 Situation : Mehdi, apprenti</h3>
+    <p>Mehdi, 17 ans, est apprenti cuisinier. Avec son premier salaire, il commande un téléphone portable sur un site internet. Le colis arrive 5 jours plus tard. Surprise : l'écran est fissuré et le téléphone ne s'allume pas !</p>
+    <p>Mehdi est inquiet. Il se demande : « Est-ce que j'ai le droit de me faire rembourser ? Comment faire ? »</p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document A — Le droit à l'information</h3>
+    <p>Avant d'acheter, le consommateur a le <strong>droit d'être informé</strong> sur le produit. Le vendeur doit afficher :</p>
+    <ul>
+      <li>Le <strong>prix</strong> (clair, en euros, TTC — toutes taxes comprises).</li>
+      <li>Les <strong>caractéristiques principales</strong> du produit.</li>
+      <li>La <strong>composition</strong> et l'<strong>origine</strong> (pour les aliments).</li>
+      <li>La <strong>date de durabilité</strong> (DLC / DDM pour l'alimentaire).</li>
+    </ul>
+    <p><em>Source : Code de la consommation, article L.111-1.</em></p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document B — L'étiquetage obligatoire</h3>
+    <p>Toute étiquette doit mentionner :</p>
+    <ul>
+      <li>Le <strong>nom du produit</strong>.</li>
+      <li>Le <strong>prix</strong>.</li>
+      <li>La <strong>quantité</strong> (poids, volume).</li>
+      <li>Le <strong>fabricant</strong> ou vendeur.</li>
+      <li>Les <strong>mentions de sécurité</strong> (pictogrammes).</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document C — Les garanties légales (tableau)</h3>
+    <table>
+      <tr><th>Garantie</th><th>Durée</th><th>Protège contre</th></tr>
+      <tr><td>Garantie légale de <strong>conformité</strong></td><td><strong>2 ans</strong></td><td>Produit qui ne fonctionne pas ou ne correspond pas à la description</td></tr>
+      <tr><td>Garantie des <strong>vices cachés</strong></td><td><strong>2 ans</strong> après découverte</td><td>Défaut caché qui rend le produit inutilisable</td></tr>
+      <tr><td>Garantie <strong>commerciale</strong></td><td>Variable (payante)</td><td>Optionnelle, en plus des garanties légales</td></tr>
+    </table>
+    <p><em>Source : Code de la consommation, articles L.217-3 et suivants.</em></p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document D — Le droit de rétractation</h3>
+    <p>Pour un achat <strong>à distance</strong> (internet, téléphone) ou en <strong>démarchage</strong> (à domicile), le consommateur a un <strong>droit de rétractation de 14 jours</strong>.</p>
+    <p>Il peut renvoyer le produit <strong>sans justifier</strong> de motif et se faire rembourser intégralement.</p>
+    <p>⚠️ Ce droit ne s'applique pas en magasin (sauf geste commercial).</p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document E — Les pratiques trompeuses</h3>
+    <p>La loi interdit les <strong>pratiques commerciales trompeuses</strong> :</p>
+    <ul>
+      <li>Fausses réductions (« barré à 100 €, soldé à 80 € » sans preuve du prix initial).</li>
+      <li>Publicité mensongère.</li>
+      <li>Faux avis de clients.</li>
+      <li>Informations cachées sur le produit.</li>
+    </ul>
+    <p>Sanction : amende jusqu'à 300 000 € et peine de prison.</p>
+  </div>
+
+  <div class="progress-label" id="s1-label">Étape 1 sur 10</div>
+  <div class="progress"><div class="progress-bar" id="s1-bar"></div></div>
+
+  <div class="question" data-seance="1" data-q="1">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 1</div>
+    <p><span class="verb">Relève</span> dans le Document C la durée de la garantie légale de conformité.</p>
+    <input type="text" id="s1q1" placeholder="Écris ta réponse ici (ex : 2 ans)...">
+    <button onclick="checkText('s1q1','2 ans','Bravo ✅ La garantie légale de conformité dure 2 ans.','Pas tout à fait 💡 Regarde le Document C : la durée est de <strong>2 ans</strong>.')">Valider</button>
+    <div class="feedback" id="f-s1q1"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',1)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="2">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 2</div>
+    <p><span class="verb">Relève</span> la durée du droit de rétractation (Document D). Écris le nombre suivi de "jours".</p>
+    <input type="text" id="s1q2" placeholder="Écris ta réponse ici...">
+    <button onclick="checkText('s1q2','14 jours','Bravo ✅ 14 jours pour se rétracter après un achat à distance.','Pas tout à fait 💡 Document D : <strong>14 jours</strong>.')">Valider</button>
+    <div class="feedback" id="f-s1q2"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',2)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="3">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 3</div>
+    <p><span class="verb">Cite</span> 3 informations obligatoires sur une étiquette (Document B). Coche les bonnes.</p>
+    <label class="option"><input type="checkbox" value="1"> Le nom du produit</label>
+    <label class="option"><input type="checkbox" value="1"> Le prix</label>
+    <label class="option"><input type="checkbox" value="0"> La couleur préférée du vendeur</label>
+    <label class="option"><input type="checkbox" value="1"> La quantité (poids ou volume)</label>
+    <label class="option"><input type="checkbox" value="0"> Le prénom du livreur</label>
+    <button onclick="checkCheckboxes(this,[1,1,0,1,0],'Bravo ✅ Nom, prix, quantité sont obligatoires.','Pas tout à fait 💡 Les bonnes réponses : nom du produit, prix, quantité.')">Valider</button>
+    <div class="feedback"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',3)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="4">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 4</div>
+    <p><span class="verb">Identifie</span> la bonne définition d'un vice caché.</p>
+    <label class="option"><input type="radio" name="s1q4" value="0"> Un défaut visible sur l'étiquette.</label>
+    <label class="option"><input type="radio" name="s1q4" value="1"> Un défaut caché qui rend le produit inutilisable.</label>
+    <label class="option"><input type="radio" name="s1q4" value="0"> Une option payante.</label>
+    <label class="option"><input type="radio" name="s1q4" value="0"> Un cadeau bonus.</label>
+    <button onclick="checkRadio('s1q4','1','Bravo ✅ Un vice caché est un défaut non visible qui rend le produit inutilisable.','Pas tout à fait 💡 Document C : vice caché = <strong>défaut caché</strong>.')">Valider</button>
+    <div class="feedback" id="f-s1q4"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',4)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="5">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 5 — Vrai ou Faux</div>
+    <div class="vf-item"><span>La garantie de conformité dure 2 ans.</span>
+      <select id="s1q5a"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+    <div class="vf-item"><span>Le droit de rétractation est de 3 jours.</span>
+      <select id="s1q5b"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+    <div class="vf-item"><span>Le prix doit être affiché en TTC.</span>
+      <select id="s1q5c"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+    <div class="vf-item"><span>Les faux avis clients sont autorisés.</span>
+      <select id="s1q5d"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+    <div class="vf-item"><span>Le droit de rétractation s'applique aux achats sur internet.</span>
+      <select id="s1q5e"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+    <button onclick="checkVF(['s1q5a','s1q5b','s1q5c','s1q5d','s1q5e'],['V','F','V','F','V'],'Bravo ✅ Parfait !','Pas tout à fait 💡 Réponses : V, F, V, F, V.')">Valider</button>
+    <div class="feedback" id="f-s1q5"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',5)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="6">
+    <div class="question-title"><span class="competence-tag">C2</span> Question 6</div>
+    <p><span class="verb">Identifie</span> quel droit protège Mehdi dont le téléphone est arrivé cassé.</p>
+    <label class="option"><input type="radio" name="s1q6" value="0"> Le droit de grève.</label>
+    <label class="option"><input type="radio" name="s1q6" value="1"> La garantie légale de conformité.</label>
+    <label class="option"><input type="radio" name="s1q6" value="0"> Le droit de vote.</label>
+    <label class="option"><input type="radio" name="s1q6" value="0"> La liberté de circulation.</label>
+    <button onclick="checkRadio('s1q6','1','Bravo ✅ La garantie de conformité protège Mehdi : le téléphone ne fonctionne pas.','Pas tout à fait 💡 Document C : la <strong>garantie de conformité</strong> couvre les produits qui ne fonctionnent pas.')">Valider</button>
+    <div class="feedback" id="f-s1q6"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',6)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="7">
+    <div class="question-title"><span class="competence-tag">C2</span> Question 7 — Classer</div>
+    <p><span class="verb">Classe</span> chaque élément dans "Obligatoire" ou "Interdit".</p>
+    <div id="s1q7-items">
+      <span class="classify-item" data-target="obl" onclick="classify(this)">Afficher le prix en TTC</span>
+      <span class="classify-item" data-target="int" onclick="classify(this)">Faux avis clients</span>
+      <span class="classify-item" data-target="obl" onclick="classify(this)">Indiquer la quantité</span>
+      <span class="classify-item" data-target="int" onclick="classify(this)">Publicité mensongère</span>
+      <span class="classify-item" data-target="obl" onclick="classify(this)">Informer sur le produit</span>
+      <span class="classify-item" data-target="int" onclick="classify(this)">Fausses réductions</span>
+    </div>
+    <p><strong>Obligatoire :</strong></p>
+    <div class="classify-zone" id="zone-obl"></div>
+    <p><strong>Interdit :</strong></p>
+    <div class="classify-zone" id="zone-int"></div>
+    <button onclick="checkClassify('s1q7','Bravo ✅ Tu distingues bien ce qui est obligatoire et interdit.','Pas tout à fait 💡 Obligatoire : prix, quantité, infos produit. Interdit : faux avis, pub mensongère, fausses réductions.')">Valider</button>
+    <div class="feedback" id="f-s1q7"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',7)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="8">
+    <div class="question-title"><span class="competence-tag">C3</span> Question 8</div>
+    <p><span class="verb">Explique</span> à Mehdi quels sont ses deux droits principaux. Utilise les mots "conformité" et "rétractation".</p>
+    <textarea id="s1q8" placeholder="Rédige ta réponse..."></textarea>
+    <button onclick="checkTextarea('s1q8',['conformité','rétractation'],'Bravo ✅ Mehdi peut faire valoir la garantie de conformité ET son droit de rétractation.','Pas tout à fait 💡 Exemple : « Mehdi a la garantie légale de <strong>conformité</strong> pendant 2 ans, et un droit de <strong>rétractation</strong> de 14 jours car il a acheté sur internet. »')">Valider</button>
+    <div class="feedback" id="f-s1q8"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',8)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="9">
+    <div class="question-title"><span class="competence-tag">C4</span> Question 9</div>
+    <p><span class="verb">Propose</span> 2 bons réflexes avant un achat sur internet. Coche les 2 meilleurs.</p>
+    <label class="option"><input type="checkbox" value="1"> Vérifier les conditions de retour et de garantie.</label>
+    <label class="option"><input type="checkbox" value="0"> Envoyer son code bancaire par SMS.</label>
+    <label class="option"><input type="checkbox" value="1"> Lire les avis et vérifier le sérieux du site.</label>
+    <label class="option"><input type="checkbox" value="0"> Acheter sans lire la description.</label>
+    <label class="option"><input type="checkbox" value="0"> Ne jamais garder les preuves d'achat.</label>
+    <button onclick="checkCheckboxes(this,[1,0,1,0,0],'Bravo ✅ 2 bons réflexes.','Pas tout à fait 💡 Les bons : vérifier garanties + lire les avis.')">Valider</button>
+    <div class="feedback"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance1',9)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="1" data-q="10">
+    <div class="question-title"><span class="competence-tag">C5</span> Question 10</div>
+    <p><span class="verb">Argumente</span> en 2 phrases : pourquoi est-il important de conserver une preuve d'achat (ticket, facture) ?</p>
+    <textarea id="s1q10" placeholder="Rédige ta réponse..."></textarea>
+    <button onclick="checkTextarea('s1q10',['preuve','garantie','remboursement','facture','achat'],'Bravo ✅ Bien argumenté ! Sans preuve, impossible de faire valoir la garantie.','Pas tout à fait 💡 Exemple : « La <strong>preuve d\'achat</strong> sert à prouver qu\'on a acheté le produit. Sans elle, on ne peut pas faire valoir la <strong>garantie</strong> ni demander un remboursement. »')">Valider</button>
+    <div class="feedback" id="f-s1q10"></div>
+    <button class="secondary next-btn hidden" onclick="showRetiens(1)">Terminer la séance ➡️</button>
+  </div>
+
+  <div id="retiens1" class="hidden">
+    <div class="je-retiens">
+      <h3>📝 Je retiens — Séance 1</h3>
+      <ul>
+        <li><strong>Droit à l'information</strong> : prix, caractéristiques, composition.</li>
+        <li><strong>Étiquetage obligatoire</strong> : nom, prix, quantité, fabricant.</li>
+        <li><strong>Garantie légale de conformité</strong> = <strong>2 ans</strong>.</li>
+        <li><strong>Garantie des vices cachés</strong> = <strong>2 ans</strong> après découverte.</li>
+        <li><strong>Droit de rétractation</strong> = <strong>14 jours</strong> pour les achats à distance.</li>
+        <li>Les <strong>pratiques trompeuses</strong> (faux avis, pub mensongère) sont interdites.</li>
+        <li>Toujours <strong>garder la preuve d'achat</strong> (ticket, facture).</li>
+      </ul>
+    </div>
+    <button onclick="showSection('autoeval1')">Faire l'auto-évaluation ➡️</button>
+  </div>
+</div>
+
+<!-- AUTO-ÉVAL S1 -->
+<div id="autoeval1" class="hidden">
+  <div class="card"><h2>✅ Auto-évaluation — Séance 1</h2><p>8 petites questions.</p></div>
+
+  <div class="question"><div class="question-title">Auto-éval 1</div>
+    <p>La garantie légale de conformité dure :</p>
+    <label class="option"><input type="radio" name="a1q1" value="0"> 6 mois</label>
+    <label class="option"><input type="radio" name="a1q1" value="1"> 2 ans</label>
+    <label class="option"><input type="radio" name="a1q1" value="0"> 10 ans</label>
+    <button onclick="checkRadio('a1q1','1','Bravo ✅','Pas tout à fait 💡 2 ans.')">Valider</button>
+    <div class="feedback" id="f-a1q1"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 2</div>
+    <p>Le droit de rétractation dure :</p>
+    <label class="option"><input type="radio" name="a1q2" value="0"> 7 jours</label>
+    <label class="option"><input type="radio" name="a1q2" value="1"> 14 jours</label>
+    <label class="option"><input type="radio" name="a1q2" value="0"> 30 jours</label>
+    <button onclick="checkRadio('a1q2','1','Bravo ✅','Pas tout à fait 💡 14 jours.')">Valider</button>
+    <div class="feedback" id="f-a1q2"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 3</div>
+    <p>Le droit de rétractation s'applique :</p>
+    <label class="option"><input type="radio" name="a1q3" value="0"> En magasin uniquement</label>
+    <label class="option"><input type="radio" name="a1q3" value="1"> Aux achats à distance et au démarchage</label>
+    <label class="option"><input type="radio" name="a1q3" value="0"> Jamais</label>
+    <button onclick="checkRadio('a1q3','1','Bravo ✅','Pas tout à fait 💡 Achats à distance + démarchage.')">Valider</button>
+    <div class="feedback" id="f-a1q3"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 4</div>
+    <p>Un vice caché est :</p>
+    <label class="option"><input type="radio" name="a1q4" value="0"> Un bonus</label>
+    <label class="option"><input type="radio" name="a1q4" value="1"> Un défaut caché qui rend le produit inutilisable</label>
+    <label class="option"><input type="radio" name="a1q4" value="0"> Une option</label>
+    <button onclick="checkRadio('a1q4','1','Bravo ✅','Pas tout à fait 💡 Défaut caché.')">Valider</button>
+    <div class="feedback" id="f-a1q4"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 5</div>
+    <p>Les faux avis clients sont :</p>
+    <label class="option"><input type="radio" name="a1q5" value="0"> Autorisés</label>
+    <label class="option"><input type="radio" name="a1q5" value="1"> Interdits (pratique trompeuse)</label>
+    <label class="option"><input type="radio" name="a1q5" value="0"> Obligatoires</label>
+    <button onclick="checkRadio('a1q5','1','Bravo ✅','Pas tout à fait 💡 Interdits.')">Valider</button>
+    <div class="feedback" id="f-a1q5"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 6</div>
+    <p>Le prix doit être affiché :</p>
+    <label class="option"><input type="radio" name="a1q6" value="0"> HT seulement</label>
+    <label class="option"><input type="radio" name="a1q6" value="1"> TTC (toutes taxes comprises)</label>
+    <label class="option"><input type="radio" name="a1q6" value="0"> En dollars</label>
+    <button onclick="checkRadio('a1q6','1','Bravo ✅','Pas tout à fait 💡 TTC.')">Valider</button>
+    <div class="feedback" id="f-a1q6"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 7</div>
+    <p>La preuve d'achat sert à :</p>
+    <label class="option"><input type="radio" name="a1q7" value="1"> Faire valoir la garantie</label>
+    <label class="option"><input type="radio" name="a1q7" value="0"> Décorer son portefeuille</label>
+    <label class="option"><input type="radio" name="a1q7" value="0"> Rien du tout</label>
+    <button onclick="checkRadio('a1q7','1','Bravo ✅','Pas tout à fait 💡 Faire valoir la garantie.')">Valider</button>
+    <div class="feedback" id="f-a1q7"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 8</div>
+    <p>La garantie des vices cachés dure :</p>
+    <label class="option"><input type="radio" name="a1q8" value="0"> 1 mois</label>
+    <label class="option"><input type="radio" name="a1q8" value="1"> 2 ans après la découverte</label>
+    <label class="option"><input type="radio" name="a1q8" value="0"> 30 ans</label>
+    <button onclick="checkRadio('a1q8','1','Bravo ✅','Pas tout à fait 💡 2 ans après découverte.')">Valider</button>
+    <div class="feedback" id="f-a1q8"></div>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="secondary" onclick="showSection('menu')">⬅️ Retour au menu</button>
+    <button onclick="showSection('seance2')">Séance 2 ➡️</button>
+  </div>
+</div>
+
+<!-- SÉANCE 2 -->
+<div id="seance2" class="hidden">
+  <div class="card">
+    <h2>💳 Séance 2 — Les modes d'achat</h2>
+    <p><strong>Objectif :</strong> Identifier les différents modes d'achat et moyens de paiement.</p>
+    <p><strong>Durée :</strong> 1 heure environ</p>
+  </div>
+
+  <div class="situation">
+    <h3>🧑 Situation : Mehdi réfléchit à ses achats</h3>
+    <p>Mehdi doit acheter des vêtements de travail, un casque Bluetooth et faire ses courses. Il se demande où acheter, comment payer, et quels sont les risques.</p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document F — Les modes d'achat</h3>
+    <table>
+      <tr><th>Mode</th><th>Avantages</th><th>Risques</th></tr>
+      <tr><td><strong>En magasin</strong></td><td>Voir le produit, essayer</td><td>Pas de droit de rétractation</td></tr>
+      <tr><td><strong>À distance</strong> (internet)</td><td>Grand choix, livraison</td><td>Arnaques, produit non conforme</td></tr>
+      <tr><td><strong>Démarchage à domicile</strong></td><td>Pratique</td><td>Pression du vendeur</td></tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document G — Les moyens de paiement</h3>
+    <ul>
+      <li><strong>Espèces</strong> (billets, pièces) : simple, anonyme, plafond 1000 € entre particuliers.</li>
+      <li><strong>Carte bancaire</strong> : rapide, sécurisée (code, 3D-Secure).</li>
+      <li><strong>Chèque</strong> : moins utilisé, risque d'impayé.</li>
+      <li><strong>Prélèvement automatique</strong> : pour les abonnements (téléphone, électricité).</li>
+      <li><strong>Paiement mobile</strong> (Apple Pay, Google Pay) : sans contact, via smartphone.</li>
+    </ul>
+  </div>
+
+  <div class="progress-label" id="s2-label">Étape 1 sur 10</div>
+  <div class="progress"><div class="progress-bar" id="s2-bar"></div></div>
+
+  <div class="question" data-seance="2" data-q="1">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 1</div>
+    <p><span class="verb">Relève</span> dans le Document G le plafond de paiement en espèces entre particuliers.</p>
+    <input type="text" id="s2q1" placeholder="Écris ta réponse (ex : 1000 €)...">
+    <button onclick="checkText('s2q1','1000','Bravo ✅ Plafond de 1000 € entre particuliers.','Pas tout à fait 💡 Document G : <strong>1000 €</strong>.')">Valider</button>
+    <div class="feedback" id="f-s2q1"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',1)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="2">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 2</div>
+    <p><span class="verb">Cite</span> 3 modes d'achat (Document F). Coche les bonnes.</p>
+    <label class="option"><input type="checkbox" value="1"> En magasin</label>
+    <label class="option"><input type="checkbox" value="1"> À distance (internet)</label>
+    <label class="option"><input type="checkbox" value="0"> En sautant par la fenêtre</label>
+    <label class="option"><input type="checkbox" value="1"> Démarchage à domicile</label>
+    <label class="option"><input type="checkbox" value="0"> Par télépathie</label>
+    <button onclick="checkCheckboxes(this,[1,1,0,1,0],'Bravo ✅ 3 modes d\'achat reconnus.','Pas tout à fait 💡 Magasin, à distance, démarchage à domicile.')">Valider</button>
+    <div class="feedback"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',2)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="3">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 3</div>
+    <p><span class="verb">Identifie</span> le mode d'achat qui donne droit à la rétractation de 14 jours.</p>
+    <label class="option"><input type="radio" name="s2q3" value="0"> En magasin</label>
+    <label class="option"><input type="radio" name="s2q3" value="1"> À distance (internet)</label>
+    <label class="option"><input type="radio" name="s2q3" value="0"> Aucun</label>
+    <button onclick="checkRadio('s2q3','1','Bravo ✅ Les achats à distance donnent droit à 14 jours de rétractation.','Pas tout à fait 💡 Achat à distance.')">Valider</button>
+    <div class="feedback" id="f-s2q3"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',3)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="4">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 4 — Vrai ou Faux</div>
+    <div class="vf-item"><span>Le prélèvement sert aux abonnements (téléphone, électricité).</span>
+      <select id="s2q4a"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <div class="vf-item"><span>Le chèque est le moyen le plus sûr et le plus utilisé.</span>
+      <select id="s2q4b"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <div class="vf-item"><span>La carte bancaire est sécurisée par un code et le 3D-Secure.</span>
+      <select id="s2q4c"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <div class="vf-item"><span>En magasin, il y a un droit de rétractation obligatoire.</span>
+      <select id="s2q4d"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <button onclick="checkVF(['s2q4a','s2q4b','s2q4c','s2q4d'],['V','F','V','F'],'Bravo ✅','Pas tout à fait 💡 V, F, V, F.')">Valider</button>
+    <div class="feedback" id="f-s2q4"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',4)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="5">
+    <div class="question-title"><span class="competence-tag">C2</span> Question 5 — Classer</div>
+    <p><span class="verb">Classe</span> chaque élément dans "Mode d'achat" ou "Moyen de paiement".</p>
+    <div id="s2q5-items">
+      <span class="classify-item" data-target="mode" onclick="classify(this)">Magasin</span>
+      <span class="classify-item" data-target="paie" onclick="classify(this)">Carte bancaire</span>
+      <span class="classify-item" data-target="mode" onclick="classify(this)">Internet</span>
+      <span class="classify-item" data-target="paie" onclick="classify(this)">Espèces</span>
+      <span class="classify-item" data-target="mode" onclick="classify(this)">Démarchage</span>
+      <span class="classify-item" data-target="paie" onclick="classify(this)">Chèque</span>
+    </div>
+    <p><strong>Mode d'achat :</strong></p>
+    <div class="classify-zone" id="zone-mode"></div>
+    <p><strong>Moyen de paiement :</strong></p>
+    <div class="classify-zone" id="zone-paie"></div>
+    <button onclick="checkClassify('s2q5','Bravo ✅ Bien classé.','Pas tout à fait 💡 Modes = magasin, internet, démarchage. Paiements = carte, espèces, chèque.')">Valider</button>
+    <div class="feedback" id="f-s2q5"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',5)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="6">
+    <div class="question-title"><span class="competence-tag">C2</span> Question 6</div>
+    <p><span class="verb">Identifie</span> le meilleur moyen de paiement pour un abonnement internet mensuel.</p>
+    <label class="option"><input type="radio" name="s2q6" value="0"> Espèces</label>
+    <label class="option"><input type="radio" name="s2q6" value="1"> Prélèvement automatique</label>
+    <label class="option"><input type="radio" name="s2q6" value="0"> Chèque chaque mois</label>
+    <button onclick="checkRadio('s2q6','1','Bravo ✅ Prélèvement automatique pour les abonnements.','Pas tout à fait 💡 Prélèvement automatique.')">Valider</button>
+    <div class="feedback" id="f-s2q6"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',6)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="7">
+    <div class="question-title"><span class="competence-tag">C3</span> Question 7</div>
+    <p><span class="verb">Explique</span> pourquoi l'achat sur internet comporte plus de risques qu'en magasin. Utilise les mots "voir" et "arnaque".</p>
+    <textarea id="s2q7" placeholder="Rédige ta réponse..."></textarea>
+    <button onclick="checkTextarea('s2q7',['voir','arnaque','internet','risque','produit'],'Bravo ✅ Bien expliqué : sur internet on ne voit pas le produit et les arnaques existent.','Pas tout à fait 💡 Exemple : « Sur internet, on ne peut pas <strong>voir</strong> ni toucher le produit, donc il y a un risque d\'<strong>arnaque</strong>. »')">Valider</button>
+    <div class="feedback" id="f-s2q7"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',7)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="8">
+    <div class="question-title"><span class="competence-tag">C3</span> Question 8</div>
+    <p><span class="verb">Mets en relation</span> chaque situation avec le bon moyen de paiement.</p>
+    <table>
+      <tr><td>Acheter une baguette</td><td><select id="s2q8a"><option value="">--</option><option value="1">Espèces</option><option value="0">Prélèvement</option></select></td></tr>
+      <tr><td>Abonnement téléphone</td><td><select id="s2q8b"><option value="">--</option><option value="1">Prélèvement</option><option value="0">Chèque</option></select></td></tr>
+      <tr><td>Achat à 80 € en ligne</td><td><select id="s2q8c"><option value="">--</option><option value="1">Carte bancaire</option><option value="0">Espèces</option></select></td></tr>
+    </table>
+    <button onclick="checkVF(['s2q8a','s2q8b','s2q8c'],['1','1','1'],'Bravo ✅','Pas tout à fait 💡 Espèces, prélèvement, carte bancaire.')">Valider</button>
+    <div class="feedback" id="f-s2q8"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',8)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="9">
+    <div class="question-title"><span class="competence-tag">C4</span> Question 9</div>
+    <p><span class="verb">Propose</span> 3 règles de sécurité pour payer par carte bancaire sur internet.</p>
+    <label class="option"><input type="checkbox" value="1"> Vérifier que le site commence par https://</label>
+    <label class="option"><input type="checkbox" value="0"> Donner son code à 4 chiffres au vendeur</label>
+    <label class="option"><input type="checkbox" value="1"> Valider avec 3D-Secure (SMS de la banque)</label>
+    <label class="option"><input type="checkbox" value="1"> Ne jamais payer sur un site inconnu</label>
+    <label class="option"><input type="checkbox" value="0"> Enregistrer sa carte partout</label>
+    <button onclick="checkCheckboxes(this,[1,0,1,1,0],'Bravo ✅ 3 règles essentielles.','Pas tout à fait 💡 https, 3D-Secure, éviter sites inconnus.')">Valider</button>
+    <div class="feedback"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance2',9)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="2" data-q="10">
+    <div class="question-title"><span class="competence-tag">C5</span> Question 10</div>
+    <p><span class="verb">Argumente</span> : selon toi, quel est le mode d'achat le plus protecteur pour Mehdi ? Justifie en 2 phrases.</p>
+    <textarea id="s2q10" placeholder="Rédige ta réponse..."></textarea>
+    <button onclick="checkTextarea('s2q10',['magasin','voir','internet','rétractation','protect'],'Bravo ✅ Bien argumenté !','Pas tout à fait 💡 Exemple : « En <strong>magasin</strong>, Mehdi peut <strong>voir</strong> le produit avant d\'acheter. Sur <strong>internet</strong>, il a le droit de <strong>rétractation</strong> de 14 jours. Les deux protègent. »')">Valider</button>
+    <div class="feedback" id="f-s2q10"></div>
+    <button class="secondary next-btn hidden" onclick="showRetiens(2)">Terminer la séance ➡️</button>
+  </div>
+
+  <div id="retiens2" class="hidden">
+    <div class="je-retiens">
+      <h3>📝 Je retiens — Séance 2</h3>
+      <ul>
+        <li>3 <strong>modes d'achat</strong> : magasin, à distance (internet), démarchage à domicile.</li>
+        <li>En <strong>magasin</strong> : on voit le produit, mais pas de rétractation.</li>
+        <li>À <strong>distance</strong> et <strong>démarchage</strong> : <strong>14 jours</strong> de rétractation.</li>
+        <li>Moyens de paiement : <strong>espèces</strong> (plafond 1000 €), <strong>carte</strong>, <strong>chèque</strong>, <strong>prélèvement</strong> (abonnements), paiement mobile.</li>
+        <li>Règles de sécurité internet : <strong>https://</strong>, <strong>3D-Secure</strong>, sites connus.</li>
+      </ul>
+    </div>
+    <button onclick="showSection('autoeval2')">Faire l'auto-évaluation ➡️</button>
+  </div>
+</div>
+
+<!-- AUTO-ÉVAL S2 -->
+<div id="autoeval2" class="hidden">
+  <div class="card"><h2>✅ Auto-évaluation — Séance 2</h2></div>
+
+  <div class="question"><div class="question-title">Auto-éval 1</div>
+    <p>Le plafond en espèces entre particuliers :</p>
+    <label class="option"><input type="radio" name="a2q1" value="0"> 100 €</label>
+    <label class="option"><input type="radio" name="a2q1" value="1"> 1000 €</label>
+    <label class="option"><input type="radio" name="a2q1" value="0"> Illimité</label>
+    <button onclick="checkRadio('a2q1','1','Bravo ✅','Pas tout à fait 💡 1000 €.')">Valider</button>
+    <div class="feedback" id="f-a2q1"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 2</div>
+    <p>Pour un abonnement, on utilise :</p>
+    <label class="option"><input type="radio" name="a2q2" value="0"> Espèces</label>
+    <label class="option"><input type="radio" name="a2q2" value="1"> Prélèvement automatique</label>
+    <label class="option"><input type="radio" name="a2q2" value="0"> Troc</label>
+    <button onclick="checkRadio('a2q2','1','Bravo ✅','Pas tout à fait 💡 Prélèvement.')">Valider</button>
+    <div class="feedback" id="f-a2q2"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 3</div>
+    <p>Le 3D-Secure sert à :</p>
+    <label class="option"><input type="radio" name="a2q3" value="0"> Changer sa carte</label>
+    <label class="option"><input type="radio" name="a2q3" value="1"> Sécuriser un paiement internet</label>
+    <label class="option"><input type="radio" name="a2q3" value="0"> Rien</label>
+    <button onclick="checkRadio('a2q3','1','Bravo ✅','Pas tout à fait 💡 Sécuriser le paiement.')">Valider</button>
+    <div class="feedback" id="f-a2q3"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 4</div>
+    <p>Achat en magasin :</p>
+    <label class="option"><input type="radio" name="a2q4" value="1"> Pas de rétractation</label>
+    <label class="option"><input type="radio" name="a2q4" value="0"> Rétractation 14 jours obligatoire</label>
+    <label class="option"><input type="radio" name="a2q4" value="0"> Rétractation 30 jours</label>
+    <button onclick="checkRadio('a2q4','1','Bravo ✅','Pas tout à fait 💡 En magasin, pas de rétractation.')">Valider</button>
+    <div class="feedback" id="f-a2q4"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 5</div>
+    <p>Achat sur internet :</p>
+    <label class="option"><input type="radio" name="a2q5" value="1"> Rétractation 14 jours</label>
+    <label class="option"><input type="radio" name="a2q5" value="0"> Pas de rétractation</label>
+    <label class="option"><input type="radio" name="a2q5" value="0"> Rétractation 1 an</label>
+    <button onclick="checkRadio('a2q5','1','Bravo ✅','Pas tout à fait 💡 14 jours.')">Valider</button>
+    <div class="feedback" id="f-a2q5"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 6</div>
+    <p>Site sécurisé :</p>
+    <label class="option"><input type="radio" name="a2q6" value="0"> http://</label>
+    <label class="option"><input type="radio" name="a2q6" value="1"> https://</label>
+    <label class="option"><input type="radio" name="a2q6" value="0"> ftp://</label>
+    <button onclick="checkRadio('a2q6','1','Bravo ✅','Pas tout à fait 💡 https://.')">Valider</button>
+    <div class="feedback" id="f-a2q6"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 7</div>
+    <p>Démarchage à domicile :</p>
+    <label class="option"><input type="radio" name="a2q7" value="1"> 14 jours de rétractation</label>
+    <label class="option"><input type="radio" name="a2q7" value="0"> Pas de rétractation</label>
+    <label class="option"><input type="radio" name="a2q7" value="0"> 2 ans de rétractation</label>
+    <button onclick="checkRadio('a2q7','1','Bravo ✅','Pas tout à fait 💡 14 jours.')">Valider</button>
+    <div class="feedback" id="f-a2q7"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 8</div>
+    <p>Paiement mobile (Apple Pay, Google Pay) :</p>
+    <label class="option"><input type="radio" name="a2q8" value="0"> Paiement par chèque</label>
+    <label class="option"><input type="radio" name="a2q8" value="1"> Paiement sans contact via smartphone</label>
+    <label class="option"><input type="radio" name="a2q8" value="0"> Paiement en espèces</label>
+    <button onclick="checkRadio('a2q8','1','Bravo ✅','Pas tout à fait 💡 Via smartphone.')">Valider</button>
+    <div class="feedback" id="f-a2q8"></div>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="secondary" onclick="showSection('menu')">⬅️ Menu</button>
+    <button onclick="showSection('seance3')">Séance 3 ➡️</button>
+  </div>
+</div>
+
+<!-- SÉANCE 3 -->
+<div id="seance3" class="hidden">
+  <div class="card">
+    <h2>⚖️ Séance 3 — Résoudre un litige</h2>
+    <p><strong>Objectif :</strong> Connaître les démarches pour résoudre un litige de consommation.</p>
+    <p><strong>Durée :</strong> 1 heure environ</p>
+  </div>
+
+  <div class="situation">
+    <h3>🧑 Situation : Mehdi passe à l'action</h3>
+    <p>Le téléphone de Mehdi est toujours cassé. Le vendeur ne répond pas à ses emails. Mehdi veut savoir comment réclamer son remboursement étape par étape.</p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document H — Les 4 étapes pour résoudre un litige</h3>
+    <ol>
+      <li><strong>Réclamation écrite</strong> au vendeur (email ou courrier).</li>
+      <li><strong>Mise en demeure</strong> par lettre recommandée avec accusé de réception.</li>
+      <li><strong>Médiateur de la consommation</strong> (gratuit, obligatoire avant le tribunal).</li>
+      <li><strong>Tribunal</strong> (tribunal de proximité ou judiciaire).</li>
+    </ol>
+    <p>Les 3 premières étapes sont des <strong>démarches amiables</strong>. Le tribunal est une <strong>démarche judiciaire</strong>.</p>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document I — Les associations et services publics</h3>
+    <ul>
+      <li><strong>UFC-Que Choisir</strong>, <strong>CLCV</strong> : associations de consommateurs qui informent, conseillent, aident à écrire des lettres.</li>
+      <li><strong>DGCCRF</strong> (Direction Générale de la Concurrence, de la Consommation et de la Répression des Fraudes) : contrôle et sanctionne les fraudes.</li>
+      <li><strong>signal.conso.gouv.fr</strong> : plateforme officielle pour signaler un problème. Le signalement est envoyé à l'entreprise et à la DGCCRF.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h3>📄 Document J — Exemple de lettre de mise en demeure</h3>
+    <p style="font-style:italic;background:#fff;padding:10px;border:1px dashed var(--border);">
+    « Madame, Monsieur,<br>
+    Le [date], j'ai acheté chez vous un téléphone au prix de 150 €. Le produit est arrivé défectueux (écran cassé). Malgré mes demandes, je n'ai pas obtenu de remboursement.<br>
+    Je vous <strong>mets en demeure</strong> de me rembourser sous 8 jours, en application de la garantie légale de conformité (art. L.217-3 du Code de la consommation).<br>
+    À défaut, je saisirai le médiateur de la consommation puis le tribunal.<br>
+    Cordialement,<br>Mehdi »
+    </p>
+  </div>
+
+  <div class="progress-label" id="s3-label">Étape 1 sur 10</div>
+  <div class="progress"><div class="progress-bar" id="s3-bar"></div></div>
+
+  <div class="question" data-seance="3" data-q="1">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 1</div>
+    <p><span class="verb">Relève</span> la première étape de résolution d'un litige (Document H).</p>
+    <input type="text" id="s3q1" placeholder="Écris ta réponse...">
+    <button onclick="checkText('s3q1','réclamation','Bravo ✅ On commence par une réclamation écrite.','Pas tout à fait 💡 Étape 1 : <strong>réclamation écrite</strong>.')">Valider</button>
+    <div class="feedback" id="f-s3q1"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',1)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="2">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 2</div>
+    <p><span class="verb">Cite</span> 3 acteurs qui aident le consommateur. Coche les bonnes.</p>
+    <label class="option"><input type="checkbox" value="1"> UFC-Que Choisir</label>
+    <label class="option"><input type="checkbox" value="1"> DGCCRF</label>
+    <label class="option"><input type="checkbox" value="0"> La Poste</label>
+    <label class="option"><input type="checkbox" value="1"> signal.conso.gouv.fr</label>
+    <label class="option"><input type="checkbox" value="0"> Le boulanger</label>
+    <button onclick="checkCheckboxes(this,[1,1,0,1,0],'Bravo ✅','Pas tout à fait 💡 UFC, DGCCRF, signal.conso.')">Valider</button>
+    <div class="feedback"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',2)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="3">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 3</div>
+    <p><span class="verb">Identifie</span> le site officiel pour signaler un litige.</p>
+    <label class="option"><input type="radio" name="s3q3" value="0"> google.fr</label>
+    <label class="option"><input type="radio" name="s3q3" value="1"> signal.conso.gouv.fr</label>
+    <label class="option"><input type="radio" name="s3q3" value="0"> lemondeduconsommateur.com</label>
+    <button onclick="checkRadio('s3q3','1','Bravo ✅ signal.conso.gouv.fr est le site officiel.','Pas tout à fait 💡 signal.conso.gouv.fr.')">Valider</button>
+    <div class="feedback" id="f-s3q3"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',3)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="4">
+    <div class="question-title"><span class="competence-tag">C1</span> Question 4 — Vrai ou Faux</div>
+    <div class="vf-item"><span>La médiation est gratuite.</span>
+      <select id="s3q4a"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <div class="vf-item"><span>La mise en demeure se fait par lettre recommandée.</span>
+      <select id="s3q4b"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <div class="vf-item"><span>Le tribunal est la première étape.</span>
+      <select id="s3q4c"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <div class="vf-item"><span>L'UFC-Que Choisir est une association de consommateurs.</span>
+      <select id="s3q4d"><option value="">--</option><option value="V">V</option><option value="F">F</option></select></div>
+    <button onclick="checkVF(['s3q4a','s3q4b','s3q4c','s3q4d'],['V','V','F','V'],'Bravo ✅','Pas tout à fait 💡 V, V, F, V.')">Valider</button>
+    <div class="feedback" id="f-s3q4"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',4)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="5">
+    <div class="question-title"><span class="competence-tag">C2</span> Question 5 — Classer</div>
+    <p><span class="verb">Classe</span> chaque démarche dans "Amiable" ou "Judiciaire".</p>
+    <div id="s3q5-items">
+      <span class="classify-item" data-target="ami" onclick="classify(this)">Réclamation</span>
+      <span class="classify-item" data-target="jud" onclick="classify(this)">Tribunal de proximité</span>
+      <span class="classify-item" data-target="ami" onclick="classify(this)">Médiateur</span>
+      <span class="classify-item" data-target="ami" onclick="classify(this)">Mise en demeure</span>
+    </div>
+    <p><strong>Amiable :</strong></p>
+    <div class="classify-zone" id="zone-ami"></div>
+    <p><strong>Judiciaire :</strong></p>
+    <div class="classify-zone" id="zone-jud"></div>
+    <button onclick="checkClassify('s3q5','Bravo ✅','Pas tout à fait 💡 Amiable = réclamation, médiateur, mise en demeure. Judiciaire = tribunal.')">Valider</button>
+    <div class="feedback" id="f-s3q5"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',5)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="6">
+    <div class="question-title"><span class="competence-tag">C2</span> Question 6</div>
+    <p><span class="verb">Identifie</span> ce que doit faire Mehdi puisque le vendeur ne répond pas à ses emails.</p>
+    <label class="option"><input type="radio" name="s3q6" value="0"> Oublier l'affaire</label>
+    <label class="option"><input type="radio" name="s3q6" value="1"> Envoyer une mise en demeure par lettre recommandée</label>
+    <label class="option"><input type="radio" name="s3q6" value="0"> Attaquer le vendeur physiquement</label>
+    <button onclick="checkRadio('s3q6','1','Bravo ✅ Mise en demeure recommandée = preuve officielle.','Pas tout à fait 💡 Mise en demeure par lettre recommandée.')">Valider</button>
+    <div class="feedback" id="f-s3q6"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',6)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="7">
+    <div class="question-title"><span class="competence-tag">C3</span> Question 7</div>
+    <p><span class="verb">Explique</span> pourquoi il faut essayer une démarche amiable avant le tribunal. Utilise les mots "gratuit" et "rapide".</p>
+    <textarea id="s3q7" placeholder="Rédige ta réponse..."></textarea>
+    <button onclick="checkTextarea('s3q7',['gratuit','rapide','amiable','tribunal','médiat'],'Bravo ✅ Bien expliqué.','Pas tout à fait 💡 Exemple : « La démarche amiable (médiateur) est <strong>gratuite</strong> et plus <strong>rapide</strong> que le tribunal, qui coûte cher et prend des mois. »')">Valider</button>
+    <div class="feedback" id="f-s3q7"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',7)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="8">
+    <div class="question-title"><span class="competence-tag">C3</span> Question 8</div>
+    <p><span class="verb">Mets en relation</span> chaque situation avec le bon interlocuteur.</p>
+    <table>
+      <tr><td>Signaler une arnaque en ligne</td><td><select id="s3q8a"><option value="">--</option><option value="1">signal.conso.gouv.fr</option><option value="0">Son voisin</option></select></td></tr>
+      <tr><td>Être conseillé sur ses droits</td><td><select id="s3q8b"><option value="">--</option><option value="1">UFC-Que Choisir</option><option value="0">Un inconnu</option></select></td></tr>
+      <tr><td>Régler un litige à l'amiable</td><td><select id="s3q8c"><option value="">--</option><option value="1">Médiateur</option><option value="0">Tribunal</option></select></td></tr>
+    </table>
+    <button onclick="checkVF(['s3q8a','s3q8b','s3q8c'],['1','1','1'],'Bravo ✅','Pas tout à fait 💡 signal.conso, UFC, médiateur.')">Valider</button>
+    <div class="feedback" id="f-s3q8"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',8)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="9">
+    <div class="question-title"><span class="competence-tag">C4</span> Question 9</div>
+    <p><span class="verb">Propose</span> à Mehdi 3 actions concrètes à faire dès aujourd'hui.</p>
+    <label class="option"><input type="checkbox" value="1"> Envoyer une lettre recommandée au vendeur</label>
+    <label class="option"><input type="checkbox" value="0"> Insulter le vendeur sur les réseaux sociaux</label>
+    <label class="option"><input type="checkbox" value="1"> Signaler l'affaire sur signal.conso.gouv.fr</label>
+    <label class="option"><input type="checkbox" value="1"> Contacter UFC-Que Choisir pour être aidé</label>
+    <label class="option"><input type="checkbox" value="0"> Casser un autre téléphone pour se venger</label>
+    <button onclick="checkCheckboxes(this,[1,0,1,1,0],'Bravo ✅ 3 actions concrètes et légales.','Pas tout à fait 💡 Lettre recommandée + signal.conso + UFC.')">Valider</button>
+    <div class="feedback"></div>
+    <button class="secondary next-btn hidden" onclick="nextQ('seance3',9)">Question suivante ➡️</button>
+  </div>
+
+  <div class="question hidden" data-seance="3" data-q="10">
+    <div class="question-title"><span class="competence-tag">C5</span> Question 10</div>
+    <p><span class="verb">Argumente</span> : pourquoi est-il utile de signaler son litige sur signal.conso.gouv.fr ? Justifie en 2 phrases.</p>
+    <textarea id="s3q10" placeholder="Rédige ta réponse..."></textarea>
+    <button onclick="checkTextarea('s3q10',['dgccrf','entreprise','autres','consommateur','protéger','frauder'],'Bravo ✅ Bien argumenté !','Pas tout à fait 💡 Exemple : « Signaler permet à la <strong>DGCCRF</strong> de contrôler l\'entreprise et de protéger les autres <strong>consommateurs</strong>. »')">Valider</button>
+    <div class="feedback" id="f-s3q10"></div>
+    <button class="secondary next-btn hidden" onclick="showRetiens(3)">Terminer la séance ➡️</button>
+  </div>
+
+  <div id="retiens3" class="hidden">
+    <div class="je-retiens">
+      <h3>📝 Je retiens — Séance 3</h3>
+      <ul>
+        <li>4 étapes : <strong>réclamation</strong> → <strong>mise en demeure</strong> → <strong>médiateur</strong> → <strong>tribunal</strong>.</li>
+        <li>Les 3 premières sont <strong>amiables</strong>, le tribunal est <strong>judiciaire</strong>.</li>
+        <li>La <strong>mise en demeure</strong> se fait par lettre recommandée avec accusé de réception.</li>
+        <li>Associations : <strong>UFC-Que Choisir</strong>, <strong>CLCV</strong>.</li>
+        <li>Service public : <strong>DGCCRF</strong> et <strong>signal.conso.gouv.fr</strong>.</li>
+        <li>La médiation est <strong>gratuite</strong> et plus rapide que le tribunal.</li>
+      </ul>
+    </div>
+    <button onclick="showSection('autoeval3')">Faire l'auto-évaluation ➡️</button>
+  </div>
+</div>
+
+<!-- AUTO-ÉVAL S3 -->
+<div id="autoeval3" class="hidden">
+  <div class="card"><h2>✅ Auto-évaluation — Séance 3</h2></div>
+
+  <div class="question"><div class="question-title">Auto-éval 1</div>
+    <p>Première étape d'un litige :</p>
+    <label class="option"><input type="radio" name="a3q1" value="1"> Réclamation écrite</label>
+    <label class="option"><input type="radio" name="a3q1" value="0"> Tribunal</label>
+    <label class="option"><input type="radio" name="a3q1" value="0"> Médiateur</label>
+    <button onclick="checkRadio('a3q1','1','Bravo ✅','Pas tout à fait 💡 Réclamation écrite.')">Valider</button>
+    <div class="feedback" id="f-a3q1"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 2</div>
+    <p>La mise en demeure se fait par :</p>
+    <label class="option"><input type="radio" name="a3q2" value="0"> SMS</label>
+    <label class="option"><input type="radio" name="a3q2" value="1"> Lettre recommandée avec AR</label>
+    <label class="option"><input type="radio" name="a3q2" value="0"> Oralement</label>
+    <button onclick="checkRadio('a3q2','1','Bravo ✅','Pas tout à fait 💡 Lettre recommandée AR.')">Valider</button>
+    <div class="feedback" id="f-a3q2"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 3</div>
+    <p>UFC-Que Choisir est :</p>
+    <label class="option"><input type="radio" name="a3q3" value="1"> Une association de consommateurs</label>
+    <label class="option"><input type="radio" name="a3q3" value="0"> Un tribunal</label>
+    <label class="option"><input type="radio" name="a3q3" value="0"> Une banque</label>
+    <button onclick="checkRadio('a3q3','1','Bravo ✅','Pas tout à fait 💡 Association de consommateurs.')">Valider</button>
+    <div class="feedback" id="f-a3q3"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 4</div>
+    <p>La DGCCRF est :</p>
+    <label class="option"><input type="radio" name="a3q4" value="0"> Une entreprise privée</label>
+    <label class="option"><input type="radio" name="a3q4" value="1"> Un service public qui contrôle les fraudes</label>
+    <label class="option"><input type="radio" name="a3q4" value="0"> Un journal</label>
+    <button onclick="checkRadio('a3q4','1','Bravo ✅','Pas tout à fait 💡 Service public.')">Valider</button>
+    <div class="feedback" id="f-a3q4"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 5</div>
+    <p>signal.conso.gouv.fr permet de :</p>
+    <label class="option"><input type="radio" name="a3q5" value="1"> Signaler un litige de consommation</label>
+    <label class="option"><input type="radio" name="a3q5" value="0"> Acheter des produits</label>
+    <label class="option"><input type="radio" name="a3q5" value="0"> Regarder des films</label>
+    <button onclick="checkRadio('a3q5','1','Bravo ✅','Pas tout à fait 💡 Signaler un litige.')">Valider</button>
+    <div class="feedback" id="f-a3q5"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 6</div>
+    <p>Le médiateur est :</p>
+    <label class="option"><input type="radio" name="a3q6" value="1"> Gratuit et amiable</label>
+    <label class="option"><input type="radio" name="a3q6" value="0"> Payant et judiciaire</label>
+    <label class="option"><input type="radio" name="a3q6" value="0"> Un juge du tribunal</label>
+    <button onclick="checkRadio('a3q6','1','Bravo ✅','Pas tout à fait 💡 Gratuit et amiable.')">Valider</button>
+    <div class="feedback" id="f-a3q6"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 7</div>
+    <p>Dernier recours pour un litige :</p>
+    <label class="option"><input type="radio" name="a3q7" value="0"> Réclamation</label>
+    <label class="option"><input type="radio" name="a3q7" value="0"> Médiation</label>
+    <label class="option"><input type="radio" name="a3q7" value="1"> Tribunal</label>
+    <button onclick="checkRadio('a3q7','1','Bravo ✅','Pas tout à fait 💡 Tribunal.')">Valider</button>
+    <div class="feedback" id="f-a3q7"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Auto-éval 8</div>
+    <p>Ce que doit faire Mehdi si le vendeur ne répond pas :</p>
+    <label class="option"><input type="radio" name="a3q8" value="0"> Oublier</label>
+    <label class="option"><input type="radio" name="a3q8" value="1"> Lettre recommandée + signal.conso</label>
+    <label class="option"><input type="radio" name="a3q8" value="0"> Casser un autre téléphone</label>
+    <button onclick="checkRadio('a3q8','1','Bravo ✅','Pas tout à fait 💡 Lettre recommandée + signal.conso.')">Valider</button>
+    <div class="feedback" id="f-a3q8"></div>
+  </div>
+
+  <div class="nav-buttons">
+    <button class="secondary" onclick="showSection('menu')">⬅️ Menu</button>
+    <button onclick="showSection('eval')">Évaluation finale ➡️</button>
+  </div>
+</div>
+
+<!-- ÉVAL FINALE -->
+<div id="eval" class="hidden">
+  <div class="card"><h2>🏆 Évaluation finale</h2><p>8 questions pour valider tes acquis sur Les achats.</p></div>
+
+  <div class="question"><div class="question-title">Question 1</div>
+    <p>Durée de la garantie légale de conformité :</p>
+    <label class="option"><input type="radio" name="fq1" value="1"> 2 ans</label>
+    <label class="option"><input type="radio" name="fq1" value="0"> 1 mois</label>
+    <label class="option"><input type="radio" name="fq1" value="0"> 10 ans</label>
+    <button onclick="checkRadio('fq1','1','Bravo ✅','💡 2 ans.')">Valider</button>
+    <div class="feedback" id="f-fq1"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 2</div>
+    <p>Durée du droit de rétractation (internet) :</p>
+    <label class="option"><input type="radio" name="fq2" value="1"> 14 jours</label>
+    <label class="option"><input type="radio" name="fq2" value="0"> 2 jours</label>
+    <label class="option"><input type="radio" name="fq2" value="0"> 1 an</label>
+    <button onclick="checkRadio('fq2','1','Bravo ✅','💡 14 jours.')">Valider</button>
+    <div class="feedback" id="f-fq2"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 3</div>
+    <p>Un vice caché :</p>
+    <label class="option"><input type="radio" name="fq3" value="1"> Défaut caché qui rend le produit inutilisable</label>
+    <label class="option"><input type="radio" name="fq3" value="0"> Un cadeau</label>
+    <label class="option"><input type="radio" name="fq3" value="0"> Une promotion</label>
+    <button onclick="checkRadio('fq3','1','Bravo ✅','💡 Défaut caché.')">Valider</button>
+    <div class="feedback" id="f-fq3"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 4</div>
+    <p>Plafond espèces entre particuliers :</p>
+    <label class="option"><input type="radio" name="fq4" value="1"> 1000 €</label>
+    <label class="option"><input type="radio" name="fq4" value="0"> 10 €</label>
+    <label class="option"><input type="radio" name="fq4" value="0"> Illimité</label>
+    <button onclick="checkRadio('fq4','1','Bravo ✅','💡 1000 €.')">Valider</button>
+    <div class="feedback" id="f-fq4"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 5</div>
+    <p>Pour signaler un litige :</p>
+    <label class="option"><input type="radio" name="fq5" value="1"> signal.conso.gouv.fr</label>
+    <label class="option"><input type="radio" name="fq5" value="0"> amazon.fr</label>
+    <label class="option"><input type="radio" name="fq5" value="0"> facebook.fr</label>
+    <button onclick="checkRadio('fq5','1','Bravo ✅','💡 signal.conso.gouv.fr.')">Valider</button>
+    <div class="feedback" id="f-fq5"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 6</div>
+    <p>Mise en demeure = :</p>
+    <label class="option"><input type="radio" name="fq6" value="1"> Lettre recommandée avec AR</label>
+    <label class="option"><input type="radio" name="fq6" value="0"> Visite au tribunal</label>
+    <label class="option"><input type="radio" name="fq6" value="0"> Appel téléphonique</label>
+    <button onclick="checkRadio('fq6','1','Bravo ✅','💡 Lettre recommandée.')">Valider</button>
+    <div class="feedback" id="f-fq6"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 7</div>
+    <p>UFC-Que Choisir :</p>
+    <label class="option"><input type="radio" name="fq7" value="1"> Association de consommateurs</label>
+    <label class="option"><input type="radio" name="fq7" value="0"> Service du gouvernement</label>
+    <label class="option"><input type="radio" name="fq7" value="0"> Banque</label>
+    <button onclick="checkRadio('fq7','1','Bravo ✅','💡 Association.')">Valider</button>
+    <div class="feedback" id="f-fq7"></div>
+  </div>
+
+  <div class="question"><div class="question-title">Question 8</div>
+    <p>Faux avis clients = :</p>
+    <label class="option"><input type="radio" name="fq8" value="1"> Pratique trompeuse interdite</label>
+    <label class="option"><input type="radio" name="fq8" value="0"> Obligatoire</label>
+    <label class="option"><input type="radio" name="fq8" value="0"> Recommandé</label>
+    <button onclick="checkRadio('fq8','1','Bravo ✅','💡 Interdit.')">Valider</button>
+    <div class="feedback" id="f-fq8"></div>
+  </div>
+
+  <button onclick="calcFinalScore()">🏆 Voir mon score</button>
+  <div id="finalScore" class="score-box hidden"></div>
+
+  <div class="nav-buttons">
+    <button class="secondary" onclick="showSection('menu')">⬅️ Menu</button>
+  </div>
+</div>
+
+<footer>
+  Ressource pédagogique adaptée — M. MECHERI — mapse.fr
+</footer>
+
+</div>
+
+<script>
+let speaking = false;
+let currentUtterance = null;
+
+function toggleAudio(){
+  const btn = document.getElementById('audioBtn');
+  if(speaking){
+    window.speechSynthesis.cancel();
+    speaking = false;
+    btn.textContent = '🔊';
+    return;
+  }
+  const text = document.querySelector('.container').innerText;
+  currentUtterance = new SpeechSynthesisUtterance(text);
+  currentUtterance.lang = 'fr-FR';
+  currentUtterance.rate = 0.95;
+  currentUtterance.onend = () => { speaking = false; btn.textContent = '🔊'; };
+  window.speechSynthesis.speak(currentUtterance);
+  speaking = true;
+  btn.textContent = '🔇';
+}
+
+function toggleSettings(){ document.getElementById('settingsPanel').classList.toggle('open'); }
+function setFontSize(v){
+  document.documentElement.style.setProperty('--font-size', v+'px');
+  document.getElementById('fontSizeVal').textContent = v+'px';
+  localStorage.setItem('pse_d3_fontSize', v);
+}
+function setLineHeight(v){
+  document.documentElement.style.setProperty('--line-height', v);
+  document.getElementById('lineHeightVal').textContent = v;
+  localStorage.setItem('pse_d3_lineHeight', v);
+}
+function toggleDyslexic(){
+  document.body.classList.toggle('dyslexic');
+  const on = document.body.classList.contains('dyslexic');
+  document.getElementById('dysBtn').textContent = on ? 'Désactiver OpenDyslexic' : 'Activer OpenDyslexic';
+  localStorage.setItem('pse_d3_dys', on ? '1' : '0');
+}
+function toggleContrast(){
+  document.body.classList.toggle('high-contrast');
+  const on = document.body.classList.contains('high-contrast');
+  document.getElementById('contrastBtn').textContent = on ? 'Désactiver' : 'Activer';
+  localStorage.setItem('pse_d3_contrast', on ? '1' : '0');
+}
+function setBg(cls){
+  document.body.classList.remove('bg-creme','bg-bleu','bg-vert');
+  if(cls) document.body.classList.add(cls);
+  document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.querySelector('.color-btn[data-bg="'+cls+'"]');
+  if(btn) btn.classList.add('active');
+  localStorage.setItem('pse_d3_bg', cls);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const fs = localStorage.getItem('pse_d3_fontSize'); if(fs){ document.getElementById('fontSize').value = fs; setFontSize(fs); }
+  const lh = localStorage.getItem('pse_d3_lineHeight'); if(lh){ document.getElementById('lineHeight').value = lh; setLineHeight(lh); }
+  if(localStorage.getItem('pse_d3_dys')==='1') toggleDyslexic();
+  if(localStorage.getItem('pse_d3_contrast')==='1') toggleContrast();
+  const bg = localStorage.getItem('pse_d3_bg'); if(bg) setBg(bg);
+});
+
+function showSection(id){
+  if(speaking){ window.speechSynthesis.cancel(); speaking=false; document.getElementById('audioBtn').textContent='🔊'; }
+  ['menu','seance1','seance2','seance3','autoeval1','autoeval2','autoeval3','eval'].forEach(s=>{
+    const el = document.getElementById(s);
+    if(el) el.classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function nextQ(seance, n){
+  const qs = document.querySelectorAll('#'+seance+' .question');
+  if(qs[n-1]) qs[n-1].classList.add('hidden');
+  if(qs[n]) qs[n].classList.remove('hidden');
+  updateProgress(seance, n+1, qs.length);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateProgress(seance, step, total){
+  const id = seance === 'seance1' ? 's1' : seance === 'seance2' ? 's2' : 's3';
+  const lbl = document.getElementById(id+'-label');
+  const bar = document.getElementById(id+'-bar');
+  if(lbl) lbl.textContent = 'Étape '+Math.min(step,total)+' sur '+total;
+  if(bar) bar.style.width = (Math.min(step,total)/total*100)+'%';
+}
+
+function showRetiens(n){
+  const q = document.querySelectorAll('#seance'+n+' .question');
+  q.forEach(el=>el.classList.add('hidden'));
+  document.getElementById('retiens'+n).classList.remove('hidden');
+  updateProgress('seance'+n, 11, 10);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showFeedback(el, ok, okMsg, koMsg){
+  el.className = 'feedback ' + (ok?'ok':'ko');
+  el.innerHTML = ok?okMsg:koMsg;
+  el.style.display = 'block';
+}
+function findQuestionBlock(el){ while(el && !el.classList.contains('question')) el = el.parentElement; return el; }
+function revealNext(fromEl){
+  const q = findQuestionBlock(fromEl);
+  if(!q) return;
+  const nb = q.querySelector('.next-btn');
+  if(nb) nb.classList.remove('hidden');
+}
+function normalize(s){ return s.toLowerCase().trim().replace(/\s+/g,' ').replace(/[.,;:!?]/g,''); }
+
+function checkText(id, expected, ok, ko){
+  const val = document.getElementById(id).value;
+  const fb = document.getElementById('f-'+id);
+  const n = normalize(val);
+  const e = normalize(expected);
+  const good = n.length>0 && (n.includes(e) || e.includes(n));
+  showFeedback(fb, good, ok, ko);
+  revealNext(fb);
+}
+function checkRadio(name, correct, ok, ko){
+  const sel = document.querySelector('input[name="'+name+'"]:checked');
+  const fb = document.getElementById('f-'+name);
+  const good = sel && sel.value === correct;
+  showFeedback(fb, good, ok, ko);
+  revealNext(fb);
+}
+function checkCheckboxes(btn, expected, ok, ko){
+  const q = findQuestionBlock(btn);
+  const boxes = q.querySelectorAll('input[type="checkbox"]');
+  let good = true;
+  boxes.forEach((b,i)=>{ const should = expected[i]===1; if(b.checked !== should) good = false; });
+  const fb = q.querySelector('.feedback');
+  showFeedback(fb, good, ok, ko);
+  revealNext(btn);
+}
+function checkVF(ids, answers, ok, ko){
+  let good = true;
+  ids.forEach((id,i)=>{ const v = document.getElementById(id).value; if(v !== answers[i]) good = false; });
+  const fb = document.getElementById('f-'+ids[0].replace(/[a-z]$/,''));
+  showFeedback(fb, good, ok, ko);
+  revealNext(fb);
+}
+function checkTextarea(id, keywords, ok, ko){
+  const val = normalize(document.getElementById(id).value);
+  const fb = document.getElementById('f-'+id);
+  let count = 0;
+  keywords.forEach(k => { if(val.includes(normalize(k))) count++; });
+  const good = count >= Math.min(2, keywords.length) && val.length > 15;
+  showFeedback(fb, good, ok, ko);
+  revealNext(fb);
+}
+function classify(item){
+  if(item.classList.contains('used')) return;
+  const target = item.dataset.target;
+  const zone = document.getElementById('zone-'+target);
+  const clone = item.cloneNode(true);
+  clone.onclick = null;
+  clone.style.cursor = 'default';
+  zone.appendChild(clone);
+  item.classList.add('used');
+}
+function checkClassify(id, ok, ko){
+  const container = document.getElementById(id+'-items');
+  const fb = document.getElementById('f-'+id);
+  let good = true;
+  container.querySelectorAll('.classify-item').forEach(i=>{ if(!i.classList.contains('used')) good = false; });
+  showFeedback(fb, good, ok, ko);
+  revealNext(fb);
+}
+function calcFinalScore(){
+  const total = 8;
+  const okCount = document.querySelectorAll('#eval .feedback.ok').length;
+  const box = document.getElementById('finalScore');
+  box.classList.remove('hidden');
+  let msg;
+  if(okCount >= 7) msg = '🏆 Excellent ! '+okCount+'/'+total+' — Tu maîtrises les droits du consommateur !';
+  else if(okCount >= 5) msg = '👏 Bien joué ! '+okCount+'/'+total+' — Continue comme ça.';
+  else if(okCount >= 3) msg = '💡 Encourageant : '+okCount+'/'+total+' — Relis le "Je retiens" et réessaie.';
+  else msg = '📖 À reprendre : '+okCount+'/'+total+' — Refais les séances tranquillement.';
+  box.innerHTML = msg;
+  box.scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>

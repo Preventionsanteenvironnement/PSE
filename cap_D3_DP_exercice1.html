@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — D3 Les achats — Exercice 1</title>
+<style>
+:root{--bg:#ffffff;--text:#1a1a1a;--primary:#2563eb;--primary-dark:#1d4ed8;--accent:#f59e0b;--success:#16a34a;--error:#dc2626;--card:#f8fafc;--border:#cbd5e1;--font-size:18px;--line-height:1.7;--font-family:'Segoe UI',Tahoma,Arial,sans-serif;}
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:var(--font-family);font-size:var(--font-size);line-height:var(--line-height);background:var(--bg);color:var(--text);}
+body.dyslexic{font-family:'OpenDyslexic','Comic Sans MS',sans-serif;letter-spacing:0.05em}
+body.high-contrast{--bg:#000;--text:#fff;--card:#1a1a1a;--border:#fff;--primary:#ffff00;--primary-dark:#ffd700}
+body.bg-creme{--bg:#fdf6e3;--card:#faeed0}
+body.bg-bleu{--bg:#e0f2fe;--card:#bae6fd}
+body.bg-vert{--bg:#dcfce7;--card:#bbf7d0}
+.container{max-width:700px;margin:0 auto;padding:20px}
+header{background:var(--primary);color:white;padding:20px;border-radius:12px;margin-bottom:20px;text-align:center}
+header h1{margin:0 0 8px 0;font-size:1.5em}
+.top-bar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+button{font-family:inherit;font-size:inherit;min-height:48px;padding:12px 20px;border:2px solid var(--primary);background:var(--primary);color:white;border-radius:10px;cursor:pointer;font-weight:600}
+button:hover{background:var(--primary-dark)}
+button.secondary{background:white;color:var(--primary)}
+body.high-contrast button.secondary{background:#000;color:#fff}
+.icon-btn{min-width:48px;min-height:48px;padding:8px 14px;font-size:1.3em}
+.card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.doc{background:#fef3c7;border-left:6px solid var(--accent);padding:16px;border-radius:8px;margin:15px 0}
+body.high-contrast .doc{background:#333;color:#fff}
+.doc h3{margin-top:0;color:#92400e}
+.situation{background:#ede9fe;border-left:6px solid #7c3aed;padding:16px;border-radius:8px;margin:15px 0}
+body.high-contrast .situation{background:#222;color:#fff}
+.competence-tag{display:inline-block;background:var(--primary);color:white;padding:3px 10px;border-radius:12px;font-size:0.85em;font-weight:700;margin-right:8px}
+.exercise{background:white;border:2px solid var(--border);border-radius:12px;padding:20px;margin:15px 0}
+body.high-contrast .exercise{background:#1a1a1a}
+.exercise-title{font-weight:700;margin-bottom:12px;font-size:1.1em}
+.verb{color:var(--primary-dark);font-weight:700;text-transform:uppercase}
+body.high-contrast .verb{color:#ffff00}
+input[type="text"],textarea,select{font-family:inherit;font-size:inherit;width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)}
+textarea{min-height:100px;resize:vertical}
+input[type="text"]:focus,textarea:focus,select:focus{outline:3px solid var(--primary);border-color:var(--primary)}
+.option{display:block;padding:12px 16px;margin:8px 0;background:var(--bg);border:2px solid var(--border);border-radius:8px;cursor:pointer;min-height:48px}
+.option:hover{background:#eff6ff;border-color:var(--primary)}
+.option input{margin-right:10px;transform:scale(1.3)}
+.feedback{margin-top:14px;padding:14px;border-radius:8px;display:none;font-weight:600}
+.feedback.ok{background:#dcfce7;color:#166534;border:2px solid var(--success);display:block}
+.feedback.ko{background:#fee2e2;color:#991b1b;border:2px solid var(--error);display:block}
+.model-answer{margin-top:10px;padding:12px;background:#eff6ff;border:2px dashed var(--primary);border-radius:8px;font-style:italic;display:none}
+body.high-contrast .model-answer{background:#001a33}
+.progress{background:var(--border);border-radius:10px;height:16px;overflow:hidden;margin:15px 0}
+.progress-bar{background:var(--primary);height:100%;transition:width 0.4s;width:0%}
+.progress-label{text-align:center;font-weight:600;margin-bottom:8px}
+.settings-panel{display:none;background:var(--card);border:2px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.settings-panel.open{display:block}
+.settings-row{margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.settings-row label{font-weight:600;min-width:130px}
+.color-btn{width:40px;height:40px;border-radius:50%;border:3px solid var(--border);cursor:pointer}
+.color-btn.active{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.3)}
+table{width:100%;border-collapse:collapse;margin:15px 0}
+th,td{border:2px solid var(--border);padding:10px;text-align:left}
+th{background:var(--primary);color:white}
+.vf-item{display:flex;gap:10px;align-items:center;margin:10px 0;flex-wrap:wrap}
+.vf-item span{flex:1;min-width:200px}
+.vf-item select{max-width:150px}
+.classify-zone{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:14px;margin:8px 0;min-height:60px}
+.classify-item{display:inline-block;background:var(--primary);color:white;padding:8px 14px;margin:4px;border-radius:20px;cursor:pointer;min-height:40px}
+.classify-item.used{opacity:0.4;text-decoration:line-through}
+footer{text-align:center;padding:20px;margin-top:40px;border-top:2px solid var(--border);font-size:0.9em;color:#64748b}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>🛒 CAP PSE — D3 Exercice 1</h1>
+  <p>Les droits du consommateur — Parcours Différencié</p>
+</header>
+
+<div class="top-bar">
+  <button class="icon-btn secondary" id="audioBtn" onclick="toggleAudio()" aria-label="Lire à voix haute">🔊</button>
+  <button class="icon-btn secondary" onclick="toggleSettings()" aria-label="Réglages">⚙️</button>
+</div>
+
+<div id="settingsPanel" class="settings-panel">
+  <h3>⚙️ Réglages</h3>
+  <div class="settings-row"><label for="fontSize">Taille du texte</label><input type="range" id="fontSize" min="16" max="28" value="18" oninput="setFontSize(this.value)"><span id="fontSizeVal">18px</span></div>
+  <div class="settings-row"><label for="lineHeight">Espace lignes</label><input type="range" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.7" oninput="setLineHeight(this.value)"><span id="lineHeightVal">1.7</span></div>
+  <div class="settings-row"><label>Police DYS</label><button class="secondary" onclick="toggleDyslexic()" id="dysBtn">Activer OpenDyslexic</button></div>
+  <div class="settings-row"><label>Contraste élevé</label><button class="secondary" onclick="toggleContrast()" id="contrastBtn">Activer</button></div>
+  <div class="settings-row"><label>Couleur de fond</label>
+    <button class="color-btn active" style="background:#fff" data-bg="" onclick="setBg('')"></button>
+    <button class="color-btn" style="background:#fdf6e3" data-bg="bg-creme" onclick="setBg('bg-creme')"></button>
+    <button class="color-btn" style="background:#e0f2fe" data-bg="bg-bleu" onclick="setBg('bg-bleu')"></button>
+    <button class="color-btn" style="background:#dcfce7" data-bg="bg-vert" onclick="setBg('bg-vert')"></button>
+  </div>
+</div>
+
+<div class="situation">
+  <h3>🧑 Situation : Mehdi</h3>
+  <p>Mehdi, apprenti de 17 ans, a acheté un <strong>casque Bluetooth</strong> sur un site internet au prix de 45 €. Lorsqu'il ouvre le colis, le casque est <strong>cassé</strong> : l'écouteur gauche ne fonctionne pas. Il veut comprendre ses droits.</p>
+</div>
+
+<div class="doc">
+  <h3>📄 Document A — Les garanties légales</h3>
+  <ul>
+    <li><strong>Garantie légale de conformité</strong> : 2 ans. Le produit doit fonctionner et correspondre à la description.</li>
+    <li><strong>Garantie des vices cachés</strong> : 2 ans après découverte d'un défaut caché.</li>
+    <li><strong>Garantie commerciale</strong> : payante, optionnelle, proposée par le vendeur.</li>
+  </ul>
+</div>
+
+<div class="doc">
+  <h3>📄 Document B — Le droit de rétractation</h3>
+  <p>Pour les achats <strong>à distance</strong> (internet, téléphone) ou en <strong>démarchage à domicile</strong>, le consommateur a <strong>14 jours</strong> pour se rétracter, <strong>sans justifier</strong>. Le vendeur doit rembourser le produit et les frais de livraison initiaux.</p>
+</div>
+
+<div class="doc">
+  <h3>📄 Document C — Les pratiques commerciales trompeuses</h3>
+  <p>La loi interdit :</p>
+  <ul>
+    <li>Les <strong>fausses réductions</strong>.</li>
+    <li>La <strong>publicité mensongère</strong>.</li>
+    <li>Les <strong>faux avis</strong> de clients.</li>
+    <li>Les <strong>informations cachées</strong>.</li>
+  </ul>
+</div>
+
+<div class="progress-label" id="prog-label">Exercice 1 sur 6</div>
+<div class="progress"><div class="progress-bar" id="prog-bar" style="width:16%"></div></div>
+
+<div class="exercise">
+  <div class="exercise-title"><span class="competence-tag">C1</span> Exercice 1 — Relever une information</div>
+  <p><span class="verb">Relève</span> dans le Document A la durée de la garantie légale de conformité. Écris-la en toutes lettres (ex : "2 ans").</p>
+  <input type="text" id="ex1" placeholder="Écris ta réponse ici...">
+  <button onclick="checkText('ex1','2 ans','Bravo ✅ La garantie de conformité dure 2 ans.','Pas tout à fait 💡 Document A : <strong>2 ans</strong>.',1)">Valider</button>
+  <div class="feedback" id="f-ex1"></div>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title"><span class="competence-tag">C1</span> Exercice 2 — Vrai ou Faux</div>
+  <p><span class="verb">Identifie</span> si chaque affirmation est vraie ou fausse.</p>
+  <div class="vf-item"><span>La garantie de conformité dure 2 ans.</span>
+    <select id="ex2a"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+  <div class="vf-item"><span>Le droit de rétractation est de 7 jours.</span>
+    <select id="ex2b"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+  <div class="vf-item"><span>Les faux avis clients sont interdits.</span>
+    <select id="ex2c"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+  <div class="vf-item"><span>La garantie commerciale est payante.</span>
+    <select id="ex2d"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+  <div class="vf-item"><span>Le droit de rétractation existe aussi en magasin.</span>
+    <select id="ex2e"><option value="">--</option><option value="V">Vrai</option><option value="F">Faux</option></select></div>
+  <button onclick="checkVF(['ex2a','ex2b','ex2c','ex2d','ex2e'],['V','F','V','V','F'],'Bravo ✅','Pas tout à fait 💡 V, F, V, V, F.',2)">Valider</button>
+  <div class="feedback" id="f-ex2"></div>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title"><span class="competence-tag">C1</span> Exercice 3 — Classer</div>
+  <p><span class="verb">Classe</span> chaque élément dans la bonne catégorie.</p>
+  <div id="ex3-items">
+    <span class="classify-item" data-target="gc" onclick="classify(this)">Dure 2 ans</span>
+    <span class="classify-item" data-target="com" onclick="classify(this)">Payante</span>
+    <span class="classify-item" data-target="ret" onclick="classify(this)">14 jours</span>
+    <span class="classify-item" data-target="gc" onclick="classify(this)">Produit non conforme</span>
+    <span class="classify-item" data-target="com" onclick="classify(this)">Optionnelle</span>
+    <span class="classify-item" data-target="ret" onclick="classify(this)">Achat internet</span>
+  </div>
+  <p><strong>Garantie légale de conformité :</strong></p><div class="classify-zone" id="zone-gc"></div>
+  <p><strong>Garantie commerciale :</strong></p><div class="classify-zone" id="zone-com"></div>
+  <p><strong>Droit de rétractation :</strong></p><div class="classify-zone" id="zone-ret"></div>
+  <button onclick="checkClassify('ex3','Bravo ✅ Bien classé.','Pas tout à fait 💡 Conformité = 2 ans + non conforme. Commerciale = payante + optionnelle. Rétractation = 14 jours + internet.',3)">Valider</button>
+  <div class="feedback" id="f-ex3"></div>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title"><span class="competence-tag">C2</span> Exercice 4 — Identifier le droit</div>
+  <p><span class="verb">Identifie</span> pour chaque situation quel droit s'applique.</p>
+  <table>
+    <tr><td>Le casque acheté sur internet est cassé dès la livraison</td>
+      <td><select id="ex4a"><option value="">--</option><option value="1">Garantie de conformité</option><option value="0">Pratique trompeuse</option></select></td></tr>
+    <tr><td>Mehdi a 10 jours depuis la livraison et veut finalement rendre le casque</td>
+      <td><select id="ex4b"><option value="">--</option><option value="1">Droit de rétractation (14 j)</option><option value="0">Garantie vice caché</option></select></td></tr>
+    <tr><td>Le site affichait « -70% » sur un prix gonflé</td>
+      <td><select id="ex4c"><option value="">--</option><option value="1">Pratique commerciale trompeuse</option><option value="0">Garantie commerciale</option></select></td></tr>
+  </table>
+  <button onclick="checkVF(['ex4a','ex4b','ex4c'],['1','1','1'],'Bravo ✅ Bien identifié !','Pas tout à fait 💡 Conformité, rétractation, pratique trompeuse.',4)">Valider</button>
+  <div class="feedback" id="f-ex4"></div>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title"><span class="competence-tag">C3</span> Exercice 5 — Expliquer</div>
+  <p><span class="verb">Explique</span> à Mehdi comment faire valoir sa garantie de conformité. Utilise au moins 3 des mots : "vendeur", "preuve d'achat", "remboursement", "réparation", "2 ans".</p>
+  <textarea id="ex5" placeholder="Rédige ta réponse..."></textarea>
+  <button onclick="checkTextarea('ex5',['vendeur','preuve','remboursement','réparation','2 ans','garantie'],'Bravo ✅ Tu sais expliquer la démarche.','Pas tout à fait 💡 Voir le modèle de réponse ci-dessous.',5)">Valider</button>
+  <div class="feedback" id="f-ex5"></div>
+  <div class="model-answer" id="m-ex5">
+    <strong>Exemple de réponse :</strong> « Mehdi doit contacter le <strong>vendeur</strong> avec sa <strong>preuve d'achat</strong> (facture du site internet) pour faire valoir la <strong>garantie de conformité</strong>, qui dure <strong>2 ans</strong>. Il peut demander une <strong>réparation</strong>, un échange ou un <strong>remboursement</strong>. »
+  </div>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title"><span class="competence-tag">C4</span> Exercice 6 — Proposer 3 actions</div>
+  <p><span class="verb">Propose</span> 3 actions à Mehdi pour se faire rembourser. Utilise au moins 3 des mots : "email", "lettre recommandée", "rétractation", "signal.conso", "preuve".</p>
+  <textarea id="ex6" placeholder="Rédige tes 3 actions..."></textarea>
+  <button onclick="checkTextarea('ex6',['email','lettre','recommandée','rétractation','signal','preuve'],'Bravo ✅ 3 actions concrètes.','Pas tout à fait 💡 Voir le modèle ci-dessous.',6)">Valider</button>
+  <div class="feedback" id="f-ex6"></div>
+  <div class="model-answer" id="m-ex6">
+    <strong>Exemple de réponse :</strong>
+    <ol>
+      <li>Envoyer un <strong>email</strong> au vendeur en joignant la <strong>preuve</strong> d'achat et des photos du casque cassé.</li>
+      <li>Si pas de réponse : envoyer une <strong>lettre recommandée</strong> avec accusé de réception en invoquant le droit de <strong>rétractation</strong> (14 jours).</li>
+      <li>Signaler l'affaire sur <strong>signal.conso.gouv.fr</strong> pour alerter la DGCCRF.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Mini auto-éval -->
+<div class="card">
+  <h2>✅ Mini auto-évaluation</h2>
+
+  <div class="exercise">
+    <div class="exercise-title">Auto-éval 1</div>
+    <p>La garantie de conformité dure :</p>
+    <label class="option"><input type="radio" name="ae1" value="0"> 6 mois</label>
+    <label class="option"><input type="radio" name="ae1" value="1"> 2 ans</label>
+    <label class="option"><input type="radio" name="ae1" value="0"> 10 ans</label>
+    <button onclick="checkRadio('ae1','1','Bravo ✅','💡 2 ans.')">Valider</button>
+    <div class="feedback" id="f-ae1"></div>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-title">Auto-éval 2</div>
+    <p>Le droit de rétractation dure :</p>
+    <label class="option"><input type="radio" name="ae2" value="0"> 3 jours</label>
+    <label class="option"><input type="radio" name="ae2" value="1"> 14 jours</label>
+    <label class="option"><input type="radio" name="ae2" value="0"> 60 jours</label>
+    <button onclick="checkRadio('ae2','1','Bravo ✅','💡 14 jours.')">Valider</button>
+    <div class="feedback" id="f-ae2"></div>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-title">Auto-éval 3</div>
+    <p>Un faux avis client est :</p>
+    <label class="option"><input type="radio" name="ae3" value="0"> Obligatoire</label>
+    <label class="option"><input type="radio" name="ae3" value="1"> Une pratique trompeuse interdite</label>
+    <label class="option"><input type="radio" name="ae3" value="0"> Autorisé si petit</label>
+    <button onclick="checkRadio('ae3','1','Bravo ✅','💡 Interdit.')">Valider</button>
+    <div class="feedback" id="f-ae3"></div>
+  </div>
+</div>
+
+<footer>Ressource pédagogique adaptée — M. MECHERI — mapse.fr</footer>
+
+</div>
+
+<script>
+let speaking=false,currentUtterance=null;
+function toggleAudio(){
+  const btn=document.getElementById('audioBtn');
+  if(speaking){window.speechSynthesis.cancel();speaking=false;btn.textContent='🔊';return;}
+  currentUtterance=new SpeechSynthesisUtterance(document.querySelector('.container').innerText);
+  currentUtterance.lang='fr-FR';currentUtterance.rate=0.95;
+  currentUtterance.onend=()=>{speaking=false;btn.textContent='🔊';};
+  window.speechSynthesis.speak(currentUtterance);speaking=true;btn.textContent='🔇';
+}
+function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
+function setFontSize(v){document.documentElement.style.setProperty('--font-size',v+'px');document.getElementById('fontSizeVal').textContent=v+'px';localStorage.setItem('pse_d3e1_fs',v);}
+function setLineHeight(v){document.documentElement.style.setProperty('--line-height',v);document.getElementById('lineHeightVal').textContent=v;localStorage.setItem('pse_d3e1_lh',v);}
+function toggleDyslexic(){document.body.classList.toggle('dyslexic');const on=document.body.classList.contains('dyslexic');document.getElementById('dysBtn').textContent=on?'Désactiver OpenDyslexic':'Activer OpenDyslexic';localStorage.setItem('pse_d3e1_dys',on?'1':'0');}
+function toggleContrast(){document.body.classList.toggle('high-contrast');const on=document.body.classList.contains('high-contrast');document.getElementById('contrastBtn').textContent=on?'Désactiver':'Activer';localStorage.setItem('pse_d3e1_hc',on?'1':'0');}
+function setBg(cls){document.body.classList.remove('bg-creme','bg-bleu','bg-vert');if(cls)document.body.classList.add(cls);document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));const b=document.querySelector('.color-btn[data-bg="'+cls+'"]');if(b)b.classList.add('active');localStorage.setItem('pse_d3e1_bg',cls);}
+window.addEventListener('DOMContentLoaded',()=>{
+  const fs=localStorage.getItem('pse_d3e1_fs');if(fs){document.getElementById('fontSize').value=fs;setFontSize(fs);}
+  const lh=localStorage.getItem('pse_d3e1_lh');if(lh){document.getElementById('lineHeight').value=lh;setLineHeight(lh);}
+  if(localStorage.getItem('pse_d3e1_dys')==='1')toggleDyslexic();
+  if(localStorage.getItem('pse_d3e1_hc')==='1')toggleContrast();
+  const bg=localStorage.getItem('pse_d3e1_bg');if(bg)setBg(bg);
+});
+function updateProgress(n){document.getElementById('prog-label').textContent='Exercice '+n+' sur 6';document.getElementById('prog-bar').style.width=(n/6*100)+'%';}
+function showFeedback(el,ok,okMsg,koMsg){el.className='feedback '+(ok?'ok':'ko');el.innerHTML=ok?okMsg:koMsg;el.style.display='block';}
+function normalize(s){return s.toLowerCase().trim().replace(/\s+/g,' ').replace(/[.,;:!?]/g,'');}
+function checkText(id,expected,ok,ko,step){
+  const val=document.getElementById(id).value;const fb=document.getElementById('f-'+id);
+  const n=normalize(val);const e=normalize(expected);
+  const good=n.length>0&&(n.includes(e)||e.includes(n));
+  showFeedback(fb,good,ok,ko);if(step)updateProgress(step);
+}
+function checkRadio(name,correct,ok,ko){
+  const sel=document.querySelector('input[name="'+name+'"]:checked');
+  const fb=document.getElementById('f-'+name);
+  showFeedback(fb,sel&&sel.value===correct,ok,ko);
+}
+function checkVF(ids,answers,ok,ko,step){
+  let good=true;ids.forEach((id,i)=>{if(document.getElementById(id).value!==answers[i])good=false;});
+  const fb=document.getElementById('f-'+ids[0].replace(/[a-z]$/,''));
+  showFeedback(fb,good,ok,ko);if(step)updateProgress(step);
+}
+function checkTextarea(id,keywords,ok,ko,step){
+  const val=normalize(document.getElementById(id).value);
+  const fb=document.getElementById('f-'+id);
+  let c=0;keywords.forEach(k=>{if(val.includes(normalize(k)))c++;});
+  const good=c>=Math.min(3,keywords.length)&&val.length>20;
+  showFeedback(fb,good,ok,ko);
+  const m=document.getElementById('m-'+id);if(m)m.style.display='block';
+  if(step)updateProgress(step);
+}
+function classify(item){
+  if(item.classList.contains('used'))return;
+  const zone=document.getElementById('zone-'+item.dataset.target);
+  const clone=item.cloneNode(true);clone.onclick=null;clone.style.cursor='default';
+  zone.appendChild(clone);item.classList.add('used');
+}
+function checkClassify(id,ok,ko,step){
+  const container=document.getElementById(id+'-items');const fb=document.getElementById('f-'+id);
+  let good=true;container.querySelectorAll('.classify-item').forEach(i=>{if(!i.classList.contains('used'))good=false;});
+  showFeedback(fb,good,ok,ko);if(step)updateProgress(step);
+}
+</script>
+</body>
+</html>
