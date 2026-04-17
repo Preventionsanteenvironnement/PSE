@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards adaptées — L'assurance — CAP PSE D1</title>
+<style>
+  :root {
+    --bg: #fdf6ec;
+    --card-bg: #ffffff;
+    --text: #2d2d2d;
+    --primary: #7ba7c7;
+    --accent-yellow: #f4d35e;
+    --accent-green: #a8d5a2;
+    --border: #d4c9b8;
+    --shadow: rgba(0,0,0,0.08);
+    --font-size: 20px;
+    --line-height: 1.6;
+    --font-family: 'Verdana', 'Arial', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; background: var(--bg); color: var(--text); font-family: var(--font-family); font-size: var(--font-size); line-height: var(--line-height); min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: background 0.3s ease; }
+  body.dyslexic { font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif; }
+  body.hc { --bg: #000; --card-bg: #fff; --text: #000; --border: #000; }
+  body.hc header, body.hc footer { color: #fff; }
+  header { width: 100%; max-width: 700px; text-align: center; margin-bottom: 20px; }
+  h1 { font-size: 1.6em; margin: 10px 0; color: #3d5a6c; }
+  .module-info { font-size: 0.9em; color: #6b6b6b; margin-bottom: 15px; }
+  .top-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 700px; margin-bottom: 15px; }
+  .btn-settings { background: var(--card-bg); border: 2px solid var(--border); border-radius: 50%; width: 52px; height: 52px; font-size: 1.5em; cursor: pointer; box-shadow: 0 2px 6px var(--shadow); }
+  .progress-wrapper { flex: 1; margin: 0 15px; }
+  .progress-text { text-align: center; font-size: 0.95em; margin-bottom: 6px; color: #555; }
+  .progress-bar { width: 100%; height: 14px; background: #e8dfd0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #a8d5a2, #7ba7c7); width: 0%; transition: width 0.4s ease; }
+  .card-container { perspective: 1200px; width: 100%; max-width: 500px; margin: 10px 0 20px; }
+  .card { position: relative; width: 100%; min-height: 350px; transform-style: preserve-3d; transition: transform 0.5s ease; cursor: pointer; }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; width: 100%; min-height: 350px; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--card-bg); border: 3px solid var(--border); border-radius: 20px; padding: 30px 25px; box-shadow: 0 6px 20px var(--shadow); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .card-face.back { transform: rotateY(180deg); background: #eef5f1; }
+  .card-label { position: absolute; top: 12px; left: 15px; font-size: 0.8em; color: #888; font-weight: bold; letter-spacing: 1px; }
+  .audio-btn { position: absolute; top: 12px; right: 15px; background: var(--card-bg); border: 2px solid var(--border); border-radius: 50%; width: 48px; height: 48px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; }
+  .audio-btn:hover { transform: scale(1.1); }
+  .audio-btn.playing { background: var(--accent-yellow); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,211,94,0.7); } 50% { box-shadow: 0 0 0 10px rgba(244,211,94,0); } }
+  .card-content { font-size: 1.15em; font-weight: 500; padding: 20px 10px; max-width: 100%; }
+  .astuce { margin-top: 20px; padding: 12px 15px; background: #fff6d6; border-left: 4px solid var(--accent-yellow); border-radius: 8px; font-size: 0.9em; font-style: italic; color: #5a4a1a; text-align: left; width: 90%; }
+  .astuce::before { content: "Astuce : "; font-weight: bold; }
+  .flip-hint { position: absolute; bottom: 12px; font-size: 0.8em; color: #999; }
+  .actions { display: flex; gap: 15px; width: 100%; max-width: 500px; margin-top: 10px; }
+  .btn-action { flex: 1; min-height: 52px; border: none; border-radius: 12px; font-size: 1.05em; font-weight: bold; cursor: pointer; font-family: inherit; box-shadow: 0 3px 8px var(--shadow); }
+  .btn-revoir { background: var(--accent-yellow); color: #5a4a1a; }
+  .btn-acquis { background: var(--accent-green); color: #2d4a2b; }
+  .btn-flip { margin-top: 15px; width: 100%; max-width: 500px; min-height: 52px; border: 2px solid var(--primary); background: var(--card-bg); color: var(--primary); border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; font-family: inherit; }
+  .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+  .overlay.active { display: flex; }
+  .settings-panel { background: var(--card-bg); border-radius: 16px; padding: 25px; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .settings-panel h2 { margin-top: 0; color: #3d5a6c; text-align: center; }
+  .setting-row { margin-bottom: 18px; }
+  .setting-row label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 0.95em; }
+  .setting-row input[type=range] { width: 100%; }
+  .setting-row .value { color: var(--primary); font-weight: bold; }
+  .bg-choices { display: flex; gap: 10px; flex-wrap: wrap; }
+  .bg-choice { width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--border); cursor: pointer; }
+  .bg-choice.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123,167,199,0.4); }
+  .toggle-row { display: flex; justify-content: space-between; align-items: center; }
+  .toggle-row input[type=checkbox] { width: 24px; height: 24px; cursor: pointer; }
+  .btn-close { width: 100%; min-height: 48px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1em; font-weight: bold; cursor: pointer; margin-top: 10px; }
+  .end-screen { display: none; text-align: center; max-width: 500px; background: var(--card-bg); padding: 40px 25px; border-radius: 20px; border: 3px solid var(--accent-green); box-shadow: 0 6px 20px var(--shadow); }
+  .end-screen.active { display: block; }
+  .end-screen h2 { color: #2d4a2b; font-size: 1.6em; }
+  .end-emoji { font-size: 3.5em; margin: 10px 0; }
+  .score-box { background: #eef5f1; border-radius: 12px; padding: 15px; margin: 20px 0; font-size: 1.1em; }
+  .btn-restart { min-height: 52px; padding: 0 30px; background: var(--accent-green); border: none; border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; font-family: inherit; margin: 5px; }
+  .btn-restart.revoir-only { background: var(--accent-yellow); color: #5a4a1a; }
+  footer { margin-top: 30px; font-size: 0.85em; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="module-info">CAP PSE — Module D1 — Parcours Différencié</div>
+  <h1>L'assurance — Flashcards adaptées</h1>
+</header>
+<div class="top-controls">
+  <button class="btn-settings" id="btnSettings" aria-label="Réglages">⚙️</button>
+  <div class="progress-wrapper">
+    <div class="progress-text" id="progressText">Carte 1 sur 15</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div style="width:52px;"></div>
+</div>
+<div class="card-container" id="cardContainer">
+  <div class="card" id="card">
+    <div class="card-face front">
+      <span class="card-label">QUESTION</span>
+      <button class="audio-btn" id="audioBtnFront" aria-label="Lire la question">🔊</button>
+      <div class="card-content" id="questionText">Chargement...</div>
+      <span class="flip-hint">Touche la carte pour la retourner</span>
+    </div>
+    <div class="card-face back">
+      <span class="card-label">RÉPONSE</span>
+      <button class="audio-btn" id="audioBtnBack" aria-label="Lire la réponse">🔊</button>
+      <div class="card-content" id="answerText">...</div>
+      <div class="astuce" id="astuceText" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+<button class="btn-flip" id="btnFlip">Retourner la carte</button>
+<div class="actions">
+  <button class="btn-action btn-revoir" id="btnRevoir">À revoir</button>
+  <button class="btn-action btn-acquis" id="btnAcquis">Acquis ✅</button>
+</div>
+<div class="end-screen" id="endScreen">
+  <div class="end-emoji">🏆</div>
+  <h2>Bravo, tu as terminé !</h2>
+  <div class="score-box" id="scoreBox"></div>
+  <p id="encouragement"></p>
+  <button class="btn-restart" onclick="restartAll()">Tout recommencer</button>
+  <button class="btn-restart revoir-only" id="btnRestartRevoir" onclick="restartRevoir()" style="display:none;">Revoir les cartes à réviser</button>
+</div>
+<div class="overlay" id="overlaySettings">
+  <div class="settings-panel">
+    <h2>⚙️ Réglages d'accessibilité</h2>
+    <div class="setting-row"><label>Taille du texte : <span class="value" id="fontSizeVal">20px</span></label><input type="range" id="fontSizeRange" min="16" max="28" step="2" value="20"></div>
+    <div class="setting-row"><label>Espacement des lignes : <span class="value" id="lineHeightVal">1.6</span></label><input type="range" id="lineHeightRange" min="1.4" max="2.2" step="0.1" value="1.6"></div>
+    <div class="setting-row toggle-row"><label for="dyslexicToggle">Police OpenDyslexic</label><input type="checkbox" id="dyslexicToggle"></div>
+    <div class="setting-row toggle-row"><label for="hcToggle">Contraste élevé</label><input type="checkbox" id="hcToggle"></div>
+    <div class="setting-row"><label>Couleur de fond :</label>
+      <div class="bg-choices">
+        <div class="bg-choice" data-bg="#ffffff" style="background:#ffffff;" title="Blanc"></div>
+        <div class="bg-choice selected" data-bg="#fdf6ec" style="background:#fdf6ec;" title="Crème"></div>
+        <div class="bg-choice" data-bg="#e8f0f5" style="background:#e8f0f5;" title="Bleu doux"></div>
+        <div class="bg-choice" data-bg="#eaf3e7" style="background:#eaf3e7;" title="Vert doux"></div>
+      </div>
+    </div>
+    <button class="btn-close" onclick="closeSettings()">Fermer</button>
+  </div>
+</div>
+<footer>Ressource pédagogique adaptée — M. MECHERI — mapse.fr</footer>
+<script>
+  const flashcards = [
+    { q: "Qu'est-ce qu'un risque en assurance ?", r: "C'est un événement possible et incertain qui peut causer un dommage.", a: "Exemples : accident, vol, incendie." },
+    { q: "Qu'est-ce qu'un sinistre ?", r: "C'est la réalisation du risque : l'événement malheureux arrive vraiment.", a: "Le vol de mon scooter est un sinistre." },
+    { q: "Qu'est-ce que la solidarité en assurance ?", r: "Plusieurs personnes cotisent ensemble pour couvrir celles qui ont un sinistre.", a: "C'est la mutualisation des risques." },
+    { q: "Qu'est-ce qu'une garantie ?", r: "C'est ce que l'assurance s'engage à couvrir (vol, incendie, dégât des eaux...).", a: "Chaque garantie est écrite dans le contrat." },
+    { q: "Qu'est-ce que l'indemnisation ?", r: "C'est l'argent versé par l'assureur pour réparer le dommage.", a: "Elle peut être totale ou partielle." },
+    { q: "Qu'est-ce qu'une cotisation ?", r: "C'est le prix payé par l'assuré à l'assureur (souvent chaque mois ou chaque année).", a: "Aussi appelée prime d'assurance." },
+    { q: "Qu'est-ce qu'un contrat d'assurance ?", r: "C'est un document signé qui détaille les garanties, les cotisations et les règles.", a: "À lire attentivement avant de signer." },
+    { q: "Qu'est-ce qu'une clause d'exclusion ?", r: "C'est une situation que l'assurance ne couvre PAS.", a: "Exemple : pas de remboursement si alcool au volant." },
+    { q: "Qu'est-ce que la responsabilité civile ?", r: "C'est l'obligation de réparer un dommage causé à quelqu'un d'autre.", a: "Elle est incluse dans l'assurance habitation et auto." },
+    { q: "Quelles sont les assurances obligatoires ?", r: "Assurance auto/scooter, habitation pour locataires, responsabilité civile pro.", a: "Pas d'assurance auto = amende et véhicule saisi." },
+    { q: "Qu'est-ce qu'une assurance facultative ?", r: "C'est une assurance libre, non obligatoire (ex : complémentaire santé, assurance scolaire).", a: "Elle apporte une protection en plus." },
+    { q: "Qu'est-ce qu'une franchise ?", r: "C'est la somme qui reste à la charge de l'assuré après un sinistre.", a: "Plus la franchise est haute, moins la cotisation est chère." },
+    { q: "Qu'est-ce qu'une déclaration de sinistre ?", r: "C'est prévenir l'assureur de l'événement dans un délai de 5 jours (2 pour un vol).", a: "Par courrier, mail ou espace en ligne." },
+    { q: "Qu'est-ce qu'une expertise ?", r: "C'est l'évaluation des dégâts par un professionnel envoyé par l'assureur.", a: "L'expert calcule le montant de l'indemnisation." },
+    { q: "Quelles preuves fournir après un sinistre ?", r: "Photos, factures, constat, témoignages, dépôt de plainte si vol.", a: "Sans preuve : pas de remboursement." }
+  ];
+  let deck = flashcards.map((_, i) => i);
+  let currentIdx = 0, acquis = [], revoir = [], isFlipped = false, currentUtterance = null;
+  const card = document.getElementById('card');
+  const questionText = document.getElementById('questionText');
+  const answerText = document.getElementById('answerText');
+  const astuceText = document.getElementById('astuceText');
+  const progressText = document.getElementById('progressText');
+  const progressFill = document.getElementById('progressFill');
+  const endScreen = document.getElementById('endScreen');
+  const cardContainer = document.getElementById('cardContainer');
+  function flipCard() { isFlipped = !isFlipped; card.classList.toggle('flipped'); stopAudio(); }
+  card.addEventListener('click', (e) => { if (e.target.closest('.audio-btn')) return; flipCard(); });
+  document.getElementById('btnFlip').addEventListener('click', flipCard);
+  function loadCard() {
+    if (deck.length === 0 || currentIdx >= deck.length) { showEndScreen(); return; }
+    if (isFlipped) { card.classList.remove('flipped'); isFlipped = false; }
+    const fc = flashcards[deck[currentIdx]];
+    questionText.textContent = fc.q;
+    answerText.textContent = fc.r;
+    if (fc.a) { astuceText.textContent = fc.a; astuceText.style.display = 'block'; }
+    else { astuceText.style.display = 'none'; }
+    progressText.textContent = `Étape ${currentIdx + 1} sur ${deck.length}`;
+    progressFill.style.width = ((currentIdx) / deck.length * 100) + '%';
+  }
+  function markAcquis() { const id = deck[currentIdx]; if (!acquis.includes(id)) acquis.push(id); revoir = revoir.filter(x => x !== id); nextCard(); }
+  function markRevoir() { const id = deck[currentIdx]; if (!revoir.includes(id)) revoir.push(id); nextCard(); }
+  function nextCard() { stopAudio(); currentIdx++; if (currentIdx >= deck.length) showEndScreen(); else loadCard(); }
+  document.getElementById('btnAcquis').addEventListener('click', markAcquis);
+  document.getElementById('btnRevoir').addEventListener('click', markRevoir);
+  function showEndScreen() {
+    stopAudio();
+    cardContainer.style.display = 'none';
+    document.getElementById('btnFlip').style.display = 'none';
+    document.querySelector('.actions').style.display = 'none';
+    document.querySelector('.top-controls').style.display = 'none';
+    progressFill.style.width = '100%';
+    const total = flashcards.length;
+    document.getElementById('scoreBox').innerHTML = `<strong>✅ Acquis :</strong> ${acquis.length} / ${total}<br><strong>📝 À revoir :</strong> ${revoir.length}`;
+    let msg;
+    if (acquis.length === total) msg = "Incroyable ! Tu maîtrises tout le module. ⭐";
+    else if (acquis.length >= total * 0.75) msg = "Très bon travail ! Continue comme ça. 👏";
+    else if (acquis.length >= total * 0.5) msg = "Bon début ! Révise encore un peu. 👍";
+    else msg = "Courage ! Reviens réviser. ✨";
+    document.getElementById('encouragement').textContent = msg;
+    if (revoir.length > 0) document.getElementById('btnRestartRevoir').style.display = 'inline-block';
+    endScreen.classList.add('active');
+  }
+  function restartAll() { deck = flashcards.map((_, i) => i); currentIdx = 0; acquis = []; revoir = []; resetUI(); }
+  function restartRevoir() { deck = [...revoir]; currentIdx = 0; acquis = []; revoir = []; resetUI(); }
+  function resetUI() {
+    endScreen.classList.remove('active');
+    cardContainer.style.display = 'block';
+    document.getElementById('btnFlip').style.display = 'block';
+    document.querySelector('.actions').style.display = 'flex';
+    document.querySelector('.top-controls').style.display = 'flex';
+    document.getElementById('btnRestartRevoir').style.display = 'none';
+    loadCard();
+  }
+  function toggleAudio(texte, btn) {
+    if (currentUtterance && speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+      document.querySelectorAll('.audio-btn').forEach(b => b.classList.remove('playing'));
+      currentUtterance = null;
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(texte);
+    u.lang = 'fr-FR'; u.rate = 0.85;
+    currentUtterance = u;
+    btn.classList.add('playing');
+    u.onend = () => { btn.classList.remove('playing'); currentUtterance = null; };
+    u.onerror = () => { btn.classList.remove('playing'); currentUtterance = null; };
+    speechSynthesis.speak(u);
+  }
+  function stopAudio() { if (speechSynthesis.speaking) speechSynthesis.cancel(); document.querySelectorAll('.audio-btn').forEach(b => b.classList.remove('playing')); currentUtterance = null; }
+  document.getElementById('audioBtnFront').addEventListener('click', (e) => { e.stopPropagation(); toggleAudio(flashcards[deck[currentIdx]].q, e.currentTarget); });
+  document.getElementById('audioBtnBack').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const fc = flashcards[deck[currentIdx]];
+    let txt = "Réponse. " + fc.r;
+    if (fc.a) txt += " Astuce. " + fc.a;
+    toggleAudio(txt, e.currentTarget);
+  });
+  const overlay = document.getElementById('overlaySettings');
+  document.getElementById('btnSettings').addEventListener('click', () => overlay.classList.add('active'));
+  function closeSettings() { overlay.classList.remove('active'); }
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeSettings(); });
+  const fsRange = document.getElementById('fontSizeRange');
+  const fsVal = document.getElementById('fontSizeVal');
+  fsRange.addEventListener('input', () => { document.documentElement.style.setProperty('--font-size', fsRange.value + 'px'); fsVal.textContent = fsRange.value + 'px'; saveSettings(); });
+  const lhRange = document.getElementById('lineHeightRange');
+  const lhVal = document.getElementById('lineHeightVal');
+  lhRange.addEventListener('input', () => { document.documentElement.style.setProperty('--line-height', lhRange.value); lhVal.textContent = lhRange.value; saveSettings(); });
+  const dyslexicToggle = document.getElementById('dyslexicToggle');
+  dyslexicToggle.addEventListener('change', () => { document.body.classList.toggle('dyslexic', dyslexicToggle.checked); saveSettings(); });
+  const hcToggle = document.getElementById('hcToggle');
+  hcToggle.addEventListener('change', () => { document.body.classList.toggle('hc', hcToggle.checked); saveSettings(); });
+  document.querySelectorAll('.bg-choice').forEach(bc => {
+    bc.addEventListener('click', () => {
+      document.querySelectorAll('.bg-choice').forEach(x => x.classList.remove('selected'));
+      bc.classList.add('selected');
+      document.documentElement.style.setProperty('--bg', bc.dataset.bg);
+      saveSettings();
+    });
+  });
+  function saveSettings() {
+    const sel = document.querySelector('.bg-choice.selected');
+    const s = { fontSize: fsRange.value, lineHeight: lhRange.value, dyslexic: dyslexicToggle.checked, hc: hcToggle.checked, bg: sel ? sel.dataset.bg : '#fdf6ec' };
+    try { localStorage.setItem('pse_d1_dp_settings', JSON.stringify(s)); } catch(e){}
+  }
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem('pse_d1_dp_settings'); if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s.fontSize) { fsRange.value = s.fontSize; fsVal.textContent = s.fontSize + 'px'; document.documentElement.style.setProperty('--font-size', s.fontSize + 'px'); }
+      if (s.lineHeight) { lhRange.value = s.lineHeight; lhVal.textContent = s.lineHeight; document.documentElement.style.setProperty('--line-height', s.lineHeight); }
+      if (s.dyslexic) { dyslexicToggle.checked = true; document.body.classList.add('dyslexic'); }
+      if (s.hc) { hcToggle.checked = true; document.body.classList.add('hc'); }
+      if (s.bg) { document.documentElement.style.setProperty('--bg', s.bg); document.querySelectorAll('.bg-choice').forEach(x => x.classList.toggle('selected', x.dataset.bg === s.bg)); }
+    } catch(e){}
+  }
+  loadSettings();
+  loadCard();
+</script>
+</body>
+</html>

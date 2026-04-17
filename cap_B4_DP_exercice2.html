@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP PSE — B4 Le bruit (2) — Parcours Différencié</title>
+<style>
+  :root { --bg:#ffffff; --fg:#1a1a1a; --primary:#2563eb; --primary-dark:#1e40af; --success:#16a34a; --warn:#d97706; --err:#dc2626; --card:#f8fafc; --border:#cbd5e1; --font-size:20px; --line-height:1.7; --font-family:'Segoe UI', Tahoma, Arial, sans-serif; }
+  body.theme-cream { --bg:#fdf6e3; --fg:#202020; --card:#f5ecd5; }
+  body.theme-blue  { --bg:#e6f0fb; --fg:#0b1d3a; --card:#d5e6f7; }
+  body.theme-green { --bg:#e6f7ea; --fg:#0b2d14; --card:#d0ecd6; }
+  body.theme-contrast { --bg:#000; --fg:#ffff00; --card:#111; --border:#ffff00; --primary:#ffff00; --primary-dark:#ffd000; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); font-family:var(--font-family); font-size:var(--font-size); line-height:var(--line-height); }
+  body.dyslexic { --font-family:'OpenDyslexic','Comic Sans MS','Segoe UI',sans-serif; }
+  .container { max-width:700px; margin:0 auto; padding:16px; }
+  header { background:var(--primary); color:#fff; padding:20px 16px; border-radius:12px; margin-bottom:16px; }
+  header h1 { margin:0 0 6px 0; font-size:1.3em; }
+  header p { margin:0; font-size:0.95em; opacity:0.95; }
+  .progress-wrap { background:var(--card); border:2px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:16px; }
+  .progress-label { font-weight:bold; margin-bottom:6px; }
+  .progress-bar { background:#e2e8f0; height:14px; border-radius:7px; overflow:hidden; }
+  .progress-fill { background:var(--primary); height:100%; width:0%; transition:width 0.4s; }
+  .card { background:var(--card); border:2px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .doc-title { color:var(--primary-dark); margin-top:0; font-size:1.1em; display:flex; align-items:center; gap:8px; }
+  .situation { background:#fff7ed; border-left:6px solid var(--warn); padding:14px; border-radius:10px; margin-bottom:16px; }
+  body.theme-contrast .situation { background:#1a1a00; }
+  .comp-badge { display:inline-block; background:var(--primary); color:#fff; padding:3px 10px; border-radius:12px; font-size:0.8em; font-weight:bold; margin-right:6px; }
+  button, .btn { min-height:48px; padding:12px 18px; font-size:1em; border:2px solid var(--primary-dark); background:var(--primary); color:#fff; border-radius:10px; cursor:pointer; font-family:inherit; margin:4px 2px; }
+  button:hover { background:var(--primary-dark); }
+  button.secondary { background:#fff; color:var(--primary-dark); }
+  button.audio-btn { background:transparent; color:var(--primary-dark); border:2px solid var(--primary-dark); padding:6px 10px; min-height:40px; font-size:1em; margin-left:6px; }
+  body.theme-contrast button.audio-btn { color:var(--primary); }
+  input[type="text"], textarea { width:100%; padding:12px; font-size:1em; font-family:inherit; border:2px solid var(--border); border-radius:8px; background:#fff; color:#111; margin-top:6px; }
+  textarea { min-height:110px; resize:vertical; }
+  .options { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+  .option { display:flex; align-items:center; gap:10px; background:#fff; border:2px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; }
+  body.theme-contrast .option { background:#111; color:#ffff00; }
+  .option input { transform:scale(1.5); margin-right:6px; }
+  .option label { flex:1; cursor:pointer; }
+  .vf-row { display:flex; align-items:center; gap:8px; background:#fff; border:2px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; flex-wrap:wrap; }
+  body.theme-contrast .vf-row { background:#111; }
+  .vf-row .statement { flex:1 1 100%; margin-bottom:6px; }
+  .vf-row .vf-buttons { display:flex; gap:8px; }
+  .vf-row button.vf { min-height:40px; padding:6px 14px; font-size:0.95em; }
+  .vf-row button.vf.chosen { background:var(--success); border-color:var(--success); }
+  .vf-row button.vf.wrong { background:var(--err); border-color:var(--err); }
+  .feedback { margin-top:10px; padding:12px; border-radius:10px; border:2px solid; display:none; }
+  .feedback.good { background:#dcfce7; border-color:var(--success); color:#064e3b; display:block; }
+  .feedback.bad { background:#fee2e2; border-color:var(--err); color:#7f1d1d; display:block; }
+  body.theme-contrast .feedback.good, body.theme-contrast .feedback.bad { background:#111; color:#ffff00; }
+  .step { display:none; }
+  .step.active { display:block; }
+  .nav-row { display:flex; justify-content:space-between; margin-top:16px; gap:8px; }
+  .settings-fab { position:fixed; top:12px; right:12px; z-index:50; min-height:48px; min-width:48px; border-radius:50%; font-size:1.3em; padding:6px 10px; }
+  .settings-panel { position:fixed; top:68px; right:12px; background:var(--card); color:var(--fg); border:2px solid var(--border); border-radius:12px; padding:14px; width:300px; max-width:92vw; display:none; z-index:49; box-shadow:0 6px 24px rgba(0,0,0,0.15); }
+  .settings-panel.open { display:block; }
+  .settings-panel h3 { margin-top:0; }
+  .settings-panel label { display:block; margin:8px 0 4px; font-weight:bold; }
+  .settings-panel input[type="range"] { width:100%; }
+  .settings-panel .themes { display:flex; flex-wrap:wrap; gap:6px; }
+  .settings-panel .themes button { min-height:40px; padding:6px 10px; font-size:0.85em; }
+  .mini-eval .q { margin-bottom:12px; }
+  .score-card { background:var(--card); border:2px solid var(--primary); border-radius:12px; padding:16px; margin-top:16px; }
+  .score-card .comp-line { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
+  .score-card .comp-line:last-child { border-bottom:none; }
+  footer { text-align:center; padding:18px 8px; margin-top:24px; color:var(--fg); opacity:0.75; font-size:0.9em; }
+  .classify { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .classify-item { background:#fff; border:2px solid var(--border); border-radius:8px; padding:10px; cursor:pointer; text-align:center; }
+  body.theme-contrast .classify-item { background:#111; color:#ffff00; }
+  .classify-item.cat-a { background:#dcfce7; border-color:var(--success); }
+  .classify-item.cat-b { background:#fef3c7; border-color:var(--warn); }
+  .tag { display:inline-block; background:var(--primary-dark); color:#fff; padding:2px 8px; border-radius:6px; font-size:0.8em; margin-left:6px; }
+</style>
+</head>
+<body>
+
+<button class="settings-fab" id="settingsBtn" aria-label="Réglages">⚙️</button>
+<div class="settings-panel" id="settingsPanel">
+  <h3>⚙️ Réglages</h3>
+  <label for="fontSize">Taille du texte : <span id="fontSizeVal">20</span> px</label>
+  <input type="range" id="fontSize" min="16" max="28" step="1" value="20">
+  <label for="lineHeight">Interligne : <span id="lineHeightVal">1.7</span></label>
+  <input type="range" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.7">
+  <label><input type="checkbox" id="dyslexicToggle"> Police OpenDyslexic</label>
+  <label>Couleur de fond :</label>
+  <div class="themes">
+    <button data-theme="">Blanc</button>
+    <button data-theme="cream">Crème</button>
+    <button data-theme="blue">Bleu</button>
+    <button data-theme="green">Vert</button>
+    <button data-theme="contrast">Contraste élevé</button>
+  </div>
+  <div style="margin-top:12px; text-align:right;"><button class="secondary" id="closeSettings">Fermer</button></div>
+</div>
+
+<div class="container">
+  <header>
+    <h1>🎯 CAP PSE — Module B4 : Le bruit (partie 2)</h1>
+    <p>Parcours Différencié — Effets du bruit et prévention ✨</p>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">Étape <span id="stepNum">1</span> sur <span id="stepTotal">10</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <section class="step active" data-step="1">
+    <div class="situation">
+      <h2 class="doc-title">📖 Situation
+        <button class="audio-btn" onclick="toggleAudio(this,'situationTxt')">🔊</button>
+      </h2>
+      <p id="situationTxt">Rayan se plaint depuis plusieurs jours d'acouphènes : il entend des sifflements permanents dans les oreilles, surtout après un concert où il était proche des enceintes sans protection. Il a du mal à dormir et se sent stressé.</p>
+    </div>
+    <div class="nav-row"><span></span><button onclick="nextStep()">Commencer ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="2">
+    <div class="card">
+      <h2 class="doc-title">📖 Document A — Effets auditifs du bruit
+        <button class="audio-btn" onclick="toggleAudio(this,'docA')">🔊</button>
+      </h2>
+      <p id="docA">Le bruit fort peut provoquer une <strong>surdité progressive</strong> (perte d'audition qui s'installe avec le temps), des <strong>acouphènes</strong> (sifflements ou bourdonnements permanents) et une <strong>fatigue auditive</strong> (baisse temporaire de l'audition après une exposition).</p>
+    </div>
+    <div class="card">
+      <h2 class="doc-title">📖 Document B — Effets extra-auditifs
+        <button class="audio-btn" onclick="toggleAudio(this,'docB')">🔊</button>
+      </h2>
+      <p id="docB">Le bruit agit aussi <strong>en dehors de l'oreille</strong> : il provoque du <strong>stress</strong>, de l'<strong>hypertension</strong> (tension artérielle élevée), de la <strong>fatigue</strong>, des <strong>troubles du sommeil</strong> et des difficultés de concentration.</p>
+    </div>
+    <div class="card">
+      <h2 class="doc-title">📖 Document C — Mesures de prévention
+        <button class="audio-btn" onclick="toggleAudio(this,'docC')">🔊</button>
+      </h2>
+      <p id="docC">Pour se protéger : porter des <strong>protecteurs individuels</strong> (bouchons, casque atténuateur), <strong>limiter la durée</strong> d'exposition, <strong>baisser le volume</strong>, <strong>s'éloigner</strong> de la source et faire des <strong>pauses</strong>.</p>
+    </div>
+    <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="nextStep()">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="3">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 1 — Relever
+        <button class="audio-btn" onclick="toggleAudio(this,'ex1Q')">🔊</button>
+      </h2>
+      <p id="ex1Q">👉 Dans le Document B, <strong>relève 3 effets extra-auditifs</strong> du bruit.</p>
+      <label for="ex1Input">Ta réponse :</label>
+      <input type="text" id="ex1Input" placeholder="Ex. : stress, fatigue, ...">
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="checkEx1()">Valider ✅</button></div>
+      <div class="feedback" id="ex1Fb"></div>
+    </div>
+    <div class="nav-row"><span></span><button id="ex1Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="4">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 2 — Vrai ou Faux
+        <button class="audio-btn" onclick="toggleAudio(this,'ex2Q')">🔊</button>
+      </h2>
+      <p id="ex2Q">👉 Pour chaque phrase sur les effets du bruit, clique sur <strong>Vrai</strong> ou <strong>Faux</strong>.</p>
+      <div id="vfList"></div>
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="checkEx2()">Valider ✅</button></div>
+      <div class="feedback" id="ex2Fb"></div>
+    </div>
+    <div class="nav-row"><span></span><button id="ex2Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="5">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C1</span> Exercice 3 — Classer
+        <button class="audio-btn" onclick="toggleAudio(this,'ex3Q')">🔊</button>
+      </h2>
+      <p id="ex3Q">👉 Classe chaque effet : est-ce un effet <strong>auditif</strong> (sur l'oreille) ou <strong>extra-auditif</strong> (sur le reste du corps) ?</p>
+      <div id="classList"></div>
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="checkEx3()">Valider ✅</button></div>
+      <div class="feedback" id="ex3Fb"></div>
+    </div>
+    <div class="nav-row"><span></span><button id="ex3Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="6">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C2</span> Exercice 4 — Identifier les bons gestes
+        <button class="audio-btn" onclick="toggleAudio(this,'ex4Q')">🔊</button>
+      </h2>
+      <p id="ex4Q">👉 Pour chaque situation, choisis le <strong>bon geste</strong>.</p>
+      <p><strong>1.</strong> En concert, devant les enceintes :
+        <button class="audio-btn" onclick="toggleAudio(this,null,'Situation 1. En concert devant les enceintes.')">🔊</button>
+      </p>
+      <div class="options">
+        <label class="option"><input type="radio" name="ex4a" value="ok"><span>A. Mettre des bouchons et s'éloigner</span></label>
+        <label class="option"><input type="radio" name="ex4a" value="ko"><span>B. Rester le plus près possible</span></label>
+        <label class="option"><input type="radio" name="ex4a" value="ko"><span>C. Mettre la musique encore plus fort</span></label>
+      </div>
+      <p><strong>2.</strong> Avec un casque audio dans les transports :
+        <button class="audio-btn" onclick="toggleAudio(this,null,'Situation 2. Avec un casque audio.')">🔊</button>
+      </p>
+      <div class="options">
+        <label class="option"><input type="radio" name="ex4b" value="ko"><span>A. Monter le son pour couvrir le bruit</span></label>
+        <label class="option"><input type="radio" name="ex4b" value="ok"><span>B. Appliquer la règle 60/60 (60 % max, 60 min max)</span></label>
+        <label class="option"><input type="radio" name="ex4b" value="ko"><span>C. Écouter plusieurs heures d'affilée</span></label>
+      </div>
+      <p><strong>3.</strong> Sur un poste bruyant au travail :
+        <button class="audio-btn" onclick="toggleAudio(this,null,'Situation 3. Poste bruyant.')">🔊</button>
+      </p>
+      <div class="options">
+        <label class="option"><input type="radio" name="ex4c" value="ko"><span>A. Ne rien faire</span></label>
+        <label class="option"><input type="radio" name="ex4c" value="ko"><span>B. Enlever ses protections pour mieux entendre</span></label>
+        <label class="option"><input type="radio" name="ex4c" value="ok"><span>C. Porter un casque anti-bruit et faire des pauses</span></label>
+      </div>
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="checkEx4()">Valider ✅</button></div>
+      <div class="feedback" id="ex4Fb"></div>
+    </div>
+    <div class="nav-row"><span></span><button id="ex4Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="7">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C3</span> Exercice 5 — Expliquer
+        <button class="audio-btn" onclick="toggleAudio(this,'ex5Q')">🔊</button>
+      </h2>
+      <p id="ex5Q">👉 Explique en 2 ou 3 phrases pourquoi les <strong>acouphènes sont souvent irréversibles</strong>.</p>
+      <textarea id="ex5Input" placeholder="Rédige ta réponse..."></textarea>
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="checkEx5()">Valider ✅</button></div>
+      <div class="feedback" id="ex5Fb"></div>
+    </div>
+    <div class="nav-row"><span></span><button id="ex5Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="8">
+    <div class="card">
+      <h2 class="doc-title"><span class="comp-badge">C5</span> Exercice 6 — Argumenter
+        <button class="audio-btn" onclick="toggleAudio(this,'ex6Q')">🔊</button>
+      </h2>
+      <p id="ex6Q">👉 <strong>Argumente</strong> l'importance du port des bouchons d'oreille en concert. Donne au moins 2 arguments.</p>
+      <textarea id="ex6Input" placeholder="Rédige ta réponse..."></textarea>
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="checkEx6()">Valider ✅</button></div>
+      <div class="feedback" id="ex6Fb"></div>
+    </div>
+    <div class="nav-row"><span></span><button id="ex6Next" onclick="nextStep()" style="display:none">Question suivante ➡️</button></div>
+  </section>
+
+  <section class="step" data-step="9">
+    <div class="card mini-eval">
+      <h2 class="doc-title">⭐ Mini auto-évaluation
+        <button class="audio-btn" onclick="toggleAudio(this,null,'Mini auto-évaluation. Réponds aux trois questions.')">🔊</button>
+      </h2>
+      <div class="q">
+        <p><strong>Q1.</strong> Un acouphène est :
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 1. Un acouphène est ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me1" value="a"><span>A. Une douleur musculaire</span></label>
+          <label class="option"><input type="radio" name="me1" value="b"><span>B. Un sifflement permanent dans l'oreille</span></label>
+          <label class="option"><input type="radio" name="me1" value="c"><span>C. Une baisse de la vue</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <p><strong>Q2.</strong> L'hypertension est un effet :
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 2. Lhypertension est un effet ?')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me2" value="a"><span>A. Auditif</span></label>
+          <label class="option"><input type="radio" name="me2" value="b"><span>B. Extra-auditif</span></label>
+          <label class="option"><input type="radio" name="me2" value="c"><span>C. Aucun rapport avec le bruit</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <p><strong>Q3.</strong> La meilleure protection en concert est :
+          <button class="audio-btn" onclick="toggleAudio(this,null,'Question 3. La meilleure protection en concert.')">🔊</button>
+        </p>
+        <div class="options">
+          <label class="option"><input type="radio" name="me3" value="a"><span>A. Le coton dans les oreilles</span></label>
+          <label class="option"><input type="radio" name="me3" value="b"><span>B. Des bouchons anti-bruit adaptés</span></label>
+          <label class="option"><input type="radio" name="me3" value="c"><span>C. Ne rien faire</span></label>
+        </div>
+      </div>
+      <div class="nav-row"><button class="secondary" onclick="prevStep()">⬅️ Retour</button><button onclick="finish()">Terminer 🎯</button></div>
+    </div>
+  </section>
+
+  <section class="step" data-step="10">
+    <div class="card">
+      <h2 class="doc-title">👏 Bilan
+        <button class="audio-btn" onclick="toggleAudio(this,'bilanTxt')">🔊</button>
+      </h2>
+      <p id="bilanTxt">Bravo ! Tu as terminé la séquence sur les effets du bruit et la prévention. Voici ton score par compétences.</p>
+      <div class="score-card" id="scoreCard"></div>
+      <div class="nav-row" style="margin-top:12px;">
+        <button class="secondary" onclick="location.reload()">🔁 Recommencer</button>
+        <button onclick="window.print()">🖨️ Imprimer mon bilan</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>Ressource pédagogique adaptée — M. MECHERI — mapse.fr</footer>
+</div>
+
+<script>
+let currentUtterance=null, currentBtn=null;
+function toggleAudio(btn,textId,rawText){
+  const synth=window.speechSynthesis;
+  if(!synth){alert("La synthèse vocale n'est pas disponible.");return;}
+  if(currentBtn===btn && synth.speaking){synth.cancel();if(currentBtn)currentBtn.textContent='🔊';currentBtn=null;return;}
+  synth.cancel();if(currentBtn)currentBtn.textContent='🔊';
+  let text=rawText;
+  if(!text && textId){const el=document.getElementById(textId);if(el)text=el.innerText;}
+  if(!text)return;
+  const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';u.rate=0.85;
+  u.onend=()=>{if(currentBtn)currentBtn.textContent='🔊';currentBtn=null;};
+  currentUtterance=u;currentBtn=btn;btn.textContent='🔇';synth.speak(u);
+}
+
+const settingsBtn=document.getElementById('settingsBtn'), panel=document.getElementById('settingsPanel');
+settingsBtn.addEventListener('click',()=>panel.classList.toggle('open'));
+document.getElementById('closeSettings').addEventListener('click',()=>panel.classList.remove('open'));
+const fontSize=document.getElementById('fontSize'), fontSizeVal=document.getElementById('fontSizeVal');
+const lineHeight=document.getElementById('lineHeight'), lineHeightVal=document.getElementById('lineHeightVal');
+const dys=document.getElementById('dyslexicToggle');
+function applySettings(s){
+  document.documentElement.style.setProperty('--font-size',s.fontSize+'px');
+  document.documentElement.style.setProperty('--line-height',s.lineHeight);
+  fontSize.value=s.fontSize;fontSizeVal.textContent=s.fontSize;
+  lineHeight.value=s.lineHeight;lineHeightVal.textContent=s.lineHeight;
+  dys.checked=!!s.dyslexic;
+  document.body.classList.toggle('dyslexic',!!s.dyslexic);
+  document.body.classList.remove('theme-cream','theme-blue','theme-green','theme-contrast');
+  if(s.theme) document.body.classList.add('theme-'+s.theme);
+}
+function saveSettings(){
+  const s={fontSize:parseInt(fontSize.value,10),lineHeight:parseFloat(lineHeight.value),dyslexic:dys.checked,theme:(document.body.className.match(/theme-(\w+)/)||[,''])[1]};
+  localStorage.setItem('pse_b4_ex2_settings',JSON.stringify(s));
+}
+fontSize.addEventListener('input',()=>{fontSizeVal.textContent=fontSize.value;document.documentElement.style.setProperty('--font-size',fontSize.value+'px');saveSettings();});
+lineHeight.addEventListener('input',()=>{lineHeightVal.textContent=lineHeight.value;document.documentElement.style.setProperty('--line-height',lineHeight.value);saveSettings();});
+dys.addEventListener('change',()=>{document.body.classList.toggle('dyslexic',dys.checked);saveSettings();});
+document.querySelectorAll('.settings-panel .themes button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.body.classList.remove('theme-cream','theme-blue','theme-green','theme-contrast');
+    const t=b.dataset.theme; if(t) document.body.classList.add('theme-'+t); saveSettings();
+  });
+});
+(function(){try{const s=JSON.parse(localStorage.getItem('pse_b4_ex2_settings')||'{}');applySettings({fontSize:s.fontSize||20,lineHeight:s.lineHeight||1.7,dyslexic:s.dyslexic||false,theme:s.theme||''});}catch(e){}})();
+
+let step=1;
+const totalSteps=document.querySelectorAll('.step').length;
+document.getElementById('stepTotal').textContent=totalSteps;
+function showStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  const cur=document.querySelector('.step[data-step="'+n+'"]'); if(cur)cur.classList.add('active');
+  document.getElementById('stepNum').textContent=n;
+  document.getElementById('progressFill').style.width=(n/totalSteps*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(window.speechSynthesis)window.speechSynthesis.cancel();
+}
+function nextStep(){ if(step<totalSteps){step++;showStep(step);} }
+function prevStep(){ if(step>1){step--;showStep(step);} }
+showStep(1);
+
+// V/F ex2
+const vfItems=[
+  { t:"Les acouphènes sont souvent irréversibles.", a:true },
+  { t:"Le bruit peut provoquer du stress et de l'hypertension.", a:true },
+  { t:"Un bruit fort et répété ne touche que l'oreille.", a:false },
+  { t:"La fatigue auditive disparaît avec du repos.", a:true },
+  { t:"Mettre des bouchons en concert est inutile.", a:false }
+];
+const vfList=document.getElementById('vfList');
+vfItems.forEach((it,i)=>{
+  const row=document.createElement('div');
+  row.className='vf-row';
+  row.innerHTML=`<div class="statement"><strong>${i+1}.</strong> ${it.t}
+    <button class="audio-btn" onclick="toggleAudio(this,null,'${it.t.replace(/'/g,"\\'")}')">🔊</button></div>
+    <div class="vf-buttons"><button class="vf" data-i="${i}" data-v="true">Vrai ✅</button>
+    <button class="vf" data-i="${i}" data-v="false">Faux ❌</button></div>`;
+  vfList.appendChild(row);
+});
+vfList.addEventListener('click',(e)=>{
+  if(e.target.classList.contains('vf')){
+    const i=e.target.dataset.i;
+    document.querySelectorAll(`.vf[data-i="${i}"]`).forEach(b=>b.classList.remove('chosen'));
+    e.target.classList.add('chosen');
+  }
+});
+
+// Classify ex3
+const classItems=[
+  { t:"Surdité progressive", a:"a" },
+  { t:"Hypertension", a:"b" },
+  { t:"Acouphènes", a:"a" },
+  { t:"Troubles du sommeil", a:"b" },
+  { t:"Fatigue auditive", a:"a" },
+  { t:"Stress au travail", a:"b" }
+];
+const classList=document.getElementById('classList');
+classItems.forEach((it,i)=>{
+  const d=document.createElement('div');
+  d.className='classify';
+  d.innerHTML=`<div style="grid-column:1/3;padding:6px;"><strong>${i+1}.</strong> ${it.t}
+    <button class="audio-btn" onclick="toggleAudio(this,null,'${it.t.replace(/'/g,"\\'")}')">🔊</button></div>
+    <button class="classify-item" data-i="${i}" data-v="a">👂 Auditif</button>
+    <button class="classify-item" data-i="${i}" data-v="b">🫀 Extra-auditif</button>`;
+  classList.appendChild(d);
+});
+classList.addEventListener('click',(e)=>{
+  if(e.target.classList.contains('classify-item')){
+    const i=e.target.dataset.i;
+    document.querySelectorAll(`.classify-item[data-i="${i}"]`).forEach(b=>{b.classList.remove('cat-a','cat-b');});
+    e.target.classList.add('cat-'+e.target.dataset.v);
+    e.target.dataset.chosen='1';
+    document.querySelectorAll(`.classify-item[data-i="${i}"]`).forEach(b=>{if(b!==e.target)delete b.dataset.chosen;});
+  }
+});
+
+const score={C1:{ok:0,tot:3},C2:{ok:0,tot:1},C3:{ok:0,tot:1},C4:{ok:0,tot:1},C5:{ok:0,tot:3}};
+function showFeedback(id,good,msg){const f=document.getElementById(id);f.className='feedback '+(good?'good':'bad');f.innerHTML=msg;}
+function revealNext(id){document.getElementById(id).style.display='inline-block';}
+
+function checkEx1(){
+  const v=(document.getElementById('ex1Input').value||'').toLowerCase();
+  const kws=['stress','hypertension','fatigue','sommeil','concentration','tension'];
+  const hits=kws.filter(k=>v.includes(k)).length;
+  if(hits>=3){score.C1.ok++;showFeedback('ex1Fb',true,"Bravo ✅ ! Tu as bien relevé 3 effets extra-auditifs.");}
+  else showFeedback('ex1Fb',false,"Pas tout à fait 💡. <strong>Réponse :</strong> stress, hypertension, fatigue, troubles du sommeil.");
+  revealNext('ex1Next');
+}
+function checkEx2(){
+  let correct=0, answered=0;
+  vfItems.forEach((it,i)=>{
+    const c=document.querySelector(`.vf.chosen[data-i="${i}"]`);
+    if(c){answered++; const v=c.dataset.v==='true'; if(v===it.a)correct++; else c.classList.add('wrong');}
+  });
+  if(answered<vfItems.length){showFeedback('ex2Fb',false,"💡 Réponds à toutes les phrases.");return;}
+  if(correct===vfItems.length){score.C1.ok++;showFeedback('ex2Fb',true,`Bravo ✅ ! ${correct}/${vfItems.length} bonnes réponses.`);}
+  else showFeedback('ex2Fb',false,`Tu as ${correct}/${vfItems.length} 💡. Rappel : le bruit a aussi des effets <strong>extra-auditifs</strong>, et les bouchons protègent vraiment l'audition.`);
+  revealNext('ex2Next');
+}
+function checkEx3(){
+  let correct=0, answered=0;
+  classItems.forEach((it,i)=>{
+    const c=document.querySelector(`.classify-item[data-i="${i}"][data-chosen="1"]`);
+    if(c){answered++; if(c.dataset.v===it.a)correct++;}
+  });
+  if(answered<classItems.length){showFeedback('ex3Fb',false,"💡 Classe tous les exemples avant de valider.");return;}
+  if(correct===classItems.length){score.C1.ok++;showFeedback('ex3Fb',true,`Bravo ✅ ! Tu as bien classé les ${correct} exemples.`);}
+  else showFeedback('ex3Fb',false,`Tu as ${correct}/${classItems.length} 💡. Rappel : auditif = sur l'audition ; extra-auditif = stress, hypertension, sommeil, concentration.`);
+  revealNext('ex3Next');
+}
+function checkEx4(){
+  const a=document.querySelector('input[name="ex4a"]:checked');
+  const b=document.querySelector('input[name="ex4b"]:checked');
+  const c=document.querySelector('input[name="ex4c"]:checked');
+  if(!a||!b||!c){showFeedback('ex4Fb',false,"💡 Réponds aux 3 questions.");return;}
+  const ok=a.value==='ok'&&b.value==='ok'&&c.value==='ok';
+  if(ok){score.C2.ok++;showFeedback('ex4Fb',true,"Bravo ✅ ! Tu as choisi les bons gestes pour chaque situation.");}
+  else showFeedback('ex4Fb',false,"Pas tout à fait 💡. Les bons gestes : bouchons + éloignement, règle 60/60 au casque, casque anti-bruit + pauses au travail.");
+  revealNext('ex4Next');
+}
+function checkEx5(){
+  const t=(document.getElementById('ex5Input').value||'').toLowerCase();
+  const ok=/(cellule|cochl[eé]e|cili[eé]|nerveux|d[eé]truit|abim[eé]|ab[iî]m|ne.se.r[eé]g[eé]n[eé]r|d[eé]finitif|irr[eé]v)/.test(t)&&t.length>40;
+  if(ok){score.C3.ok++;showFeedback('ex5Fb',true,"Bravo ✅ ! Tu as expliqué le caractère irréversible.");}
+  else showFeedback('ex5Fb',false,"💡 <strong>Réponse modèle :</strong> « Les acouphènes sont provoqués par la destruction des cellules auditives de la cochlée. Ces cellules ne se régénèrent pas : une fois détruites, la gêne reste définitivement. »");
+  revealNext('ex5Next');
+}
+function checkEx6(){
+  const t=(document.getElementById('ex6Input').value||'').toLowerCase();
+  const kws=['prot[eè]g','acouph[eè]n','surdit[eé]','d[eé]finitif','irr[eé]v','audit','sant[eé]','pr[eé]vent','diminu','att[eé]nu','filtre','qualit[eé]','cellule'];
+  const hits=kws.filter(k=>new RegExp(k).test(t)).length;
+  if(hits>=2&&t.length>50){score.C4.ok++;showFeedback('ex6Fb',true,"Bravo ✅ ! Tes arguments sont pertinents.");}
+  else showFeedback('ex6Fb',false,"💡 <strong>Réponse modèle :</strong> « 1) Les bouchons protègent la cochlée et évitent la destruction des cellules auditives. 2) Ils préviennent les acouphènes et la surdité qui sont définitifs. 3) Les bouchons filtrants laissent entendre la musique sans danger. »");
+  revealNext('ex6Next');
+}
+function finish(){
+  const expected={me1:'b',me2:'b',me3:'b'};
+  Object.entries(expected).forEach(([n,v])=>{const s=document.querySelector(`input[name="${n}"]:checked`);if(s&&s.value===v)score.C5.ok++;});
+  const labels={C1:"C1 — S'informer / relever",C2:"C2 — Identifier / analyser",C3:"C3 — Expliquer / mobiliser",C4:"C4 — Proposer / agir",C5:"C5 — Auto-évaluation"};
+  const card=document.getElementById('scoreCard');
+  let html='<h3 style="margin-top:0">🎯 Mon score par compétences</h3>';
+  let ok=0,tot=0;
+  Object.keys(score).forEach(k=>{const s=score[k];ok+=s.ok;tot+=s.tot;
+    const em=s.ok===s.tot?'⭐':(s.ok===0?'💡':'✨');
+    html+=`<div class="comp-line"><span>${em} ${labels[k]}</span><strong>${s.ok} / ${s.tot}</strong></div>`;
+  });
+  const pct=Math.round(ok/tot*100);
+  html+=`<div class="comp-line" style="margin-top:8px;border-top:2px solid var(--border)"><span>🏆 <strong>Total</strong></span><strong>${ok} / ${tot} (${pct} %)</strong></div>`;
+  let n="Non atteint (NT)"; if(pct>=80)n="Maîtrisé (M) ⭐"; else if(pct>=60)n="Atteint (A) ✅"; else if(pct>=40)n="Intermédiaire (I) ✨";
+  html+=`<p style="margin-top:12px"><strong>Niveau global :</strong> ${n}</p>`;
+  card.innerHTML=html;
+  nextStep();
+}
+</script>
+</body>
+</html>
