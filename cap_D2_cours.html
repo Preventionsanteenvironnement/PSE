@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module D2 — Gérer son budget</title>
+<style>
+  :root { --c1: #1a6fa8; --c2: #e07b00; --c3: #2d9e5c; --c4: #8b3fa8; --c5: #b03060; --c6: #555; --s1: #c0392b; --s2: #2d9e5c; --s3: #8b3fa8; --bg: #f5f6fa; --card: #fff; --border: #dde3ed; --text: #1a1f2e; --muted: #6b7280; --accent: #1a6fa8; --radius: 10px; --shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; } html { -webkit-text-size-adjust: 100%; }
+  body { font-family: 'Segoe UI','Calibri','Helvetica Neue',Arial,sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.65; }
+  input[type=radio] { accent-color: var(--accent); cursor: pointer; } label { cursor: pointer; }
+  header { background: linear-gradient(135deg,#0d3b66 0%,#1a6fa8 60%,#2196f3 100%); color: #fff; padding: 28px 32px 20px; position: relative; }
+  header .module-tag { display: inline-block; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; margin-bottom: 8px; }
+  header h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+  header .objectif { font-size: 13px; color: rgba(255,255,255,0.82); max-width: 750px; border-left: 3px solid rgba(255,255,255,0.4); padding-left: 12px; margin-top: 10px; }
+  header .thematique { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .print-btn { position: absolute; bottom: 16px; right: 16px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background 0.2s; }
+  .print-btn:hover { background: rgba(255,255,255,0.28); }
+  main { max-width: 900px; margin: 28px auto; padding: 0 16px 60px; }
+  footer { text-align: center; padding: 18px 16px 28px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); max-width: 900px; margin: 0 auto; }
+  .seance-block { margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); background: var(--card); }
+  .seance-header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; cursor: pointer; border-left: 5px solid; background: var(--card); transition: background 0.15s; } .seance-header:hover { background: #f0f4f8; }
+  .seance-block[data-s="1"] .seance-header { border-color: var(--s1); } .seance-block[data-s="2"] .seance-header { border-color: var(--s2); } .seance-block[data-s="3"] .seance-header { border-color: var(--s3); }
+  .seance-num { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0; }
+  .seance-block[data-s="1"] .seance-num { background: var(--s1); } .seance-block[data-s="2"] .seance-num { background: var(--s2); } .seance-block[data-s="3"] .seance-num { background: var(--s3); }
+  .seance-header-text { flex: 1; } .seance-header-text h2 { font-size: 1rem; font-weight: 700; } .seance-header-text .seance-obj { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .seance-chevron { font-size: 20px; color: var(--muted); transition: transform 0.25s; }
+  .seance-body { display: none; padding: 0 22px 24px; border-top: 1px solid var(--border); } .seance-block.open .seance-body { display: block; } .seance-block.open .seance-chevron { transform: rotate(180deg); }
+  .index-table { background: #f8f9fc; border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin: 18px 0 20px; font-size: 13px; }
+  .index-table h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; } .index-table ul { list-style: none; } .index-table li { padding: 3px 0; display: flex; align-items: baseline; gap: 8px; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; color: #fff; flex-shrink: 0; letter-spacing: 0.5px; }
+  .badge-c1 { background: var(--c1); } .badge-c2 { background: var(--c2); } .badge-c3 { background: var(--c3); } .badge-c4 { background: var(--c4); } .badge-c5 { background: var(--c5); } .badge-c6 { background: var(--c6); }
+  .notions-box { background: linear-gradient(135deg,#fff8e7 0%,#fff3cd 100%); border: 1px solid #f0c040; border-left: 4px solid #f0c040; border-radius: 8px; padding: 12px 16px; margin: 20px 0; font-size: 13px; }
+  .notions-box strong { display: block; margin-bottom: 6px; color: #8a6500; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  .notions-box span { display: inline-block; background: #fff; border: 1px solid #ddb830; border-radius: 12px; padding: 2px 10px; margin: 2px; font-size: 12px; color: #5a4000; }
+  .situation-block { background: #edf4fc; border: 1px solid #b0cfe8; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .situation-block h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #1a6fa8; margin-bottom: 10px; font-weight: 700; }
+  .doc-block { background: #f8f8f8; border: 1px solid #ddd; border-left: 4px solid #888; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13.5px; }
+  .doc-block h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 8px; font-weight: 700; }
+  .doc-block[data-doc="A"] { border-left-color: var(--s1); } .doc-block[data-doc="B"] { border-left-color: #5a3; } .doc-block[data-doc="C"] { border-left-color: #a73; }
+  .question-block { margin: 22px 0; } .question-label { display: flex; align-items: flex-start; gap: 10px; font-weight: 600; margin-bottom: 8px; font-size: 14.5px; }
+  .question-num { background: #e8eaf6; color: #3949ab; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; margin-top: 2px; }
+  textarea.reponse { width: 100%; min-height: 64px; border: 1.5px solid #c5cde0; border-radius: 6px; padding: 10px 12px; font-family: inherit; font-size: 14px; color: var(--text); background: #fff; resize: none; overflow: hidden; line-height: 1.5; }
+  textarea.reponse:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,111,168,0.12); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-aide { padding: 6px 14px; border: 1.5px solid; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; background: #fff; }
+  .btn-indice { color: #c07000; border-color: #c07000; } .btn-indice:hover, .btn-indice.active { background: #fff8e7; }
+  .btn-corrige { color: #2d7a45; border-color: #2d7a45; } .btn-corrige:hover, .btn-corrige.active { background: #e8f5ec; }
+  .btn-pourquoi { color: #6738a8; border-color: #6738a8; } .btn-pourquoi:hover, .btn-pourquoi.active { background: #f3eeff; }
+  .aide-box { display: none; margin-top: 8px; padding: 10px 14px; border-radius: 6px; font-size: 13.5px; line-height: 1.55; animation: fadeIn 0.2s ease; } .aide-box.show { display: block; }
+  .aide-indice { background: #fff8e7; border-left: 3px solid #c07000; color: #6b4400; } .aide-corrige { background: #e8f5ec; border-left: 3px solid #2d7a45; color: #1a4e2c; } .aide-pourquoi { background: #f3eeff; border-left: 3px solid #6738a8; color: #3b1f6a; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; }
+  th { background: #e8edf5; padding: 9px 12px; text-align: left; font-weight: 700; font-size: 12px; text-transform: uppercase; border: 1px solid #c5cde0; } td { padding: 8px 12px; border: 1px solid #dde3ed; vertical-align: top; } tr:nth-child(even) td { background: #f8f9fc; }
+  .choix-liste { list-style: none; margin: 8px 0 8px 4px; } .choix-liste li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14px; }
+  .autoeval-block { margin-top: 32px; border: 2px solid; border-radius: var(--radius); overflow: hidden; }
+  .seance-block[data-s="1"] .autoeval-block { border-color: var(--s1); } .seance-block[data-s="2"] .autoeval-block { border-color: var(--s2); } .seance-block[data-s="3"] .autoeval-block { border-color: var(--s3); }
+  .autoeval-header { padding: 12px 18px; color: #fff; font-weight: 700; font-size: 14px; }
+  .seance-block[data-s="1"] .autoeval-header { background: var(--s1); } .seance-block[data-s="2"] .autoeval-header { background: var(--s2); } .seance-block[data-s="3"] .autoeval-header { background: var(--s3); }
+  .autoeval-body { padding: 16px 18px; } .eval-question { margin-bottom: 18px; }
+  .eval-question p { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .eval-question p span.qtype { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; background: #e8edf5; color: #444; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+  .eval-options { list-style: none; } .eval-options li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 8px; border-radius: 5px; font-size: 14px; } .eval-options li input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; }
+  .vf-options { display: flex; gap: 12px; margin-top: 6px; } .vf-options label { display: flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 14px; border: 1.5px solid #c5cde0; border-radius: 20px; } .vf-options input { width: 16px; height: 16px; }
+  .court-input { width: 100%; border: 1.5px solid #c5cde0; border-radius: 6px; padding: 8px 12px; font-family: inherit; font-size: 14px; margin-top: 6px; }
+  .btn-valider { width: 100%; padding: 12px; background: linear-gradient(135deg,#c0392b,#962d22); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 12px; }
+  .seance-block[data-s="2"] .btn-valider { background: linear-gradient(135deg,#2d9e5c,#1e6e3e); } .seance-block[data-s="3"] .btn-valider { background: linear-gradient(135deg,#8b3fa8,#6a2d82); }
+  .score-block { display: none; margin-top: 16px; padding: 14px 18px; border-radius: 8px; text-align: center; } .score-block.show { display: block; } .score-block .score-num { font-size: 2.5rem; font-weight: 900; } .score-block .score-label { font-size: 13px; margin-top: 4px; }
+  .remediation-block { display: none; margin-top: 14px; padding: 14px 18px; border-radius: 8px; font-size: 13.5px; border-left: 4px solid; } .remediation-block.show { display: block; }
+  .retiens-block { background: linear-gradient(135deg,#edf4fc 0%,#d6e8f8 100%); border: 2px solid #a0c4e8; border-radius: var(--radius); padding: 20px; margin-top: 30px; }
+  .retiens-block h2 { font-size: 1rem; font-weight: 800; color: #0d3b66; margin-bottom: 16px; }
+  .retiens-section { margin-bottom: 16px; } .retiens-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #1a6fa8; margin-bottom: 8px; font-weight: 700; border-bottom: 1px solid #a0c4e8; padding-bottom: 4px; }
+  .retiens-section p, .retiens-section ul { font-size: 13.5px; line-height: 1.65; } .retiens-section ul { padding-left: 18px; }
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); } .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  @media (max-width: 680px) { header h1 { font-size: 1.2rem; } main { padding: 0 8px 40px; } .seance-header { padding: 12px; } .seance-body { padding: 0 10px 18px; } .btn-aide { flex: 1; min-width: 80px; } table { display: block; overflow-x: auto; font-size: 12.5px; } .vf-options label { flex: 1; justify-content: center; } }
+  @media print { body { background: #fff; font-size: 12pt; } header { background: #0d3b66 !important; -webkit-print-color-adjust: exact; } .print-btn, .btn-aide, .btn-valider, .score-block, .remediation-block, .autoeval-block { display: none !important; } .seance-body { display: block !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="thematique">Thématique D — L'individu consommateur averti</div>
+  <div class="module-tag">Module D2</div>
+  <h1>Gérer son budget</h1>
+  <p class="objectif"><strong>Objectif :</strong> Identifier les revenus et les dépenses, établir un budget équilibré, repérer les situations à risque (surendettement, crédit) et connaître les droits du consommateur.</p>
+  <button class="print-btn" onclick="window.print()">Imprimer</button>
+</header>
+
+<main>
+
+<!-- ====== SÉANCE 1 ====== -->
+<div class="seance-block open" data-s="1">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="true">
+    <div class="seance-num">1</div>
+    <div class="seance-header-text">
+      <h2>Séance 1 — Revenus et dépenses</h2>
+      <div class="seance-obj">Objectif : identifier les revenus et classer les dépenses (incompressibles / courantes / occasionnelles).</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+    <div class="index-table"><h3>Compétences travaillées dans cette séance</h3><ul>
+      <li><span class="badge badge-c1">C1</span> Q1 à Q2 — Citer et nommer revenus et dépenses.</li>
+      <li><span class="badge badge-c2">C2</span> Q3 à Q5 — Appliquer une méthode de classement et calculer.</li>
+      <li><span class="badge badge-c3">C3</span> Q6 — Mettre en relation dépenses incompressibles et priorité.</li>
+      <li><span class="badge badge-c4">C4</span> Q7 — Proposer des sources d'information fiables.</li>
+      <li><span class="badge badge-c5">C5</span> Q8 — Argumenter l'intérêt du budget avant un engagement.</li>
+    </ul></div>
+    <div class="notions-box"><strong>Notions à retenir — Séance 1</strong><span>Revenu</span><span>Salaire net</span><span>Prestation</span><span>APL</span><span>Bourse</span><span>Dépense incompressible</span><span>Dépense courante</span><span>Dépense occasionnelle</span><span>Charges</span><span>Reste à vivre</span></div>
+    <div class="section-divider">Situation de départ</div>
+    <div class="situation-block"><h3>Situation — La première paie de Sofiane</h3>
+      <p style="margin-top:6px; font-size:13.5px;">Sofiane, 18 ans, en CAP, touche sa première paie d'apprenti. Il veut louer un petit studio. Ses parents lui disent : « Fais ton budget avant de signer. » Sofiane ne sait pas par où commencer.</p></div>
+
+    <div class="doc-block" data-doc="A"><h3>Doc. A — Les revenus</h3>
+      <p>Un <strong>revenu</strong> est une somme d'argent régulièrement ou ponctuellement perçue. Exemples :</p>
+      <ul style="padding-left:22px; margin-top:4px;">
+        <li><strong>Salaires</strong> et indemnité d'apprentissage : le <strong>salaire net</strong> est ce qui reste après les cotisations sociales.</li>
+        <li><strong>Prestations familiales</strong> (CAF), <strong>APL</strong> (aide au logement).</li>
+        <li><strong>Bourses</strong>, pensions.</li>
+      </ul></div>
+
+    <div class="doc-block" data-doc="B"><h3>Doc. B — Les trois types de dépenses</h3>
+      <table><thead><tr><th>Type</th><th>Exemples</th></tr></thead><tbody>
+        <tr><td><strong>Incompressibles</strong> (obligatoires)</td><td>Loyer, eau, électricité, gaz, assurance, transport obligatoire, remboursement de crédit</td></tr>
+        <tr><td><strong>Courantes</strong></td><td>Alimentation, hygiène, produits ménagers, carburant, frais scolaires</td></tr>
+        <tr><td><strong>Occasionnelles</strong></td><td>Loisirs, vêtements, cadeaux, sorties, vacances</td></tr>
+      </tbody></table></div>
+
+    <div class="doc-block" data-doc="C"><h3>Doc. C — Le reste à vivre</h3>
+      <p><strong>Reste à vivre = revenus − dépenses incompressibles.</strong> Il sert à payer les dépenses courantes et à épargner. Pour le calculer, on établit un <strong>tableau de budget mensuel</strong> qui compare tous les revenus et toutes les dépenses.</p></div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c1">C1</span><span class="question-num">Q1</span><span><strong>Citer</strong> deux revenus possibles pour Sofiane.</span></div>
+      <textarea class="reponse" placeholder="Revenu 1 : ... / Revenu 2 : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q1s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q1s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q1s1')">Pourquoi</button></div>
+      <div id="i-q1s1" class="aide-box aide-indice">Doc. A, liste à puces.</div>
+      <div id="c-q1s1" class="aide-box aide-corrige">Deux au choix : <strong>indemnité d'apprentissage, APL, bourse, aide familiale</strong>.</div>
+      <div id="p-q1s1" class="aide-box aide-pourquoi">Identifier tous ses revenus est la première étape pour construire un budget réaliste.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c1">C1</span><span class="question-num">Q2</span><span><strong>Nommer</strong> deux dépenses incompressibles typiques.</span></div>
+      <textarea class="reponse" placeholder="Dépense 1 : ... / Dépense 2 : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q2s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q2s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q2s1')">Pourquoi</button></div>
+      <div id="i-q2s1" class="aide-box aide-indice">Doc. B, première ligne.</div>
+      <div id="c-q2s1" class="aide-box aide-corrige">Deux au choix : <strong>loyer, assurance, électricité, gaz, transport obligatoire</strong>.</div>
+      <div id="p-q2s1" class="aide-box aide-pourquoi">Ces dépenses reviennent chaque mois et ne peuvent pas être supprimées facilement.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q3</span><span><strong>Classer</strong>, dans le tableau, les dépenses suivantes : <em>loyer, cinéma, pâtes, assurance, vêtements</em>.</span></div>
+      <table><thead><tr><th>Incompressibles</th><th>Courantes</th><th>Occasionnelles</th></tr></thead><tbody><tr>
+        <td><textarea class="reponse" rows="2" oninput="autoResize(this)"></textarea></td>
+        <td><textarea class="reponse" rows="2" oninput="autoResize(this)"></textarea></td>
+        <td><textarea class="reponse" rows="2" oninput="autoResize(this)"></textarea></td>
+      </tr></tbody></table>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q3s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q3s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q3s1')">Pourquoi</button></div>
+      <div id="i-q3s1" class="aide-box aide-indice">Doc. B.</div>
+      <div id="c-q3s1" class="aide-box aide-corrige"><strong>Incompressibles :</strong> loyer, assurance. <strong>Courantes :</strong> pâtes. <strong>Occasionnelles :</strong> cinéma, vêtements.</div>
+      <div id="p-q3s1" class="aide-box aide-pourquoi">Ce classement aide à voir quelles dépenses peuvent être réduites en cas de difficulté.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q4</span><span><strong>Identifier</strong> la différence entre le salaire brut et le salaire net.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q4s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q4s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q4s1')">Pourquoi</button></div>
+      <div id="i-q4s1" class="aide-box aide-indice">Cotisations sociales.</div>
+      <div id="c-q4s1" class="aide-box aide-corrige">Le <strong>salaire brut</strong> est le salaire avant cotisations sociales. Le <strong>salaire net</strong> est ce que le salarié reçoit réellement sur son compte, après déduction des cotisations.</div>
+      <div id="p-q4s1" class="aide-box aide-pourquoi">Pour établir un budget, il faut toujours partir du net : c'est la somme réellement disponible.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q5</span><span><strong>Appliquer</strong> la formule « reste à vivre = revenus − dépenses incompressibles » pour des revenus de 900 € et des dépenses incompressibles de 600 €.</span></div>
+      <textarea class="reponse" placeholder="Calcul : ... / Résultat : ... €" oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q5s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q5s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q5s1')">Pourquoi</button></div>
+      <div id="i-q5s1" class="aide-box aide-indice">Soustraction simple.</div>
+      <div id="c-q5s1" class="aide-box aide-corrige">900 − 600 = <strong>300 €</strong> de reste à vivre.</div>
+      <div id="p-q5s1" class="aide-box aide-pourquoi">C'est cette somme qui servira à l'alimentation, aux loisirs et à l'épargne.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c3">C3</span><span class="question-num">Q6</span><span><strong>Expliquer</strong> pourquoi Sofiane doit lister d'abord ses dépenses incompressibles.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q6s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q6s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q6s1')">Pourquoi</button></div>
+      <div id="i-q6s1" class="aide-box aide-indice">Obligatoires chaque mois → priorité.</div>
+      <div id="c-q6s1" class="aide-box aide-corrige">Parce qu'elles sont <strong>obligatoires chaque mois</strong> : loyer, assurance, énergie. Ce qui reste après les avoir soustraites des revenus détermine ce que Sofiane peut réellement dépenser ou épargner.</div>
+      <div id="p-q6s1" class="aide-box aide-pourquoi">Un budget bien fait commence par les obligations, pas par les envies.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c4">C4</span><span class="question-num">Q7</span><span><strong>Proposer</strong> deux sources d'information fiables pour vérifier ses droits (APL, bourse).</span></div>
+      <textarea class="reponse" placeholder="Source 1 : ... / Source 2 : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q7s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q7s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q7s1')">Pourquoi</button></div>
+      <div id="i-q7s1" class="aide-box aide-indice">Sites officiels et accompagnement scolaire.</div>
+      <div id="c-q7s1" class="aide-box aide-corrige">Deux au choix : <strong>caf.fr, service-public.fr</strong>, assistant·e social·e scolaire, <strong>Info Jeunes</strong>.</div>
+      <div id="p-q7s1" class="aide-box aide-pourquoi">Se baser sur des sources officielles évite les rumeurs et les arnaques.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c5">C5</span><span class="question-num">Q8</span><span><strong>Argumenter</strong> pourquoi il est utile de faire un budget mensuel avant de signer un bail.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q8s1')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q8s1')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q8s1')">Pourquoi</button></div>
+      <div id="i-q8s1" class="aide-box aide-indice">Pensez aux impayés et à la capacité d'épargne.</div>
+      <div id="c-q8s1" class="aide-box aide-corrige">Faire un budget avant permet de vérifier que les <strong>charges fixes</strong> restent compatibles avec le revenu, d'éviter les impayés, de garder un <strong>reste à vivre</strong> suffisant et de conserver une capacité d'épargne pour les imprévus.</div>
+      <div id="p-q8s1" class="aide-box aide-pourquoi">Signer un bail sans budget, c'est risquer le découvert bancaire dès les premiers mois.</div>
+    </div>
+
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 1 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> 1. Dépense incompressible :</p><ul class="eval-options"><li><input type="radio" name="es1q1" value="A"> <label>cinéma</label></li><li><input type="radio" name="es1q1" value="B"> <label>loyer</label></li><li><input type="radio" name="es1q1" value="C"> <label>vêtements</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> 2. Complétez : « Le salaire réellement reçu est le salaire _____ . »</p><input type="text" class="court-input" id="es1q2-input" placeholder="Votre réponse..."></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 3. Le reste à vivre se calcule avant de payer le loyer.</p><div class="vf-options"><label><input type="radio" name="es1q3" value="V"> Vrai</label><label><input type="radio" name="es1q3" value="F"> Faux</label></div></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 4. APL signifie :</p><ul class="eval-options"><li><input type="radio" name="es1q4" value="A"> <label>aide au logement</label></li><li><input type="radio" name="es1q4" value="B"> <label>assurance</label></li><li><input type="radio" name="es1q4" value="C"> <label>crédit</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 5. Une bourse est un revenu.</p><div class="vf-options"><label><input type="radio" name="es1q5" value="V"> Vrai</label><label><input type="radio" name="es1q5" value="F"> Faux</label></div></div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> 6. Complétez : « Reste à vivre = revenus − dépenses _____ . »</p><input type="text" class="court-input" id="es1q6-input" placeholder="Votre réponse..."></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 7. Dépense courante :</p><ul class="eval-options"><li><input type="radio" name="es1q7" value="A"> <label>alimentation</label></li><li><input type="radio" name="es1q7" value="B"> <label>loyer</label></li><li><input type="radio" name="es1q7" value="C"> <label>vacances</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 8. Faire un budget ne sert qu'aux personnes en difficulté.</p><div class="vf-options"><label><input type="radio" name="es1q8" value="V"> Vrai</label><label><input type="radio" name="es1q8" value="F"> Faux</label></div></div>
+        <button class="btn-valider" onclick="validerSeance(1)">Valider mes réponses</button>
+        <div class="score-block" id="score-s1"><div class="score-num" id="score-num-s1"></div><div class="score-label" id="score-detail-s1"></div></div>
+        <div class="remediation-block" id="remed-s1"><div id="remed-text-s1"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SÉANCE 2 ====== -->
+<div class="seance-block" data-s="2">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="false">
+    <div class="seance-num">2</div>
+    <div class="seance-header-text">
+      <h2>Séance 2 — Un budget équilibré</h2>
+      <div class="seance-obj">Objectif : distinguer budget équilibré / déficitaire / excédentaire et mettre en place une épargne de précaution.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+    <div class="index-table"><h3>Compétences travaillées dans cette séance</h3><ul>
+      <li><span class="badge badge-c1">C1</span> Q1 — Nommer les trois états du budget.</li>
+      <li><span class="badge badge-c2">C2</span> Q2 à Q4 — Appliquer la formule et identifier l'état du budget.</li>
+      <li><span class="badge badge-c3">C3</span> Q5 à Q6 — Mettre en relation découvert et agios.</li>
+      <li><span class="badge badge-c4">C4</span> Q7 — Proposer des pistes de rééquilibrage.</li>
+      <li><span class="badge badge-c5">C5</span> Q8 — Argumenter l'intérêt d'une épargne de précaution.</li>
+    </ul></div>
+    <div class="notions-box"><strong>Notions à retenir — Séance 2</strong><span>Budget</span><span>Équilibré</span><span>Déficitaire</span><span>Excédentaire</span><span>Découvert</span><span>Agios</span><span>Épargne</span><span>Épargne de précaution</span><span>Livret A</span><span>Prévision</span></div>
+    <div class="section-divider">Situation de départ</div>
+    <div class="situation-block"><h3>Situation — Sofiane à découvert</h3>
+      <p style="margin-top:6px; font-size:13.5px;">Au bout de deux mois dans son studio, Sofiane remarque qu'à chaque fin de mois il est à découvert. Un ami lui dit : « Ton budget est déficitaire. » Sofiane veut comprendre où passe l'argent et comment remettre ses comptes à l'équilibre.</p></div>
+
+    <div class="doc-block" data-doc="A"><h3>Doc. A — Les trois états du budget</h3>
+      <table><thead><tr><th>État</th><th>Définition</th><th>Conséquence</th></tr></thead><tbody>
+        <tr><td><strong>Équilibré</strong></td><td>Revenus = dépenses</td><td>Comptes à l'équilibre</td></tr>
+        <tr><td><strong>Déficitaire</strong></td><td>Dépenses &gt; revenus</td><td>Découvert, agios, risque de dettes</td></tr>
+        <tr><td><strong>Excédentaire</strong></td><td>Revenus &gt; dépenses</td><td>Possibilité d'épargner</td></tr>
+      </tbody></table></div>
+
+    <div class="doc-block" data-doc="B"><h3>Doc. B — L'épargne de précaution</h3>
+      <p>L'<strong>épargne de précaution</strong> est une somme mise de côté pour faire face à un <strong>imprévu</strong> : panne, frais de santé, perte de revenus. On recommande souvent <strong>1 à 3 mois de dépenses</strong> sur un produit liquide (<strong>livret A</strong>, LEP si on y a droit). Elle n'est pas bloquée.</p></div>
+
+    <div class="doc-block" data-doc="C"><h3>Doc. C — Bonnes pratiques</h3>
+      <ul style="padding-left:22px; margin-top:4px;">
+        <li>Tenir un <strong>tableau de budget mensuel</strong>.</li>
+        <li>Anticiper les dépenses annuelles (assurance, rentrée) en les <strong>lissant sur 12 mois</strong>.</li>
+        <li>Distinguer <strong>envie</strong> et <strong>besoin</strong>.</li>
+        <li>Comparer avant d'acheter.</li>
+      </ul></div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c1">C1</span><span class="question-num">Q1</span><span><strong>Nommer</strong> les trois états possibles d'un budget.</span></div>
+      <textarea class="reponse" placeholder="État 1 : ... / État 2 : ... / État 3 : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q1s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q1s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q1s2')">Pourquoi</button></div>
+      <div id="i-q1s2" class="aide-box aide-indice">Doc. A.</div>
+      <div id="c-q1s2" class="aide-box aide-corrige"><strong>Équilibré, déficitaire, excédentaire.</strong></div>
+      <div id="p-q1s2" class="aide-box aide-pourquoi">Connaître ces trois états permet de diagnostiquer sa situation en quelques secondes.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q2</span><span><strong>Identifier</strong> l'état du budget de Sofiane qui est à découvert chaque mois.</span></div>
+      <textarea class="reponse" placeholder="Votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q2s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q2s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q2s2')">Pourquoi</button></div>
+      <div id="i-q2s2" class="aide-box aide-indice">Dépenses &gt; revenus.</div>
+      <div id="c-q2s2" class="aide-box aide-corrige">Budget <strong>déficitaire</strong>.</div>
+      <div id="p-q2s2" class="aide-box aide-pourquoi">Reconnaître le déficit est la première étape avant de chercher des solutions.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q3</span><span><strong>Appliquer</strong> : revenus 900 €, dépenses 950 €. Quel est l'état du budget ?</span></div>
+      <textarea class="reponse" placeholder="Calcul : ... / État : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q3s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q3s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q3s2')">Pourquoi</button></div>
+      <div id="i-q3s2" class="aide-box aide-indice">900 − 950 = ?</div>
+      <div id="c-q3s2" class="aide-box aide-corrige">900 − 950 = <strong>−50 €</strong> : budget <strong>déficitaire</strong>.</div>
+      <div id="p-q3s2" class="aide-box aide-pourquoi">Un signe négatif = le compte se vide plus vite qu'il ne se remplit.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q4</span><span><strong>Appliquer</strong> : revenus 1 100 €, dépenses 950 €. Quel est l'état et quel est l'excédent ?</span></div>
+      <textarea class="reponse" placeholder="Calcul : ... / État : ... / Excédent : ... €" oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q4s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q4s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q4s2')">Pourquoi</button></div>
+      <div id="i-q4s2" class="aide-box aide-indice">1 100 − 950 = ?</div>
+      <div id="c-q4s2" class="aide-box aide-corrige">1 100 − 950 = <strong>+150 €</strong> : budget <strong>excédentaire</strong>.</div>
+      <div id="p-q4s2" class="aide-box aide-pourquoi">Cet excédent peut être épargné ou investi.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c3">C3</span><span class="question-num">Q5</span><span><strong>Expliquer</strong> ce qu'est l'épargne de précaution.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q5s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q5s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q5s2')">Pourquoi</button></div>
+      <div id="i-q5s2" class="aide-box aide-indice">Doc. B.</div>
+      <div id="c-q5s2" class="aide-box aide-corrige">Une somme mise de côté pour faire face à un <strong>imprévu</strong> (panne, frais de santé, perte de revenus), disponible rapidement (livret A).</div>
+      <div id="p-q5s2" class="aide-box aide-pourquoi">Elle évite de recourir au crédit ou au découvert en cas de coup dur.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c3">C3</span><span class="question-num">Q6</span><span><strong>Expliquer</strong> le lien entre budget déficitaire et agios.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q6s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q6s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q6s2')">Pourquoi</button></div>
+      <div id="i-q6s2" class="aide-box aide-indice">Intérêts payés à la banque.</div>
+      <div id="c-q6s2" class="aide-box aide-corrige">Un budget déficitaire entraîne un <strong>découvert</strong>. La banque fait payer des <strong>agios</strong> (intérêts) sur ce découvert, ce qui aggrave encore le déficit.</div>
+      <div id="p-q6s2" class="aide-box aide-pourquoi">Le déficit alimente ainsi une spirale : plus on est en déficit, plus on paie, plus on est en déficit.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c4">C4</span><span class="question-num">Q7</span><span><strong>Proposer</strong> trois pistes concrètes pour rééquilibrer le budget de Sofiane.</span></div>
+      <textarea class="reponse" placeholder="Piste 1 : ... / Piste 2 : ... / Piste 3 : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q7s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q7s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q7s2')">Pourquoi</button></div>
+      <div id="i-q7s2" class="aide-box aide-indice">Réduire les occasionnelles, comparer, vérifier les droits.</div>
+      <div id="c-q7s2" class="aide-box aide-corrige"><strong>1.</strong> Réduire les dépenses occasionnelles (sorties, vêtements). <strong>2.</strong> Comparer les abonnements (téléphone, énergie). <strong>3.</strong> Vérifier les droits aux aides (APL, bourse). Lisser les dépenses annuelles sur 12 mois.</div>
+      <div id="p-q7s2" class="aide-box aide-pourquoi">On agit d'abord sur ce qui est compressible et négociable, pas sur ce qui est obligatoire.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c5">C5</span><span class="question-num">Q8</span><span><strong>Argumenter</strong> l'intérêt de mettre en place une épargne de précaution avant de financer un projet de loisirs.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q8s2')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q8s2')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q8s2')">Pourquoi</button></div>
+      <div id="i-q8s2" class="aide-box aide-indice">Pensez à la sécurité et aux projets futurs.</div>
+      <div id="c-q8s2" class="aide-box aide-corrige">L'épargne de précaution <strong>sécurise la situation financière</strong> : elle évite de tomber en déficit au premier imprévu. Elle garantit que les projets futurs ne seront pas compromis par une dépense inattendue.</div>
+      <div id="p-q8s2" class="aide-box aide-pourquoi">Financer des loisirs sans filet de sécurité, c'est risquer un découvert dès la première panne.</div>
+    </div>
+
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 2 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">QCM</span> 1. Dépenses &gt; revenus = budget :</p><ul class="eval-options"><li><input type="radio" name="es2q1" value="A"> <label>équilibré</label></li><li><input type="radio" name="es2q1" value="B"> <label>déficitaire</label></li><li><input type="radio" name="es2q1" value="C"> <label>excédentaire</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> 2. Complétez : « Les intérêts payés à la banque lors d'un découvert s'appellent les _____ . »</p><input type="text" class="court-input" id="es2q2-input" placeholder="Votre réponse..."></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 3. L'épargne de précaution doit être bloquée 5 ans.</p><div class="vf-options"><label><input type="radio" name="es2q3" value="V"> Vrai</label><label><input type="radio" name="es2q3" value="F"> Faux</label></div></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 4. Le livret A est :</p><ul class="eval-options"><li><input type="radio" name="es2q4" value="A"> <label>bloqué</label></li><li><input type="radio" name="es2q4" value="B"> <label>disponible à tout moment</label></li><li><input type="radio" name="es2q4" value="C"> <label>interdit aux mineurs</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 5. Un budget excédentaire permet d'épargner.</p><div class="vf-options"><label><input type="radio" name="es2q5" value="V"> Vrai</label><label><input type="radio" name="es2q5" value="F"> Faux</label></div></div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> 6. Complétez : « L'équivalent recommandé d'épargne est de _____ à 3 mois de dépenses. »</p><input type="text" class="court-input" id="es2q6-input" placeholder="Votre réponse..."></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 7. Premier réflexe en cas de découvert répété :</p><ul class="eval-options"><li><input type="radio" name="es2q7" value="A"> <label>prendre un crédit</label></li><li><input type="radio" name="es2q7" value="B"> <label>refaire son budget</label></li><li><input type="radio" name="es2q7" value="C"> <label>ignorer</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 8. Un budget équilibré signifie que les revenus sont égaux aux dépenses.</p><div class="vf-options"><label><input type="radio" name="es2q8" value="V"> Vrai</label><label><input type="radio" name="es2q8" value="F"> Faux</label></div></div>
+        <button class="btn-valider" onclick="validerSeance(2)">Valider mes réponses</button>
+        <div class="score-block" id="score-s2"><div class="score-num" id="score-num-s2"></div><div class="score-label" id="score-detail-s2"></div></div>
+        <div class="remediation-block" id="remed-s2"><div id="remed-text-s2"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SÉANCE 3 ====== -->
+<div class="seance-block" data-s="3">
+  <div class="seance-header" onclick="toggleSeance(this)" aria-expanded="false">
+    <div class="seance-num">3</div>
+    <div class="seance-header-text">
+      <h2>Séance 3 — Crédit, surendettement et droits</h2>
+      <div class="seance-obj">Objectif : comprendre le TAEG, connaître le droit de rétractation et les recours en cas de difficultés.</div>
+    </div>
+    <div class="seance-chevron">&#9662;</div>
+  </div>
+  <div class="seance-body">
+    <div class="index-table"><h3>Compétences travaillées dans cette séance</h3><ul>
+      <li><span class="badge badge-c1">C1</span> Q1 à Q2 — Nommer le TAEG et indiquer le délai de rétractation.</li>
+      <li><span class="badge badge-c2">C2</span> Q3 à Q4 — Appliquer un calcul de coût de crédit.</li>
+      <li><span class="badge badge-c3">C3</span> Q5 à Q6 — Mettre en relation surendettement et commission.</li>
+      <li><span class="badge badge-c4">C4</span> Q7 — Proposer des conseils avant un crédit.</li>
+      <li><span class="badge badge-c5">C5</span> Q8 — Argumenter les risques d'un crédit signé sous pression.</li>
+    </ul></div>
+    <div class="notions-box"><strong>Notions à retenir — Séance 3</strong><span>Crédit à la consommation</span><span>TAEG</span><span>Coût total du crédit</span><span>Mensualité</span><span>Rétractation 14 jours</span><span>FICP</span><span>Surendettement</span><span>Commission de surendettement</span><span>Banque de France</span><span>Point conseil budget</span></div>
+    <div class="section-divider">Situation de départ</div>
+    <div class="situation-block"><h3>Situation — Le scooter de Sofiane</h3>
+      <p style="margin-top:6px; font-size:13.5px;">Sofiane veut acheter un scooter. Un vendeur lui propose un crédit à la consommation « facile ». Pressé, il est sur le point de signer. Une amie lui dit : « Regarde le TAEG et prends 14 jours pour réfléchir. »</p></div>
+
+    <div class="doc-block" data-doc="A"><h3>Doc. A — Le crédit et le TAEG</h3>
+      <p>Un <strong>crédit à la consommation</strong> est une somme prêtée à rembourser avec intérêts. Le <strong>TAEG</strong> (Taux Annuel Effectif Global) regroupe tous les frais du crédit (intérêts + frais de dossier + assurance) : c'est le seul indicateur <strong>comparable</strong> entre offres. Plus le TAEG est élevé, plus le crédit coûte cher.</p>
+      <p style="margin-top:6px;">La <strong>mensualité</strong> est la somme prélevée chaque mois sur le compte.</p></div>
+
+    <div class="doc-block" data-doc="B"><h3>Doc. B — Le droit de rétractation</h3>
+      <p>Pour un crédit à la consommation, l'emprunteur dispose de <strong>14 jours</strong> pour se rétracter après la signature, sans avoir à se justifier. Pour un achat en ligne, le délai est généralement aussi de 14 jours.</p>
+      <p style="margin-top:6px;">Un crédit engage : un refus de signer est toujours possible.</p></div>
+
+    <div class="doc-block" data-doc="C"><h3>Doc. C — Surendettement et aides</h3>
+      <p>Le <strong>surendettement</strong> est l'incapacité durable à payer ses dettes courantes. Recours :</p>
+      <ul style="padding-left:22px; margin-top:4px;">
+        <li>déposer un dossier à la <strong>commission de surendettement</strong> de la <strong>Banque de France</strong> ;</li>
+        <li>s'adresser à un travailleur social ou à un <strong>point conseil budget (PCB)</strong> ;</li>
+        <li>contacter une association de consommateurs (UFC-Que Choisir, CLCV).</li>
+      </ul>
+      <p style="margin-top:6px;">Le <strong>FICP</strong> (Fichier des Incidents de remboursement des Crédits aux Particuliers) recense les incidents de paiement.</p></div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c1">C1</span><span class="question-num">Q1</span><span><strong>Nommer</strong> l'indicateur qui permet de comparer deux crédits.</span></div>
+      <textarea class="reponse" placeholder="Votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q1s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q1s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q1s3')">Pourquoi</button></div>
+      <div id="i-q1s3" class="aide-box aide-indice">Sigle en 4 lettres.</div>
+      <div id="c-q1s3" class="aide-box aide-corrige">Le <strong>TAEG</strong> (Taux Annuel Effectif Global).</div>
+      <div id="p-q1s3" class="aide-box aide-pourquoi">Deux crédits ne se comparent pas par leur mensualité mais par leur TAEG.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c1">C1</span><span class="question-num">Q2</span><span><strong>Indiquer</strong> le délai de rétractation pour un crédit à la consommation.</span></div>
+      <textarea class="reponse" placeholder="Votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q2s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q2s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q2s3')">Pourquoi</button></div>
+      <div id="i-q2s3" class="aide-box aide-indice">Doc. B.</div>
+      <div id="c-q2s3" class="aide-box aide-corrige"><strong>14 jours</strong> sans justification.</div>
+      <div id="p-q2s3" class="aide-box aide-pourquoi">Ce délai légal protège le consommateur d'une décision précipitée.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q3</span><span><strong>Identifier</strong> le signe qu'un crédit est coûteux.</span></div>
+      <ul class="choix-liste" style="list-style:none; padding-left:0;">
+        <li><label><input type="radio" name="q3s3"> Un TAEG bas.</label></li>
+        <li><label><input type="radio" name="q3s3"> Un TAEG élevé.</label></li>
+        <li><label><input type="radio" name="q3s3"> Une petite mensualité.</label></li>
+      </ul>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q3s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q3s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q3s3')">Pourquoi</button></div>
+      <div id="i-q3s3" class="aide-box aide-indice">Doc. A.</div>
+      <div id="c-q3s3" class="aide-box aide-corrige">Un <strong>TAEG élevé</strong>.</div>
+      <div id="p-q3s3" class="aide-box aide-pourquoi">Une petite mensualité peut cacher un TAEG élevé sur une durée longue : le crédit revient alors très cher.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c2">C2</span><span class="question-num">Q4</span><span><strong>Appliquer</strong> : un crédit de 3 000 € est remboursé au total 3 600 €. Quel est le coût du crédit ?</span></div>
+      <textarea class="reponse" placeholder="Calcul : ... / Coût : ... €" oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q4s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q4s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q4s3')">Pourquoi</button></div>
+      <div id="i-q4s3" class="aide-box aide-indice">Total remboursé − somme empruntée.</div>
+      <div id="c-q4s3" class="aide-box aide-corrige">3 600 − 3 000 = <strong>600 €</strong>.</div>
+      <div id="p-q4s3" class="aide-box aide-pourquoi">Connaître le coût total permet de comparer deux offres au-delà du TAEG annoncé.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c3">C3</span><span class="question-num">Q5</span><span><strong>Expliquer</strong> ce qu'est le surendettement.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q5s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q5s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q5s3')">Pourquoi</button></div>
+      <div id="i-q5s3" class="aide-box aide-indice">Incapacité durable à payer.</div>
+      <div id="c-q5s3" class="aide-box aide-corrige">Le surendettement est l'<strong>incapacité durable</strong> à faire face à l'ensemble de ses dettes non professionnelles avec ses ressources.</div>
+      <div id="p-q5s3" class="aide-box aide-pourquoi">Ce n'est pas une faute morale : c'est une situation juridique qui ouvre des recours.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c3">C3</span><span class="question-num">Q6</span><span><strong>Expliquer</strong> le rôle de la commission de surendettement de la Banque de France.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q6s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q6s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q6s3')">Pourquoi</button></div>
+      <div id="i-q6s3" class="aide-box aide-indice">Examiner + proposer un plan.</div>
+      <div id="c-q6s3" class="aide-box aide-corrige">Elle examine la situation du demandeur et propose un <strong>plan de redressement</strong> : rééchelonnement des dettes, effacement partiel ou total, afin de permettre à la personne de repartir financièrement.</div>
+      <div id="p-q6s3" class="aide-box aide-pourquoi">Cet outil public évite l'enfermement dans la spirale des dettes.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c4">C4</span><span class="question-num">Q7</span><span><strong>Proposer</strong> trois conseils à Sofiane avant de signer son crédit scooter.</span></div>
+      <textarea class="reponse" placeholder="Conseil 1 : ... / Conseil 2 : ... / Conseil 3 : ..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q7s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q7s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q7s3')">Pourquoi</button></div>
+      <div id="i-q7s3" class="aide-box aide-indice">Comparer, vérifier la mensualité, utiliser les 14 jours.</div>
+      <div id="c-q7s3" class="aide-box aide-corrige"><strong>1.</strong> Comparer plusieurs TAEG avant de signer. <strong>2.</strong> Vérifier que la mensualité reste compatible avec son reste à vivre. <strong>3.</strong> Utiliser les 14 jours de rétractation si besoin et demander conseil à un point conseil budget ou à une association de consommateurs.</div>
+      <div id="p-q7s3" class="aide-box aide-pourquoi">Trois réflexes simples évitent la plupart des mauvaises décisions.</div>
+    </div>
+
+    <div class="question-block">
+      <div class="question-label"><span class="badge badge-c5">C5</span><span class="question-num">Q8</span><span><strong>Argumenter</strong> pourquoi signer sous pression un crédit à la consommation est risqué.</span></div>
+      <textarea class="reponse" placeholder="Rédigez votre réponse..." oninput="autoResize(this)"></textarea>
+      <div class="btn-row"><button class="btn-aide btn-indice" onclick="toggle(this,'indice','i-q8s3')">Indice</button><button class="btn-aide btn-corrige" onclick="toggle(this,'corrige','c-q8s3')">Corrigé</button><button class="btn-aide btn-pourquoi" onclick="toggle(this,'pourquoi','p-q8s3')">Pourquoi</button></div>
+      <div id="i-q8s3" class="aide-box aide-indice">Pas de comparaison, pas d'évaluation.</div>
+      <div id="c-q8s3" class="aide-box aide-corrige">Sous pression, on n'a pas le temps de <strong>comparer les TAEG</strong>, de vérifier sa <strong>capacité de remboursement</strong>, ni d'évaluer les conséquences. Cela expose à une mensualité trop lourde, à des impayés, voire au surendettement.</div>
+      <div id="p-q8s3" class="aide-box aide-pourquoi">Un vendeur qui met la pression est déjà un signal d'alerte.</div>
+    </div>
+
+    <div class="retiens-block">
+      <h2>Je retiens l'essentiel — Module D2 : Gérer son budget</h2>
+      <div class="retiens-section"><h3>1. Revenus et dépenses</h3><p>Identifier les revenus (salaire net, APL, bourses) et classer les dépenses : <strong>incompressibles / courantes / occasionnelles</strong>.</p></div>
+      <div class="retiens-section"><h3>2. Reste à vivre</h3><p><strong>Reste à vivre = revenus − dépenses incompressibles.</strong> C'est la base de tout arbitrage financier.</p></div>
+      <div class="retiens-section"><h3>3. Trois états du budget</h3><ul>
+        <li><strong>Équilibré</strong> : revenus = dépenses.</li>
+        <li><strong>Déficitaire</strong> : dépenses &gt; revenus → découvert + agios.</li>
+        <li><strong>Excédentaire</strong> : revenus &gt; dépenses → épargne.</li>
+      </ul></div>
+      <div class="retiens-section"><h3>4. Épargne de précaution</h3><p><strong>1 à 3 mois</strong> de dépenses sur un livret disponible (livret A). Elle amortit les imprévus.</p></div>
+      <div class="retiens-section"><h3>5. Crédit</h3><p>Le <strong>TAEG</strong> est le seul indicateur comparable entre offres. <strong>14 jours de rétractation</strong> après signature.</p></div>
+      <div class="retiens-section"><h3>6. En difficulté</h3><p>Points conseil budget (PCB), associations de consommateurs, <strong>commission de surendettement</strong> de la Banque de France.</p></div>
+    </div>
+
+    <div class="autoeval-block">
+      <div class="autoeval-header">Auto-évaluation — Séance 3 <span style="font-size:12px; font-weight:400; opacity:0.85;">(8 questions)</span></div>
+      <div class="autoeval-body">
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> 1. Complétez : « Le taux qui regroupe tous les frais d'un crédit s'appelle le _____ . »</p><input type="text" class="court-input" id="es3q1-input" placeholder="Votre réponse..."></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 2. Délai de rétractation d'un crédit à la consommation :</p><ul class="eval-options"><li><input type="radio" name="es3q2" value="A"> <label>7 jours</label></li><li><input type="radio" name="es3q2" value="B"> <label>14 jours</label></li><li><input type="radio" name="es3q2" value="C"> <label>30 jours</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 3. Un TAEG plus bas signifie un crédit plus cher.</p><div class="vf-options"><label><input type="radio" name="es3q3" value="V"> Vrai</label><label><input type="radio" name="es3q3" value="F"> Faux</label></div></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 4. L'instance compétente en matière de surendettement est :</p><ul class="eval-options"><li><input type="radio" name="es3q4" value="A"> <label>la préfecture</label></li><li><input type="radio" name="es3q4" value="B"> <label>la commission de surendettement de la Banque de France</label></li><li><input type="radio" name="es3q4" value="C"> <label>les impôts</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">Réponse courte</span> 5. Complétez : « Le fichier qui recense les incidents de paiement est le _____ . »</p><input type="text" class="court-input" id="es3q5-input" placeholder="Votre réponse..."></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 6. La rétractation nécessite une justification.</p><div class="vf-options"><label><input type="radio" name="es3q6" value="V"> Vrai</label><label><input type="radio" name="es3q6" value="F"> Faux</label></div></div>
+        <div class="eval-question"><p><span class="qtype">QCM</span> 7. Pour un conseil budget gratuit, on peut aller à un :</p><ul class="eval-options"><li><input type="radio" name="es3q7" value="A"> <label>point conseil budget (PCB)</label></li><li><input type="radio" name="es3q7" value="B"> <label>agence immobilière</label></li><li><input type="radio" name="es3q7" value="C"> <label>huissier</label></li></ul></div>
+        <div class="eval-question"><p><span class="qtype">V/F</span> 8. Coût du crédit = somme totale remboursée − somme empruntée.</p><div class="vf-options"><label><input type="radio" name="es3q8" value="V"> Vrai</label><label><input type="radio" name="es3q8" value="F"> Faux</label></div></div>
+        <button class="btn-valider" onclick="validerSeance(3)">Valider mes réponses</button>
+        <div class="score-block" id="score-s3"><div class="score-num" id="score-num-s3"></div><div class="score-label" id="score-detail-s3"></div></div>
+        <div class="remediation-block" id="remed-s3"><div id="remed-text-s3"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>Ressource pédagogique — M. MECHERI — mapse.fr</footer>
+
+<script>
+function toggleSeance(el) { const block = el.closest('.seance-block'); block.classList.toggle('open'); el.setAttribute('aria-expanded', block.classList.contains('open')); }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function toggle(btn, type, id) {
+  const box = document.getElementById(id); const isVisible = box.classList.contains('show');
+  const qBlock = btn.closest('.question-block');
+  if (qBlock) { qBlock.querySelectorAll('.aide-box').forEach(b => b.classList.remove('show')); qBlock.querySelectorAll('.btn-aide').forEach(b => b.classList.remove('active')); }
+  if (!isVisible) { box.classList.add('show'); btn.classList.add('active'); }
+}
+function normalizeAns(v) { return (v||'').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+
+const answers = {
+  1: { es1q1:'B', es1q2:['net'], es1q3:'F', es1q4:'A', es1q5:'V', es1q6:['incompressibles','incompressible'], es1q7:'A', es1q8:'F' },
+  2: { es2q1:'B', es2q2:['agios'], es2q3:'F', es2q4:'B', es2q5:'V', es2q6:['1'], es2q7:'B', es2q8:'V' },
+  3: { es3q1:['taeg'], es3q2:'B', es3q3:'F', es3q4:'B', es3q5:['ficp'], es3q6:'F', es3q7:'A', es3q8:'V' }
+};
+
+const remediations = {
+  1: { low: '<strong>Reprenez la séance 1.</strong> Doc. A (revenus), B (dépenses), C (reste à vivre).', mid: '<strong>Les bases sont là.</strong> Retenez les 3 types de dépenses et la formule du reste à vivre.', good: '<strong>Bon travail.</strong>', top: '<strong>Excellent.</strong> Passez à la séance 2.' },
+  2: { low: '<strong>Reprenez la séance 2.</strong> 3 états : équilibré / déficitaire / excédentaire.', mid: '<strong>Vous progressez.</strong> Mémorisez : épargne = 1 à 3 mois de dépenses.', good: '<strong>Bien.</strong>', top: '<strong>Très bien.</strong> Passez à la séance 3.' },
+  3: { low: '<strong>Reprenez la séance 3.</strong> TAEG, 14 jours, surendettement.', mid: '<strong>Vous progressez.</strong> Comparez les TAEG, utilisez les 14 jours.', good: '<strong>Bon travail.</strong>', top: '<strong>Félicitations.</strong> Module D2 maîtrisé.' }
+};
+
+function validerSeance(s) {
+  const A = answers[s]; let score = 0, total = 8; const errors = [];
+  function radio(n) { return document.querySelector('input[name="'+n+'"]:checked'); }
+  function text(id) { return normalizeAns(document.getElementById(id).value); }
+  if (s === 1) {
+    const q1 = radio('es1q1'); if (q1 && q1.value === A.es1q1) score++; else errors.push('Q1 (réponse : B — loyer)');
+    const v2 = text('es1q2-input'); if (A.es1q2.some(k => v2.includes(normalizeAns(k)))) score++; else errors.push('Q2 (réponse : net)');
+    const q3 = radio('es1q3'); if (q3 && q3.value === A.es1q3) score++; else errors.push('Q3 (réponse : Faux — le loyer est incompressible donc déduit en premier)');
+    const q4 = radio('es1q4'); if (q4 && q4.value === A.es1q4) score++; else errors.push('Q4 (réponse : A — aide au logement)');
+    const q5 = radio('es1q5'); if (q5 && q5.value === A.es1q5) score++; else errors.push('Q5 (réponse : Vrai)');
+    const v6 = text('es1q6-input'); if (A.es1q6.some(k => v6.includes(normalizeAns(k)))) score++; else errors.push('Q6 (réponse : incompressibles)');
+    const q7 = radio('es1q7'); if (q7 && q7.value === A.es1q7) score++; else errors.push('Q7 (réponse : A — alimentation)');
+    const q8 = radio('es1q8'); if (q8 && q8.value === A.es1q8) score++; else errors.push('Q8 (réponse : Faux — il est utile à tout le monde)');
+  } else if (s === 2) {
+    const q1 = radio('es2q1'); if (q1 && q1.value === A.es2q1) score++; else errors.push('Q1 (réponse : B — déficitaire)');
+    const v2 = text('es2q2-input'); if (A.es2q2.some(k => v2.includes(normalizeAns(k)))) score++; else errors.push('Q2 (réponse : agios)');
+    const q3 = radio('es2q3'); if (q3 && q3.value === A.es2q3) score++; else errors.push('Q3 (réponse : Faux — elle doit être disponible)');
+    const q4 = radio('es2q4'); if (q4 && q4.value === A.es2q4) score++; else errors.push('Q4 (réponse : B — disponible à tout moment)');
+    const q5 = radio('es2q5'); if (q5 && q5.value === A.es2q5) score++; else errors.push('Q5 (réponse : Vrai)');
+    const v6 = text('es2q6-input'); if (A.es2q6.some(k => v6.includes(normalizeAns(k)))) score++; else errors.push('Q6 (réponse : 1)');
+    const q7 = radio('es2q7'); if (q7 && q7.value === A.es2q7) score++; else errors.push('Q7 (réponse : B — refaire son budget)');
+    const q8 = radio('es2q8'); if (q8 && q8.value === A.es2q8) score++; else errors.push('Q8 (réponse : Vrai)');
+  } else if (s === 3) {
+    const v1 = text('es3q1-input'); if (A.es3q1.some(k => v1.includes(normalizeAns(k)))) score++; else errors.push('Q1 (réponse : TAEG)');
+    const q2 = radio('es3q2'); if (q2 && q2.value === A.es3q2) score++; else errors.push('Q2 (réponse : B — 14 jours)');
+    const q3 = radio('es3q3'); if (q3 && q3.value === A.es3q3) score++; else errors.push('Q3 (réponse : Faux — un TAEG bas = crédit moins cher)');
+    const q4 = radio('es3q4'); if (q4 && q4.value === A.es3q4) score++; else errors.push('Q4 (réponse : B — commission de surendettement de la Banque de France)');
+    const v5 = text('es3q5-input'); if (A.es3q5.some(k => v5.includes(normalizeAns(k)))) score++; else errors.push('Q5 (réponse : FICP)');
+    const q6 = radio('es3q6'); if (q6 && q6.value === A.es3q6) score++; else errors.push('Q6 (réponse : Faux — sans justification)');
+    const q7 = radio('es3q7'); if (q7 && q7.value === A.es3q7) score++; else errors.push('Q7 (réponse : A — point conseil budget)');
+    const q8 = radio('es3q8'); if (q8 && q8.value === A.es3q8) score++; else errors.push('Q8 (réponse : Vrai)');
+  }
+  const colors = { low: '#fff3e0', mid: '#e3f2fd', good: '#e8f5e9', top: '#f3e5f5' };
+  const borderC = { low: '#ff9800', mid: '#2196f3', good: '#4caf50', top: '#9c27b0' };
+  let level = score <= 2 ? 'low' : score <= 5 ? 'mid' : score <= 7 ? 'good' : 'top';
+  const scoreBlock = document.getElementById('score-s' + s);
+  scoreBlock.style.background = colors[level]; scoreBlock.style.border = '2px solid ' + borderC[level];
+  document.getElementById('score-num-s' + s).textContent = score + ' / ' + total;
+  document.getElementById('score-detail-s' + s).innerHTML = errors.length > 0 ? '<strong>À revoir :</strong> ' + errors.join(' — ') : '<strong>Toutes les réponses sont correctes !</strong>';
+  scoreBlock.classList.add('show');
+  const R = remediations[s]; const remedBlock = document.getElementById('remed-s' + s);
+  remedBlock.style.background = colors[level]; remedBlock.style.borderColor = borderC[level];
+  document.getElementById('remed-text-s' + s).innerHTML = R[level]; remedBlock.classList.add('show');
+  scoreBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
