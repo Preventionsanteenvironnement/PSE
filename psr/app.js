@@ -46,8 +46,9 @@ const PHOTO_JPEG_QUALITY = 0.75;
 const MIN_COMPLETENESS = 0.4;
 
 /* Champs de la section "identite" qui alimentent state.infos_eleve.
-   RGPD : nom/prenom/lycee retirés. Le code élève + classe viennent de PSR_USER (auth.js). */
-const IDENTITE_SYNC = ["classe", "annee_scolaire", "titre_dossier"];
+   RGPD strict : ni nom, ni prénom, ni lycée, ni classe, ni année scolaire ne sont saisis.
+   Seul le titre du dossier est conservé. */
+const IDENTITE_SYNC = ["titre_dossier"];
 
 /* V4.14 — Portfolio démo intégré (Marie DURAND) pour aperçu rapide. */
 const DEMO_PORTFOLIO_JSON = `{"meta":{"app_version":"4.13.0","projet_titre":"Chef-d'œuvre : concevoir un repas ou menu équilibré et éco-responsable","date_creation":"2025-09-15T08:30:00.000Z","date_derniere_modification":"2026-04-26T15:42:00.000Z","date_dernier_export":"2026-04-26T15:42:00.000Z"},"infos_eleve":{"userCode":"DEMO","classe":"CAP PSR — 1re année","annee_scolaire":"2025-2026","titre_dossier":"Mon bowl bio et de saison à emporter","nom":"","prenom":"","lycee":""},"progression":{"pourcentage_global":73,"sections_terminees":6,"sections_validees":4},"sections":[{"id":"accueil","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-09-29T10:15:00.000Z","date_validation":"2025-10-05","champs":[{"id":"titre_projet","valeur":"Concevoir un repas ou menu équilibré et éco-responsable"},{"id":"objectif","valeur":"Apprendre à concevoir un repas équilibré et respectueux de l'environnement, à le présenter à un client et à le défendre lors d'un oral en juin 2027."},{"id":"comprendre","valeur":"Le chef-d'œuvre, c'est un grand projet de fin de CAP qui dure 2 ans. À la fin, je présenterai mon projet pendant 10 minutes devant deux profs."},{"id":"capacite_finale","valeur":"Concevoir un menu équilibré et éco-responsable à emporter, le présenter et le défendre à l'oral."},{"id":"duree","valeur":"2 ans (de septembre 2025 à juin 2027)"}],"preuves":[]},{"id":"identite","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-09-22T09:05:00.000Z","date_validation":"2025-09-29","champs":[{"id":"classe","valeur":"CAP PSR — 1re année"},{"id":"annee_scolaire","valeur":"2025-2026"},{"id":"titre_dossier","valeur":"Mon bowl bio et de saison à emporter"},{"id":"valeurs","valeur":["Respect","Entraide","Persévérance","Créativité","Bienveillance"]},{"id":"qualites","valeur":["Organisée","Soigneuse","Motivée","Patiente","Méthodique"]},{"id":"interets","valeur":["Cuisine","Pâtisserie","Lecture","Nature","Animaux"]},{"id":"pourquoi_cap","valeur":"J'ai choisi ce CAP parce que j'aime cuisiner depuis toute petite avec ma grand-mère. J'aimerais plus tard ouvrir mon propre restaurant éco-responsable, où on cuisinerait avec des produits locaux et de saison."},{"id":"projet_apres","valeur":"Continuer en bac professionnel restauration puis ouvrir un food-truck bio à Lyon, avec des plats simples mais sains."}],"preuves":[]},{"id":"comprendre","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-10-13T11:30:00.000Z","date_validation":"2025-10-20","champs":[{"id":"compris","valeur":"Le chef-d'œuvre, c'est un projet concret que je vais mener pendant 2 ans. Ça doit être lié à mon métier. À la fin, je présenterai mon projet à l'oral pendant 10 minutes."},{"id":"reussir","valeur":"Je dois réussir à concevoir un menu équilibré et éco-responsable à emporter, et savoir le défendre devant un jury."},{"id":"important","valeur":"Ce qui me paraît le plus important, c'est d'avancer étape par étape sans me décourager, et d'apprendre à argumenter mes choix."}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":2,"q4":1,"q5":1,"q6":1,"q7":1,"q8":2},"qcm_score":8,"qcm_total":8,"qcm_completed":true,"exercice_order":["e1","e2","e3","e4","e5","e6"],"exercice_ok":true,"ressources_lues":{"r_mapse_j1":"2025-10-06T14:00:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":1,"ep4":1,"ep5":["démarche","présentation"],"ep6":["repas équilibré","éco-responsable"],"ep7":"Le chef-d'œuvre c'est un projet concret qu'on fait sur 2 ans en lien avec notre métier. À la fin on doit le présenter à l'oral pour montrer ce qu'on a appris.","ep8":"Il y a une note pendant les 2 ans (50%) et une note à l'oral final (50%).","ep9":"Si je n'y arrive pas du premier coup, je peux recommencer. C'est normal de se tromper, on corrige et on apprend."},"validations":{"ep7":{"state":"ok","commentaire":"Très bonne réformulation, vocabulaire juste. Bon travail.","modifie_le":"2025-10-20T14:00:00.000Z"},"ep8":{"state":"ok","commentaire":"Bonne réponse, claire et précise.","modifie_le":"2025-10-20T14:00:00.000Z"},"ep9":{"state":"ok","commentaire":"Bonne posture, c'est exactement la démarche attendue.","modifie_le":"2025-10-20T14:00:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Très bonne épreuve, Marie a bien compris l'esprit du chef-d'œuvre.","date":"2025-10-20T14:30:00.000Z"},"note_brute":22,"note_max":22,"note_sur_20":20,"date":"2025-10-13","tentative":1}},"preuves":[]},{"id":"equilibre","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-01-19T10:30:00.000Z","date_validation":"2026-01-26","champs":[{"id":"appris","valeur":"J'ai appris qu'il y a 7 groupes d'aliments différents, et que chaque constituant alimentaire (protides, glucides, lipides…) joue un rôle précis dans le corps. Et la règle ½ ¼ ¼ pour bien composer une assiette."},{"id":"retiens","valeur":"Quand je vais composer mon menu, je vais penser à mettre la moitié de mon assiette en légumes, un quart de féculents et un quart de protéines."},{"id":"mon_assiette","valeur":"Une assiette équilibrée pour mon menu : salade de carottes râpées (½), riz aux légumes (¼), lentilles (¼), avec un yaourt nature et une pomme bio en dessert."}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":1,"q4":1,"q5":2,"q6":1,"q7":2,"q8":2,"q9":1,"q10":1},"qcm_score":10,"qcm_total":10,"qcm_completed":true,"ressources_lues":{"r_pnns":"2026-01-12T13:30:00.000Z","r_lentilles":"2026-01-19T10:15:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":1,"ep4":1,"ep5":1,"ep6":1,"ep7":2,"ep8":1,"ep9":2,"ep10":1},"validations":{},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Marie maîtrise les notions, bonne épreuve.","date":"2026-01-26T14:00:00.000Z"},"note_brute":9,"note_max":10,"note_sur_20":18,"date":"2026-01-19","tentative":1}},"preuves":[]},{"id":"eco_responsable","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-03-30T14:25:00.000Z","date_validation":"2026-04-06","champs":[{"id":"gaspillage","valeur":"Pour éviter le gaspillage je vais cuisiner uniquement les quantités prévues, utiliser les épluchures de carottes pour faire un bouillon, et vendre mon menu seulement à la commande."},{"id":"packaging","valeur":"Je vais utiliser un bol en carton recyclable avec un couvercle compostable, et une cuillère en bois."},{"id":"packaging_lieu","valeur":"Magasin de fournitures bio La Vie Claire à Lyon ou commande chez VegWare."},{"id":"fournisseurs","valeur":[{"id":"f1","produit":"Carottes","lieu":"Marché de la Croix-Rousse à Lyon","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"Producteur local"},{"id":"f2","produit":"Lentilles vertes","lieu":"AMAP Lyon 7","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"AOP Lentille verte du Puy"},{"id":"f3","produit":"Pommes Reinettes","lieu":"Verger des Monts du Lyonnais","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"AB"},{"id":"f4","produit":"Riz semi-complet","lieu":"Magasin bio La Vie Claire","saison":"À vérifier","circuit":"Non","label":"AB"}]}],"module_state":{"qcm_answers":{"q1":1,"q2":2,"q3":1,"q4":2,"q5":0,"q6":2,"q7":1,"q8":1,"q9":1,"q10":1,"q11":3,"q12":1},"qcm_score":11,"qcm_total":12,"qcm_completed":true,"ressources_lues":{"r_loi_agec":"2026-02-23T14:30:00.000Z","r_lois_gaspi":"2026-02-23T14:45:00.000Z","r_circuit_def":"2026-03-09T13:30:00.000Z","r_video_ademe":"2026-03-02T13:15:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":2,"ep4":1,"ep5":["AB","Label Rouge","AOP"],"ep6":["carton","verre"],"ep7":"Les poivrons ne poussent pas en hiver à Lyon. Donc en décembre ils viennent d'Espagne ou du Maroc, en avion ou en serre chauffée. Ça pollue beaucoup et c'est plus cher.","ep8":"Faire des portions adaptées et utiliser les restes (épluchures pour bouillon, pain rassis pour croûtons).","ep9":"Je choisis un emballage en carton recyclable et un couvercle en bioplastique compostable. Comme ça l'emballage peut être recyclé ou composté à la fin, ce qui est conforme à la loi AGEC."},"validations":{"ep7":{"state":"ok","commentaire":"Très bon raisonnement, exemples concrets et bien argumenté.","modifie_le":"2026-04-06T14:30:00.000Z"},"ep8":{"state":"ok","commentaire":"Idée juste et concrète. Bon travail.","modifie_le":"2026-04-06T14:30:00.000Z"},"ep9":{"state":"ok","commentaire":"Excellente argumentation, mention de la loi AGEC très pertinente.","modifie_le":"2026-04-06T14:30:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Marie a parfaitement intégré les notions d'éco-responsabilité, bonne épreuve.","date":"2026-04-06T15:00:00.000Z"},"note_brute":21,"note_max":22,"note_sur_20":19,"date":"2026-03-30","tentative":1}},"preuves":[]},{"id":"repas_equilibre","statut_eleve":"done","statut_enseignant":"none","date_maj":"2026-04-13T11:00:00.000Z","champs":[{"id":"entree","valeur":"Salade de carottes râpées au citron et persil"},{"id":"plat","valeur":"Bowl de riz semi-complet aux lentilles vertes du Puy AOP, avec poireaux braisés et œuf mollet"},{"id":"dessert","valeur":"Pomme Reinette bio du verger local, cuite à la cannelle"},{"id":"laitage","valeur":"Yaourt nature de la ferme du Mont d'Or"},{"id":"boisson","valeur":"Eau plate"},{"id":"equilibre_global","valeur":"Mon repas respecte la règle ½ ¼ ¼ : la moitié du bol est en légumes (carottes + poireaux), un quart en féculents (riz semi-complet) et un quart en protéines (lentilles + œuf)."},{"id":"justification","valeur":"Les carottes et les poireaux apportent les vitamines et les fibres. Le riz semi-complet donne l'énergie nécessaire pour la journée (glucides). Les lentilles et l'œuf apportent les protéines (bâtisseurs du corps). Le yaourt complète avec du calcium pour les os."},{"id":"regle","valeur":"Règle ½ ¼ ¼ avec un produit laitier en complément, un fruit en dessert et un verre d'eau."}],"preuves":[]},{"id":"etiquetage","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-04-20T10:45:00.000Z","date_validation":"2026-04-26","champs":[{"id":"design_general","valeur":"Étiquette en papier kraft recyclé avec encres végétales. Couleurs naturelles (vert et beige). Petit dessin d'une pomme stylisée en haut. Logo AB visible."},{"id":"etiquettes","valeur":[{"id":"et1","nom_produit":"Bowl bio de Marie","slogan":"Le bon goût des produits de saison","type_date":"DLC (à consommer jusqu'au)","date":"2026-04-21","poids":"350 g","ingredients":"Carottes BIO, riz semi-complet BIO, lentilles vertes du Puy AOP, poireaux BIO, œuf, yaourt nature, citron, persil, sel, poivre, huile d'olive.","allergenes":"ŒUF, LAIT (yaourt). Peut contenir des traces de GLUTEN.","tracabilite":"Carottes : Marché Croix-Rousse, Lyon. Lentilles : AMAP Lyon 7. Riz : La Vie Claire, Lyon. Œufs : Ferme du Mont d'Or, Limonest. Yaourt : Ferme du Mont d'Or, Limonest.","conservation":"À conserver entre 0 °C et 4 °C. À consommer dans les 24 heures."},{"id":"et2","nom_produit":"Pomme Reinette cuite","slogan":"Le dessert simple, local et de saison","type_date":"DLC (à consommer jusqu'au)","date":"2026-04-21","poids":"150 g","ingredients":"Pomme Reinette BIO du verger local, cannelle, miel local.","allergenes":"Aucun allergène majeur.","tracabilite":"Pomme : Verger des Monts du Lyonnais. Miel : Apiculteur de Mornant.","conservation":"À conserver au frais. Se déguste tiède."}]}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":0,"q4":1,"q5":1,"q6":1,"q7":2,"q8":1,"q9":1,"q10":1},"qcm_score":10,"qcm_total":10,"qcm_completed":true,"ressources_lues":{"r_dlc_ddm":"2026-04-13T13:00:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":2,"ep4":2,"ep5":["nom du produit","ingrédients","DLC"],"ep6":["œuf","lait"],"ep7":"Sur mon dessert au yaourt je mets une DLC parce que c'est un produit frais à base de lait, donc périssable. Si on dépasse la date, ça peut rendre malade.","ep8":"La traçabilité c'est savoir d'où vient un produit, qui l'a fait et quand. Ça sert à pouvoir le retirer du marché s'il y a un problème, et ça rassure le client.","ep9":"Pour rendre mon étiquette vendeuse, je mets un nom accrocheur (« Bowl bio de Marie »), une jolie illustration de pomme, et le logo AB bien visible."},"validations":{"ep7":{"state":"ok","commentaire":"Bonne distinction DLC/DDM, justification claire.","modifie_le":"2026-04-26T15:00:00.000Z"},"ep8":{"state":"ok","commentaire":"Très bonne définition + utilité bien expliquée.","modifie_le":"2026-04-26T15:00:00.000Z"},"ep9":{"state":"ok","commentaire":"3 éléments vendeurs, bien.","modifie_le":"2026-04-26T15:00:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"M. Bertrand","commentaire":"Marie a bien intégré la réglementation INCO, étiquette conforme.","date":"2026-04-26T15:30:00.000Z"},"note_brute":22,"note_max":22,"note_sur_20":20,"date":"2026-04-20","tentative":1}},"preuves":[]},{"id":"mon_menu","statut_eleve":"in_progress","statut_enseignant":"none","date_maj":"2026-04-26T15:42:00.000Z","champs":[{"id":"nom_menu","valeur":"Bowl bio de Marie"},{"id":"description","valeur":"Un bol complet à emporter, cuisiné avec uniquement des produits bio, de saison et locaux : carottes du marché, lentilles de l'AMAP, riz bio, poireaux du potager, œuf et yaourt de la ferme du Mont d'Or. En dessert, une pomme cuite du verger local."},{"id":"pourquoi_plats","valeur":"J'ai choisi ces plats parce qu'ils sont équilibrés (½ légumes, ¼ féculents, ¼ protéines), simples à cuisiner, bons à manger même tiède, et tous les ingrédients sont disponibles à Lyon en avril."},{"id":"equilibre","valeur":"Mon menu est équilibré : la moitié de l'assiette est en légumes (carottes + poireaux), un quart en féculents (riz semi-complet) et un quart en protéines (lentilles + œuf). Le yaourt apporte le calcium et la pomme la vitamine C."},{"id":"eco","valeur":"Mon menu est éco-responsable : tous les ingrédients sont de saison à Lyon en avril, achetés en circuit court (marché, AMAP, ferme), avec des labels (AB et AOP). L'emballage est en carton recyclable. Pas de gaspillage : portions calibrées et restes utilisés."},{"id":"points_forts","valeur":"Repas complet, savoureux, économique (entre 4 et 5 € le bol), et 100 % traçable. Les clients voient d'où viennent leurs aliments."},{"id":"ameliorations","valeur":"Je pourrais varier les légumes selon la saison (en été : courgettes, tomates, basilic). Je pourrais aussi proposer une version végane sans œuf ni yaourt."}],"preuves":[]}],"evaluations":[{"jalon_id":"j1_comprendre","source":"epreuve_auto","criteres":[{"id":"Connaissance des modalités du chef-d'œuvre","label":"Connaissance des modalités du chef-d'œuvre","capacite":"Connaître le cadre officiel du chef-d'œuvre et ses modalités.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance du projet de l'année","label":"Connaissance du projet de l'année","capacite":"Identifier et nommer le projet personnel mené dans le cadre du chef-d'œuvre.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des capacités évaluées à l'oral","label":"Connaissance des capacités évaluées à l'oral","capacite":"Identifier ce qui est attendu et évalué à l'oral final.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Capacité à expliquer le chef-d'œuvre avec ses mots","label":"Capacité à expliquer le chef-d'œuvre avec ses mots","capacite":"Reformuler une notion scolaire en langage courant compréhensible.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des règles d'évaluation et du droit à l'erreur","label":"Connaissance des règles d'évaluation et du droit à l'erreur","capacite":"Comprendre l'évaluation du chef-d'œuvre et adopter une posture de progression.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":20,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2025-10-13","enseignant":"Mme Lefèvre"},{"jalon_id":"j2_repas_equilibre","source":"epreuve_auto","criteres":[{"id":"Connaissance des groupes alimentaires","label":"Connaissance des groupes alimentaires","capacite":"Connaître et différencier les 7 groupes alimentaires.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des constituants et de leurs rôles","label":"Connaissance des constituants et de leurs rôles","capacite":"Identifier les constituants alimentaires et expliquer leur rôle pour la santé.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Application de la règle ½ légumes / ¼ féculents / ¼ protéines","label":"Application de la règle ½ légumes / ¼ féculents / ¼ protéines","capacite":"Composer une assiette équilibrée selon la règle ½ ¼ ¼.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Capacité d'analyse et de proposition d'amélioration","label":"Capacité d'analyse et de proposition d'amélioration","capacite":"Analyser un menu existant, repérer le déséquilibre et proposer une amélioration concrète.","niveau":"A","note":3,"max":4,"remediation":null},{"id":"Vocabulaire technique et argumentation","label":"Vocabulaire technique et argumentation","capacite":"Utiliser le vocabulaire de la nutrition et argumenter un choix alimentaire.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":18,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2026-01-19","enseignant":"Mme Lefèvre"},{"jalon_id":"j3_eco_responsable","source":"epreuve_auto","criteres":[{"id":"Connaissance du gaspillage alimentaire et des moyens de lutte","label":"Connaissance du gaspillage alimentaire et des moyens de lutte","capacite":"Identifier l'ampleur du gaspillage alimentaire et proposer des actions concrètes.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des dates DLC / DDM","label":"Maîtrise des dates DLC / DDM","capacite":"Lire et interpréter correctement les dates de consommation indiquées sur les produits.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Saisonnalité et circuits courts","label":"Saisonnalité et circuits courts","capacite":"Choisir des produits de saison et favoriser les circuits courts.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des labels officiels","label":"Connaissance des labels officiels","capacite":"Reconnaître les labels officiels et expliquer ce qu'ils certifient.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Choix d'emballages éco-responsables","label":"Choix d'emballages éco-responsables","capacite":"Choisir un emballage à faible impact environnemental et justifier ce choix.","niveau":"A","note":3,"max":4,"remediation":null}],"note_totale":19,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2026-03-30","enseignant":"Mme Lefèvre"},{"jalon_id":"j4_etiquetage","source":"epreuve_auto","criteres":[{"id":"Connaissance des mentions obligatoires (règlement INCO)","label":"Connaissance des mentions obligatoires (règlement INCO)","capacite":"Identifier et lister les informations obligatoires sur une étiquette alimentaire.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des allergènes (14 allergènes majeurs)","label":"Maîtrise des allergènes (14 allergènes majeurs)","capacite":"Identifier les allergènes majeurs et les présenter de manière conforme.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des dates DLC / DDM appliquée à l'étiquetage","label":"Maîtrise des dates DLC / DDM appliquée à l'étiquetage","capacite":"Choisir la bonne mention de date selon la nature du produit.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Compréhension de la traçabilité","label":"Compréhension de la traçabilité","capacite":"Définir la traçabilité et identifier ses enjeux.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Présentation vendeuse et cohérence éco-responsable","label":"Présentation vendeuse et cohérence éco-responsable","capacite":"Concevoir une étiquette vendeuse et cohérente avec la démarche éco-responsable.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":20,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par M. Bertrand.","date":"2026-04-20","enseignant":"M. Bertrand"}]}`;
@@ -886,16 +887,15 @@ const SECTIONS_SCHEMA = [
     id: "identite",
     annee: "both",
     titre: "Ma fiche",
-    description: "Une fiche de présentation pour mon dossier de chef-d'œuvre.",
+    description: "Personnalise ton portfolio (avatar, valeurs, qualités). Aucune donnée personnelle n'est demandée.",
     pedago: {
-      consigne: "Remplis ton état civil, choisis ce qui te correspond, ajoute une photo si tu veux.",
-      production: "Une fiche de présentation soignée qui figurera sur ton dossier final.",
-      attentes: "Une fiche complète, sérieuse, valorisante.",
+      consigne: "Choisis un avatar et ce qui te correspond. Aucun nom ou identifiant personnel n'est demandé.",
+      production: "Une fiche de présentation valorisante, sans donnée personnelle.",
+      attentes: "Une fiche sérieuse et valorisante.",
     },
     fields: [
-      // RGPD : ni nom, ni prénom, ni lycée. L'identité = code élève (Data Élèves).
-      { id: "classe",          label: "Classe",                               type: "text", hint: "Renseignée automatiquement depuis ton code." },
-      { id: "annee_scolaire",  label: "Année scolaire",                       type: "text", hint: "Ex : 2025-2026" },
+      // RGPD strict : ni nom, ni prénom, ni lycée, ni classe, ni année scolaire.
+      // Seuls l'avatar et les éléments de personnalité sont conservés.
       { id: "titre_dossier",   label: "Titre de mon dossier (mon projet)",   type: "text", hint: "Ex : Ma cuisine éco-responsable" },
       { id: "photo_profil",    label: "Mon avatar (optionnel)",               type: "photo_profil" },
       { id: "valeurs",         label: "Mes valeurs",                          type: "checklist",
@@ -3447,7 +3447,8 @@ function renderWelcomeBanner() {
   const banner = document.createElement("div");
   banner.className = "welcome-banner no-print";
   const e = state.infos_eleve;
-  const prenom = e.prenom ? escapeHtml(e.prenom) : "à toi";
+  // RGPD : on s'adresse à l'élève sans utiliser de nom/prénom
+  const prenom = "à toi";
   const total = state.sections.length;
   const done = state.sections.filter(s => s.statut_eleve === "done").length;
   const pct = Math.round(done / total * 100);
@@ -4791,7 +4792,7 @@ function renderOralSummary() {
 
   wrap.innerHTML = `
     <h2>🎤 Synthèse orale finale — plan prêt à apprendre</h2>
-    <p><b>${escapeHtml(e.prenom)} ${escapeHtml(e.nom)}</b> — ${escapeHtml(e.classe)} (${escapeHtml(e.annee_scolaire)})</p>
+    <p><b>${escapeHtml(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + escapeHtml(e.classe) : ""}</p>
     <p class="hint">Cette synthèse est construite automatiquement à partir de vos réponses.
        Choisissez la <b>version concise</b> pour un aide-mémoire, ou la <b>version détaillée</b> pour tout revoir.</p>
     ${controls}
@@ -4836,7 +4837,7 @@ function renderOralSummary() {
 function copyOralText(parts) {
   const e = state.infos_eleve;
   const lines = [];
-  lines.push(`SYNTHÈSE ORALE — ${e.prenom || ""} ${e.nom || ""} (${e.classe || ""} / ${e.annee_scolaire || ""})`);
+  lines.push(`SYNTHÈSE ORALE — ${e.userCode || "Élève anonyme"}${e.classe ? " (" + e.classe + ")" : ""}`);
   lines.push("");
   parts.forEach(part => {
     lines.push(part.titre.toUpperCase());
@@ -5086,10 +5087,7 @@ function exportSectionWord(sec, schema) {
   <div class="head">
     <div class="eyebrow">Chef-d'œuvre — ${escapeHtml(stripEmoji(sec.titre))}</div>
     <h1>${escapeHtml(titreEtape)}</h1>
-    <div class="author">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}
-      ${e.classe ? " · " + escapeHtml(e.classe) : ""}
-      ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
-    </div>
+    <div class="author">${escapeHtml(e.userCode || "")}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
   </div>
   ${body || "<p><i>Aucune information saisie.</i></p>"}
   <div class="foot">
@@ -5101,7 +5099,7 @@ function exportSectionWord(sec, schema) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `${sec.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -5165,12 +5163,8 @@ function buildFicheIdentiteHTML(forPrint) {
 <div class="fiche-live">
   <div class="band">
     <div class="eyebrow">Fiche de présentation — Chef-d'œuvre CAP</div>
-    <div class="name">${escapeHtml(e.prenom||"Prénom")} ${escapeHtml(e.nom||"Nom")}</div>
-    <div class="meta">
-      ${escapeHtml(e.classe||"Classe")}
-      ${e.lycee ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.lycee) : ""}
-      ${e.annee_scolaire ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.annee_scolaire) : ""}
-    </div>
+    <div class="name">${escapeHtml(e.userCode || "Élève anonyme")}</div>
+    <div class="meta">${e.classe ? escapeHtml(e.classe) : ""}</div>
     ${titre ? `<div class="projet">${escapeHtml(titre)}</div>` : ""}
   </div>
   <div class="body">
@@ -5206,7 +5200,7 @@ function buildFicheIdentiteHTML(forPrint) {
 <!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Fiche de présentation — ${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</title>
+<head><meta charset="UTF-8"><title>Fiche de présentation — ${escapeHtml(e.userCode || "Élève")}</title>
 <style>
   @page { size: 21cm 29.7cm; margin: 0.7cm; }
   body { font-family: "Calibri", "Helvetica Neue", Arial, sans-serif; color: #1a2330; font-size: 11pt; line-height: 1.55; margin: 0; }
@@ -5272,11 +5266,8 @@ function buildFicheIdentiteHTML(forPrint) {
 <div class="fiche-page">
   <div class="fiche-band">
     <div class="fiche-eyebrow">Fiche de présentation — Chef-d'œuvre CAP</div>
-    <h1 class="fiche-name">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</h1>
-    <div class="fiche-meta">
-      ${escapeHtml(e.classe||"")}
-      ${e.annee_scolaire ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.annee_scolaire) : ""}
-    </div>
+    <h1 class="fiche-name">${escapeHtml(e.userCode || "Élève anonyme")}</h1>
+    <div class="fiche-meta">${e.classe ? escapeHtml(e.classe) : ""}</div>
     ${titre ? `<div class="fiche-projet">${escapeHtml(titre)}</div>` : ""}
   </div>
 
@@ -5368,7 +5359,7 @@ function exportFicheIdentiteWord() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const e = state.infos_eleve;
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `FichePresentation_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -5613,12 +5604,7 @@ function renderProjetView() {
     <header class="projet-header-v2">
       <div class="ph-eyebrow">Mon chef-d'œuvre</div>
       <h1 class="ph-titre">${escapeHtml(nomMenu)}</h1>
-      <div class="ph-author">
-        ${escapeHtml(e.prenom || "")} ${escapeHtml(e.nom || "")}
-        ${e.classe ? " · " + escapeHtml(e.classe) : ""}
-        ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
-        ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
-      </div>
+      <div class="ph-author">${escapeHtml(e.userCode || "")}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
 
       <div class="ph-row">
         <div class="ph-photo">
@@ -5782,7 +5768,8 @@ function proposerSuggestionAliment(aliment, groupe) {
     state.suggestions_aliments.push({
       aliment: aliment,
       groupe: groupe || "Autre",
-      eleve: (state.infos_eleve && state.infos_eleve.prenom) || "",
+      // RGPD : pas de nom/prénom — uniquement le code élève (vide si non connecté)
+      eleve: (state.infos_eleve && state.infos_eleve.userCode) || "",
       date: new Date().toISOString(),
     });
     scheduleAutoSave();
@@ -6912,12 +6899,7 @@ function renderDossierProjetView() {
   cover.innerHTML = `
     <div class="doss-eyebrow">Mon chef-d'œuvre · Dossier projet</div>
     <h1 class="doss-titre">${escapeHtml(nomMenu)}</h1>
-    <div class="doss-author">
-      ${escapeHtml(e.prenom || "")} ${escapeHtml(e.nom || "")}
-      ${e.classe ? " · " + escapeHtml(e.classe) : ""}
-      ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
-      ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
-    </div>
+    <div class="doss-author">${escapeHtml(e.userCode || "")}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
     ${desc ? `<p class="doss-desc">${escapeHtml(desc)}</p>` : ""}
     ${photo ? `<img class="doss-photo" src="${photo.contenu}" alt="" />` : ""}
   `;
@@ -7213,11 +7195,7 @@ function exportFicheProjetWord() {
   <div class="cover">
     <div class="eyebrow">Mon chef-d'œuvre · Dossier projet · Année 1</div>
     <h1>${br(nomMenu)}</h1>
-    <div class="author">${br(e.prenom || "")} ${br(e.nom || "")}
-      ${e.classe ? " · " + br(e.classe) : ""}
-      ${e.lycee ? " · " + br(e.lycee) : ""}
-      ${e.annee_scolaire ? " · " + br(e.annee_scolaire) : ""}
-      · Édité le ${new Date().toLocaleDateString("fr-FR")}</div>
+    <div class="author">${br(e.userCode || "")}${e.classe ? " · " + br(e.classe) : ""} · Édité le ${new Date().toLocaleDateString("fr-FR")}</div>
     ${desc ? `<p>${br(desc)}</p>` : ""}
   </div>
 
@@ -7271,7 +7249,7 @@ function exportFicheProjetWord() {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `FicheProjet_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -7339,7 +7317,7 @@ function renderHomeView() {
     <div class="h2-greet-main">
       <span class="h2-greet-emoji">${emojiSalut}</span>
       <div>
-        <div class="h2-greet-text">${escapeHtml(salutation)}${e.prenom ? ", " : ""}<b>${escapeHtml(e.prenom || "")}</b> !</div>
+        <div class="h2-greet-text">${escapeHtml(salutation)} !</div>
         <div class="h2-greet-meta">${escapeHtml(today)}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
       </div>
     </div>
@@ -7347,17 +7325,18 @@ function renderHomeView() {
   `;
   wrap.appendChild(greet);
 
-  /* ===== 2. ALERTE si fiche identité vide ===== */
-  if (!e.prenom && !e.nom) {
+  /* ===== 2. ALERTE si fiche présentation vide (RGPD : pas de nom/prénom) ===== */
+  const ficheVide = !(e.titre_dossier);
+  if (ficheVide) {
     const alerte = document.createElement("section");
     alerte.className = "h2-alerte-identite";
     alerte.innerHTML = `
       <span class="hai-emoji">👋</span>
       <div class="hai-text">
-        <b>Bienvenue ! On commence par te présenter ?</b>
-        <small>Remplis ta fiche identité (nom, prénom, classe…) pour personnaliser ton portfolio.</small>
+        <b>Bienvenue ! Personnalise ton portfolio.</b>
+        <small>Choisis un avatar, donne un titre à ton projet, indique tes valeurs et qualités.</small>
       </div>
-      <button type="button" class="btn btn-primary" id="hai-btn">🎓 Je remplis maintenant →</button>
+      <button type="button" class="btn btn-primary" id="hai-btn">🎓 Je personnalise →</button>
     `;
     alerte.querySelector("#hai-btn").addEventListener("click", () => selectSection("identite"));
     wrap.appendChild(alerte);
@@ -9402,11 +9381,9 @@ function exportAttestationOfficielle(sec, mod) {
       <hr class="att-rule" />
 
       <div class="att-delivree">Délivrée à</div>
-      <div class="att-name">${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</div>
+      <div class="att-name">${escapeHtml(e.userCode || "—")}</div>
       <hr class="att-name-rule" />
-      <div class="att-classe">
-        ${e.classe ? escapeHtml(e.classe) : ""}${e.lycee ? " &middot; " + escapeHtml(e.lycee) : ""}${e.annee_scolaire ? " &middot; année scolaire " + escapeHtml(e.annee_scolaire) : ""}
-      </div>
+      <div class="att-classe">${e.classe ? escapeHtml(e.classe) : ""}</div>
 
       <p class="att-text">
         A satisfait avec succès aux exigences de l'épreuve d'attestation portant sur
@@ -9439,7 +9416,7 @@ function exportAttestationOfficielle(sec, mod) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `Attestation_${ep.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -9620,9 +9597,8 @@ function exportGrilleEvaluation(sec, mod) {
   </table>
   <div class="head-rule"></div>
   <p class="head-id-line">
-    <span><b>Élève&nbsp;:</b> ${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</span>
+    <span><b>Code élève&nbsp;:</b> ${escapeHtml(e.userCode || "—")}</span>
     <span><b>Classe&nbsp;:</b> ${escapeHtml(e.classe||"—")}</span>
-    <span><b>Année scolaire&nbsp;:</b> ${escapeHtml(e.annee_scolaire||"—")}</span>
     <span><b>Date&nbsp;:</b> ${escapeHtml(date)}</span>
   </p>
 
@@ -9680,7 +9656,7 @@ function exportGrilleEvaluation(sec, mod) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `GrilleEval_${ep.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -9726,8 +9702,8 @@ function exportAttestationAssiette(sec, mod) {
     <h1>Attestation de connaissances</h1>
     <h2>Je sais composer une assiette équilibrée</h2>
 
-    <div class="att-name">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</div>
-    <div class="att-classe">${escapeHtml(e.classe||"")}${e.annee_scolaire ? " — " + escapeHtml(e.annee_scolaire) : ""}</div>
+    <div class="att-name">${escapeHtml(e.userCode || "Élève anonyme")}</div>
+    <div class="att-classe">${escapeHtml(e.classe||"")}</div>
 
     <p class="att-text">
       A étudié les <b>groupes alimentaires</b>, les <b>constituants alimentaires</b>,
@@ -9749,7 +9725,7 @@ function exportAttestationAssiette(sec, mod) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `Attestation_Assiette_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -12212,7 +12188,7 @@ function exportModuleWord(sec, mod) {
 <body>
   <h1>${br(sec.titre)}</h1>
   <div class="identity">
-    <b>${br(e.prenom)} ${br(e.nom)}</b> — ${br(e.classe)} (${br(e.annee_scolaire)})
+    <b>${br(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + br(e.classe) : ""}
     — ${new Date().toLocaleDateString("fr-FR")}
   </div>
 
@@ -12228,7 +12204,7 @@ function exportModuleWord(sec, mod) {
   const blob = new Blob(["\ufeff", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `Fiche_${sec.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -12523,13 +12499,12 @@ function applyEvaluationImport(data) {
     throw new Error("Ce fichier n'est pas une évaluation enseignant.");
   }
   if (data.eleve) {
-    const expected = [state.infos_eleve.nom, state.infos_eleve.prenom, state.infos_eleve.classe]
-      .map(v => String(v || "").trim().toLowerCase()).join("|");
-    const incoming = [data.eleve.nom, data.eleve.prenom, data.eleve.classe]
-      .map(v => String(v || "").trim().toLowerCase()).join("|");
-    if (expected !== "||" && incoming !== "||" && expected !== incoming) {
-      const ok = confirm("Attention : ce retour d'évaluation ne semble pas correspondre à cet élève.\n\nImporter quand même ?");
-      if (!ok) throw new Error("Import annulé : élève différent.");
+    // RGPD : on compare uniquement les codes élèves (jamais les noms/prénoms)
+    const expected = String(state.infos_eleve.userCode || "").trim().toUpperCase();
+    const incoming = String(data.eleve.userCode || "").trim().toUpperCase();
+    if (expected && incoming && expected !== incoming) {
+      const ok = confirm("Attention : ce retour d'évaluation ne semble pas correspondre à ce code élève.\n\nImporter quand même ?");
+      if (!ok) throw new Error("Import annulé : code élève différent.");
     }
   }
   if (!Array.isArray(state.evaluations)) state.evaluations = [];
@@ -12628,7 +12603,7 @@ function exportFicheMenuWord() {
   <h1>${br(nomMenu)}</h1>
   <div class="subtitle">Fiche menu — Chef-d'œuvre CAP</div>
   <div class="identity">
-    <b>${br(e.prenom)} ${br(e.nom)}</b> — ${br(e.classe)} (${br(e.annee_scolaire)})
+    <b>${br(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + br(e.classe) : ""}
     — ${new Date().toLocaleDateString("fr-FR")}
   </div>
 
@@ -12662,7 +12637,7 @@ function exportFicheMenuWord() {
   const blob = new Blob(["\ufeff", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url;
   a.download = `FicheMenu_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -12730,7 +12705,8 @@ function doExportJSON() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (state.infos_eleve.nom || "eleve").replace(/\s+/g, "_");
+  // RGPD : nom de fichier basé sur le code élève (anonymisé), jamais sur le nom
+  const n = (state.infos_eleve.userCode || "anonyme").replace(/\s+/g, "_");
   a.href = url; a.download = `portfolio_${n}_${new Date().toISOString().slice(0,10)}.json`;
   a.style.display = "none";
   document.body.appendChild(a);
@@ -12802,10 +12778,8 @@ function buildDossierHTML() {
       <div class="project-title">${escapeHtml(state.meta.projet_titre)}</div>
       <div class="project-title"><b>${escapeHtml(e.titre_dossier || "Sans titre")}</b></div>
       <div class="identity">
-        <div><b>Nom :</b> ${escapeHtml(e.nom)}</div>
-        <div><b>Prénom :</b> ${escapeHtml(e.prenom)}</div>
-        <div><b>Classe :</b> ${escapeHtml(e.classe)}</div>
-        <div><b>Année scolaire :</b> ${escapeHtml(e.annee_scolaire)}</div>
+        <div><b>Code élève :</b> ${escapeHtml(e.userCode || "—")}</div>
+        <div><b>Classe :</b> ${escapeHtml(e.classe || "—")}</div>
         <div style="margin-top:14px;"><b>Date d'édition :</b> ${today}</div>
       </div>
     </div>
@@ -12881,7 +12855,7 @@ function buildOralHTML(asFullDoc) {
   const parts = buildOralParts();
   let html = asFullDoc ? `<div class="print-doc"><div class="print-oral" style="page-break-before:auto;">` : `<div class="print-oral">`;
   html += `<h2>🎤 Synthèse orale finale</h2>`;
-  html += `<p><b>${escapeHtml(e.prenom)} ${escapeHtml(e.nom)}</b> — ${escapeHtml(e.classe)} (${escapeHtml(e.annee_scolaire)})</p>`;
+  html += `<p><b>${escapeHtml(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + escapeHtml(e.classe) : ""}</p>`;
   parts.forEach(part => {
     html += `<div class="oral-part"><h3>${escapeHtml(part.titre)}</h3>`;
     if (part.lines.length === 0) {
@@ -13906,7 +13880,7 @@ function recordMeteoEmotion(emo, nuance, modal) {
       <p class="hint">Ton émotion a été enregistrée.</p>
     </div>
     <div class="meteo-confirm">
-      <p style="text-align:center;">Bonne séance${state.infos_eleve.prenom ? ", " + escapeHtml(state.infos_eleve.prenom) : ""} !</p>
+      <p style="text-align:center;">Bonne séance !</p>
       <button type="button" class="btn btn-primary btn-lg" id="meteo-go">Commencer ma séance</button>
     </div>
   `;
@@ -14070,7 +14044,8 @@ function showSplashScreen() {
   const splash = document.createElement("div");
   splash.id = "splash-screen";
   splash.className = "splash";
-  const initials = (escapeHtml((e.prenom||"?").charAt(0)) + escapeHtml((e.nom||"").charAt(0))).toUpperCase() || "?";
+  // RGPD : initiales basées sur le code élève
+  const initials = escapeHtml((e.userCode || "?").slice(0, 2)).toUpperCase();
   splash.innerHTML = `
     <div class="splash-content">
       <div class="splash-eyebrow">Portfolio Chef-d'œuvre · CAP</div>
@@ -14084,12 +14059,8 @@ function showSplashScreen() {
               : `<div class="splash-photo-empty">${initials}</div>`}
         </div>
         <div class="splash-meta">
-          <h1 class="splash-name">${escapeHtml(e.prenom || "Bienvenue")} ${escapeHtml(e.nom || "")}</h1>
-          <div class="splash-classe">
-            ${escapeHtml(e.classe || "")}
-            ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
-            ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
-          </div>
+          <h1 class="splash-name">${escapeHtml(e.userCode || "Bienvenue")}</h1>
+          <div class="splash-classe">${escapeHtml(e.classe || "")}</div>
           ${e.titre_dossier ? `<div class="splash-projet">${escapeHtml(e.titre_dossier)}</div>` : ""}
         </div>
       </div>
@@ -15591,8 +15562,9 @@ function openAvatarEditor() {
       canvas.toBlob((png) => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(png);
-        const nom = (state.infos_eleve.prenom || "avatar").replace(/\s+/g, "_");
-        a.download = `Avatar_${nom}_${new Date().toISOString().slice(0,10)}.png`;
+        // RGPD : nom de fichier sans donnée personnelle
+        const code = (state.infos_eleve.userCode || "avatar").replace(/\s+/g, "_");
+        a.download = `Avatar_${code}_${new Date().toISOString().slice(0,10)}.png`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       }, "image/png");
