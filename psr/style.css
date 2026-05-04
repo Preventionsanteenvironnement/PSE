@@ -4142,8 +4142,82 @@ body.with-demo-banner { padding-top: 0; }
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .app-body { grid-template-columns: 1fr; }
-  .sidebar { position: static; max-height: none; }
   .main { padding: 18px; }
+
+  /* Sidebar = drawer off-canvas */
+  .sidebar {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    width: 86vw;
+    max-width: 360px;
+    max-height: 100dvh;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease-out;
+    z-index: 2500;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+    padding-top: 60px; /* place pour le bouton fermer */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sidebar.sidebar-open { transform: translateX(0); }
+
+  /* Bouton fermer drawer */
+  .sidebar-close-mobile {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 44px; height: 44px;
+    border: none;
+    background: var(--c-surface-2);
+    color: var(--c-text);
+    border-radius: 50%;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2;
+  }
+  .sidebar-close-mobile:hover { background: var(--c-border); }
+
+  /* Overlay sombre derrière le drawer */
+  .sidebar-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.5);
+    z-index: 2400;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0s 0.2s;
+  }
+  .sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s, visibility 0s;
+  }
+
+  /* Bouton hamburger flottant */
+  .menu-toggle {
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 2300;
+    width: 48px; height: 48px;
+    border: none;
+    background: linear-gradient(135deg, var(--c-primary, #2c3e50), var(--c-primary-dark, #1a2530));
+    color: #fff;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .menu-toggle:active { transform: scale(0.96); }
+
+  /* Le header se décale pour laisser place au hamburger */
+  .app-header { padding-left: 70px; }
+
+  /* Quand la sidebar est ouverte, le scroll du body est bloqué */
+  body.sidebar-open-state { overflow: hidden; }
+}
+
+/* Hamburger caché sur desktop */
+@media (min-width: 901px) {
+  .menu-toggle, .sidebar-overlay, .sidebar-close-mobile { display: none !important; }
 }
 
 /* =====================================================================
@@ -4619,6 +4693,8 @@ body.with-demo-banner { padding-top: 0; }
   border-radius: 16px;
   width: min(1200px, 96vw);
   height: min(820px, 92vh);
+  /* Mobile : utiliser dvh pour gérer la barre d'URL iOS */
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0,0,0,0.4);
@@ -4649,12 +4725,15 @@ body.with-demo-banner { padding-top: 0; }
 }
 .galerie-search input:focus { outline: 2px solid #f0c98c; }
 .galerie-close {
-  width: 36px; height: 36px;
+  width: 44px; height: 44px;
   border: none; background: rgba(255,255,255,0.15);
-  color: #fff; font-size: 1.2rem;
+  color: #fff; font-size: 1.4rem;
   border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 .galerie-close:hover { background: rgba(255,255,255,0.3); }
+.galerie-close:active { background: rgba(255,255,255,0.45); }
 
 .galerie-tabs {
   display: flex;
@@ -4822,6 +4901,12 @@ body.with-demo-banner { padding-top: 0; }
   justify-content: space-between;
   align-items: center;
   gap: 14px;
+  /* Mobile : footer collant en bas + safe-area iPhone */
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
 }
 .galerie-selected-info {
   flex: 1;
@@ -4883,13 +4968,45 @@ body.with-demo-banner { padding-top: 0; }
 .app-toast.visible { opacity: 1; transform: translateX(0); }
 
 @media (max-width: 700px) {
-  .galerie-modal { width: 100vw; height: 100vh; border-radius: 0; }
-  .galerie-header { grid-template-columns: 1fr auto; }
+  .galerie-modal {
+    width: 100vw;
+    height: 100dvh;       /* dvh = dynamic viewport height (gère la barre d'URL Safari) */
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .galerie-header { grid-template-columns: 1fr auto; padding: 12px 14px; }
   .galerie-search { grid-column: 1 / -1; order: 3; }
-  .galerie-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .galerie-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); padding: 12px; gap: 8px; }
+  .galerie-tabs { padding: 0 12px; }
+  .galerie-subs { padding: 8px 12px; }
+  .galerie-footer { padding: 12px 14px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .galerie-actions .btn { padding: 12px 16px; min-height: 44px; font-size: 0.95rem; }
   .galerie-fab .fab-label { display: none; }
   .galerie-fab { padding: 14px; border-radius: 50%; }
+  /* Indicateur visuel : les onglets sont scrollables horizontalement */
+  .galerie-tabs::after {
+    content: "›";
+    position: sticky;
+    right: 0;
+    background: linear-gradient(90deg, transparent, #f7f9fc 60%);
+    padding: 12px 14px 12px 26px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
 }
+
+/* Body scroll lock : appliqué quand une modale est ouverte */
+body.body-modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+/* FAB caché quand une modale plein écran est ouverte */
+body.body-modal-open .galerie-fab,
+body.body-modal-open .tools-fab { display: none !important; }
 
 /* =====================================================================
    V4.43 — Photos dans les exercices DnD

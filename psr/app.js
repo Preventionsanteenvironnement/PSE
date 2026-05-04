@@ -11390,6 +11390,8 @@ function openGaleriePicker(opts = {}) {
   `;
   back.appendChild(modal);
   document.body.appendChild(back);
+  // Mobile : on bloque le scroll du body pour éviter le double-scroll
+  document.body.classList.add("body-modal-open");
 
   const tabsEl = modal.querySelector(".galerie-tabs");
   cats.forEach(c => {
@@ -11686,6 +11688,8 @@ function closeGaleriePicker() {
     document.removeEventListener("keydown", _galerieState._escHandler);
   }
   _galerieState = null;
+  // Mobile : on relâche le scroll du body
+  document.body.classList.remove("body-modal-open");
 }
 
 /* V4.49 — Bouton dans la barre latérale (remplace l'ancien bouton flottant). */
@@ -12688,6 +12692,43 @@ function bindGlobalEvents() {
   // V4.25 : avatar header cliquable pour ouvrir l'éditeur
   const headerAvatar = document.getElementById("header-avatar");
   if (headerAvatar) headerAvatar.addEventListener("click", openAvatarEditor);
+
+  // ===== Mobile : drawer sidebar =====
+  setupMobileDrawer();
+}
+
+function setupMobileDrawer() {
+  const sidebar  = document.getElementById("sidebar");
+  const overlay  = document.getElementById("sidebar-overlay");
+  const btnOpen  = document.getElementById("menu-toggle");
+  const btnClose = document.getElementById("sidebar-close-mobile");
+  if (!sidebar || !overlay || !btnOpen) return;
+
+  function openDrawer() {
+    sidebar.classList.add("sidebar-open");
+    overlay.classList.add("visible");
+    document.body.classList.add("sidebar-open-state");
+  }
+  function closeDrawer() {
+    sidebar.classList.remove("sidebar-open");
+    overlay.classList.remove("visible");
+    document.body.classList.remove("sidebar-open-state");
+  }
+  btnOpen.addEventListener("click", openDrawer);
+  if (btnClose) btnClose.addEventListener("click", closeDrawer);
+  overlay.addEventListener("click", closeDrawer);
+
+  // Auto-fermeture du drawer après navigation (clic sur un onglet ou une section)
+  sidebar.addEventListener("click", (e) => {
+    if (window.innerWidth > 900) return;
+    const navBtn = e.target.closest(".view-btn, .section-list a, .section-list button, .sidebar-tool-btn");
+    if (navBtn) setTimeout(closeDrawer, 120);
+  });
+
+  // Fermeture sur Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && sidebar.classList.contains("sidebar-open")) closeDrawer();
+  });
 }
 
 /* =====================================================================
