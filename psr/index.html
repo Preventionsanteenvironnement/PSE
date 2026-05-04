@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio — Chef-d'œuvre CAP</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📒</text></svg>" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<!-- =========================================================
+     Portfolio numérique — Chef-d'œuvre CAP (V2)
+     Ajouts V2 :
+       - Encart pédagogique par section (consigne / production / attentes)
+       - Vue "Synthèse orale finale"
+       - Vue "Tableau récapitulatif enseignant"
+       - Export "Dossier final" imprimable (page de garde, sommaire…)
+       - Photos redimensionnées/compressées avant stockage
+     Voir app.js → SECTIONS_SCHEMA pour la structure pédagogique.
+     ========================================================= -->
+
+<header class="app-header no-print">
+  <div class="app-header-left">
+    <h1>Portfolio — Chef-d'œuvre</h1>
+    <p class="app-subtitle">Concevoir un repas ou menu équilibré et éco-responsable</p>
+  </div>
+  <div class="app-header-right">
+    <!-- V4.25 : avatar + prénom toujours visible, cliquable pour modifier -->
+    <button id="header-avatar" class="header-avatar" type="button" title="Cliquer pour modifier mon avatar">
+      <span id="header-avatar-visu" class="header-avatar-visu"></span>
+      <span id="header-avatar-name" class="header-avatar-name">Mon avatar</span>
+    </button>
+    <button id="btn-mon-projet" class="btn-mon-projet" type="button" title="Aller à mon tableau de bord projet">
+      <span class="btn-mon-projet-icon">🍽️</span>
+      <span class="btn-mon-projet-text">Mon projet</span>
+    </button>
+    <div id="save-indicator" class="save-indicator">Jamais enregistré</div>
+    <!-- V4.13 : indicateur du dernier export JSON -->
+    <div id="export-indicator" class="export-indicator" title="Dernier export JSON">Pas encore exporté</div>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- Navigation latérale -->
+  <nav class="sidebar no-print" id="sidebar" aria-label="Navigation des sections">
+    <div class="progress-block">
+      <div class="progress-label">
+        <span>Progression globale</span>
+        <span id="progress-percent">0 %</span>
+      </div>
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div class="progress-stats" id="progress-stats">0 / 0 sections terminées</div>
+    </div>
+
+    <!-- V4.5 : navigation principale (5 vues) -->
+    <nav class="nav-block" aria-label="Navigation principale">
+      <button class="view-btn nav-btn" data-view="home"          type="button">🏠 Accueil</button>
+      <button class="view-btn nav-btn nav-btn-cours" data-view="parcours"      type="button">📚 Mes cours</button>
+      <button class="view-btn nav-btn nav-btn-projet" data-view="projet" type="button">✏️ Concevoir mon projet</button>
+      <button class="view-btn nav-btn nav-btn-dossier" data-view="dossier" type="button">🏆 Mon œuvre</button>
+      <button class="view-btn nav-btn" data-view="jalons"        type="button">📊 Mes résultats</button>
+      <button class="view-btn nav-btn" data-view="oral-summary"  type="button">🎤 Épreuve orale 2027</button>
+      <button class="view-btn nav-btn nav-btn-revision" data-view="revision" type="button">💪 Entraîne-toi</button>
+    </nav>
+
+    <!-- V4.49 : section "Outils" — boutons isolés (les autres sont dans Espace révision) -->
+    <div class="sidebar-tools">
+      <div class="sidebar-tools-title">Outils</div>
+      <button class="sidebar-tool-btn" id="sidebar-banque-images" type="button" title="Parcourir la banque d'images">
+        <span class="stb-icon">🖼️</span><span>Banque d'images</span>
+      </button>
+      <button class="sidebar-tool-btn" id="sidebar-glossaire" type="button" title="Définitions des mots du chef-d'œuvre">
+        <span class="stb-icon">📖</span><span>Glossaire</span>
+      </button>
+      <button class="sidebar-tool-btn" id="sidebar-mon-avatar" type="button" title="Ma fiche de présentation (état civil, photo, intérêts, projet)">
+        <span class="stb-icon">👤</span><span>Ma fiche de présentation</span>
+      </button>
+      <button class="sidebar-tool-btn" id="sidebar-edit-avatar" type="button" title="Composer mon avatar (apparence visuelle)">
+        <span class="stb-icon">🎨</span><span>Mon avatar</span>
+      </button>
+      <button class="sidebar-tool-btn" id="sidebar-mon-avis" type="button" title="Donner mon avis pour améliorer le portfolio">
+        <span class="stb-icon">💬</span><span>Donner mon avis</span>
+      </button>
+      <button class="sidebar-tool-btn sidebar-tool-teacher" id="sidebar-mode-enseignant" type="button" title="Mode enseignant — pour valider les épreuves directement">
+        <span class="stb-icon">🔒</span><span>Mode enseignant</span>
+      </button>
+    </div>
+
+    <ul id="section-list" class="section-list" hidden></ul>
+
+    <!-- V4.6 : "Sauvegarde" en accordéon repliable -->
+    <details class="sidebar-save" id="sidebar-save">
+      <summary class="sidebar-save-summary">
+        <span>Sauvegarde</span>
+      </summary>
+      <div class="sidebar-actions">
+        <button id="btn-save"          class="btn btn-primary" type="button">Enregistrer</button>
+        <button id="btn-export"        class="btn" type="button">Exporter JSON</button>
+        <button id="btn-import"        class="btn" type="button">Importer JSON</button>
+        <input  type="file" id="import-file" accept="application/json" hidden />
+        <!-- Export Word retiré (RGPD + simplification) -->
+        <button id="btn-print-dossier" class="btn" type="button">Imprimer le dossier final</button>
+        <button id="btn-print-oral"    class="btn" type="button">Imprimer la synthèse orale</button>
+        <button id="btn-logout"        class="btn" type="button">Se déconnecter</button>
+        <button id="btn-reset"         class="btn btn-danger" type="button">Réinitialiser</button>
+      </div>
+    </details>
+  </nav>
+
+  <!-- Zone principale -->
+  <main class="main" id="main">
+    <div id="alerts" class="alerts no-print"></div>
+    <div id="section-container"></div>
+  </main>
+
+</div>
+
+<!-- Zone d'impression dédiée : remplie à la volée -->
+<div id="print-area" class="print-only"></div>
+
+<!-- RGPD : base élèves (userCode + classe uniquement, pas de nom/prénom) -->
+<script src="data_eleves.js"></script>
+<!-- RGPD : authentification par code élève -->
+<script src="auth.js"></script>
+<!-- V4.31 : ressources personnalisées de l'enseignant·e (à éditer librement) -->
+<script src="ressources_perso.js"></script>
+<!-- V4.42 : index automatique des 410 images de ressources_eco/ -->
+<script src="banque_images.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Anti-Contamination — CAP PSR</title>
+<style>
+/* ============================================================
+   MISSION ANTI-CONTAMINATION
+   Jeu pédagogique sur la marche en avant — CAP PSR
+   ============================================================ */
+:root{
+  --bg:#0f172a; --panel:#1e293b; --panel2:#334155;
+  --txt:#f1f5f9; --muted:#94a3b8;
+  --sale:#dc2626; --sale-bg:#7f1d1d;
+  --propre:#16a34a; --propre-bg:#14532d;
+  --orange:#ea580c; --vigilance:#f59e0b;
+  --bleu:#2563eb; --jaune:#eab308; --violet:#7c3aed;
+  --ok:#22c55e; --ko:#ef4444;
+  --shadow:0 10px 30px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none !important}
+
+/* ============== ÉCRAN ACCUEIL ============== */
+#screen-home{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);
+}
+#screen-home h1{font-size:clamp(28px,5vw,48px);margin:0 0 8px;letter-spacing:.5px;text-align:center}
+#screen-home .subtitle{color:#cbd5e1;font-size:clamp(14px,2.5vw,18px);text-align:center;max-width:600px;margin-bottom:32px}
+.card{background:var(--panel);border-radius:16px;padding:24px;box-shadow:var(--shadow);width:100%;max-width:520px}
+.card label{display:block;margin:12px 0 6px;font-weight:600;color:#cbd5e1}
+.card input{width:100%;padding:12px 14px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:var(--txt);font-size:16px}
+.card input:focus{outline:2px solid var(--bleu);border-color:var(--bleu)}
+.btn-row{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.btn{padding:14px 20px;border:none;border-radius:10px;font-size:16px;font-weight:600;color:#fff;transition:transform .1s, filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:active{transform:scale(.98)}
+.btn-demo{background:var(--bleu)}
+.btn-play{background:var(--propre)}
+.btn-defi{background:var(--violet)}
+.btn-secondary{background:var(--panel2);color:var(--txt)}
+.btn-danger{background:var(--ko)}
+.teacher-link{margin-top:20px;color:var(--muted);font-size:13px;text-align:center;cursor:pointer;text-decoration:underline}
+
+/* ============== ÉCRAN JEU ============== */
+#screen-game{display:flex;flex-direction:column;min-height:100vh}
+.hud{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;padding:10px;background:var(--panel);border-bottom:2px solid var(--panel2)}
+.hud-cell{background:var(--panel2);border-radius:8px;padding:8px 12px}
+.hud-cell .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.hud-cell .val{font-size:18px;font-weight:700;margin-top:2px}
+.lives{display:flex;gap:4px}
+.life{width:18px;height:18px;background:var(--ko);clip-path:polygon(50% 90%,5% 35%,25% 10%,50% 25%,75% 10%,95% 35%);transition:opacity .3s}
+.life.lost{opacity:.2;background:#475569}
+.gauge{height:10px;background:#0f172a;border-radius:5px;overflow:hidden;margin-top:6px}
+.gauge-fill{height:100%;background:linear-gradient(90deg,var(--ok),var(--vigilance),var(--ko));transition:width .4s}
+.progress-bar{display:flex;gap:2px;margin-top:6px}
+.progress-step{flex:1;height:8px;background:#0f172a;border-radius:2px}
+.progress-step.done{background:var(--ok)}
+.progress-step.current{background:var(--vigilance);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.5}}
+
+.game-area{flex:1;display:grid;grid-template-columns:1fr 320px;gap:12px;padding:12px}
+@media(max-width:900px){.game-area{grid-template-columns:1fr}}
+
+/* === Plan cuisine === */
+.map-wrap{position:relative;background:var(--panel);border-radius:12px;overflow:hidden}
+.map-img{width:100%;height:auto;display:block;background:#475569}
+.zone{position:absolute;border:3px solid transparent;border-radius:6px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.05)}
+.zone:hover{background:rgba(255,255,255,.18);border-color:#fff}
+.zone.done{border-color:var(--ok);background:rgba(34,197,94,.25)}
+.zone.current{border-color:#fbbf24;border-width:4px;background:rgba(251,191,36,.18);box-shadow:0 0 0 2px rgba(251,191,36,.5) inset, 0 0 16px rgba(251,191,36,.6)}
+.zone.error{border-color:var(--ko);background:rgba(239,68,68,.4);animation:flash .3s 3}
+@keyframes flash{50%{background:rgba(239,68,68,.7)}}
+.zone-label{position:absolute;top:2px;left:2px;background:rgba(0,0,0,.7);color:#fff;padding:1px 6px;font-size:10px;border-radius:3px;pointer-events:none}
+.chef{position:absolute;width:7%;aspect-ratio:1;background:#fff;border:3px solid #fbbf24;border-radius:50%;transform:translate(-50%,-50%);transition:left .4s, top .4s;z-index:10;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.5);overflow:hidden}
+.chef img{width:100%;height:100%;object-fit:contain;border-radius:50%;background:#fff}
+.action-bubble{position:absolute;z-index:20;transform:translate(-50%,-100%);background:#fbbf24;color:#0f172a;padding:10px 16px;border-radius:14px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);cursor:pointer;border:none;font-size:14px;max-width:240px;animation:bounce 1s infinite;white-space:normal;text-align:center;line-height:1.3}
+.action-bubble::after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fbbf24}
+.action-bubble:hover{filter:brightness(1.1)}
+@keyframes bounce{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,calc(-100% - 6px))}}
+
+/* === Panneau action === */
+.side{display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border-radius:12px;padding:14px}
+.panel h3{margin:0 0 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.product-state{display:flex;align-items:center;gap:10px}
+.product-icon{width:48px;height:48px;border-radius:8px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.product-icon img{width:100%;height:100%;object-fit:contain;border-radius:8px;background:#fff;padding:2px}
+.product-state .txt{font-weight:600}
+.product-state .sub{font-size:12px;color:var(--muted)}
+.product-state.contaminated .product-icon{background:var(--sale-bg);outline:2px solid var(--sale)}
+.action-list{display:flex;flex-direction:column;gap:8px}
+.action-btn{display:flex;align-items:center;gap:10px;padding:10px;background:var(--panel2);border:2px solid transparent;border-radius:8px;color:var(--txt);text-align:left;font-size:14px}
+.action-btn:hover{border-color:var(--bleu)}
+.action-btn.done{border-color:var(--ok);background:rgba(34,197,94,.15)}
+.action-btn.done::after{content:"✓";margin-left:auto;color:var(--ok);font-weight:bold}
+#actions-panel.required{outline:3px solid #fbbf24;animation:pulseOutline 1.6s infinite}
+@keyframes pulseOutline{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.6)}50%{box-shadow:0 0 0 8px rgba(251,191,36,0)}}
+.action-btn img{width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0;background:#fff;padding:2px}
+.action-btn .ph{width:32px;height:32px;background:var(--panel);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+
+/* === D-pad === */
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:200px;margin:0 auto}
+.dpad button{padding:18px;background:var(--panel2);border:none;border-radius:8px;color:var(--txt);font-size:20px;font-weight:bold}
+.dpad button:active{background:var(--bleu)}
+.dpad .empty{visibility:hidden}
+
+/* === Bandeau message === */
+.message-bar{padding:10px 14px;border-radius:8px;margin:0 12px;font-weight:600;text-align:center;animation:slideIn .3s}
+.message-bar.ok{background:var(--propre-bg);color:#bbf7d0;border:1px solid var(--propre)}
+.message-bar.ko{background:var(--sale-bg);color:#fecaca;border:1px solid var(--sale)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+
+/* ============== MODALES ============== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal{background:var(--panel);border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:var(--shadow)}
+.modal-head{padding:18px 22px;border-bottom:2px solid var(--panel2);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+.modal-head.error{background:var(--sale-bg);color:#fecaca;border-bottom-color:var(--sale)}
+.modal-head.success{background:var(--propre-bg);color:#bbf7d0;border-bottom-color:var(--propre)}
+.modal-body{padding:18px 22px}
+.modal-body img{width:100%;max-height:220px;object-fit:contain;border-radius:8px;margin-bottom:14px;background:#fff;padding:8px}
+.modal-body p{margin:8px 0;line-height:1.5}
+.modal-body .lbl{font-weight:700;color:var(--vigilance);text-transform:uppercase;font-size:12px;letter-spacing:.5px;margin-top:12px}
+.modal-foot{padding:14px 22px;border-top:2px solid var(--panel2);display:flex;justify-content:flex-end;gap:8px}
+
+/* ============== QCM ============== */
+.qcm-q{background:var(--panel2);border-radius:8px;padding:14px;margin-bottom:12px}
+.qcm-q .qnum{font-size:12px;color:var(--muted);margin-bottom:6px}
+.qcm-q .qtxt{font-weight:600;margin-bottom:10px}
+.qcm-options{display:flex;flex-direction:column;gap:6px}
+.qcm-opt{padding:10px;background:var(--panel);border:2px solid transparent;border-radius:6px;color:var(--txt);text-align:left;cursor:pointer}
+.qcm-opt:hover{border-color:var(--bleu)}
+.qcm-opt.selected{border-color:var(--bleu);background:#1e3a8a}
+.qcm-opt.correct{border-color:var(--ok);background:var(--propre-bg)}
+.qcm-opt.wrong{border-color:var(--ko);background:var(--sale-bg)}
+
+/* ============== ATTESTATION ============== */
+#screen-attestation{padding:20px;background:#fff;color:#0f172a;min-height:100vh}
+.attestation{max-width:780px;margin:0 auto;background:#fff;padding:50px;border:6px double #1e3a8a;border-radius:8px}
+.attestation h1{text-align:center;color:#1e3a8a;margin-top:0;letter-spacing:1px}
+.attestation .seal{text-align:center;font-size:14px;color:#475569;margin-bottom:30px}
+.attestation .field{margin:14px 0;font-size:16px}
+.attestation .field b{display:inline-block;min-width:140px}
+.attestation .competence{margin-top:30px;padding:14px;background:#eff6ff;border-left:4px solid #1e3a8a;font-style:italic}
+.attestation .sig{margin-top:40px;display:flex;justify-content:space-between;font-size:14px;color:#475569}
+.no-print{margin:20px auto;max-width:780px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+@media print{
+  .no-print{display:none}
+  body{background:#fff !important}
+  #screen-attestation{padding:0}
+}
+
+/* ============== ESPACE ENSEIGNANT ============== */
+.teacher-modal{max-width:780px}
+.teacher-modal table{width:100%;border-collapse:collapse;font-size:13px}
+.teacher-modal th,.teacher-modal td{padding:6px 8px;border-bottom:1px solid var(--panel2);text-align:left}
+.teacher-modal th{background:var(--panel2);position:sticky;top:0}
+.teacher-modal .empty{text-align:center;color:var(--muted);padding:30px}
+
+/* Placeholder image en cas de fichier manquant */
+.img-fallback{display:flex;align-items:center;justify-content:center;background:#475569;color:#fbbf24;font-size:10px;padding:4px;text-align:center;word-break:break-all}
+</style>
+</head>
+<body>
+
+<!-- RGPD : base élèves (code + classe seulement, pas de nom) -->
+<script src="data_eleves.js"></script>
+
+<!-- ===================== ÉCRAN ACCUEIL ===================== -->
+<div id="screen-home">
+  <h1>Mission Anti-Contamination</h1>
+  <p class="subtitle">Guide le cuisinier dans la cuisine sans provoquer de contamination croisée. Apprends à respecter la marche en avant.</p>
+  <div class="card">
+    <label for="eleve-nom">Code élève (Data Élèves)</label>
+    <input id="eleve-nom" type="text" maxlength="10" placeholder="Ex : XX99" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;font-weight:700">
+    <label for="eleve-classe">Classe (renseignée automatiquement)</label>
+    <input id="eleve-classe" type="text" placeholder="—" autocomplete="off" readonly>
+    <div class="btn-row">
+      <button class="btn btn-demo" onclick="startGame('demo')">Voir la démonstration</button>
+      <button class="btn btn-play" onclick="startGame('mission')">Jouer la mission</button>
+      <button class="btn btn-defi" onclick="startGame('defi')">Défi sans aide</button>
+    </div>
+    <div class="teacher-link" onclick="openTeacher()">Espace enseignant</div>
+  </div>
+</div>
+
+<!-- ===================== ÉCRAN JEU ===================== -->
+<div id="screen-game" class="hidden">
+  <div class="hud">
+    <div class="hud-cell">
+      <div class="lbl">Vies</div>
+      <div class="lives" id="hud-lives"></div>
+    </div>
+    <div class="hud-cell">
+      <div class="lbl">Score</div>
+      <div class="val" id="hud-score">0</div>
+    </div>
+    <div class="hud-cell">
+      <div class="lbl">Contamination</div>
+      <div class="gauge"><div class="gauge-fill" id="hud-gauge" style="width:0%"></div></div>
+    </div>
+    <div class="hud-cell">
+      <div class="lbl">Étape <span id="hud-step-num">0/9</span></div>
+      <div class="progress-bar" id="hud-progress"></div>
+    </div>
+    <div class="hud-cell">
+      <div class="lbl">Mode</div>
+      <div class="val" id="hud-mode" style="font-size:14px">—</div>
+    </div>
+  </div>
+
+  <div id="message-bar" class="hidden"></div>
+
+  <div class="game-area">
+    <div class="map-wrap">
+      <img id="map-img" class="map-img" alt="Plan cuisine">
+      <div id="zones-layer"></div>
+      <div class="chef" id="chef"><img id="chef-img" alt=""></div>
+      <button class="action-bubble hidden" id="action-bubble"></button>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h3>État du produit</h3>
+        <div class="product-state" id="product-state">
+          <div class="product-icon" id="product-icon"></div>
+          <div>
+            <div class="txt" id="product-text">Produit brut</div>
+            <div class="sub" id="product-sub">Pommes de terre à la réception</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="actions-panel">
+        <h3>Actions disponibles</h3>
+        <div class="action-list" id="actions-list">
+          <div style="color:var(--muted);font-size:13px">Clique sur une zone du plan pour t'y rendre.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Déplacement</h3>
+        <div class="dpad">
+          <span class="empty"></span>
+          <button onclick="moveDir('up')">▲</button>
+          <span class="empty"></span>
+          <button onclick="moveDir('left')">◀</button>
+          <span class="empty"></span>
+          <button onclick="moveDir('right')">▶</button>
+          <span class="empty"></span>
+          <button onclick="moveDir('down')">▼</button>
+          <span class="empty"></span>
+        </div>
+        <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="quitGame()">Quitter la mission</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ÉCRAN QCM ===================== -->
+<div id="screen-qcm" class="hidden" style="padding:20px;max-width:720px;margin:0 auto">
+  <h2>Épreuve finale — 5 questions</h2>
+  <div id="qcm-list"></div>
+  <button class="btn btn-play" style="width:100%;margin-top:14px" onclick="submitQcm()">Valider mes réponses</button>
+</div>
+
+<!-- ===================== ÉCRAN BILAN ===================== -->
+<div id="screen-bilan" class="hidden" style="padding:20px;max-width:600px;margin:0 auto;text-align:center">
+  <h2 id="bilan-title">Mission terminée</h2>
+  <div class="card" style="margin:20px auto">
+    <div style="font-size:48px;font-weight:700" id="bilan-score">0/20</div>
+    <div id="bilan-status" style="font-size:20px;margin:10px 0"></div>
+    <div id="bilan-message" style="color:var(--muted)"></div>
+    <div id="bilan-detail" style="margin-top:14px;font-size:14px;color:#cbd5e1;line-height:1.7"></div>
+    <div style="margin-top:10px;font-size:14px;color:var(--muted)">
+      Erreurs : <span id="bilan-errors">0</span>
+    </div>
+  </div>
+  <div class="card" style="margin:20px auto;text-align:left">
+    <h3 style="margin-top:0;color:var(--vigilance);text-transform:uppercase;font-size:13px;letter-spacing:.5px">Fiche mémo — à retenir</h3>
+    <ol style="margin:0;padding-left:20px;line-height:1.7;color:#e2e8f0">
+      <li>On <b>avance</b> du sale vers le propre.</li>
+      <li>On ne revient <b>jamais</b> en arrière.</li>
+      <li>On retire les <b>emballages extérieurs</b> avant la zone propre.</li>
+      <li>On <b>lave</b> les produits sales (terre, microbes).</li>
+      <li>On se lave les <b>mains</b> et on <b>nettoie/désinfecte</b> le plan avant de préparer.</li>
+      <li>On <b>conditionne</b> et on <b>étiquette</b> avant la distribution.</li>
+    </ol>
+  </div>
+  <div class="btn-row" style="max-width:400px;margin:0 auto">
+    <button class="btn btn-play" id="btn-attest" onclick="showAttestation()">Voir mon attestation</button>
+    <button class="btn btn-secondary" onclick="location.reload()">Recommencer</button>
+  </div>
+</div>
+
+<!-- ===================== ÉCRAN ATTESTATION ===================== -->
+<div id="screen-attestation" class="hidden">
+  <div class="no-print">
+    <button class="btn btn-play" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+    <button class="btn btn-secondary" onclick="show('screen-bilan')">Retour</button>
+  </div>
+  <div class="attestation" id="attestation-content">
+    <h1>Attestation de réussite</h1>
+    <div class="seal">Mission Anti-Contamination — CAP PSR</div>
+    <div class="field"><b>Code élève :</b> <span id="att-nom"></span></div>
+    <div class="field"><b>Classe :</b> <span id="att-classe"></span></div>
+    <div class="field"><b>Date :</b> <span id="att-date"></span></div>
+    <div class="field"><b>Mode :</b> <span id="att-mode"></span></div>
+    <div class="field"><b>Score :</b> <span id="att-score"></span></div>
+    <div class="field"><b>Statut :</b> <span id="att-statut"></span></div>
+    <div class="field"><b>Mention :</b> <span id="att-mention"></span></div>
+    <div class="competence">
+      <b>Compétence travaillée :</b><br>
+      Préparer un produit à emporter en respectant la marche en avant afin d'éviter les contaminations croisées.<br><br>
+      <i>L'élève a su guider le produit du sale vers le propre sans provoquer de contamination croisée.</i>
+    </div>
+    <div class="sig">
+      <div>Signature de l'élève<br>__________________</div>
+      <div>Signature de l'enseignant<br>__________________</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODALE ERREUR ===================== -->
+<div id="modal-error" class="modal-bg hidden">
+  <div class="modal">
+    <div class="modal-head error" id="me-title">Erreur</div>
+    <div class="modal-body">
+      <img id="me-img" alt="">
+      <p id="me-text"></p>
+      <p class="lbl">Risque</p>
+      <p id="me-risk"></p>
+      <p class="lbl">Bon geste</p>
+      <p id="me-good"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-play" onclick="closeError()">J'ai compris</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODALE SUCCÈS ÉTAPE ===================== -->
+<div id="modal-success" class="modal-bg hidden">
+  <div class="modal">
+    <div class="modal-head success">Bonne étape</div>
+    <div class="modal-body">
+      <img id="ms-img" alt="">
+      <p id="ms-text"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-play" onclick="closeSuccess()">Continuer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODALE ENSEIGNANT ===================== -->
+<div id="modal-teacher" class="modal-bg hidden">
+  <div class="modal teacher-modal">
+    <div class="modal-head">Espace enseignant — Résultats</div>
+    <div class="modal-body" id="teacher-body">
+      <div class="empty">Aucun résultat enregistré.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" onclick="clearResults()">Effacer tout</button>
+      <button class="btn btn-play" onclick="exportCsv()">Exporter CSV</button>
+      <button class="btn btn-secondary" onclick="closeTeacher()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG GLOBALE
+   ============================================================ */
+const IMG_BASE = "ressources_eco/mission_anti_contamination/";
+const PATHS = {
+  plan: IMG_BASE + "01_plan_cuisine_jeu/plan_cuisine_vue_du_dessus.jpg",
+  chef_face:  IMG_BASE + "02_personnages/personnage_cuisinier_face.jpg",
+  chef_dos:   IMG_BASE + "02_personnages/personnage_cuisinier_dos.jpg",
+  chef_droite:IMG_BASE + "02_personnages/personnage_cuisinier_profil_marche_1_va_droite.jpg",
+  chef_gauche:IMG_BASE + "02_personnages/personnage_cuisinier_profil_marche_2va_gauche.jpg",
+  pdt:        IMG_BASE + "03_aliments_produits/aliment_pommes_de_terre.jpg",
+  pdt_contam: IMG_BASE + "05_zones_dangereuses_contamination/danger_viande_crue_non_couverte.jpg",
+  // étapes
+  e1: IMG_BASE + "07_etapes_marche_en_avant/etape_01_reception.jpg",
+  e2: IMG_BASE + "07_etapes_marche_en_avant/etape_02_stockage.jpg",
+  e3: IMG_BASE + "07_etapes_marche_en_avant/etape_03_deconditionnement.jpg",
+  e4: IMG_BASE + "07_etapes_marche_en_avant/etape_04_lavage.jpg",
+  e5: IMG_BASE + "07_etapes_marche_en_avant/etape_05_preparation.jpg",
+  e6: IMG_BASE + "07_etapes_marche_en_avant/etape_06_cuisson.jpg",
+  e7: IMG_BASE + "07_etapes_marche_en_avant/etape_07_conditionnement.jpg",
+  e8: IMG_BASE + "07_etapes_marche_en_avant/etape_08_etiquetage_froid.jpg",
+  e9: IMG_BASE + "07_etapes_marche_en_avant/etape_09_distribution.jpg",
+  // actions
+  a_mains:    IMG_BASE + "06_actions_hygiene/action_se_laver_les_mains.jpg",
+  a_desinf:   IMG_BASE + "06_actions_hygiene/action_desinfecter_les_mains.jpg",
+  a_nettoyer: IMG_BASE + "06_actions_hygiene/action_nettoyer_desinfecter.jpg",
+  a_temp:     IMG_BASE + "06_actions_hygiene/action_controler_temperature.jpg",
+  // matériel
+  m_econome: IMG_BASE + "04_materiel_ustensiles/materiel_econome.jpg",
+  m_couteau:  IMG_BASE + "04_materiel_ustensiles/materiel_couteau_legumes.jpg",
+  m_planche:  IMG_BASE + "04_materiel_ustensiles/materiel_planche_decouper.jpg",
+  m_barq:     IMG_BASE + "04_materiel_ustensiles/materiel_barquette_alimentaire.jpg",
+  // dangers
+  d_cartons:  IMG_BASE + "05_zones_dangereuses_contamination/danger_cartons_sur_plan_propre.jpg",
+  d_dechets:  IMG_BASE + "05_zones_dangereuses_contamination/danger_dechets_alimentaires.jpg",
+  d_vaisselle:IMG_BASE + "05_zones_dangereuses_contamination/danger_vaisselle_sale.jpg",
+  d_viande:   IMG_BASE + "05_zones_dangereuses_contamination/danger_viande_crue_non_couverte.jpg",
+  // icones
+  i_risk:     IMG_BASE + "09_icones_indicateurs/icone_risque_contamination.jpg",
+};
+
+/* Définition des zones — coordonnées en % du plan (à calibrer si besoin) */
+const ZONES = {
+  reception:        {x:2,  y:8,  w:18, h:28, label:"Réception",        type:"sale",    step:1, grid:[0,0]},
+  stockage:         {x:24, y:8,  w:22, h:24, label:"Stockage",         type:"sale",    step:2, grid:[0,1]},
+  deconditionnement:{x:50, y:8,  w:22, h:28, label:"Déconditionnement",type:"sale",    step:3, grid:[0,2]},
+  cuisson:          {x:2,  y:38, w:14, h:24, label:"Cuisson",          type:"propre",  step:6, grid:[1,0]},
+  preparation:      {x:24, y:40, w:30, h:22, label:"Préparation",      type:"propre",  step:5, grid:[1,1]},
+  lavage:           {x:60, y:38, w:18, h:22, label:"Lavage",           type:"transition", step:4, grid:[1,2]},
+  conditionnement:  {x:2,  y:66, w:18, h:22, label:"Conditionnement",  type:"propre",  step:7, grid:[2,0]},
+  etiquetage_froid: {x:24, y:66, w:24, h:22, label:"Étiquetage froid", type:"propre",  step:8, grid:[2,1]},
+  distribution:     {x:62, y:66, w:18, h:22, label:"Distribution",     type:"propre",  step:9, grid:[2,2]},
+  dechets:          {x:2,  y:90, w:14, h:8,  label:"Déchets",          type:"danger",  step:0, grid:[3,0]},
+  plonge_sale:      {x:22, y:90, w:24, h:8,  label:"Plonge sale",      type:"danger",  step:0, grid:[3,1]},
+  plonge_propre:    {x:50, y:90, w:18, h:8,  label:"Plonge propre (matériel propre)", type:"neutral", step:0, grid:[3,2]},
+};
+
+const STEP_ORDER = ["reception","stockage","deconditionnement","lavage","preparation","cuisson","conditionnement","etiquetage_froid","distribution"];
+const PRODUCT_STATES = [
+  "Produit brut","Produit stocké","Produit déconditionné","Produit lavé",
+  "Produit préparé","Produit cuit","Produit conditionné","Produit étiqueté","Produit prêt à distribuer"
+];
+
+/* Actions obligatoires par zone */
+const ZONE_ACTIONS = {
+  lavage: [{id:"laver",label:"Laver les pommes de terre",img:PATHS.e4,validates:"laver_produit"}],
+  preparation: [
+    {id:"mains",   label:"Se laver les mains",         img:PATHS.a_mains,    validates:"mains"},
+    {id:"nettoyer",label:"Nettoyer / désinfecter le plan",img:PATHS.a_nettoyer,validates:"plan"},
+    {id:"econome", label:"Prendre l'économe",          img:PATHS.m_econome, validates:"econome"},
+    {id:"couteau", label:"Prendre le couteau légumes", img:PATHS.m_couteau,  validates:"couteau"},
+    {id:"prep",    label:"Éplucher / couper",          img:PATHS.e5,         validates:"prep_done", needs:["mains","plan","econome","couteau"]},
+  ],
+  cuisson: [{id:"cuire",label:"Cuire les pommes de terre",img:PATHS.e6,validates:"cuire"}],
+  conditionnement: [{id:"barq",label:"Mettre en barquette",img:PATHS.m_barq,validates:"barq"}],
+  etiquetage_froid: [
+    {id:"temp",label:"Contrôler la température",img:PATHS.a_temp,validates:"temp_ok"},
+    {id:"etiq",label:"Étiqueter le produit",img:PATHS.e8,validates:"etiq",needs:["temp"]},
+  ],
+  distribution: [{id:"remise",label:"Remettre au client",img:PATHS.e9,validates:"remise",needs:["barq","etiq"]}],
+};
+
+/* QCM */
+const QCM = [
+  {q:"Quelle est la règle d'or de la marche en avant ?",
+   options:["Le sale ne croise jamais le propre","On peut revenir en arrière si on lave","Le froid avant le chaud","Cuisson puis lavage"],
+   ok:0},
+  {q:"Pourquoi faut-il déconditionner ?",
+   options:["Pour gagner de la place","Les emballages extérieurs peuvent être sales","Pour le tri des déchets","Pour peser les aliments"],
+   ok:1},
+  {q:"Pourquoi laver les pommes de terre ?",
+   options:["Pour les rafraîchir","Pour enlever la terre et limiter les microbes","Parce que c'est joli","Pour les saler"],
+   ok:1},
+  {q:"Que faire avant de préparer les aliments ?",
+   options:["Mettre la table","Allumer le four","Se laver les mains et nettoyer le plan","Sortir les déchets"],
+   ok:2},
+  {q:"Pourquoi étiqueter le produit ?",
+   options:["Pour décorer","Pour identifier le produit, sa date et informer le client","Pour le poids","Aucune utilité"],
+   ok:1},
+];
+
+/* ============================================================
+   ÉTAT DU JEU
+   ============================================================ */
+let state = null;
+
+function resetState(mode){
+  const code = document.getElementById('eleve-nom').value.trim().toUpperCase();
+  let classe = document.getElementById('eleve-classe').value.trim();
+  // RGPD : si data_eleves.js disponible, on récupère la classe à partir du code
+  if (window.BDD_ELEVES && code) {
+    const found = window.BDD_ELEVES.find(e => e.userCode === code);
+    if (found) classe = found.classe;
+  }
+  state = {
+    mode,
+    eleve: code || "—",   // RGPD : code élève uniquement (pas de nom/prénom)
+    classe: classe || "—",
+    position: "reception",
+    productState: 0,         // index dans PRODUCT_STATES
+    contaminated: false,
+    lives: 3,
+    score: 0,
+    contamination: 0,
+    currentStep: 1,
+    visited: new Set(["reception"]),
+    completedSteps: new Set(),
+    actions: {},             // {validates: true}
+    errors: 0,
+    qcmScore: 0,
+    qcmAnswers: [],
+    finalScore: 0,
+    statut: "—",
+  };
+  // Réception est validée d'office (point de départ)
+  state.completedSteps.add(1);
+  state.score += 1;
+}
+
+/* ============================================================
+   AFFICHAGE / NAVIGATION
+   ============================================================ */
+function show(id){
+  ["screen-home","screen-game","screen-qcm","screen-bilan","screen-attestation"].forEach(s=>{
+    document.getElementById(s).classList.toggle("hidden", s!==id);
+  });
+}
+
+function startGame(mode){
+  const code = document.getElementById('eleve-nom').value.trim().toUpperCase();
+  if(!code){
+    alert("Saisis ton code élève.");
+    return;
+  }
+  // RGPD : si data_eleves.js est chargé, vérifier que le code existe
+  if (window.BDD_ELEVES) {
+    const found = window.BDD_ELEVES.find(e => e.userCode === code);
+    if (!found) {
+      alert("Code élève inconnu. Vérifie auprès de ton enseignant.");
+      return;
+    }
+    document.getElementById('eleve-classe').value = found.classe;
+  }
+  resetState(mode);
+  show('screen-game');
+  document.getElementById('hud-mode').textContent =
+    mode==='demo'?'Démonstration':mode==='defi'?'Défi sans aide':'Mission';
+  buildMap();
+  renderHud();
+  renderActions();
+  setProductIcon();
+  if(mode==='demo') runDemo();
+}
+
+function buildMap(){
+  const img = document.getElementById('map-img');
+  img.src = PATHS.plan;
+  img.onerror = ()=>{img.style.display='none';document.querySelector('.map-wrap').style.background='#475569';};
+
+  const layer = document.getElementById('zones-layer');
+  layer.innerHTML = '';
+  Object.entries(ZONES).forEach(([id,z])=>{
+    const div = document.createElement('div');
+    div.className = 'zone';
+    div.id = 'zone-'+id;
+    div.style.left = z.x+'%'; div.style.top = z.y+'%';
+    div.style.width = z.w+'%'; div.style.height = z.h+'%';
+    div.onclick = ()=>tryMoveTo(id);
+    const lbl = document.createElement('div');
+    lbl.className='zone-label'; lbl.textContent = z.label;
+    div.appendChild(lbl);
+    layer.appendChild(div);
+  });
+
+  const chefImg = document.getElementById('chef-img');
+  chefImg.src = PATHS.chef_face;
+  chefImg.onerror = ()=>{chefImg.style.display='none';document.getElementById('chef').textContent='👨‍🍳';};
+  placeChef('reception');
+}
+
+function placeChef(zoneId){
+  const z = ZONES[zoneId];
+  const chef = document.getElementById('chef');
+  chef.style.left = (z.x + z.w/2) + '%';
+  chef.style.top  = (z.y + z.h/2) + '%';
+}
+
+function setProductIcon(){
+  const ic = document.getElementById('product-icon');
+  const ps = document.getElementById('product-state');
+  ic.innerHTML = '';
+  const im = document.createElement('img');
+  im.src = state.contaminated ? PATHS.d_viande : PATHS.pdt;
+  im.alt='';
+  im.onerror=()=>{ic.innerHTML='🥔';};
+  ic.appendChild(im);
+  ps.classList.toggle('contaminated', state.contaminated);
+  document.getElementById('product-text').textContent =
+    state.contaminated ? "Produit contaminé" : PRODUCT_STATES[state.productState];
+  document.getElementById('product-sub').textContent =
+    state.contaminated ? "Risque sanitaire — étape ratée" : "Pommes de terre";
+}
+
+function renderHud(){
+  // Vies
+  const lives = document.getElementById('hud-lives');
+  lives.innerHTML='';
+  for(let i=0;i<3;i++){
+    const d=document.createElement('div');
+    d.className='life'+(i>=state.lives?' lost':'');
+    lives.appendChild(d);
+  }
+  // Score
+  document.getElementById('hud-score').textContent = state.score;
+  // Jauge
+  document.getElementById('hud-gauge').style.width = state.contamination+'%';
+  // Progression
+  document.getElementById('hud-step-num').textContent = state.completedSteps.size+'/9';
+  const pb = document.getElementById('hud-progress');
+  pb.innerHTML='';
+  for(let i=1;i<=9;i++){
+    const d=document.createElement('div');
+    d.className='progress-step';
+    if(state.completedSteps.has(i)) d.classList.add('done');
+    else if(i===state.currentStep+1) d.classList.add('current');
+    pb.appendChild(d);
+  }
+  // Zones validées + zone courante
+  Object.keys(ZONES).forEach(id=>{
+    const el=document.getElementById('zone-'+id);
+    if(!el)return;
+    el.classList.toggle('done', state.completedSteps.has(ZONES[id].step) && ZONES[id].step>0);
+    el.classList.toggle('current', id===state.position);
+  });
+}
+
+function renderActions(){
+  const list = document.getElementById('actions-list');
+  const panel = document.getElementById('actions-panel');
+  const z = state.position;
+  const acts = ZONE_ACTIONS[z];
+  panel.classList.remove('required');
+  if(!acts){
+    list.innerHTML='<div style="color:var(--muted);font-size:13px">Aucune action ici. Choisis ta prochaine zone.</div>';
+    return;
+  }
+  // Si au moins une action n'est pas encore validée, faire pulser le panneau
+  // et afficher la bulle d'action flottante à côté du chef
+  const nextPending = acts.find(a=>{
+    if(state.actions[a.validates]) return false;
+    if(a.needs){
+      for(const n of a.needs){
+        const found = Object.values(ZONE_ACTIONS).flat().find(x=>x.id===n);
+        if(found && !state.actions[found.validates]) return false;
+      }
+    }
+    return true;
+  });
+  const bubble = document.getElementById('action-bubble');
+  if(nextPending){
+    panel.classList.add('required');
+    const zo = ZONES[z];
+    bubble.style.left = (zo.x + zo.w/2) + '%';
+    bubble.style.top  = (zo.y) + '%';
+    bubble.textContent = "👉 " + nextPending.label;
+    bubble.onclick = ()=>doAction(z, nextPending);
+    bubble.classList.remove('hidden');
+  } else {
+    bubble.classList.add('hidden');
+  }
+  list.innerHTML='';
+  acts.forEach(a=>{
+    const b = document.createElement('button');
+    b.className = 'action-btn'+(state.actions[a.validates]?' done':'');
+    const img = document.createElement('img');
+    img.src=a.img; img.alt='';
+    img.onerror = ()=>{img.replaceWith(Object.assign(document.createElement('div'),{className:'ph',textContent:a.img.split('/').pop().slice(0,8)}));};
+    b.appendChild(img);
+    const sp = document.createElement('span'); sp.textContent=a.label;
+    b.appendChild(sp);
+    b.onclick = ()=>doAction(z,a);
+    list.appendChild(b);
+  });
+}
+
+/* ============================================================
+   LOGIQUE DE DÉPLACEMENT — case par case
+   Priorité d'erreurs :
+   1. Retour en arrière
+   2. Passage en zone sale ou dangereuse
+   3. Étape sautée
+   4. Action obligatoire oubliée (vérifié à doAction)
+   5. Erreur de conditionnement / étiquetage / distribution trop tôt
+   ============================================================ */
+function tryMoveTo(zoneId){
+  if(state.contaminated){ message("Produit contaminé. Termine ou recommence.","ko"); return; }
+  if(zoneId === state.position) return;
+  const from = ZONES[state.position];
+  const to   = ZONES[zoneId];
+
+  // 1. Retour en arrière (vers étape de step inférieur déjà visitée)
+  if(to.step>0 && from.step>0 && to.step < from.step && state.completedSteps.has(to.step)){
+    return triggerError("retour");
+  }
+
+  // 2. Passage en zone dangereuse avec produit propre (au-delà de l'étape lavage)
+  if(to.type==="danger" && state.productState >= 3){
+    if(zoneId==="dechets")      return triggerError("dechets");
+    if(zoneId==="plonge_sale")  return triggerError("plonge");
+  }
+
+  // 3. Étape sautée (si on saute plus d'une étape avant)
+  if(to.step > 0 && to.step > state.currentStep + 1){
+    // Cas particuliers selon la zone
+    if(to.step===5 && !state.completedSteps.has(3)) return triggerError("decond");
+    if(to.step===5 && !state.completedSteps.has(4)) return triggerError("lavage");
+    if(to.step===9 && (!state.completedSteps.has(7)||!state.completedSteps.has(8)))
+      return triggerError("trop_tot");
+    return triggerError("saut");
+  }
+
+  // Déplacement OK
+  performMove(zoneId);
+}
+
+function performMove(zoneId){
+  // Animation directionnelle sommaire
+  const from = ZONES[state.position], to = ZONES[zoneId];
+  const chefImg = document.getElementById('chef-img');
+  if(to.x > from.x) chefImg.src = PATHS.chef_droite;
+  else if(to.x < from.x) chefImg.src = PATHS.chef_gauche;
+  else if(to.y > from.y) chefImg.src = PATHS.chef_face;
+  else chefImg.src = PATHS.chef_dos;
+
+  state.position = zoneId;
+  state.visited.add(zoneId);
+  placeChef(zoneId);
+
+  // Validation d'étape (sauf étapes nécessitant une action)
+  const z = ZONES[zoneId];
+  if(z.step > 0 && !state.completedSteps.has(z.step)){
+    // Pour réception/stockage/déconditionnement : entrée = validation
+    if(z.step <= 3){
+      validateStep(z.step, zoneId);
+    } else {
+      message("Tu es en zone "+z.label+". Réalise l'action ci-contre avant de continuer.","ok");
+    }
+  }
+  renderActions();
+  renderHud();
+}
+
+function validateStep(stepNum, zoneId){
+  state.completedSteps.add(stepNum);
+  state.currentStep = Math.max(state.currentStep, stepNum);
+  state.productState = stepNum; // index aligné sur les étapes
+  state.score += 2;
+  setProductIcon();
+  showSuccess("Étape "+stepNum+" validée. Le produit avance vers le propre.", PATHS["e"+stepNum]);
+  renderHud();
+}
+
+function doAction(zoneId, act){
+  if(state.actions[act.validates]){ return; }
+  // Vérifier prérequis
+  if(act.needs){
+    for(const n of act.needs){
+      const found = Object.values(ZONE_ACTIONS).flat().find(x=>x.id===n);
+      if(found && !state.actions[found.validates]){
+        if(n==="mains") return triggerError("mains");
+        if(n==="plan") return triggerError("plan");
+        return triggerError("action_oubliee");
+      }
+    }
+  }
+  state.actions[act.validates] = true;
+  state.score += 1;
+  renderActions();
+
+  // Validation d'étape selon zone
+  if(zoneId==="lavage" && act.id==="laver") validateStep(4,"lavage");
+  if(zoneId==="preparation" && act.id==="prep") validateStep(5,"preparation");
+  if(zoneId==="cuisson" && act.id==="cuire") validateStep(6,"cuisson");
+  if(zoneId==="conditionnement" && act.id==="barq") validateStep(7,"conditionnement");
+  if(zoneId==="etiquetage_froid" && act.id==="etiq") validateStep(8,"etiquetage_froid");
+  if(zoneId==="distribution" && act.id==="remise"){
+    validateStep(9,"distribution");
+    message("Mission réussie : le client est protégé.","ok");
+    setTimeout(endMission, 1500);
+  }
+  renderHud();
+}
+
+/* ============================================================
+   ERREURS
+   ============================================================ */
+const ERRORS = {
+  retour:{titre:"Retour en arrière",txt:"Le produit propre revient vers une zone déjà passée plus sale.",risk:"Contamination croisée.",good:"Continue toujours vers l'étape suivante.",img:PATHS.i_risk},
+  dechets:{titre:"Passage par les déchets",txt:"Tu passes par la zone des déchets avec un produit propre.",risk:"Le plat peut être contaminé par les déchets.",good:"Évacue les déchets séparément, sans croiser le produit propre.",img:PATHS.d_dechets},
+  plonge:{titre:"Passage par la plonge sale",txt:"La vaisselle sale ne doit pas croiser les aliments propres.",risk:"Contamination croisée par la vaisselle sale.",good:"Sépare le circuit propre et la plonge sale.",img:PATHS.d_vaisselle},
+  decond:{titre:"Déconditionnement oublié",txt:"Tu as oublié de retirer les emballages extérieurs.",risk:"Les cartons peuvent contaminer la zone propre.",good:"Retire les emballages avant d'aller vers le propre.",img:PATHS.d_cartons},
+  lavage:{titre:"Lavage oublié",txt:"Les pommes de terre sont encore sales.",risk:"La terre et les microbes peuvent contaminer le plat.",good:"Lave les produits avant la préparation.",img:PATHS.e4},
+  saut:{titre:"Étape sautée",txt:"Tu sautes une étape importante de la marche en avant.",risk:"Risque sanitaire — étapes obligatoires.",good:"Respecte l'ordre : réception → stockage → déconditionnement → lavage → préparation → cuisson → conditionnement → étiquetage → distribution.",img:PATHS.i_risk},
+  mains:{titre:"Mains non lavées",txt:"Tu dois te laver les mains avant de préparer.",risk:"Les mains sont le 1er vecteur de contamination.",good:"Lave-toi les mains avant toute manipulation des aliments.",img:PATHS.a_mains},
+  plan:{titre:"Plan non nettoyé",txt:"Le plan de travail n'est pas propre.",risk:"Contamination de la préparation.",good:"Nettoie et désinfecte le plan avant la préparation.",img:PATHS.a_nettoyer},
+  action_oubliee:{titre:"Action oubliée",txt:"Une action obligatoire n'a pas été réalisée.",risk:"Risque de contamination.",good:"Vérifie les actions à faire dans la zone.",img:PATHS.i_risk},
+  trop_tot:{titre:"Distribution trop tôt",txt:"Le plat n'est pas prêt pour le client.",risk:"Manque d'étiquette, mauvaise conservation ou information absente.",good:"Conditionne puis étiquette avant de distribuer.",img:PATHS.e8},
+};
+
+function triggerError(key){
+  const e = ERRORS[key]; if(!e) return;
+  state.errors++;
+  state.contamination = Math.min(100, state.contamination + 25);
+  state.score = Math.max(0, state.score - 1);
+  // Message émotionnel professionnel selon la jauge
+  if(state.contamination < 50)       message("Attention, le risque de contamination augmente.","ko");
+  else if(state.contamination < 75)  message("Le plat est en danger : un consommateur pourrait être malade.","ko");
+  else                               message("Plat fortement contaminé : il ne pourrait pas être servi.","ko");
+  if(state.contamination >= 75 && state.lives>0){
+    state.lives--;
+    state.contamination = 0;
+  }
+  // Flash zone
+  const zEl = document.getElementById('zone-'+state.position);
+  if(zEl){zEl.classList.add('error');setTimeout(()=>zEl.classList.remove('error'),900);}
+  // Modale (sauf en mode défi : seul 1 indice court)
+  if(state.mode==='defi'){
+    message(e.titre+" — "+e.good,"ko");
+  } else {
+    document.getElementById('me-title').textContent = "Erreur — "+e.titre;
+    document.getElementById('me-text').textContent = e.txt;
+    document.getElementById('me-risk').textContent = e.risk;
+    document.getElementById('me-good').textContent = e.good;
+    const img=document.getElementById('me-img');
+    img.src = e.img;
+    img.onerror = ()=>{img.style.display='none';};
+    img.style.display='';
+    document.getElementById('modal-error').classList.remove('hidden');
+  }
+  renderHud();
+  // Game over si plus de vies
+  if(state.lives<=0){
+    setTimeout(()=>{ alert("Plus de vies. La mission s'arrête."); endMission(true); },800);
+  }
+}
+function closeError(){ document.getElementById('modal-error').classList.add('hidden'); }
+
+function showSuccess(text, img){
+  if(state.mode==='demo') return; // silencieux en démo
+  document.getElementById('ms-text').textContent = text;
+  const im = document.getElementById('ms-img');
+  im.src = img;
+  im.onerror = ()=>{im.style.display='none';};
+  im.style.display='';
+  document.getElementById('modal-success').classList.remove('hidden');
+}
+function closeSuccess(){ document.getElementById('modal-success').classList.add('hidden'); }
+
+function message(txt, kind){
+  const el = document.getElementById('message-bar');
+  el.className = 'message-bar '+kind;
+  el.textContent = txt;
+  el.classList.remove('hidden');
+  clearTimeout(message._t);
+  message._t = setTimeout(()=>el.classList.add('hidden'), 3000);
+}
+
+/* ============================================================
+   D-PAD / CLAVIER (case par case sur grille logique)
+   ============================================================ */
+function moveDir(dir){
+  const cur = ZONES[state.position].grid;
+  let target = null, best = 999;
+  Object.entries(ZONES).forEach(([id,z])=>{
+    const dr = z.grid[0]-cur[0], dc = z.grid[1]-cur[1];
+    let ok=false;
+    if(dir==='up'    && dr===-1 && dc===0) ok=true;
+    if(dir==='down'  && dr=== 1 && dc===0) ok=true;
+    if(dir==='left'  && dr=== 0 && dc===-1) ok=true;
+    if(dir==='right' && dr=== 0 && dc=== 1) ok=true;
+    if(ok){ target=id; }
+  });
+  if(target) tryMoveTo(target);
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('screen-game').classList.contains('hidden')) return;
+  if(e.key==='ArrowUp') moveDir('up');
+  else if(e.key==='ArrowDown') moveDir('down');
+  else if(e.key==='ArrowLeft') moveDir('left');
+  else if(e.key==='ArrowRight') moveDir('right');
+});
+
+/* ============================================================
+   MODE DÉMO
+   ============================================================ */
+function runDemo(){
+  const sequence = [
+    {z:"stockage", say:"Étape 2 — Stockage. On range les produits avant de les utiliser."},
+    {z:"deconditionnement", say:"Étape 3 — On retire les emballages extérieurs (cartons sales)."},
+    {z:"lavage", a:"laver", say:"Étape 4 — On lave les pommes de terre pour enlever la terre et les microbes."},
+    {z:"preparation", a:"mains", say:"Avant de préparer : on se lave soigneusement les mains."},
+    {z:"preparation", a:"nettoyer", say:"On nettoie et désinfecte le plan de travail."},
+    {z:"preparation", a:"econome", say:"On prend l'économe pour éplucher les légumes."},
+    {z:"preparation", a:"couteau", say:"On prend le couteau légumes (manche vert)."},
+    {z:"preparation", a:"prep", say:"Étape 5 — On épluche et on coupe les pommes de terre."},
+    {z:"cuisson", a:"cuire", say:"Étape 6 — Cuisson. La chaleur détruit les bactéries restantes."},
+    {z:"conditionnement", a:"barq", say:"Étape 7 — On conditionne le plat dans une barquette propre."},
+    {z:"etiquetage_froid", a:"temp", say:"On contrôle la température : la chaîne du froid doit être respectée."},
+    {z:"etiquetage_froid", a:"etiq", say:"Étape 8 — On étiquette : nom, date, DLC, conservation."},
+    {z:"distribution", a:"remise", say:"Étape 9 — Remise au client. Le plat est sécurisé."},
+  ];
+  let i=0;
+  const next = ()=>{
+    if(i>=sequence.length || state.contaminated) return;
+    const step = sequence[i++];
+    if(step.say) message(step.say,"ok");
+    if(step.z!==state.position) tryMoveTo(step.z);
+    if(step.a){
+      const acts = ZONE_ACTIONS[step.z];
+      const a = acts.find(x=>x.id===step.a);
+      if(a) setTimeout(()=>doAction(step.z,a),700);
+    }
+    setTimeout(next, 2600);
+  };
+  setTimeout(next, 800);
+}
+
+/* ============================================================
+   FIN DE MISSION → QCM → BILAN
+   ============================================================ */
+function endMission(forced){
+  if(state.mode==='demo'){
+    setTimeout(()=>{ alert("Démonstration terminée. Le produit est passé du sale vers le propre sans contamination.");
+      show('screen-home'); },1000);
+    return;
+  }
+  show('screen-qcm');
+  buildQcm();
+}
+
+function buildQcm(){
+  const el = document.getElementById('qcm-list');
+  el.innerHTML='';
+  QCM.forEach((q,qi)=>{
+    const d = document.createElement('div');
+    d.className='qcm-q';
+    d.innerHTML = `<div class="qnum">Question ${qi+1}/5</div><div class="qtxt">${q.q}</div>`;
+    const ops = document.createElement('div');
+    ops.className='qcm-options';
+    q.options.forEach((opt,oi)=>{
+      const b = document.createElement('button');
+      b.className='qcm-opt'; b.textContent=opt;
+      b.onclick=()=>{
+        ops.querySelectorAll('.qcm-opt').forEach(x=>x.classList.remove('selected'));
+        b.classList.add('selected');
+        state.qcmAnswers[qi]=oi;
+      };
+      ops.appendChild(b);
+    });
+    d.appendChild(ops);
+    el.appendChild(d);
+  });
+}
+
+function submitQcm(){
+  if(state.qcmAnswers.length<5 || state.qcmAnswers.includes(undefined)){
+    alert("Réponds aux 5 questions."); return;
+  }
+  state.qcmScore = 0;
+  state.qcmAnswers.forEach((a,i)=>{ if(a===QCM[i].ok) state.qcmScore++; });
+  state.parcoursScore = Math.round((state.completedSteps.size/9)*10*10)/10;
+  state.qcmScore10    = Math.round((state.qcmScore/5)*10*10)/10;
+  state.penalty       = Math.min(5, state.errors*0.5);
+  state.finalScore    = Math.max(0, Math.round(state.parcoursScore + state.qcmScore10 - state.penalty));
+  showBilan();
+}
+
+function showBilan(){
+  show('screen-bilan');
+  document.getElementById('bilan-score').textContent = state.finalScore+"/20";
+  document.getElementById('bilan-errors').textContent = state.errors;
+  document.getElementById('bilan-detail').innerHTML =
+    `Parcours : <b>${state.parcoursScore}/10</b><br>`+
+    `Questions : <b>${state.qcmScore10}/10</b><br>`+
+    `Pénalité erreurs : <b>− ${state.penalty}</b>`;
+  let st="À revoir", msg="Mission échouée : le plat ne peut pas être servi. Reprends la marche en avant.", mention="";
+  if(state.finalScore>=19){ st="Expert hygiène"; msg="Mission réussie : le client est protégé. Tu maîtrises parfaitement la marche en avant."; mention="Expert hygiène"; }
+  else if(state.finalScore>=16){ st="Très bien"; msg="Mission réussie : le plat est sécurisé. Excellent travail."; mention="Très bien"; }
+  else if(state.finalScore>=12){ st="Validé"; msg="Mission validée : le client est protégé. Continue de progresser."; mention="Validé"; }
+  state.statut = st;
+  state.mention = mention;
+  document.getElementById('bilan-status').textContent = st;
+  document.getElementById('bilan-message').textContent = msg;
+  document.getElementById('btn-attest').classList.toggle('hidden', state.finalScore<12);
+  saveResult();
+}
+
+/* ============================================================
+   ATTESTATION
+   ============================================================ */
+function showAttestation(){
+  show('screen-attestation');
+  document.getElementById('att-nom').textContent = state.eleve;
+  document.getElementById('att-classe').textContent = state.classe;
+  document.getElementById('att-date').textContent = new Date().toLocaleDateString('fr-FR');
+  document.getElementById('att-mode').textContent =
+    state.mode==='defi'?'Défi sans aide':'Mission';
+  document.getElementById('att-score').textContent = state.finalScore+"/20";
+  document.getElementById('att-statut').textContent = state.statut;
+  document.getElementById('att-mention').textContent = state.mention || "—";
+}
+
+/* ============================================================
+   PERSISTANCE / EXPORT ENSEIGNANT
+   ============================================================ */
+const LS_KEY = "mission_anti_contam_results_v1";
+function loadResults(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){return [];} }
+function saveResult(){
+  const all = loadResults();
+  all.push({
+    nom_eleve: state.eleve, classe: state.classe,
+    date: new Date().toISOString().slice(0,10),
+    mission: "Anti-Contamination", mode: state.mode,
+    score: state.finalScore, statut: state.statut,
+    nombre_erreurs: state.errors, tentatives: 1,
+  });
+  localStorage.setItem(LS_KEY, JSON.stringify(all));
+}
+
+function openTeacher(){
+  const all = loadResults();
+  const body = document.getElementById('teacher-body');
+  if(!all.length){ body.innerHTML='<div class="empty">Aucun résultat enregistré.</div>'; }
+  else{
+    let h='<table><thead><tr><th>Nom</th><th>Classe</th><th>Date</th><th>Mode</th><th>Score</th><th>Statut</th><th>Erreurs</th></tr></thead><tbody>';
+    all.forEach(r=>{
+      h+=`<tr><td>${esc(r.nom_eleve)}</td><td>${esc(r.classe)}</td><td>${r.date}</td><td>${r.mode}</td><td>${r.score}/20</td><td>${esc(r.statut)}</td><td>${r.nombre_erreurs}</td></tr>`;
+    });
+    h+='</tbody></table>';
+    body.innerHTML=h;
+  }
+  document.getElementById('modal-teacher').classList.remove('hidden');
+}
+function closeTeacher(){ document.getElementById('modal-teacher').classList.add('hidden'); }
+function clearResults(){
+  if(!confirm("Effacer tous les résultats ?")) return;
+  localStorage.removeItem(LS_KEY); openTeacher();
+}
+function exportCsv(){
+  const all = loadResults();
+  if(!all.length){ alert("Aucun résultat à exporter."); return; }
+  const cols = ["nom_eleve","classe","date","mission","mode","score","statut","nombre_erreurs","tentatives"];
+  let csv = cols.join(";")+"\n";
+  all.forEach(r=>{ csv += cols.map(c=>('"'+String(r[c]??"").replace(/"/g,'""')+'"')).join(";")+"\n"; });
+  const blob = new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download="resultats_mission_anti_contamination.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function quitGame(){ if(confirm("Quitter la mission en cours ?")) location.reload(); }
+</script>
+</body>
+</html>

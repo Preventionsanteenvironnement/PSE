@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Outil de correction — Chef-d'œuvre CAP</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+/* =========================================================
+   Outil de correction enseignant (correction.html)
+   - Charge un JSON élève (sans toucher à localStorage)
+   - Permet de naviguer dans son portfolio comme l'élève
+   - Permet de corriger toutes les épreuves d'attestation
+   - Bouton "Validation enseignant" sur chaque question
+   - Réexporte le JSON corrigé pour l'élève
+   ========================================================= */
+
+/* Header dédié, plus discret que le portfolio élève */
+.tt-header {
+  background: linear-gradient(135deg, #c47a00 0%, #8a5a00 100%);
+  color: #fff;
+  padding: 12px 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; flex-wrap: wrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+.tt-title h1 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.tt-title .sub {
+  font-size: .82rem;
+  opacity: .9;
+}
+.tt-actions {
+  display: flex; gap: 8px; align-items: center;
+}
+.tt-actions .btn {
+  background: #fff;
+  color: var(--c-warning);
+  border: 1.5px solid #fff;
+  font-weight: 600;
+}
+.tt-actions .btn:hover { background: #fff8e0; }
+.tt-actions .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.tt-info {
+  background: #fff;
+  border-bottom: 1px solid var(--c-border);
+  padding: 10px 24px;
+  font-size: .92rem;
+  display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+}
+.tt-info .lbl { color: var(--c-muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.tt-info b { color: var(--c-primary-dark); }
+.tt-info .pill {
+  background: var(--c-surface-2); padding: 2px 10px; border-radius: 10px; font-size: .85rem;
+}
+
+/* Écran de bienvenue (avant import) */
+.tt-welcome {
+  max-width: 700px; margin: 80px auto;
+  padding: 40px;
+  background: #fff;
+  border: 2px dashed var(--c-warning);
+  border-radius: 14px;
+  text-align: center;
+}
+.tt-welcome h2 { color: var(--c-primary-dark); }
+.tt-welcome p { color: var(--c-muted); font-size: 1rem; line-height: 1.6; }
+.tt-welcome .btn-lg { margin-top: 18px; }
+
+/* Quand un élève est chargé : vue d'ensemble des épreuves */
+.tt-overview {
+  max-width: 1000px; margin: 16px auto; padding: 0 16px;
+}
+.tt-overview h2 {
+  color: var(--c-primary-dark); margin: 18px 0 10px;
+}
+.tt-epr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.tt-epr-card {
+  background: #fff;
+  border: 1.5px solid var(--c-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.tt-epr-card.tt-pending { border-color: var(--c-warning); background: #fffbe5; }
+.tt-epr-card.tt-validated { border-color: var(--c-accent); background: #f1fbf4; }
+.tt-epr-card.tt-not-passed { background: #fafbfc; }
+
+.tt-epr-titre { font-weight: 700; color: var(--c-primary-dark); }
+.tt-epr-meta { font-size: .85rem; color: var(--c-muted); }
+.tt-epr-note {
+  font-size: 1.6rem; font-weight: 700;
+  color: var(--c-primary-dark);
+}
+.tt-epr-statut {
+  font-size: .76rem; font-weight: 700;
+  padding: 2px 10px; border-radius: 10px;
+  display: inline-block;
+}
+.tt-epr-statut.pending { background: var(--c-warning); color: #fff; }
+.tt-epr-statut.validated { background: var(--c-accent); color: #fff; }
+.tt-epr-statut.not-passed { background: var(--c-surface-2); color: var(--c-muted); }
+.tt-epr-actions { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+/* V4.30 : liste des élèves dans la sidebar */
+.tt-eleves-block {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.tt-eleves-title {
+  font-weight: 700;
+  color: var(--c-primary-dark);
+  font-size: .85rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 8px;
+}
+.tt-eleves-list {
+  list-style: none; padding: 0; margin: 0;
+  max-height: 50vh; overflow-y: auto;
+}
+.tt-eleve-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px; align-items: center;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: var(--c-surface-2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: all .12s;
+}
+.tt-eleve-item:hover { background: #e3efff; }
+.tt-eleve-item.active {
+  background: var(--c-primary);
+  color: #fff;
+  font-weight: 600;
+}
+.tt-eleve-num {
+  background: rgba(0,0,0,.1);
+  color: inherit;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700;
+}
+.tt-eleve-item.active .tt-eleve-num { background: rgba(255,255,255,.3); }
+.tt-eleve-cls {
+  font-size: .72rem;
+  opacity: .75;
+}
+
+.ttsy-card {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.ttsy-card b { color: var(--c-primary-dark); }
+.ttsy-card small { color: var(--c-muted); font-size: .82rem; }
+
+/* Pas de splash, pas de bouton "Mon projet" enseignant */
+.splash, #btn-mon-projet, .export-toast { display: none !important; }
+.export-indicator { display: none !important; }
+
+/* Cacher la vue Accueil splash élève */
+body.teacher-tool .save-indicator { display: none; }
+
+/* On ne montre pas l'avertissement de fermeture côté enseignant : il sait ce qu'il fait */
+</style>
+</head>
+<body class="teacher-tool">
+
+<!-- Header outil enseignant -->
+<header class="tt-header no-print">
+  <div class="tt-title">
+    <h1>📋 Outil de correction enseignant</h1>
+    <div class="sub">Charger un portfolio d'élève · corriger les épreuves · réexporter</div>
+  </div>
+  <div class="tt-actions">
+    <button id="tt-load" class="btn">📂 Charger des portfolios (plusieurs)</button>
+    <input type="file" id="tt-file" accept="application/json" multiple hidden />
+    <button id="tt-export" class="btn" disabled>📤 Exporter ce portfolio</button>
+    <button id="tt-export-all" class="btn" disabled>📤 Exporter tous les retours</button>
+    <button id="tt-classe" class="btn" disabled>📊 Vue classe</button>
+    <button id="tt-synthese" class="btn" disabled>📊 Synthèse élève</button>
+    <button id="tt-csv" class="btn" disabled>📋 Export notes CSV</button>
+    <a href="index.html" class="btn" title="Retour au portfolio élève">↩ Vue élève</a>
+  </div>
+</header>
+
+<!-- Bandeau d'info une fois un élève chargé -->
+<div id="tt-info" class="tt-info no-print" hidden>
+  <span class="lbl">Élève</span> <b id="tt-eleve-name">—</b>
+  <span class="pill" id="tt-eleve-classe"></span>
+  <span class="pill" id="tt-eleve-lycee"></span>
+  <span class="pill" id="tt-eleve-progress"></span>
+</div>
+
+<!-- Zone principale : 1) accueil avant import, 2) overview après import, 3) navigation portfolio -->
+<div class="app-body">
+
+  <!-- Sidebar — réutilisée du portfolio (les boutons inutiles sont cachés via CSS) -->
+  <nav class="sidebar no-print" id="sidebar">
+    <div class="progress-block">
+      <div class="progress-label">
+        <span>Progression de l'élève</span>
+        <span id="progress-percent">— %</span>
+      </div>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <div class="progress-stats" id="progress-stats">—</div>
+    </div>
+
+    <!-- V4.30 : liste des élèves chargés -->
+    <div class="tt-eleves-block" id="tt-eleves-block" hidden>
+      <div class="tt-eleves-title">Mes élèves (<span id="tt-eleves-count">0</span>)</div>
+      <ul class="tt-eleves-list" id="tt-eleves-list"></ul>
+    </div>
+
+    <nav class="nav-block">
+      <button class="view-btn nav-btn" data-view="home"          type="button">Accueil de l'élève</button>
+      <button class="view-btn nav-btn" data-view="parcours"      type="button">Parcours et épreuves</button>
+      <button class="view-btn nav-btn" data-view="jalons"        type="button">Mes évaluations (côté élève)</button>
+      <button class="view-btn nav-btn" data-view="projet"        type="button">Tableau de bord projet</button>
+    </nav>
+
+    <ul id="section-list" class="section-list" hidden></ul>
+  </nav>
+
+  <main class="main" id="main">
+    <div id="alerts" class="alerts no-print"></div>
+    <div id="section-container">
+
+      <!-- Écran de bienvenue avant import -->
+      <div class="tt-welcome" id="tt-welcome">
+        <h2>Outil de correction des épreuves</h2>
+        <p>Charge le fichier JSON d'un élève pour accéder à son portfolio,
+        corriger ses épreuves d'attestation (toutes les épreuves : J1, J2, J3, J4 et le menu final)
+        et réexporter le portfolio corrigé à lui rendre.</p>
+        <p><b>Tes données ne sont pas modifiées</b> — cet outil ne touche jamais à ton propre portfolio.</p>
+        <button class="btn btn-primary btn-lg" id="tt-welcome-btn">📂 Charger un portfolio élève</button>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<div id="print-area" class="print-only"></div>
+
+<!-- IS_TEACHER_TOOL doit être défini AVANT app.js pour court-circuiter init() élève -->
+<script>window.IS_TEACHER_TOOL = true;</script>
+<script src="app.js"></script>
+
+<script>
+/* =========================================================
+   initTeacherCorrection : appelé par init() de app.js quand
+   IS_TEACHER_TOOL = true.
+   ========================================================= */
+/* V4.30 : multi-élèves
+   On charge plusieurs portfolios JSON d'un coup, on les stocke dans
+   `elevesCharges[]`, on bascule de l'un à l'autre, on exporte un par un
+   ou tous d'un coup. */
+let elevesCharges = []; // [{ key, fileName, state }]
+let currentEleveIdx = -1;
+
+function initTeacherCorrection() {
+  state = buildDefaultState();
+  currentView = { type: "home", id: null };
+
+  try { bindGlobalEvents(); } catch (e) { }
+
+  document.getElementById("tt-load").addEventListener("click", openLoad);
+  document.getElementById("tt-welcome-btn").addEventListener("click", openLoad);
+  document.getElementById("tt-file").addEventListener("change", handleFiles);
+  document.getElementById("tt-export").addEventListener("click", exportCorrigeCurrent);
+  document.getElementById("tt-export-all").addEventListener("click", exportAllRetours);
+  document.getElementById("tt-classe").addEventListener("click", showVueClasse);
+  document.getElementById("tt-synthese").addEventListener("click", showSyntheseEleve);
+  document.getElementById("tt-csv").addEventListener("click", exportNotesCSV);
+}
+
+/* V4.29 — Synthèse complète d'un élève (vue enseignant) */
+function showSyntheseEleve() {
+  const e = state.infos_eleve || {};
+  const container = document.getElementById("section-container");
+  container.innerHTML = "";
+
+  // Compteurs
+  const epreuves = SECTIONS_SCHEMA.filter(s => s.module && s.module.epreuve);
+  const epreuvesPasses = epreuves.filter(s => {
+    const sec = state.sections.find(x => x.id === s.id);
+    return sec && sec.module_state && sec.module_state.epreuve_state && sec.module_state.epreuve_state.note_sur_20 != null;
+  });
+  const moyenne = epreuvesPasses.length
+    ? (epreuvesPasses.reduce((s, sec_) => {
+        const sec = state.sections.find(x => x.id === sec_.id);
+        return s + (sec.module_state.epreuve_state.note_sur_20 || 0);
+      }, 0) / epreuvesPasses.length).toFixed(1)
+    : "—";
+
+  const flashTotal = (window.FLASHCARDS_DECKS || []).reduce((s,d) => s + d.cartes.length, 0);
+  const flashRetenues = Object.values(state.flashcards_state || {})
+    .reduce((s, st) => s + ((st.reussies || []).length), 0);
+  const convFaites = Object.values(state.conversations_state || {}).filter(c => c.terminee).length;
+  const ressLues = state.sections.reduce((s, sec) => s + Object.keys(sec.module_state?.ressources_lues || {}).length, 0);
+
+  let html = `
+    <div class="tt-synthese">
+      <h2 style="color:var(--c-primary-dark);">📊 Synthèse — ${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</h2>
+      <p class="hint">${escapeHtml(e.classe||"")} ${e.lycee ? "· " + escapeHtml(e.lycee) : ""}</p>
+
+      <div class="ttsy-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0;">
+        <div class="ttsy-card"><b style="font-size:1.4rem;">${moyenne} / 20</b><br /><small>Moyenne épreuves</small></div>
+        <div class="ttsy-card"><b style="font-size:1.4rem;">${epreuvesPasses.length} / ${epreuves.length}</b><br /><small>Épreuves passées</small></div>
+        <div class="ttsy-card"><b style="font-size:1.4rem;">${flashRetenues} / ${flashTotal}</b><br /><small>Cartes mémorisées</small></div>
+        <div class="ttsy-card"><b style="font-size:1.4rem;">${convFaites}</b><br /><small>Conversations</small></div>
+        <div class="ttsy-card"><b style="font-size:1.4rem;">${ressLues}</b><br /><small>Ressources lues</small></div>
+      </div>
+
+      <h3 style="color:var(--c-primary-dark);">Notes par épreuve</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
+        <thead><tr><th style="text-align:left;padding:8px;border-bottom:2px solid #ccc;">Épreuve</th><th style="padding:8px;border-bottom:2px solid #ccc;">Note</th><th style="padding:8px;border-bottom:2px solid #ccc;">Validation</th><th style="padding:8px;border-bottom:2px solid #ccc;">Date</th><th style="padding:8px;border-bottom:2px solid #ccc;">Tentatives</th></tr></thead>
+        <tbody>
+          ${epreuves.map(sec_ => {
+            const sec = state.sections.find(x => x.id === sec_.id);
+            const st = sec && sec.module_state && sec.module_state.epreuve_state;
+            const v = st && st.validation_finale && st.validation_finale.state === "validee";
+            return `<tr>
+              <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(sec_.module.epreuve.titre)}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;font-weight:700;">${st && st.note_sur_20 != null ? st.note_sur_20 + " / 20" : "—"}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${v ? "✅" : "—"}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${st && st.date ? escapeHtml(st.date) : "—"}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${st ? st.tentative || 0 : 0}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+
+      ${(state.bilans_seance||[]).length ? `
+        <h3 style="color:var(--c-primary-dark);margin-top:18px;">Bilans de séance (${state.bilans_seance.length})</h3>
+        <div style="font-size:.9rem;">
+          ${(state.bilans_seance||[]).slice(-10).reverse().map(b => `
+            <div style="padding:6px;border-bottom:1px solid #eee;">${"★".repeat(b.note||0)}${"☆".repeat(5-(b.note||0))} ${b.retient ? "— " + escapeHtml(b.retient) : ""} <small style="color:#999;">${new Date(b.date).toLocaleDateString("fr-FR")}</small></div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      ${(state.auto_evaluations||[]).length ? `
+        <h3 style="color:var(--c-primary-dark);margin-top:18px;">Auto-évaluations après épreuves (${state.auto_evaluations.length})</h3>
+        <div style="font-size:.9rem;">
+          ${(state.auto_evaluations||[]).slice(-10).reverse().map(a => `
+            <div style="padding:6px;border-bottom:1px solid #eee;">
+              <b>${escapeHtml(a.epreuve||"")}</b> · Tentative ${a.tentative}<br />
+              Mood : ${a.mood||"—"} · Aides : ${(a.aides||[]).join(", ")||"—"}
+              ${a.difficile ? "<br />Difficile : " + escapeHtml(a.difficile) : ""}
+              <small style="color:#999;display:block;">${new Date(a.date).toLocaleDateString("fr-FR")}</small>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      ${(state.sondages||[]).length ? `
+        <h3 style="color:var(--c-primary-dark);margin-top:18px;">Sondages (${state.sondages.length})</h3>
+        <div style="font-size:.9rem;">
+          ${(state.sondages||[]).slice(-5).reverse().map(s => `
+            <div style="padding:8px;border-bottom:1px solid #eee;background:#fafbfc;border-radius:6px;margin-bottom:6px;">
+              <small style="color:#999;">${new Date(s.date).toLocaleDateString("fr-FR")}</small>
+              ${Object.entries(s.reponses||{}).map(([k,v]) => `<div><b>${escapeHtml(k)}</b> : ${escapeHtml(Array.isArray(v) ? v.join(", ") : String(v))}</div>`).join("")}
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      <p style="margin-top:18px; padding:10px 14px; background:#f1fbf4; border-left:3px solid var(--c-accent); font-size:.85rem; color:#1f6b3d;">
+        🔒 <b>Confidentialité respectée</b> : les notes post-it personnelles et la météo des émotions de l'élève ne sont pas affichées ici (elles lui appartiennent).
+      </p>
+
+      <h3 style="color:var(--c-primary-dark);margin-top:18px;">📥 Exports Word pour l'élève / le dossier</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-accent" onclick="exportRecapWord()">📝 Récap complet Word (toutes évaluations)</button>
+        <button class="btn" onclick="exportToutesAttestations()">🎓 Toutes les attestations validées</button>
+        <button class="btn" onclick="exportToutesGrilles()">📋 Toutes les grilles d'évaluation</button>
+      </div>
+
+      <p style="margin-top:18px;"><button class="btn" onclick="renderTeacherOverview()">← Retour à la liste des épreuves</button></p>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+function renderTeacherOverview() {
+  showOverview();
+}
+
+/* V4.30 — Récap Word complet de toutes les évaluations d'un élève
+   Format académique sérieux, sans emojis, prêt à imprimer. */
+function exportRecapWord() {
+  const e = state.infos_eleve || {};
+  const epreuves = SECTIONS_SCHEMA.filter(s => s.module && s.module.epreuve);
+  const stripEmoji = s => String(s||"").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim();
+
+  let body = "";
+
+  // I. Tableau récap
+  body += `<h2>I. Tableau récapitulatif des évaluations</h2>`;
+  body += `<table><thead><tr><th>Épreuve</th><th>Note /20</th><th>Statut</th><th>Date</th><th>Tentative</th><th>Validation enseignant·e</th></tr></thead><tbody>`;
+  let totalNotes = 0, nbNotes = 0;
+  epreuves.forEach(sec_ => {
+    const sec = state.sections.find(x => x.id === sec_.id);
+    const st = sec && sec.module_state && sec.module_state.epreuve_state;
+    if (!st || st.note_sur_20 == null) {
+      body += `<tr><td>${stripEmoji(sec_.module.epreuve.titre)}</td><td colspan="5"><i>Non passée</i></td></tr>`;
+      return;
+    }
+    totalNotes += st.note_sur_20; nbNotes++;
+    const v = st.validation_finale && st.validation_finale.state === "validee";
+    const seuil = sec_.module.epreuve.seuil;
+    body += `<tr>
+      <td><b>${stripEmoji(sec_.module.epreuve.titre)}</b></td>
+      <td style="text-align:center;font-weight:bold;color:${st.note_sur_20 >= seuil ? "#1f6b3d" : "#b23a48"}">${st.note_sur_20} / 20</td>
+      <td style="text-align:center;">${v ? "VALIDÉE" : (st.note_sur_20 >= seuil ? "Au seuil" : "À reprendre")}</td>
+      <td style="text-align:center;">${st.date || ""}</td>
+      <td style="text-align:center;">${st.tentative || 1}</td>
+      <td>${v && st.validation_finale.enseignant ? st.validation_finale.enseignant : "—"}</td>
+    </tr>`;
+  });
+  if (nbNotes) {
+    const moy = (totalNotes / nbNotes).toFixed(1);
+    body += `<tr style="background:#eef2f6;"><td colspan="5" style="text-align:right;"><b>Moyenne des épreuves passées</b></td><td style="text-align:center;font-weight:bold;">${moy} / 20</td></tr>`;
+  }
+  body += `</tbody></table>`;
+
+  // II. Détail par épreuve : critères et niveaux
+  body += `<h2>II. Détail des évaluations par jalon</h2>`;
+  epreuves.forEach((sec_, idx) => {
+    const sec = state.sections.find(x => x.id === sec_.id);
+    const st = sec && sec.module_state && sec.module_state.epreuve_state;
+    if (!st || st.note_sur_20 == null) return;
+    const ep = sec_.module.epreuve;
+    body += `<h3>${idx+1}. ${stripEmoji(ep.titre)}</h3>`;
+    body += `<p><b>Note :</b> ${st.note_sur_20}/20 · <b>Tentative :</b> ${st.tentative||1} · <b>Date :</b> ${st.date||"—"}</p>`;
+
+    // Critères
+    if (ep.criteres_grille && ep.criteres_grille.length) {
+      body += `<table><thead><tr><th>Critère</th><th>Capacité visée</th><th>Niveau</th><th>Remédiation</th></tr></thead><tbody>`;
+      ep.criteres_grille.forEach(c => {
+        // Calcul du niveau (réutilise la même logique que la grille)
+        const qIds = c.questions || [];
+        let total = 0, ok = 0;
+        qIds.forEach(qid => {
+          const q = ep.questions.find(x => x.id === qid);
+          if (!q) return;
+          total++;
+          const ans = st.reponses?.[q.id];
+          const val = (st.validations||{})[q.id];
+          let isOk;
+          if (val && (val.state === "ok" || val.state === "ko")) isOk = val.state === "ok";
+          else if (q.type === "qcm") isOk = ans === q.correct;
+          else if (q.type === "mots" && typeof isMotsQuestionOk === "function") isOk = isMotsQuestionOk(q, ans);
+          else isOk = false;
+          if (isOk) ok++;
+        });
+        const ratio = total ? ok/total : 0;
+        const niveau = ratio >= 0.99 ? "M (Maîtrisé)" : ratio >= 0.5 ? "A (Acceptable)" : ratio > 0 ? "I (Insuffisant)" : "NT (Non traité)";
+        const showRem = ratio < 0.5;
+        body += `<tr>
+          <td><b>${stripEmoji(c.label)}</b></td>
+          <td>${stripEmoji(c.capacite||"")}</td>
+          <td style="text-align:center;font-weight:bold;">${niveau}</td>
+          <td>${showRem ? stripEmoji(c.remediation||"") : "—"}</td>
+        </tr>`;
+      });
+      body += `</tbody></table>`;
+    }
+
+    // Validation finale enseignant
+    if (st.validation_finale && st.validation_finale.state === "validee") {
+      body += `<p style="background:#f1fbf4;border-left:3pt solid #2e8b57;padding:6pt 10pt;"><b>Attestation validée</b> par ${stripEmoji(st.validation_finale.enseignant||"—")} le ${st.validation_finale.date ? new Date(st.validation_finale.date).toLocaleDateString("fr-FR") : "—"}.${st.validation_finale.commentaire ? " <br /><i>" + stripEmoji(st.validation_finale.commentaire) + "</i>" : ""}</p>`;
+    }
+  });
+
+  // III. Bilans de séance
+  if ((state.bilans_seance||[]).length) {
+    body += `<h2>III. Bilans de séance déclarés par l'élève</h2><table><thead><tr><th>Date</th><th>Note ressentie</th><th>Ce que l'élève retient</th></tr></thead><tbody>`;
+    state.bilans_seance.forEach(b => {
+      body += `<tr><td>${new Date(b.date).toLocaleDateString("fr-FR")}</td><td style="text-align:center;">${b.note||"—"}/5</td><td>${stripEmoji(b.retient||"—")}</td></tr>`;
+    });
+    body += `</tbody></table>`;
+  }
+
+  // IV. Auto-évaluations après épreuve
+  if ((state.auto_evaluations||[]).length) {
+    body += `<h2>IV. Auto-évaluations de l'élève après les épreuves</h2><table><thead><tr><th>Date</th><th>Épreuve</th><th>Tentative</th><th>Ressenti</th><th>Aides utilisées</th><th>Difficultés</th></tr></thead><tbody>`;
+    state.auto_evaluations.forEach(a => {
+      body += `<tr><td>${new Date(a.date).toLocaleDateString("fr-FR")}</td><td>${stripEmoji(a.epreuve||"")}</td><td style="text-align:center;">${a.tentative}</td><td>${a.mood||"—"}</td><td>${(a.aides||[]).join(", ")||"—"}</td><td>${stripEmoji(a.difficile||"—")}</td></tr>`;
+    });
+    body += `</tbody></table>`;
+  }
+
+  // V. Sondages
+  if ((state.sondages||[]).length) {
+    body += `<h2>V. Sondages remplis par l'élève</h2>`;
+    state.sondages.forEach(s => {
+      body += `<p><b>${new Date(s.date).toLocaleDateString("fr-FR")}</b></p><ul>`;
+      Object.entries(s.reponses||{}).forEach(([k,v]) => {
+        body += `<li><b>${escapeHtml(k)} :</b> ${escapeHtml(Array.isArray(v) ? v.join(", ") : String(v))}</li>`;
+      });
+      body += `</ul>`;
+    });
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><title>Récap évaluations</title>
+<style>
+  @page { size: 21cm 29.7cm; margin: 1.6cm; }
+  body { font-family: "Calibri", Arial, sans-serif; color: #1a2330; font-size: 10.5pt; line-height: 1.45; }
+  h1 { color: #1f4f86; font-size: 18pt; margin: 0 0 6pt; }
+  h2 { color: #1f4f86; font-size: 13pt; border-bottom: 1pt solid #1f4f86; padding-bottom: 3pt; margin-top: 14pt; }
+  h3 { color: #2e8b57; font-size: 11.5pt; margin-top: 12pt; }
+  .eyebrow { font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; color: #6b7785; font-weight: 700; }
+  .head-id { font-size: 9.5pt; margin-bottom: 14pt; }
+  .head-id td { padding: 2pt 8pt; border: .5pt solid #ccc; }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0; font-size: 9.5pt; }
+  th, td { border: .8pt solid #1a2330; padding: 4pt 7pt; vertical-align: top; }
+  th { background: #eef2f6; color: #1f4f86; font-weight: 700; text-align: left; }
+  .foot { margin-top: 18pt; padding-top: 6pt; border-top: 1pt solid #d2dae3; font-size: 8pt; color: #6b7785; }
+</style></head>
+<body>
+  <div class="eyebrow">Récapitulatif des évaluations — Chef-d'œuvre CAP</div>
+  <h1>${escapeHtml((e.prenom||"") + " " + (e.nom||""))}</h1>
+  <table class="head-id" style="width:auto;">
+    <tr><td><b>Élève</b></td><td>${escapeHtml((e.prenom||"") + " " + (e.nom||""))}</td></tr>
+    <tr><td><b>Classe</b></td><td>${escapeHtml(e.classe||"")}</td></tr>
+    <tr><td><b>Lycée</b></td><td>${escapeHtml(e.lycee||"")}</td></tr>
+    <tr><td><b>Année scolaire</b></td><td>${escapeHtml(e.annee_scolaire||"")}</td></tr>
+    <tr><td><b>Édité le</b></td><td>${new Date().toLocaleDateString("fr-FR")}</td></tr>
+  </table>
+
+  ${body}
+
+  <div class="foot">
+    Document généré par le portfolio numérique du Chef-d'œuvre CAP. À usage pédagogique. La météo des émotions et les notes personnelles de l'élève ne figurent pas dans ce document, par respect de sa sphère privée.
+  </div>
+</body></html>`;
+
+  const blob = new Blob(["﻿", html], { type: "application/msword" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  a.href = url;
+  a.download = `Recap_evaluations_${n}_${new Date().toISOString().slice(0,10)}.doc`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+/* V4.30 — Téléchargement de toutes les attestations validées d'un élève */
+function exportToutesAttestations() {
+  const epreuves = SECTIONS_SCHEMA.filter(s => s.module && s.module.epreuve);
+  let count = 0;
+  epreuves.forEach((sec_, i) => {
+    const sec = state.sections.find(x => x.id === sec_.id);
+    const st = sec && sec.module_state && sec.module_state.epreuve_state;
+    if (!st || !st.validation_finale || st.validation_finale.state !== "validee") return;
+    setTimeout(() => {
+      // Réutilise la fonction d'export attestation d'app.js
+      if (typeof exportAttestationOfficielle === "function") {
+        exportAttestationOfficielle(sec, sec_.module);
+      }
+    }, count * 500);
+    count++;
+  });
+  if (count === 0) {
+    alert("Aucune attestation validée à télécharger pour cet élève.");
+  } else {
+    alert(`${count} attestation(s) en cours de téléchargement…`);
+  }
+}
+
+/* V4.30 — Téléchargement de toutes les grilles d'évaluation d'un élève */
+function exportToutesGrilles() {
+  const epreuves = SECTIONS_SCHEMA.filter(s => s.module && s.module.epreuve);
+  let count = 0;
+  epreuves.forEach((sec_) => {
+    const sec = state.sections.find(x => x.id === sec_.id);
+    const st = sec && sec.module_state && sec.module_state.epreuve_state;
+    if (!st || st.note_sur_20 == null) return;
+    setTimeout(() => {
+      if (typeof exportGrilleEvaluation === "function") {
+        exportGrilleEvaluation(sec, sec_.module);
+      }
+    }, count * 500);
+    count++;
+  });
+  if (count === 0) {
+    alert("Aucune épreuve passée — pas de grille à télécharger.");
+  } else {
+    alert(`${count} grille(s) en cours de téléchargement…`);
+  }
+}
+
+/* V4.29 — Export CSV des notes pour Pronote/livret */
+function exportNotesCSV() {
+  const e = state.infos_eleve || {};
+  const epreuves = SECTIONS_SCHEMA.filter(s => s.module && s.module.epreuve);
+  const lines = [
+    `"Élève";"${(e.prenom||"") + " " + (e.nom||"")}"`,
+    `"Classe";"${e.classe||""}"`,
+    `"Lycée";"${e.lycee||""}"`,
+    `"Année";"${e.annee_scolaire||""}"`,
+    "",
+    `"Épreuve";"Note /20";"Validée";"Date";"Tentatives";"Enseignant"`,
+  ];
+  epreuves.forEach(sec_ => {
+    const sec = state.sections.find(x => x.id === sec_.id);
+    const st = sec && sec.module_state && sec.module_state.epreuve_state;
+    if (!st || st.note_sur_20 == null) return;
+    const v = st.validation_finale && st.validation_finale.state === "validee";
+    lines.push(`"${sec_.module.epreuve.titre}";"${st.note_sur_20}";"${v ? "Oui" : "Non"}";"${st.date||""}";"${st.tentative||0}";"${(st.validation_finale && st.validation_finale.enseignant)||""}"`);
+  });
+  const blob = new Blob(["﻿", lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
+  a.href = url; a.download = `notes_${n}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+function openLoad() {
+  document.getElementById("tt-file").click();
+}
+
+function handleFiles(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  let loaded = 0, errors = 0;
+  files.forEach(f => {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (!data.sections) throw new Error("pas un portfolio valide");
+        const merged = mergeWithSchema(data);
+        const k = (merged.infos_eleve.nom || "?") + "-" + (merged.infos_eleve.prenom || "?");
+        // Si déjà chargé : remplacer
+        const existing = elevesCharges.findIndex(el => el.key === k);
+        if (existing >= 0) elevesCharges[existing] = { key: k, fileName: f.name, state: merged };
+        else elevesCharges.push({ key: k, fileName: f.name, state: merged });
+        loaded++;
+      } catch (err) {
+        errors++;
+        console.error("Fichier ignoré : " + f.name + " — " + err.message);
+      }
+      // Quand tous les fichiers sont traités
+      if (loaded + errors === files.length) {
+        afterFilesLoaded(loaded, errors);
+      }
+    };
+    r.readAsText(f);
+  });
+  e.target.value = "";
+}
+
+function afterFilesLoaded(loaded, errors) {
+  if (loaded === 0) {
+    alert("Aucun fichier valide importé." + (errors ? " (" + errors + " erreurs)" : ""));
+    return;
+  }
+  // Cache l'écran de bienvenue
+  const w = document.getElementById("tt-welcome");
+  if (w) w.style.display = "none";
+  // Active les boutons
+  document.getElementById("tt-export").disabled = false;
+  document.getElementById("tt-export-all").disabled = false;
+  document.getElementById("tt-classe").disabled = false;
+  document.getElementById("tt-synthese").disabled = false;
+  document.getElementById("tt-csv").disabled = false;
+  // Affiche la liste d'élèves
+  renderElevesList();
+  // Si pas encore d'élève sélectionné, on ouvre la vue classe
+  if (currentEleveIdx < 0) {
+    showVueClasse();
+  } else {
+    selectEleve(currentEleveIdx);
+  }
+  if (errors) {
+    alert(loaded + " portfolio(s) chargé(s). " + errors + " fichier(s) ignoré(s) (format invalide).");
+  }
+}
+
+function renderElevesList() {
+  const block = document.getElementById("tt-eleves-block");
+  const list = document.getElementById("tt-eleves-list");
+  const count = document.getElementById("tt-eleves-count");
+  if (!block || !list) return;
+  block.hidden = elevesCharges.length === 0;
+  count.textContent = elevesCharges.length;
+  list.innerHTML = elevesCharges.map((el, i) => {
+    const e = el.state.infos_eleve || {};
+    return `<li class="tt-eleve-item ${i === currentEleveIdx ? "active" : ""}" data-idx="${i}">
+      <span class="tt-eleve-num">${i+1}</span>
+      <span class="tt-eleve-nom">${escapeHtml((e.prenom||"?") + " " + (e.nom||"?"))}</span>
+      <span class="tt-eleve-cls">${escapeHtml(e.classe||"")}</span>
+    </li>`;
+  }).join("");
+  list.querySelectorAll("[data-idx]").forEach(li => {
+    li.addEventListener("click", () => selectEleve(parseInt(li.dataset.idx)));
+  });
+}
+
+function selectEleve(idx) {
+  if (idx < 0 || idx >= elevesCharges.length) return;
+  // L'élève précédent est conservé par référence dans elevesCharges[currentEleveIdx].state
+  // (les modifications de "state" pointent vers le même objet)
+  currentEleveIdx = idx;
+  state = elevesCharges[idx].state;
+  currentView = { type: "home", id: null };
+  updateInfoBar();
+  renderElevesList();
+  showOverview();
+}
+
+function showVueClasse() {
+  const c = document.getElementById("section-container");
+  c.innerHTML = "";
+  if (elevesCharges.length === 0) {
+    c.innerHTML = `<div class="tt-welcome"><h2>Aucun portfolio chargé</h2><button class="btn btn-primary btn-lg" onclick="document.getElementById('tt-load').click();">📂 Charger des portfolios</button></div>`;
+    return;
+  }
+
+  // Vue classe : tableau des élèves × jalons
+  const epreuves = SECTIONS_SCHEMA.filter(s => s.module && s.module.epreuve);
+  let html = `
+    <div class="tt-classe-view">
+      <h2 style="color:var(--c-primary-dark);">📊 Vue classe — ${elevesCharges.length} élève(s)</h2>
+      <p class="hint">Clique sur un élève pour ouvrir son portfolio. Clique sur une note pour aller directement corriger l'épreuve.</p>
+      <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
+        <thead>
+          <tr style="background:#eef2f6;">
+            <th style="padding:8px;text-align:left;border:1px solid #ccc;">Élève</th>
+            ${epreuves.map(ep => `<th style="padding:8px;text-align:center;border:1px solid #ccc;font-size:.78rem;">${escapeHtml(ep.titre.replace(/[^\w\sÀ-ÿ-]/g,"").trim().split(" ").slice(0,4).join(" "))}</th>`).join("")}
+            <th style="padding:8px;text-align:center;border:1px solid #ccc;background:#cfe2ff;">Moyenne</th>
+            <th style="padding:8px;border:1px solid #ccc;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  elevesCharges.forEach((el, idx) => {
+    const e = el.state.infos_eleve || {};
+    const notes = [];
+    let cellsHtml = "";
+    epreuves.forEach(ep => {
+      const sec = el.state.sections.find(s => s.id === ep.id);
+      const st = sec && sec.module_state && sec.module_state.epreuve_state;
+      if (st && st.note_sur_20 != null) {
+        notes.push(st.note_sur_20);
+        const v = st.validation_finale && st.validation_finale.state === "validee";
+        const color = st.note_sur_20 >= ep.module.epreuve.seuil ? "#1f6b3d" : "#b23a48";
+        cellsHtml += `<td style="padding:8px;text-align:center;border:1px solid #ccc;cursor:pointer;font-weight:700;color:${color};${v ? "background:#f1fbf4;" : ""}" data-eleve="${idx}" data-sec="${ep.id}">${st.note_sur_20}/20${v ? " ✓" : ""}</td>`;
+      } else {
+        cellsHtml += `<td style="padding:8px;text-align:center;border:1px solid #ccc;color:#aaa;">—</td>`;
+      }
+    });
+    const moy = notes.length ? (notes.reduce((a,b) => a+b, 0) / notes.length).toFixed(1) : "—";
+    html += `
+      <tr style="${idx === currentEleveIdx ? "background:#fff3cd;" : ""}">
+        <td style="padding:8px;border:1px solid #ccc;font-weight:600;cursor:pointer;" data-eleve-line="${idx}">
+          ${escapeHtml((e.prenom||"") + " " + (e.nom||""))}<br />
+          <small style="color:#999;">${escapeHtml(e.classe||"")}</small>
+        </td>
+        ${cellsHtml}
+        <td style="padding:8px;text-align:center;border:1px solid #ccc;font-weight:700;background:#f7faff;">${moy}${moy !== "—" ? "/20" : ""}</td>
+        <td style="padding:8px;border:1px solid #ccc;text-align:center;">
+          <button type="button" class="btn btn-sm" data-eleve-line="${idx}">Ouvrir</button>
+        </td>
+      </tr>
+    `;
+  });
+  html += `</tbody></table></div></div>`;
+  c.innerHTML = html;
+
+  c.querySelectorAll("[data-eleve-line]").forEach(b => {
+    b.addEventListener("click", () => selectEleve(parseInt(b.dataset.eleveLine)));
+  });
+  c.querySelectorAll("[data-eleve][data-sec]").forEach(b => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectEleve(parseInt(b.dataset.eleve));
+      currentView = { type: "epreuve", id: b.dataset.sec };
+      renderMain(); renderSidebar();
+    });
+  });
+}
+
+/* Wrappers pour les exports */
+function exportCorrigeCurrent() {
+  if (currentEleveIdx < 0) { alert("Aucun élève sélectionné."); return; }
+  exportCorrige();
+}
+function exportAllRetours() {
+  if (elevesCharges.length === 0) return;
+  if (!confirm(`Exporter ${elevesCharges.length} portfolio(s) corrigé(s) ?\nUn fichier sera téléchargé pour chaque élève.`)) return;
+  elevesCharges.forEach((el, i) => {
+    setTimeout(() => {
+      const tempState = state;
+      state = el.state;
+      exportCorrige();
+      state = tempState;
+    }, i * 400); // décalage pour que le navigateur accepte les téléchargements multiples
+  });
+}
+
+function updateInfoBar() {
+  const e = state.infos_eleve;
+  const bar = document.getElementById("tt-info");
+  bar.hidden = false;
+  document.getElementById("tt-eleve-name").textContent =
+    `${e.prenom || "?"} ${e.nom || "?"}`;
+  document.getElementById("tt-eleve-classe").textContent = e.classe || "Classe ?";
+  document.getElementById("tt-eleve-lycee").textContent = e.lycee || "Lycée ?";
+  const total = state.sections.length;
+  const done = state.sections.filter(s => s.statut_eleve === "done").length;
+  document.getElementById("tt-eleve-progress").textContent =
+    `${done}/${total} étapes terminées`;
+  updateProgress();
+}
+
+/* Vue d'ensemble : liste des épreuves passées avec leur état */
+function showOverview() {
+  const container = document.getElementById("section-container");
+  container.innerHTML = "";
+
+  const wrap = document.createElement("div");
+  wrap.className = "tt-overview";
+
+  const e = state.infos_eleve;
+  wrap.innerHTML = `
+    <h2>Portfolio de ${escapeHtml(e.prenom || "")} ${escapeHtml(e.nom || "")}</h2>
+    <p class="hint">Voici toutes les épreuves d'attestation. Clique sur celle que tu veux corriger.</p>
+  `;
+
+  const grid = document.createElement("div");
+  grid.className = "tt-epr-grid";
+
+  // Itère sur toutes les sections qui ont un module avec une épreuve
+  SECTIONS_SCHEMA.forEach(schemaSec => {
+    if (!schemaSec.module || !schemaSec.module.epreuve) return;
+    const sec = state.sections.find(s => s.id === schemaSec.id);
+    if (!sec) return;
+    const ep = schemaSec.module.epreuve;
+    const st = sec.module_state?.epreuve_state;
+    const passed = st && st.note_sur_20 != null;
+    const validated = passed && st.validation_finale?.state === "validee";
+    const pendingPhrases = passed && (ep.questions || []).some(q =>
+      q.type === "phrase" &&
+      (!st.validations || !st.validations[q.id] || st.validations[q.id].state === "a_valider")
+    );
+
+    let cls = "tt-epr-card";
+    let statutHtml;
+    if (!passed) {
+      cls += " tt-not-passed";
+      statutHtml = `<span class="tt-epr-statut not-passed">Non passée</span>`;
+    } else if (validated) {
+      cls += " tt-validated";
+      statutHtml = `<span class="tt-epr-statut validated">Validée</span>`;
+    } else if (pendingPhrases) {
+      cls += " tt-pending";
+      statutHtml = `<span class="tt-epr-statut pending">À corriger</span>`;
+    } else {
+      cls += " tt-pending";
+      statutHtml = `<span class="tt-epr-statut pending">En attente validation finale</span>`;
+    }
+
+    const card = document.createElement("div");
+    card.className = cls;
+    card.innerHTML = `
+      <div class="tt-epr-titre">${escapeHtml(ep.titre)}</div>
+      <div class="tt-epr-meta">
+        ${schemaSec.titre.replace(/[^\w\sÀ-ÿ]/g, "").trim()}
+      </div>
+      ${passed
+        ? `<div class="tt-epr-note">${st.note_sur_20} / 20</div>
+           <div class="tt-epr-meta">Tentative ${st.tentative || 1} · ${st.date || "—"}</div>`
+        : `<div class="tt-epr-meta"><i>Pas encore tentée par l'élève</i></div>`}
+      ${statutHtml}
+      <div class="tt-epr-actions">
+        ${passed
+          ? `<button type="button" class="btn btn-primary" data-go="epreuve" data-sec="${schemaSec.id}">Corriger l'épreuve</button>`
+          : `<button type="button" class="btn" data-go="section" data-sec="${schemaSec.id}">Voir la section</button>`}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+
+  // Bouton retour vers la vue d'overview en plus de la sidebar
+  const backHint = document.createElement("p");
+  backHint.className = "hint";
+  backHint.style.marginTop = "20px";
+  backHint.innerHTML = `Pour revenir à cette vue, clique sur <b>Accueil de l'élève</b> dans la barre de gauche.`;
+  wrap.appendChild(backHint);
+
+  container.appendChild(wrap);
+
+  // Bind clicks sur les cartes
+  setTimeout(() => {
+    grid.querySelectorAll("[data-go]").forEach(b => {
+      b.addEventListener("click", () => {
+        const secId = b.dataset.sec;
+        if (b.dataset.go === "epreuve") {
+          currentView = { type: "epreuve", id: secId };
+          renderMain(); renderSidebar();
+        } else {
+          selectSection(secId);
+        }
+      });
+    });
+  }, 0);
+}
+
+/* Surcharger renderMain pour afficher overview quand vue = home */
+const originalRenderMain = renderMain;
+window.renderMain = function() {
+  if (window.IS_TEACHER_TOOL && currentView.type === "home") {
+    showOverview();
+    // toujours mettre à jour la sidebar pour refléter la vue active
+    if (typeof renderSidebar === "function") renderSidebar();
+    return;
+  }
+  return originalRenderMain.apply(this, arguments);
+};
+
+/* Export du portfolio corrigé */
+function exportCorrige() {
+  // Met à jour la date d'export sur les meta (pour que l'élève voie qu'il a un retour)
+  state.meta.date_dernier_export = new Date().toISOString();
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const n = (state.infos_eleve.nom || "eleve").replace(/\s+/g, "_");
+  a.href = url;
+  a.download = `portfolio_corrige_${n}_${new Date().toISOString().slice(0,10)}.json`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  alert("Portfolio corrigé exporté.\nDonne-le à l'élève (clé USB ou ENT).\nIl devra l'importer dans SON portfolio pour récupérer ses notes et son attestation.");
+}
+</script>
+</body>
+</html>

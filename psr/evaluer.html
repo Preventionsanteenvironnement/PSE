@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Évaluer — Chef-d'œuvre CAP</title>
+<style>
+/* =====================================================================
+   evaluer.html — Outil enseignant AUTONOME pour noter les portfolios.
+   Workflow :
+     1) L'enseignant clique "Charger des portfolios" et sélectionne un
+        ou plusieurs fichiers JSON (un par élève) exportés depuis le
+        portfolio élève.
+     2) Une vue classe s'affiche (tableau élèves × jalons).
+     3) Cliquer sur une cellule ouvre la grille de notation du jalon
+        pour l'élève concerné.
+     4) L'enseignant note, commente, et exporte :
+          - un fichier "retour_[eleve].json" à rendre à l'élève
+            (que l'élève importe via "Mes évaluations" → "Importer")
+          - un fichier "notes_classe.json" de sauvegarde globale.
+   ===================================================================== */
+
+:root {
+  --c-primary: #2f6fb5; --c-primary-dark: #1f4f86;
+  --c-accent: #2e8b57; --c-accent-dark: #1f6b3d;
+  --c-warning: #c47a00; --c-danger: #b23a48;
+  --c-bg: #f5f7fa; --c-surface: #fff; --c-surface-2: #eef2f6;
+  --c-border: #d2dae3; --c-text: #1f2a37; --c-muted: #5b6b7b;
+  --radius: 8px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--c-bg); color: var(--c-text);
+}
+header {
+  background: var(--c-primary-dark); color: #fff;
+  padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;
+}
+header h1 { margin: 0; font-size: 1.2rem; }
+header .subtitle { font-size: .85rem; opacity: .9; }
+
+main { padding: 20px; max-width: 1300px; margin: 0 auto; }
+
+.toolbar {
+  background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius);
+  padding: 14px 18px; margin-bottom: 20px;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.btn {
+  padding: 9px 14px; border: 1px solid var(--c-border); background: #fff;
+  border-radius: var(--radius); cursor: pointer; font-size: 1rem; font-weight: 500;
+}
+.btn:hover { background: var(--c-surface-2); }
+.btn-primary { background: var(--c-primary); color: #fff; border-color: var(--c-primary-dark); }
+.btn-primary:hover { background: var(--c-primary-dark); }
+.btn-accent { background: var(--c-accent); color: #fff; border-color: var(--c-accent-dark); }
+.btn-accent:hover { background: var(--c-accent-dark); }
+.btn-danger { background: #fff; color: var(--c-danger); border-color: var(--c-danger); }
+
+.empty-hint {
+  padding: 40px; text-align: center; color: var(--c-muted);
+  background: #fff; border: 2px dashed var(--c-border); border-radius: var(--radius);
+}
+
+/* Tableau classe */
+table.classroom {
+  width: 100%; border-collapse: collapse; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08); border-radius: var(--radius);
+  overflow: hidden;
+}
+table.classroom th, table.classroom td {
+  border: 1px solid var(--c-border); padding: 8px 10px; text-align: center;
+  font-size: .92rem;
+}
+table.classroom th {
+  background: var(--c-surface-2); color: var(--c-primary-dark);
+  position: sticky; top: 0;
+}
+table.classroom td.eleve-cell {
+  text-align: left; font-weight: 600; background: #f7fafc;
+}
+table.classroom td.jalon-cell {
+  cursor: pointer; font-weight: 600; min-width: 110px;
+}
+table.classroom td.jalon-cell:hover { background: #fffbe0; }
+.cell-pending { color: var(--c-muted); }
+.cell-note    { color: var(--c-accent-dark); }
+.cell-low     { color: var(--c-danger); }
+
+/* Modale grille */
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center; z-index: 20;
+}
+.modal[hidden] { display: none; }
+.modal-content {
+  background: #fff; border-radius: var(--radius);
+  padding: 24px; max-width: 760px; width: 95%;
+  max-height: 90vh; overflow-y: auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute; top: 6px; right: 12px;
+  background: none; border: none; font-size: 1.6rem; cursor: pointer;
+}
+.grille-head h2 { color: var(--c-primary-dark); margin: 0 0 4px; }
+.grille-head .sub { color: var(--c-muted); font-size: .92rem; }
+
+.critere-row {
+  display: grid; grid-template-columns: 1fr 140px; gap: 10px;
+  align-items: center;
+  padding: 10px 12px; border-bottom: 1px solid var(--c-border);
+}
+.critere-row:last-child { border-bottom: none; }
+.critere-label { font-size: .95rem; }
+.critere-input {
+  display: flex; align-items: center; gap: 6px; justify-content: flex-end;
+}
+.critere-input input {
+  width: 60px; padding: 6px 8px; border: 1px solid var(--c-border);
+  border-radius: var(--radius); text-align: right; font-size: 1rem;
+}
+
+.grille-total {
+  margin-top: 14px; padding: 12px 16px;
+  background: var(--c-surface-2); border-radius: var(--radius);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 1.1rem;
+}
+.grille-total b { color: var(--c-accent-dark); font-size: 1.4rem; }
+.grille-total .note-final {
+  background: #fff; padding: 4px 12px; border-radius: var(--radius);
+  border: 2px solid var(--c-accent);
+}
+
+.grille-comment { margin-top: 14px; }
+.grille-comment label { font-weight: 600; display: block; margin-bottom: 6px; }
+.grille-comment textarea {
+  width: 100%; min-height: 90px; padding: 10px;
+  border: 1px solid var(--c-border); border-radius: var(--radius);
+  font-family: inherit; font-size: 1rem;
+}
+
+.grille-meta {
+  display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap;
+}
+.grille-meta > div { flex: 1; min-width: 180px; }
+.grille-meta input {
+  width: 100%; padding: 8px; border: 1px solid var(--c-border); border-radius: var(--radius);
+}
+
+.grille-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* Réponses élève (aperçu) */
+.apercu {
+  background: #f7fafc; border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: 12px; margin-top: 14px;
+  font-size: .9rem; max-height: 260px; overflow-y: auto;
+}
+.apercu h4 { margin: 8px 0 4px; color: var(--c-primary-dark); }
+.apercu p  { margin: 3px 0; }
+.apercu b  { color: #444; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📋 Évaluation Chef-d'œuvre — Outil enseignant</h1>
+    <div class="subtitle">Charge les portfolios élèves, note aux jalons, renvoie l'évaluation.</div>
+  </div>
+  <a href="index.html" style="color:#fff; font-size:.85rem;">→ ouvrir le portfolio élève</a>
+</header>
+
+<main>
+  <div class="toolbar">
+    <button class="btn btn-primary" id="btn-load">📂 Charger des portfolios</button>
+    <input type="file" id="file-load" accept="application/json" multiple hidden />
+    <button class="btn" id="btn-load-notes">📥 Charger notes de classe</button>
+    <input type="file" id="file-load-notes" accept="application/json" hidden />
+    <button class="btn btn-accent" id="btn-save-all">💾 Enregistrer notes de classe</button>
+    <span style="flex:1"></span>
+    <span id="count-info" style="color: var(--c-muted); font-size: .9rem;"></span>
+  </div>
+
+  <div id="empty-hint" class="empty-hint">
+    Aucun portfolio chargé. Cliquez sur <b>Charger des portfolios</b> pour commencer.<br />
+    Astuce : sélectionnez plusieurs fichiers à la fois.
+  </div>
+
+  <div id="classroom"></div>
+</main>
+
+<div id="modal" class="modal" hidden>
+  <div class="modal-content">
+    <button class="modal-close" id="modal-close">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   Schéma des jalons — DOIT RESTER COHÉRENT avec app.js (const JALONS)
+   Si vous modifiez app.js, recopiez ici la même structure.
+   ===================================================================== */
+const JALONS = [
+  {
+    id: "j1_comprendre",
+    titre: "Jalon 1 — Comprendre le chef-d'œuvre",
+    annee: "A1",
+    sections_apercu: ["accueil", "comprendre"],
+    criteres: [
+      { id: "c1", label: "Compréhension du projet et des attentes", max: 5 },
+      { id: "c2", label: "Capacité à dire ce qu'il faudra savoir faire", max: 5 },
+      { id: "c3", label: "Vocabulaire clair et juste", max: 5 },
+      { id: "c4", label: "Remplissage soigné et complet", max: 5 },
+    ],
+  },
+  {
+    id: "j2_repas_equilibre",
+    titre: "Jalon 2 — Présentation d'un repas équilibré",
+    annee: "A1",
+    sections_apercu: ["equilibre", "repas_equilibre"],
+    criteres: [
+      { id: "c1", label: "Respect ½ légumes / ¼ féculents / ¼ protéines", max: 5 },
+      { id: "c2", label: "Justification nutritionnelle", max: 5 },
+      { id: "c3", label: "Cohérence entrée/plat/(laitage)/dessert", max: 5 },
+      { id: "c4", label: "Présentation soignée et complète", max: 5 },
+    ],
+  },
+  {
+    id: "j3_eco_responsable",
+    titre: "Jalon 3 — Repas équilibré ET éco-responsable",
+    annee: "A1",
+    sections_apercu: ["eco_responsable", "mon_menu"],
+    criteres: [
+      { id: "c1", label: "Produits de saison identifiés",        max: 4 },
+      { id: "c2", label: "Circuit court / filière de proximité", max: 4 },
+      { id: "c3", label: "Lutte contre le gaspillage",           max: 4 },
+      { id: "c4", label: "Arguments nutritionnels maintenus",    max: 4 },
+      { id: "c5", label: "Cohérence globale du menu",            max: 4 },
+    ],
+  },
+  {
+    id: "j4_etiquetage",
+    titre: "Jalon 4 — Étiquetage du produit",
+    annee: "A1",
+    sections_apercu: ["etiquetage"],
+    criteres: [
+      { id: "c1", label: "Nom du produit clair",                      max: 2 },
+      { id: "c2", label: "DLC / DDM correcte",                        max: 3 },
+      { id: "c3", label: "Traçabilité",                               max: 3 },
+      { id: "c4", label: "Liste des ingrédients",                     max: 4 },
+      { id: "c5", label: "Informations utiles au client",             max: 4 },
+      { id: "c6", label: "Design vendeur + conscience écologique",    max: 4 },
+    ],
+  },
+  {
+    id: "j5_menu_final",
+    titre: "Jalon 5 — Mon menu final (synthèse année 1)",
+    annee: "A1",
+    sections_apercu: ["mon_menu", "repas_equilibre", "eco_responsable", "etiquetage"],
+    criteres: [
+      { id: "c1", label: "Cohérence du menu et équilibre nutritionnel", max: 4 },
+      { id: "c2", label: "Démarche éco-responsable",                    max: 4 },
+      { id: "c3", label: "Étiquetage et conformité",                    max: 4 },
+      { id: "c4", label: "Argumentation et justification",              max: 4 },
+      { id: "c5", label: "Présentation et clarté",                      max: 4 },
+    ],
+  },
+];
+const jalonMax = j => j.criteres.reduce((s,c)=>s+c.max,0);
+
+/* État : map id -> { portfolio, evaluations: [{jalon_id, criteres:[], note_totale, commentaire, date, enseignant}] } */
+const classroom = new Map();
+const EVALUER_STORAGE_KEY = "cdo_evaluer_classroom_v1";
+let dirtySinceClassExport = false;
+
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const eleveKey = p => `${p.infos_eleve?.nom || ""}|${p.infos_eleve?.prenom || ""}|${p.infos_eleve?.classe || ""}`.toLowerCase();
+const eleveLabel = p => `${p.infos_eleve?.prenom || "?"} ${p.infos_eleve?.nom || "?"}`;
+function formatValueForPreview(value) {
+  if (value === undefined || value === null || value === "" || value === false) return "";
+  if (Array.isArray(value)) {
+    if (!value.length) return "";
+    if (value.every(v => typeof v !== "object" || v === null)) return esc(value.join(", "));
+    return `<ul>${value.map(v => `<li>${formatValueForPreview(v)}</li>`).join("")}</ul>`;
+  }
+  if (typeof value === "object") {
+    return Object.entries(value)
+      .filter(([, v]) => v !== undefined && v !== null && v !== "")
+      .map(([k, v]) => `<b>${esc(k)}:</b> ${formatValueForPreview(v)}`)
+      .join(" · ");
+  }
+  return esc(value);
+}
+
+function classroomSnapshot() {
+  return {
+    type: "cdo_classroom_notes",
+    date: new Date().toISOString(),
+    eleves: Array.from(classroom.entries()).map(([k, v]) => ({
+      key: k,
+      infos_eleve: v.portfolio.infos_eleve || {},
+      portfolio: v.portfolio,
+      evaluations: v.evaluations,
+    })),
+  };
+}
+
+function persistDraft() {
+  try { localStorage.setItem(EVALUER_STORAGE_KEY, JSON.stringify(classroomSnapshot())); }
+  catch (e) { console.warn("Sauvegarde locale impossible", e); }
+}
+
+function markDirty() {
+  dirtySinceClassExport = true;
+  persistDraft();
+  renderClassroom();
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(EVALUER_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    (data.eleves || []).forEach(el => {
+      const portfolio = el.portfolio || { infos_eleve: el.infos_eleve || {}, sections: [] };
+      classroom.set(el.key || eleveKey(portfolio), {
+        portfolio,
+        evaluations: el.evaluations || [],
+      });
+    });
+  } catch (e) {
+    console.warn("Brouillon de notes illisible", e);
+  }
+}
+
+/* --------- Chargement portfolios --------- */
+document.getElementById("btn-load").addEventListener("click", () => document.getElementById("file-load").click());
+document.getElementById("file-load").addEventListener("change", e => {
+  Array.from(e.target.files).forEach(readPortfolio);
+  e.target.value = "";
+});
+function readPortfolio(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const p = JSON.parse(r.result);
+      if (!p.sections) throw new Error("Pas un portfolio valide");
+      const key = eleveKey(p);
+      const existing = classroom.get(key);
+      classroom.set(key, {
+        portfolio: p,
+        evaluations: existing?.evaluations || (p.evaluations || []).slice(),
+      });
+      markDirty();
+    } catch (err) { alert("Fichier invalide : " + file.name + " — " + err.message); }
+  };
+  r.readAsText(file);
+}
+
+/* --------- Chargement / sauvegarde notes de classe --------- */
+document.getElementById("btn-load-notes").addEventListener("click", () => document.getElementById("file-load-notes").click());
+document.getElementById("file-load-notes").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (data.type !== "cdo_classroom_notes") throw new Error("Fichier notes invalide");
+      (data.eleves || []).forEach(el => {
+        const key = el.key;
+        const existing = classroom.get(key);
+        if (existing) existing.evaluations = el.evaluations || [];
+        else {
+          // On conserve la référence même sans portfolio chargé
+          classroom.set(key, { portfolio: { infos_eleve: el.infos_eleve, sections: [] }, evaluations: el.evaluations || [] });
+        }
+      });
+      persistDraft();
+      renderClassroom();
+      alert("Notes de classe importées ✅");
+    } catch (err) { alert("Erreur : " + err.message); }
+  };
+  r.readAsText(f); e.target.value = "";
+});
+
+document.getElementById("btn-save-all").addEventListener("click", () => {
+  const data = classroomSnapshot();
+  download("notes_classe_" + new Date().toISOString().slice(0,10) + ".json",
+           new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  dirtySinceClassExport = false;
+  persistDraft();
+  renderClassroom();
+});
+
+function download(filename, blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+/* --------- Vue classe --------- */
+function renderClassroom() {
+  const hint = document.getElementById("empty-hint");
+  const host = document.getElementById("classroom");
+  const info = document.getElementById("count-info");
+  if (classroom.size === 0) {
+    hint.style.display = "block"; host.innerHTML = "";
+    info.textContent = ""; return;
+  }
+  hint.style.display = "none";
+  info.textContent = `${classroom.size} élève(s) chargé(s)${dirtySinceClassExport ? " · modifications non exportées" : ""}`;
+
+  const table = document.createElement("table");
+  table.className = "classroom";
+  let thead = `<thead><tr><th>Élève</th><th>Classe</th>`;
+  JALONS.forEach(j => thead += `<th title="${esc(j.titre)}">${esc(j.titre.split("—")[0].trim())}</th>`);
+  thead += `<th>Moyenne</th><th>Actions</th></tr></thead>`;
+  table.innerHTML = thead;
+  const tbody = document.createElement("tbody");
+
+  Array.from(classroom.entries())
+    .sort((a,b) => eleveLabel(a[1].portfolio).localeCompare(eleveLabel(b[1].portfolio)))
+    .forEach(([key, data]) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="eleve-cell">${esc(eleveLabel(data.portfolio))}</td>
+      <td>${esc(data.portfolio.infos_eleve?.classe || "")}</td>
+    `;
+    const notes = [];
+    JALONS.forEach(j => {
+      const td = document.createElement("td");
+      td.className = "jalon-cell";
+      const ev = data.evaluations.find(e => e.jalon_id === j.id);
+      if (ev) {
+        td.innerHTML = `<span class="${ev.note_totale < 10 ? "cell-low" : "cell-note"}">${ev.note_totale} / 20</span>`;
+        notes.push(ev.note_totale);
+      } else {
+        td.innerHTML = `<span class="cell-pending">—</span>`;
+      }
+      td.addEventListener("click", () => openGrille(key, j.id));
+      tr.appendChild(td);
+    });
+
+    const tdMoy = document.createElement("td");
+    tdMoy.innerHTML = notes.length
+      ? `<b>${(notes.reduce((a,b)=>a+b,0)/notes.length).toFixed(1)} / 20</b>`
+      : `<span class="cell-pending">—</span>`;
+    tr.appendChild(tdMoy);
+
+    const tdAct = document.createElement("td");
+    const btnExport = document.createElement("button");
+    btnExport.className = "btn"; btnExport.textContent = "📤 Exporter retour";
+    btnExport.addEventListener("click", () => exportRetourEleve(key));
+    tdAct.appendChild(btnExport);
+    tr.appendChild(tdAct);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  host.innerHTML = "";
+  host.appendChild(table);
+}
+
+/* --------- Modale grille de notation --------- */
+function openGrille(eleveKey, jalonId) {
+  const data = classroom.get(eleveKey);
+  const jalon = JALONS.find(j => j.id === jalonId);
+  if (!data || !jalon) return;
+
+  let ev = data.evaluations.find(e => e.jalon_id === jalonId);
+  if (!ev) {
+    ev = {
+      jalon_id: jalonId,
+      criteres: jalon.criteres.map(c => ({ id: c.id, note: 0 })),
+      note_totale: 0,
+      commentaire: "",
+      date: new Date().toISOString().slice(0,10),
+      enseignant: "",
+    };
+  }
+
+  const body = document.getElementById("modal-body");
+  let html = `
+    <div class="grille-head">
+      <h2>${esc(jalon.titre)}</h2>
+      <div class="sub">${esc(eleveLabel(data.portfolio))} — ${esc(data.portfolio.infos_eleve?.classe || "")} · Barème /${jalonMax(jalon)} → ramené sur 20</div>
+    </div>
+  `;
+
+  // Aperçu des réponses élève
+  html += `<div class="apercu">`;
+  (jalon.sections_apercu || []).forEach(sid => {
+    const sec = (data.portfolio.sections || []).find(s => s.id === sid);
+    if (!sec) return;
+    html += `<h4>${esc(sec.titre)}</h4>`;
+    (sec.champs || []).forEach(c => {
+      const rendered = formatValueForPreview(c.valeur);
+      if (rendered) html += `<p><b>${esc(c.label)} :</b> ${rendered}</p>`;
+    });
+  });
+  html += `</div>`;
+
+  // Critères
+  jalon.criteres.forEach(c => {
+    const current = ev.criteres.find(x => x.id === c.id)?.note ?? 0;
+    html += `
+      <div class="critere-row">
+        <div class="critere-label">${esc(c.label)}</div>
+        <div class="critere-input">
+          <input type="number" min="0" max="${c.max}" step="0.5" value="${current}" data-cid="${c.id}" data-max="${c.max}" />
+          <span style="color: var(--c-muted);">/ ${c.max}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="grille-total">
+      <span>Total brut : <b id="total-raw">0</b> / ${jalonMax(jalon)}</span>
+      <span class="note-final">Note sur 20 : <b id="total-20">0</b></span>
+    </div>
+    <div class="grille-meta">
+      <div><label>Date<br /><input type="date" id="grille-date" value="${esc(ev.date)}" /></label></div>
+      <div><label>Enseignant<br /><input type="text" id="grille-enseignant" value="${esc(ev.enseignant)}" placeholder="Nom du professeur" /></label></div>
+    </div>
+    <div class="grille-comment">
+      <label>Commentaire pour l'élève</label>
+      <textarea id="grille-comment">${esc(ev.commentaire)}</textarea>
+    </div>
+    <div class="grille-actions">
+      <button class="btn btn-danger" id="btn-delete-ev">🗑️ Supprimer</button>
+      <button class="btn" id="btn-cancel">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-ev">💾 Enregistrer</button>
+    </div>
+  `;
+  body.innerHTML = html;
+  document.getElementById("modal").hidden = false;
+
+  const max = jalonMax(jalon);
+  const recomputeTotal = () => {
+    let raw = 0;
+    body.querySelectorAll("input[data-cid]").forEach(inp => raw += parseFloat(inp.value) || 0);
+    document.getElementById("total-raw").textContent = raw.toFixed(1).replace(/\.0$/, "");
+    document.getElementById("total-20").textContent  = (raw / max * 20).toFixed(1).replace(/\.0$/, "");
+  };
+  body.querySelectorAll("input[data-cid]").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const m = parseFloat(inp.dataset.max);
+      if (parseFloat(inp.value) > m) inp.value = m;
+      if (parseFloat(inp.value) < 0) inp.value = 0;
+      recomputeTotal();
+    });
+  });
+  recomputeTotal();
+
+  document.getElementById("btn-cancel").addEventListener("click", closeModal);
+  document.getElementById("btn-save-ev").addEventListener("click", () => {
+    const criteres = [];
+    body.querySelectorAll("input[data-cid]").forEach(inp => {
+      criteres.push({ id: inp.dataset.cid, note: parseFloat(inp.value) || 0 });
+    });
+    const raw = criteres.reduce((s, c) => s + c.note, 0);
+    const note20 = Math.round((raw / max * 20) * 10) / 10;
+    const newEv = {
+      jalon_id: jalonId,
+      criteres,
+      note_totale: note20,
+      note_brute: raw,
+      note_max: max,
+      commentaire: document.getElementById("grille-comment").value,
+      date: document.getElementById("grille-date").value,
+      enseignant: document.getElementById("grille-enseignant").value,
+    };
+    const idx = data.evaluations.findIndex(e => e.jalon_id === jalonId);
+    if (idx >= 0) data.evaluations[idx] = newEv; else data.evaluations.push(newEv);
+    closeModal(); markDirty();
+  });
+  document.getElementById("btn-delete-ev").addEventListener("click", () => {
+    if (!confirm("Supprimer cette évaluation ?")) return;
+    data.evaluations = data.evaluations.filter(e => e.jalon_id !== jalonId);
+    closeModal(); markDirty();
+  });
+}
+function closeModal() { document.getElementById("modal").hidden = true; }
+document.getElementById("modal-close").addEventListener("click", closeModal);
+document.getElementById("modal").addEventListener("click", e => {
+  if (e.target.id === "modal") closeModal();
+});
+
+/* --------- Export retour élève --------- */
+function exportRetourEleve(key) {
+  const data = classroom.get(key);
+  if (!data) return;
+  if (!data.evaluations.length) { alert("Aucune évaluation pour cet élève."); return; }
+  const retour = {
+    type: "cdo_evaluation",
+    date: new Date().toISOString(),
+    eleve: data.portfolio.infos_eleve || {},
+    portfolio: data.portfolio,
+    evaluations: data.evaluations,
+  };
+  const n = (data.portfolio.infos_eleve?.nom || "eleve").replace(/\s+/g, "_");
+  download(`retour_${n}_${new Date().toISOString().slice(0,10)}.json`,
+           new Blob([JSON.stringify(retour, null, 2)], { type: "application/json" }));
+}
+
+restoreDraft();
+renderClassroom();
+window.addEventListener("beforeunload", e => {
+  if (!dirtySinceClassExport) return;
+  e.preventDefault();
+  e.returnValue = "Des évaluations enseignant ne sont pas encore exportées.";
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Service du Midi — CAP PSR</title>
+<style>
+/* ============================================================
+   LE SERVICE DU MIDI — jeu temps réel marche en avant
+   ============================================================ */
+:root{
+  --bg:#0b1120; --panel:#1e293b; --panel2:#334155;
+  --txt:#f1f5f9; --muted:#94a3b8;
+  --rouge:#dc2626; --vert:#16a34a; --orange:#ea580c;
+  --jaune:#fbbf24; --bleu:#2563eb; --violet:#7c3aed;
+  --rose:#ec4899; --cyan:#06b6d4;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none}
+.hidden{display:none !important}
+
+/* ============== ÉCRAN ACCUEIL ============== */
+#screen-home{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+  background: radial-gradient(ellipse at top, #1e3a8a 0%, #0b1120 60%);
+}
+#screen-home h1{font-size:clamp(36px,7vw,72px);margin:0;letter-spacing:1px;text-align:center;
+  background:linear-gradient(90deg,#fbbf24,#ec4899,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:0 4px 30px rgba(251,191,36,.3)}
+#screen-home .sub{color:#cbd5e1;font-size:clamp(14px,2.5vw,18px);text-align:center;max-width:560px;margin:14px 0 32px}
+.intro-card{background:rgba(30,41,59,.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px;max-width:600px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.intro-card h2{margin-top:0;color:var(--jaune)}
+.intro-card .rules{display:grid;gap:12px;margin:16px 0}
+.intro-card .rule{display:flex;gap:12px;align-items:flex-start}
+.intro-card .rule .num{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--violet));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.intro-card .rule .t{font-size:14px;line-height:1.5}
+.intro-card .rule .t b{color:var(--jaune)}
+.id-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.id-row input{padding:12px 14px;border-radius:10px;border:2px solid #475569;background:#0f172a;color:var(--txt);font-size:15px;width:100%}
+.id-row input:focus{outline:none;border-color:var(--jaune)}
+.btn-start{margin-top:18px;width:100%;padding:18px;background:linear-gradient(135deg,var(--rose),var(--orange),var(--jaune));color:#fff;border-radius:14px;font-weight:800;font-size:20px;letter-spacing:1px;box-shadow:0 10px 30px rgba(236,72,153,.4);transition:transform .15s,filter .2s}
+.btn-start:hover{filter:brightness(1.1)}
+.btn-start:active{transform:scale(.97)}
+
+/* ============== ÉCRAN JEU ============== */
+#screen-game{display:flex;flex-direction:column;min-height:100vh}
+
+.topbar{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;padding:10px 16px;background:linear-gradient(90deg,#0f172a,#1e293b,#0f172a);border-bottom:2px solid #334155;align-items:center}
+.timer-box{display:flex;flex-direction:column;align-items:flex-start}
+.timer-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.timer-val{font-size:42px;font-weight:800;letter-spacing:2px;color:var(--jaune);font-variant-numeric:tabular-nums;text-shadow:0 0 20px rgba(251,191,36,.5)}
+.timer-val.urgent{color:var(--rouge);animation:urgent .5s infinite}
+@keyframes urgent{50%{opacity:.5}}
+.stats{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.stat{background:var(--panel);border-radius:12px;padding:8px 14px;text-align:center;min-width:90px;border:1px solid #334155}
+.stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.stat .v{font-size:22px;font-weight:800;margin-top:2px}
+.stat.served .v{color:var(--vert)}
+.stat.lost .v{color:var(--rouge)}
+.stat.score .v{color:var(--jaune)}
+.stat.contam .v{color:var(--orange)}
+.right-box{display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.btn-quit{background:#475569;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px}
+.btn-quit:hover{background:#dc2626}
+
+/* === Layout principal === */
+.game-grid{flex:1;display:grid;grid-template-columns:280px 1fr 280px;gap:12px;padding:12px}
+@media(max-width:1100px){.game-grid{grid-template-columns:1fr;}}
+
+/* === Commandes (gauche) === */
+.col-orders{display:flex;flex-direction:column;gap:10px}
+.col-title{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;padding:0 4px}
+.orders-list{display:flex;flex-direction:column;gap:10px;min-height:200px}
+.order-card{background:linear-gradient(135deg,#1e293b,#0f172a);border:2px solid var(--cyan);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:slideInLeft .4s}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+.order-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(6,182,212,.3)}
+.order-card .pic{width:54px;height:54px;background:#fff;border-radius:8px;flex-shrink:0;overflow:hidden}
+.order-card .pic img{width:100%;height:100%;object-fit:contain;padding:2px}
+.order-card .info{flex:1;min-width:0}
+.order-card .info .nom{font-weight:700;font-size:14px;line-height:1.2}
+.order-card .info .num{font-size:11px;color:var(--muted)}
+.order-card .timer{position:absolute;bottom:0;left:0;height:4px;background:linear-gradient(90deg,var(--vert),var(--jaune),var(--rouge));transition:width 1s linear}
+.order-card.urgent{border-color:var(--rouge);animation:shake .4s infinite}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.order-card .take{position:absolute;top:6px;right:6px;background:var(--jaune);color:#0f172a;font-weight:700;font-size:11px;padding:4px 8px;border-radius:6px;border:none;cursor:pointer}
+
+/* === Plan cuisine (centre) === */
+.col-map{position:relative}
+.map-wrap{position:relative;background:var(--panel);border-radius:14px;overflow:hidden;border:2px solid #334155}
+.map-img{width:100%;height:auto;display:block;background:#475569}
+.zone{position:absolute;border:2px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;background:rgba(255,255,255,.04);transition:all .15s;display:flex;align-items:flex-start;justify-content:flex-start}
+.zone:hover{background:rgba(251,191,36,.2);border-color:var(--jaune)}
+.zone.busy{border-color:var(--cyan);background:rgba(6,182,212,.18)}
+.zone.dirty{border-color:var(--rouge);background:rgba(220,38,38,.25);animation:dirtyPulse 1.2s infinite}
+@keyframes dirtyPulse{50%{background:rgba(220,38,38,.4)}}
+.zone-tag{background:rgba(0,0,0,.78);color:#fff;font-size:10px;padding:2px 5px;border-radius:3px;margin:3px;pointer-events:none;font-weight:600}
+.zone-occupants{position:absolute;bottom:2px;right:2px;display:flex;gap:2px}
+.zone-occupants span{width:14px;height:14px;border-radius:50%;border:2px solid #fff;font-size:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.chef{position:absolute;width:7%;aspect-ratio:1;background:#fff;border:3px solid var(--jaune);border-radius:50%;transform:translate(-50%,-50%);transition:left .35s, top .35s;z-index:10;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.chef img{width:100%;height:100%;object-fit:contain}
+
+/* === Tableau de bord (droite) === */
+.col-board{display:flex;flex-direction:column;gap:10px}
+.slot{background:linear-gradient(135deg,#1e293b,#0f172a);border:2px solid #334155;border-radius:14px;padding:10px;transition:border-color .2s}
+.slot.active{border-color:var(--jaune);box-shadow:0 0 24px rgba(251,191,36,.25)}
+.slot.empty{opacity:.5}
+.slot-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
+.slot-head .badge{background:var(--cyan);color:#0f172a;font-weight:700;padding:2px 8px;border-radius:6px;font-size:10px}
+.slot-body{display:flex;gap:10px;align-items:center}
+.slot-body .pic{width:60px;height:60px;background:#fff;border-radius:10px;flex-shrink:0;overflow:hidden}
+.slot-body .pic img{width:100%;height:100%;object-fit:contain;padding:3px}
+.slot-body .info{flex:1;min-width:0}
+.slot-body .info .nom{font-weight:700;font-size:13px;margin-bottom:4px}
+.slot-body .info .etat{font-size:11px;color:var(--cyan);text-transform:uppercase;letter-spacing:.5px}
+.slot-body .info .timer{font-size:11px;color:var(--muted);margin-top:2px}
+.slot-progress{display:flex;gap:2px;margin-top:8px}
+.slot-progress span{flex:1;height:6px;background:#334155;border-radius:1px}
+.slot-progress span.done{background:var(--vert)}
+.slot-progress span.current{background:var(--jaune);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.slot-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.slot-actions button{flex:1;padding:6px 4px;font-size:11px;background:var(--panel2);color:#fff;border-radius:6px;font-weight:600;border:1px solid transparent}
+.slot-actions button:hover{border-color:var(--jaune)}
+.slot-actions button.warn{background:var(--orange)}
+.btn-active{background:var(--jaune);color:#0f172a;font-weight:700}
+
+/* Hygiène */
+.hygiene{background:var(--panel);border-radius:14px;padding:10px;border:1px solid #334155}
+.hygiene h4{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.hyg-item{display:flex;align-items:center;justify-content:space-between;font-size:13px;margin:4px 0}
+.hyg-bar{width:80px;height:8px;background:#334155;border-radius:4px;overflow:hidden}
+.hyg-bar div{height:100%;background:linear-gradient(90deg,var(--rouge),var(--jaune),var(--vert));transition:width .3s}
+.hyg-action{margin-top:8px;width:100%;padding:8px;background:var(--bleu);color:#fff;border-radius:8px;font-weight:600;font-size:13px}
+.hyg-action:hover{filter:brightness(1.15)}
+
+/* === Bulle d'action sur le chef === */
+.action-bubble{position:absolute;z-index:30;transform:translate(-50%,-100%);background:var(--jaune);color:#0f172a;padding:8px 14px;border-radius:12px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);cursor:pointer;font-size:13px;max-width:200px;border:none;animation:bounce 1s infinite;text-align:center;line-height:1.2}
+.action-bubble::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--jaune)}
+@keyframes bounce{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,calc(-100% - 5px))}}
+
+/* === Toast / notifications === */
+#toasts{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:10px 18px;border-radius:10px;font-weight:700;animation:toastIn .3s, toastOut .3s 2.4s forwards;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:90vw}
+.toast.ok{background:var(--vert);color:#fff}
+.toast.warn{background:var(--orange);color:#fff}
+.toast.bad{background:var(--rouge);color:#fff}
+.toast.info{background:var(--bleu);color:#fff}
+.toast.gold{background:linear-gradient(135deg,var(--jaune),var(--orange));color:#0f172a}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px)}}
+
+/* === Inspecteur === */
+#inspector-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.inspector-card{background:#fff;color:#0f172a;border-radius:20px;padding:30px;max-width:480px;text-align:center;border:6px solid var(--rouge);animation:popIn .4s}
+@keyframes popIn{from{opacity:0;transform:scale(.7)}}
+.inspector-card h2{margin:0;color:var(--rouge);font-size:32px}
+.inspector-card .face{width:100px;height:100px;margin:14px auto;border-radius:50%;border:4px solid var(--rouge);overflow:hidden}
+.inspector-card .face img{width:100%;height:100%;object-fit:contain}
+.inspector-card p{font-size:16px;line-height:1.5}
+.inspector-card .verdict{font-size:24px;font-weight:800;margin:16px 0;padding:14px;border-radius:10px}
+.inspector-card .verdict.ok{background:#dcfce7;color:#14532d}
+.inspector-card .verdict.ko{background:#fee2e2;color:#7f1d1d}
+.inspector-card button{padding:12px 24px;background:var(--bleu);color:#fff;border-radius:10px;font-weight:700;font-size:15px}
+
+/* === Écran fin === */
+#screen-end{padding:24px;min-height:100vh}
+.end-wrap{max-width:900px;margin:0 auto}
+.end-head{text-align:center;margin-bottom:24px}
+.end-head h1{font-size:48px;margin:0;background:linear-gradient(90deg,var(--jaune),var(--rose));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.end-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.end-stat{background:var(--panel);border-radius:14px;padding:18px;text-align:center;border:2px solid #334155}
+.end-stat .v{font-size:42px;font-weight:800;margin:6px 0}
+.end-stat .l{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.end-stat.good .v{color:var(--vert)}
+.end-stat.bad .v{color:var(--rouge)}
+.end-stat.gold .v{color:var(--jaune)}
+.lendemain{background:linear-gradient(135deg,#7f1d1d,#0f172a);border-radius:16px;padding:24px;margin:20px 0;border:2px solid var(--rouge)}
+.lendemain.ok{background:linear-gradient(135deg,#14532d,#0f172a);border-color:var(--vert)}
+.lendemain h2{margin-top:0}
+.lendemain .news{font-style:italic;font-size:15px;line-height:1.6;background:rgba(0,0,0,.3);padding:14px;border-radius:8px;border-left:4px solid var(--rouge)}
+.lendemain.ok .news{border-left-color:var(--vert)}
+.btn-row-end{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.btn-row-end button{padding:14px 24px;border-radius:10px;font-weight:700;font-size:15px;color:#fff}
+.btn-replay{background:var(--vert)}
+.btn-home{background:var(--panel2)}
+
+/* === Compteurs étoiles === */
+.stars{font-size:32px;letter-spacing:6px;color:var(--jaune)}
+.stars .off{color:#475569}
+
+/* === Responsive === */
+@media(max-width:1100px){
+  .game-grid{grid-template-columns:1fr}
+  .col-orders,.col-board{order:2}
+  .col-map{order:1}
+}
+</style>
+</head>
+<body>
+<!-- RGPD : base élèves (code + classe seulement, pas de nom) -->
+<script src="data_eleves.js"></script>
+
+<!-- ===================== ÉCRAN ACCUEIL ===================== -->
+<div id="screen-home">
+  <h1>Le Service du Midi</h1>
+  <p class="sub">12h00 — Le coup de feu commence. Tu as <b>4 minutes</b> pour servir un maximum de clients sans contaminer un seul plat.</p>
+  <div class="intro-card">
+    <h2>Règles du service</h2>
+    <div class="rules">
+      <div class="rule"><div class="num">1</div><div class="t">Les <b>commandes tombent</b> à gauche. Clique « Prendre » pour la mettre en cuisine.</div></div>
+      <div class="rule"><div class="num">2</div><div class="t">Tu peux gérer <b>2 produits en parallèle</b>. Pendant que l'un cuit, l'autre se prépare.</div></div>
+      <div class="rule"><div class="num">3</div><div class="t">Respecte la <b>marche en avant</b> à chaque produit : sale → propre, sans retour.</div></div>
+      <div class="rule"><div class="num">4</div><div class="t"><b>Lave-toi les mains</b> entre chaque produit cru. Nettoie le plan après chaque préparation.</div></div>
+      <div class="rule"><div class="num">5</div><div class="t">Si tu contamines : <b>silence pendant le service</b>… mais le lendemain, le journal en parle.</div></div>
+      <div class="rule"><div class="num">6</div><div class="t">Un <b>inspecteur HACCP</b> peut débarquer à tout moment. Sois irréprochable.</div></div>
+    </div>
+    <div class="id-row">
+      <input id="eleve-nom" maxlength="10" placeholder="Code élève (ex : XX99)" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;font-weight:700">
+      <input id="eleve-classe" placeholder="Classe (auto)" autocomplete="off" readonly>
+    </div>
+    <button class="btn-start" onclick="startService()">Démarrer le service</button>
+  </div>
+</div>
+
+<!-- ===================== ÉCRAN JEU ===================== -->
+<div id="screen-game" class="hidden">
+  <div class="topbar">
+    <div class="timer-box">
+      <div class="timer-lbl">Service — temps restant</div>
+      <div class="timer-val" id="timer">04:00</div>
+    </div>
+    <div class="stats">
+      <div class="stat served"><div class="l">Servis</div><div class="v" id="stat-served">0</div></div>
+      <div class="stat lost"><div class="l">Perdus</div><div class="v" id="stat-lost">0</div></div>
+      <div class="stat score"><div class="l">Score</div><div class="v" id="stat-score">0</div></div>
+      <div class="stat contam"><div class="l">Contam.</div><div class="v" id="stat-contam">0</div></div>
+    </div>
+    <div class="right-box">
+      <button class="btn-quit" onclick="quitService()">Quitter</button>
+    </div>
+  </div>
+
+  <div class="game-grid">
+    <!-- COMMANDES -->
+    <div class="col-orders">
+      <div class="col-title">Commandes en attente</div>
+      <div class="orders-list" id="orders-list"></div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="col-map">
+      <div class="map-wrap">
+        <img class="map-img" id="map-img" alt="">
+        <div id="zones-layer"></div>
+        <div class="chef" id="chef"><img id="chef-img" alt=""></div>
+        <button class="action-bubble hidden" id="action-bubble"></button>
+      </div>
+    </div>
+
+    <!-- TABLEAU DE BORD -->
+    <div class="col-board">
+      <div class="col-title">Produits en cuisine</div>
+      <div class="slot empty" id="slot-0">
+        <div class="slot-head"><span>Plan A</span><span class="badge hidden">Actif</span></div>
+        <div class="slot-body">
+          <div class="pic"><img id="slot-0-pic" alt=""></div>
+          <div class="info">
+            <div class="nom" id="slot-0-nom">Aucun produit</div>
+            <div class="etat" id="slot-0-etat">—</div>
+            <div class="timer" id="slot-0-timer"></div>
+          </div>
+        </div>
+        <div class="slot-progress" id="slot-0-prog"></div>
+        <div class="slot-actions"><button onclick="setActive(0)">Sélectionner</button></div>
+      </div>
+      <div class="slot empty" id="slot-1">
+        <div class="slot-head"><span>Plan B</span><span class="badge hidden">Actif</span></div>
+        <div class="slot-body">
+          <div class="pic"><img id="slot-1-pic" alt=""></div>
+          <div class="info">
+            <div class="nom" id="slot-1-nom">Aucun produit</div>
+            <div class="etat" id="slot-1-etat">—</div>
+            <div class="timer" id="slot-1-timer"></div>
+          </div>
+        </div>
+        <div class="slot-progress" id="slot-1-prog"></div>
+        <div class="slot-actions"><button onclick="setActive(1)">Sélectionner</button></div>
+      </div>
+
+      <div class="hygiene">
+        <h4>Hygiène & matériel</h4>
+        <div class="hyg-item"><span>Mains</span><div class="hyg-bar"><div id="hyg-mains" style="width:100%"></div></div></div>
+        <div class="hyg-item"><span>Plan de travail</span><div class="hyg-bar"><div id="hyg-plan" style="width:100%"></div></div></div>
+        <div class="hyg-item"><span>Couteau légumes</span><div class="hyg-bar"><div id="hyg-couteau" style="width:100%"></div></div></div>
+        <button class="hyg-action" onclick="quickHygiene()">Lavage rapide (mains + plan)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== INSPECTEUR ===================== -->
+<div id="inspector-modal" class="hidden">
+  <div class="inspector-card">
+    <h2>Inspection HACCP</h2>
+    <div class="face"><img id="insp-face" alt=""></div>
+    <p id="insp-text"></p>
+    <div class="verdict" id="insp-verdict"></div>
+    <button onclick="closeInspector()">Reprendre le service</button>
+  </div>
+</div>
+
+<!-- ===================== ÉCRAN FIN ===================== -->
+<div id="screen-end" class="hidden">
+  <div class="end-wrap">
+    <div class="end-head">
+      <h1 id="end-title">Service terminé</h1>
+      <div class="stars" id="end-stars"></div>
+    </div>
+    <div class="end-grid">
+      <div class="end-stat good"><div class="l">Clients servis</div><div class="v" id="end-served">0</div></div>
+      <div class="end-stat bad"><div class="l">Clients perdus</div><div class="v" id="end-lost">0</div></div>
+      <div class="end-stat bad"><div class="l">Contaminations</div><div class="v" id="end-contam">0</div></div>
+      <div class="end-stat gold"><div class="l">Score final</div><div class="v" id="end-score">0</div></div>
+    </div>
+    <div class="lendemain" id="lendemain">
+      <h2 id="lendemain-title">Le lendemain — Journal local</h2>
+      <div class="news" id="lendemain-news"></div>
+    </div>
+    <div class="btn-row-end">
+      <button class="btn-replay" onclick="location.reload()">Rejouer le service</button>
+      <button class="btn-home" onclick="window.location.href='index.html'">Retour à l'accueil</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TOASTS ===================== -->
+<div id="toasts"></div>
+
+<script>
+/* ============================================================
+   CONFIG IMAGES
+   ============================================================ */
+const IMG = "ressources_eco/mission_anti_contamination/";
+const P = {
+  plan: IMG+"01_plan_cuisine_jeu/plan_cuisine_vue_du_dessus.jpg",
+  chef_face: IMG+"02_personnages/personnage_cuisinier_face.jpg",
+  chef_dos:  IMG+"02_personnages/personnage_cuisinier_dos.jpg",
+  chef_dr:   IMG+"02_personnages/personnage_cuisinier_profil_marche_1_va_droite.jpg",
+  chef_g:    IMG+"02_personnages/personnage_cuisinier_profil_marche_2va_gauche.jpg",
+  insp_ok:   IMG+"06_actions_hygiene/action_se_laver_les_mains.jpg",
+  insp_ko:   IMG+"05_zones_dangereuses_contamination/danger_viande_crue_non_couverte.jpg",
+};
+
+/* Produits possibles */
+const PRODUITS = [
+  {id:"pdt",     nom:"Pommes de terre",   img:IMG+"03_aliments_produits/aliment_pommes_de_terre.jpg",  type:"vege",  risque:1},
+  {id:"salade",  nom:"Salade verte",      img:IMG+"03_aliments_produits/aliment_salade_verte.jpg",     type:"vege",  risque:1},
+  {id:"tomates", nom:"Tomates",           img:IMG+"03_aliments_produits/aliment_tomates.jpg",          type:"vege",  risque:1},
+  {id:"poulet",  nom:"Poulet cru",        img:IMG+"03_aliments_produits/aliment_poulet_cru.jpg",       type:"viande",risque:3},
+  {id:"hachee",  nom:"Viande hachée",     img:IMG+"03_aliments_produits/aliment_viande_hachee.jpg",    type:"viande",risque:3},
+  {id:"oeufs",   nom:"Œufs",              img:IMG+"03_aliments_produits/aliment_oeufs.jpg",            type:"animal",risque:2},
+];
+
+/* Zones du plan — 9 étapes + 3 dangers */
+const ZONES = {
+  reception:        {x:2,  y:8,  w:18, h:28, label:"Réception",        step:1},
+  stockage:         {x:24, y:8,  w:22, h:24, label:"Stockage",         step:2},
+  deconditionnement:{x:50, y:8,  w:22, h:28, label:"Déconditionnement",step:3},
+  cuisson:          {x:2,  y:38, w:14, h:24, label:"Cuisson",          step:6},
+  preparation:      {x:24, y:40, w:30, h:22, label:"Préparation",      step:5},
+  lavage:           {x:60, y:38, w:18, h:22, label:"Lavage",           step:4},
+  conditionnement:  {x:2,  y:66, w:18, h:22, label:"Conditionnement",  step:7},
+  etiquetage_froid: {x:24, y:66, w:24, h:22, label:"Étiquetage froid", step:8},
+  distribution:     {x:62, y:66, w:18, h:22, label:"Distribution",     step:9},
+  dechets:          {x:2,  y:90, w:14, h:8,  label:"Déchets",          step:0,danger:true},
+  plonge_sale:      {x:22, y:90, w:24, h:8,  label:"Plonge sale",      step:0,danger:true},
+};
+const ETATS = ["Brut","Stocké","Déconditionné","Lavé","Préparé","Cuit","Conditionné","Étiqueté","Prêt"];
+
+/* ============================================================
+   ÉTAT DU JEU
+   ============================================================ */
+let G = null;
+
+function initGame(){
+  const code = document.getElementById('eleve-nom').value.trim().toUpperCase();
+  let classe = document.getElementById('eleve-classe').value.trim();
+  if (window.BDD_ELEVES && code) {
+    const found = window.BDD_ELEVES.find(e => e.userCode === code);
+    if (found) classe = found.classe;
+  }
+  G = {
+    eleve: code || "—",   // RGPD : code élève uniquement
+    classe: classe || "—",
+    timeLeft: 240,        // 4 minutes
+    serviceMs: Date.now(),
+    served: 0, lost: 0, score: 0, contam: 0,
+    orders: [],           // commandes en attente
+    nextOrderId: 1,
+    slots: [null, null],  // 2 produits actifs max
+    activeSlot: -1,
+    hyg: {mains:100, plan:100, couteau:100},
+    chefAt: "reception",
+    finished: false,
+    inspectionDone: false,
+    history: [],          // log pour rapport
+  };
+}
+
+/* ============================================================
+   AFFICHAGE
+   ============================================================ */
+function show(id){
+  ["screen-home","screen-game","screen-end"].forEach(s=>{
+    document.getElementById(s).classList.toggle("hidden", s!==id);
+  });
+}
+
+function startService(){
+  const code = document.getElementById('eleve-nom').value.trim().toUpperCase();
+  if(!code){
+    alert("Saisis ton code élève."); return;
+  }
+  if (window.BDD_ELEVES) {
+    const found = window.BDD_ELEVES.find(e => e.userCode === code);
+    if (!found) { alert("Code élève inconnu. Vérifie auprès de ton enseignant."); return; }
+    document.getElementById('eleve-classe').value = found.classe;
+  }
+  initGame();
+  show('screen-game');
+  buildMap();
+  // Première commande tout de suite
+  spawnOrder();
+  // Boucles
+  G.tickInterval = setInterval(tick, 1000);
+  G.spawnTimeout = setTimeout(spawnLoop, 8000);
+  G.inspTimeout  = setTimeout(maybeInspector, 60000 + Math.random()*60000);
+  toast("Le service commence ! Bonne chance.", "gold");
+  render();
+}
+
+function buildMap(){
+  const img = document.getElementById('map-img');
+  img.src = P.plan;
+  img.onerror = ()=>{ img.style.display='none'; };
+  const layer = document.getElementById('zones-layer');
+  layer.innerHTML = '';
+  Object.entries(ZONES).forEach(([id,z])=>{
+    const d = document.createElement('div');
+    d.className = 'zone';
+    d.id = 'zone-'+id;
+    d.style.left = z.x+'%'; d.style.top = z.y+'%';
+    d.style.width = z.w+'%'; d.style.height = z.h+'%';
+    d.onclick = ()=>moveTo(id);
+    const tag = document.createElement('div');
+    tag.className='zone-tag'; tag.textContent = z.label;
+    d.appendChild(tag);
+    layer.appendChild(d);
+  });
+  const ci = document.getElementById('chef-img');
+  ci.src = P.chef_face;
+  ci.onerror = ()=>{ ci.style.display='none'; };
+  positionChef('reception');
+}
+
+function positionChef(zoneId){
+  const z = ZONES[zoneId];
+  const c = document.getElementById('chef');
+  c.style.left = (z.x + z.w/2)+'%';
+  c.style.top  = (z.y + z.h/2)+'%';
+}
+
+/* ============================================================
+   COMMANDES
+   ============================================================ */
+function spawnOrder(){
+  const prod = PRODUITS[Math.floor(Math.random()*PRODUITS.length)];
+  const order = {
+    id: G.nextOrderId++,
+    produit: prod,
+    timeLeft: 110, // 110s pour exécuter
+    timeMax: 110,
+  };
+  G.orders.push(order);
+  toast("Nouvelle commande : "+prod.nom, "info");
+  renderOrders();
+}
+
+function spawnLoop(){
+  if(G.finished) return;
+  spawnOrder();
+  // Cadence : plus on avance, plus c'est rapide
+  const elapsed = 240 - G.timeLeft;
+  const delay = Math.max(15000, 38000 - elapsed*100);
+  G.spawnTimeout = setTimeout(spawnLoop, delay);
+}
+
+function takeOrder(orderId){
+  const idx = G.orders.findIndex(o=>o.id===orderId);
+  if(idx<0) return;
+  // Cherche un slot libre
+  let slot = G.slots.findIndex(s=>!s);
+  if(slot<0){ toast("Tu as déjà 2 produits en cuisine !","warn"); return; }
+  const order = G.orders.splice(idx,1)[0];
+  G.slots[slot] = {
+    order,
+    step: 0,           // 0 = brut, 9 = prêt
+    contaminated: false,
+    timeLeft: order.timeLeft,
+    timeMax: order.timeMax,
+    handledRaw: order.produit.type==="viande"||order.produit.type==="animal",
+  };
+  // Auto-validation étape 1 (réception) — l'élève vient de prendre le produit
+  G.slots[slot].step = 1;
+  if(G.activeSlot<0) setActive(slot);
+  toast("Commande prise : "+order.produit.nom, "ok");
+  render();
+}
+
+function setActive(slot){
+  if(!G.slots[slot]){ toast("Aucun produit dans ce plan.","warn"); return; }
+  G.activeSlot = slot;
+  render();
+}
+
+/* ============================================================
+   DÉPLACEMENT & ACTIONS
+   ============================================================ */
+function moveTo(zoneId){
+  if(G.finished) return;
+  const z = ZONES[zoneId];
+  const fromZ = ZONES[G.chefAt];
+  // Animation directionnelle
+  const ci = document.getElementById('chef-img');
+  if(z.x>fromZ.x) ci.src=P.chef_dr;
+  else if(z.x<fromZ.x) ci.src=P.chef_g;
+  else if(z.y>fromZ.y) ci.src=P.chef_face;
+  else ci.src=P.chef_dos;
+  G.chefAt = zoneId;
+  positionChef(zoneId);
+
+  const slot = G.slots[G.activeSlot];
+
+  // Zone danger : contamine le produit actif si pas en plonge sale spécifique
+  if(z.danger && slot && slot.step>=4 && zoneId!=="dechets"){
+    slot.contaminated = true;
+    G.contam++;
+    toast("Contamination silencieuse : croisement zone sale.","bad");
+    G.history.push({type:"contam",reason:"plonge_sale",produit:slot.order.produit.nom});
+    render();
+    return;
+  }
+  // Zone déchets : OK pour évacuer mais salit les mains
+  if(zoneId==="dechets"){
+    G.hyg.mains = Math.max(0, G.hyg.mains - 60);
+    toast("Tu as touché les déchets : lave-toi les mains.","warn");
+    render();
+    return;
+  }
+
+  // Sinon, tente de progresser le produit actif
+  if(slot && z.step>0){
+    tryProgress(slot, zoneId);
+  }
+  render();
+}
+
+function tryProgress(slot, zoneId){
+  const z = ZONES[zoneId];
+  const targetStep = z.step;
+  // Doit progresser d'exactement 1 étape (pas de saut, pas de retour)
+  if(targetStep === slot.step + 1){
+    // Vérifier prérequis hygiène pour étape Préparation
+    if(targetStep===5){
+      if(G.hyg.mains < 40){
+        slot.contaminated = true; G.contam++;
+        toast("Mains sales : produit contaminé en préparation.","bad");
+        G.history.push({type:"contam",reason:"mains_sales",produit:slot.order.produit.nom});
+        return;
+      }
+      if(G.hyg.plan < 40){
+        slot.contaminated = true; G.contam++;
+        toast("Plan non nettoyé : contamination.","bad");
+        G.history.push({type:"contam",reason:"plan_sale",produit:slot.order.produit.nom});
+        return;
+      }
+      G.hyg.couteau = Math.max(0, G.hyg.couteau - 40);
+      G.hyg.plan = Math.max(0, G.hyg.plan - 50);
+      G.hyg.mains = Math.max(0, G.hyg.mains - 30);
+    }
+    if(targetStep===4 && slot.handledRaw){
+      G.hyg.mains = Math.max(0, G.hyg.mains - 40);
+    }
+    slot.step = targetStep;
+    G.score += 10;
+    toast("Étape "+targetStep+" : "+ETATS[targetStep]+" — "+slot.order.produit.nom, "ok");
+    if(targetStep===9){ deliverOrder(); }
+  } else if(targetStep <= slot.step){
+    toast("Retour en arrière interdit !","bad");
+    slot.contaminated = true; G.contam++;
+    G.history.push({type:"contam",reason:"retour",produit:slot.order.produit.nom});
+  } else {
+    toast("Étape sautée : il manque "+ETATS[slot.step+1],"warn");
+  }
+}
+
+function deliverOrder(){
+  const slot = G.slots[G.activeSlot];
+  if(!slot) return;
+  if(slot.contaminated){
+    G.history.push({type:"served_contam",produit:slot.order.produit.nom});
+    toast("Plat servi… mais contaminé.","warn");
+  } else {
+    G.history.push({type:"served_ok",produit:slot.order.produit.nom});
+    toast("Client servi : "+slot.order.produit.nom+" !","gold");
+  }
+  G.served++;
+  G.score += 50;
+  if(slot.timeLeft > 30) G.score += 20; // bonus rapidité
+  // Vide le slot
+  G.slots[G.activeSlot] = null;
+  G.activeSlot = G.slots.findIndex(s=>s);
+}
+
+/* ============================================================
+   HYGIÈNE
+   ============================================================ */
+function quickHygiene(){
+  G.hyg.mains = 100;
+  G.hyg.plan  = 100;
+  G.hyg.couteau = Math.max(G.hyg.couteau, 80);
+  toast("Mains lavées + plan désinfecté.","ok");
+  render();
+}
+
+/* ============================================================
+   TICK / TIMERS
+   ============================================================ */
+function tick(){
+  if(G.finished) return;
+  G.timeLeft--;
+  // Décroissance hygiène lente
+  G.hyg.mains   = Math.max(0, G.hyg.mains - 1);
+  G.hyg.plan    = Math.max(0, G.hyg.plan  - 0.5);
+  // Commandes timer
+  G.orders.forEach(o => o.timeLeft--);
+  G.orders = G.orders.filter(o=>{
+    if(o.timeLeft<=0){
+      G.lost++; G.score -= 30;
+      G.history.push({type:"lost",produit:o.produit.nom});
+      toast("Client parti sans son plat !","bad");
+      return false;
+    }
+    return true;
+  });
+  // Slots timer
+  G.slots.forEach((s,i)=>{
+    if(!s) return;
+    s.timeLeft--;
+    if(s.timeLeft<=0){
+      G.lost++; G.score -= 30;
+      G.history.push({type:"lost_inhand",produit:s.order.produit.nom});
+      toast("Plat trop lent : client parti.","bad");
+      G.slots[i] = null;
+      if(G.activeSlot===i) G.activeSlot = G.slots.findIndex(x=>x);
+    }
+  });
+  if(G.timeLeft<=0){ endService(); return; }
+  render();
+}
+
+/* ============================================================
+   INSPECTEUR
+   ============================================================ */
+function maybeInspector(){
+  if(G.finished || G.inspectionDone) return;
+  G.inspectionDone = true;
+  // Verdict basé sur l'état au moment du contrôle
+  const handsOk = G.hyg.mains >= 60;
+  const planOk  = G.hyg.plan >= 60;
+  const noContam = G.contam === 0;
+  const ok = handsOk && planOk && noContam;
+  const card = document.getElementById('inspector-modal');
+  document.getElementById('insp-face').src = ok ? P.insp_ok : P.insp_ko;
+  document.getElementById('insp-text').textContent = ok
+    ? "Mains propres, plan désinfecté, aucun croisement détecté."
+    : "Manquements relevés : "
+      + (!handsOk?"mains sales · ":"")
+      + (!planOk?"plan non nettoyé · ":"")
+      + (!noContam?"contaminations passées · ":"");
+  const v = document.getElementById('insp-verdict');
+  v.className = 'verdict '+(ok?'ok':'ko');
+  v.textContent = ok ? "CONFORME ✓ +200 pts" : "AMENDE −150 pts";
+  if(ok) G.score += 200;
+  else { G.score -= 150; G.history.push({type:"amende"}); }
+  card.classList.remove('hidden');
+}
+function closeInspector(){ document.getElementById('inspector-modal').classList.add('hidden'); render(); }
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+function toast(txt, kind){
+  const t = document.createElement('div');
+  t.className = 'toast '+(kind||'info');
+  t.textContent = txt;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>t.remove(), 2800);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  // Timer
+  const m = Math.floor(G.timeLeft/60), s = G.timeLeft%60;
+  const tEl = document.getElementById('timer');
+  tEl.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  tEl.classList.toggle('urgent', G.timeLeft<=30);
+  // Stats
+  document.getElementById('stat-served').textContent = G.served;
+  document.getElementById('stat-lost').textContent = G.lost;
+  document.getElementById('stat-score').textContent = G.score;
+  document.getElementById('stat-contam').textContent = G.contam;
+  // Hygiene bars
+  document.getElementById('hyg-mains').style.width = G.hyg.mains+'%';
+  document.getElementById('hyg-plan').style.width = G.hyg.plan+'%';
+  document.getElementById('hyg-couteau').style.width = G.hyg.couteau+'%';
+  // Orders
+  renderOrders();
+  // Slots
+  [0,1].forEach(renderSlot);
+  // Zones
+  Object.keys(ZONES).forEach(id=>{
+    const el = document.getElementById('zone-'+id);
+    if(!el) return;
+    el.classList.remove('busy','dirty');
+    // busy si un slot est à cette étape
+    G.slots.forEach(s=>{
+      if(!s) return;
+      if(ZONES[id].step === s.step) el.classList.add('busy');
+    });
+    // dirty si plan ou hygiène au minimum
+    if(id==="preparation" && G.hyg.plan<40) el.classList.add('dirty');
+  });
+  // Bulle d'action
+  renderBubble();
+}
+
+function renderOrders(){
+  const list = document.getElementById('orders-list');
+  list.innerHTML = '';
+  if(!G.orders.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Aucune commande en attente.</div>';
+    return;
+  }
+  G.orders.forEach(o=>{
+    const c = document.createElement('div');
+    c.className = 'order-card'+(o.timeLeft<25?' urgent':'');
+    const m = Math.floor(o.timeLeft/60), s = o.timeLeft%60;
+    c.innerHTML = `
+      <div class="pic"><img src="${o.produit.img}" onerror="this.style.display='none'"></div>
+      <div class="info">
+        <div class="nom">${o.produit.nom}</div>
+        <div class="num">Cmd #${o.id} — ${m}:${String(s).padStart(2,'0')} restantes</div>
+      </div>
+      <button class="take" onclick="takeOrder(${o.id})">Prendre</button>
+      <div class="timer" style="width:${(o.timeLeft/o.timeMax*100)}%"></div>
+    `;
+    list.appendChild(c);
+  });
+}
+
+function renderSlot(i){
+  const el = document.getElementById('slot-'+i);
+  const slot = G.slots[i];
+  const badge = el.querySelector('.badge');
+  el.classList.toggle('empty', !slot);
+  el.classList.toggle('active', G.activeSlot===i && !!slot);
+  badge.classList.toggle('hidden', G.activeSlot!==i || !slot);
+  const pic = document.getElementById('slot-'+i+'-pic');
+  const nom = document.getElementById('slot-'+i+'-nom');
+  const etat = document.getElementById('slot-'+i+'-etat');
+  const timer = document.getElementById('slot-'+i+'-timer');
+  const prog = document.getElementById('slot-'+i+'-prog');
+  if(!slot){
+    pic.removeAttribute('src');
+    nom.textContent = "Aucun produit";
+    etat.textContent = "—";
+    timer.textContent = "";
+    prog.innerHTML = "";
+    return;
+  }
+  pic.src = slot.order.produit.img;
+  pic.onerror = ()=>{pic.style.display='none';};
+  nom.textContent = slot.order.produit.nom;
+  etat.textContent = ETATS[slot.step] + (slot.contaminated?" — CONTAMINÉ":"");
+  if(slot.contaminated) etat.style.color='var(--rouge)'; else etat.style.color='';
+  const m=Math.floor(slot.timeLeft/60),s=slot.timeLeft%60;
+  timer.textContent = "Reste : "+m+":"+String(s).padStart(2,'0');
+  prog.innerHTML = '';
+  for(let k=1;k<=9;k++){
+    const sp = document.createElement('span');
+    if(k<=slot.step) sp.classList.add('done');
+    else if(k===slot.step+1) sp.classList.add('current');
+    prog.appendChild(sp);
+  }
+}
+
+function renderBubble(){
+  const b = document.getElementById('action-bubble');
+  const slot = G.slots[G.activeSlot];
+  if(!slot){ b.classList.add('hidden'); return; }
+  const nextStep = slot.step + 1;
+  if(nextStep > 9){ b.classList.add('hidden'); return; }
+  // Trouve la zone correspondante
+  const zid = Object.keys(ZONES).find(k=>ZONES[k].step===nextStep);
+  if(!zid){ b.classList.add('hidden'); return; }
+  const z = ZONES[zid];
+  if(G.chefAt === zid){ b.classList.add('hidden'); return; } // déjà sur place
+  b.style.left = (z.x + z.w/2)+'%';
+  b.style.top  = z.y + '%';
+  b.textContent = "→ "+z.label;
+  b.onclick = ()=>moveTo(zid);
+  b.classList.remove('hidden');
+}
+
+/* ============================================================
+   FIN DE SERVICE
+   ============================================================ */
+function endService(){
+  G.finished = true;
+  clearInterval(G.tickInterval);
+  clearTimeout(G.spawnTimeout);
+  clearTimeout(G.inspTimeout);
+  // Bonus / malus
+  G.score = Math.max(0, G.score);
+  show('screen-end');
+  document.getElementById('end-served').textContent = G.served;
+  document.getElementById('end-lost').textContent   = G.lost;
+  document.getElementById('end-contam').textContent = G.contam;
+  document.getElementById('end-score').textContent  = G.score;
+  // Étoiles
+  let stars = 0;
+  if(G.served>=3 && G.contam===0) stars = 1;
+  if(G.served>=5 && G.contam===0) stars = 2;
+  if(G.served>=7 && G.contam===0 && G.lost<=1) stars = 3;
+  const sEl = document.getElementById('end-stars');
+  sEl.innerHTML = '';
+  for(let i=0;i<3;i++){
+    const s = document.createElement('span');
+    s.textContent = '★';
+    if(i>=stars) s.className='off';
+    sEl.appendChild(s);
+  }
+  // Lendemain
+  const lend = document.getElementById('lendemain');
+  const lendT = document.getElementById('lendemain-title');
+  const lendN = document.getElementById('lendemain-news');
+  if(G.contam===0 && G.served>0){
+    lend.classList.add('ok');
+    lendT.textContent = "Le lendemain — Tout va bien";
+    lendN.textContent = `« Le restaurant a servi ${G.served} clients hier midi. Tous repartis satisfaits. Le contrôle d'hygiène n'a relevé aucun manquement. ${G.eleve}, commis du jour, mérite des félicitations. »`;
+  } else if(G.contam===0){
+    lendT.textContent = "Le lendemain — Service difficile";
+    lendN.textContent = "« Service compliqué hier midi : peu de clients ont pu être servis à temps. Aucune contamination, mais l'efficacité doit progresser. »";
+  } else {
+    lend.classList.remove('ok');
+    lendT.textContent = "Le lendemain — Mauvaise nouvelle";
+    const malades = G.contam * (1+Math.floor(Math.random()*3));
+    lendN.textContent = `« ${malades} clients ont été hospitalisés cette nuit suite à une intoxication alimentaire. Le restaurant est fermé pour 48h le temps de l'enquête sanitaire. ${G.contam} contamination(s) ont été identifiées dans le service du midi. »`;
+  }
+  saveResult();
+}
+
+function saveResult(){
+  try{
+    const all = JSON.parse(localStorage.getItem("service_du_midi_v1")||"[]");
+    all.push({
+      eleve:G.eleve, classe:G.classe, date:new Date().toISOString().slice(0,10),
+      served:G.served, lost:G.lost, contam:G.contam, score:G.score,
+    });
+    localStorage.setItem("service_du_midi_v1", JSON.stringify(all));
+  }catch(e){}
+}
+
+function quitService(){
+  if(!confirm("Quitter le service en cours ?")) return;
+  location.reload();
+}
+
+/* ============================================================
+   CLAVIER
+   ============================================================ */
+document.addEventListener('keydown', e=>{
+  if(document.getElementById('screen-game').classList.contains('hidden')) return;
+  if(e.key==='1') setActive(0);
+  else if(e.key==='2') setActive(1);
+  else if(e.key===' '){ e.preventDefault(); quickHygiene(); }
+});
+</script>
+</body>
+</html>
