@@ -11994,7 +11994,6 @@ const ROUE_DEFIS = [
   { emoji: "💡", label: "Trouve le mot",   action: () => openTrouveLeMot() },
   { emoji: "📱", label: "Conversation",    action: () => openConversations() },
   { emoji: "📖", label: "Glossaire",       action: () => openGlossaire() },
-  { emoji: "📋", label: "Référentiel PSR", action: () => openReferentielPsr() },
   { emoji: "🌡️", label: "Chaîne du froid", action: () => selectView("section", "eco_responsable") },
   { emoji: "🎈", label: "Bulles détente",  action: () => openBullesGame() },
 ];
@@ -13268,7 +13267,7 @@ function openTutorielPremiereVisite() {
     },
     {
       emoji: "🆘", titre: "Si tu galères ou si tu veux réviser",
-      texte: "<b>💪 Entraîne-toi</b> (en bas à gauche) regroupe :<br>📖 Glossaire (40 mots-clés expliqués)<br>🃏 Flashcards · 📱 Conversations · 🎯 Pendu · 💡 Trouve le mot<br>📋 Référentiel PSR (toutes tes compétences)<br><br><b>💬 Donner mon avis</b> : dis-nous ce qui marche ou pas.<br><br><b>👤 Mon avatar</b> : personnalise ton profil 😊",
+      texte: "<b>💪 Entraîne-toi</b> (en bas à gauche) regroupe :<br>📖 Glossaire · 🃏 Flashcards · 📱 Conversations · 🎯 Pendu · 💡 Trouve le mot · 🎡 Roue des défis · 🎈 Bulles détente<br><br><b>💬 Donner mon avis</b> : dis-nous ce qui marche ou pas.<br><br><b>👤 Mon avatar</b> : personnalise ton profil 😊",
       cta: "Suivant →",
     },
     {
@@ -14174,6 +14173,8 @@ function showSplashScreen() {
    ===================================================================== */
 const GLOSSAIRE = [
   { mot: "Allergène", def: "Aliment qui peut provoquer une réaction grave chez certaines personnes (œuf, lait, gluten, etc.). Il y en a 14 à signaler obligatoirement sur l'étiquette." },
+  { mot: "Allergènes majeurs (les 14)", def: "Liste officielle imposée par la réglementation INCO : gluten, crustacés, œufs, poissons, arachides, soja, lait, fruits à coque, céleri, moutarde, sésame, sulfites, lupin, mollusques. Doivent apparaître en gras ou souligné dans la liste des ingrédients." },
+  { mot: "AMAP", def: "Association pour le Maintien d'une Agriculture Paysanne. Tu commandes ton panier directement à un producteur, sans intermédiaire. C'est de la vente directe (circuit court)." },
   { mot: "AOP", def: "Appellation d'Origine Protégée. Label européen qui garantit qu'un produit vient d'un endroit précis (ex : Lentille verte du Puy)." },
   { mot: "AOC", def: "Appellation d'Origine Contrôlée. Version française de l'AOP. Garantit l'origine et le savoir-faire." },
   { mot: "AB (Agriculture Biologique)", def: "Label européen. Garantit que le produit est cultivé sans pesticides chimiques ni OGM." },
@@ -14182,36 +14183,58 @@ const GLOSSAIRE = [
   { mot: "Bâtisseur", def: "Rôle des protéines : construire les muscles, les os, les cheveux. On en a besoin pour grandir et se réparer." },
   { mot: "Bio", def: "Produit cultivé sans pesticides chimiques, conformément aux règles de l'agriculture biologique. Souvent labellisé AB." },
   { mot: "Bioplastique", def: "Plastique fabriqué à partir de plantes (maïs, canne à sucre). Souvent compostable, plus écolo que le plastique classique." },
+  { mot: "Biodégradable", def: "Qui peut se décomposer naturellement sous l'action des bactéries. Pas forcément compostable (peut prendre des années)." },
   { mot: "Calcium", def: "Minéral indispensable pour les os et les dents. On en trouve surtout dans les produits laitiers (lait, yaourt, fromage)." },
   { mot: "Carbone (CO₂)", def: "Gaz qui réchauffe la planète. Plus on transporte des produits de loin, plus on émet de CO₂." },
+  { mot: "Chaîne du froid", def: "Maintien des produits frais à température basse (entre 0 et 4 °C) tout au long du transport, du stockage et de la vente. Sa rupture rend les aliments dangereux." },
   { mot: "Circuit court", def: "Quand il y a au maximum 1 intermédiaire entre celui qui produit et celui qui mange. Exemples : marché, AMAP, vente directe à la ferme." },
+  { mot: "Compostable", def: "Qui se transforme en compost (terre fertile) en quelques mois, dans un composteur. Plus rapide que le simple « biodégradable »." },
+  { mot: "Congélation", def: "Conservation à -18 °C ou moins. Stoppe la multiplication des bactéries. Conservation longue (plusieurs mois)." },
+  { mot: "Conserve", def: "Aliment stérilisé puis fermé dans un récipient hermétique (boîte, bocal). Se conserve plusieurs années à température ambiante." },
   { mot: "Constituants alimentaires", def: "Éléments contenus dans les aliments : protides, glucides, lipides, vitamines, minéraux, eau. Chacun a un rôle pour la santé." },
+  { mot: "Contamination croisée", def: "Quand des microbes passent d'un aliment cru ou sale vers un aliment cuit ou propre (ex : couteau qui sert à la viande crue puis aux légumes). Cause majeure d'intoxication." },
+  { mot: "Cuisson à cœur", def: "Cuire l'aliment jusqu'à ce que la température au centre atteigne 63 °C (au moins). Détruit la majorité des bactéries." },
   { mot: "DLC", def: "Date Limite de Consommation. À ne pas dépasser sur les produits frais (yaourt, viande). Affichée « À consommer jusqu'au… »." },
   { mot: "DDM", def: "Date de Durabilité Minimale. Le produit reste sain après cette date, mais peut perdre du goût. Affichée « À consommer de préférence avant… »." },
+  { mot: "DLUO", def: "Date Limite d'Utilisation Optimale. Ancien nom de la DDM, encore parfois employé. Même signification." },
+  { mot: "Doggy bag", def: "Boîte fournie au client pour emporter ce qu'il n'a pas mangé au restaurant. Obligatoire pour les pros depuis la loi AGEC." },
   { mot: "Éco-responsable", def: "Qui respecte la planète : produits de saison, circuits courts, peu d'emballage, anti-gaspillage." },
+  { mot: "EGalim (Loi)", def: "Loi pour l'équilibre des relations commerciales agricoles et une alimentation saine et durable (2018). Oblige 50 % de produits durables et 20 % de bio dans la restauration collective." },
+  { mot: "Empreinte carbone", def: "Quantité de gaz à effet de serre (CO₂ surtout) émise pour produire, transporter ou consommer un produit. Plus elle est faible, mieux c'est pour la planète." },
   { mot: "Énergie (alimentaire)", def: "Ce que les aliments donnent au corps pour fonctionner. On la mesure en kilocalories (kcal). Surtout fournie par les glucides et les lipides." },
   { mot: "Étiquetage", def: "Toutes les informations écrites sur l'emballage d'un produit : nom, ingrédients, allergènes, dates, fabricant." },
   { mot: "Féculents", def: "Aliments qui apportent de l'énergie : pâtes, riz, pain, pommes de terre, semoule, lentilles, pois chiches." },
   { mot: "Fibre", def: "Élément des fruits, légumes et céréales complètes. Aide à la digestion et au bon fonctionnement du ventre." },
   { mot: "Filière de proximité", def: "Achats faits près de chez soi (dans la région). Réduit le transport et soutient les producteurs locaux." },
+  { mot: "Garot (Loi)", def: "Loi anti-gaspillage de 2016. Interdit aux supermarchés de plus de 400 m² de jeter ou détruire de la nourriture encore consommable. Don aux associations obligatoire." },
   { mot: "Glucides", def: "Sucres et amidons. Ils donnent l'énergie rapide au corps. Présents dans les pâtes, le riz, le pain, les fruits." },
   { mot: "Groupes alimentaires", def: "Les 7 grandes familles d'aliments : 1) fruits-légumes, 2) féculents, 3) produits laitiers, 4) VPO (viande-poisson-œuf), 5) matières grasses, 6) produits sucrés, 7) boissons." },
+  { mot: "HACCP", def: "Hazard Analysis Critical Control Point. Méthode obligatoire en cuisine pour identifier les risques (microbes, contamination) et les points critiques à maîtriser." },
   { mot: "Hygiène alimentaire", def: "Règles pour éviter de tomber malade : se laver les mains, bien cuire les aliments, respecter le froid." },
+  { mot: "IGP", def: "Indication Géographique Protégée. Label européen qui garantit qu'au moins une étape (production, transformation, élaboration) a eu lieu dans une région précise (ex : Jambon de Bayonne)." },
   { mot: "INCO", def: "Règlement européen 1169/2011. Définit toutes les informations obligatoires sur les étiquettes alimentaires en Europe." },
   { mot: "Label", def: "Marque officielle qui garantit la qualité ou l'origine d'un produit (AB, Label Rouge, AOP…)." },
   { mot: "Label Rouge", def: "Label français qui garantit une qualité supérieure liée au mode de production." },
   { mot: "Légumineuses", def: "Famille d'aliments qui sont à la fois féculents ET protéines végétales : lentilles, pois chiches, haricots, fèves." },
   { mot: "Lipides", def: "Matières grasses. Énergie de réserve du corps. Huile, beurre, fruits à coque, fromage." },
+  { mot: "Marche en avant", def: "Principe d'organisation d'une cuisine pro : le produit avance toujours du sale vers le propre, sans jamais revenir en arrière. Évite les contaminations." },
+  { mot: "Mention d'allergène", def: "Sur l'étiquette, l'allergène doit être mis en valeur (gras, souligné ou couleur différente) dans la liste des ingrédients pour qu'on le repère facilement." },
   { mot: "Menu équilibré", def: "Repas qui combine les bons groupes alimentaires dans les bonnes proportions (½ légumes, ¼ féculents, ¼ protéines)." },
   { mot: "Minéraux", def: "Calcium, fer, magnésium… Présents en petite quantité mais indispensables à la santé. Dans les fruits, légumes, produits laitiers." },
   { mot: "Organoleptique (analyse)", def: "Manière d'évaluer un aliment avec ses sens : la vue, l'odorat, le goût, le toucher." },
   { mot: "Packaging", def: "Mot anglais pour « emballage ». Tout ce qui entoure le produit pour le protéger et le présenter." },
+  { mot: "Plat à emporter", def: "Plat préparé et conditionné pour être consommé ailleurs qu'au lieu de vente. Doit être étiqueté (DLC, ingrédients, allergènes) et respecter la chaîne du froid." },
   { mot: "PNNS", def: "Programme National Nutrition Santé. Recommandations officielles françaises pour bien manger (mangerbouger.fr)." },
   { mot: "Protides (protéines)", def: "Bâtisseurs du corps : construisent les muscles, les os, les cheveux. Dans la viande, le poisson, l'œuf, les légumineuses, les produits laitiers." },
   { mot: "Recyclable", def: "Qui peut être transformé pour fabriquer un nouvel objet (carton, verre, métal). Bien trier permet de recycler." },
+  { mot: "Réfrigération", def: "Conservation entre 0 et 4 °C pour les produits très périssables (viande, poisson, plats préparés). Ralentit la multiplication des bactéries." },
   { mot: "Saisonnalité", def: "Manger de saison = manger des fruits et légumes qui poussent à ce moment de l'année dans notre région. Meilleur, moins cher, moins polluant." },
+  { mot: "Sécurité alimentaire", def: "Ensemble des règles qui garantissent que les aliments servis ne rendront pas malade. Repose sur l'hygiène, la chaîne du froid, la marche en avant et la traçabilité." },
   { mot: "SIQO", def: "Signes Officiels d'Identification de la Qualité et de l'Origine. Regroupe AB, Label Rouge, AOP, AOC, IGP, STG." },
+  { mot: "Surgelé", def: "Aliment congelé très rapidement à très basse température (-30 °C ou moins). Préserve la qualité et la texture mieux qu'une congélation classique." },
+  { mot: "TIAC", def: "Toxi-Infection Alimentaire Collective. Quand au moins 2 personnes tombent malades après avoir mangé le même aliment. À déclarer obligatoirement." },
   { mot: "Traçabilité", def: "Pouvoir savoir d'où vient un produit, qui l'a fait, quand. Permet de retirer un produit s'il y a un problème." },
+  { mot: "Vente à emporter", def: "Activité commerciale où le client achète un repas qu'il consomme ailleurs. Soumise à la réglementation INCO (étiquetage) et HACCP (hygiène)." },
   { mot: "Vitamines", def: "Petites quantités, grands rôles : protègent l'organisme et le maintiennent en bonne santé. Dans les fruits, légumes, produits laitiers." },
   { mot: "VPO", def: "Viandes - Poissons - Œufs. Groupe alimentaire qui apporte les protéines animales." },
 ];
@@ -15882,13 +15905,6 @@ function renderRevisionView() {
         <div class="rev-titre">Trouve le mot</div>
         <div class="rev-desc">10 définitions à deviner sur tous les modules.</div>
         <div class="rev-stat">${TROUVE_LE_MOT_BANQUE.length} mots à découvrir</div>
-      </button>
-
-      <button type="button" class="revision-card" data-tool="referentiel_psr">
-        <div class="rev-icon">📋</div>
-        <div class="rev-titre">Mon référentiel PSR</div>
-        <div class="rev-desc">Toutes les compétences de ton CAP, à cocher au fur et à mesure.</div>
-        <div class="rev-stat">${REFERENTIEL_PSR.reduce((s, f) => s + f.items.length, 0)} compétences · ${Object.values(state.referentiel_psr || {}).filter(v => v === "acquis").length} acquises</div>
       </button>
 
       <button type="button" class="revision-card rev-card-fun" data-tool="roue_defis">

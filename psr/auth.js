@@ -87,7 +87,8 @@
     document.head.appendChild(s);
   }
 
-  function buildLoginUI(onSuccess) {
+  function buildLoginUI(onSuccess, opts) {
+    opts = opts || {};
     injectStyles();
     let overlay = document.getElementById("psr-auth-overlay");
     if (!overlay) {
@@ -96,21 +97,19 @@
       overlay.innerHTML = `
         <div class="psr-auth-card">
           <div class="psr-rgpd-tag">RGPD</div>
-          <div class="psr-logo">📒</div>
-          <h1>Portfolio Chef-d'œuvre PSR</h1>
-          <p class="psr-sub">Saisis ton <b>code élève</b> Data Élèves pour accéder au portfolio.</p>
+          <div class="psr-logo">🔐</div>
+          <h1 id="psr-auth-title">Code élève requis</h1>
+          <p class="psr-sub" id="psr-auth-sub">Cette partie nécessite ton <b>code élève Data Élèves</b>. Aucun nom ni prénom n'est demandé.</p>
           <input id="psr-auth-input" type="text" maxlength="10" placeholder="CODE" autocomplete="off" autocapitalize="characters" />
           <div class="psr-error" id="psr-auth-error"></div>
-          <button class="psr-btn" id="psr-auth-btn">Entrer</button>
-          <p class="psr-help">
-            Aucun nom, aucun prénom n'est demandé.<br>
-            Ton code suffit à retrouver tes données.<br>
-            <b>Mode enseignant :</b> code <code>PROFPSE</code>.
-          </p>
+          <button class="psr-btn" id="psr-auth-btn">Valider</button>
+          <button class="psr-btn psr-btn-secondary" id="psr-auth-cancel" style="margin-top:8px;background:#475569">Annuler</button>
         </div>
       `;
       document.body.appendChild(overlay);
     }
+    if (opts.title)    document.getElementById('psr-auth-title').textContent = opts.title;
+    if (opts.subtitle) document.getElementById('psr-auth-sub').innerHTML    = opts.subtitle;
     overlay.classList.remove("psr-hidden");
     const input = document.getElementById("psr-auth-input");
     const btn   = document.getElementById("psr-auth-btn");
@@ -131,6 +130,11 @@
     }
     btn.onclick = tryLogin;
     input.onkeydown = (e) => { if (e.key === "Enter") tryLogin(); };
+    const cancelBtn = document.getElementById('psr-auth-cancel');
+    if (cancelBtn) cancelBtn.onclick = () => {
+      overlay.classList.add("psr-hidden");
+      if (typeof opts.onCancel === "function") opts.onCancel();
+    };
   }
 
   function logout() {
@@ -140,24 +144,33 @@
   }
 
   // ==== INIT ================================================================
+  // Le portfolio est librement accessible : on restaure simplement la session
+  // si elle existe, mais on N'OUVRE PAS l'écran de login automatiquement.
+  // L'écran sera affiché seulement à la demande (auto-évaluation, mode enseignant).
   function init() {
     const session = readSession();
     if (session) {
       const eleve = findEleve(session.userCode);
       if (eleve) {
         setUserGlobal(eleve);
-        // hide overlay if already in DOM
-        const ov = document.getElementById("psr-auth-overlay");
-        if (ov) ov.classList.add("psr-hidden");
-        return;
       }
     }
-    // Pas de session valide → afficher login
-    buildLoginUI();
+  }
+
+  /** Demande le code à l'élève, exécute callback en cas de succès.
+   *  opts = { title, subtitle, onCancel } */
+  function requireLogin(callback, opts) {
+    if (window.PSR_USER) { if (typeof callback === "function") callback(window.PSR_USER); return; }
+    buildLoginUI(callback, opts);
   }
 
   // Exposer globalement
-  window.PSR_AUTH = { logout, getUser: () => window.PSR_USER || null, requireLogin: buildLoginUI };
+  window.PSR_AUTH = {
+    logout,
+    getUser: () => window.PSR_USER || null,
+    requireLogin: requireLogin,
+    isTeacher: () => !!(window.PSR_USER && window.PSR_USER.isTeacher),
+  };
 
   // Démarrer dès que possible
   if (document.readyState === "loading") {
