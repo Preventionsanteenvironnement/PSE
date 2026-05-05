@@ -3798,8 +3798,16 @@ function renderComposanteRepas(sec, field, schema) {
 
   const wrap = document.createElement("details");
   wrap.className = "field composante-repas";
+  // Identifie le type pour la coloration thématique CSS
+  if (schema.composante) wrap.setAttribute("data-composante", schema.composante);
   // V4.52 : toujours ouvert pour que le bouton "Choisir" soit visible
   wrap.open = true;
+
+  // Icône de la composante (utilisée dans le header)
+  const ICON_BY_COMPO = {
+    entree: "🥗", plat: "🍽️", laitage: "🧀", dessert: "🍎", boisson: "💧",
+  };
+  const compoIcon = ICON_BY_COMPO[schema.composante] || "🍴";
 
   const sum = document.createElement("summary");
   sum.className = "composante-summary";
@@ -3807,7 +3815,7 @@ function renderComposanteRepas(sec, field, schema) {
     const fac = schema.facultatif ? ` <span class="cr-fac">(facultatif)</span>` : "";
     const count = v.ingredients.length;
     const dot = count > 0 ? `<span class="cr-dot ok">●</span>` : `<span class="cr-dot ko">○</span>`;
-    sum.innerHTML = `${dot} <b>${escapeHtml(schema.label)}</b>${fac} ${v.nom ? `— <i>${escapeHtml(v.nom)}</i>` : ""} <span class="cr-count">${count} ingrédient${count>1?"s":""}</span>`;
+    sum.innerHTML = `<span class="cr-compo-icon">${compoIcon}</span>${dot} <b class="cr-compo-titre">${escapeHtml(schema.label)}</b>${fac} ${v.nom ? `— <i>${escapeHtml(v.nom)}</i>` : ""} <span class="cr-count">${count} ingrédient${count>1?"s":""}</span>`;
   };
   refreshSummary();
   wrap.appendChild(sum);
