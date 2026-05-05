@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lire et écrire — Cuisine — PSE</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f0f4f8; color:#1e293b; min-height:100vh; }
+.container { min-height:100vh; padding:20px; max-width:920px; margin:0 auto; }
+
+/* HEADER */
+.page-header { background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:white; padding:20px 24px; border-radius:16px; margin-bottom:16px; text-align:center; }
+.page-header h1 { font-size:1.5rem; font-weight:800; }
+.page-header p { opacity:.85; font-size:.9rem; margin-top:4px; }
+.back-home { display:inline-flex; align-items:center; gap:6px; color:white; text-decoration:none; font-size:.85rem; opacity:.85; margin-bottom:10px; }
+.back-home:hover { opacity:1; }
+
+/* TOP BAR */
+.top-bar { background:white; border-radius:14px; padding:12px 16px; margin-bottom:14px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; border:2px solid #e2e8f0; }
+.top-bar .score { font-weight:700; color:#475569; }
+.top-bar .score .v { color:#6d28d9; font-size:1.15rem; }
+.top-bar .avatar-pill { background:#f1f5f9; border-radius:20px; padding:4px 12px; font-size:1.3rem; cursor:pointer; }
+.top-bar .spacer { flex:1; }
+.icon-btn { background:#f1f5f9; border:none; border-radius:10px; width:38px; height:38px; cursor:pointer; font-size:1.05rem; transition:.15s; }
+.icon-btn:hover { background:#e2e8f0; }
+
+/* FILTERS */
+.filters { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.filter-btn { background:white; border:2px solid #e2e8f0; border-radius:20px; padding:6px 14px; cursor:pointer; font-weight:600; font-size:.85rem; transition:.15s; }
+.filter-btn.active { background:#6d28d9; color:white; border-color:#6d28d9; }
+
+/* LEVEL TITLE */
+.level-title { font-size:.85rem; font-weight:800; color:#6d28d9; margin:14px 4px 8px; letter-spacing:.5px; text-transform:uppercase; }
+
+/* MODULE ACCORDION */
+details.module { background:white; border-radius:14px; margin-bottom:10px; border:2px solid #e2e8f0; overflow:hidden; transition:.2s; }
+details.module[open] { border-color:#8b5cf6; box-shadow:0 4px 18px rgba(139,92,246,.1); }
+details.module summary { cursor:pointer; padding:14px 18px; font-weight:700; font-size:1rem; display:flex; align-items:center; gap:12px; list-style:none; background:linear-gradient(135deg,#f8fafc,#fff); transition:.15s; user-select:none; }
+details.module summary::-webkit-details-marker { display:none; }
+details.module summary:hover { background:#f1f5f9; }
+details.module[open] summary { background:linear-gradient(135deg,#ede9fe,#f5f3ff); color:#6d28d9; border-bottom:1px solid #e2e8f0; }
+.m-icon { font-size:1.5rem; flex-shrink:0; }
+.m-info { flex:1; }
+.m-info h3 { font-size:.98rem; font-weight:700; }
+.m-num { color:#94a3b8; font-weight:800; font-size:.8rem; }
+.audio-badge { font-size:.7rem; padding:3px 8px; border-radius:10px; font-weight:700; flex-shrink:0; }
+.audio-badge.silent { background:#dbeafe; color:#1e40af; }
+.audio-badge.optional { background:#fef3c7; color:#92400e; }
+.audio-badge.audio { background:#fce7f3; color:#9d174d; }
+.m-status { font-size:.85rem; color:#22c55e; font-weight:700; flex-shrink:0; }
+.chevron { color:#94a3b8; transition:transform .2s; }
+details.module[open] .chevron { transform:rotate(180deg); }
+.module-body { padding:18px; }
+
+/* HIDDEN BY FILTER */
+.hidden-by-filter { display:none; }
+
+/* COMMON */
+.consigne { font-size:.95rem; color:#475569; text-align:center; margin-bottom:14px; font-weight:600; }
+.img-wrap { display:inline-block; padding:8px; background:#f8fafc; border-radius:14px; border:2px solid #e2e8f0; }
+.img-wrap img { max-width:240px; max-height:200px; border-radius:10px; display:block; }
+.center { text-align:center; }
+.btn { background:#6d28d9; color:white; border:none; border-radius:10px; padding:10px 18px; font-weight:700; cursor:pointer; font-size:.95rem; transition:.15s; }
+.btn:hover { background:#5b21b6; }
+.btn:disabled { background:#cbd5e1; cursor:not-allowed; }
+.btn-soft { background:#ede9fe; color:#6d28d9; border:2px solid #c4b5fd; }
+.btn-soft:hover { background:#ddd6fe; }
+.btn-audio { background:#8b5cf6; color:white; border:none; border-radius:10px; padding:8px 16px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:.95rem; }
+.btn-audio:hover { background:#7c3aed; }
+.feedback { margin-top:14px; padding:12px; border-radius:10px; font-weight:700; text-align:center; display:none; }
+.feedback.show { display:block; }
+.feedback.ok { background:#dcfce7; color:#166534; }
+.feedback.ko { background:#fef3c7; color:#92400e; }
+.feedback .av { font-size:1.6rem; display:block; margin-bottom:4px; }
+.nav-row { display:flex; justify-content:space-between; align-items:center; margin-top:14px; gap:10px; flex-wrap:wrap; }
+.progress { font-size:.85rem; color:#64748b; font-weight:600; }
+
+/* GRID CHOICES IMAGES */
+.grid-imgs { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
+.grid-imgs.g4 { grid-template-columns:repeat(4,1fr); }
+.img-choice { background:white; border:2px solid #e2e8f0; border-radius:12px; padding:6px; cursor:pointer; transition:.15s; }
+.img-choice img { width:100%; height:100px; object-fit:cover; border-radius:8px; display:block; }
+.img-choice:hover { border-color:#8b5cf6; transform:translateY(-2px); }
+.img-choice.correct { border-color:#22c55e; background:#dcfce7; }
+.img-choice.wrong { border-color:#ef4444; background:#fee2e2; }
+.img-choice.disabled { pointer-events:none; opacity:.5; }
+
+/* CHOICES TEXT */
+.choices-txt { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
+.choice-txt { background:white; border:2px solid #e2e8f0; border-radius:12px; padding:18px; font-size:1.4rem; font-weight:700; cursor:pointer; transition:.15s; text-align:center; color:#1e293b; }
+.choice-txt:hover { border-color:#8b5cf6; transform:translateY(-1px); }
+.choice-txt.correct { background:#dcfce7; border-color:#22c55e; color:#166534; }
+.choice-txt.wrong { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+.choice-txt.disabled { pointer-events:none; }
+.choice-txt .small-spk { font-size:.9rem; color:#8b5cf6; display:block; margin-top:4px; }
+
+/* LETTRES */
+.letters { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px; }
+.letter { background:white; border:2px solid #cbd5e1; border-radius:10px; width:48px; height:48px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.4rem; cursor:pointer; transition:.15s; user-select:none; }
+.letter:hover:not(.used) { background:#ede9fe; border-color:#8b5cf6; }
+.letter.used { opacity:.3; pointer-events:none; }
+.letter.correct { background:#dcfce7; border-color:#22c55e; color:#166534; }
+.letter.wrong { background:#fee2e2; border-color:#ef4444; }
+.letters-built { display:flex; gap:6px; justify-content:center; margin:14px 0; min-height:54px; }
+.slot { width:44px; height:54px; border-bottom:3px solid #cbd5e1; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.5rem; color:#6d28d9; }
+.slot.filled { border-bottom-color:#6d28d9; }
+
+/* RELIER */
+.relier { display:grid; grid-template-columns:1fr 1fr; gap:30px; align-items:start; position:relative; }
+.relier-col { display:flex; flex-direction:column; gap:8px; }
+.relier-item { background:white; border:2px solid #e2e8f0; border-radius:10px; padding:8px; cursor:pointer; transition:.15s; min-height:64px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.relier-item img { width:50px; height:50px; object-fit:cover; border-radius:6px; }
+.relier-item .lbl { font-size:1.1rem; font-weight:700; }
+.relier-item.selected { border-color:#8b5cf6; background:#ede9fe; }
+.relier-item.matched { background:#dcfce7; border-color:#22c55e; pointer-events:none; }
+
+/* MEMORY */
+.memory-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:480px; margin:0 auto; }
+.memo-card { background:#8b5cf6; border-radius:10px; aspect-ratio:1; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; transition:.2s; position:relative; overflow:hidden; }
+.memo-card.flipped { background:white; border:2px solid #8b5cf6; }
+.memo-card.flipped img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
+.memo-card.matched { background:#dcfce7; border:2px solid #22c55e; }
+.memo-card.matched img { opacity:.7; }
+
+/* RECOPIER / DICTÉE */
+.write-input { width:100%; max-width:300px; padding:14px; font-size:1.4rem; font-weight:700; text-align:center; border:2px solid #cbd5e1; border-radius:10px; text-transform:lowercase; letter-spacing:2px; }
+.write-input:focus { outline:none; border-color:#8b5cf6; }
+.write-input.ok { border-color:#22c55e; background:#f0fdf4; }
+.write-input.ko { border-color:#ef4444; background:#fef2f2; }
+.model-word { font-size:1.6rem; font-weight:800; color:#6d28d9; letter-spacing:3px; margin:10px 0; }
+.helper-row { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+
+/* GALERIE DÉCOUVERTE */
+.galerie { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
+.gal-card { background:white; border:2px solid #e2e8f0; border-radius:12px; padding:8px; text-align:center; cursor:pointer; transition:.15s; }
+.gal-card:hover { border-color:#8b5cf6; transform:translateY(-2px); }
+.gal-card.seen { background:#f0fdf4; border-color:#22c55e; }
+.gal-card img { width:100%; height:80px; object-fit:cover; border-radius:8px; }
+.gal-card .nom { font-weight:700; margin-top:6px; font-size:.95rem; }
+
+/* MODAL AVATAR */
+.modal-bg { position:fixed; inset:0; background:rgba(15,23,42,.6); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal-bg.show { display:flex; }
+.modal { background:white; border-radius:16px; padding:24px; max-width:420px; width:100%; text-align:center; }
+.modal h2 { color:#6d28d9; margin-bottom:8px; }
+.modal p { color:#64748b; margin-bottom:16px; font-size:.9rem; }
+.avatar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.avatar-opt { background:#f1f5f9; border:2px solid transparent; border-radius:12px; padding:14px; font-size:2rem; cursor:pointer; transition:.15s; }
+.avatar-opt:hover { background:#ede9fe; border-color:#8b5cf6; }
+
+/* RESPONSIVE */
+@media (max-width:600px) {
+    .container { padding:12px; }
+    .page-header h1 { font-size:1.2rem; }
+    .grid-imgs.g4 { grid-template-columns:repeat(2,1fr); }
+    .img-wrap img { max-width:200px; max-height:160px; }
+    .memory-grid { grid-template-columns:repeat(3,1fr); }
+    .choice-txt { font-size:1.2rem; padding:14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="modal-bg" id="modal-avatar">
+    <div class="modal">
+        <h2>Bienvenue ! 👋</h2>
+        <p>Choisis un emoji-avatar pour suivre ta progression.<br>Aucune information personnelle n'est demandée.</p>
+        <div class="avatar-grid" id="avatar-choices"></div>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="page-header">
+        <a href="index.html" class="back-home">&larr; Retour à l'accueil</a>
+        <h1>🍽️ Lire et écrire — Cuisine</h1>
+        <p>Les fruits — exercices progressifs</p>
+    </div>
+
+    <div class="top-bar">
+        <div class="score">⭐ <span class="v" id="score">0</span> / <span id="score-max">0</span></div>
+        <div class="avatar-pill" id="avatar-pill" title="Changer mon avatar">🐱</div>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="btn-mute" onclick="toggleMute()" title="Couper / activer le son">🔊</button>
+        <button class="icon-btn" onclick="resetProgress()" title="Effacer ma progression">🗑️</button>
+    </div>
+
+    <div class="filters" id="theme-bar"></div>
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">Tous</button>
+        <button class="filter-btn" data-filter="silent">🔇 Silencieux</button>
+        <button class="filter-btn" data-filter="audio">🔊 Avec son</button>
+    </div>
+
+    <!-- ============ NIVEAU 1 ============ -->
+    <div class="level-title">Niveau 1 — Découvrir (sans lire ni écrire)</div>
+
+    <details class="module" data-audio="optional" open>
+        <summary><span class="m-num">1</span><span class="m-icon">👀</span><div class="m-info"><h3>Je regarde et j'écoute</h3></div><span class="audio-badge optional">🎧 Son utile</span><span class="m-status" id="st-1"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="1"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">2</span><span class="m-icon">🧩</span><div class="m-info"><h3>Trouve la même image</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-2"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="2"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">3</span><span class="m-icon">🔍</span><div class="m-info"><h3>Trouve l'intrus</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-3"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="3"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">4</span><span class="m-icon">🃏</span><div class="m-info"><h3>Memory — retrouve les paires</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-4"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="4"></div>
+    </details>
+
+    <!-- ============ NIVEAU 2 ============ -->
+    <div class="level-title">Niveau 2 — Reconnaître le mot écrit</div>
+
+    <details class="module" data-audio="audio">
+        <summary><span class="m-num">5</span><span class="m-icon">👂</span><div class="m-info"><h3>Écoute et clique sur l'image</h3></div><span class="audio-badge audio">🔊 Avec son</span><span class="m-status" id="st-5"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="5"></div>
+    </details>
+
+    <details class="module" data-audio="optional">
+        <summary><span class="m-num">6</span><span class="m-icon">🔍</span><div class="m-info"><h3>Quel mot va avec l'image ?</h3></div><span class="audio-badge optional">🎧 Son utile</span><span class="m-status" id="st-6"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="6"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">7</span><span class="m-icon">🔤</span><div class="m-info"><h3>Trouve la première lettre du mot</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-7"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="7"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">8</span><span class="m-icon">🔗</span><div class="m-info"><h3>Relie l'image et le mot</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-8"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="8"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">13</span><span class="m-icon">🔢</span><div class="m-info"><h3>Compte les lettres du mot</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-13"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="13"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">14</span><span class="m-icon">🔡</span><div class="m-info"><h3>Trouve la dernière lettre</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-14"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="14"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">15</span><span class="m-icon">🔠</span><div class="m-info"><h3>Associe MAJUSCULE et minuscule</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-15"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="15"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">16</span><span class="m-icon">🎨</span><div class="m-info"><h3>De quelle couleur est ce fruit ?</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-16"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="16"></div>
+    </details>
+
+    <!-- ============ NIVEAU 3 ============ -->
+    <div class="level-title">Niveau 3 — Écrire</div>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">9</span><span class="m-icon">🔤</span><div class="m-info"><h3>Remets les lettres dans l'ordre</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-9"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="9"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">10</span><span class="m-icon">✏️</span><div class="m-info"><h3>Recopie le mot</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-10"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="10"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">11</span><span class="m-icon">✍️</span><div class="m-info"><h3>Dictée muette (avec image)</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-11"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="11"></div>
+    </details>
+
+    <details class="module" data-audio="audio">
+        <summary><span class="m-num">12</span><span class="m-icon">🎤</span><div class="m-info"><h3>Dictée orale</h3></div><span class="audio-badge audio">🔊 Avec son</span><span class="m-status" id="st-12"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="12"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">17</span><span class="m-icon">🧩</span><div class="m-info"><h3>La lettre manquante</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-17"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="17"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">18</span><span class="m-icon">📖</span><div class="m-info"><h3>Complète la phrase</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-18"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="18"></div>
+    </details>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">19</span><span class="m-icon">🔍</span><div class="m-info"><h3>Trouve le mot caché</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-19"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="19"></div>
+    </details>
+
+    <div class="level-title">🏆 Bonus — défi de révision</div>
+
+    <details class="module" data-audio="silent">
+        <summary><span class="m-num">20</span><span class="m-icon">🏆</span><div class="m-info"><h3>Quiz mixte de révision</h3></div><span class="audio-badge silent">🔇 Silencieux</span><span class="m-status" id="st-20"></span><span class="chevron">▾</span></summary>
+        <div class="module-body" data-ex="20"></div>
+    </details>
+
+</div>
+
+<script>
+// ==========================================================
+// DONNÉES — thème : LES FRUITS
+// ==========================================================
+const IMG = "psr/ressources_eco/";
+const COULEURS = ["rouge","jaune","vert","orange","violet","blanc","brun"];
+
+const THEMES = {
+    fruits: {
+        label: "🍎 Fruits",
+        items: [
+            { mot:"pomme",  img:IMG+"fruits/pomme.jpg",  couleur:"rouge"  },
+            { mot:"banane", img:IMG+"fruits/banane.jpg", couleur:"jaune"  },
+            { mot:"fraise", img:IMG+"fruits/fraise.jpg", couleur:"rouge"  },
+            { mot:"orange", img:IMG+"fruits/orange.jpg", couleur:"orange" },
+            { mot:"kiwi",   img:IMG+"fruits/kiwi.jpg",   couleur:"vert"   },
+            { mot:"poire",  img:IMG+"fruits/poire.jpg",  couleur:"vert"   },
+            { mot:"cerise", img:IMG+"fruits/cerise.jpg", couleur:"rouge"  },
+            { mot:"raisin", img:IMG+"fruits/raisin.jpg", couleur:"violet" }
+        ],
+        intrus: [
+            { mot:"carotte", img:IMG+"legumes/carotte.jpg" },
+            { mot:"tomate",  img:IMG+"legumes/tomate.jpg" },
+            { mot:"poireau", img:IMG+"legumes/poireau.jpg" },
+            { mot:"oignon",  img:IMG+"legumes/oignon.jpg" }
+        ],
+        phrases: [
+            { texte:"J'aime la ___.",     mot:"pomme",  img:IMG+"fruits/pomme.jpg" },
+            { texte:"Je mange une ___.",  mot:"banane", img:IMG+"fruits/banane.jpg" },
+            { texte:"La ___ est rouge.",  mot:"fraise", img:IMG+"fruits/fraise.jpg" },
+            { texte:"L'___ est ronde.",   mot:"orange", img:IMG+"fruits/orange.jpg" },
+            { texte:"Le ___ est vert.",   mot:"kiwi",   img:IMG+"fruits/kiwi.jpg" },
+            { texte:"La ___ est sucrée.", mot:"poire",  img:IMG+"fruits/poire.jpg" }
+        ]
+    },
+    legumes: {
+        label: "🥕 Légumes",
+        items: [
+            { mot:"carotte",   img:IMG+"legumes/carotte.jpg",   couleur:"orange" },
+            { mot:"tomate",    img:IMG+"legumes/tomate.jpg",    couleur:"rouge"  },
+            { mot:"courgette", img:IMG+"legumes/courgette.jpg", couleur:"vert"   },
+            { mot:"poireau",   img:IMG+"legumes/poireau.jpg",   couleur:"vert"   },
+            { mot:"oignon",    img:IMG+"legumes/oignon.jpg",    couleur:"blanc"  },
+            { mot:"salade",    img:IMG+"legumes/salade.jpg",    couleur:"vert"   },
+            { mot:"radis",     img:IMG+"legumes/radis.jpg",     couleur:"rouge"  },
+            { mot:"poivron",   img:IMG+"legumes/poivron.jpg",   couleur:"rouge"  }
+        ],
+        intrus: [
+            { mot:"pomme",  img:IMG+"fruits/pomme.jpg" },
+            { mot:"banane", img:IMG+"fruits/banane.jpg" },
+            { mot:"kiwi",   img:IMG+"fruits/kiwi.jpg" },
+            { mot:"orange", img:IMG+"fruits/orange.jpg" }
+        ],
+        phrases: [
+            { texte:"La ___ est orange.",  mot:"carotte",   img:IMG+"legumes/carotte.jpg" },
+            { texte:"La ___ est rouge.",   mot:"tomate",    img:IMG+"legumes/tomate.jpg" },
+            { texte:"Je coupe la ___.",    mot:"courgette", img:IMG+"legumes/courgette.jpg" },
+            { texte:"Je mange une ___.",   mot:"salade",    img:IMG+"legumes/salade.jpg" },
+            { texte:"L'___ pique les yeux.", mot:"oignon",  img:IMG+"legumes/oignon.jpg" },
+            { texte:"Le ___ est rouge.",   mot:"radis",     img:IMG+"legumes/radis.jpg" }
+        ]
+    },
+    viandes: {
+        label: "🥩 Viandes",
+        items: [
+            { mot:"poulet",  img:IMG+"viandes/poulet.jpg" },
+            { mot:"boeuf",   img:IMG+"viandes/boeuf.jpg" },
+            { mot:"porc",    img:IMG+"viandes/porc.jpg" },
+            { mot:"agneau",  img:IMG+"viandes/agneau.jpg" },
+            { mot:"jambon",  img:IMG+"viandes/jambon.jpg" },
+            { mot:"canard",  img:IMG+"viandes/canard.jpg" },
+            { mot:"dinde",   img:IMG+"viandes/dinde.jpg" },
+            { mot:"lapin",   img:IMG+"viandes/lapin.jpg" }
+        ],
+        intrus: [
+            { mot:"pomme",   img:IMG+"fruits/pomme.jpg" },
+            { mot:"carotte", img:IMG+"legumes/carotte.jpg" },
+            { mot:"saumon",  img:IMG+"poissons_et_fruits_de_mer/saumon.jpg" },
+            { mot:"banane",  img:IMG+"fruits/banane.jpg" }
+        ],
+        phrases: [
+            { texte:"Je cuis le ___.",    mot:"poulet", img:IMG+"viandes/poulet.jpg" },
+            { texte:"Le ___ est rouge.",  mot:"boeuf",  img:IMG+"viandes/boeuf.jpg" },
+            { texte:"Je mange du ___.",   mot:"jambon", img:IMG+"viandes/jambon.jpg" },
+            { texte:"Le ___ est cuit.",   mot:"porc",   img:IMG+"viandes/porc.jpg" },
+            { texte:"Je découpe le ___.", mot:"canard", img:IMG+"viandes/canard.jpg" },
+            { texte:"La ___ est dorée.",  mot:"dinde",  img:IMG+"viandes/dinde.jpg" }
+        ]
+    },
+    poissons: {
+        label: "🐟 Poissons",
+        items: [
+            { mot:"saumon",   img:IMG+"poissons_et_fruits_de_mer/saumon.jpg" },
+            { mot:"thon",     img:IMG+"poissons_et_fruits_de_mer/thon.jpg" },
+            { mot:"sardine",  img:IMG+"poissons_et_fruits_de_mer/sardine.jpg" },
+            { mot:"truite",   img:IMG+"poissons_et_fruits_de_mer/truite.jpg" },
+            { mot:"crevette", img:IMG+"poissons_et_fruits_de_mer/crevette.jpg" },
+            { mot:"moule",    img:IMG+"poissons_et_fruits_de_mer/moule.jpg" },
+            { mot:"crabe",    img:IMG+"poissons_et_fruits_de_mer/crabe.jpg" },
+            { mot:"huître",   img:IMG+"poissons_et_fruits_de_mer/huitre.jpg" }
+        ],
+        intrus: [
+            { mot:"pomme",   img:IMG+"fruits/pomme.jpg" },
+            { mot:"poulet",  img:IMG+"viandes/poulet.jpg" },
+            { mot:"carotte", img:IMG+"legumes/carotte.jpg" },
+            { mot:"banane",  img:IMG+"fruits/banane.jpg" }
+        ],
+        phrases: [
+            { texte:"Je cuis le ___.",      mot:"saumon",  img:IMG+"poissons_et_fruits_de_mer/saumon.jpg" },
+            { texte:"Le ___ est en boîte.", mot:"thon",    img:IMG+"poissons_et_fruits_de_mer/thon.jpg" },
+            { texte:"Je grille la ___.",    mot:"sardine", img:IMG+"poissons_et_fruits_de_mer/sardine.jpg" },
+            { texte:"La ___ est rose.",     mot:"crevette",img:IMG+"poissons_et_fruits_de_mer/crevette.jpg" },
+            { texte:"La ___ est noire.",    mot:"moule",   img:IMG+"poissons_et_fruits_de_mer/moule.jpg" },
+            { texte:"Le ___ pince.",        mot:"crabe",   img:IMG+"poissons_et_fruits_de_mer/crabe.jpg" }
+        ]
+    },
+    boissons: {
+        label: "🥤 Boissons",
+        items: [
+            { mot:"eau",       img:IMG+"boissons_sansalcool/eauplate.jpg",   couleur:"blanc"  },
+            { mot:"lait",      img:IMG+"boissons_sansalcool/lait.jpg",       couleur:"blanc"  },
+            { mot:"café",      img:IMG+"boissons_sansalcool/cafe.jpg",       couleur:"brun"   },
+            { mot:"limonade",  img:IMG+"boissons_sansalcool/limonade.jpg",   couleur:"jaune"  },
+            { mot:"soda",      img:IMG+"boissons_sansalcool/sodacola.jpg",   couleur:"brun"   },
+            { mot:"thé",       img:IMG+"boissons_sansalcool/thechaud.jpg",   couleur:"brun"   }
+        ],
+        intrus: [
+            { mot:"pomme",   img:IMG+"fruits/pomme.jpg" },
+            { mot:"poulet",  img:IMG+"viandes/poulet.jpg" },
+            { mot:"carotte", img:IMG+"legumes/carotte.jpg" },
+            { mot:"saumon",  img:IMG+"poissons_et_fruits_de_mer/saumon.jpg" }
+        ],
+        phrases: [
+            { texte:"Je bois de l'___.",    mot:"eau",      img:IMG+"boissons_sansalcool/eauplate.jpg" },
+            { texte:"Le ___ est blanc.",    mot:"lait",     img:IMG+"boissons_sansalcool/lait.jpg" },
+            { texte:"Le ___ est chaud.",    mot:"café",     img:IMG+"boissons_sansalcool/cafe.jpg" },
+            { texte:"La ___ est sucrée.",   mot:"limonade", img:IMG+"boissons_sansalcool/limonade.jpg" },
+            { texte:"Le ___ est chaud.",    mot:"thé",      img:IMG+"boissons_sansalcool/thechaud.jpg" }
+        ]
+    }
+};
+
+// THÈME ACTIF (chargé depuis le storage ou par défaut)
+let activeTheme = "fruits";
+let FRUITS  = THEMES.fruits.items;
+let INTRUS  = THEMES.fruits.intrus;
+let PHRASES = THEMES.fruits.phrases;
+const AVATARS = ["🐱","🦊","🐼","🦁","🐧","🐸","🐢","🐙"];
+
+// ==========================================================
+// ÉTAT GLOBAL + STORAGE (RGPD : tout en local)
+// ==========================================================
+const STORE_KEY = "cuisine_lire_ecrire_v1";
+let state = loadState();
+let muted = state.muted || false;
+if (state.theme && THEMES[state.theme]) activeTheme = state.theme;
+FRUITS  = THEMES[activeTheme].items;
+INTRUS  = THEMES[activeTheme].intrus;
+PHRASES = THEMES[activeTheme].phrases;
+
+function loadState() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+function saveState() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+function themeStore() {
+    state.themes = state.themes || {};
+    state.themes[activeTheme] = state.themes[activeTheme] || {};
+    return state.themes[activeTheme];
+}
+function getEx(n) { return themeStore()["ex"+n] || { score:0, total:0, done:false }; }
+function setEx(n, score, total, done) {
+    themeStore()["ex"+n] = { score, total, done: done || score>=total };
+    saveState();
+    refreshScore();
+    setStatus(n);
+}
+function refreshScore() {
+    let total=0, max=0;
+    for (let i=1; i<=20; i++) { const e=getEx(i); total+=e.score; max+=e.total||0; }
+    document.getElementById('score').textContent = total;
+    document.getElementById('score-max').textContent = max;
+}
+function setStatus(n) {
+    const e = getEx(n);
+    const el = document.getElementById('st-'+n);
+    if (!el) return;
+    if (e.done) el.textContent = '✅';
+    else if (e.score>0) el.textContent = e.score+'/'+e.total;
+    else el.textContent = '';
+}
+
+// ==========================================================
+// AVATAR (RGPD : juste un emoji, anonyme)
+// ==========================================================
+function showAvatarModal() {
+    const grid = document.getElementById('avatar-choices');
+    grid.innerHTML = '';
+    AVATARS.forEach(a => {
+        const b = document.createElement('button');
+        b.className = 'avatar-opt';
+        b.textContent = a;
+        b.onclick = () => { state.avatar = a; saveState(); document.getElementById('avatar-pill').textContent=a; document.getElementById('modal-avatar').classList.remove('show'); };
+        grid.appendChild(b);
+    });
+    document.getElementById('modal-avatar').classList.add('show');
+}
+if (!state.avatar) showAvatarModal();
+else document.getElementById('avatar-pill').textContent = state.avatar;
+document.getElementById('avatar-pill').onclick = showAvatarModal;
+
+// ==========================================================
+// SÉLECTEUR DE THÈMES
+// ==========================================================
+function renderThemeBar() {
+    const bar = document.getElementById('theme-bar');
+    bar.innerHTML = '';
+    Object.keys(THEMES).forEach(k => {
+        const b = document.createElement('button');
+        b.className = 'filter-btn' + (k===activeTheme?' active':'');
+        b.textContent = THEMES[k].label;
+        b.onclick = () => {
+            if (k===activeTheme) return;
+            state.theme = k; saveState();
+            location.reload();
+        };
+        bar.appendChild(b);
+    });
+}
+renderThemeBar();
+// sous-titre dynamique
+document.querySelector('.page-header p').textContent = THEMES[activeTheme].label + ' — exercices progressifs';
+
+// ==========================================================
+// AUDIO TTS
+// ==========================================================
+function parler(t, cb) {
+    if (muted || !('speechSynthesis' in window)) { if(cb) cb(); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'fr-FR'; u.rate = 0.85;
+    if (cb) u.onend = cb;
+    window.speechSynthesis.speak(u);
+}
+function toggleMute() {
+    muted = !muted; state.muted = muted; saveState();
+    document.getElementById('btn-mute').textContent = muted?'🔇':'🔊';
+    if (muted && window.speechSynthesis) window.speechSynthesis.cancel();
+    // Reconstruit les exos audio ouverts pour refléter le nouvel état
+    document.querySelectorAll('details.module[open]').forEach(det => {
+        if (det.dataset.audio === 'audio' && det._build) { det._built = false; det._build(); }
+    });
+}
+window.toggleMute = toggleMute;
+if (muted) document.getElementById('btn-mute').textContent = '🔇';
+
+function resetProgress() {
+    if (!confirm('Effacer toute la progression ?')) return;
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+}
+window.resetProgress = resetProgress;
+
+// ==========================================================
+// UTILS
+// ==========================================================
+function shuffle(a) { a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+function pick(arr,n) { return shuffle(arr).slice(0,n); }
+function feedbackOk(msg, cb) {
+    const av = state.avatar || '🎉';
+    return `<div class="feedback ok show"><span class="av">${av} ✅</span>Bravo ! ${msg}</div>`;
+}
+function feedbackKo(msg) {
+    return `<div class="feedback ko show"><span class="av">🙂</span>Pas grave, on essaie encore. ${msg}</div>`;
+}
+
+// ==========================================================
+// FILTRES audio
+// ==========================================================
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const f = btn.dataset.filter;
+        document.querySelectorAll('details.module').forEach(d => {
+            const a = d.dataset.audio;
+            let show = true;
+            if (f==='silent')  show = (a==='silent' || a==='optional');
+            if (f==='audio')   show = (a==='audio'  || a==='optional');
+            d.classList.toggle('hidden-by-filter', !show);
+        });
+    };
+});
+
+// ==========================================================
+// EX 1 — JE REGARDE ET J'ÉCOUTE
+// ==========================================================
+function buildEx1(c) {
+    const seen = new Set(themeStore().ex1seen || []);
+    function render() {
+        c.innerHTML = `<div class="consigne">Clique sur un fruit pour le voir et l'écouter.</div><div class="galerie" id="gal1"></div>`;
+        const gal = c.querySelector('#gal1');
+        FRUITS.forEach((f,i) => {
+            const card = document.createElement('div');
+            card.className = 'gal-card' + (seen.has(i)?' seen':'');
+            card.innerHTML = `<img src="${f.img}" alt=""><div class="nom">${f.mot}</div>`;
+            card.onclick = () => showFruit(i);
+            gal.appendChild(card);
+        });
+    }
+    function showFruit(i) {
+        const f = FRUITS[i];
+        c.innerHTML = `
+            <div class="center">
+                <div class="img-wrap"><img src="${f.img}" alt=""></div>
+                <div class="model-word">${f.mot}</div>
+                <button class="btn-audio" onclick="parler('${f.mot}')">🔊 Écouter</button>
+                <div class="nav-row" style="justify-content:center; margin-top:18px;">
+                    <button class="btn btn-soft" id="back1">← Retour</button>
+                    <button class="btn" id="next1">Suivant →</button>
+                </div>
+            </div>`;
+        parler(f.mot);
+        seen.add(i); themeStore().ex1seen = [...seen]; saveState();
+        setEx(1, seen.size, FRUITS.length);
+        c.querySelector('#back1').onclick = render;
+        c.querySelector('#next1').onclick = () => showFruit((i+1)%FRUITS.length);
+    }
+    render();
+    if (!getEx(1).total) setEx(1, seen.size, FRUITS.length);
+}
+
+// ==========================================================
+// EX 2 — TROUVE LA MÊME IMAGE
+// ==========================================================
+function buildQuiz(c, n, makeQ, total) {
+    let idx = 0, score = 0;
+    function render() {
+        if (idx>=total) { c.innerHTML = feedbackOk('Tu as terminé cet exercice !') + `<div class="center" style="margin-top:14px;"><button class="btn btn-soft" id="rs">↻ Recommencer</button></div>`; c.querySelector('#rs').onclick=()=>{idx=0;score=0;setEx(n,0,total);render();}; setEx(n,score,total,true); return; }
+        const q = makeQ(idx);
+        c.innerHTML = q.html + `<div class="feedback" id="fb"></div><div class="nav-row"><span class="progress">Question ${idx+1} / ${total}</span><button class="btn" id="nx" disabled>Suivant →</button></div>`;
+        q.bind(c, ok => {
+            const fb = c.querySelector('#fb');
+            if (ok) { score++; fb.outerHTML = feedbackOk(q.bravo||''); }
+            else { fb.outerHTML = feedbackKo(q.help||''); }
+            c.querySelector('#nx').disabled = false;
+            setEx(n, score, total);
+        });
+        c.querySelector('#nx').onclick = () => { idx++; render(); };
+    }
+    render();
+}
+
+function buildEx2(c) {
+    buildQuiz(c, 2, idx => {
+        const target = FRUITS[idx % FRUITS.length];
+        const others = pick(FRUITS.filter(f=>f.mot!==target.mot), 3);
+        const all = shuffle([target, ...others]);
+        return {
+            html: `<div class="consigne">Trouve la même image :</div>
+                   <div class="center"><div class="img-wrap"><img src="${target.img}" alt=""></div></div>
+                   <div class="grid-imgs g4" id="gr"></div>`,
+            bravo: 'C\'était bien ça !',
+            help: 'Regarde bien les détails.',
+            bind: (root, done) => {
+                const gr = root.querySelector('#gr');
+                all.forEach(f => {
+                    const d = document.createElement('div');
+                    d.className = 'img-choice';
+                    d.innerHTML = `<img src="${f.img}" alt="">`;
+                    d.onclick = () => {
+                        root.querySelectorAll('.img-choice').forEach(x=>x.classList.add('disabled'));
+                        if (f.mot===target.mot) { d.classList.add('correct'); done(true); }
+                        else { d.classList.add('wrong'); root.querySelectorAll('.img-choice').forEach(x=>{ if(x.querySelector('img').src.endsWith(target.img.split('/').pop())) x.classList.add('correct'); }); done(false); }
+                    };
+                    gr.appendChild(d);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 3 — TROUVE L'INTRUS
+// ==========================================================
+function buildEx3(c) {
+    buildQuiz(c, 3, idx => {
+        const fruits3 = pick(FRUITS, 3);
+        const intrus = pick(INTRUS, 1)[0];
+        const all = shuffle([...fruits3, intrus]);
+        return {
+            html: `<div class="consigne">Une image ne fait pas partie du thème. Clique dessus !</div><div class="grid-imgs g4" id="gr"></div>`,
+            bravo: 'Tu as trouvé l\'intrus !',
+            help: `L'intrus était : ${intrus.mot}.`,
+            bind: (root, done) => {
+                const gr = root.querySelector('#gr');
+                all.forEach(it => {
+                    const d = document.createElement('div');
+                    d.className = 'img-choice';
+                    d.innerHTML = `<img src="${it.img}" alt="">`;
+                    d.onclick = () => {
+                        root.querySelectorAll('.img-choice').forEach(x=>x.classList.add('disabled'));
+                        const isIntrus = (it.mot===intrus.mot);
+                        if (isIntrus) { d.classList.add('correct'); done(true); }
+                        else { d.classList.add('wrong'); root.querySelectorAll('.img-choice').forEach(x=>{ if(x.querySelector('img').src.endsWith(intrus.img.split('/').pop())) x.classList.add('correct'); }); done(false); }
+                    };
+                    gr.appendChild(d);
+                });
+            }
+        };
+    }, 5);
+}
+
+// ==========================================================
+// EX 4 — MEMORY
+// ==========================================================
+function buildEx4(c) {
+    const sel = pick(FRUITS, 6);
+    let pairs = shuffle([...sel, ...sel].map((f,i)=>({...f, key:i})));
+    let flipped = [], matched = 0, locked = false;
+    const total = sel.length;
+    c.innerHTML = `<div class="consigne">Retrouve les paires d'images identiques.</div><div class="memory-grid" id="mg"></div><div id="mfb"></div>`;
+    const mg = c.querySelector('#mg');
+    pairs.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'memo-card';
+        card.dataset.mot = p.mot;
+        card.dataset.idx = i;
+        card.innerHTML = '?';
+        card.onclick = () => {
+            if (locked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+            card.classList.add('flipped');
+            card.innerHTML = `<img src="${p.img}" alt="">`;
+            flipped.push(card);
+            if (flipped.length === 2) {
+                locked = true;
+                if (flipped[0].dataset.mot === flipped[1].dataset.mot) {
+                    setTimeout(()=>{ flipped.forEach(x=>x.classList.add('matched')); flipped=[]; locked=false; matched++; setEx(4, matched, total); if(matched===total){ c.querySelector('#mfb').outerHTML = feedbackOk('Toutes les paires trouvées !'); setEx(4,total,total,true);} }, 400);
+                } else {
+                    setTimeout(()=>{ flipped.forEach(x=>{x.classList.remove('flipped'); x.innerHTML='?';}); flipped=[]; locked=false; }, 900);
+                }
+            }
+        };
+        mg.appendChild(card);
+    });
+    setEx(4, matched, total);
+}
+
+// ==========================================================
+// EX 5 — ÉCOUTE ET CLIQUE
+// ==========================================================
+function buildEx5(c) {
+    if (muted) {
+        c.innerHTML = `<div class="feedback ko show"><span class="av">🔇</span>Cet exercice nécessite le son. Active-le en haut à droite (🔇 → 🔊).</div>`;
+        return;
+    }
+    buildQuiz(c, 5, idx => {
+        const target = FRUITS[idx % FRUITS.length];
+        const others = pick(FRUITS.filter(f=>f.mot!==target.mot), 3);
+        const all = shuffle([target, ...others]);
+        return {
+            html: `<div class="consigne">Clique sur 🔊 puis trouve le bon fruit.</div>
+                   <div class="center"><button class="btn-audio" id="say">🔊 Écouter le mot</button></div>
+                   <div class="grid-imgs g4" id="gr"></div>`,
+            bravo: '',
+            help: 'Le bon fruit est entouré en vert.',
+            bind: (root, done) => {
+                root.querySelector('#say').onclick = ()=>parler(target.mot);
+                setTimeout(()=>parler(target.mot), 200);
+                const gr = root.querySelector('#gr');
+                all.forEach(f => {
+                    const d = document.createElement('div');
+                    d.className = 'img-choice';
+                    d.innerHTML = `<img src="${f.img}" alt="">`;
+                    d.onclick = () => {
+                        root.querySelectorAll('.img-choice').forEach(x=>x.classList.add('disabled'));
+                        if (f.mot===target.mot) { d.classList.add('correct'); parler('Bravo ! '+target.mot); done(true); }
+                        else { d.classList.add('wrong'); root.querySelectorAll('.img-choice').forEach(x=>{ if(x.querySelector('img').src.endsWith(target.img.split('/').pop())) x.classList.add('correct'); }); parler('C\'était '+target.mot); done(false); }
+                    };
+                    gr.appendChild(d);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 6 — QUEL MOT VA AVEC L'IMAGE ?
+// ==========================================================
+function buildEx6(c) {
+    buildQuiz(c, 6, idx => {
+        const target = FRUITS[idx % FRUITS.length];
+        const distractors = pick(FRUITS.filter(f=>f.mot[0]!==target.mot[0] && f.mot.length!==target.mot.length), 1);
+        const distract = distractors.length ? distractors[0] : pick(FRUITS.filter(f=>f.mot!==target.mot),1)[0];
+        const all = shuffle([target.mot, distract.mot]);
+        return {
+            html: `<div class="consigne">Quel mot correspond à l'image ?</div>
+                   <div class="center"><div class="img-wrap"><img src="${target.img}" alt=""></div></div>
+                   <div class="choices-txt" id="ch"></div>`,
+            bravo: 'Bien lu !',
+            help: 'Le bon mot est entouré en vert.',
+            bind: (root, done) => {
+                const ch = root.querySelector('#ch');
+                all.forEach(m => {
+                    const b = document.createElement('button');
+                    b.className = 'choice-txt';
+                    b.innerHTML = m + '<span class="small-spk">🔊</span>';
+                    b.onmouseenter = () => parler(m);
+                    b.onclick = () => {
+                        root.querySelectorAll('.choice-txt').forEach(x=>x.classList.add('disabled'));
+                        if (m===target.mot) { b.classList.add('correct'); parler('Bravo ! '+m); done(true); }
+                        else { b.classList.add('wrong'); root.querySelectorAll('.choice-txt').forEach(x=>{if(x.textContent.startsWith(target.mot))x.classList.add('correct');}); parler('Le bon mot était '+target.mot); done(false); }
+                    };
+                    ch.appendChild(b);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 7 — PREMIÈRE LETTRE
+// ==========================================================
+function buildEx7(c) {
+    buildQuiz(c, 7, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        const first = t.mot[0].toUpperCase();
+        const others = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","V"].filter(l=>l!==first);
+        const all = shuffle([first, ...pick(others,3)]);
+        const masque = "_" + t.mot.slice(1).toUpperCase();
+        return {
+            html: `<div class="consigne">Trouve la première lettre du mot.</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word">${masque}</div></div>
+                   <div class="letters" id="lt"></div>`,
+            bravo: `Le mot est « ${t.mot} ».`,
+            help: `Le mot commence par « ${first} ».`,
+            bind: (root, done) => {
+                const lt = root.querySelector('#lt');
+                all.forEach(l => {
+                    const e = document.createElement('div');
+                    e.className = 'letter';
+                    e.textContent = l;
+                    e.onclick = () => {
+                        root.querySelectorAll('.letter').forEach(x=>x.classList.add('used'));
+                        if (l===first) { e.classList.add('correct'); done(true); }
+                        else { e.classList.add('wrong'); root.querySelectorAll('.letter').forEach(x=>{if(x.textContent===first)x.classList.add('correct');}); done(false); }
+                    };
+                    lt.appendChild(e);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 8 — RELIER IMAGE / MOT
+// ==========================================================
+function buildEx8(c) {
+    const sel = pick(FRUITS, 4);
+    const left = shuffle(sel);
+    const right = shuffle(sel);
+    let selectedImg = null, matched = 0;
+    c.innerHTML = `<div class="consigne">Clique sur une image, puis sur le bon mot.</div>
+                   <div class="relier"><div class="relier-col" id="lcol"></div><div class="relier-col" id="rcol"></div></div>
+                   <div id="rfb"></div>`;
+    const lcol = c.querySelector('#lcol'), rcol = c.querySelector('#rcol');
+    left.forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'relier-item';
+        d.dataset.mot = f.mot;
+        d.innerHTML = `<img src="${f.img}" alt="">`;
+        d.onclick = () => {
+            if (d.classList.contains('matched')) return;
+            lcol.querySelectorAll('.relier-item').forEach(x=>x.classList.remove('selected'));
+            d.classList.add('selected'); selectedImg = d;
+        };
+        lcol.appendChild(d);
+    });
+    right.forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'relier-item';
+        d.dataset.mot = f.mot;
+        d.innerHTML = `<span class="lbl">${f.mot}</span>`;
+        d.onclick = () => {
+            if (!selectedImg || d.classList.contains('matched')) return;
+            if (selectedImg.dataset.mot === d.dataset.mot) {
+                selectedImg.classList.remove('selected'); selectedImg.classList.add('matched');
+                d.classList.add('matched'); selectedImg = null;
+                matched++; setEx(8, matched, sel.length);
+                if (matched === sel.length) { c.querySelector('#rfb').outerHTML = feedbackOk('Toutes les paires sont reliées !'); setEx(8,sel.length,sel.length,true); }
+            } else {
+                d.classList.add('wrong'); setTimeout(()=>d.classList.remove('wrong'),500);
+            }
+        };
+        rcol.appendChild(d);
+    });
+    setEx(8, 0, sel.length);
+}
+
+// ==========================================================
+// EX 9 — REMETTRE LES LETTRES DANS L'ORDRE
+// ==========================================================
+function buildEx9(c) {
+    buildQuiz(c, 9, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        const lettres = t.mot.toUpperCase().split('');
+        const melange = shuffle(lettres);
+        let built = [];
+        return {
+            html: `<div class="consigne">Remets les lettres dans le bon ordre.</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div></div>
+                   <div class="letters-built" id="lb"></div>
+                   <div class="letters" id="lt"></div>
+                   <div class="helper-row"><button class="btn btn-soft" id="ud">↶ Annuler</button></div>`,
+            bravo: `Le mot est « ${t.mot} » !`,
+            help: `Le mot était « ${t.mot} ».`,
+            bind: (root, done) => {
+                const lb = root.querySelector('#lb');
+                const lt = root.querySelector('#lt');
+                lettres.forEach(()=>{ const s=document.createElement('div'); s.className='slot'; lb.appendChild(s); });
+                melange.forEach((L,i)=>{
+                    const e = document.createElement('div');
+                    e.className = 'letter';
+                    e.textContent = L;
+                    e.dataset.i = i;
+                    e.onclick = () => {
+                        if (e.classList.contains('used')) return;
+                        e.classList.add('used');
+                        const slot = lb.children[built.length];
+                        slot.textContent = L; slot.classList.add('filled');
+                        built.push({L, src:e});
+                        if (built.length === lettres.length) {
+                            const word = built.map(x=>x.L).join('');
+                            if (word === t.mot.toUpperCase()) { lb.querySelectorAll('.slot').forEach(s=>s.style.color='#22c55e'); done(true); }
+                            else { lb.querySelectorAll('.slot').forEach(s=>s.style.color='#ef4444'); done(false); }
+                        }
+                    };
+                    lt.appendChild(e);
+                });
+                root.querySelector('#ud').onclick = () => {
+                    if (!built.length) return;
+                    const last = built.pop();
+                    last.src.classList.remove('used');
+                    const slot = lb.children[built.length];
+                    slot.textContent=''; slot.classList.remove('filled');
+                };
+            }
+        };
+    }, 5);
+}
+
+// ==========================================================
+// EX 10 — RECOPIER (modèle visible)
+// ==========================================================
+function buildEx10(c) {
+    buildQuiz(c, 10, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        return {
+            html: `<div class="consigne">Recopie le mot dans le cadre.</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word">${t.mot}</div>
+                   <input type="text" class="write-input" id="inp" autocomplete="off" autocapitalize="off">
+                   <div class="helper-row"><button class="btn" id="vchk">✅ Vérifier</button></div></div>`,
+            bravo: 'Bien recopié !',
+            help: `Le mot est « ${t.mot} ».`,
+            bind: (root, done) => {
+                const inp = root.querySelector('#inp');
+                inp.focus();
+                inp.oninput = () => {
+                    const v = norm(inp.value);
+                    const target = norm(t.mot);
+                    if (target.startsWith(v) || v==='') inp.classList.remove('ko');
+                    if (v===target) { inp.classList.add('ok'); inp.disabled=true; done(true); }
+                };
+                root.querySelector('#vchk').onclick = () => {
+                    const v = norm(inp.value);
+                    if (v===norm(t.mot)) { inp.classList.add('ok'); inp.disabled=true; done(true); }
+                    else { inp.classList.add('ko'); done(false); }
+                };
+            }
+        };
+    }, 5);
+}
+
+// ==========================================================
+// EX 11 — DICTÉE MUETTE (image seule)
+// ==========================================================
+function buildEx11(c) {
+    buildQuiz(c, 11, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        return {
+            html: `<div class="consigne">Écris le mot qui correspond à l'image.</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div style="margin:14px 0;"><input type="text" class="write-input" id="inp" autocomplete="off" autocapitalize="off"></div>
+                   <div class="helper-row">
+                     <button class="btn-soft btn" id="hint1">💡 1re lettre</button>
+                     <button class="btn-soft btn" id="hint2">👁 Voir le mot 3s</button>
+                     <button class="btn" id="vchk">✅ Vérifier</button>
+                   </div></div>
+                   <div class="model-word" id="modw" style="visibility:hidden;">${t.mot}</div>`,
+            bravo: 'Tu sais l\'écrire !',
+            help: `Le mot était « ${t.mot} ».`,
+            bind: (root, done) => {
+                const inp = root.querySelector('#inp');
+                inp.focus();
+                root.querySelector('#hint1').onclick = ()=>{ if(!inp.value) inp.value = t.mot[0]; inp.focus(); };
+                root.querySelector('#hint2').onclick = ()=>{ const m=root.querySelector('#modw'); m.style.visibility='visible'; setTimeout(()=>m.style.visibility='hidden', 3000); };
+                root.querySelector('#vchk').onclick = () => {
+                    const v = norm(inp.value);
+                    if (v===norm(t.mot)) { inp.classList.add('ok'); inp.disabled=true; done(true); }
+                    else { inp.classList.add('ko'); done(false); }
+                };
+                inp.onkeydown = (e) => { if (e.key==='Enter') root.querySelector('#vchk').click(); };
+            }
+        };
+    }, 4);
+}
+
+// ==========================================================
+// EX 12 — DICTÉE ORALE
+// ==========================================================
+function buildEx12(c) {
+    if (muted) {
+        c.innerHTML = `<div class="feedback ko show"><span class="av">🔇</span>Cet exercice nécessite le son. Active-le en haut à droite (🔇 → 🔊).</div>`;
+        return;
+    }
+    buildQuiz(c, 12, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        return {
+            html: `<div class="consigne">Écoute le mot et écris-le.</div>
+                   <div class="center"><button class="btn-audio" id="say">🔊 Écouter le mot</button>
+                   <div style="margin:14px 0;"><input type="text" class="write-input" id="inp" autocomplete="off" autocapitalize="off"></div>
+                   <div class="helper-row">
+                     <button class="btn-soft btn" id="hint1">💡 1re lettre</button>
+                     <button class="btn" id="vchk">✅ Vérifier</button>
+                   </div></div>`,
+            bravo: 'Excellent !',
+            help: `Le mot était « ${t.mot} ».`,
+            bind: (root, done) => {
+                const inp = root.querySelector('#inp');
+                inp.focus();
+                setTimeout(()=>parler(t.mot), 200);
+                root.querySelector('#say').onclick = ()=>parler(t.mot);
+                root.querySelector('#hint1').onclick = ()=>{ if(!inp.value) inp.value = t.mot[0]; inp.focus(); };
+                root.querySelector('#vchk').onclick = () => {
+                    const v = norm(inp.value);
+                    if (v===norm(t.mot)) { inp.classList.add('ok'); inp.disabled=true; parler('Bravo !'); done(true); }
+                    else { inp.classList.add('ko'); parler('C\'était '+t.mot); done(false); }
+                };
+                inp.onkeydown = (e) => { if (e.key==='Enter') root.querySelector('#vchk').click(); };
+            }
+        };
+    }, 4);
+}
+
+// ==========================================================
+// EX 13 — COMPTE LES LETTRES DU MOT
+// ==========================================================
+function buildEx13(c) {
+    buildQuiz(c, 13, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        const n = t.mot.length;
+        const choices = shuffle([n, n-1, n+1, n+2].filter((v,i,a)=>v>0 && a.indexOf(v)===i)).slice(0,4);
+        if (!choices.includes(n)) choices[0] = n;
+        return {
+            html: `<div class="consigne">Combien y a-t-il de lettres dans ce mot ?</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word">${t.mot}</div></div>
+                   <div class="choices-txt" id="ch"></div>`,
+            bravo: `« ${t.mot} » a bien ${n} lettres.`,
+            help: `Le mot « ${t.mot} » a ${n} lettres.`,
+            bind: (root, done) => {
+                const ch = root.querySelector('#ch');
+                shuffle(choices).forEach(v => {
+                    const b = document.createElement('button');
+                    b.className = 'choice-txt'; b.textContent = v;
+                    b.onclick = () => {
+                        root.querySelectorAll('.choice-txt').forEach(x=>x.classList.add('disabled'));
+                        if (v===n) { b.classList.add('correct'); done(true); }
+                        else { b.classList.add('wrong'); root.querySelectorAll('.choice-txt').forEach(x=>{ if(x.textContent==String(n)) x.classList.add('correct'); }); done(false); }
+                    };
+                    ch.appendChild(b);
+                });
+            }
+        };
+    }, 5);
+}
+
+// ==========================================================
+// EX 14 — TROUVE LA DERNIÈRE LETTRE
+// ==========================================================
+function buildEx14(c) {
+    buildQuiz(c, 14, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        const last = t.mot.slice(-1).toUpperCase();
+        const others = ["A","E","I","O","U","M","N","R","S","T"].filter(l=>l!==last);
+        const all = shuffle([last, ...pick(others,3)]);
+        const masque = t.mot.slice(0,-1).toUpperCase() + "_";
+        return {
+            html: `<div class="consigne">Trouve la dernière lettre du mot.</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word">${masque}</div></div>
+                   <div class="letters" id="lt"></div>`,
+            bravo: `Le mot est « ${t.mot} ».`,
+            help: `Le mot finit par « ${last} ».`,
+            bind: (root, done) => {
+                const lt = root.querySelector('#lt');
+                all.forEach(L => {
+                    const e = document.createElement('div');
+                    e.className = 'letter'; e.textContent = L;
+                    e.onclick = () => {
+                        root.querySelectorAll('.letter').forEach(x=>x.classList.add('used'));
+                        if (L===last) { e.classList.add('correct'); done(true); }
+                        else { e.classList.add('wrong'); root.querySelectorAll('.letter').forEach(x=>{if(x.textContent===last)x.classList.add('correct');}); done(false); }
+                    };
+                    lt.appendChild(e);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 15 — ASSOCIE MAJUSCULE / MINUSCULE
+// ==========================================================
+function buildEx15(c) {
+    const sel = pick(FRUITS, 4);
+    const left = shuffle(sel);
+    const right = shuffle(sel);
+    let selected = null, matched = 0;
+    c.innerHTML = `<div class="consigne">Clique sur un mot en MAJUSCULES, puis sur le même en minuscules.</div>
+                   <div class="relier"><div class="relier-col" id="lcol"></div><div class="relier-col" id="rcol"></div></div>
+                   <div id="rfb"></div>`;
+    const lcol = c.querySelector('#lcol'), rcol = c.querySelector('#rcol');
+    left.forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'relier-item'; d.dataset.mot = f.mot;
+        d.innerHTML = `<span class="lbl">${f.mot.toUpperCase()}</span>`;
+        d.onclick = () => {
+            if (d.classList.contains('matched')) return;
+            lcol.querySelectorAll('.relier-item').forEach(x=>x.classList.remove('selected'));
+            d.classList.add('selected'); selected = d;
+        };
+        lcol.appendChild(d);
+    });
+    right.forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'relier-item'; d.dataset.mot = f.mot;
+        d.innerHTML = `<span class="lbl">${f.mot}</span>`;
+        d.onclick = () => {
+            if (!selected || d.classList.contains('matched')) return;
+            if (selected.dataset.mot === d.dataset.mot) {
+                selected.classList.remove('selected'); selected.classList.add('matched');
+                d.classList.add('matched'); selected = null;
+                matched++; setEx(15, matched, sel.length);
+                if (matched === sel.length) { c.querySelector('#rfb').outerHTML = feedbackOk('Toutes les paires sont reliées !'); setEx(15,sel.length,sel.length,true); }
+            } else { d.classList.add('wrong'); setTimeout(()=>d.classList.remove('wrong'),500); }
+        };
+        rcol.appendChild(d);
+    });
+    setEx(15, 0, sel.length);
+}
+
+// ==========================================================
+// EX 16 — DE QUELLE COULEUR EST CE FRUIT ?
+// ==========================================================
+function buildEx16(c) {
+    const colored = FRUITS.filter(f => f.couleur);
+    if (colored.length === 0) {
+        c.innerHTML = `<div class="feedback ok show"><span class="av">ℹ️</span>Cet exercice n'est pas disponible pour ce thème (pas de couleur attribuée).</div>`;
+        setEx(16, 0, 0, true);
+        return;
+    }
+    buildQuiz(c, 16, idx => {
+        const t = colored[idx % colored.length];
+        const others = COULEURS.filter(co=>co!==t.couleur);
+        const all = shuffle([t.couleur, ...pick(others,2)]);
+        const tints = { rouge:"#ef4444", jaune:"#facc15", vert:"#22c55e", orange:"#f97316", violet:"#a855f7" };
+        return {
+            html: `<div class="consigne">De quelle couleur est ce fruit ?</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div></div>
+                   <div class="choices-txt" id="ch"></div>`,
+            bravo: `Oui, ${t.mot} est ${t.couleur} !`,
+            help: `${t.mot} est ${t.couleur}.`,
+            bind: (root, done) => {
+                const ch = root.querySelector('#ch');
+                all.forEach(co => {
+                    const b = document.createElement('button');
+                    b.className = 'choice-txt';
+                    b.innerHTML = `<span style="display:inline-block; width:18px; height:18px; border-radius:50%; background:${tints[co]}; vertical-align:middle; margin-right:8px;"></span>${co}`;
+                    b.onclick = () => {
+                        root.querySelectorAll('.choice-txt').forEach(x=>x.classList.add('disabled'));
+                        if (co===t.couleur) { b.classList.add('correct'); done(true); }
+                        else { b.classList.add('wrong'); root.querySelectorAll('.choice-txt').forEach(x=>{ if(x.textContent.trim().endsWith(t.couleur)) x.classList.add('correct'); }); done(false); }
+                    };
+                    ch.appendChild(b);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 17 — LA LETTRE MANQUANTE (au milieu)
+// ==========================================================
+function buildEx17(c) {
+    buildQuiz(c, 17, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        const upper = t.mot.toUpperCase();
+        const pos = Math.min(2, upper.length-2); // une lettre au milieu, pas la dernière
+        const lettre = upper[pos];
+        const masque = upper.slice(0,pos) + "_" + upper.slice(pos+1);
+        const others = ["A","E","I","O","U","M","N","R","S","T","B","P","D","L","G","K"].filter(l=>l!==lettre);
+        const all = shuffle([lettre, ...pick(others,3)]);
+        return {
+            html: `<div class="consigne">Quelle lettre manque ?</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word">${masque}</div></div>
+                   <div class="letters" id="lt"></div>`,
+            bravo: `Le mot est « ${t.mot} ».`,
+            help: `La lettre manquante est « ${lettre} » → « ${t.mot} ».`,
+            bind: (root, done) => {
+                const lt = root.querySelector('#lt');
+                all.forEach(L => {
+                    const e = document.createElement('div');
+                    e.className = 'letter'; e.textContent = L;
+                    e.onclick = () => {
+                        root.querySelectorAll('.letter').forEach(x=>x.classList.add('used'));
+                        if (L===lettre) { e.classList.add('correct'); done(true); }
+                        else { e.classList.add('wrong'); root.querySelectorAll('.letter').forEach(x=>{if(x.textContent===lettre)x.classList.add('correct');}); done(false); }
+                    };
+                    lt.appendChild(e);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 18 — COMPLÈTE LA PHRASE
+// ==========================================================
+function buildEx18(c) {
+    buildQuiz(c, 18, idx => {
+        const p = PHRASES[idx % PHRASES.length];
+        const others = pick(FRUITS.filter(f=>f.mot!==p.mot), 2).map(f=>f.mot);
+        const all = shuffle([p.mot, ...others]);
+        const phraseHtml = p.texte.replace('___', '<span style="display:inline-block; min-width:80px; border-bottom:3px solid #6d28d9; color:#6d28d9;" id="blnk">_____</span>');
+        return {
+            html: `<div class="consigne">Choisis le bon mot pour compléter la phrase.</div>
+                   <div class="center"><div class="img-wrap"><img src="${p.img}" alt=""></div></div>
+                   <div style="font-size:1.3rem; text-align:center; margin:18px 0; padding:14px; background:#f8fafc; border-radius:12px; border:2px solid #e2e8f0;">${phraseHtml}</div>
+                   <div class="choices-txt" id="ch"></div>`,
+            bravo: 'Phrase bien complétée !',
+            help: `La bonne réponse était « ${p.mot} ».`,
+            bind: (root, done) => {
+                const ch = root.querySelector('#ch');
+                const blnk = root.querySelector('#blnk');
+                all.forEach(m => {
+                    const b = document.createElement('button');
+                    b.className = 'choice-txt'; b.textContent = m;
+                    b.onclick = () => {
+                        root.querySelectorAll('.choice-txt').forEach(x=>x.classList.add('disabled'));
+                        blnk.textContent = m; blnk.style.background='#ede9fe'; blnk.style.padding='2px 8px'; blnk.style.borderRadius='6px';
+                        if (m===p.mot) { b.classList.add('correct'); done(true); }
+                        else { b.classList.add('wrong'); root.querySelectorAll('.choice-txt').forEach(x=>{if(x.textContent===p.mot)x.classList.add('correct');}); done(false); }
+                    };
+                    ch.appendChild(b);
+                });
+            }
+        };
+    }, 6);
+}
+
+// ==========================================================
+// EX 19 — TROUVE LE MOT CACHÉ
+// ==========================================================
+function buildEx19(c) {
+    buildQuiz(c, 19, idx => {
+        const t = FRUITS[idx % FRUITS.length];
+        const noise = "XBZQWFJK";
+        const left = noise[Math.floor(Math.random()*noise.length)] + noise[Math.floor(Math.random()*noise.length)];
+        const right = noise[Math.floor(Math.random()*noise.length)] + noise[Math.floor(Math.random()*noise.length)];
+        const suite = (left + t.mot.toUpperCase() + right);
+        return {
+            html: `<div class="consigne">Le mot du fruit est caché dans cette suite de lettres. Recopie-le.</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word" style="letter-spacing:6px;">${suite}</div>
+                   <input type="text" class="write-input" id="inp" autocomplete="off" autocapitalize="off">
+                   <div class="helper-row"><button class="btn" id="vchk">✅ Vérifier</button></div></div>`,
+            bravo: 'Bien trouvé !',
+            help: `Le mot caché était « ${t.mot} ».`,
+            bind: (root, done) => {
+                const inp = root.querySelector('#inp');
+                inp.focus();
+                root.querySelector('#vchk').onclick = () => {
+                    const v = norm(inp.value);
+                    if (v===norm(t.mot)) { inp.classList.add('ok'); inp.disabled=true; done(true); }
+                    else { inp.classList.add('ko'); done(false); }
+                };
+                inp.onkeydown = (e) => { if (e.key==='Enter') root.querySelector('#vchk').click(); };
+            }
+        };
+    }, 5);
+}
+
+// ==========================================================
+// EX 20 — QUIZ MIXTE DE RÉVISION
+// ==========================================================
+function buildEx20(c) {
+    const TYPES = ['img2mot', 'mot2img', 'compte', 'firstletter'];
+    buildQuiz(c, 20, idx => {
+        const type = TYPES[idx % TYPES.length];
+        const t = FRUITS[(idx*3) % FRUITS.length];
+        if (type==='img2mot') {
+            const others = pick(FRUITS.filter(f=>f.mot!==t.mot), 2).map(f=>f.mot);
+            const all = shuffle([t.mot, ...others]);
+            return {
+                html: `<div class="consigne">Quel mot correspond à l'image ?</div>
+                       <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div></div>
+                       <div class="choices-txt" id="ch"></div>`,
+                bravo:'', help:`C'était « ${t.mot} ».`,
+                bind: (root, done) => {
+                    const ch = root.querySelector('#ch');
+                    all.forEach(m => {
+                        const b = document.createElement('button');
+                        b.className='choice-txt'; b.textContent=m;
+                        b.onclick = () => {
+                            root.querySelectorAll('.choice-txt').forEach(x=>x.classList.add('disabled'));
+                            if (m===t.mot) { b.classList.add('correct'); done(true); }
+                            else { b.classList.add('wrong'); root.querySelectorAll('.choice-txt').forEach(x=>{if(x.textContent===t.mot)x.classList.add('correct');}); done(false); }
+                        };
+                        ch.appendChild(b);
+                    });
+                }
+            };
+        }
+        if (type==='mot2img') {
+            const others = pick(FRUITS.filter(f=>f.mot!==t.mot), 3);
+            const all = shuffle([t, ...others]);
+            return {
+                html: `<div class="consigne">Trouve l'image qui correspond au mot.</div>
+                       <div class="model-word center">${t.mot}</div>
+                       <div class="grid-imgs g4" id="gr"></div>`,
+                bravo:'', help:`Le mot « ${t.mot} » correspondait à cette image.`,
+                bind: (root, done) => {
+                    const gr = root.querySelector('#gr');
+                    all.forEach(f => {
+                        const d = document.createElement('div');
+                        d.className='img-choice'; d.innerHTML=`<img src="${f.img}" alt="">`;
+                        d.onclick = () => {
+                            root.querySelectorAll('.img-choice').forEach(x=>x.classList.add('disabled'));
+                            if (f.mot===t.mot) { d.classList.add('correct'); done(true); }
+                            else { d.classList.add('wrong'); root.querySelectorAll('.img-choice').forEach(x=>{if(x.querySelector('img').src.endsWith(t.img.split('/').pop()))x.classList.add('correct');}); done(false); }
+                        };
+                        gr.appendChild(d);
+                    });
+                }
+            };
+        }
+        if (type==='compte') {
+            const n = t.mot.length;
+            const choices = shuffle([n, n-1, n+1]).filter(v=>v>0);
+            return {
+                html: `<div class="consigne">Combien de lettres dans ce mot ?</div>
+                       <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                       <div class="model-word">${t.mot}</div></div>
+                       <div class="choices-txt" id="ch"></div>`,
+                bravo:'', help:`${t.mot} = ${n} lettres.`,
+                bind: (root, done) => {
+                    const ch = root.querySelector('#ch');
+                    choices.forEach(v => {
+                        const b = document.createElement('button');
+                        b.className='choice-txt'; b.textContent=v;
+                        b.onclick = () => {
+                            root.querySelectorAll('.choice-txt').forEach(x=>x.classList.add('disabled'));
+                            if (v===n) { b.classList.add('correct'); done(true); }
+                            else { b.classList.add('wrong'); root.querySelectorAll('.choice-txt').forEach(x=>{if(x.textContent==String(n))x.classList.add('correct');}); done(false); }
+                        };
+                        ch.appendChild(b);
+                    });
+                }
+            };
+        }
+        // firstletter
+        const first = t.mot[0].toUpperCase();
+        const others = ["A","B","C","E","F","K","O","P","R","T"].filter(l=>l!==first);
+        const all = shuffle([first, ...pick(others,3)]);
+        return {
+            html: `<div class="consigne">Par quelle lettre commence le mot ?</div>
+                   <div class="center"><div class="img-wrap"><img src="${t.img}" alt=""></div>
+                   <div class="model-word">${"_"+t.mot.slice(1).toUpperCase()}</div></div>
+                   <div class="letters" id="lt"></div>`,
+            bravo:'', help:`Le mot « ${t.mot} » commence par « ${first} ».`,
+            bind: (root, done) => {
+                const lt = root.querySelector('#lt');
+                all.forEach(L => {
+                    const e = document.createElement('div');
+                    e.className='letter'; e.textContent=L;
+                    e.onclick = () => {
+                        root.querySelectorAll('.letter').forEach(x=>x.classList.add('used'));
+                        if (L===first) { e.classList.add('correct'); done(true); }
+                        else { e.classList.add('wrong'); root.querySelectorAll('.letter').forEach(x=>{if(x.textContent===first)x.classList.add('correct');}); done(false); }
+                    };
+                    lt.appendChild(e);
+                });
+            }
+        };
+    }, 8);
+}
+
+// ==========================================================
+// LAZY-INIT à l'ouverture des accordéons
+// ==========================================================
+const BUILDERS = { 1:buildEx1,2:buildEx2,3:buildEx3,4:buildEx4,5:buildEx5,6:buildEx6,7:buildEx7,8:buildEx8,9:buildEx9,10:buildEx10,11:buildEx11,12:buildEx12,13:buildEx13,14:buildEx14,15:buildEx15,16:buildEx16,17:buildEx17,18:buildEx18,19:buildEx19,20:buildEx20 };
+document.querySelectorAll('details.module').forEach(det => {
+    const body = det.querySelector('.module-body');
+    const ex = parseInt(body.dataset.ex);
+    det._build = function() { body.innerHTML=''; BUILDERS[ex](body); det._built = true; };
+    det.addEventListener('toggle', () => { if (det.open && !det._built) det._build(); });
+    if (det.open) det._build();
+});
+
+// init status & score totals
+for (let i=1; i<=20; i++) setStatus(i);
+// totaux estimés (mis à jour à la première ouverture des exos)
+const TOTALS = {1:FRUITS.length, 2:6, 3:5, 4:6, 5:6, 6:6, 7:6, 8:4, 9:5, 10:5, 11:4, 12:4, 13:5, 14:6, 15:4, 16:6, 17:6, 18:6, 19:5, 20:8};
+let scoreMax=0; for(let i=1;i<=20;i++){ const e=getEx(i); scoreMax += (e.total||TOTALS[i]); }
+document.getElementById('score-max').textContent = scoreMax;
+refreshScore();
+
+window.parler = parler;
+</script>
+</body>
+</html>
