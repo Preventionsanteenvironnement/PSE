@@ -7995,6 +7995,15 @@ function loadState() {
 }
 
 function saveState(markSaved = true) {
+  // PSR Auth : mode invité => aucune sauvegarde (ni locale, ni cloud)
+  if (!window.PSR_USER || !window.PSR_USER.userCode) {
+    if (typeof updateSaveIndicator === "function") {
+      try { updateSaveIndicator(false, "🔓 Mode invité — non sauvegardé"); } catch(e) {}
+    }
+    if (typeof renderAuthBadge === "function") { try { renderAuthBadge(); } catch(e) {} }
+    if (typeof renderSidebarAuthBlock === "function") { try { renderSidebarAuthBlock(); } catch(e) {} }
+    return;
+  }
   state.meta.date_derniere_modification = new Date().toISOString();
   // V4.60 : toute modification doit déclencher le rappel "à exporter"
   dirtySinceExport = true;
@@ -8026,6 +8035,12 @@ function saveState(markSaved = true) {
   if (markSaved) updateSaveIndicator(true);
   // V4.60 : met à jour le rappel "à exporter" même quand saveState est appelé directement
   if (typeof updateExportIndicator === "function") updateExportIndicator();
+  // PSR Firebase : synchro cloud (throttlée côté firebase_psr.js)
+  try {
+    if (window.PSR_FIREBASE && typeof window.PSR_FIREBASE.savePortfolioState === "function") {
+      window.PSR_FIREBASE.savePortfolioState(state);
+    }
+  } catch (e) { /* silencieux */ }
 }
 
 function scheduleAutoSave() {
@@ -13606,6 +13621,16 @@ function syncEpreuveToEvaluations(sec) {
 
 /* ----- Recalcul de la note avec validations enseignant + note manuelle (V4.68) ---- */
 function recomputeEpreuveScore(sec) {
+  // PSR Auth : verrou mode invité → on ne calcule pas la note sans code élève
+  if (!window.PSR_USER || !window.PSR_USER.userCode) {
+    if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+      window.PSR_AUTH.requireLogin(() => recomputeEpreuveScore(sec), {
+        title: "🔒 Code élève requis",
+        subtitle: "Pour valider cette épreuve d'attestation et l'enregistrer dans <b>Mon espace</b>, entre ton code élève."
+      });
+    }
+    return;
+  }
   const ep = SECTIONS_SCHEMA.find(s => s.id === sec.id).module.epreuve;
   const st = sec.module_state.epreuve_state;
   let pointsObtenus = 0, pointsMax = 0;
@@ -13662,6 +13687,42 @@ function recomputeEpreuveScore(sec) {
   }
   // V4.8 : synchronise automatiquement la note dans les évaluations visibles à l'élève
   syncEpreuveToEvaluations(sec);
+  // PSR Firebase : push épreuve d'attestation (chef-d'œuvre)
+  try {
+    if (window.PSR_FIREBASE && window.PSR_FIREBASE.saveEvaluation && window.PSR_USER && window.PSR_USER.userCode) {
+      const userCode = window.PSR_USER.userCode;
+      const titreEp = (ep && ep.titre) || sec.titre || sec.id;
+      const tentative = (st.tentative || 1);
+      window.PSR_FIREBASE.saveEvaluation({
+        eleveCode: userCode,
+        devoirId: "psr_jd_" + sec.id,
+        titre: "Portfolio PSR — " + titreEp,
+        note_finale: st.note_sur_20 || 0,
+        bareme: 20,
+        appreciation: "Auto-correction. Score : " + (st.note_sur_20 || 0) + "/20. Tentative " + tentative + ".",
+        publie: true,
+        autocorrected: true,
+        source: "psr_portfolio",
+        type: "chef_oeuvre",
+        module_id: sec.id,
+        reponses: st.reponses || {},
+        createdAtISO: new Date().toISOString(),
+        updatedAtISO: new Date().toISOString()
+      });
+      if (window.PSR_FIREBASE.saveCopie) {
+        window.PSR_FIREBASE.saveCopie({
+          eleveCode: userCode,
+          devoirId: "psr_jd_" + sec.id,
+          titre: "Portfolio PSR — " + titreEp,
+          reponses: st.reponses || {},
+          source: "psr_portfolio",
+          type: "chef_oeuvre",
+          module_id: sec.id,
+          createdAtISO: new Date().toISOString()
+        });
+      }
+    }
+  } catch (e) { console.warn("[PSR] Push Firebase épreuve échoué:", e); }
 }
 
 /* =====================================================================
@@ -18809,6 +18870,72 @@ function renderAll() {
   updateProgress();
   // V4.25 : met à jour l'avatar + prénom dans le header (permanent)
   updateHeaderAvatar();
+  // PSR Auth : badge header + bloc sidebar
+  try { renderAuthBadge(); } catch(e) {}
+  try { renderSidebarAuthBlock(); } catch(e) {}
+}
+
+/* PSR Auth : badge "Mode invité" / "Connecté" dans le header */
+function renderAuthBadge() {
+  const el = document.getElementById("psr-auth-badge");
+  if (!el) return;
+  const u = window.PSR_USER;
+  if (u && u.userCode) {
+    el.style.background = "#dff6e1";
+    el.style.color = "#1f6b3a";
+    el.style.cursor = "pointer";
+    el.innerHTML = "✅ Connecté · " + escapeHtml(u.userCode) +
+      ' <button id="psr-badge-logout" class="btn" style="padding:2px 8px;font-size:11px;margin-left:6px;">Déconnexion</button>';
+    const btn = document.getElementById("psr-badge-logout");
+    if (btn) btn.onclick = (e) => {
+      e.stopPropagation();
+      if (window.PSR_AUTH && window.PSR_AUTH.logout) window.PSR_AUTH.logout();
+      try { renderAuthBadge(); renderSidebarAuthBlock(); } catch(_) {}
+    };
+  } else {
+    el.style.background = "#fff3cd";
+    el.style.color = "#7a5500";
+    el.style.cursor = "pointer";
+    el.textContent = "🔓 Mode invité — entre ton code";
+    el.onclick = () => {
+      if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+        window.PSR_AUTH.requireLogin(() => {
+          try { renderAuthBadge(); renderSidebarAuthBlock(); } catch(_) {}
+          if (typeof renderAll === "function") renderAll();
+        });
+      }
+    };
+  }
+}
+
+/* PSR Auth : bloc sidebar (boutons selon état connecté) */
+function renderSidebarAuthBlock() {
+  const el = document.getElementById("sidebar-auth-block");
+  if (!el) return;
+  const u = window.PSR_USER;
+  if (u && u.userCode) {
+    el.innerHTML =
+      '<div class="connected-info" style="padding:6px 10px;background:#e8f5ec;border-radius:6px;margin-bottom:6px;font-size:.85rem;">' +
+      '👤 Connecté : <b>' + escapeHtml(u.userCode) + '</b></div>' +
+      '<button class="btn" id="psr-side-logout" type="button" style="margin-bottom:6px;">🚪 Me déconnecter</button>';
+    const lo = document.getElementById("psr-side-logout");
+    if (lo) lo.onclick = () => {
+      if (window.PSR_AUTH && window.PSR_AUTH.logout) window.PSR_AUTH.logout();
+      try { renderAuthBadge(); renderSidebarAuthBlock(); } catch(_) {}
+    };
+  } else {
+    el.innerHTML =
+      '<button class="btn btn-primary" id="btn-save-with-code" type="button" style="margin-bottom:6px;">🔐 Entrer mon code pour sauvegarder</button>';
+    const b = document.getElementById("btn-save-with-code");
+    if (b) b.onclick = () => {
+      if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+        window.PSR_AUTH.requireLogin(() => {
+          try { saveState(); } catch(_) {}
+          if (typeof renderAll === "function") renderAll();
+        });
+      }
+    };
+  }
 }
 
 /* V4.25 : avatar + prénom dans le header, cliquable pour ouvrir l'éditeur */
@@ -18832,7 +18959,7 @@ function updateHeaderAvatar() {
   name.textContent = e.prenom || "Mon profil";
 }
 
-function init() {
+async function init() {
   // V4.15 : si on est dans correction.html, l'outil enseignant gère lui-même son init
   if (window.IS_TEACHER_TOOL) {
     if (typeof initTeacherCorrection === "function") {
@@ -18841,6 +18968,20 @@ function init() {
     return;
   }
   state = loadState();
+  // PSR Auth : si élève connecté ET Firebase dispo → tenter de charger l'état cloud
+  if (window.PSR_USER && window.PSR_USER.userCode && window.PSR_FIREBASE && window.PSR_FIREBASE.loadPortfolioState) {
+    try {
+      const cloudState = await window.PSR_FIREBASE.loadPortfolioState();
+      if (cloudState && cloudState.meta && cloudState.meta.date_derniere_modification) {
+        const localTs = (state && state.meta && state.meta.date_derniere_modification) || "1970";
+        if (new Date(cloudState.meta.date_derniere_modification) > new Date(localTs)) {
+          state = mergeWithSchema(cloudState);
+        }
+      }
+    } catch (e) {
+      console.warn("[PSR] Chargement cloud échoué:", e);
+    }
+  }
   // V2.1 : sync bidirectionnelle identité / infos_eleve à l'ouverture
   syncInfosToIdentite();
   syncIdentiteToInfos();
@@ -23877,6 +24018,16 @@ function _makeFormationSecProxy(chapId) {
 }
 
 function recomputeEpreuveScoreFormation(chap, st) {
+  // PSR Auth : verrou mode invité
+  if (!window.PSR_USER || !window.PSR_USER.userCode) {
+    if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+      window.PSR_AUTH.requireLogin(() => recomputeEpreuveScoreFormation(chap, st), {
+        title: "🔒 Code élève requis",
+        subtitle: "Pour valider cette épreuve d'attestation et l'enregistrer dans <b>Mon espace</b>, entre ton code élève."
+      });
+    }
+    return;
+  }
   const ep = chap.module.epreuve;
   let pointsObtenus = 0, pointsMax = 0;
   ep.questions.forEach(q => {
@@ -23927,6 +24078,42 @@ function recomputeEpreuveScoreFormation(chap, st) {
   // Maintien des champs « legacy » (compat avec exportFormationChapitreAttestationWord)
   st.score = st.note_brute;
   st.valide = st.note_sur_20 >= ep.seuil;
+  // PSR Firebase : push épreuve formation PSR
+  try {
+    if (window.PSR_FIREBASE && window.PSR_FIREBASE.saveEvaluation && window.PSR_USER && window.PSR_USER.userCode) {
+      const userCode = window.PSR_USER.userCode;
+      const titreEp = (ep && ep.titre) || chap.titre || chap.id;
+      const tentative = (st.tentative || 1);
+      window.PSR_FIREBASE.saveEvaluation({
+        eleveCode: userCode,
+        devoirId: "psr_fpsr_" + chap.id,
+        titre: "Portfolio PSR — " + titreEp,
+        note_finale: st.note_sur_20 || 0,
+        bareme: 20,
+        appreciation: "Auto-correction. Score : " + (st.note_sur_20 || 0) + "/20. Tentative " + tentative + ".",
+        publie: true,
+        autocorrected: true,
+        source: "psr_portfolio",
+        type: "formation_psr",
+        module_id: chap.id,
+        reponses: st.reponses || {},
+        createdAtISO: new Date().toISOString(),
+        updatedAtISO: new Date().toISOString()
+      });
+      if (window.PSR_FIREBASE.saveCopie) {
+        window.PSR_FIREBASE.saveCopie({
+          eleveCode: userCode,
+          devoirId: "psr_fpsr_" + chap.id,
+          titre: "Portfolio PSR — " + titreEp,
+          reponses: st.reponses || {},
+          source: "psr_portfolio",
+          type: "formation_psr",
+          module_id: chap.id,
+          createdAtISO: new Date().toISOString()
+        });
+      }
+    }
+  } catch (e) { console.warn("[PSR] Push Firebase épreuve formation échoué:", e); }
 }
 
 function openTeacherValidationFormation(chap, q) {
