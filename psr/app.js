@@ -7983,7 +7983,46 @@ let savedRealState = null;
 let recapFilter = "all"; // all | not_started | in_progress | done | to_review | validated
 let oralMode = "detailed"; // detailed | concise
 
+/* =====================================================================
+   AUTH GUARD — Bloque les épreuves d'attestation en mode invité
+   ===================================================================== */
+function requireUserForEpreuve(onSuccess) {
+  if (window.PSR_USER) { onSuccess(); return; }
+  // Overlay de blocage stylé
+  let ov = document.getElementById("psr-epreuve-block-overlay");
+  if (ov) ov.remove();
+  ov = document.createElement("div");
+  ov.id = "psr-epreuve-block-overlay";
+  ov.style.cssText = "position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.85);display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,sans-serif;";
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+      <div style="font-size:48px;margin-bottom:8px">🔒</div>
+      <h2 style="margin:0 0 12px;color:#0f172a">Épreuve d'attestation</h2>
+      <p style="color:#475569;line-height:1.5;margin:0 0 8px">Pour passer cette épreuve, entre ton <b>code élève</b>.</p>
+      <p style="color:#64748b;font-size:14px;margin:0 0 20px">Ta note sera enregistrée dans « Mon espace ».</p>
+      <button id="psr-eb-login" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;margin-right:8px">🔐 Entrer mon code</button>
+      <button id="psr-eb-later" style="background:#e2e8f0;color:#0f172a;border:none;border-radius:10px;padding:12px 22px;font-weight:600;font-size:15px;cursor:pointer">Plus tard</button>
+    </div>`;
+  document.body.appendChild(ov);
+  document.getElementById("psr-eb-login").onclick = () => {
+    ov.remove();
+    if (window.PSR_AUTH && typeof window.PSR_AUTH.requireLogin === "function") {
+      window.PSR_AUTH.requireLogin(() => {
+        // Recharger pour activer la sync cloud + chargement state Firebase
+        location.reload();
+      }, { title: "Code élève requis", subtitle: "Entre ton code pour passer l'épreuve d'attestation." });
+    } else {
+      alert("Module d'authentification indisponible.");
+    }
+  };
+  document.getElementById("psr-eb-later").onclick = () => ov.remove();
+}
+
 function loadState() {
+  // Mode invité : pas de chargement local, on démarre toujours sur un état vierge
+  if (!window.PSR_USER && !window.IS_TEACHER_TOOL) {
+    return buildDefaultState();
+  }
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try { return mergeWithSchema(JSON.parse(raw)); }
@@ -7993,6 +8032,13 @@ function loadState() {
 }
 
 function saveState(markSaved = true) {
+  // Mode invité : aucune sauvegarde (ni locale ni cloud)
+  if (!window.PSR_USER && !window.IS_TEACHER_TOOL) {
+    if (markSaved && typeof updateSaveIndicator === "function") {
+      updateSaveIndicator(false, "Mode invité — non sauvegardé");
+    }
+    return;
+  }
   state.meta.date_derniere_modification = new Date().toISOString();
   // V4.60 : toute modification doit déclencher le rappel "à exporter"
   dirtySinceExport = true;
@@ -8034,6 +8080,13 @@ function saveState(markSaved = true) {
 }
 
 function scheduleAutoSave() {
+  // Mode invité : pas d'auto-save
+  if (!window.PSR_USER && !window.IS_TEACHER_TOOL) {
+    if (typeof updateSaveIndicator === "function") {
+      updateSaveIndicator(false, "🔓 Mode invité — non sauvegardé");
+    }
+    return;
+  }
   clearTimeout(autoSaveTimer);
   updateSaveIndicator(false, "Modifications non enregistrées…");
   // V4.13 : marqueur de modifications non exportées
@@ -12324,6 +12377,33 @@ function renderHomeView() {
   `;
   wrap.appendChild(greet);
 
+  /* ===== 1bis. BANNIÈRE Mode invité ===== */
+  if (!window.PSR_USER) {
+    const guest = document.createElement("section");
+    guest.style.cssText = "background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #fcd34d;border-radius:12px;padding:16px 20px;margin:12px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap;";
+    guest.innerHTML = `
+      <div style="font-size:36px">🔓</div>
+      <div style="flex:1;min-width:240px;color:#78350f">
+        <b style="font-size:16px">Tu es en mode invité</b>
+        <div style="font-size:13px;margin-top:4px;line-height:1.4">
+          Tu peux explorer librement tous les cours et exercices.<br>
+          Pour <b>sauvegarder ton travail</b> et <b>passer les épreuves d'attestation</b>, entre ton code élève (donné par ton enseignant).
+        </div>
+      </div>
+      <button type="button" id="home-guest-login" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer">🔐 Entrer mon code</button>
+    `;
+    setTimeout(() => {
+      const b = document.getElementById("home-guest-login");
+      if (b) b.onclick = () => {
+        if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+          window.PSR_AUTH.requireLogin(() => location.reload(),
+            { title: "Code élève", subtitle: "Entre ton code pour sauvegarder ton travail." });
+        }
+      };
+    }, 0);
+    wrap.appendChild(guest);
+  }
+
   /* ===== 2. ALERTE si fiche identité vide ===== */
   if (!e.prenom && !e.nom) {
     const alerte = document.createElement("section");
@@ -13131,9 +13211,11 @@ function renderPedagogicalModule(sec, mod) {
       // Pour la 1re tentative seulement (sinon trop intrusif aux re-tentatives)
       const dejaPasse = noteConnue;
       if (!validee && !dejaPasse && !verifierPretPourEpreuve(sec, mod)) return;
-      currentView = { type: "epreuve", id: sec.id };
-      renderMain(); renderSidebar();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      requireUserForEpreuve(() => {
+        currentView = { type: "epreuve", id: sec.id };
+        renderMain(); renderSidebar();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     });
     actions.appendChild(btnEp);
 
@@ -14195,6 +14277,7 @@ function renderEpreuveView(secId) {
       actionBox.appendChild(info);
     }
     btn.addEventListener("click", () => {
+      if (!window.PSR_USER) { requireUserForEpreuve(() => location.reload()); return; }
       // V4.7 : calcul mixte (QCM + mots auto + phrases en attente enseignant)
       st.date = new Date().toISOString().slice(0, 10);
       st.tentative = (st.tentative || 0) + 1;
@@ -19000,6 +19083,72 @@ async function init() {
   showSplashScreen();
   // V4.61 : tutoriel "Première visite" pour les nouveaux élèves
   setTimeout(() => maybeShowTutorielPremiereVisite(), 1500);
+  // Modèle d'accès invité / connecté
+  renderAuthUI();
+}
+
+/* =====================================================================
+   AUTH UI — Badge top + bloc sidebar + bannière home
+   ===================================================================== */
+function renderAuthUI() {
+  const badge = document.getElementById("psr-auth-badge");
+  const sideBlock = document.getElementById("sidebar-auth-block");
+  const u = window.PSR_USER;
+
+  if (badge) {
+    if (u) {
+      badge.style.background = "#dcfce7";
+      badge.style.color = "#166534";
+      badge.style.border = "1px solid #86efac";
+      badge.innerHTML = `✅ Connecté · <b style="margin:0 4px">${escapeHtml(u.userCode)}</b>
+        <button id="psr-badge-logout" type="button" style="background:#475569;border:none;color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px">🚪 Déconnexion</button>`;
+      const lo = document.getElementById("psr-badge-logout");
+      if (lo) lo.onclick = () => { if (window.PSR_AUTH) window.PSR_AUTH.logout(); };
+    } else {
+      badge.style.background = "#fef3c7";
+      badge.style.color = "#92400e";
+      badge.style.border = "1px solid #fcd34d";
+      badge.innerHTML = `🔓 Mode invité
+        <button id="psr-badge-login" type="button" style="background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px">🔐 Connexion</button>`;
+      const li = document.getElementById("psr-badge-login");
+      if (li) li.onclick = () => {
+        if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+          window.PSR_AUTH.requireLogin(() => location.reload(),
+            { title: "Code élève", subtitle: "Entre ton code pour sauvegarder ton travail." });
+        }
+      };
+    }
+  }
+
+  if (sideBlock) {
+    if (u) {
+      sideBlock.innerHTML = `
+        <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:8px 10px;font-size:12px;color:#166534;margin-bottom:6px">
+          👤 Connecté en tant que <b>${escapeHtml(u.userCode)}</b>
+        </div>
+        <button id="sb-auth-reload" class="btn" type="button" style="margin-bottom:4px">🔄 Recharger mon travail</button>
+        <button id="sb-auth-logout" class="btn btn-danger" type="button">🚪 Me déconnecter</button>
+      `;
+      const r = document.getElementById("sb-auth-reload");
+      if (r) r.onclick = () => { if (typeof cloudRestoreState === "function") cloudRestoreState(); };
+      const lo = document.getElementById("sb-auth-logout");
+      if (lo) lo.onclick = () => { if (window.PSR_AUTH) window.PSR_AUTH.logout(); };
+    } else {
+      sideBlock.innerHTML = `
+        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400e;margin-bottom:6px">
+          🔓 Mode invité — rien n'est sauvegardé
+        </div>
+        <button id="sb-auth-login" class="btn btn-primary" type="button">🔐 Entrer mon code pour sauvegarder</button>
+      `;
+      const li = document.getElementById("sb-auth-login");
+      if (li) li.onclick = () => {
+        if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+          window.PSR_AUTH.requireLogin(() => location.reload(),
+            { title: "Code élève", subtitle: "Entre ton code pour sauvegarder ton travail." });
+        }
+      };
+    }
+  }
 }
 
 /* V4.61 — Helpers pré-remplissage étiquetage depuis le menu composé */
@@ -23513,9 +23662,11 @@ function renderFormationChapitre(chapId) {
         ? `Recommencer l’épreuve (note précédente : ${epSt.note_sur_20}/20)`
         : "Commencer l’épreuve d’attestation";
     btnEp.addEventListener("click", () => {
-      currentView = { type: "formation-epreuve", id: chap.id };
-      renderSidebar(); renderMain();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      requireUserForEpreuve(() => {
+        currentView = { type: "formation-epreuve", id: chap.id };
+        renderSidebar(); renderMain();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     });
     card.appendChild(btnEp);
     wrap.appendChild(card);
@@ -23844,6 +23995,7 @@ function renderFormationEpreuve(chap, st) {
   btn.className = "btn btn-primary";
   btn.textContent = st.epreuve.score !== null ? "Recalculer mon score" : "Calculer mon score";
   btn.addEventListener("click", () => {
+    if (!window.PSR_USER) { requireUserForEpreuve(() => location.reload()); return; }
     let score = 0;
     ep.questions.forEach(q => {
       const ans = st.epreuve.reponses[q.id];
