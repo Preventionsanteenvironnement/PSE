@@ -28,6 +28,8 @@
     const list = (window.BDD_ELEVES || []);
     const norm = String(code || "").trim().toUpperCase();
     if (!norm) return null;
+    // Refus explicite des codes enseignant : ce portfolio est uniquement pour les élèves
+    if (norm === "PROFPSE" || norm === "PROFPSR" || norm === "PROF") return null;
     return list.find(e => e.userCode === norm) || null;
   }
 
@@ -35,7 +37,7 @@
     window.PSR_USER = {
       userCode: eleve.userCode,
       classe:   eleve.classe || "",
-      isTeacher: eleve.userCode === "PROFPSE",
+      isTeacher: false,  // ce portfolio est exclusivement élève
     };
   }
 
@@ -150,6 +152,13 @@
   function init() {
     const session = readSession();
     if (session) {
+      // Purger les anciennes sessions enseignant qui auraient pu rester
+      const code = String(session.userCode || "").toUpperCase();
+      if (code === "PROFPSE" || code === "PROFPSR" || code === "PROF") {
+        clearSession();
+        window.PSR_USER = null;
+        return;
+      }
       const eleve = findEleve(session.userCode);
       if (eleve) {
         setUserGlobal(eleve);
