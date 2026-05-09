@@ -27,13 +27,7 @@
    ===================================================================== */
 
 const APP_VERSION = "4.84.0";
-/* RGPD : la clé localStorage est suffixée par le userCode pour que chaque
-   élève sur le même navigateur ait son propre portfolio sans collision. */
-const STORAGE_KEY_BASE = "portfolio_cap_chef_doeuvre";
-const STORAGE_KEY = (() => {
-  const code = (window.PSR_USER && window.PSR_USER.userCode) || "";
-  return code ? STORAGE_KEY_BASE + "_" + code : STORAGE_KEY_BASE;
-})();
+const STORAGE_KEY = "portfolio_cap_chef_doeuvre";
 const AUTOSAVE_DELAY_MS = 1200;
 
 /* Redimensionnement / compression photos */
@@ -45,13 +39,11 @@ const PHOTO_JPEG_QUALITY = 0.75;
    duquel une section marquée "terminée" est signalée comme peu remplie. */
 const MIN_COMPLETENESS = 0.4;
 
-/* Champs de la section "identite" qui alimentent state.infos_eleve.
-   RGPD strict : ni nom, ni prénom, ni lycée, ni classe, ni année scolaire ne sont saisis.
-   Seul le titre du dossier est conservé. */
-const IDENTITE_SYNC = ["titre_dossier"];
+/* Champs de la section "identite" qui alimentent state.infos_eleve. */
+const IDENTITE_SYNC = ["nom", "prenom", "lycee", "classe", "annee_scolaire", "titre_dossier"];
 
 /* V4.14 — Portfolio démo intégré (Marie DURAND) pour aperçu rapide. */
-const DEMO_PORTFOLIO_JSON = `{"meta":{"app_version":"4.13.0","projet_titre":"Chef-d'œuvre : concevoir un repas ou menu équilibré et éco-responsable","date_creation":"2025-09-15T08:30:00.000Z","date_derniere_modification":"2026-04-26T15:42:00.000Z","date_dernier_export":"2026-04-26T15:42:00.000Z"},"infos_eleve":{"userCode":"DEMO","classe":"CAP PSR — 1re année","annee_scolaire":"2025-2026","titre_dossier":"Mon bowl bio et de saison à emporter","nom":"","prenom":"","lycee":""},"progression":{"pourcentage_global":73,"sections_terminees":6,"sections_validees":4},"sections":[{"id":"accueil","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-09-29T10:15:00.000Z","date_validation":"2025-10-05","champs":[{"id":"titre_projet","valeur":"Concevoir un repas ou menu équilibré et éco-responsable"},{"id":"objectif","valeur":"Apprendre à concevoir un repas équilibré et respectueux de l'environnement, à le présenter à un client et à le défendre lors d'un oral en juin 2027."},{"id":"comprendre","valeur":"Le chef-d'œuvre, c'est un grand projet de fin de CAP qui dure 2 ans. À la fin, je présenterai mon projet pendant 10 minutes devant deux profs."},{"id":"capacite_finale","valeur":"Concevoir un menu équilibré et éco-responsable à emporter, le présenter et le défendre à l'oral."},{"id":"duree","valeur":"2 ans (de septembre 2025 à juin 2027)"}],"preuves":[]},{"id":"identite","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-09-22T09:05:00.000Z","date_validation":"2025-09-29","champs":[{"id":"classe","valeur":"CAP PSR — 1re année"},{"id":"annee_scolaire","valeur":"2025-2026"},{"id":"titre_dossier","valeur":"Mon bowl bio et de saison à emporter"},{"id":"valeurs","valeur":["Respect","Entraide","Persévérance","Créativité","Bienveillance"]},{"id":"qualites","valeur":["Organisée","Soigneuse","Motivée","Patiente","Méthodique"]},{"id":"interets","valeur":["Cuisine","Pâtisserie","Lecture","Nature","Animaux"]},{"id":"pourquoi_cap","valeur":"J'ai choisi ce CAP parce que j'aime cuisiner depuis toute petite avec ma grand-mère. J'aimerais plus tard ouvrir mon propre restaurant éco-responsable, où on cuisinerait avec des produits locaux et de saison."},{"id":"projet_apres","valeur":"Continuer en bac professionnel restauration puis ouvrir un food-truck bio à Lyon, avec des plats simples mais sains."}],"preuves":[]},{"id":"comprendre","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-10-13T11:30:00.000Z","date_validation":"2025-10-20","champs":[{"id":"compris","valeur":"Le chef-d'œuvre, c'est un projet concret que je vais mener pendant 2 ans. Ça doit être lié à mon métier. À la fin, je présenterai mon projet à l'oral pendant 10 minutes."},{"id":"reussir","valeur":"Je dois réussir à concevoir un menu équilibré et éco-responsable à emporter, et savoir le défendre devant un jury."},{"id":"important","valeur":"Ce qui me paraît le plus important, c'est d'avancer étape par étape sans me décourager, et d'apprendre à argumenter mes choix."}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":2,"q4":1,"q5":1,"q6":1,"q7":1,"q8":2},"qcm_score":8,"qcm_total":8,"qcm_completed":true,"exercice_order":["e1","e2","e3","e4","e5","e6"],"exercice_ok":true,"ressources_lues":{"r_mapse_j1":"2025-10-06T14:00:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":1,"ep4":1,"ep5":["démarche","présentation"],"ep6":["repas équilibré","éco-responsable"],"ep7":"Le chef-d'œuvre c'est un projet concret qu'on fait sur 2 ans en lien avec notre métier. À la fin on doit le présenter à l'oral pour montrer ce qu'on a appris.","ep8":"Il y a une note pendant les 2 ans (50%) et une note à l'oral final (50%).","ep9":"Si je n'y arrive pas du premier coup, je peux recommencer. C'est normal de se tromper, on corrige et on apprend."},"validations":{"ep7":{"state":"ok","commentaire":"Très bonne réformulation, vocabulaire juste. Bon travail.","modifie_le":"2025-10-20T14:00:00.000Z"},"ep8":{"state":"ok","commentaire":"Bonne réponse, claire et précise.","modifie_le":"2025-10-20T14:00:00.000Z"},"ep9":{"state":"ok","commentaire":"Bonne posture, c'est exactement la démarche attendue.","modifie_le":"2025-10-20T14:00:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Très bonne épreuve, Marie a bien compris l'esprit du chef-d'œuvre.","date":"2025-10-20T14:30:00.000Z"},"note_brute":22,"note_max":22,"note_sur_20":20,"date":"2025-10-13","tentative":1}},"preuves":[]},{"id":"equilibre","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-01-19T10:30:00.000Z","date_validation":"2026-01-26","champs":[{"id":"appris","valeur":"J'ai appris qu'il y a 7 groupes d'aliments différents, et que chaque constituant alimentaire (protides, glucides, lipides…) joue un rôle précis dans le corps. Et la règle ½ ¼ ¼ pour bien composer une assiette."},{"id":"retiens","valeur":"Quand je vais composer mon menu, je vais penser à mettre la moitié de mon assiette en légumes, un quart de féculents et un quart de protéines."},{"id":"mon_assiette","valeur":"Une assiette équilibrée pour mon menu : salade de carottes râpées (½), riz aux légumes (¼), lentilles (¼), avec un yaourt nature et une pomme bio en dessert."}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":1,"q4":1,"q5":2,"q6":1,"q7":2,"q8":2,"q9":1,"q10":1},"qcm_score":10,"qcm_total":10,"qcm_completed":true,"ressources_lues":{"r_pnns":"2026-01-12T13:30:00.000Z","r_lentilles":"2026-01-19T10:15:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":1,"ep4":1,"ep5":1,"ep6":1,"ep7":2,"ep8":1,"ep9":2,"ep10":1},"validations":{},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Marie maîtrise les notions, bonne épreuve.","date":"2026-01-26T14:00:00.000Z"},"note_brute":9,"note_max":10,"note_sur_20":18,"date":"2026-01-19","tentative":1}},"preuves":[]},{"id":"eco_responsable","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-03-30T14:25:00.000Z","date_validation":"2026-04-06","champs":[{"id":"gaspillage","valeur":"Pour éviter le gaspillage je vais cuisiner uniquement les quantités prévues, utiliser les épluchures de carottes pour faire un bouillon, et vendre mon menu seulement à la commande."},{"id":"packaging","valeur":"Je vais utiliser un bol en carton recyclable avec un couvercle compostable, et une cuillère en bois."},{"id":"packaging_lieu","valeur":"Magasin de fournitures bio La Vie Claire à Lyon ou commande chez VegWare."},{"id":"fournisseurs","valeur":[{"id":"f1","produit":"Carottes","lieu":"Marché de la Croix-Rousse à Lyon","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"Producteur local"},{"id":"f2","produit":"Lentilles vertes","lieu":"AMAP Lyon 7","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"AOP Lentille verte du Puy"},{"id":"f3","produit":"Pommes Reinettes","lieu":"Verger des Monts du Lyonnais","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"AB"},{"id":"f4","produit":"Riz semi-complet","lieu":"Magasin bio La Vie Claire","saison":"À vérifier","circuit":"Non","label":"AB"}]}],"module_state":{"qcm_answers":{"q1":1,"q2":2,"q3":1,"q4":2,"q5":0,"q6":2,"q7":1,"q8":1,"q9":1,"q10":1,"q11":3,"q12":1},"qcm_score":11,"qcm_total":12,"qcm_completed":true,"ressources_lues":{"r_loi_agec":"2026-02-23T14:30:00.000Z","r_lois_gaspi":"2026-02-23T14:45:00.000Z","r_circuit_def":"2026-03-09T13:30:00.000Z","r_video_ademe":"2026-03-02T13:15:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":2,"ep4":1,"ep5":["AB","Label Rouge","AOP"],"ep6":["carton","verre"],"ep7":"Les poivrons ne poussent pas en hiver à Lyon. Donc en décembre ils viennent d'Espagne ou du Maroc, en avion ou en serre chauffée. Ça pollue beaucoup et c'est plus cher.","ep8":"Faire des portions adaptées et utiliser les restes (épluchures pour bouillon, pain rassis pour croûtons).","ep9":"Je choisis un emballage en carton recyclable et un couvercle en bioplastique compostable. Comme ça l'emballage peut être recyclé ou composté à la fin, ce qui est conforme à la loi AGEC."},"validations":{"ep7":{"state":"ok","commentaire":"Très bon raisonnement, exemples concrets et bien argumenté.","modifie_le":"2026-04-06T14:30:00.000Z"},"ep8":{"state":"ok","commentaire":"Idée juste et concrète. Bon travail.","modifie_le":"2026-04-06T14:30:00.000Z"},"ep9":{"state":"ok","commentaire":"Excellente argumentation, mention de la loi AGEC très pertinente.","modifie_le":"2026-04-06T14:30:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Marie a parfaitement intégré les notions d'éco-responsabilité, bonne épreuve.","date":"2026-04-06T15:00:00.000Z"},"note_brute":21,"note_max":22,"note_sur_20":19,"date":"2026-03-30","tentative":1}},"preuves":[]},{"id":"repas_equilibre","statut_eleve":"done","statut_enseignant":"none","date_maj":"2026-04-13T11:00:00.000Z","champs":[{"id":"entree","valeur":"Salade de carottes râpées au citron et persil"},{"id":"plat","valeur":"Bowl de riz semi-complet aux lentilles vertes du Puy AOP, avec poireaux braisés et œuf mollet"},{"id":"dessert","valeur":"Pomme Reinette bio du verger local, cuite à la cannelle"},{"id":"laitage","valeur":"Yaourt nature de la ferme du Mont d'Or"},{"id":"boisson","valeur":"Eau plate"},{"id":"equilibre_global","valeur":"Mon repas respecte la règle ½ ¼ ¼ : la moitié du bol est en légumes (carottes + poireaux), un quart en féculents (riz semi-complet) et un quart en protéines (lentilles + œuf)."},{"id":"justification","valeur":"Les carottes et les poireaux apportent les vitamines et les fibres. Le riz semi-complet donne l'énergie nécessaire pour la journée (glucides). Les lentilles et l'œuf apportent les protéines (bâtisseurs du corps). Le yaourt complète avec du calcium pour les os."},{"id":"regle","valeur":"Règle ½ ¼ ¼ avec un produit laitier en complément, un fruit en dessert et un verre d'eau."}],"preuves":[]},{"id":"etiquetage","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-04-20T10:45:00.000Z","date_validation":"2026-04-26","champs":[{"id":"design_general","valeur":"Étiquette en papier kraft recyclé avec encres végétales. Couleurs naturelles (vert et beige). Petit dessin d'une pomme stylisée en haut. Logo AB visible."},{"id":"etiquettes","valeur":[{"id":"et1","nom_produit":"Bowl bio de Marie","slogan":"Le bon goût des produits de saison","type_date":"DLC (à consommer jusqu'au)","date":"2026-04-21","poids":"350 g","ingredients":"Carottes BIO, riz semi-complet BIO, lentilles vertes du Puy AOP, poireaux BIO, œuf, yaourt nature, citron, persil, sel, poivre, huile d'olive.","allergenes":"ŒUF, LAIT (yaourt). Peut contenir des traces de GLUTEN.","tracabilite":"Carottes : Marché Croix-Rousse, Lyon. Lentilles : AMAP Lyon 7. Riz : La Vie Claire, Lyon. Œufs : Ferme du Mont d'Or, Limonest. Yaourt : Ferme du Mont d'Or, Limonest.","conservation":"À conserver entre 0 °C et 4 °C. À consommer dans les 24 heures."},{"id":"et2","nom_produit":"Pomme Reinette cuite","slogan":"Le dessert simple, local et de saison","type_date":"DLC (à consommer jusqu'au)","date":"2026-04-21","poids":"150 g","ingredients":"Pomme Reinette BIO du verger local, cannelle, miel local.","allergenes":"Aucun allergène majeur.","tracabilite":"Pomme : Verger des Monts du Lyonnais. Miel : Apiculteur de Mornant.","conservation":"À conserver au frais. Se déguste tiède."}]}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":0,"q4":1,"q5":1,"q6":1,"q7":2,"q8":1,"q9":1,"q10":1},"qcm_score":10,"qcm_total":10,"qcm_completed":true,"ressources_lues":{"r_dlc_ddm":"2026-04-13T13:00:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":2,"ep4":2,"ep5":["nom du produit","ingrédients","DLC"],"ep6":["œuf","lait"],"ep7":"Sur mon dessert au yaourt je mets une DLC parce que c'est un produit frais à base de lait, donc périssable. Si on dépasse la date, ça peut rendre malade.","ep8":"La traçabilité c'est savoir d'où vient un produit, qui l'a fait et quand. Ça sert à pouvoir le retirer du marché s'il y a un problème, et ça rassure le client.","ep9":"Pour rendre mon étiquette vendeuse, je mets un nom accrocheur (« Bowl bio de Marie »), une jolie illustration de pomme, et le logo AB bien visible."},"validations":{"ep7":{"state":"ok","commentaire":"Bonne distinction DLC/DDM, justification claire.","modifie_le":"2026-04-26T15:00:00.000Z"},"ep8":{"state":"ok","commentaire":"Très bonne définition + utilité bien expliquée.","modifie_le":"2026-04-26T15:00:00.000Z"},"ep9":{"state":"ok","commentaire":"3 éléments vendeurs, bien.","modifie_le":"2026-04-26T15:00:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"M. Bertrand","commentaire":"Marie a bien intégré la réglementation INCO, étiquette conforme.","date":"2026-04-26T15:30:00.000Z"},"note_brute":22,"note_max":22,"note_sur_20":20,"date":"2026-04-20","tentative":1}},"preuves":[]},{"id":"mon_menu","statut_eleve":"in_progress","statut_enseignant":"none","date_maj":"2026-04-26T15:42:00.000Z","champs":[{"id":"nom_menu","valeur":"Bowl bio de Marie"},{"id":"description","valeur":"Un bol complet à emporter, cuisiné avec uniquement des produits bio, de saison et locaux : carottes du marché, lentilles de l'AMAP, riz bio, poireaux du potager, œuf et yaourt de la ferme du Mont d'Or. En dessert, une pomme cuite du verger local."},{"id":"pourquoi_plats","valeur":"J'ai choisi ces plats parce qu'ils sont équilibrés (½ légumes, ¼ féculents, ¼ protéines), simples à cuisiner, bons à manger même tiède, et tous les ingrédients sont disponibles à Lyon en avril."},{"id":"equilibre","valeur":"Mon menu est équilibré : la moitié de l'assiette est en légumes (carottes + poireaux), un quart en féculents (riz semi-complet) et un quart en protéines (lentilles + œuf). Le yaourt apporte le calcium et la pomme la vitamine C."},{"id":"eco","valeur":"Mon menu est éco-responsable : tous les ingrédients sont de saison à Lyon en avril, achetés en circuit court (marché, AMAP, ferme), avec des labels (AB et AOP). L'emballage est en carton recyclable. Pas de gaspillage : portions calibrées et restes utilisés."},{"id":"points_forts","valeur":"Repas complet, savoureux, économique (entre 4 et 5 € le bol), et 100 % traçable. Les clients voient d'où viennent leurs aliments."},{"id":"ameliorations","valeur":"Je pourrais varier les légumes selon la saison (en été : courgettes, tomates, basilic). Je pourrais aussi proposer une version végane sans œuf ni yaourt."}],"preuves":[]}],"evaluations":[{"jalon_id":"j1_comprendre","source":"epreuve_auto","criteres":[{"id":"Connaissance des modalités du chef-d'œuvre","label":"Connaissance des modalités du chef-d'œuvre","capacite":"Connaître le cadre officiel du chef-d'œuvre et ses modalités.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance du projet de l'année","label":"Connaissance du projet de l'année","capacite":"Identifier et nommer le projet personnel mené dans le cadre du chef-d'œuvre.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des capacités évaluées à l'oral","label":"Connaissance des capacités évaluées à l'oral","capacite":"Identifier ce qui est attendu et évalué à l'oral final.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Capacité à expliquer le chef-d'œuvre avec ses mots","label":"Capacité à expliquer le chef-d'œuvre avec ses mots","capacite":"Reformuler une notion scolaire en langage courant compréhensible.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des règles d'évaluation et du droit à l'erreur","label":"Connaissance des règles d'évaluation et du droit à l'erreur","capacite":"Comprendre l'évaluation du chef-d'œuvre et adopter une posture de progression.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":20,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2025-10-13","enseignant":"Mme Lefèvre"},{"jalon_id":"j2_repas_equilibre","source":"epreuve_auto","criteres":[{"id":"Connaissance des groupes alimentaires","label":"Connaissance des groupes alimentaires","capacite":"Connaître et différencier les 7 groupes alimentaires.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des constituants et de leurs rôles","label":"Connaissance des constituants et de leurs rôles","capacite":"Identifier les constituants alimentaires et expliquer leur rôle pour la santé.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Application de la règle ½ légumes / ¼ féculents / ¼ protéines","label":"Application de la règle ½ légumes / ¼ féculents / ¼ protéines","capacite":"Composer une assiette équilibrée selon la règle ½ ¼ ¼.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Capacité d'analyse et de proposition d'amélioration","label":"Capacité d'analyse et de proposition d'amélioration","capacite":"Analyser un menu existant, repérer le déséquilibre et proposer une amélioration concrète.","niveau":"A","note":3,"max":4,"remediation":null},{"id":"Vocabulaire technique et argumentation","label":"Vocabulaire technique et argumentation","capacite":"Utiliser le vocabulaire de la nutrition et argumenter un choix alimentaire.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":18,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2026-01-19","enseignant":"Mme Lefèvre"},{"jalon_id":"j3_eco_responsable","source":"epreuve_auto","criteres":[{"id":"Connaissance du gaspillage alimentaire et des moyens de lutte","label":"Connaissance du gaspillage alimentaire et des moyens de lutte","capacite":"Identifier l'ampleur du gaspillage alimentaire et proposer des actions concrètes.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des dates DLC / DDM","label":"Maîtrise des dates DLC / DDM","capacite":"Lire et interpréter correctement les dates de consommation indiquées sur les produits.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Saisonnalité et circuits courts","label":"Saisonnalité et circuits courts","capacite":"Choisir des produits de saison et favoriser les circuits courts.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des labels officiels","label":"Connaissance des labels officiels","capacite":"Reconnaître les labels officiels et expliquer ce qu'ils certifient.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Choix d'emballages éco-responsables","label":"Choix d'emballages éco-responsables","capacite":"Choisir un emballage à faible impact environnemental et justifier ce choix.","niveau":"A","note":3,"max":4,"remediation":null}],"note_totale":19,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2026-03-30","enseignant":"Mme Lefèvre"},{"jalon_id":"j4_etiquetage","source":"epreuve_auto","criteres":[{"id":"Connaissance des mentions obligatoires (règlement INCO)","label":"Connaissance des mentions obligatoires (règlement INCO)","capacite":"Identifier et lister les informations obligatoires sur une étiquette alimentaire.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des allergènes (14 allergènes majeurs)","label":"Maîtrise des allergènes (14 allergènes majeurs)","capacite":"Identifier les allergènes majeurs et les présenter de manière conforme.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des dates DLC / DDM appliquée à l'étiquetage","label":"Maîtrise des dates DLC / DDM appliquée à l'étiquetage","capacite":"Choisir la bonne mention de date selon la nature du produit.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Compréhension de la traçabilité","label":"Compréhension de la traçabilité","capacite":"Définir la traçabilité et identifier ses enjeux.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Présentation vendeuse et cohérence éco-responsable","label":"Présentation vendeuse et cohérence éco-responsable","capacite":"Concevoir une étiquette vendeuse et cohérente avec la démarche éco-responsable.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":20,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par M. Bertrand.","date":"2026-04-20","enseignant":"M. Bertrand"}]}`;
+const DEMO_PORTFOLIO_JSON = `{"meta":{"app_version":"4.13.0","projet_titre":"Chef-d'œuvre : concevoir un repas ou menu équilibré et éco-responsable","date_creation":"2025-09-15T08:30:00.000Z","date_derniere_modification":"2026-04-26T15:42:00.000Z","date_dernier_export":"2026-04-26T15:42:00.000Z"},"infos_eleve":{"nom":"DURAND","prenom":"Marie","lycee":"Lycée Pro. Jean Moulin","classe":"CAP PSR — 1re année","annee_scolaire":"2025-2026","titre_dossier":"Mon bowl bio et de saison à emporter"},"progression":{"pourcentage_global":73,"sections_terminees":6,"sections_validees":4},"sections":[{"id":"accueil","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-09-29T10:15:00.000Z","date_validation":"2025-10-05","champs":[{"id":"titre_projet","valeur":"Concevoir un repas ou menu équilibré et éco-responsable"},{"id":"objectif","valeur":"Apprendre à concevoir un repas équilibré et respectueux de l'environnement, à le présenter à un client et à le défendre lors d'un oral en juin 2027."},{"id":"comprendre","valeur":"Le chef-d'œuvre, c'est un grand projet de fin de CAP qui dure 2 ans. À la fin, je présenterai mon projet pendant 10 minutes devant deux profs."},{"id":"capacite_finale","valeur":"Concevoir un menu équilibré et éco-responsable à emporter, le présenter et le défendre à l'oral."},{"id":"duree","valeur":"2 ans (de septembre 2025 à juin 2027)"}],"preuves":[]},{"id":"identite","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-09-22T09:05:00.000Z","date_validation":"2025-09-29","champs":[{"id":"nom","valeur":"DURAND"},{"id":"prenom","valeur":"Marie"},{"id":"lycee","valeur":"Lycée Pro. Jean Moulin"},{"id":"classe","valeur":"CAP PSR — 1re année"},{"id":"annee_scolaire","valeur":"2025-2026"},{"id":"titre_dossier","valeur":"Mon bowl bio et de saison à emporter"},{"id":"valeurs","valeur":["Respect","Entraide","Persévérance","Créativité","Bienveillance"]},{"id":"qualites","valeur":["Organisée","Soigneuse","Motivée","Patiente","Méthodique"]},{"id":"interets","valeur":["Cuisine","Pâtisserie","Lecture","Nature","Animaux"]},{"id":"pourquoi_cap","valeur":"J'ai choisi ce CAP parce que j'aime cuisiner depuis toute petite avec ma grand-mère. J'aimerais plus tard ouvrir mon propre restaurant éco-responsable, où on cuisinerait avec des produits locaux et de saison."},{"id":"projet_apres","valeur":"Continuer en bac professionnel restauration puis ouvrir un food-truck bio à Lyon, avec des plats simples mais sains."}],"preuves":[]},{"id":"comprendre","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2025-10-13T11:30:00.000Z","date_validation":"2025-10-20","champs":[{"id":"compris","valeur":"Le chef-d'œuvre, c'est un projet concret que je vais mener pendant 2 ans. Ça doit être lié à mon métier. À la fin, je présenterai mon projet à l'oral pendant 10 minutes."},{"id":"reussir","valeur":"Je dois réussir à concevoir un menu équilibré et éco-responsable à emporter, et savoir le défendre devant un jury."},{"id":"important","valeur":"Ce qui me paraît le plus important, c'est d'avancer étape par étape sans me décourager, et d'apprendre à argumenter mes choix."}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":2,"q4":1,"q5":1,"q6":1,"q7":1,"q8":2},"qcm_score":8,"qcm_total":8,"qcm_completed":true,"exercice_order":["e1","e2","e3","e4","e5","e6"],"exercice_ok":true,"ressources_lues":{"r_mapse_j1":"2025-10-06T14:00:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":1,"ep4":1,"ep5":["démarche","présentation"],"ep6":["repas équilibré","éco-responsable"],"ep7":"Le chef-d'œuvre c'est un projet concret qu'on fait sur 2 ans en lien avec notre métier. À la fin on doit le présenter à l'oral pour montrer ce qu'on a appris.","ep8":"Il y a une note pendant les 2 ans (50%) et une note à l'oral final (50%).","ep9":"Si je n'y arrive pas du premier coup, je peux recommencer. C'est normal de se tromper, on corrige et on apprend."},"validations":{"ep7":{"state":"ok","commentaire":"Très bonne réformulation, vocabulaire juste. Bon travail.","modifie_le":"2025-10-20T14:00:00.000Z"},"ep8":{"state":"ok","commentaire":"Bonne réponse, claire et précise.","modifie_le":"2025-10-20T14:00:00.000Z"},"ep9":{"state":"ok","commentaire":"Bonne posture, c'est exactement la démarche attendue.","modifie_le":"2025-10-20T14:00:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Très bonne épreuve, Marie a bien compris l'esprit du chef-d'œuvre.","date":"2025-10-20T14:30:00.000Z"},"note_brute":22,"note_max":22,"note_sur_20":20,"date":"2025-10-13","tentative":1}},"preuves":[]},{"id":"equilibre","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-01-19T10:30:00.000Z","date_validation":"2026-01-26","champs":[{"id":"appris","valeur":"J'ai appris qu'il y a 7 groupes d'aliments différents, et que chaque constituant alimentaire (protides, glucides, lipides…) joue un rôle précis dans le corps. Et la règle ½ ¼ ¼ pour bien composer une assiette."},{"id":"retiens","valeur":"Quand je vais composer mon menu, je vais penser à mettre la moitié de mon assiette en légumes, un quart de féculents et un quart de protéines."},{"id":"mon_assiette","valeur":"Une assiette équilibrée pour mon menu : salade de carottes râpées (½), riz aux légumes (¼), lentilles (¼), avec un yaourt nature et une pomme bio en dessert."}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":1,"q4":1,"q5":2,"q6":1,"q7":2,"q8":2,"q9":1,"q10":1},"qcm_score":10,"qcm_total":10,"qcm_completed":true,"ressources_lues":{"r_pnns":"2026-01-12T13:30:00.000Z","r_lentilles":"2026-01-19T10:15:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":1,"ep4":1,"ep5":1,"ep6":1,"ep7":2,"ep8":1,"ep9":2,"ep10":1},"validations":{},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Marie maîtrise les notions, bonne épreuve.","date":"2026-01-26T14:00:00.000Z"},"note_brute":9,"note_max":10,"note_sur_20":18,"date":"2026-01-19","tentative":1}},"preuves":[]},{"id":"eco_responsable","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-03-30T14:25:00.000Z","date_validation":"2026-04-06","champs":[{"id":"gaspillage","valeur":"Pour éviter le gaspillage je vais cuisiner uniquement les quantités prévues, utiliser les épluchures de carottes pour faire un bouillon, et vendre mon menu seulement à la commande."},{"id":"packaging","valeur":"Je vais utiliser un bol en carton recyclable avec un couvercle compostable, et une cuillère en bois."},{"id":"packaging_lieu","valeur":"Magasin de fournitures bio La Vie Claire à Lyon ou commande chez VegWare."},{"id":"fournisseurs","valeur":[{"id":"f1","produit":"Carottes","lieu":"Marché de la Croix-Rousse à Lyon","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"Producteur local"},{"id":"f2","produit":"Lentilles vertes","lieu":"AMAP Lyon 7","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"AOP Lentille verte du Puy"},{"id":"f3","produit":"Pommes Reinettes","lieu":"Verger des Monts du Lyonnais","saison":"Oui","circuit":"Oui (au plus 1 intermédiaire)","label":"AB"},{"id":"f4","produit":"Riz semi-complet","lieu":"Magasin bio La Vie Claire","saison":"À vérifier","circuit":"Non","label":"AB"}]}],"module_state":{"qcm_answers":{"q1":1,"q2":2,"q3":1,"q4":2,"q5":0,"q6":2,"q7":1,"q8":1,"q9":1,"q10":1,"q11":3,"q12":1},"qcm_score":11,"qcm_total":12,"qcm_completed":true,"ressources_lues":{"r_loi_agec":"2026-02-23T14:30:00.000Z","r_lois_gaspi":"2026-02-23T14:45:00.000Z","r_circuit_def":"2026-03-09T13:30:00.000Z","r_video_ademe":"2026-03-02T13:15:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":2,"ep4":1,"ep5":["AB","Label Rouge","AOP"],"ep6":["carton","verre"],"ep7":"Les poivrons ne poussent pas en hiver à Lyon. Donc en décembre ils viennent d'Espagne ou du Maroc, en avion ou en serre chauffée. Ça pollue beaucoup et c'est plus cher.","ep8":"Faire des portions adaptées et utiliser les restes (épluchures pour bouillon, pain rassis pour croûtons).","ep9":"Je choisis un emballage en carton recyclable et un couvercle en bioplastique compostable. Comme ça l'emballage peut être recyclé ou composté à la fin, ce qui est conforme à la loi AGEC."},"validations":{"ep7":{"state":"ok","commentaire":"Très bon raisonnement, exemples concrets et bien argumenté.","modifie_le":"2026-04-06T14:30:00.000Z"},"ep8":{"state":"ok","commentaire":"Idée juste et concrète. Bon travail.","modifie_le":"2026-04-06T14:30:00.000Z"},"ep9":{"state":"ok","commentaire":"Excellente argumentation, mention de la loi AGEC très pertinente.","modifie_le":"2026-04-06T14:30:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"Mme Lefèvre","commentaire":"Marie a parfaitement intégré les notions d'éco-responsabilité, bonne épreuve.","date":"2026-04-06T15:00:00.000Z"},"note_brute":21,"note_max":22,"note_sur_20":19,"date":"2026-03-30","tentative":1}},"preuves":[]},{"id":"repas_equilibre","statut_eleve":"done","statut_enseignant":"none","date_maj":"2026-04-13T11:00:00.000Z","champs":[{"id":"entree","valeur":"Salade de carottes râpées au citron et persil"},{"id":"plat","valeur":"Bowl de riz semi-complet aux lentilles vertes du Puy AOP, avec poireaux braisés et œuf mollet"},{"id":"dessert","valeur":"Pomme Reinette bio du verger local, cuite à la cannelle"},{"id":"laitage","valeur":"Yaourt nature de la ferme du Mont d'Or"},{"id":"boisson","valeur":"Eau plate"},{"id":"equilibre_global","valeur":"Mon repas respecte la règle ½ ¼ ¼ : la moitié du bol est en légumes (carottes + poireaux), un quart en féculents (riz semi-complet) et un quart en protéines (lentilles + œuf)."},{"id":"justification","valeur":"Les carottes et les poireaux apportent les vitamines et les fibres. Le riz semi-complet donne l'énergie nécessaire pour la journée (glucides). Les lentilles et l'œuf apportent les protéines (bâtisseurs du corps). Le yaourt complète avec du calcium pour les os."},{"id":"regle","valeur":"Règle ½ ¼ ¼ avec un produit laitier en complément, un fruit en dessert et un verre d'eau."}],"preuves":[]},{"id":"etiquetage","statut_eleve":"done","statut_enseignant":"validated","date_maj":"2026-04-20T10:45:00.000Z","date_validation":"2026-04-26","champs":[{"id":"design_general","valeur":"Étiquette en papier kraft recyclé avec encres végétales. Couleurs naturelles (vert et beige). Petit dessin d'une pomme stylisée en haut. Logo AB visible."},{"id":"etiquettes","valeur":[{"id":"et1","nom_produit":"Bowl bio de Marie","slogan":"Le bon goût des produits de saison","type_date":"DLC (à consommer jusqu'au)","date":"2026-04-21","poids":"350 g","ingredients":"Carottes BIO, riz semi-complet BIO, lentilles vertes du Puy AOP, poireaux BIO, œuf, yaourt nature, citron, persil, sel, poivre, huile d'olive.","allergenes":"ŒUF, LAIT (yaourt). Peut contenir des traces de GLUTEN.","tracabilite":"Carottes : Marché Croix-Rousse, Lyon. Lentilles : AMAP Lyon 7. Riz : La Vie Claire, Lyon. Œufs : Ferme du Mont d'Or, Limonest. Yaourt : Ferme du Mont d'Or, Limonest.","conservation":"À conserver entre 0 °C et 4 °C. À consommer dans les 24 heures."},{"id":"et2","nom_produit":"Pomme Reinette cuite","slogan":"Le dessert simple, local et de saison","type_date":"DLC (à consommer jusqu'au)","date":"2026-04-21","poids":"150 g","ingredients":"Pomme Reinette BIO du verger local, cannelle, miel local.","allergenes":"Aucun allergène majeur.","tracabilite":"Pomme : Verger des Monts du Lyonnais. Miel : Apiculteur de Mornant.","conservation":"À conserver au frais. Se déguste tiède."}]}],"module_state":{"qcm_answers":{"q1":2,"q2":1,"q3":0,"q4":1,"q5":1,"q6":1,"q7":2,"q8":1,"q9":1,"q10":1},"qcm_score":10,"qcm_total":10,"qcm_completed":true,"ressources_lues":{"r_dlc_ddm":"2026-04-13T13:00:00.000Z"},"epreuve_state":{"reponses":{"ep1":2,"ep2":1,"ep3":2,"ep4":2,"ep5":["nom du produit","ingrédients","DLC"],"ep6":["œuf","lait"],"ep7":"Sur mon dessert au yaourt je mets une DLC parce que c'est un produit frais à base de lait, donc périssable. Si on dépasse la date, ça peut rendre malade.","ep8":"La traçabilité c'est savoir d'où vient un produit, qui l'a fait et quand. Ça sert à pouvoir le retirer du marché s'il y a un problème, et ça rassure le client.","ep9":"Pour rendre mon étiquette vendeuse, je mets un nom accrocheur (« Bowl bio de Marie »), une jolie illustration de pomme, et le logo AB bien visible."},"validations":{"ep7":{"state":"ok","commentaire":"Bonne distinction DLC/DDM, justification claire.","modifie_le":"2026-04-26T15:00:00.000Z"},"ep8":{"state":"ok","commentaire":"Très bonne définition + utilité bien expliquée.","modifie_le":"2026-04-26T15:00:00.000Z"},"ep9":{"state":"ok","commentaire":"3 éléments vendeurs, bien.","modifie_le":"2026-04-26T15:00:00.000Z"}},"validation_finale":{"state":"validee","enseignant":"M. Bertrand","commentaire":"Marie a bien intégré la réglementation INCO, étiquette conforme.","date":"2026-04-26T15:30:00.000Z"},"note_brute":22,"note_max":22,"note_sur_20":20,"date":"2026-04-20","tentative":1}},"preuves":[]},{"id":"mon_menu","statut_eleve":"in_progress","statut_enseignant":"none","date_maj":"2026-04-26T15:42:00.000Z","champs":[{"id":"nom_menu","valeur":"Bowl bio de Marie"},{"id":"description","valeur":"Un bol complet à emporter, cuisiné avec uniquement des produits bio, de saison et locaux : carottes du marché, lentilles de l'AMAP, riz bio, poireaux du potager, œuf et yaourt de la ferme du Mont d'Or. En dessert, une pomme cuite du verger local."},{"id":"pourquoi_plats","valeur":"J'ai choisi ces plats parce qu'ils sont équilibrés (½ légumes, ¼ féculents, ¼ protéines), simples à cuisiner, bons à manger même tiède, et tous les ingrédients sont disponibles à Lyon en avril."},{"id":"equilibre","valeur":"Mon menu est équilibré : la moitié de l'assiette est en légumes (carottes + poireaux), un quart en féculents (riz semi-complet) et un quart en protéines (lentilles + œuf). Le yaourt apporte le calcium et la pomme la vitamine C."},{"id":"eco","valeur":"Mon menu est éco-responsable : tous les ingrédients sont de saison à Lyon en avril, achetés en circuit court (marché, AMAP, ferme), avec des labels (AB et AOP). L'emballage est en carton recyclable. Pas de gaspillage : portions calibrées et restes utilisés."},{"id":"points_forts","valeur":"Repas complet, savoureux, économique (entre 4 et 5 € le bol), et 100 % traçable. Les clients voient d'où viennent leurs aliments."},{"id":"ameliorations","valeur":"Je pourrais varier les légumes selon la saison (en été : courgettes, tomates, basilic). Je pourrais aussi proposer une version végane sans œuf ni yaourt."}],"preuves":[]}],"evaluations":[{"jalon_id":"j1_comprendre","source":"epreuve_auto","criteres":[{"id":"Connaissance des modalités du chef-d'œuvre","label":"Connaissance des modalités du chef-d'œuvre","capacite":"Connaître le cadre officiel du chef-d'œuvre et ses modalités.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance du projet de l'année","label":"Connaissance du projet de l'année","capacite":"Identifier et nommer le projet personnel mené dans le cadre du chef-d'œuvre.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des capacités évaluées à l'oral","label":"Connaissance des capacités évaluées à l'oral","capacite":"Identifier ce qui est attendu et évalué à l'oral final.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Capacité à expliquer le chef-d'œuvre avec ses mots","label":"Capacité à expliquer le chef-d'œuvre avec ses mots","capacite":"Reformuler une notion scolaire en langage courant compréhensible.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des règles d'évaluation et du droit à l'erreur","label":"Connaissance des règles d'évaluation et du droit à l'erreur","capacite":"Comprendre l'évaluation du chef-d'œuvre et adopter une posture de progression.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":20,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2025-10-13","enseignant":"Mme Lefèvre"},{"jalon_id":"j2_repas_equilibre","source":"epreuve_auto","criteres":[{"id":"Connaissance des groupes alimentaires","label":"Connaissance des groupes alimentaires","capacite":"Connaître et différencier les 7 groupes alimentaires.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des constituants et de leurs rôles","label":"Connaissance des constituants et de leurs rôles","capacite":"Identifier les constituants alimentaires et expliquer leur rôle pour la santé.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Application de la règle ½ légumes / ¼ féculents / ¼ protéines","label":"Application de la règle ½ légumes / ¼ féculents / ¼ protéines","capacite":"Composer une assiette équilibrée selon la règle ½ ¼ ¼.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Capacité d'analyse et de proposition d'amélioration","label":"Capacité d'analyse et de proposition d'amélioration","capacite":"Analyser un menu existant, repérer le déséquilibre et proposer une amélioration concrète.","niveau":"A","note":3,"max":4,"remediation":null},{"id":"Vocabulaire technique et argumentation","label":"Vocabulaire technique et argumentation","capacite":"Utiliser le vocabulaire de la nutrition et argumenter un choix alimentaire.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":18,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2026-01-19","enseignant":"Mme Lefèvre"},{"jalon_id":"j3_eco_responsable","source":"epreuve_auto","criteres":[{"id":"Connaissance du gaspillage alimentaire et des moyens de lutte","label":"Connaissance du gaspillage alimentaire et des moyens de lutte","capacite":"Identifier l'ampleur du gaspillage alimentaire et proposer des actions concrètes.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des dates DLC / DDM","label":"Maîtrise des dates DLC / DDM","capacite":"Lire et interpréter correctement les dates de consommation indiquées sur les produits.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Saisonnalité et circuits courts","label":"Saisonnalité et circuits courts","capacite":"Choisir des produits de saison et favoriser les circuits courts.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Connaissance des labels officiels","label":"Connaissance des labels officiels","capacite":"Reconnaître les labels officiels et expliquer ce qu'ils certifient.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Choix d'emballages éco-responsables","label":"Choix d'emballages éco-responsables","capacite":"Choisir un emballage à faible impact environnemental et justifier ce choix.","niveau":"A","note":3,"max":4,"remediation":null}],"note_totale":19,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par Mme Lefèvre.","date":"2026-03-30","enseignant":"Mme Lefèvre"},{"jalon_id":"j4_etiquetage","source":"epreuve_auto","criteres":[{"id":"Connaissance des mentions obligatoires (règlement INCO)","label":"Connaissance des mentions obligatoires (règlement INCO)","capacite":"Identifier et lister les informations obligatoires sur une étiquette alimentaire.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des allergènes (14 allergènes majeurs)","label":"Maîtrise des allergènes (14 allergènes majeurs)","capacite":"Identifier les allergènes majeurs et les présenter de manière conforme.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Maîtrise des dates DLC / DDM appliquée à l'étiquetage","label":"Maîtrise des dates DLC / DDM appliquée à l'étiquetage","capacite":"Choisir la bonne mention de date selon la nature du produit.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Compréhension de la traçabilité","label":"Compréhension de la traçabilité","capacite":"Définir la traçabilité et identifier ses enjeux.","niveau":"M","note":4,"max":4,"remediation":null},{"id":"Présentation vendeuse et cohérence éco-responsable","label":"Présentation vendeuse et cohérence éco-responsable","capacite":"Concevoir une étiquette vendeuse et cohérente avec la démarche éco-responsable.","niveau":"M","note":4,"max":4,"remediation":null}],"note_totale":20,"commentaire":"Évaluation produite automatiquement par l'épreuve d'attestation. Validée par M. Bertrand.","date":"2026-04-20","enseignant":"M. Bertrand"}]}`;
 
 
 /* V3 : années scolaires du chef-d'œuvre */
@@ -244,13 +236,13 @@ const EXOS_DND = {
     {
       id: "frigo",
       titre: "🧊 Range ton frigo (5 zones)",
-      intro: "Le frigo n'est pas uniforme : chaque zone a sa température. Glisse chaque aliment dans la bonne zone.",
+      intro: "Le frigo n'est pas uniforme : chaque zone a sa température. Cas d'un frigo domestique à froid statique (le plus courant). Glisse chaque aliment dans la bonne zone.",
       buckets: [
-        { id: "haut",   label: "Haut",   sub: "4-6 °C",          tip: "Restes, fromages, yaourts" },
+        { id: "haut",   label: "Haut",   sub: "4-6 °C",          tip: "Restes, fromages, yaourts, œufs" },
         { id: "milieu", label: "Milieu", sub: "3-4 °C",          tip: "Viandes cuites, plats préparés" },
         { id: "bas",    label: "Bas",    sub: "0-3 °C — le + froid", tip: "Viande et poisson crus" },
         { id: "bac",    label: "Bac à légumes", sub: "8-10 °C",  tip: "Fruits et légumes frais" },
-        { id: "porte",  label: "Porte",  sub: "6-8 °C — le + chaud", tip: "Œufs, beurre, sauces, boissons" },
+        { id: "porte",  label: "Porte",  sub: "6-8 °C — le + chaud", tip: "Beurre, sauces, boissons" },
       ],
       items: [
         { id: "yaourt",  label: "Yaourt",          bucket: "haut",   why: "Le haut (4-6 °C) est idéal pour les yaourts.",
@@ -259,7 +251,7 @@ const EXOS_DND = {
           photo: "ressources_eco/banque_images_chaine_du_froid/viande_crue/viande_cru.jpg" },
         { id: "carottes",label: "Carottes",         bucket: "bac",    why: "Le bac à légumes (8-10 °C) garde les légumes frais sans les abîmer.",
           photo: "ressources_eco/legumes/carotte.jpg" },
-        { id: "oeuf",    label: "Œufs",             bucket: "porte",  why: "Les œufs vont dans la porte (6-8 °C).",
+        { id: "oeuf",    label: "Œufs",             bucket: "haut",   why: "Une fois au frigo, les œufs y restent : on les place en haut (4-6 °C), pas dans la porte où la température varie à chaque ouverture.",
           photo: "ressources_eco/les_oeufs_et_preparations_a_base_doeufs/oeufcru.jpg" },
         { id: "poulet",  label: "Poulet rôti",      bucket: "milieu", why: "Les viandes CUITES se rangent au milieu (3-4 °C).",
           photo: "ressources_eco/plats_prepares_et_traiteur/pouletroti.jpg" },
@@ -281,7 +273,7 @@ const EXOS_DND = {
       mots_cles: [
         { mot: "0 à 3 °C",       def: "La zone la plus froide du frigo : viande et poisson crus." },
         { mot: "Bac à légumes",  def: "8 à 10 °C : pour fruits et légumes frais." },
-        { mot: "Porte",          def: "6 à 8 °C, la zone la plus chaude : œufs, beurre, sauces, boissons." },
+        { mot: "Porte",          def: "6 à 8 °C, la zone la plus chaude (température variable à chaque ouverture) : beurre, sauces, boissons." },
         { mot: "Chaîne du froid",def: "Garder les aliments au froid sans interruption, du magasin à l'assiette." },
       ],
     },
@@ -887,17 +879,18 @@ const SECTIONS_SCHEMA = [
     id: "identite",
     annee: "both",
     titre: "Ma fiche",
-    description: "Personnalise ton portfolio (avatar, valeurs, qualités). Aucune donnée personnelle n'est demandée.",
+    description: "Une fiche de présentation pour mon dossier de chef-d'œuvre.",
     pedago: {
-      consigne: "Choisis un avatar et ce qui te correspond. Aucun nom ou identifiant personnel n'est demandé.",
-      production: "Une fiche de présentation valorisante, sans donnée personnelle.",
-      attentes: "Une fiche sérieuse et valorisante.",
+      consigne: "Remplis ton état civil, choisis ce qui te correspond, ajoute une photo si tu veux.",
+      production: "Une fiche de présentation soignée qui figurera sur ton dossier final.",
+      attentes: "Une fiche complète, sérieuse, valorisante.",
     },
     fields: [
-      // RGPD strict : ni nom, ni prénom, ni lycée, ni classe, ni année scolaire.
-      // Seuls l'avatar et les éléments de personnalité sont conservés.
+      // RGPD : champs identité personnelle retirés du formulaire (nom, prénom, lycée, classe, année scolaire)
+      // Conservés en données pour rétro-compat (import JSON ancien). Le code élève et la classe
+      // viennent désormais de window.PSR_USER (auth.js).
       { id: "titre_dossier",   label: "Titre de mon dossier (mon projet)",   type: "text", hint: "Ex : Ma cuisine éco-responsable" },
-      { id: "photo_profil",    label: "Mon avatar (optionnel)",               type: "photo_profil" },
+      { id: "photo_profil",    label: "Une photo de moi (optionnelle)",       type: "photo_profil" },
       { id: "valeurs",         label: "Mes valeurs",                          type: "checklist",
         hint: "Coche les valeurs qui te correspondent (plusieurs choix possibles).",
         allow_custom: true,
@@ -1069,6 +1062,7 @@ Un support de **5 pages maximum** (papier ou numérique).
             "Un site internet",
           ],
           correct: 2,
+          explication: "C’est ton projet de chef-d’œuvre sur 2 ans : tu vas concevoir un menu complet, équilibré ET éco-responsable.",
         },
         {
           id: "q4",
@@ -1132,19 +1126,19 @@ Un support de **5 pages maximum** (papier ou numérique).
           { id: "ep1", type: "qcm", points: 2,
             question: "Le chef-d'œuvre dure :",
             options: ["Un trimestre", "Un an", "Deux ans (toute la formation CAP)", "Trois ans"],
-            correct: 2 },
+            correct: 2, explication: "Le chef-d’œuvre se déroule sur les 2 années du CAP, de la 1re année jusqu’à l’oral final." },
           { id: "ep2", type: "qcm", points: 2,
             question: "Le chef-d'œuvre est :",
             options: ["Un simple devoir", "Une réalisation concrète liée au métier", "Un stage en entreprise", "Un examen écrit"],
-            correct: 1 },
+            correct: 1, explication: "Le chef-d’œuvre n’est pas un simple devoir : c’est une vraie réalisation en lien avec ton métier." },
           { id: "ep3", type: "qcm", points: 2,
             question: "L'oral final dure :",
             options: ["5 minutes", "10 minutes", "20 minutes", "30 minutes"],
-            correct: 1 },
+            correct: 1, explication: "L’oral final dure 10 minutes : 5 min de présentation + 5 min d’échange avec le jury." },
           { id: "ep4", type: "qcm", points: 2,
             question: "Pendant l'oral, tu peux utiliser un support de :",
             options: ["2 pages maximum", "5 pages maximum", "10 pages maximum", "Sans limite"],
-            correct: 1 },
+            correct: 1, explication: "Tu peux t’appuyer sur un support de 5 pages maximum pendant l’oral." },
 
           // Mots
           { id: "ep5", type: "mots", points: 3,
@@ -1389,7 +1383,7 @@ Tu peux remplacer parfois la viande par un plat de lentilles ou de pois chiches.
           correct: 1, explication: "Les protéines construisent les muscles, les os, etc." },
         { id: "q3", lie_cours: "c1", question: "Dans quel groupe classer les pâtes ?",
           options: ["Fruits et légumes", "Féculents et céréales", "Produits laitiers", "Matières grasses"],
-          correct: 1 },
+          correct: 1, explication: "Les pâtes sont faites de blé : elles font partie des féculents et apportent de l’énergie (glucides)." },
         { id: "q4", lie_cours: "c1", question: "Le calcium se trouve surtout dans :",
           options: ["Les pâtes", "Les produits laitiers", "Les matières grasses", "Les fruits"],
           correct: 1, explication: "Lait, yaourt, fromage sont riches en calcium." },
@@ -1401,12 +1395,12 @@ Tu peux remplacer parfois la viande par un plat de lentilles ou de pois chiches.
           correct: 1, explication: "Un quart (¼) de l'assiette." },
         { id: "q7", lie_cours: "c5", question: "Quelle est la seule boisson indispensable ?",
           options: ["Le jus de fruit", "Le lait", "L'eau", "Le soda"],
-          correct: 2 },
+          correct: 2, explication: "L’eau est la SEULE boisson indispensable. Les sodas et jus sont à limiter." },
         { id: "q8", lie_cours: "c3", question: "Un adolescent a besoin de combien de kcal par jour environ ?",
-          options: ["500-800", "1 200-1 500", "2 200-2 800", "5 000"], correct: 2 },
+          options: ["500-800", "1 200-1 500", "2 200-2 800", "5 000"], correct: 2, explication: "Un·e adolescent·e a besoin de 2 200 à 2 800 kcal par jour pour bien grandir et avoir de l’énergie." },
         { id: "q9", lie_cours: "c2", question: "Les lipides (huile, beurre) jouent surtout le rôle de :",
           options: ["Bâtisseurs", "Énergie de réserve", "Protecteurs", "Hydratants"],
-          correct: 1 },
+          correct: 1, explication: "Les lipides (huiles, beurre) servent surtout de réserve d’énergie pour le corps." },
         { id: "q10", lie_cours: "c5", question: "Pour bien manger, il faut :",
           options: ["Manger tout le temps la même chose", "Varier les couleurs et les groupes", "Éviter les légumes", "Manger seulement des protéines"],
           correct: 1, explication: "La variété = équilibre." },
@@ -1450,17 +1444,17 @@ Tu peux remplacer parfois la viande par un plat de lentilles ou de pois chiches.
           // ----- Partie 1 : Connaissances (QCM) -----
           { id: "ep1", type: "qcm", points: 2,
             question: "Dans une assiette équilibrée, les légumes doivent occuper :",
-            options: ["Un quart", "Un tiers", "La moitié", "La totalité"], correct: 2 },
+            options: ["Un quart", "Un tiers", "La moitié", "La totalité"], correct: 2, explication: "Règle ½ ¼ ¼ : les légumes occupent la MOITIÉ de l’assiette, c’est la base de l’équilibre." },
           { id: "ep2", type: "qcm", points: 2,
             question: "Les protides (protéines) ont surtout un rôle de :",
             options: ["Carburant rapide", "Bâtisseur des muscles, os, cheveux", "Réserve de graisse", "Hydratation"],
-            correct: 1 },
+            correct: 1, explication: "Les protides (viande, poisson, œuf, légumineuses) sont les bâtisseurs : ils construisent et réparent le corps." },
           { id: "ep3", type: "qcm", points: 2,
             question: "Quel constituant alimentaire est le carburant rapide de l'organisme ?",
-            options: ["Les protides", "Les glucides", "Les lipides", "Les vitamines"], correct: 1 },
+            options: ["Les protides", "Les glucides", "Les lipides", "Les vitamines"], correct: 1, explication: "Les glucides (pain, pâtes, riz, sucre) sont le carburant rapide du corps, comme l’essence d’une voiture." },
           { id: "ep4", type: "qcm", points: 2,
             question: "Le calcium, indispensable aux os, se trouve principalement dans :",
-            options: ["Les pâtes", "Les produits laitiers", "Les huiles", "Les fruits"], correct: 1 },
+            options: ["Les pâtes", "Les produits laitiers", "Les huiles", "Les fruits"], correct: 1, explication: "Le calcium se trouve surtout dans les produits laitiers (lait, yaourt, fromage). Il est indispensable pour les os." },
 
           // ----- Partie 2 : Vocabulaire (mots à écrire) -----
           { id: "ep5", type: "mots", points: 3,
@@ -1565,6 +1559,22 @@ Tu peux remplacer parfois la viande par un plat de lentilles ou de pois chiches.
           { id: "i12", label: "🍅 Tomate",        correct: "legumes"   },
         ],
       },
+      exercices_bonus: [
+        {
+          type: "assemble_assiette",
+          titre: "🥗 Compose une assiette équilibrée",
+          consigne: "Clique un aliment puis clique la zone où tu veux le poser. Objectif : ½ légumes, ¼ féculents, ¼ protéines.",
+          assiette: "ressources_eco/exo_composer_assiette/assiette_vide_blanche.png",
+          aliments: [
+            { id: "al1", nom: "Carottes",   type: "legumes",   photo: "ressources_eco/exo_composer_assiette/cutout_legumes_carottes.png" },
+            { id: "al2", nom: "Haricots",   type: "legumes",   photo: "ressources_eco/exo_composer_assiette/cutout_legumes_haricots.png" },
+            { id: "al3", nom: "Riz",        type: "feculents", photo: "ressources_eco/exo_composer_assiette/cutout_feculents_riz.png" },
+            { id: "al4", nom: "Pâtes",      type: "feculents", photo: "ressources_eco/exo_composer_assiette/cutout_feculents_pates.png" },
+            { id: "al5", nom: "Poulet",     type: "proteines", photo: "ressources_eco/exo_composer_assiette/cutout_proteines_poulet.png" },
+            { id: "al6", nom: "Lentilles",  type: "proteines", photo: "ressources_eco/exo_composer_assiette/cutout_proteines_lentilles.png" },
+          ],
+        },
+      ],
     },
     fields: [
       { id: "appris",         label: "✍️ Ce que j'ai appris (3 choses)",     type: "textarea" },
@@ -1784,9 +1794,9 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
         // V4.9 — questions remappées sur les nouveaux cours c1..c7
         { id: "q1",  lie_cours: "c4", question: "Un produit de saison c'est :",
           options: ["Un produit qu'on peut manger toute l'année", "Un produit qui pousse naturellement à un moment précis de l'année", "Un produit en promotion", "Un produit du supermarché"],
-          correct: 1 },
+          correct: 1, explication: "Un produit de saison pousse naturellement à un moment précis de l’année dans ta région : moins de transport, plus de goût." },
         { id: "q2",  lie_cours: "c4", question: "En hiver à Lyon, quel légume est de saison ?",
-          options: ["Tomate", "Courgette", "Poireau", "Fraise"], correct: 2 },
+          options: ["Tomate", "Courgette", "Poireau", "Fraise"], correct: 2, explication: "Le poireau est un légume d’hiver à Lyon. Tomate, courgette et fraise sont d’été ou de printemps." },
         { id: "q3",  lie_cours: "c5", question: "Un circuit court c'est :",
           options: ["Passer par une grande surface", "Au maximum 1 intermédiaire entre producteur et consommateur", "Un circuit sportif", "Manger vite"],
           correct: 1, explication: "Définition officielle du ministère de l'Agriculture (2009)." },
@@ -1795,26 +1805,26 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
           explication: "Environ 30 kg / personne / an selon l'ADEME." },
         { id: "q5",  lie_cours: "c2", question: "La DLC c'est :",
           options: ["Date limite de consommation (à respecter sur les produits frais)", "Date de livraison", "Durée de cuisson", "Date de la commande"],
-          correct: 0 },
+          correct: 0, explication: "DLC = Date Limite de Consommation. À NE PAS dépasser sur les produits frais (yaourt, viande)." },
         { id: "q6",  lie_cours: "c2", question: "La DDM c'est :",
           options: ["Date à ne jamais dépasser", "Date de dégustation maximale", "Date de Durabilité Minimale : le produit reste sûr après, mais peut perdre du goût", "Date de mise en rayon"],
-          correct: 2 },
+          correct: 2, explication: "DDM = Date de Durabilité Minimale. Après cette date, le produit reste sain mais peut perdre du goût." },
         { id: "q7",  lie_cours: "c6", question: "Le label AB garantit :",
           options: ["Un très bon goût", "Une agriculture sans pesticides chimiques ni OGM", "Le meilleur prix", "Un produit français"],
-          correct: 1 },
+          correct: 1, explication: "Le label AB (Agriculture Biologique) garantit pas de pesticides chimiques ni d’OGM." },
         { id: "q8",  lie_cours: "c6", question: "AOP signifie :",
           options: ["À offrir aux parents", "Appellation d'Origine Protégée (produit d'un terroir précis)", "Agriculture Officielle de Paris", "Association des Origines Produites"],
-          correct: 1 },
+          correct: 1, explication: "AOP = Appellation d’Origine Protégée. Le produit vient d’un terroir précis (ex. lentille du Puy)." },
         { id: "q9",  lie_cours: "c7", question: "Le meilleur emballage pour l'environnement c'est :",
-          options: ["Plastique noir", "Carton recyclable ou verre", "Polystyrène", "Aluminium"], correct: 1 },
+          options: ["Plastique noir", "Carton recyclable ou verre", "Polystyrène", "Aluminium"], correct: 1, explication: "Le carton recyclable et le verre sont les emballages les plus écologiques. Le plastique pollue beaucoup." },
         { id: "q10", lie_cours: "c5", question: "Pourquoi choisir des circuits courts ?",
-          options: ["C'est plus cher", "Moins de transport donc moins de CO₂", "C'est plus long", "Ça ne change rien"], correct: 1 },
+          options: ["C'est plus cher", "Moins de transport donc moins de CO₂", "C'est plus long", "Ça ne change rien"], correct: 1, explication: "Circuits courts = moins de transport, donc moins de pollution et un meilleur revenu pour le producteur." },
         // Nouvelles questions
         { id: "q11", lie_cours: "c3", question: "Dans le frigo, où ranger la viande crue ?",
-          options: ["En haut (le plus chaud)", "Dans la porte", "Dans le bac à légumes", "En bas (le plus froid)"], correct: 3 },
+          options: ["En haut (le plus chaud)", "Dans la porte", "Dans le bac à légumes", "En bas (le plus froid)"], correct: 3, explication: "La viande crue va dans la zone la plus froide du frigo, en bas (0-3 °C), pour éviter les bactéries." },
         { id: "q12", lie_cours: "c7", question: "La loi AGEC, c'est :",
           options: ["Une loi sur les vacances", "La loi Anti-Gaspillage et Économie Circulaire (2020)", "Une loi pour les agriculteurs", "Une loi européenne sur l'alcool"],
-          correct: 1 },
+          correct: 1, explication: "Loi AGEC (2020) = Anti-Gaspillage et Économie Circulaire : elle interdit la destruction des invendus et oblige le tri." },
       ],
       // V4.9 — Épreuve d'attestation J3 : Concevoir un menu éco-responsable
       epreuve: {
@@ -1829,11 +1839,11 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
           // QCM connaissances (4)
           { id: "ep1", type: "qcm", points: 2,
             question: "Combien de kg de nourriture jette chaque Français·e par an ? (source ADEME)",
-            options: ["10 kg", "20 kg", "30 kg", "100 kg"], correct: 2 },
+            options: ["10 kg", "20 kg", "30 kg", "100 kg"], correct: 2, explication: "Chaque Français·e jette 30 kg de nourriture par an (source ADEME). C’est énorme, et évitable." },
           { id: "ep2", type: "qcm", points: 2,
             question: "Un produit qui dépasse sa DDM (Date de Durabilité Minimale) est :",
             options: ["Dangereux pour la santé, à jeter", "Toujours consommable, peut juste perdre du goût", "Forcément périmé", "Interdit à la vente partout"],
-            correct: 1 },
+            correct: 1, explication: "Après la DDM, le produit reste sain : il peut juste perdre du goût ou de la texture." },
           { id: "ep3", type: "qcm", points: 2,
             question: "Tu achètes en mars à Lyon. Lequel de ces fruits N'EST PAS de saison ?",
             options: ["Pomme", "Poire", "Fraise", "Orange"],
@@ -1841,7 +1851,7 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
           { id: "ep4", type: "qcm", points: 2,
             question: "Un circuit court, c'est au maximum :",
             options: ["Aucun intermédiaire", "1 intermédiaire entre producteur et consommateur", "3 intermédiaires", "5 intermédiaires"],
-            correct: 1 },
+            correct: 1, explication: "Circuit court = 1 intermédiaire MAXIMUM entre le producteur et toi (ex. AMAP, marché)." },
 
           // Mots (2)
           { id: "ep5", type: "mots", points: 3,
@@ -2072,12 +2082,14 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
 3. **Déconditionnement** — retrait des emballages extérieurs sales
 4. **Lavage** — lavage des légumes et des produits terreux
 5. **Préparation** — découpe et assemblage sur un plan propre
-6. **Cuisson** — à la bonne température (≥ 63 °C)
+6. **Cuisson** — à cœur selon le produit (volaille 74 °C, viande hachée 70 °C, poisson 63 °C). Pour un plat servi chaud, maintien à ≥ 63 °C.
 7. **Conditionnement** — mise en barquette ou contenant propre
 8. **Étiquetage et stockage froid** — DLC, traçabilité, 0 à 4 °C
 9. **Distribution** — remise au client, vente à emporter
 
-> ⚠️ Attention : on ne saute **aucune étape** et on ne revient **jamais** en arrière.`,
+> ⚠️ Attention : on ne saute **aucune étape** et on ne revient **jamais** en arrière.
+
+> 🧊 **Cas particulier — refroidissement rapide** : si un plat cuit n'est pas consommé immédiatement, il doit passer de **+63 °C à +10 °C en moins de 2 h** en cellule de refroidissement, avant le conditionnement. C'est une étape critique en restauration collective.`,
         },
         {
           id: "c3",
@@ -2157,29 +2169,29 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
       ],
       qcm: [
         { id: "q1", lie_cours: "c1", question: "Quelle est la règle d'or de la marche en avant ?",
-          options: ["On avance du sale vers le propre, sans jamais revenir en arrière", "On peut revenir en arrière si on lave bien", "On va du propre au sale", "On ne fait pas attention au sens"], correct: 0 },
+          options: ["On avance du sale vers le propre, sans jamais revenir en arrière", "On peut revenir en arrière si on lave bien", "On va du propre au sale", "On ne fait pas attention au sens"], correct: 0, explication: "Règle d’or : on avance du sale vers le propre, et on ne revient JAMAIS en arrière." },
         { id: "q2", lie_cours: "c2", question: "Combien y a-t-il d'étapes dans la marche en avant ?",
-          options: ["5", "7", "9", "12"], correct: 2 },
+          options: ["5", "7", "9", "12"], correct: 2, explication: "La marche en avant compte 9 étapes, de la réception jusqu’à la distribution." },
         { id: "q3", lie_cours: "c2", question: "Quelle est la PREMIÈRE étape de la marche en avant ?",
-          options: ["La cuisson", "La réception des marchandises", "Le lavage", "L'étiquetage"], correct: 1 },
+          options: ["La cuisson", "La réception des marchandises", "Le lavage", "L'étiquetage"], correct: 1, explication: "Tout commence par la réception : c’est l’arrivée des marchandises en cuisine." },
         { id: "q4", lie_cours: "c2", question: "Après la PRÉPARATION, l'étape suivante est :",
-          options: ["L'étiquetage", "La cuisson", "Le stockage", "Le déconditionnement"], correct: 1 },
+          options: ["L'étiquetage", "La cuisson", "Le stockage", "Le déconditionnement"], correct: 1, explication: "Après la préparation, on passe à la cuisson : c’est l’étape qui détruit les microbes." },
         { id: "q5", lie_cours: "c3", question: "Laquelle de ces zones est une zone SALE ?",
-          options: ["Le conditionnement", "L'étiquetage", "La plonge / vaisselle sale", "La distribution"], correct: 2 },
+          options: ["Le conditionnement", "L'étiquetage", "La plonge / vaisselle sale", "La distribution"], correct: 2, explication: "La plonge (vaisselle sale) est une zone SALE : elle ne doit jamais croiser les zones propres." },
         { id: "q6", lie_cours: "c3", question: "Laquelle de ces zones est une zone PROPRE ?",
-          options: ["La réception des marchandises", "La préparation des aliments lavés", "Le déconditionnement", "Le stockage des déchets"], correct: 1 },
+          options: ["La réception des marchandises", "La préparation des aliments lavés", "Le déconditionnement", "Le stockage des déchets"], correct: 1, explication: "La préparation des aliments lavés est une zone PROPRE : matériel et plan de travail désinfectés." },
         { id: "q7", lie_cours: "c4", question: "Quand on a un espace LIMITÉ, on respecte la marche en avant :",
-          options: ["Dans l'espace seulement", "Dans le temps : on fait le sale, on nettoie, puis le propre", "On ne peut pas la respecter", "On fait n'importe comment"], correct: 1 },
+          options: ["Dans l'espace seulement", "Dans le temps : on fait le sale, on nettoie, puis le propre", "On ne peut pas la respecter", "On fait n'importe comment"], correct: 1, explication: "Si l’espace est limité, on respecte la marche en avant DANS LE TEMPS : sale d’abord, on nettoie, puis propre." },
         { id: "q8", lie_cours: "c5", question: "Utiliser le MÊME couteau pour la viande crue et les légumes prêts à manger, c'est :",
-          options: ["Pratique et autorisé", "Une erreur de contamination croisée", "Conseillé pour gagner du temps", "Sans risque"], correct: 1 },
+          options: ["Pratique et autorisé", "Une erreur de contamination croisée", "Conseillé pour gagner du temps", "Sans risque"], correct: 1, explication: "Même couteau pour viande crue puis légumes = contamination croisée. Toujours changer ou laver entre les deux." },
         { id: "q9", lie_cours: "c5", question: "Que faire avant de passer d'une préparation sale à une préparation propre ?",
-          options: ["Rien, on continue", "Se laver les mains et nettoyer le matériel", "Juste s'essuyer les mains", "Mettre une casquette"], correct: 1 },
+          options: ["Rien, on continue", "Se laver les mains et nettoyer le matériel", "Juste s'essuyer les mains", "Mettre une casquette"], correct: 1, explication: "Avant de passer du sale au propre : lavage des mains ET nettoyage du matériel. C’est obligatoire." },
         { id: "q10", lie_cours: "c6", question: "À quelle température doit être stocké un produit frais (DLC) ?",
-          options: ["10-15 °C", "0-4 °C (chaîne du froid)", "20 °C (température ambiante)", "Plus de 14 °C"], correct: 1 },
+          options: ["10-15 °C", "0-4 °C (chaîne du froid)", "20 °C (température ambiante)", "Plus de 14 °C"], correct: 1, explication: "Les produits frais (DLC) se conservent entre 0 et 4 °C : c’est la chaîne du froid." },
         { id: "q11", lie_cours: "c6", question: "Le règlement européen CE 852/2004 concerne :",
-          options: ["L'étiquetage", "L'hygiène des denrées alimentaires", "Les emballages", "Les prix"], correct: 1 },
+          options: ["L'étiquetage", "L'hygiène des denrées alimentaires", "Les emballages", "Les prix"], correct: 1, explication: "Le règlement CE 852/2004 fixe les règles d’hygiène pour TOUS les pros de l’alimentaire en Europe." },
         { id: "q12", lie_cours: "c1", question: "Pourquoi la marche en avant est-elle importante ?",
-          options: ["Pour aller plus vite", "Pour décorer la cuisine", "Pour éviter de rendre les clients malades (contamination croisée)", "C'est juste une tradition"], correct: 2 },
+          options: ["Pour aller plus vite", "Pour décorer la cuisine", "Pour éviter de rendre les clients malades (contamination croisée)", "C'est juste une tradition"], correct: 2, explication: "La marche en avant évite les contaminations croisées et donc les intoxications alimentaires (TIAC)." },
       ],
       exercice: {
         type: "ordering",
@@ -2218,7 +2230,7 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
           { id: "ep1", type: "qcm", points: 2,
             question: "La marche en avant signifie :",
             options: ["On avance du propre vers le sale", "On avance du sale vers le propre", "Peu importe le sens", "On revient en arrière si nécessaire"],
-            correct: 1 },
+            correct: 1, explication: "Marche en avant = on avance du sale vers le propre, sans retour arrière. C’est la règle d’or." },
 
           // ===== Vrai / Faux =====
           { id: "ep2", type: "vrai_faux", points: 2,
@@ -2269,7 +2281,7 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
               { image: "ressources_eco/marche_en_avant/3_zones_cuisine/09_zone_propre_conditionnement.jpg", label: "Conditionnement en zone propre" },
               { image: "ressources_eco/marche_en_avant/4_marche_dans_le_temps/03_lavage_mains_avant_preparation_propre.jpg", label: "Lavage des mains" },
             ],
-            correct: 0 },
+            correct: 0, explication: "Utiliser le même couteau pour viande crue puis légumes prêts à manger = contamination croisée. Erreur grave." },
 
           // ===== Mots à écrire =====
           { id: "ep6", type: "mots", points: 3,
@@ -2334,6 +2346,130 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
           },
         ],
       },
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          titre: "🔍 Trouve les erreurs sur la photo",
+          consigne: "Regarde bien chaque photo. Clique sur l’erreur d’hygiène que tu vois. Tu peux te tromper, tu peux recommencer.",
+          items: [
+            {
+              photo: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_1_planche_meme_couteau.jpg",
+              zone: { x0: 40, y0: 20, x1: 60, y1: 90 },
+              explication: "Le même couteau sert pour la viande crue ET les légumes propres → contamination croisée.",
+            },
+            {
+              photo: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_2_frigo_ouvert.jpg",
+              zone: { x0: 0, y0: 0, x1: 50, y1: 100 },
+              explication: "La porte du frigo reste ouverte → la chaîne du froid est rompue.",
+            },
+            {
+              photo: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_3_carton_sur_propre.jpg",
+              zone: { x0: 30, y0: 30, x1: 70, y1: 70 },
+              explication: "Un carton sale est posé sur un plan de travail propre → les microbes du carton vont sur le plan.",
+            },
+            {
+              photo: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_4_dechets_pres_aliments.jpg",
+              zone: { x0: 0, y0: 30, x1: 40, y1: 100 },
+              explication: "La poubelle est ouverte juste à côté des plats prêts → les microbes peuvent contaminer.",
+            },
+            {
+              photo: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_5_lavette_sale.jpg",
+              zone: { x0: 30, y0: 30, x1: 70, y1: 70 },
+              explication: "Une lavette sale est posée près d’un plat propre → contamination.",
+            },
+          ],
+        },
+        {
+          type: "compare_avant_apres",
+          titre: "🔄 Avant / Après : qu’est-ce qui a changé ?",
+          consigne: "Pour chaque paire de photos, regarde et coche les bonnes choses qui ont été faites.",
+          paires: [
+            {
+              avant: "ressources_eco/exo_avant_apres/poste_avant_1_desordre.jpg",
+              apres: "ressources_eco/exo_avant_apres/poste_apres_1_propre.jpg",
+              choix: [
+                { texte: "Le plan de travail a été nettoyé", vrai: true },
+                { texte: "Les ustensiles sont rangés", vrai: true },
+                { texte: "On a changé le carrelage", vrai: false },
+                { texte: "La lavette n’est plus là", vrai: true },
+                { texte: "On a ajouté une lampe", vrai: false },
+              ],
+            },
+            {
+              avant: "ressources_eco/exo_avant_apres/frigo_avant_2_fouillis.jpg",
+              apres: "ressources_eco/exo_avant_apres/frigo_apres_2_range.jpg",
+              choix: [
+                { texte: "La viande crue est en bas (zone la plus froide)", vrai: true },
+                { texte: "Les fromages sont en haut", vrai: true },
+                { texte: "Les aliments sont étiquetés", vrai: true },
+                { texte: "Le frigo a été repeint", vrai: false },
+                { texte: "On a ajouté plus de produits", vrai: false },
+              ],
+            },
+            {
+              avant: "ressources_eco/exo_avant_apres/mains_avant_3_sales.jpg",
+              apres: "ressources_eco/exo_avant_apres/mains_apres_3_propres.jpg",
+              choix: [
+                { texte: "Les mains ont été lavées avec du savon", vrai: true },
+                { texte: "Il n’y a plus de saleté visible", vrai: true },
+                { texte: "Les mains sont rincées à l’eau", vrai: true },
+                { texte: "On a changé de gants", vrai: false },
+                { texte: "On a coupé les ongles", vrai: false },
+              ],
+            },
+            {
+              avant: "ressources_eco/exo_avant_apres/service_avant_4_chaotique.jpg",
+              apres: "ressources_eco/exo_avant_apres/service_apres_4_organise.jpg",
+              choix: [
+                { texte: "Les barquettes sont alignées", vrai: true },
+                { texte: "Les étiquettes sont bien collées", vrai: true },
+                { texte: "Le comptoir est propre", vrai: true },
+                { texte: "On a installé une machine à café", vrai: false },
+                { texte: "Les produits sont moins chers", vrai: false },
+              ],
+            },
+          ],
+        },
+        {
+          type: "audit_zones",
+          titre: "🔍 Audit photo : reconnais les zones de la cuisine",
+          consigne: "Pour chaque photo, dis quelle zone tu vois et si elle est SALE ou PROPRE.",
+          items: [
+            {
+              photo: "ressources_eco/exo_audit_cuisine_v2/audit_zone_reception.jpg",
+              q1_options: ["Zone de réception", "Zone de cuisson", "Zone de distribution", "Zone de plonge"],
+              q1_correct: 0,
+              q2_options: ["Sale", "Propre"],
+              q2_correct: 0,
+              explication: "Les cartons et palettes arrivent du camion, ils sont sales. C’est une zone SALE.",
+            },
+            {
+              photo: "ressources_eco/exo_audit_cuisine_v2/audit_zone_preparation.jpg",
+              q1_options: ["Zone de réception", "Zone de préparation", "Zone de cuisson", "Zone de distribution"],
+              q1_correct: 1,
+              q2_options: ["Sale", "Propre"],
+              q2_correct: 1,
+              explication: "On y prépare les plats avec des aliments lavés. C’est une zone PROPRE.",
+            },
+            {
+              photo: "ressources_eco/exo_audit_cuisine_v2/audit_zone_cuisson.jpg",
+              q1_options: ["Zone de stockage", "Zone de cuisson", "Zone de distribution", "Zone de plonge"],
+              q1_correct: 1,
+              q2_options: ["Sale", "Propre"],
+              q2_correct: 1,
+              explication: "La cuisson tue les microbes. C’est une zone PROPRE.",
+            },
+            {
+              photo: "ressources_eco/exo_audit_cuisine_v2/audit_zone_distribution.jpg",
+              q1_options: ["Zone de réception", "Zone de cuisson", "Zone de distribution", "Zone de plonge"],
+              q1_correct: 2,
+              q2_options: ["Sale", "Propre"],
+              q2_correct: 1,
+              explication: "C’est où le client vient chercher son repas. C’est une zone PROPRE.",
+            },
+          ],
+        },
+      ],
     },
     fields: [
       { id: "ce_que_jai_appris",      label: "Ce que j'ai appris sur la marche en avant", type: "textarea_keywords", keywords_bank: "marche_avant_appris", placeholder: "Ex : J'ai appris qu'il faut toujours avancer du sale vers le propre…" },
@@ -2384,11 +2520,11 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
       qcm: [
         { id: "q1", lie_cours: "c1", question: "Quel est l'objectif final de l'année 1 du chef-d'œuvre ?",
           options: ["Faire un seul plat", "Composer un menu complet alliant équilibre, éco-responsabilité et étiquetage", "Faire un exposé sur la nutrition", "Réussir un examen écrit"],
-          correct: 1 },
+          correct: 1, explication: "Objectif final : composer un menu complet alliant équilibre, éco-responsabilité ET étiquetage conforme." },
         { id: "q2", lie_cours: "c2", question: "Combien de critères principaux pour un bon menu de chef-d'œuvre ?",
-          options: ["2", "3", "5", "10"], correct: 2 },
+          options: ["2", "3", "5", "10"], correct: 2, explication: "Un bon menu repose sur 5 critères : équilibre, saison, circuit court, label, emballage. Tu dois savoir les justifier." },
         { id: "q3", lie_cours: "c2", question: "Si tu ne peux pas justifier un de tes choix, que faire ?",
-          options: ["Garder ce choix", "Revoir ce choix et l'argumenter ou le changer", "Supprimer le menu", "Ne rien faire"], correct: 1 },
+          options: ["Garder ce choix", "Revoir ce choix et l'argumenter ou le changer", "Supprimer le menu", "Ne rien faire"], correct: 1, explication: "Si tu ne peux pas justifier un choix, c’est qu’il faut le revoir. Le jury attend des arguments solides." },
       ],
 
       // V4.12 — Épreuve d'attestation finale (synthèse année 1)
@@ -2405,15 +2541,15 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
           { id: "ep1", type: "qcm", points: 2,
             question: "Pour défendre que ton menu est équilibré, tu mobilises :",
             options: ["La règle ½ ¼ ¼ et les groupes alimentaires", "Le prix bas", "L'aspect", "L'opinion personnelle"],
-            correct: 0 },
+            correct: 0, explication: "Pour défendre l’équilibre : règle ½ légumes ¼ féculents ¼ protéines, et les 7 groupes alimentaires." },
           { id: "ep2", type: "qcm", points: 2,
             question: "Pour défendre que ton menu est éco-responsable, tu cites :",
             options: ["Le marketing du produit", "Saison + circuit court + label + emballage adapté + anti-gaspi", "Le nom de la marque", "Le goût"],
-            correct: 1 },
+            correct: 1, explication: "Pour défendre l’éco-responsabilité : 5 leviers à citer : saison, circuit court, label, emballage, anti-gaspi." },
           { id: "ep3", type: "qcm", points: 2,
             question: "Une étiquette conforme contient en priorité :",
             options: ["Une photo et un slogan", "Les 7 mentions obligatoires INCO + 14 allergènes mis en évidence", "Seulement le nom", "Seulement la date"],
-            correct: 1 },
+            correct: 1, explication: "Une étiquette conforme = 7 mentions obligatoires (règlement INCO) + 14 allergènes mis en évidence." },
 
           // Mots (2) — synthèse vocabulaire
           { id: "ep4", type: "mots", points: 3,
@@ -2584,6 +2720,44 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
 - 💼 Mais aussi un **argument de vente** : le client veut savoir.`,
         },
         {
+          id: "c3b",
+          titre: "🔢 Le numéro de lot",
+          texte: `Le **numéro de lot**, c’est un petit code qu’on écrit sur l’étiquette. Il sert à retrouver rapidement le produit si quelqu’un tombe malade.
+
+**À quoi ça sert ?**
+
+Si un client est malade, on regarde son étiquette. On voit le numéro de lot. On peut alors retirer tout de suite les autres produits du même lot. Ça **protège les clients**.
+
+**Les 4 questions du lot**
+
+Un bon numéro de lot doit dire :
+
+1. 👤 **QUI** a fabriqué ?
+2. 📅 **QUAND** ?
+3. 👥 **QUEL groupe** ?
+4. 🥗 **QUEL produit** ?
+
+**Le format à retenir**
+
+\`\`\`
+L - PSR - JJMMAA - Groupe - Produit
+\`\`\`
+
+**Un exemple**
+
+\`L-PSR-090526-G2-WRAP\`
+
+- **L** = lot
+- **PSR** = ma classe (Production et Service en Restaurations)
+- **090526** = fait le 09/05/2026
+- **G2** = groupe 2
+- **WRAP** = c’est un wrap
+
+> 💡 **À retenir** : avec ce code, je peux retrouver QUI, QUAND, QUEL groupe et QUEL produit. C’est tout simple !
+
+> ⚠️ Si une seule des 4 infos manque, le lot ne sert à rien. Pense à toutes les mettre.`,
+        },
+        {
           id: "c4",
           titre: "⚠️ Les allergènes : 14 à déclarer obligatoirement",
           texte: `Le **règlement INCO** impose de mettre en évidence **14 allergènes majeurs** dans la liste des ingrédients (en gras, souligné ou en MAJUSCULES).
@@ -2633,31 +2807,182 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
           explication: "7 mentions obligatoires selon le règlement INCO n° 1169/2011." },
         { id: "q2", lie_cours: "c1", question: "La liste des ingrédients est classée :",
           options: ["Par ordre alphabétique", "Par ordre décroissant (le plus présent en premier)", "Au hasard", "Par couleur"],
-          correct: 1 },
+          correct: 1, explication: "Les ingrédients sont classés du plus présent au moins présent (ordre décroissant)." },
         { id: "q3", lie_cours: "c2", question: "DLC signifie :",
           options: ["Date Limite de Consommation", "Date de Livraison Conforme", "Durée Longue de Conservation", "Date du Lot de Cuisson"],
-          correct: 0 },
+          correct: 0, explication: "DLC = Date Limite de Consommation. À ne PAS dépasser, sinon risque pour la santé." },
         { id: "q4", lie_cours: "c2", question: "Après la DLC, je peux :",
           options: ["Encore consommer le produit", "Le jeter (risque pour la santé)", "Le recuisiner", "Le congeler"],
           correct: 1, explication: "DLC = à ne jamais dépasser sur les produits frais." },
         { id: "q5", lie_cours: "c2", question: "DDM signifie :",
           options: ["Date Dernière Mention", "Date de Durabilité Minimale", "Durée de Degré Minimum", "Date de Départ Magasin"],
-          correct: 1 },
+          correct: 1, explication: "DDM = Date de Durabilité Minimale. Le produit reste sain après, mais peut perdre du goût." },
         { id: "q6", lie_cours: "c2", question: "Après la DDM :",
           options: ["Le produit est toxique", "Le produit reste sain, peut perdre du goût", "On le jette obligatoirement", "On le congèle"],
-          correct: 1 },
+          correct: 1, explication: "Après la DDM, le produit reste consommable. Pas de risque sanitaire, mais qualité moindre." },
         { id: "q7", lie_cours: "c4", question: "Combien d'allergènes majeurs à déclarer obligatoirement ?",
-          options: ["5", "10", "14", "20"], correct: 2 },
+          options: ["5", "10", "14", "20"], correct: 2, explication: "Il y a 14 allergènes majeurs à déclarer obligatoirement (règlement INCO 1169/2011)." },
         { id: "q8", lie_cours: "c3", question: "La traçabilité c'est :",
           options: ["Suivre les ventes", "Savoir d'où vient le produit et pouvoir le retrouver", "Compter les calories", "Dessiner le logo"],
-          correct: 1 },
+          correct: 1, explication: "Traçabilité = pouvoir suivre un produit du producteur jusqu’au client. Indispensable en cas de problème." },
         { id: "q9", lie_cours: "c4", question: "Sur l'étiquette, les allergènes doivent être :",
           options: ["Cachés", "Mis en évidence (gras, souligné, MAJUSCULES)", "À la fin", "Barrés"],
-          correct: 1 },
+          correct: 1, explication: "Les allergènes doivent être mis en évidence (gras, souligné ou MAJUSCULES) pour être visibles immédiatement." },
         { id: "q10", lie_cours: "c5", question: "Pour une étiquette éco-responsable, je choisis :",
           options: ["Plastique brillant", "Papier recyclé et encres végétales", "Grande étiquette colorée", "Aluminium"],
-          correct: 1 },
+          correct: 1, explication: "Pour une étiquette éco-responsable : papier recyclé et encres végétales (sans pétrole)." },
       ],
+      exercice2: {
+        type: "image_yesno",
+        titre: "🏷️ Étiquette conforme ou pas ?",
+        consigne: "Pour chaque étiquette, regarde bien l’image puis dis si elle est conforme à la loi (règlement INCO + numéro de lot). Tu as droit à 2 essais avec un indice si tu te trompes.",
+        items: [
+          {
+            id: "et1",
+            photo: "ressources_eco/plats_prepares_et_traiteur/saladenicoise.jpg",
+            nom: "Salade niçoise du chef",
+            slogan: "Fraîcheur de Provence",
+            ingredients: "Tomates, <b>œufs</b>, thon, haricots verts, olives noires, oignon, huile d’olive, basilic, sel, poivre.",
+            allergenes: "<b>ŒUFS</b>, <b>POISSON</b> (thon).",
+            type_date: "DLC",
+            date: "12/05/2026",
+            poids: "250 g",
+            conservation: "À conserver entre 0 °C et +4 °C.",
+            lot: "L-PSR-100526-G1-NICOISE",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: true,
+            defaut: null,
+            zoneIndice: null,
+            indice: "Bravo ! Les 7 mentions sont là, les allergènes sont en gras et le lot est complet."
+          },
+          {
+            id: "et2",
+            photo: "ressources_eco/plats_prepares_et_traiteur/quichelorraine.jpg",
+            nom: "Quiche lorraine maison",
+            slogan: "Le goût d’antan",
+            ingredients: "Pâte brisée (farine de blé, beurre, sel, eau), lardons fumés, œufs, crème fraîche, lait, muscade, poivre.",
+            allergenes: "Aucun allergène signalé.",
+            type_date: "DLC",
+            date: "11/05/2026",
+            poids: "180 g",
+            conservation: "À conserver au frais.",
+            lot: "L-PSR-090526-G3-QUICHE",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: false,
+            defaut: "Il y a des allergènes oubliés ! La quiche contient GLUTEN (farine de blé), ŒUFS et LAIT (crème). Il faut les mettre en gras dans les ingrédients et les écrire dans la ligne « allergènes ».",
+            zoneIndice: "allergenes",
+            indice: "Regarde bien la ligne « allergènes ». Tu vois tous les allergènes qui sont dans les ingrédients ?"
+          },
+          {
+            id: "et3",
+            photo: "ressources_eco/desserts/compotedepomme.jpg",
+            nom: "Compote pomme-cannelle",
+            slogan: "100 % maison",
+            ingredients: "Pommes BIO du verger local, cannelle, miel local.",
+            allergenes: "Aucun allergène majeur.",
+            type_date: "DLC",
+            date: "13/05/2026",
+            poids: "120 g",
+            conservation: "À conserver au frais (0–4 °C).",
+            lot: "L-PSR-100526-G2-COMPOTE",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: true,
+            defaut: null,
+            zoneIndice: null,
+            indice: "Bravo ! Tout y est : nom, ingrédients, date, poids, conservation, lot, fabricant."
+          },
+          {
+            id: "et4",
+            photo: "ressources_eco/desserts/cookies.jpg",
+            nom: "Cookies aux pépites",
+            slogan: "Tout chauds !",
+            ingredients: "Farine de blé, beurre, sucre, œufs, pépites de chocolat (lait), levure, sel.",
+            allergenes: "<b>GLUTEN</b>, <b>ŒUFS</b>, <b>LAIT</b>.",
+            type_date: null,
+            date: null,
+            poids: "60 g (l’unité)",
+            conservation: "À conserver au sec.",
+            lot: "L-PSR-100526-G4-COOKIE",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: false,
+            defaut: "Il manque la DATE ! Sur un produit, on doit toujours écrire une DLC ou une DDM. Sans date, le client ne sait pas jusqu’à quand il peut manger.",
+            zoneIndice: "date",
+            indice: "Cherche la date. Tu vois une DLC ou une DDM ?"
+          },
+          {
+            id: "et5",
+            photo: "ressources_eco/produits_laitiers/fromageblanc.jpg",
+            nom: "Fromage blanc fermier",
+            slogan: "Onctueux et frais",
+            ingredients: "<b>Lait</b> entier pasteurisé, ferments lactiques, sel.",
+            allergenes: "<b>LAIT</b>.",
+            type_date: "DLC",
+            date: "10/05/2026",
+            poids: "150 g",
+            conservation: "À conserver entre 0 °C et +4 °C.",
+            lot: "L-PSR-080526-G1-FROBLANC",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: true,
+            defaut: null,
+            zoneIndice: null,
+            indice: "Bravo ! C’est un produit frais (laitier), donc DLC. L’allergène LAIT est bien en gras."
+          },
+          {
+            id: "et6",
+            photo: "ressources_eco/plats_prepares_et_traiteur/saladedepate.jpg",
+            nom: "Salade de pâtes au thon",
+            slogan: "Fraîche et gourmande",
+            ingredients: "<b>Pâtes</b> (semoule de blé), thon, maïs, tomates, mayonnaise (œufs, moutarde), persil, sel, poivre.",
+            allergenes: "<b>GLUTEN</b>, <b>POISSON</b>, <b>ŒUFS</b>, <b>MOUTARDE</b>.",
+            type_date: "DLC",
+            date: "11/05/2026",
+            poids: "200 g",
+            conservation: "À conserver au frais.",
+            lot: "WRAP",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: false,
+            defaut: "Le numéro de lot est trop court ! « WRAP » ne dit pas QUI, QUAND, ni QUEL groupe. Il faudrait écrire par exemple : L-PSR-100526-G2-PATES.",
+            zoneIndice: "lot",
+            indice: "Regarde la ligne « Lot ». Est-ce qu’il répond aux 4 questions : QUI ? QUAND ? QUEL groupe ? QUEL produit ?"
+          },
+          {
+            id: "et7",
+            photo: "ressources_eco/plats_prepares_et_traiteur/lasagnebolognaise.jpg",
+            nom: "Lasagnes bolognaise",
+            slogan: "Recette d’Italie",
+            ingredients: "Sel, eau, viande de bœuf, tomates, pâtes (blé), <b>lait</b>, beurre, oignon, ail, basilic, huile d’olive.",
+            allergenes: "<b>GLUTEN</b>, <b>LAIT</b>.",
+            type_date: "DLC",
+            date: "11/05/2026",
+            poids: "350 g",
+            conservation: "À conserver entre 0 °C et +4 °C.",
+            lot: "L-PSR-100526-G3-LASAGNE",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            defaut: "Les ingrédients sont dans le mauvais ordre ! On écrit toujours du plus présent au moins présent. Ici, le sel et l’eau ne peuvent pas être en premier. Il faut commencer par la viande, les tomates, les pâtes.",
+            conforme: false,
+            zoneIndice: "ingredients",
+            indice: "Regarde l’ordre des ingrédients. On commence par celui qui est le plus dans le plat."
+          },
+          {
+            id: "et8",
+            photo: "ressources_eco/desserts/crepes.jpg",
+            nom: "Crêpes du goûter",
+            slogan: "Comme à la maison",
+            ingredients: "Farine de blé, lait, œufs, beurre, sucre, sel, vanille.",
+            allergenes: "<b>GLUTEN</b>, <b>LAIT</b>, <b>ŒUFS</b>.",
+            type_date: "DLC",
+            date: "10/05/2026",
+            poids: "150 g (3 crêpes)",
+            conservation: "À conserver au frais.",
+            lot: "L-PSR-100526-G4-CREPE",
+            fabricant: "CAP PSR — Lycée Pro. Jean Moulin, Lyon",
+            conforme: true,
+            defaut: null,
+            zoneIndice: null,
+            indice: "Bravo ! 7 mentions, allergènes en gras, lot complet. Tout est bon !"
+          }
+        ]
+      },
       // V4.10 — Épreuve d'attestation J4 : L'étiquetage du produit
       epreuve: {
         id: "ep_etiquette",
@@ -2671,11 +2996,11 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
           // QCM (4)
           { id: "ep1", type: "qcm", points: 2,
             question: "Combien de mentions sont obligatoires sur une étiquette alimentaire selon le règlement INCO 1169/2011 ?",
-            options: ["3", "5", "7", "12"], correct: 2 },
+            options: ["3", "5", "7", "12"], correct: 2, explication: "Le règlement INCO 1169/2011 impose 7 mentions obligatoires sur une étiquette alimentaire." },
           { id: "ep2", type: "qcm", points: 2,
             question: "La liste des ingrédients sur une étiquette est classée :",
             options: ["Par ordre alphabétique", "Par ordre décroissant (le plus présent en premier)", "Au hasard", "Par couleur"],
-            correct: 1 },
+            correct: 1, explication: "Liste des ingrédients : ordre décroissant (du plus au moins présent)." },
           { id: "ep3", type: "qcm", points: 2,
             question: "Combien d'allergènes majeurs doivent être déclarés OBLIGATOIREMENT et mis en évidence ?",
             options: ["5", "10", "14", "20"], correct: 2,
@@ -2683,7 +3008,7 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
           { id: "ep4", type: "qcm", points: 2,
             question: "Sur l'étiquette, les allergènes doivent être :",
             options: ["Cachés", "À la fin de la liste", "Mis en évidence (gras, souligné ou MAJUSCULES)", "Barrés"],
-            correct: 2 },
+            correct: 2, explication: "Les allergènes doivent ressortir clairement : gras, souligné ou MAJUSCULES." },
 
           // Mots (2)
           { id: "ep5", type: "mots", points: 3,
@@ -2811,6 +3136,55 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
           { id: "i12", label: "Conditions de conservation",             correct: "obligatoire" },
         ],
       },
+      exercices_bonus: [
+        {
+          type: "multi_choix_image",
+          titre: "🍽️ Le client allergique : que lui proposer ?",
+          consigne: "Un client te dit son allergie. Choisis le bon plat (ou le plat à éviter, selon la question).",
+          scenarios: [
+            {
+              enonce: "Madame Dupont est allergique au GLUTEN. Quel plat peut-elle manger ?",
+              plats: [
+                { nom: "Pâtes au pesto",          photo: "ressources_eco/exo_client_allergique/plat_pates_pesto.jpg" },
+                { nom: "Poulet rôti aux légumes", photo: "ressources_eco/exo_client_allergique/plat_poulet_legumes.jpg" },
+                { nom: "Quiche lorraine",         photo: "ressources_eco/exo_client_allergique/plat_quiche_lorraine.jpg" },
+              ],
+              bonne: 1,
+              explication: "Le poulet et les légumes ne contiennent pas de gluten. La quiche (pâte) et les pâtes (blé) en contiennent.",
+            },
+            {
+              enonce: "Léo est allergique aux ŒUFS. Quel plat peut-il manger ?",
+              plats: [
+                { nom: "Quiche lorraine",         photo: "ressources_eco/exo_client_allergique/plat_quiche_lorraine.jpg" },
+                { nom: "Salade de riz au thon",   photo: "ressources_eco/exo_client_allergique/plat_salade_riz_thon.jpg" },
+                { nom: "Poulet rôti aux légumes", photo: "ressources_eco/exo_client_allergique/plat_poulet_legumes.jpg" },
+              ],
+              bonne: 2,
+              explication: "Le poulet rôti aux légumes ne contient pas d’œufs. La quiche en contient (œufs battus). La salade au thon a souvent de la mayonnaise (avec œufs).",
+            },
+            {
+              enonce: "Madame Garcia est allergique au LAIT. Quel plat peut-elle manger ?",
+              plats: [
+                { nom: "Quiche lorraine",     photo: "ressources_eco/exo_client_allergique/plat_quiche_lorraine.jpg" },
+                { nom: "Pâtes au pesto",      photo: "ressources_eco/exo_client_allergique/plat_pates_pesto.jpg" },
+                { nom: "Taboulé aux légumes", photo: "ressources_eco/exo_client_allergique/plat_taboule_legumes.jpg" },
+              ],
+              bonne: 2,
+              explication: "Le taboulé n’a ni lait ni produit laitier. La quiche contient de la crème (lait) et le pesto contient du parmesan (lait).",
+            },
+            {
+              enonce: "Tom est allergique au POISSON. Lequel de ces 3 plats contient du poisson ? (Tom doit l’éviter !)",
+              plats: [
+                { nom: "Salade de riz au thon", photo: "ressources_eco/exo_client_allergique/plat_salade_riz_thon.jpg" },
+                { nom: "Quiche lorraine",       photo: "ressources_eco/exo_client_allergique/plat_quiche_lorraine.jpg" },
+                { nom: "Yaourt aux fruits",     photo: "ressources_eco/exo_client_allergique/plat_dessert_yaourt_fruits.jpg" },
+              ],
+              bonne: 0,
+              explication: "Le thon est un poisson. Tom doit absolument éviter ce plat. La quiche et le yaourt ne contiennent pas de poisson.",
+            },
+          ],
+        },
+      ],
     },
     fields: [
       { id: "nom_produit",   label: "🏷️ Nom de mon produit (accrocheur)",           type: "text" },
@@ -2840,6 +3214,7 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
           { id: "allergenes",   label: "Allergènes (mettre en évidence)",                type: "textarea" },
           { id: "tracabilite",  label: "Traçabilité (origine, fabricant…)",              type: "textarea" },
           { id: "conservation", label: "Conditions de conservation",                      type: "text" },
+          { id: "numero_lot",   label: "🔢 Numéro de lot (format conseillé : L-PSR-JJMMAA-Groupe-Produit, ex. L-PSR-090526-G2-WRAP)", type: "text" },
         ],
       },
     ],
@@ -2999,6 +3374,4594 @@ C'est ton jalon final de fin d'année 1, qui sera présenté à l'oral devant la
 ];
 
 /* =====================================================================
+   FORMATION PSR — chapitres adossés au référentiel CAP PSR officiel
+   Section indépendante du parcours chef-d'œuvre.
+   Voir renderFormationPSR() / renderFormationChapitre() plus bas.
+   ===================================================================== */
+const FORMATION_PSR_CHAPITRES = [
+  {
+    id: "tenue_pro",
+    titre: "Ma tenue de pro",
+    emoji: "👕",
+    description: "Hygiène personnelle, tenue de cuisine et de salle, règles d'or pour bien démarrer ton service.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Bloc n°1 — Production de préparations simples",
+      lien: "Hygiène et sécurité au poste de travail (savoirs associés transversaux S1 — règles d'hygiène corporelle et vestimentaire en restauration).",
+      capacites: [
+        "Adopter une tenue professionnelle conforme aux règles d'hygiène.",
+        "Identifier les règles d'hygiène corporelle et vestimentaire.",
+        "Justifier le port de la tenue pour la sécurité du client."
+      ]
+    },
+    objectifs_eleve: [
+      "adopter une tenue professionnelle conforme aux règles d'hygiène",
+      "identifier les règles d'hygiène corporelle et vestimentaire",
+      "justifier pourquoi chaque règle existe",
+      "repérer les erreurs de tenue sur des photos"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 5 pièces de la tenue et leur rôle",
+        "Reconnaître une tenue conforme et repérer les erreurs",
+        "Appliquer les règles d'hygiène corporelle (ongles, bijoux, cheveux)",
+        "Choisir le bon pansement (bleu détectable) en cas de coupure",
+        "Expliquer pourquoi la tenue protège le client ET toi"
+      ],
+      message: "Bravo, tu as terminé ce chapitre ! Tu peux passer l'épreuve d'attestation pour valider tes connaissances."
+    },
+    mots_cles: [
+      { mot: "Charlotte (coiffe)", def: "Couvre-chef qui retient tous les cheveux pour qu'aucun ne tombe dans les plats." },
+      { mot: "Veste de cuisine", def: "Veste à manches longues qui protège des brûlures et des projections." },
+      { mot: "Tablier", def: "Pièce qui protège la veste. Se change dès qu'il est sale." },
+      { mot: "Pansement bleu détectable", def: "Pansement de couleur bleue qui se voit s'il tombe dans un plat." },
+      { mot: "Hygiène corporelle", def: "Ensemble des règles de propreté du corps avant le service (douche, ongles, mains)." },
+      { mot: "Bijou (interdit)", def: "Tout bijou (montre, bague, bracelet, boucle) est interdit en cuisine. Seule l'alliance lisse est parfois tolérée." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi une tenue spéciale ?",
+          texte:
+            "En cuisine ou en salle, tu manipules des aliments. Ta tenue **protège trois choses** :\n\n" +
+            "- **Le client** : pas de cheveux, pas de bactéries, pas de saleté dans son assiette.\n" +
+            "- **Toi** : la veste protège des brûlures, les chaussures des chutes et des coupures.\n" +
+            "- **L'image du métier** : une tenue propre montre que tu es un pro.\n\n" +
+            "C'est aussi la **loi** : les règles d'hygiène imposent une tenue dédiée au travail."
+        },
+        {
+          id: "c2",
+          titre: "👕 Les pièces de la tenue",
+          texte:
+            "La tenue de cuisine est composée de **pièces précises**. Chacune a un rôle.\n\n" +
+            "- **Charlotte (ou coiffe)** : couvre tous les cheveux. Pas un seul ne doit dépasser.\n" +
+            "- **Veste de cuisine** : protège des brûlures et des projections. Manches longues.\n" +
+            "- **Tablier** : protège la veste. Se change dès qu'il est sale.\n" +
+            "- **Pantalon pied-de-poule** : tient à la chaleur, cache les taches.\n" +
+            "- **Chaussures de sécurité** : antidérapantes, bout renforcé."
+        },
+        {
+          id: "c3",
+          titre: "🧴 L'hygiène corporelle",
+          texte:
+            "Avant le service, ton corps doit être **propre et net**.\n\n" +
+            "- **Douche** chaque jour avant le service.\n" +
+            "- **Ongles courts**, propres, **sans vernis** ni faux ongles.\n" +
+            "- **Pas de bijoux** (sauf une alliance lisse, parfois tolérée).\n" +
+            "- **Pas de parfum fort** : il peut donner du goût aux plats.\n" +
+            "- **Cheveux attachés** et **couverts par la charlotte**.\n" +
+            "- **Mains lavées** souvent, surtout après chaque tâche sale."
+        },
+        {
+          id: "c4",
+          titre: "⚠️ Les erreurs à éviter",
+          texte:
+            "Voici ce que tu ne dois **jamais** faire en cuisine :\n\n" +
+            "- Tablier sale gardé sur soi.\n" +
+            "- Charlotte mal mise, cheveux qui dépassent.\n" +
+            "- Montre, bague (sauf alliance lisse), bracelet.\n" +
+            "- Boucles d'oreilles pendantes.\n" +
+            "- Vernis à ongles ou faux ongles.\n" +
+            "- Parfum fort.\n" +
+            "- Plaie sans **pansement bleu détectable**.\n" +
+            "- Mouchoir en tissu dans la poche (utilise des mouchoirs jetables)."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les 4 règles d'or de ta tenue de pro :**\n\n" +
+            "1. **Propre** : tenue lavée, tablier changé dès qu'il est sale.\n" +
+            "2. **Complète** : toutes les pièces, pas une oubliée.\n" +
+            "3. **Sans risque** : pas de bijoux, pas de vernis, cheveux couverts.\n" +
+            "4. **Au travail seulement** : tu enlèves ta tenue à la maison, tu ne la portes pas dans la rue."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Pourquoi porter une tenue de pro en cuisine ?",
+          options: ["Pour faire joli sur les photos.", "Pour protéger le client, te protéger et montrer ton professionnalisme.", "C'est obligatoire seulement en grand restaurant."],
+          correct: 1, explication: "La tenue protège le client (hygiène), te protège (sécurité) et c'est aussi la loi en restauration." },
+        { id: "q2", lie_cours: "c2", question: "À quoi sert la charlotte ?",
+          options: ["À garder la tête au chaud.", "À couvrir tous les cheveux pour éviter qu'ils tombent dans les plats.", "À cacher une mauvaise coupe."],
+          correct: 1, explication: "La charlotte empêche les cheveux et pellicules de tomber dans les aliments." },
+        { id: "q3", lie_cours: "c2", question: "Pourquoi des chaussures de sécurité ?",
+          options: ["Elles sont antidérapantes et protègent les pieds (chutes, coupures, brûlures).", "Pour faire plus grand.", "Parce qu'elles sont à la mode."],
+          correct: 0, explication: "Le sol de cuisine glisse, des objets peuvent tomber : ces chaussures te protègent." },
+        { id: "q4", lie_cours: "c3", question: "Tu as vernis à ongles avant ton service. Que fais-tu ?",
+          options: ["Rien, ça se voit pas.", "Je l'enlève avant d'arriver en cuisine.", "Je mets des gants par-dessus."],
+          correct: 1, explication: "Le vernis peut s'écailler et tomber dans les plats. Interdit en cuisine." },
+        { id: "q5", lie_cours: "c3", question: "Quelle règle pour les bijoux ?",
+          options: ["On peut garder une montre et une bague.", "Pas de bijoux. Seule l'alliance lisse est parfois tolérée.", "Les boucles d'oreilles sont autorisées."],
+          correct: 1, explication: "Les bijoux retiennent les bactéries et peuvent tomber dans les plats." },
+        { id: "q6", lie_cours: "c4", question: "Tu te coupes le doigt en cuisine. Que mets-tu ?",
+          options: ["Un pansement de couleur chair.", "Un pansement bleu détectable.", "Rien, je continue à travailler."],
+          correct: 1, explication: "Le pansement bleu se voit s'il tombe dans un plat. C'est la règle en cuisine." },
+        { id: "q7", lie_cours: "c4", question: "Ton tablier est sale après l'épluchage. Que fais-tu ?",
+          options: ["Je continue, je le changerai à la pause.", "Je le change tout de suite par un propre.", "Je le rince à l'eau."],
+          correct: 1, explication: "Un tablier sale contamine la suite. On change immédiatement." },
+        { id: "q8", lie_cours: "c5", question: "Quand portes-tu ta tenue de pro ?",
+          options: ["Du matin au soir, même chez moi.", "Uniquement au travail. Je me change avant de partir.", "Seulement quand le chef me regarde."],
+          correct: 1, explication: "La tenue reste au travail. On ne la porte pas dans la rue, sinon elle se contamine." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_tenue",
+          titre: "🔍 Repère l'erreur — 8 photos",
+          consigne: "Sur chaque photo, clique sur l'endroit où tu vois une erreur de tenue.",
+          items: [
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_bijoux.jpg",
+              erreur: "Bijoux interdits en cuisine (montre, bague, boucles d'oreilles)." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_charlotte_mal_mise.jpg",
+              erreur: "Cheveux qui dépassent de la charlotte." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pas_de_charlotte.jpg",
+              erreur: "Pas de charlotte du tout : cheveux totalement à l'air." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_tablier_sale.jpg",
+              erreur: "Tablier sale = à changer immédiatement." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_veste_ouverte.jpg",
+              erreur: "Veste de cuisine non boutonnée : t-shirt visible, pas conforme." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_ongles.jpg",
+              erreur: "Ongles longs et vernis interdits." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pansement_chair.jpg",
+              erreur: "Pansement couleur chair : on ne le voit pas s'il tombe. Il faut un pansement BLEU détectable." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_chaussures_ouvertes.jpg",
+              erreur: "Chaussures ouvertes : il faut des chaussures de sécurité fermées." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_tenue",
+          titre: "✅ La bonne tenue — choisis la bonne photo",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre la bonne pratique.",
+          scenarios: [
+            { question: "Quelle tenue est correcte ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_complete_correcte.jpg", correct: true, label: "Tenue A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_tablier_sale.jpg", correct: false, label: "Tenue B" }
+              ] },
+            { question: "Pour l'hygiène des mains, quelle photo est la bonne ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_mains.jpg", correct: true, label: "Mains A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_bijoux.jpg", correct: false, label: "Mains B" }
+              ] },
+            { question: "Et la coiffe ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_charlotte.jpg", correct: true, label: "Coiffe A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pas_de_charlotte.jpg", correct: false, label: "Coiffe B" }
+              ] },
+            { question: "Tu t'es coupé le doigt. Quel pansement ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_pansement_bleu.jpg", correct: true, label: "Pansement A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pansement_chair.jpg", correct: false, label: "Pansement B" }
+              ] },
+            { question: "Et les chaussures ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_chaussures.jpg", correct: true, label: "Chaussures A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_chaussures_ouvertes.jpg", correct: false, label: "Chaussures B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_tenue",
+        titre: "Épreuve d'attestation — Ma tenue est conforme",
+        verbe_action: "ADOPTER",
+        objectif: "une tenue de pro conforme aux règles d'hygiène et de sécurité, en restauration.",
+        mise_en_situation: "Tu commences ton service. Avant d'entrer en cuisine, tu vérifies ta tenue, ton hygiène et ta présentation. Réponds aux 7 questions pour valider ton attestation.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Quelle pièce couvre obligatoirement les cheveux ?",
+            options: ["Le tablier.", "La charlotte.", "La veste."],
+            correct: 1, explication: "La charlotte couvre tous les cheveux. Pas un seul ne doit dépasser." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Tu as vernis et une bague. Que fais-tu avant le service ?",
+            options: ["J'enlève les deux.", "Je garde la bague, j'enlève le vernis.", "Je garde tout, je mets des gants."],
+            correct: 0, explication: "Pas de vernis et pas de bijoux : on enlève tout avant d'entrer en cuisine." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Ton tablier est taché de sauce. Que fais-tu ?",
+            options: ["Je le rince.", "Je le change tout de suite.", "Je continue, ça part au lavage du soir."],
+            correct: 1, explication: "Un tablier sale contamine la suite. On le change immédiatement." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Pourquoi un pansement bleu détectable ?",
+            options: ["Parce que le bleu c'est joli.", "Pour le voir s'il tombe dans un plat.", "C'est moins cher."],
+            correct: 1, explication: "Le bleu n'existe pas naturellement dans les aliments. On le repère vite." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : je peux porter ma tenue de cuisine pour aller à la boulangerie.",
+            correct: false, explication: "Faux. La tenue reste au travail, sinon elle se contamine dans la rue." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "Cite **3 règles d'hygiène corporelle** à respecter avant le service.",
+            indice_correction: "Réponse attendue : douche quotidienne, ongles courts sans vernis, pas de bijoux, pas de parfum fort, cheveux attachés et couverts, mains lavées." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** pourquoi la tenue de pro protège le client.",
+            indice_correction: "Réponse attendue : la tenue empêche les cheveux, bactéries, bijoux ou saleté de tomber dans les plats. Elle protège la santé du client." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Reconnaître les pièces de la tenue de pro", indicateur: "L'élève cite et identifie les pièces de la tenue.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Appliquer les règles d'hygiène corporelle avant le service", indicateur: "L'élève cite au moins 3 règles d'hygiène corporelle.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Repérer les erreurs de tenue sur des photos", indicateur: "L'élève repère les erreurs courantes (bijoux, vernis, tablier sale).", niveau_attendu: "A", remediation: "Refaire l'exo « Repère l'erreur »." },
+          { id: "cr4", capacite: "Justifier pourquoi la tenue protège le client", indicateur: "L'élève explique pourquoi la tenue protège le client.", niveau_attendu: "A", remediation: "Revoir cours c1 + c5." },
+          { id: "cr5", capacite: "Expliquer ses choix avec un vocabulaire pro", indicateur: "L'élève argumente avec des phrases claires et un vocabulaire pro.", niveau_attendu: "A", remediation: "Travail à l'oral avec l'enseignant." }
+        ]
+      }
+    }
+  },
+  {
+    id: "lavage_mains",
+    titre: "Le lavage des mains",
+    emoji: "🧼",
+    description: "Le geste pro le plus important pour protéger tes clients : se laver les mains correctement, au bon moment, avec le bon matériel.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Bloc n°1 — Production de préparations simples",
+      lien: "Hygiène et sécurité au poste de travail (savoirs associés transversaux S1 — hygiène des mains en restauration).",
+      capacites: [
+        "Appliquer la technique du lavage des mains en 7 étapes.",
+        "Identifier les moments-clés où il faut se laver les mains.",
+        "Justifier le rôle du lavage des mains dans la protection du client."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer la technique du lavage des mains en 7 étapes",
+      "identifier les moments où il faut se laver les mains",
+      "reconnaître le bon matériel (savon liquide, papier jetable, robinet à coude)",
+      "expliquer pourquoi le lavage des mains protège le client"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 7 étapes du lavage des mains dans l’ordre",
+        "Lister les moments-clés où il faut se laver",
+        "Reconnaître un lavabo bien équipé",
+        "Expliquer pourquoi les mains sont le vecteur n°1 de contamination",
+        "Repérer les erreurs de lavage sur des photos"
+      ],
+      message: "Bravo ! Tu es prêt·e à passer l’épreuve d’attestation pour valider ces connaissances."
+    },
+    mots_cles: [
+      { mot: "Vecteur de contamination", def: "Ce qui transporte les microbes d’un endroit à un autre. Les mains en sont le vecteur n°1." },
+      { mot: "Savon liquide", def: "Savon dans une pompe (pas une savonnette qu’on se passe). Plus hygiénique." },
+      { mot: "Robinet à coude", def: "Robinet qu’on ouvre et ferme avec le coude. Comme ça, les mains propres ne touchent rien de sale." },
+      { mot: "Essuie-mains papier jetable", def: "Pour sécher les mains. Une fois utilisé, on jette. Pas de serviette en tissu." },
+      { mot: "Lavage hygiénique", def: "Lavage complet en 7 étapes pendant 30 secondes minimum, à l’eau chaude." },
+      { mot: "Friction hydroalcoolique", def: "Solution rapide quand pas d’eau. Ne remplace pas un vrai lavage avec savon." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi se laver les mains ?",
+          texte:
+            "Tes mains touchent **tout** : argent, poignées, téléphone, déchets…\n\n" +
+            "- Sur **1 cm² de peau**, il peut y avoir des **millions de bactéries**.\n" +
+            "- En cuisine, **les mains sont la 1re source** de contamination des aliments.\n" +
+            "- Un lavage régulier réduit énormément ce risque.\n" +
+            "- C’est **le geste le plus important** de ton métier."
+        },
+        {
+          id: "c2",
+          titre: "📅 Quand se laver les mains ?",
+          texte:
+            "Tu dois te laver les mains à **8 moments-clés** :\n\n" +
+            "1. En **arrivant** en cuisine.\n" +
+            "2. **Après être allé aux toilettes**.\n" +
+            "3. **Avant de toucher** des aliments.\n" +
+            "4. **Entre 2 préparations** différentes (cru → cuit, viande → légumes).\n" +
+            "5. Après avoir touché des **déchets** ou la **poubelle**.\n" +
+            "6. Après s’être **mouché, toussé, éternué**.\n" +
+            "7. Après une **pause** (manger, fumer, boire).\n" +
+            "8. Après chaque activité **« sale »**."
+        },
+        {
+          id: "c3",
+          titre: "🔢 Les 7 étapes du lavage",
+          texte:
+            "La technique pro se fait en **7 étapes** :\n\n" +
+            "1. **Mouiller** les mains à l’eau chaude.\n" +
+            "2. **Mettre du savon** liquide.\n" +
+            "3. **Frotter les paumes** l’une contre l’autre.\n" +
+            "4. **Frotter le dos** des mains.\n" +
+            "5. **Entrelacer les doigts** et frotter entre les doigts.\n" +
+            "6. **Frotter les pouces** dans la paume opposée.\n" +
+            "7. **Frotter les ongles** dans la paume opposée.\n\n" +
+            "Puis : **rincer** à l’eau claire et **sécher** avec un essuie-mains en papier jetable.\n" +
+            "Durée totale : **30 secondes minimum**."
+        },
+        {
+          id: "c4",
+          titre: "🛠️ Le bon matériel",
+          texte:
+            "Un lavabo de pro est équipé de :\n\n" +
+            "- ✅ **Savon liquide** dans un distributeur (pas de savonnette).\n" +
+            "- ✅ **Essuie-mains papier jetable** (pas de torchon en tissu).\n" +
+            "- ✅ **Robinet à coude** ou à pied (pas à main).\n" +
+            "- ✅ **Eau chaude**.\n" +
+            "- ❌ **Pas de bijou**, pas de vernis, **ongles courts**."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or du lavage des mains :**\n\n" +
+            "- Mains = **vecteur n°1** de microbes.\n" +
+            "- **7 étapes**, **30 secondes** minimum.\n" +
+            "- Savon **liquide**, papier **jetable**, robinet **à coude**.\n" +
+            "- En cas de doute → **on lave**."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Pourquoi les mains sont-elles importantes en cuisine ?",
+          options: ["Elles touchent tout et transportent les microbes.", "Parce qu’elles servent à goûter les plats.", "Parce qu’on les voit sur les photos."],
+          correct: 0, explication: "Les mains touchent tout (argent, poignées, déchets) : elles sont le vecteur n°1 de microbes." },
+        { id: "q2", lie_cours: "c2", question: "Tu sors des toilettes. Que dois-tu faire avant de retourner en cuisine ?",
+          options: ["Rien, j’ai utilisé du papier.", "Me laver les mains.", "Mettre des gants par-dessus."],
+          correct: 1, explication: "Après les toilettes, lavage obligatoire : c’est un moment-clé non négociable." },
+        { id: "q3", lie_cours: "c2", question: "Tu viens de toucher des cartons sales. Tu fais quoi ?",
+          options: ["Je continue, c’est juste du carton.", "Je m’essuie sur le tablier.", "Je me lave les mains avant de toucher les aliments."],
+          correct: 2, explication: "Après une activité sale, on lave les mains avant de revenir aux aliments." },
+        { id: "q4", lie_cours: "c3", question: "Combien de temps minimum dure un lavage complet ?",
+          options: ["5 secondes.", "30 secondes.", "5 minutes."],
+          correct: 1, explication: "Il faut au moins 30 secondes pour que le savon agisse sur les microbes." },
+        { id: "q5", lie_cours: "c3", question: "Quelle est la 1re étape du lavage ?",
+          options: ["Mettre le savon.", "Frotter les paumes.", "Mouiller les mains."],
+          correct: 2, explication: "On commence toujours par mouiller les mains à l’eau chaude, avant le savon." },
+        { id: "q6", lie_cours: "c4", question: "Quel savon utiliser en cuisine pro ?",
+          options: ["Savon liquide en distributeur.", "Savonnette qu’on se passe.", "Liquide vaisselle."],
+          correct: 0, explication: "Le savon liquide en distributeur est le seul accepté : la savonnette transporte les microbes." },
+        { id: "q7", lie_cours: "c4", question: "Avec quoi sécher les mains ?",
+          options: ["Un torchon en tissu.", "Un essuie-mains en papier jetable.", "Mon tablier."],
+          correct: 1, explication: "Le papier jetable se jette après usage. Le tissu garde les microbes." },
+        { id: "q8", lie_cours: "c5", question: "Combien d’étapes a un lavage hygiénique ?",
+          options: ["3.", "5.", "7."],
+          correct: 2, explication: "Le lavage pro se fait en 7 étapes pour bien nettoyer toutes les zones des mains." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_lavage",
+          titre: "🔍 Repère l’erreur — le lavabo",
+          consigne: "Sur chaque photo, clique sur la zone qui pose problème (ou indique que tout est OK).",
+          items: [
+            { image: "ressources_eco/exo_lavage_mains/lavage_lavabo_erreur.jpg",
+              erreur: "Savonnette + serviette en tissu + robinet manuel : tout est à changer (savon liquide, papier jetable, robinet à coude)." },
+            { image: "ressources_eco/exo_lavage_mains/lavage_lavabo_correct.jpg",
+              erreur: "Bravo, ce lavabo est parfait : savon liquide, papier jetable, robinet à coude." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_lavage",
+          titre: "✅ La bonne pratique — choisis la bonne photo",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre la bonne pratique.",
+          scenarios: [
+            { question: "Quel lavabo est conforme ?",
+              choix: [
+                { image: "ressources_eco/exo_lavage_mains/lavage_lavabo_correct.jpg", correct: true, label: "Lavabo A" },
+                { image: "ressources_eco/exo_lavage_mains/lavage_lavabo_erreur.jpg", correct: false, label: "Lavabo B" }
+              ] },
+            { question: "À quoi ressemble la 3e étape (frotter les paumes) ?",
+              choix: [
+                { image: "ressources_eco/exo_lavage_mains/lavage_etape_3_paumes.jpg", correct: true, label: "Étape A" },
+                { image: "ressources_eco/exo_lavage_mains/lavage_etape_5_doigts_entrelaces.jpg", correct: false, label: "Étape B" }
+              ] },
+            { question: "À quoi ressemble la dernière étape (séchage) ?",
+              choix: [
+                { image: "ressources_eco/exo_lavage_mains/lavage_etape_9_essuyage_papier.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/exo_lavage_mains/lavage_etape_1_mouiller.jpg", correct: false, label: "Geste B" }
+              ] }
+          ]
+        },
+        {
+          type: "ordering_photos",
+          id: "exoC_lavage",
+          titre: "🔢 Range les 7 étapes du lavage dans le bon ordre",
+          consigne: "Clique sur ↑ ↓ pour remettre les 7 étapes dans le bon ordre, du début (mouiller) à la fin (frotter les ongles).",
+          items: [
+            { id: "et1", image: "ressources_eco/exo_lavage_mains/lavage_etape_1_mouiller.jpg",         label: "1. Mouiller les mains",          order: 1 },
+            { id: "et2", image: "ressources_eco/exo_lavage_mains/lavage_etape_2_savonner.jpg",         label: "2. Mettre du savon",             order: 2 },
+            { id: "et3", image: "ressources_eco/exo_lavage_mains/lavage_etape_3_paumes.jpg",           label: "3. Frotter les paumes",          order: 3 },
+            { id: "et4", image: "ressources_eco/exo_lavage_mains/lavage_etape_4_dos_mains.jpg",        label: "4. Frotter le dos des mains",    order: 4 },
+            { id: "et5", image: "ressources_eco/exo_lavage_mains/lavage_etape_5_doigts_entrelaces.jpg", label: "5. Entrelacer les doigts",       order: 5 },
+            { id: "et6", image: "ressources_eco/exo_lavage_mains/lavage_etape_6_pouces.jpg",           label: "6. Frotter les pouces",          order: 6 },
+            { id: "et7", image: "ressources_eco/exo_lavage_mains/lavage_etape_7_ongles.jpg",           label: "7. Frotter les ongles",          order: 7 }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_lavage_mains",
+        titre: "Épreuve d’attestation — Je sais me laver les mains",
+        verbe_action: "APPLIQUER",
+        objectif: "la technique du lavage des mains en 7 étapes, au bon moment, avec le bon matériel.",
+        mise_en_situation: "Tu commences ton service. Avant de toucher les aliments, tu dois te laver les mains correctement. Cette épreuve vérifie que tu sais quand, comment et avec quoi te laver les mains.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien d’étapes a un lavage hygiénique des mains ?",
+            options: ["3 étapes.", "7 étapes.", "10 étapes."],
+            correct: 1, explication: "Le lavage pro se fait en 7 étapes (paumes, dos, doigts, pouces, ongles…)." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Quel est le bon matériel pour se sécher les mains en cuisine ?",
+            options: ["Un torchon en tissu partagé.", "Un essuie-mains en papier jetable.", "Mon tablier."],
+            correct: 1, explication: "Seul le papier jetable est accepté : on l’utilise une fois, puis on le jette." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Tu as touché de la viande crue. Tu vas couper des légumes. Tu fais quoi ?",
+            options: ["Je continue, j’ai déjà lavé en arrivant.", "Je me lave les mains entre les deux préparations.", "Je rince juste à l’eau."],
+            correct: 1, explication: "Entre 2 préparations (cru → cuit, viande → légumes), lavage obligatoire pour éviter la contamination." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Quelle est la durée minimale d’un lavage des mains ?",
+            options: ["5 secondes.", "30 secondes.", "3 minutes."],
+            correct: 1, explication: "30 secondes minimum pour que le savon agisse sur les microbes." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : une simple friction hydroalcoolique remplace un lavage à l’eau et au savon.",
+            correct: false, explication: "Faux. La friction hydroalcoolique dépanne, mais ne remplace pas un vrai lavage avec savon et eau." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "Cite **3 moments** où tu dois te laver les mains pendant ton service.",
+            indice_correction: "Réponse attendue : en arrivant, après les toilettes, avant de toucher les aliments, entre 2 préparations, après les déchets, après s’être mouché, après une pause." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** pourquoi on utilise un essuie-mains papier jetable plutôt qu’un torchon en tissu.",
+            indice_correction: "Réponse attendue : le papier se jette après usage, donc pas de microbes qui s’accumulent. Le torchon garde les microbes et recontamine les mains propres." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Connaître les 7 étapes du lavage des mains", indicateur: "L’élève cite les 7 étapes dans l’ordre.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr2", capacite: "Identifier les moments-clés du lavage", indicateur: "L’élève cite au moins 3 moments-clés.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Reconnaître le bon matériel", indicateur: "L’élève identifie savon liquide, papier jetable, robinet à coude.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Expliquer pourquoi le lavage protège le client", indicateur: "L’élève explique le rôle du lavage face aux microbes.", niveau_attendu: "A", remediation: "Revoir cours c1 + c5." },
+          { id: "cr5", capacite: "Repérer les erreurs sur des photos", indicateur: "L’élève repère savonnette, torchon tissu, robinet manuel.", niveau_attendu: "A", remediation: "Refaire l’exo « Repère l’erreur »." }
+        ]
+      }
+    }
+  },
+  {
+    id: "nettoyage",
+    titre: "Le nettoyage et la désinfection",
+    emoji: "🧽",
+    description: "Comment nettoyer et désinfecter ton poste de travail pour éviter les contaminations.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Activité A5 — Entretien des locaux et matériels",
+      lien: "Hygiène et sécurité au poste de travail (savoirs associés S1 — bionettoyage, produits d’entretien, code couleur des lavettes).",
+      capacites: [
+        "Appliquer la méthode de bionettoyage en 5 étapes.",
+        "Différencier détergent et désinfectant.",
+        "Utiliser le bon code couleur des lavettes."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer la méthode de bionettoyage en 5 étapes",
+      "différencier détergent et désinfectant",
+      "utiliser le bon code couleur des lavettes",
+      "ranger les produits chimiques séparés des aliments"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 5 étapes du bionettoyage dans l’ordre",
+        "Faire la différence entre détergent et désinfectant",
+        "Utiliser une lavette par zone (code couleur)",
+        "Repérer les erreurs de nettoyage sur photo",
+        "Ranger les produits dangereux loin des aliments"
+      ],
+      message: "Bravo ! Tu peux maintenant passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Bionettoyage", def: "Méthode complète pour rendre une surface visuellement propre ET sans microbes." },
+      { mot: "Détergent", def: "Produit qui enlève les saletés visibles (graisse, sauce). Il LAVE." },
+      { mot: "Désinfectant", def: "Produit qui tue les microbes invisibles. Il DÉSINFECTE." },
+      { mot: "Code couleur des lavettes", def: "Une couleur de lavette par zone : par exemple bleu en cuisine, rouge en sanitaires. Pour ne pas mélanger les microbes." },
+      { mot: "Lavette à usage unique", def: "Lavette qu’on jette ou qu’on lave après UNE utilisation. Évite la contamination." },
+      { mot: "Plan de nettoyage", def: "Tableau qui dit QUOI nettoyer, QUAND, COMMENT, par QUI." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi nettoyer et désinfecter ?",
+          texte:
+            "Une surface peut **sembler propre** mais cacher des millions de microbes.\n\n" +
+            "- Sans nettoyage, les microbes **se multiplient**.\n" +
+            "- Ils peuvent **contaminer les aliments**.\n" +
+            "- Un client malade = **problème grave** pour l’établissement.\n" +
+            "- Nettoyer et désinfecter, c’est **protéger les clients ET ton métier**."
+        },
+        {
+          id: "c2",
+          titre: "🔢 Les 5 étapes du bionettoyage",
+          texte:
+            "Le bionettoyage se fait en **5 étapes** dans l’ordre :\n\n" +
+            "1. **Prélaver** : enlever le plus gros (résidus, sauce, miettes) à la lavette ou raclette.\n" +
+            "2. **Laver** au détergent : produit + lavette pour enlever la saleté visible.\n" +
+            "3. **Rincer** à l’eau claire : pour enlever le détergent.\n" +
+            "4. **Désinfecter** : pulvériser un produit désinfectant pour tuer les microbes.\n" +
+            "5. **Sécher** : la surface doit être sèche pour éviter la repousse des microbes."
+        },
+        {
+          id: "c3",
+          titre: "⚖️ Détergent ≠ désinfectant",
+          texte:
+            "Ce sont **deux produits différents** :\n\n" +
+            "- **Détergent** = enlève la saleté visible (graisse, taches). Il **LAVE**.\n" +
+            "- **Désinfectant** = tue les microbes invisibles. Il **DÉSINFECTE**.\n" +
+            "- Les deux sont **complémentaires** : on commence par le détergent, on finit par le désinfectant.\n" +
+            "- Certains produits sont « 2 en 1 » mais l’ordre reste : **laver → rincer → désinfecter**."
+        },
+        {
+          id: "c4",
+          titre: "🎨 Le code couleur des lavettes",
+          texte:
+            "Chaque zone a **sa couleur de lavette** pour éviter les contaminations croisées.\n\n" +
+            "Code courant en restauration :\n\n" +
+            "- 🟦 **Bleu** : zones de préparation alimentaire.\n" +
+            "- 🟩 **Vert** : zones de production (légumes).\n" +
+            "- 🟥 **Rouge** : sanitaires, zones très souillées.\n" +
+            "- 🟨 **Jaune** : zones de service.\n\n" +
+            "À retenir : **une zone = une lavette**. On ne mélange jamais."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or du nettoyage :**\n\n" +
+            "- **5 étapes** : prélaver, laver, rincer, désinfecter, sécher.\n" +
+            "- Détergent ≠ désinfectant : ils sont **complémentaires**.\n" +
+            "- **Une lavette par zone** (code couleur).\n" +
+            "- Produits chimiques **rangés à part** des aliments."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Pourquoi désinfecter après avoir lavé ?",
+          options: ["Pour faire briller la surface.", "Pour tuer les microbes invisibles.", "Pour parfumer la cuisine."],
+          correct: 1, explication: "Le lavage enlève la saleté visible, mais seuls les désinfectants tuent les microbes." },
+        { id: "q2", lie_cours: "c2", question: "Quelle est la 1re étape du bionettoyage ?",
+          options: ["Désinfecter.", "Prélaver (enlever le plus gros).", "Rincer."],
+          correct: 1, explication: "On commence toujours par enlever le plus gros (résidus, miettes) avant le détergent." },
+        { id: "q3", lie_cours: "c2", question: "Combien d’étapes a un bionettoyage complet ?",
+          options: ["3.", "5.", "7."],
+          correct: 1, explication: "Le bionettoyage se fait en 5 étapes : prélaver, laver, rincer, désinfecter, sécher." },
+        { id: "q4", lie_cours: "c3", question: "Le détergent sert à :",
+          options: ["Tuer les microbes.", "Enlever la saleté visible.", "Sécher la surface."],
+          correct: 1, explication: "Le détergent LAVE : il enlève graisse et saletés visibles." },
+        { id: "q5", lie_cours: "c3", question: "Le désinfectant sert à :",
+          options: ["Tuer les microbes.", "Enlever la graisse.", "Faire briller."],
+          correct: 0, explication: "Le désinfectant DÉSINFECTE : il tue les microbes invisibles." },
+        { id: "q6", lie_cours: "c4", question: "Quelle couleur de lavette pour les sanitaires ?",
+          options: ["Bleu.", "Vert.", "Rouge."],
+          correct: 2, explication: "La lavette rouge est réservée aux sanitaires et zones très souillées." },
+        { id: "q7", lie_cours: "c4", question: "Tu utilises la même lavette pour le plan de travail et l’évier sale ?",
+          options: ["Oui, ça gagne du temps.", "Non, jamais.", "Oui, si je la rince entre."],
+          correct: 1, explication: "Une zone = une lavette. Sinon on transporte les microbes d’une zone à l’autre." },
+        { id: "q8", lie_cours: "c5", question: "Où ranges-tu les produits chimiques ?",
+          options: ["Près des aliments, c’est pratique.", "Dans un placard séparé des aliments.", "Sur le plan de travail."],
+          correct: 1, explication: "Les produits chimiques se rangent à part, jamais à côté des aliments." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_nettoyage",
+          titre: "🔍 Repère l’erreur — le nettoyage",
+          consigne: "Sur chaque photo, identifie l’erreur de nettoyage.",
+          items: [
+            { image: "ressources_eco/exo_nettoyage/nettoyage_erreur_eponge_sale.jpg",
+              erreur: "Éponge sale réutilisée. Il faut une lavette propre ou jetable." },
+            { image: "ressources_eco/exo_nettoyage/nettoyage_erreur_produits_pres_aliments.jpg",
+              erreur: "Produit chimique posé à côté d’un plat. Risque de contamination." },
+            { image: "ressources_eco/exo_nettoyage/nettoyage_erreur_meme_lavette.jpg",
+              erreur: "Une seule lavette pour 2 zones (propre / sale). Il faut une lavette par zone." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_nettoyage",
+          titre: "✅ La bonne pratique — choisis la bonne photo",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre la bonne pratique.",
+          scenarios: [
+            { question: "Où ranges-tu les produits chimiques ?",
+              choix: [
+                { image: "ressources_eco/exo_nettoyage/nettoyage_correct_produits_ranges.jpg", correct: true, label: "Rangement A" },
+                { image: "ressources_eco/exo_nettoyage/nettoyage_erreur_produits_pres_aliments.jpg", correct: false, label: "Rangement B" }
+              ] },
+            { question: "Quelle lavette utiliser pour la cuisine ?",
+              choix: [
+                { image: "ressources_eco/exo_nettoyage/nettoyage_lavettes_code_couleur.jpg", correct: true, label: "Lavette A" },
+                { image: "ressources_eco/exo_nettoyage/nettoyage_erreur_eponge_sale.jpg", correct: false, label: "Lavette B" }
+              ] },
+            { question: "Quel matériel pour nettoyer un plan de travail ?",
+              choix: [
+                { image: "ressources_eco/exo_nettoyage/nettoyage_lavettes_code_couleur.jpg", correct: true, label: "Matériel A" },
+                { image: "ressources_eco/exo_nettoyage/nettoyage_erreur_eponge_sale.jpg", correct: false, label: "Matériel B" }
+              ] }
+          ]
+        },
+        {
+          type: "ordering_photos",
+          id: "exoC_nettoyage",
+          titre: "🔢 Range les 5 étapes du bionettoyage dans le bon ordre",
+          consigne: "Clique sur ↑ ↓ pour remettre les 5 étapes dans le bon ordre, du début (prélaver) à la fin (sécher).",
+          items: [
+            { id: "n1", image: "ressources_eco/exo_nettoyage/nettoyage_1_prelavage.jpg",        label: "1. Prélaver",          order: 1 },
+            { id: "n2", image: "ressources_eco/exo_nettoyage/nettoyage_2_lavage_detergent.jpg", label: "2. Laver (détergent)", order: 2 },
+            { id: "n3", image: "ressources_eco/exo_nettoyage/nettoyage_3_rincage.jpg",          label: "3. Rincer",            order: 3 },
+            { id: "n4", image: "ressources_eco/exo_nettoyage/nettoyage_4_desinfection.jpg",     label: "4. Désinfecter",       order: 4 },
+            { id: "n5", image: "ressources_eco/exo_nettoyage/nettoyage_5_sechage.jpg",          label: "5. Sécher",            order: 5 }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_nettoyage",
+        titre: "Épreuve d’attestation — Je sais nettoyer et désinfecter",
+        verbe_action: "APPLIQUER",
+        objectif: "la méthode de bionettoyage en 5 étapes, en distinguant détergent et désinfectant.",
+        mise_en_situation: "Le service est terminé. Tu dois nettoyer et désinfecter ton plan de travail avant de partir. Cette épreuve vérifie que tu connais les 5 étapes, les bons produits et le code couleur des lavettes.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien d’étapes a le bionettoyage ?",
+            options: ["3 étapes.", "5 étapes.", "7 étapes."],
+            correct: 1, explication: "Le bionettoyage se fait en 5 étapes : prélaver, laver, rincer, désinfecter, sécher." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Quelle est la différence entre détergent et désinfectant ?",
+            options: ["C’est la même chose.", "Le détergent enlève la saleté, le désinfectant tue les microbes.", "Le désinfectant lave, le détergent sèche."],
+            correct: 1, explication: "Le détergent LAVE (saleté visible), le désinfectant tue les microbes invisibles." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Tu nettoies un plan de travail. Dans quel ordre ?",
+            options: ["Désinfecter, puis laver.", "Prélaver, laver, rincer, désinfecter, sécher.", "Sécher, laver, désinfecter."],
+            correct: 1, explication: "Toujours dans cet ordre : prélaver → laver → rincer → désinfecter → sécher." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Quelle couleur de lavette pour les sanitaires ?",
+            options: ["Bleu.", "Vert.", "Rouge."],
+            correct: 2, explication: "La lavette rouge est réservée aux sanitaires et zones très souillées." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : on peut utiliser la même lavette pour le plan de travail et les sanitaires si on la rince.",
+            correct: false, explication: "Faux. Une lavette par zone, code couleur obligatoire. Sinon on transporte les microbes." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "Cite **les 5 étapes** du bionettoyage dans l’ordre.",
+            indice_correction: "Réponse attendue : 1. Prélaver, 2. Laver (détergent), 3. Rincer, 4. Désinfecter, 5. Sécher." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** pourquoi il ne faut pas ranger les produits chimiques près des aliments.",
+            indice_correction: "Réponse attendue : risque de contamination chimique des aliments (projection, fuite, confusion). Les produits chimiques sont dangereux : ils doivent être stockés dans un placard séparé." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Connaître les 5 étapes du bionettoyage", indicateur: "L’élève cite les 5 étapes dans l’ordre.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Différencier détergent et désinfectant", indicateur: "L’élève explique le rôle de chaque produit.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Reconnaître le code couleur des lavettes", indicateur: "L’élève associe couleur et zone (bleu, vert, rouge, jaune).", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Repérer les erreurs de nettoyage", indicateur: "L’élève repère éponge sale, mélange de zones, produits près des aliments.", niveau_attendu: "A", remediation: "Refaire l’exo « Repère l’erreur »." },
+          { id: "cr5", capacite: "Ranger les produits chimiques en sécurité", indicateur: "L’élève explique le rangement séparé des aliments.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "dangers_5m",
+    titre: "Les 5M et les dangers alimentaires",
+    emoji: "⚠️",
+    description: "Comprendre d’où viennent les risques pour la sécurité du client : les 4 dangers et la méthode des 5M.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Savoirs associés SC 1.5 — Dangers et 5M",
+      lien: "Sécurité alimentaire : identifier les dangers et leurs sources de contamination (méthode des 5M).",
+      capacites: [
+        "Identifier les 4 types de dangers alimentaires.",
+        "Expliquer la méthode des 5M.",
+        "Repérer un danger sur une photo de cuisine."
+      ]
+    },
+    objectifs_eleve: [
+      "identifier les 4 types de dangers alimentaires",
+      "expliquer la méthode des 5M",
+      "repérer un danger sur une photo de cuisine",
+      "comprendre pourquoi on prend autant de précautions au quotidien"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 4 types de dangers (bio, chimique, physique, allergique)",
+        "Citer les 5M (Main d’œuvre, Matière, Matériel, Milieu, Méthode)",
+        "Donner un exemple concret pour chaque M",
+        "Repérer un danger dans une scène de cuisine",
+        "Expliquer pourquoi les bactéries aiment chaud + humide + temps"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Danger alimentaire", def: "Tout ce qui peut rendre un aliment impropre à la consommation et faire tomber malade un client." },
+      { mot: "Danger biologique", def: "Microbes vivants : bactéries, virus, parasites, moisissures." },
+      { mot: "Danger chimique", def: "Produits non alimentaires : produit ménager, pesticide, allergène caché." },
+      { mot: "Danger physique", def: "Corps étranger : cheveu, morceau de verre, bout de plastique, ongle." },
+      { mot: "Danger allergique", def: "Allergène (les 14 INCO) qui peut provoquer une réaction grave chez un client." },
+      { mot: "5M", def: "5 sources possibles de contamination : Main d’œuvre, Matière, Matériel, Milieu, Méthode." },
+      { mot: "Contamination", def: "Quand un danger arrive dans un aliment qui était propre." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Qu’est-ce qu’un danger alimentaire ?",
+          texte:
+            "Un **danger alimentaire** = tout ce qui peut **rendre malade** un client.\n\n" +
+            "- Un client malade = **problème grave** (santé, image, justice).\n" +
+            "- Ton métier : produire des aliments **sains** ET **bons**.\n" +
+            "- Pour cela, tu dois **connaître les dangers** et savoir les **éviter**."
+        },
+        {
+          id: "c2",
+          titre: "🚨 Les 4 types de dangers",
+          texte:
+            "Il existe **4 grandes familles** de dangers :\n\n" +
+            "- 🦠 **Biologique** — microbes vivants (bactéries, virus, moisissures, parasites).\n" +
+            "  Ex. : *Salmonella* sur un œuf, *Listeria* dans du fromage.\n" +
+            "- 🧪 **Chimique** — produits non alimentaires.\n" +
+            "  Ex. : reste de produit ménager mal rincé, pesticides sur des légumes mal lavés.\n" +
+            "- 🪨 **Physique** — corps étrangers visibles.\n" +
+            "  Ex. : cheveu, morceau de verre cassé, bout de plastique, ongle.\n" +
+            "- 🥜 **Allergique** — un des 14 allergènes obligatoires.\n" +
+            "  Ex. : trace d’arachide dans un plat, lait caché dans une sauce."
+        },
+        {
+          id: "c3",
+          titre: "🎯 La méthode des 5M",
+          texte:
+            "Les **5M** sont un **outil** pour repérer d’où peut venir un danger. 5 sources possibles :\n\n" +
+            "1. **Main d’œuvre** (toi !) → cheveux, mains sales, blessures, vêtements.\n" +
+            "   *Je maîtrise* : je porte ma tenue + je me lave les mains.\n" +
+            "2. **Matière** → l’aliment lui-même (cru, périmé, contaminé en amont).\n" +
+            "   *Je maîtrise* : je vérifie la DLC et l’aspect avant utilisation.\n" +
+            "3. **Matériel** → couteaux, planches, frigo, surfaces.\n" +
+            "   *Je maîtrise* : je nettoie et désinfecte mon matériel.\n" +
+            "4. **Milieu** → la cuisine elle-même (températures, propreté, aération).\n" +
+            "   *Je maîtrise* : je respecte la marche en avant et le froid.\n" +
+            "5. **Méthode** → comment tu travailles (recettes, marche en avant, lavage).\n" +
+            "   *Je maîtrise* : j’applique les protocoles appris en cours."
+        },
+        {
+          id: "c4",
+          titre: "🦠 Comment les microbes se développent ?",
+          texte:
+            "Les bactéries adorent **3 choses** :\n\n" +
+            "- 🌡️ **Chaleur** : entre **+10 °C et +63 °C** = zone dangereuse.\n" +
+            "- 💧 **Humidité** : eau présente dans l’aliment.\n" +
+            "- ⏱️ **Temps** : plus on attend, plus elles se multiplient.\n\n" +
+            "Donc : on garde **au froid OU au chaud**, jamais entre les deux trop longtemps.\n\n" +
+            "> Une bactérie peut se diviser en 2 toutes les 20 minutes. En 6 heures, elle devient des **milliards**."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or des dangers :**\n\n" +
+            "- 4 dangers : 🦠 biologique, 🧪 chimique, 🪨 physique, 🥜 allergique.\n" +
+            "- 5M = 5 sources de contamination (**M**ain d’œuvre, **M**atière, **M**atériel, **M**ilieu, **M**éthode).\n" +
+            "- Microbes adorent : **chaud + humide + temps**.\n" +
+            "- Tout ce que tu fais en cuisine vise à **casser** au moins un de ces 3.\n" +
+            "- Si tu connais les dangers, tu sais **pourquoi** tu fais chaque geste."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Un danger alimentaire, c’est…",
+          options: ["Un plat qui n’a pas bon goût.", "Tout ce qui peut rendre un client malade en mangeant.", "Un aliment trop cher."],
+          correct: 1, explication: "Un danger alimentaire = tout ce qui peut rendre un client malade." },
+        { id: "q2", lie_cours: "c2", question: "Un cheveu dans un plat est un danger…",
+          options: ["Biologique.", "Chimique.", "Physique."],
+          correct: 2, explication: "Un cheveu est un corps étranger visible : c’est un danger physique." },
+        { id: "q3", lie_cours: "c2", question: "Une bactérie comme la Salmonella est un danger…",
+          options: ["Biologique.", "Chimique.", "Allergique."],
+          correct: 0, explication: "Les bactéries sont des microbes vivants : danger biologique." },
+        { id: "q4", lie_cours: "c2", question: "Une trace d’arachide cachée dans une sauce est un danger…",
+          options: ["Physique.", "Allergique.", "Chimique."],
+          correct: 1, explication: "L’arachide fait partie des 14 allergènes obligatoires : danger allergique." },
+        { id: "q5", lie_cours: "c3", question: "Dans les 5M, le M de « Main d’œuvre » représente…",
+          options: ["La machine à laver.", "Toi et tes collègues.", "Les matières premières."],
+          correct: 1, explication: "Main d’œuvre = les personnes qui travaillent (toi et tes collègues)." },
+        { id: "q6", lie_cours: "c3", question: "Une planche à découper sale est un risque venant du M…",
+          options: ["Matière.", "Matériel.", "Milieu."],
+          correct: 1, explication: "La planche à découper, c’est du matériel : c’est le M Matériel." },
+        { id: "q7", lie_cours: "c3", question: "Tu utilises la même planche pour la viande crue ET les légumes : c’est un problème de M…",
+          options: ["Matière.", "Milieu.", "Méthode (mauvaise organisation)."],
+          correct: 2, explication: "Le problème vient de la façon de travailler : c’est le M Méthode." },
+        { id: "q8", lie_cours: "c4", question: "Les bactéries se multiplient surtout entre…",
+          options: ["−18 °C et 0 °C.", "+10 °C et +63 °C.", "+80 °C et +100 °C."],
+          correct: 1, explication: "La zone dangereuse va de +10 °C à +63 °C : ni froid ni chaud." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_dangers_5m",
+          titre: "🔍 Identifie le danger sur la photo",
+          consigne: "Sur chaque photo, identifie le danger présent et dis à quelle famille il appartient.",
+          items: [
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_1_planche_meme_couteau.jpg",
+              erreur: "Couteau utilisé pour viande crue ET légumes : danger biologique (les microbes de la viande passent sur les légumes). Problème du M Méthode." },
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_3_carton_sur_propre.jpg",
+              erreur: "Carton sale posé sur surface propre : danger biologique + physique (microbes et débris du carton). Problème du M Milieu." },
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_4_dechets_pres_aliments.jpg",
+              erreur: "Poubelle ouverte près des plats : danger biologique (microbes des déchets). Problème du M Milieu." },
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_5_lavette_sale.jpg",
+              erreur: "Lavette sale près d’un plat : danger biologique. Problème du M Matériel." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_ongles.jpg",
+              erreur: "Ongles longs vernis : danger physique (vernis qui s’écaille) + biologique (microbes sous les ongles). Problème du M Main d’œuvre." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_dangers_5m",
+          titre: "✅ La bonne pratique — choisis la bonne photo",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre la bonne pratique.",
+          scenarios: [
+            { question: "Quelle posture est correcte au poste (M Main d’œuvre) ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_complete_correcte.jpg", correct: true, label: "Tenue A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pas_de_charlotte.jpg", correct: false, label: "Tenue B" }
+              ] },
+            { question: "Quel plan de travail est correct (M Milieu) ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_mains.jpg", correct: true, label: "Plan A" },
+                { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_3_carton_sur_propre.jpg", correct: false, label: "Plan B" }
+              ] },
+            { question: "Quelles mains sont prêtes pour cuisiner (M Main d’œuvre) ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_mains.jpg", correct: true, label: "Mains A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_ongles.jpg", correct: false, label: "Mains B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_dangers_5m",
+        titre: "Épreuve d’attestation — Je connais les 5M et les dangers",
+        verbe_action: "IDENTIFIER",
+        objectif: "les 4 types de dangers alimentaires et savoir d’où ils peuvent venir grâce à la méthode des 5M.",
+        mise_en_situation: "Tu travailles en cuisine. Avant chaque geste, tu dois savoir reconnaître les dangers possibles et leurs sources. Cette épreuve vérifie que tu connais les 4 dangers et la méthode des 5M.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien existe-t-il de types de dangers alimentaires ?",
+            options: ["2 types.", "4 types.", "5 types."],
+            correct: 1, explication: "4 types : biologique, chimique, physique, allergique." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Un morceau de verre dans une assiette est un danger…",
+            options: ["Biologique.", "Physique.", "Chimique."],
+            correct: 1, explication: "Un corps étranger visible (verre, cheveu, plastique) = danger physique." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Que veut dire le sigle « 5M » ?",
+            options: ["5 Microbes.", "Main d’œuvre, Matière, Matériel, Milieu, Méthode.", "5 Métiers de la cuisine."],
+            correct: 1, explication: "Les 5M = Main d’œuvre, Matière, Matériel, Milieu, Méthode." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Les bactéries se multiplient le plus vite…",
+            options: ["Au congélateur (−18 °C).", "Entre +10 °C et +63 °C.", "Dans un four à 200 °C."],
+            correct: 1, explication: "La zone dangereuse est entre +10 °C et +63 °C." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : un client allergique à l’arachide peut avoir une réaction grave même avec une simple trace.",
+            correct: true, explication: "Vrai. L’allergène est un danger même en très petite quantité : c’est le danger allergique." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 4 types de dangers** alimentaires et donne **un exemple** pour chacun.",
+            indice_correction: "Réponse attendue : Biologique (ex. salmonelle, listeria), Chimique (ex. produit ménager mal rincé), Physique (ex. cheveu, verre), Allergique (ex. trace d’arachide)." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** pourquoi on doit garder les aliments soit au froid soit au chaud.",
+            indice_correction: "Réponse attendue : entre +10 °C et +63 °C les bactéries se multiplient très vite (chaud + humide + temps). Au froid (frigo) ou au chaud (au-dessus de +63 °C), elles ne se développent pas. On évite donc la zone dangereuse." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Connaître les 4 types de dangers", indicateur: "L’élève cite biologique, chimique, physique, allergique avec un exemple.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Citer les 5M et donner un exemple", indicateur: "L’élève cite Main d’œuvre, Matière, Matériel, Milieu, Méthode avec un exemple.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Repérer un danger sur une photo", indicateur: "L’élève identifie le danger et sa famille sur l’exo « Identifie le danger ».", niveau_attendu: "A", remediation: "Refaire l’exo « Identifie le danger »." },
+          { id: "cr4", capacite: "Expliquer comment les bactéries se multiplient", indicateur: "L’élève cite chaud + humide + temps et la zone +10/+63 °C.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Faire le lien entre les gestes pro et la prévention des dangers", indicateur: "L’élève explique pourquoi un geste (lavage, tenue, froid) protège des dangers.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "haccp_pms",
+    titre: "HACCP et le Plan de Maîtrise Sanitaire",
+    emoji: "🦠",
+    description: "La méthode et le plan que tout pro de la restauration doit suivre pour garantir la sécurité du client.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Savoirs associés SC 1.6 — HACCP et PMS",
+      lien: "Sécurité alimentaire : appliquer la méthode HACCP et le Plan de Maîtrise Sanitaire en restauration.",
+      capacites: [
+        "Expliquer ce qu’est l’HACCP.",
+        "Citer les 7 principes de l’HACCP.",
+        "Comprendre le rôle du PMS et de la traçabilité."
+      ]
+    },
+    objectifs_eleve: [
+      "expliquer ce qu’est l’HACCP avec tes mots",
+      "citer les 7 principes de l’HACCP",
+      "comprendre ce qu’est un Plan de Maîtrise Sanitaire (PMS)",
+      "identifier les documents de traçabilité à remplir au quotidien"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Définir HACCP avec tes mots simples",
+        "Citer au moins 4 des 7 principes de l’HACCP",
+        "Expliquer ce qu’est un PMS",
+        "Citer 3 documents de traçabilité courants",
+        "Comprendre pourquoi c’est obligatoire en restauration"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "HACCP", def: "Méthode pour analyser les dangers et les maîtriser. Vient de l’anglais : Hazard Analysis Critical Control Points (en gros : repérer où ça peut mal tourner)." },
+      { mot: "PMS (Plan de Maîtrise Sanitaire)", def: "Document obligatoire qui décrit comment ton établissement applique les règles d’hygiène. C’est la « bible » de la cuisine." },
+      { mot: "Point critique (CCP)", def: "Étape clé où un danger peut survenir. On la surveille de près (ex. cuisson à cœur ≥ 63 °C)." },
+      { mot: "Bonnes Pratiques d’Hygiène (BPH)", def: "Toutes les règles de base à appliquer tous les jours : tenue, lavage des mains, marche en avant, nettoyage…" },
+      { mot: "Traçabilité", def: "Pouvoir suivre un produit depuis sa livraison jusqu’au client. Permet de retrouver vite un problème." },
+      { mot: "Plat témoin", def: "Petit échantillon (100 g) gardé 5 jours à +3 °C pour pouvoir l’analyser en cas de souci." },
+      { mot: "Autocontrôle", def: "Vérification que tu fais toi-même (ex. relever la T° du frigo, vérifier la DLC)." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 C’est quoi HACCP ?",
+          texte:
+            "**HACCP** est une **méthode** créée par la NASA pour la nourriture des astronautes.\n\n" +
+            "- But : repérer **où** un aliment peut devenir dangereux et **comment** l’éviter.\n" +
+            "- C’est devenu **obligatoire** en restauration en Europe (règlement CE 852/2004).\n" +
+            "- Tu n’as pas besoin de tout savoir, mais tu dois en connaître les **principes** et **appliquer** ce que ton plan te demande."
+        },
+        {
+          id: "c2",
+          titre: "📋 Les 7 principes de l’HACCP",
+          texte:
+            "Les **7 principes** à connaître :\n\n" +
+            "1. **Lister les dangers** possibles à chaque étape (les 4 dangers, les 5M).\n" +
+            "2. **Repérer les points critiques** (CCP) : étapes où le danger doit être maîtrisé.\n" +
+            "3. **Fixer des limites** (T°, durée, dosage…) pour chaque CCP.\n" +
+            "4. **Surveiller** ces limites en permanence (relevés, contrôles).\n" +
+            "5. **Corriger** si la limite est dépassée (action immédiate).\n" +
+            "6. **Vérifier** que ça marche (autocontrôles, audits).\n" +
+            "7. **Tout enregistrer** par écrit (documents de traçabilité).\n\n" +
+            "> 💡 Astuce : moyen mnémotechnique → **L-R-F-S-C-V-E**."
+        },
+        {
+          id: "c3",
+          titre: "📘 Le Plan de Maîtrise Sanitaire (PMS)",
+          texte:
+            "Le **PMS** est le **classeur officiel** de ton établissement.\n\n" +
+            "Il contient **3 grandes parties** :\n\n" +
+            "1. **Les BPH** — Bonnes Pratiques d’Hygiène (tenue, lavage mains, nettoyage, marche en avant…).\n" +
+            "2. **Le plan HACCP** — analyse des dangers spécifiques à ton activité.\n" +
+            "3. **La traçabilité** — comment tu gardes la trace de ce que tu fais (documents).\n\n" +
+            "- Le PMS est demandé en **inspection sanitaire** (DDPP).\n" +
+            "- Toute l’équipe doit le connaître et l’appliquer."
+        },
+        {
+          id: "c4",
+          titre: "📝 Les documents que tu remplis",
+          texte:
+            "Documents de **traçabilité** courants en PSR :\n\n" +
+            "- 🌡️ **Relevé de températures** (frigos, vitrines) — 1 fois/jour minimum.\n" +
+            "- 📥 **Bons de livraison** signés (avec T° à réception).\n" +
+            "- 🥡 **Étiquettes plats produits** (DLC, lot, allergènes).\n" +
+            "- 🥢 **Plats témoins** (100 g, 5 jours à +3 °C).\n" +
+            "- 🧹 **Plan de nettoyage rempli** (qui, quand, où).\n" +
+            "- ⚠️ **Fiche de non-conformité** quand un problème est détecté.\n\n" +
+            "> 📌 Pourquoi remplir ? **Si problème → on retrouve la cause.**"
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or HACCP & PMS :**\n\n" +
+            "- HACCP = méthode pour repérer où un aliment peut devenir dangereux.\n" +
+            "- 7 principes : **lister, repérer, fixer, surveiller, corriger, vérifier, enregistrer**.\n" +
+            "- PMS = classeur officiel de ton établissement (BPH + HACCP + traçabilité).\n" +
+            "- Tu remplis chaque jour des **documents simples** (T°, DLC, plats témoins).\n" +
+            "- Tout cela protège **le client ET ton métier**."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "HACCP, ça veut dire quoi en français ?",
+          options: ["Une recette de cuisine internationale.", "Une méthode pour repérer et maîtriser les dangers alimentaires.", "Un type de four professionnel."],
+          correct: 1, explication: "HACCP = méthode pour analyser les dangers et les maîtriser à chaque étape." },
+        { id: "q2", lie_cours: "c1", question: "L’HACCP est-il obligatoire en restauration ?",
+          options: ["Non, c’est conseillé.", "Oui, depuis 2006 partout en Europe.", "Seulement pour les grands restaurants."],
+          correct: 1, explication: "Oui, c’est obligatoire en Europe depuis le règlement CE 852/2004 (appliqué en 2006)." },
+        { id: "q3", lie_cours: "c2", question: "Combien de principes a la méthode HACCP ?",
+          options: ["5.", "7.", "10."],
+          correct: 1, explication: "L’HACCP repose sur 7 principes (L-R-F-S-C-V-E)." },
+        { id: "q4", lie_cours: "c2", question: "Un point critique (CCP), c’est…",
+          options: ["Une étape clé où un danger doit être maîtrisé (ex. cuisson à cœur).", "Le moment du service du midi.", "Un défaut sur un aliment."],
+          correct: 0, explication: "Un CCP est une étape où le danger doit absolument être maîtrisé (ex. cuisson ≥ 63 °C)." },
+        { id: "q5", lie_cours: "c3", question: "Le PMS contient…",
+          options: ["Seulement des recettes.", "Les BPH, le plan HACCP et la traçabilité.", "La liste des fournisseurs."],
+          correct: 1, explication: "Le PMS = 3 parties : BPH + plan HACCP + traçabilité." },
+        { id: "q6", lie_cours: "c3", question: "Le PMS est demandé en…",
+          options: ["Réunion d’équipe.", "Inspection sanitaire (DDPP).", "Cours de cuisine."],
+          correct: 1, explication: "Le PMS est exigé lors des contrôles de la DDPP (inspection sanitaire)." },
+        { id: "q7", lie_cours: "c4", question: "Combien de temps garde-t-on un plat témoin ?",
+          options: ["24 heures à température ambiante.", "5 jours, à +3 °C.", "1 mois au congélateur."],
+          correct: 1, explication: "Un plat témoin (100 g) se conserve 5 jours à +3 °C maximum." },
+        { id: "q8", lie_cours: "c4", question: "Pourquoi remplir des documents de traçabilité tous les jours ?",
+          options: ["Pour faire plaisir au chef.", "Pour pouvoir retrouver la cause d’un problème (traçabilité).", "Pour décorer le classeur."],
+          correct: 1, explication: "La traçabilité permet de retrouver vite la cause d’un problème (lot, T°, etc.)." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_haccp_pms",
+          titre: "🔍 Où est le risque ? Repère le manquement HACCP/PMS",
+          consigne: "Sur chaque photo, repère le manquement aux règles HACCP / PMS.",
+          items: [
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_2_frigo_ouvert.jpg",
+              erreur: "Frigo ouvert : la chaîne du froid est rompue. C’est un point critique non maîtrisé." },
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_3_carton_sur_propre.jpg",
+              erreur: "Carton sale sur surface propre : non-conformité aux BPH." },
+            { image: "ressources_eco/exo_avant_apres/frigo_avant_2_fouillis.jpg",
+              erreur: "Frigo mal rangé, pas de traçabilité visible (étiquettes manquantes, mélange cru/cuit)." },
+            { image: "ressources_eco/exo_avant_apres/poste_avant_1_desordre.jpg",
+              erreur: "Poste de travail désorganisé : non-respect des BPH (plan de nettoyage)." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_haccp_pms",
+          titre: "✅ Quelle situation respecte le PMS ?",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre la situation conforme au PMS.",
+          scenarios: [
+            { question: "Quel poste de travail respecte le PMS ?",
+              choix: [
+                { image: "ressources_eco/exo_avant_apres/poste_apres_1_propre.jpg", correct: true, label: "Poste A" },
+                { image: "ressources_eco/exo_avant_apres/poste_avant_1_desordre.jpg", correct: false, label: "Poste B" }
+              ] },
+            { question: "Quel frigo respecte les BPH ?",
+              choix: [
+                { image: "ressources_eco/exo_avant_apres/frigo_apres_2_range.jpg", correct: true, label: "Frigo A" },
+                { image: "ressources_eco/exo_avant_apres/frigo_avant_2_fouillis.jpg", correct: false, label: "Frigo B" }
+              ] },
+            { question: "Quel comptoir de service est conforme ?",
+              choix: [
+                { image: "ressources_eco/exo_avant_apres/service_apres_4_organise.jpg", correct: true, label: "Service A" },
+                { image: "ressources_eco/exo_avant_apres/service_avant_4_chaotique.jpg", correct: false, label: "Service B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_haccp_pms",
+        titre: "Épreuve d’attestation — Je connais HACCP et le PMS",
+        verbe_action: "EXPLIQUER",
+        objectif: "ce qu’est l’HACCP, le Plan de Maîtrise Sanitaire et leur utilité concrète au quotidien.",
+        mise_en_situation: "Tu commences ton stage. Le chef te montre le classeur PMS posé sur l’étagère de la cuisine. Que dois-tu savoir pour bien l’utiliser au quotidien ? Cette épreuve vérifie que tu connais l’HACCP et le PMS.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "L’HACCP, c’est…",
+            options: ["Une recette traditionnelle.", "Une méthode pour repérer et maîtriser les dangers alimentaires.", "Un type de couteau professionnel."],
+            correct: 1, explication: "HACCP = méthode pour analyser les dangers et les maîtriser." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Combien de principes a l’HACCP ?",
+            options: ["5.", "7.", "12."],
+            correct: 1, explication: "7 principes : Lister, Repérer, Fixer, Surveiller, Corriger, Vérifier, Enregistrer." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Le PMS contient…",
+            options: ["Les BPH, le plan HACCP et la traçabilité.", "Les recettes du chef.", "La liste des clients."],
+            correct: 0, explication: "Le PMS = BPH + plan HACCP + traçabilité." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Un plat témoin se conserve…",
+            options: ["1 jour à température ambiante.", "5 jours à +3 °C.", "1 mois au congélateur."],
+            correct: 1, explication: "Plat témoin : 100 g, 5 jours, à +3 °C." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : le PMS est obligatoire en restauration et il est contrôlé par la DDPP.",
+            correct: true, explication: "Vrai. Le PMS est obligatoire et demandé lors des inspections sanitaires de la DDPP." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** ce qu’est l’HACCP.",
+            indice_correction: "Réponse attendue : une méthode pour repérer les dangers (biologiques, chimiques, physiques, allergiques) à chaque étape de la production et fixer des règles pour les éviter. Obligatoire en restauration." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Cite 3 documents** que tu dois remplir au quotidien et explique à quoi ils servent.",
+            indice_correction: "Réponse attendue : ex. relevé de T° frigo (vérifier la chaîne du froid), bon de livraison (T° à réception), plat témoin (analyser en cas de souci), étiquette DLC, plan de nettoyage. Ils servent à la traçabilité : retrouver la cause d’un problème." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Définir HACCP avec ses propres mots", indicateur: "L’élève explique que c’est une méthode pour repérer et maîtriser les dangers alimentaires.", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr2", capacite: "Citer au moins 4 des 7 principes", indicateur: "L’élève cite au moins 4 principes parmi : lister, repérer, fixer, surveiller, corriger, vérifier, enregistrer.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Expliquer ce qu’est un PMS", indicateur: "L’élève cite les 3 parties : BPH + plan HACCP + traçabilité.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Identifier les documents de traçabilité", indicateur: "L’élève cite au moins 3 documents (T°, plat témoin, étiquette DLC, plan de nettoyage…).", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Faire le lien entre HACCP/PMS et la sécurité du client", indicateur: "L’élève explique que ces règles protègent le client et le professionnel.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "marche_en_avant_theorie",
+    titre: "La marche en avant",
+    emoji: "🔄",
+    description: "Le principe d’organisation qui empêche les microbes de circuler dans la cuisine.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Savoirs associés SC 1.6 — Hygiène et sécurité alimentaire",
+      lien: "Marche en avant : organiser le travail du sale vers le propre pour éviter les contaminations croisées.",
+      capacites: [
+        "Expliquer le principe de la marche en avant.",
+        "Distinguer marche dans l’espace et marche dans le temps.",
+        "Identifier les zones sales et propres d’une cuisine."
+      ]
+    },
+    objectifs_eleve: [
+      "expliquer ce qu’est la marche en avant",
+      "distinguer marche dans l’espace et marche dans le temps",
+      "reconnaître les zones sales et propres d’une cuisine",
+      "repérer une rupture de marche en avant sur photo"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Définir la marche en avant avec tes mots",
+        "Citer les 9 étapes du parcours d’un aliment",
+        "Distinguer marche dans l’espace et marche dans le temps",
+        "Repérer une erreur de marche en avant sur une photo",
+        "Faire le lien avec les contaminations croisées"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Marche en avant", def: "Principe d’organisation où les aliments avancent toujours du sale vers le propre, sans revenir en arrière." },
+      { mot: "Zone sale", def: "Endroit où arrivent ou sont stockés les produits non encore préparés (réception, déconditionnement, plonge)." },
+      { mot: "Zone propre", def: "Endroit où on prépare, cuit et conditionne les aliments prêts à servir." },
+      { mot: "Marche dans l’espace", def: "Quand la cuisine a assez de place : chaque zone est physiquement séparée." },
+      { mot: "Marche dans le temps", def: "Quand la cuisine est petite : on fait le sale, on nettoie, puis on fait le propre." },
+      { mot: "Contamination croisée", def: "Microbes qui passent d’un produit sale à un produit propre. C’est ce qu’on veut éviter." },
+      { mot: "5 circuits", def: "Dans une cuisine pro, il y a 5 flux qui ne doivent pas se croiser : marchandises propres, marchandises sales, déchets, personnel, clients." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 C’est quoi la marche en avant ?",
+          texte:
+            "Une cuisine pro a une **règle d’or** : les aliments avancent toujours **du sale vers le propre**.\n\n" +
+            "- Pas de retour en arrière. Pas de croisement entre cru et cuit.\n" +
+            "- Pourquoi ? Pour éviter que les microbes du sale ne contaminent le propre.\n" +
+            "- C’est **obligatoire** par la loi (règlement européen)."
+        },
+        {
+          id: "c2",
+          titre: "📋 Les 9 étapes du parcours",
+          texte:
+            "Le parcours d’un aliment se fait toujours dans cet ordre :\n\n" +
+            "1. **Réception** des marchandises.\n" +
+            "2. **Stockage** (réserve, chambre froide).\n" +
+            "3. **Déconditionnement** (retrait des emballages).\n" +
+            "4. **Lavage** (légumes, produits terreux).\n" +
+            "5. **Préparation** (découpe sur plan propre).\n" +
+            "6. **Cuisson** (à la bonne température).\n" +
+            "7. **Conditionnement** (mise en barquette).\n" +
+            "8. **Étiquetage et stockage froid**.\n" +
+            "9. **Distribution / vente à emporter**.\n\n" +
+            "> ⚠️ Pour un plat à servir chaud : penser au refroidissement rapide (+63 °C → +10 °C en moins de 2 h) entre cuisson et conditionnement."
+        },
+        {
+          id: "c3",
+          titre: "🏗️ Marche dans l’espace VS dans le temps",
+          texte:
+            "Deux façons de faire, selon la taille de ta cuisine :\n\n" +
+            "- **Dans l’espace** : la cuisine est assez grande pour avoir une zone par étape. Le sale et le propre ne se croisent jamais physiquement. C’est l’idéal.\n" +
+            "- **Dans le temps** : la cuisine est petite. On utilise la même zone pour tout, mais à des moments différents. Avant : zone sale (épluchage). On nettoie. Après : zone propre (dressage).\n\n" +
+            "> 💡 Les deux solutions sont **valables**, à condition de **respecter la règle d’or** (sale → propre, jamais l’inverse)."
+        },
+        {
+          id: "c4",
+          titre: "🚦 Les zones de la cuisine",
+          texte:
+            "Chaque cuisine se découpe en zones :\n\n" +
+            "- 🟥 **Zones SALES** : réception, stockage des cartons, déconditionnement, plonge, déchets.\n" +
+            "- 🟩 **Zones PROPRES** : préparation, cuisson, conditionnement, stockage froid, distribution.\n\n" +
+            "- Chaque zone a son **matériel** (couteaux, planches, lavettes) qui ne sort pas de la zone.\n" +
+            "- Les **5 circuits** ne doivent pas se croiser : marchandises propres, marchandises sales, déchets, personnel, clients."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or de la marche en avant :**\n\n" +
+            "- Marche en avant = du sale vers le propre, sans retour arrière.\n" +
+            "- 9 étapes successives, toujours dans le même ordre.\n" +
+            "- Espace OU temps, peu importe : on respecte la règle d’or.\n" +
+            "- 5 circuits à ne jamais croiser.\n" +
+            "- C’est ce qui protège tes clients des intoxications alimentaires."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "La marche en avant c’est…",
+          options: ["Avancer du sale vers le propre, sans revenir en arrière.", "Marcher vite en cuisine.", "Aller chercher les produits en réserve."],
+          correct: 0, explication: "C’est le principe d’organisation : les aliments avancent toujours du sale vers le propre." },
+        { id: "q2", lie_cours: "c2", question: "Quelle est la 1re étape de la marche en avant ?",
+          options: ["La cuisson.", "La réception des marchandises.", "Le lavage des légumes."],
+          correct: 1, explication: "Tout commence par la réception des marchandises livrées." },
+        { id: "q3", lie_cours: "c2", question: "Combien d’étapes dans le parcours d’un aliment ?",
+          options: ["5.", "7.", "9."],
+          correct: 2, explication: "9 étapes : réception, stockage, déconditionnement, lavage, préparation, cuisson, conditionnement, étiquetage, distribution." },
+        { id: "q4", lie_cours: "c3", question: "Tu es dans une petite cuisine. Tu peux quand même appliquer la marche en avant ?",
+          options: ["Non, c’est impossible.", "Oui, en faisant le sale d’abord, en nettoyant, puis le propre.", "Oui, en mélangeant tout."],
+          correct: 1, explication: "C’est la marche dans le temps : sale → nettoyage → propre, dans le même espace." },
+        { id: "q5", lie_cours: "c4", question: "La plonge est une zone…",
+          options: ["Sale.", "Propre.", "Neutre."],
+          correct: 0, explication: "La plonge reçoit la vaisselle sale : c’est une zone sale." },
+        { id: "q6", lie_cours: "c4", question: "La zone de cuisson est une zone…",
+          options: ["Sale.", "Propre.", "Mixte."],
+          correct: 1, explication: "La cuisson concerne des aliments préparés : c’est une zone propre." },
+        { id: "q7", lie_cours: "c1", question: "Qu’est-ce qu’une contamination croisée ?",
+          options: ["Quand deux clients commandent le même plat.", "Quand des microbes passent d’un produit sale à un produit propre.", "Quand on croise un collègue en cuisine."],
+          correct: 1, explication: "C’est exactement ce que la marche en avant cherche à éviter." },
+        { id: "q8", lie_cours: "c4", question: "Combien de circuits ne doivent pas se croiser dans une cuisine ?",
+          options: ["3.", "5 (marchandises propres, marchandises sales, déchets, personnel, clients).", "7."],
+          correct: 1, explication: "5 circuits : marchandises propres, marchandises sales, déchets, personnel, clients." }
+      ],
+      exercices_bonus: [
+        {
+          type: "ordering_photos",
+          id: "exoA_marche_en_avant",
+          titre: "🔢 Range les 9 étapes de la marche en avant",
+          consigne: "Clique sur ↑ ↓ pour remettre les 9 étapes dans le bon ordre, de la réception à la distribution.",
+          items: [
+            { id: "ma1", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/01_reception_marchandises_cartons_cagettes.jpg",        label: "1. Réception",          order: 1 },
+            { id: "ma2", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/02_stockage_reserve_chambre_froide.jpg",                  label: "2. Stockage",           order: 2 },
+            { id: "ma3", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/03_deconditionnement_retrait_emballages_exterieurs.jpg",  label: "3. Déconditionnement",  order: 3 },
+            { id: "ma4", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/04_lavage_legumes_produits.jpg",                          label: "4. Lavage",             order: 4 },
+            { id: "ma5", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/05_preparation_aliments_plan_propre.jpg",                 label: "5. Préparation",        order: 5 },
+            { id: "ma6", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/06_cuisson_aliments_bonne_temperature.jpg",               label: "6. Cuisson",            order: 6 },
+            { id: "ma7", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/07_conditionnement_barquette_contenant_propre.jpg",       label: "7. Conditionnement",    order: 7 },
+            { id: "ma8", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/08_etiquetage_dlc_stockage_froid.jpg",                    label: "8. Étiquetage + froid", order: 8 },
+            { id: "ma9", image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/09_distribution_remise_client_vente_emporter.jpg",        label: "9. Distribution",       order: 9 }
+          ]
+        },
+        {
+          type: "points_chauds",
+          id: "exoB_marche_en_avant",
+          titre: "🔍 Repère l’erreur de marche en avant",
+          consigne: "Sur chaque photo, repère la rupture de marche en avant ou la contamination croisée.",
+          items: [
+            { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/01_erreur_cartons_sur_plan_travail_propre.jpg",
+              erreur: "Cartons sales sur plan de travail propre. Le sale ne doit jamais croiser le propre." },
+            { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/03_erreur_viande_crue_a_cote_aliments_prets.jpg",
+              erreur: "Viande crue à côté d’aliments prêts à servir : risque de contamination croisée." },
+            { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/05_erreur_retour_arriere_plat_prepare_zone_sale.jpg",
+              erreur: "Plat préparé qui retourne en zone sale. La marche en avant interdit le retour en arrière." },
+            { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/06_erreur_meme_couteau_viande_crue_legumes.jpg",
+              erreur: "Même couteau pour viande crue et légumes. Contamination croisée garantie." },
+            { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/08_erreur_vaisselle_sale_pres_aliments_propres.jpg",
+              erreur: "Vaisselle sale près d’aliments propres. La plonge doit rester séparée." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoC_marche_en_avant",
+          titre: "✅ Quelle situation respecte la marche en avant ?",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre la situation conforme.",
+          scenarios: [
+            { question: "Quelle situation respecte la marche en avant ?",
+              choix: [
+                { image: "ressources_eco/marche_en_avant/1_parcours_9_etapes/05_preparation_aliments_plan_propre.jpg", correct: true, label: "Situation A" },
+                { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/01_erreur_cartons_sur_plan_travail_propre.jpg", correct: false, label: "Situation B" }
+              ] },
+            { question: "Quel rangement de plan de travail est conforme ?",
+              choix: [
+                { image: "ressources_eco/marche_en_avant/4_marche_dans_le_temps/04_preparation_propre_aliments_prets_manger.jpg", correct: true, label: "Plan A" },
+                { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/09_erreur_produit_propre_sur_chiffon_sale.jpg", correct: false, label: "Plan B" }
+              ] },
+            { question: "Que faire après avoir préparé du sale ?",
+              choix: [
+                { image: "ressources_eco/marche_en_avant/4_marche_dans_le_temps/02_nettoyage_plan_travail_materiel.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/05_erreur_retour_arriere_plat_prepare_zone_sale.jpg", correct: false, label: "Geste B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_marche_en_avant",
+        titre: "Épreuve d’attestation — Je connais la marche en avant",
+        verbe_action: "APPLIQUER",
+        objectif: "le principe de la marche en avant pour organiser ton travail en cuisine et éviter les contaminations croisées.",
+        mise_en_situation: "Tu commences ton stage en cafétéria. Le chef te dit : « Ici, on respecte à fond la marche en avant. » Cette épreuve vérifie que tu sais ce que ça veut dire et que tu sauras l’appliquer.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "La marche en avant, c’est…",
+            options: ["Marcher vite entre les postes.", "Avancer du sale vers le propre, sans retour en arrière.", "Une danse de cuisinier."],
+            correct: 1, explication: "C’est le principe d’organisation : sale → propre, sans revenir en arrière." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Combien d’étapes a le parcours d’un aliment ?",
+            options: ["5.", "7.", "9."],
+            correct: 2, explication: "9 étapes, de la réception à la distribution." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Marche dans le temps, c’est quand…",
+            options: ["On fait tout en même temps.", "On fait le sale, on nettoie, puis on fait le propre, dans le même espace.", "On regarde l’horloge en travaillant."],
+            correct: 1, explication: "Dans une petite cuisine : sale → nettoyage → propre, séparés dans le temps." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "La plonge est une zone…",
+            options: ["Propre.", "Sale.", "Neutre."],
+            correct: 1, explication: "La plonge reçoit la vaisselle sale : zone sale." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : un plat préparé peut repasser dans la zone de déconditionnement si c’est plus pratique.",
+            correct: false, explication: "Faux. La marche en avant interdit le retour en arrière du propre vers le sale." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** ce qu’est la marche en avant.",
+            indice_correction: "Réponse attendue : un principe d’organisation où les aliments avancent toujours du sale vers le propre, sans retour en arrière, pour éviter les contaminations croisées. Obligatoire en restauration." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Donne 2 exemples** de zones sales et 2 exemples de zones propres.",
+            indice_correction: "Réponse attendue : zones sales (réception, stockage cartons, déconditionnement, plonge, déchets) ; zones propres (préparation, cuisson, conditionnement, stockage froid, distribution)." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Définir la marche en avant", indicateur: "L’élève explique que les aliments avancent du sale vers le propre, sans retour arrière.", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr2", capacite: "Citer les 9 étapes du parcours", indicateur: "L’élève cite au moins 6 des 9 étapes dans le bon ordre.", niveau_attendu: "A", remediation: "Revoir cours c2 et refaire l’exo de rangement." },
+          { id: "cr3", capacite: "Distinguer espace vs temps", indicateur: "L’élève explique la différence entre marche dans l’espace (zones séparées) et marche dans le temps (mêmes zones, moments différents).", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Repérer les zones sales et propres", indicateur: "L’élève cite 2 zones sales et 2 zones propres et justifie.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Identifier une erreur sur photo", indicateur: "L’élève repère la rupture de marche en avant sur l’exo « Repère l’erreur ».", niveau_attendu: "A", remediation: "Refaire l’exo « Repère l’erreur »." }
+        ]
+      }
+    }
+  },
+  {
+    id: "chaine_du_froid",
+    titre: "La chaîne du froid",
+    emoji: "🧊",
+    description: "Comment le froid protège les aliments des microbes, et pourquoi il ne faut jamais le rompre.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Savoirs associés SC 1.6 — Hygiène et sécurité alimentaire",
+      lien: "Chaîne du froid : maintenir une T° basse en continu pour bloquer la multiplication des microbes.",
+      capacites: [
+        "Expliquer ce qu’est la chaîne du froid.",
+        "Citer les T° de conservation des produits frais et surgelés.",
+        "Reconnaître une rupture de la chaîne du froid."
+      ]
+    },
+    objectifs_eleve: [
+      "expliquer ce qu’est la chaîne du froid",
+      "citer les températures de conservation des produits frais et surgelés",
+      "reconnaître une rupture de la chaîne du froid",
+      "appliquer les bons gestes pour la préserver"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Définir la chaîne du froid",
+        "Citer les T° à respecter (frais 0–4 °C, surgelé -18 °C)",
+        "Reconnaître une rupture sur photo",
+        "Citer 3 gestes pour préserver le froid",
+        "Faire le lien avec les microbes"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Chaîne du froid", def: "Maintenir un produit au froid en continu, du producteur au client. Aucune coupure." },
+      { mot: "Produit frais (DLC)", def: "Se conserve entre 0 et 4 °C. Périssable. Ex. : viande, poisson, yaourt." },
+      { mot: "Produit surgelé", def: "Se conserve à -18 °C ou moins. Très longue conservation, pas de microbes actifs." },
+      { mot: "Rupture de la chaîne du froid", def: "Quand un produit frais reste trop longtemps à T° ambiante. Les microbes se multiplient." },
+      { mot: "Zone dangereuse", def: "Entre +10 °C et +63 °C : c’est là que les microbes adorent grossir." },
+      { mot: "Décongélation", def: "On décongèle au frigo (jamais à T° ambiante) pour rester dans la chaîne du froid." },
+      { mot: "Sonde alimentaire", def: "Petit thermomètre qu’on pique dans un produit pour vérifier sa T° à cœur." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi le froid ?",
+          texte:
+            "Le froid est ton **meilleur allié** contre les microbes.\n\n" +
+            "- Le froid **arrête** la multiplication des microbes.\n" +
+            "- Il ne les tue pas, il les **endort**.\n" +
+            "- Si on rompt la chaîne, les microbes se **réveillent**.\n" +
+            "- Résultat : danger pour le client."
+        },
+        {
+          id: "c2",
+          titre: "🌡️ Les températures à respecter",
+          texte:
+            "Chaque type de produit a sa T° :\n\n" +
+            "- **Frais (DLC)** : entre **0 et +4 °C**.\n" +
+            "- **Surgelé** : à **-18 °C** ou moins.\n" +
+            "- **Cuit chaud servi** : ≥ **+63 °C**.\n" +
+            "- **Zone dangereuse** : entre **+10 et +63 °C**.\n\n" +
+            "> ⚠️ Dans la zone dangereuse, les microbes adorent grossir."
+        },
+        {
+          id: "c3",
+          titre: "⚠️ La rupture de la chaîne du froid",
+          texte:
+            "Tu sors un produit du frigo. Tu l’oublies. Il chauffe.\n\n" +
+            "- À **+14 °C**, les bactéries doublent toutes les **20 min**.\n" +
+            "- En **1 heure**, il y en a **8 fois plus**.\n" +
+            "- Le produit peut sembler bon, mais il est **dangereux**.\n" +
+            "- On ne peut pas rattraper une rupture."
+        },
+        {
+          id: "c4",
+          titre: "🛒 Les bons gestes pour ta chaîne du froid",
+          texte:
+            "**Aux courses :**\n\n" +
+            "- Tu prends le frais en **dernier**.\n" +
+            "- Tu utilises un **sac isotherme**.\n" +
+            "- Tu rentres et tu ranges au frigo **tout de suite**.\n\n" +
+            "**En cuisine :**\n\n" +
+            "- Tu sors **juste ce qu’il te faut**.\n" +
+            "- Tu remets au frigo entre chaque étape.\n" +
+            "- Tu fermes le frigo **vite**."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or de la chaîne du froid :**\n\n" +
+            "- Frais = **0 à 4 °C**, surgelé = **-18 °C**.\n" +
+            "- Rupture = **danger immédiat**.\n" +
+            "- Décongélation au **frigo**, jamais à T° ambiante.\n" +
+            "- La **sonde alimentaire** est ton amie.\n" +
+            "- Le froid endort les microbes, il ne les tue pas."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Le froid sur les microbes…",
+          options: ["Les tue tous immédiatement.", "Les endort, ne les tue pas.", "N’a aucun effet."],
+          correct: 1, explication: "Le froid endort les microbes. Si la chaîne se rompt, ils se réveillent." },
+        { id: "q2", lie_cours: "c2", question: "Un yaourt se conserve à…",
+          options: ["0 à 4 °C.", "10 à 12 °C.", "-18 °C."],
+          correct: 0, explication: "Un produit frais se conserve entre 0 et +4 °C." },
+        { id: "q3", lie_cours: "c2", question: "Un produit surgelé se conserve à…",
+          options: ["0 °C.", "-18 °C ou moins.", "+4 °C."],
+          correct: 1, explication: "Un surgelé doit rester à -18 °C ou moins." },
+        { id: "q4", lie_cours: "c2", question: "La zone dangereuse pour les bactéries c’est entre…",
+          options: ["-18 et 0 °C.", "0 et +4 °C.", "+10 °C et +63 °C."],
+          correct: 2, explication: "Entre +10 et +63 °C, les microbes se multiplient à toute vitesse." },
+        { id: "q5", lie_cours: "c3", question: "Un steak laissé 1 h à T° ambiante en cuisine…",
+          options: ["Reste bon, pas de problème.", "Sa chaîne du froid est rompue, à jeter ou cuire vite.", "Doit retourner au frigo, ça repart."],
+          correct: 1, explication: "Sa chaîne du froid est rompue : à cuire vite ou à jeter." },
+        { id: "q6", lie_cours: "c4", question: "Comment décongèles-tu de la viande ?",
+          options: ["À T° ambiante sur le plan de travail.", "Au frigo, jamais à T° ambiante.", "Au soleil, près de la fenêtre."],
+          correct: 1, explication: "On décongèle au frigo pour rester dans la chaîne du froid." },
+        { id: "q7", lie_cours: "c4", question: "Quand tu fais des courses, le frais…",
+          options: ["Tu le prends en premier.", "Tu le prends en dernier, tu rentres vite.", "Tu le poses à côté du chauffage."],
+          correct: 1, explication: "Le frais se prend en dernier pour limiter la durée hors du froid." },
+        { id: "q8", lie_cours: "c5", question: "Avec quoi vérifies-tu la T° à cœur d’un produit ?",
+          options: ["Avec ton doigt.", "Une sonde alimentaire.", "À l’œil."],
+          correct: 1, explication: "La sonde alimentaire mesure la T° au centre du produit." }
+      ],
+      exercices_bonus: [
+        {
+          type: "multi_choix_image",
+          id: "exoA_chaine_du_froid",
+          titre: "✅ Choisis le produit frais conforme",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre un produit qui a respecté la chaîne du froid.",
+          scenarios: [
+            { question: "Quel citron a respecté la chaîne du froid ?",
+              choix: [
+                { image: "ressources_eco/banque_images_chaine_du_froid/citron/citron_frais_0_2_degre.jpg", correct: true, label: "Citron A" },
+                { image: "ressources_eco/banque_images_chaine_du_froid/citron/citron_frais_plusde14_degre.jpg", correct: false, label: "Citron B" }
+              ] },
+            { question: "Quelle viande a respecté la chaîne du froid ?",
+              choix: [
+                { image: "ressources_eco/banque_images_chaine_du_froid/viande_crue/viande_0_2degre.jpg", correct: true, label: "Viande A" },
+                { image: "ressources_eco/banque_images_chaine_du_froid/viande_crue/viande_plusde14_degre.jpg", correct: false, label: "Viande B" }
+              ] },
+            { question: "Quel poisson a respecté la chaîne du froid ?",
+              choix: [
+                { image: "ressources_eco/banque_images_chaine_du_froid/poissoncru/poission_0_2degre.jpg", correct: true, label: "Poisson A" },
+                { image: "ressources_eco/banque_images_chaine_du_froid/poissoncru/poission_plusde14_degre.jpg", correct: false, label: "Poisson B" }
+              ] },
+            { question: "Quelle fraise a respecté la chaîne du froid ?",
+              choix: [
+                { image: "ressources_eco/banque_images_chaine_du_froid/fraise/fraise_frais.0_2_degre.jpg", correct: true, label: "Fraise A" },
+                { image: "ressources_eco/banque_images_chaine_du_froid/fraise/fraise_frais.plusde_14_degre.jpg", correct: false, label: "Fraise B" }
+              ] }
+          ]
+        },
+        {
+          type: "points_chauds",
+          id: "exoB_chaine_du_froid",
+          titre: "🔍 Repère le danger pour la chaîne du froid",
+          consigne: "Sur chaque photo, repère le risque de rupture de la chaîne du froid.",
+          items: [
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_2_frigo_ouvert.jpg",
+              erreur: "Frigo ouvert : la chaîne du froid se rompt à chaque seconde." },
+            { image: "ressources_eco/exo_avant_apres/frigo_avant_2_fouillis.jpg",
+              erreur: "Frigo mal organisé : T° non homogène, risque de rupture sur certaines zones." }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_chaine_du_froid",
+        titre: "Épreuve d’attestation — Je connais la chaîne du froid",
+        verbe_action: "APPLIQUER",
+        objectif: "le respect de la chaîne du froid de la livraison au service.",
+        mise_en_situation: "Tu travailles en cafétéria. Le chef te confie la réception des produits frais et le rangement en chambre froide. Cette épreuve vérifie que tu sais protéger la chaîne du froid.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "La T° d’un produit frais doit être…",
+            options: ["Entre 0 et +4 °C.", "Entre +10 et +14 °C.", "À -18 °C."],
+            correct: 0, explication: "Frais = 0 à +4 °C. C’est la règle." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "La T° d’un produit surgelé doit être…",
+            options: ["0 °C.", "-18 °C ou moins.", "+4 °C."],
+            correct: 1, explication: "Surgelé = -18 °C ou moins." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Le froid sur les microbes…",
+            options: ["Les tue tous.", "Les endort, ne les tue pas.", "Les nourrit."],
+            correct: 1, explication: "Le froid endort. Si on le coupe, les microbes repartent." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Pour décongeler de la viande, tu la mets…",
+            options: ["Au frigo.", "Sur le plan de travail.", "Sur le radiateur."],
+            correct: 0, explication: "Décongélation au frigo : la chaîne du froid est respectée." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : un steak laissé 1 h à T° ambiante peut être remis au frigo et reservi sans risque.",
+            correct: false, explication: "Faux. La chaîne du froid est rompue, le produit est à risque." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Explique avec tes mots** ce qu’est la chaîne du froid.",
+            indice_correction: "Réponse attendue : maintenir un produit au froid en continu, sans coupure, pour empêcher les microbes de se multiplier. Frais 0–4 °C, surgelé -18 °C." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Donne 3 gestes** pour préserver la chaîne du froid en cuisine ou aux courses.",
+            indice_correction: "Réponses possibles : prendre le frais en dernier aux courses, sac isotherme, ranger vite au frigo, sortir juste ce qu’il faut, fermer le frigo vite, décongeler au frigo, vérifier T° à la sonde." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Définir la chaîne du froid", indicateur: "L’élève explique le maintien au froid en continu, sans coupure.", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr2", capacite: "Citer les T° à respecter", indicateur: "L’élève cite frais 0–4 °C et surgelé -18 °C.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Reconnaître une rupture", indicateur: "L’élève repère un produit hors T° sur photo.", niveau_attendu: "A", remediation: "Refaire l’exo « Choisis le produit conforme »." },
+          { id: "cr4", capacite: "Appliquer les bons gestes", indicateur: "L’élève cite 3 gestes (sac isotherme, ranger vite, frigo fermé…).", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Faire le lien avec les microbes", indicateur: "L’élève explique que le froid endort les microbes.", niveau_attendu: "A", remediation: "Revoir cours c1." }
+        ]
+      }
+    }
+  },
+  {
+    id: "modes_cuisson",
+    titre: "Les modes de cuisson",
+    emoji: "🔥",
+    description: "Les techniques de base pour cuire un aliment : chaque mode a ses règles, ses températures et ses usages.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Savoirs associés SC 1.4 — Techniques culinaires",
+      lien: "Modes de cuisson : choisir le bon mode et la bonne T° à cœur pour la sécurité et le goût.",
+      capacites: [
+        "Identifier les principaux modes de cuisson.",
+        "Associer chaque aliment à un mode adapté.",
+        "Respecter les T° à cœur de sécurité."
+      ]
+    },
+    objectifs_eleve: [
+      "identifier les principaux modes de cuisson",
+      "associer chaque aliment à un mode adapté",
+      "respecter les températures de cuisson à cœur",
+      "comprendre l’impact d’une cuisson sur la santé et la sécurité"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer 6 modes de cuisson au moins",
+        "Reconnaître chaque mode sur photo",
+        "Connaître la T° à cœur de sécurité (volaille 74 °C, hachée 70 °C, autres 63 °C)",
+        "Choisir le bon mode pour un aliment donné",
+        "Faire le lien cuisson/destruction des microbes"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Cuisson à la vapeur", def: "Cuisson par la vapeur d’eau. Préserve vitamines et goût. Ex. : brocolis, poisson." },
+      { mot: "Cuisson au four", def: "Chaleur sèche, T° contrôlée. Ex. : rôti, gratin, pain." },
+      { mot: "Cuisson sautée", def: "À la poêle, feu vif, peu de matière grasse. Ex. : légumes, émincés." },
+      { mot: "Cuisson grillée", def: "Sur grill ou plancha, marques caramélisées. Ex. : viande, poisson." },
+      { mot: "Cuisson en friture", def: "Plongé dans l’huile chaude (160–180 °C). Ex. : frites, beignets. À limiter (gras)." },
+      { mot: "Cuisson gratinée", def: "Au four avec fromage ou chapelure dorée dessus." },
+      { mot: "T° à cœur", def: "Température au CENTRE de l’aliment. Volaille 74 °C, hachée 70 °C, autres 63 °C minimum." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi cuire ?",
+          texte:
+            "Cuire, ce n’est pas juste pour le goût.\n\n" +
+            "- La cuisson **détruit** les microbes.\n" +
+            "- Elle rend les aliments plus **digestes**.\n" +
+            "- Elle développe les **saveurs**.\n" +
+            "- C’est un acte de **sécurité** ET de plaisir."
+        },
+        {
+          id: "c2",
+          titre: "🥘 Les principaux modes de cuisson",
+          texte:
+            "Tu dois en connaître au moins 6 :\n\n" +
+            "- 💨 **Vapeur** : par la vapeur d’eau. Sain, préserve les vitamines.\n" +
+            "- 🔥 **Four** : chaleur sèche, T° réglée.\n" +
+            "- 🍳 **Sauté** : à la poêle, feu vif, peu de gras.\n" +
+            "- 🥩 **Grillé** : sur grill ou plancha, marques dorées.\n" +
+            "- 🍟 **Frit** : dans l’huile à 160–180 °C.\n" +
+            "- 🧀 **Gratiné** : au four, fromage doré dessus.\n" +
+            "- 💧 **À l’eau** : bouilli ou pochée."
+        },
+        {
+          id: "c3",
+          titre: "🌡️ La T° à cœur — règle d’or",
+          texte:
+            "On mesure la T° au **centre** de l’aliment, avec une **sonde**.\n\n" +
+            "- 🐔 **Volaille** : **74 °C** à cœur.\n" +
+            "- 🍔 **Viande hachée** : **70 °C** à cœur.\n" +
+            "- 🥩🐟 **Autres viandes ou poisson** : **63 °C** minimum.\n\n" +
+            "> ⚠️ À ne pas confondre avec le **maintien au chaud** (≥ 63 °C, arrêté du 21/12/2009)."
+        },
+        {
+          id: "c4",
+          titre: "⚖️ Cuisson et santé",
+          texte:
+            "Toutes les cuissons ne se valent pas pour la santé :\n\n" +
+            "- **Vapeur > four > sauté > grillé > frit**.\n" +
+            "- Le sain : **peu de gras**, **peu de carbonisation**.\n" +
+            "- Le frit, c’est OK **ponctuellement**, pas tous les jours.\n" +
+            "- Le grillé brûlé contient des composés à éviter."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or des modes de cuisson :**\n\n" +
+            "- 7 modes principaux à connaître.\n" +
+            "- Volaille 74 °C, hachée 70 °C, autres 63 °C.\n" +
+            "- Chaque mode a son intérêt (santé, goût, vitesse).\n" +
+            "- La sonde alimentaire vérifie la T° à cœur.\n" +
+            "- Cuisson = sécurité ET plaisir."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "À quoi sert la cuisson ?",
+          options: ["Juste à donner du goût.", "Détruire les microbes et rendre les aliments digestes.", "Refroidir les aliments."],
+          correct: 1, explication: "La cuisson détruit les microbes et rend les aliments digestes." },
+        { id: "q2", lie_cours: "c2", question: "Quel mode préserve le mieux les vitamines ?",
+          options: ["La friture.", "La vapeur.", "Le grillé."],
+          correct: 1, explication: "La vapeur préserve vitamines et goût." },
+        { id: "q3", lie_cours: "c2", question: "Cuire à 160–180 °C dans l’huile, c’est…",
+          options: ["La vapeur.", "La friture.", "Le sauté."],
+          correct: 1, explication: "C’est la définition de la friture." },
+        { id: "q4", lie_cours: "c3", question: "T° à cœur pour une volaille ?",
+          options: ["63 °C.", "70 °C.", "74 °C."],
+          correct: 2, explication: "Volaille = 74 °C à cœur." },
+        { id: "q5", lie_cours: "c3", question: "T° à cœur pour une viande hachée ?",
+          options: ["63 °C.", "70 °C.", "74 °C."],
+          correct: 1, explication: "Viande hachée = 70 °C à cœur." },
+        { id: "q6", lie_cours: "c3", question: "T° à cœur pour un poisson ou autre viande ?",
+          options: ["50 °C.", "63 °C minimum.", "100 °C."],
+          correct: 1, explication: "63 °C minimum pour les autres viandes ou poisson." },
+        { id: "q7", lie_cours: "c4", question: "Quel mode est le plus sain en général ?",
+          options: ["La friture.", "La vapeur.", "Le gratiné."],
+          correct: 1, explication: "La vapeur : peu de gras, vitamines préservées." },
+        { id: "q8", lie_cours: "c2", question: "Cuisson au four avec fromage doré dessus, c’est…",
+          options: ["Sauté.", "Gratiné.", "Vapeur."],
+          correct: 1, explication: "C’est la définition du gratiné." }
+      ],
+      exercices_bonus: [
+        {
+          type: "multi_choix_image",
+          id: "exoA_modes_cuisson",
+          titre: "✅ Reconnais le mode de cuisson",
+          consigne: "Pour chaque scénario, clique sur la photo qui montre le mode demandé.",
+          scenarios: [
+            { question: "Quelle photo montre une cuisson à la vapeur ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/vapeur.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/frit.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre une cuisson en friture ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/frit.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/vapeur.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre une cuisson au four ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/four.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/saute.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre une cuisson sautée ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/saute.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/four.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre une cuisson grillée ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/grille.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/vapeur.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre une cuisson gratinée ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/gratine.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/cru.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre un aliment cru (non cuit) ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/cru.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/cuit.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre un aliment cuit ?",
+              choix: [
+                { image: "ressources_eco/modes_cuisson/cuit.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/modes_cuisson/cru.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        },
+        {
+          type: "points_chauds",
+          id: "exoB_modes_cuisson",
+          titre: "🔍 Risque de cuisson",
+          consigne: "Sur chaque photo, repère le point d’attention pour la santé ou la sécurité.",
+          items: [
+            { image: "ressources_eco/modes_cuisson/cru.jpg",
+              erreur: "Aliment cru : il faut cuire pour détruire les microbes (sauf si recette crue contrôlée)." },
+            { image: "ressources_eco/modes_cuisson/frit.jpg",
+              erreur: "Friture : à consommer avec modération (gras, acrylamides si trop coloré)." },
+            { image: "ressources_eco/modes_cuisson/grille.jpg",
+              erreur: "Grillé trop noir : composés cancérigènes possibles, ne pas carboniser." }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_modes_cuisson",
+        titre: "Épreuve d’attestation — Je connais les modes de cuisson",
+        verbe_action: "IDENTIFIER",
+        objectif: "les principaux modes de cuisson, leurs règles et les T° à cœur de sécurité.",
+        mise_en_situation: "Tu prépares plusieurs plats en cafétéria : un poulet rôti, des frites, des légumes vapeur. Cette épreuve vérifie que tu sais associer chaque aliment au bon mode et respecter les T° à cœur.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Quel mode de cuisson préserve le mieux les vitamines ?",
+            options: ["La friture.", "La vapeur.", "Le gratiné."],
+            correct: 1, explication: "La vapeur : peu de gras, vitamines préservées." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "T° à cœur pour une volaille ?",
+            options: ["63 °C.", "70 °C.", "74 °C."],
+            correct: 2, explication: "Volaille = 74 °C à cœur." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "T° à cœur pour une viande hachée ?",
+            options: ["63 °C.", "70 °C.", "74 °C."],
+            correct: 1, explication: "Viande hachée = 70 °C à cœur." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Cuire dans l’huile à 160–180 °C, c’est…",
+            options: ["La vapeur.", "La friture.", "Le sauté."],
+            correct: 1, explication: "C’est la définition de la friture." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : on peut servir une volaille à 60 °C à cœur, c’est suffisant.",
+            correct: false, explication: "Faux. Volaille = 74 °C à cœur minimum." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite 4 modes de cuisson** et donne 1 exemple d’aliment pour chacun.",
+            indice_correction: "Réponses possibles : vapeur (brocolis), four (rôti), sauté (légumes), grillé (steak), frit (frites), gratiné (gratin dauphinois)." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique pourquoi la T° à cœur est importante** et donne 2 valeurs.",
+            indice_correction: "Réponse attendue : la T° à cœur garantit que le centre de l’aliment est cuit et que les microbes sont détruits. Volaille 74 °C, hachée 70 °C, autres 63 °C." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Citer les modes de cuisson", indicateur: "L’élève cite au moins 4 modes avec exemple.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Reconnaître un mode sur photo", indicateur: "L’élève associe correctement photo et mode.", niveau_attendu: "A", remediation: "Refaire l’exo « Reconnais le mode »." },
+          { id: "cr3", capacite: "Connaître les T° à cœur", indicateur: "L’élève cite volaille 74 °C, hachée 70 °C, autres 63 °C.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Choisir le bon mode", indicateur: "L’élève associe un aliment à un mode adapté.", niveau_attendu: "A", remediation: "Revoir cours c2 et c4." },
+          { id: "cr5", capacite: "Faire le lien cuisson/microbes", indicateur: "L’élève explique que la cuisson détruit les microbes.", niveau_attendu: "A", remediation: "Revoir cours c1." }
+        ]
+      }
+    }
+  },
+  {
+    id: "reception",
+    titre: "La réception des marchandises",
+    emoji: "📦",
+    description: "Première étape de la marche en avant : contrôler ce qui entre en cuisine pour bloquer les problèmes dès l’arrivée.",
+    referentiel: {
+      pole: "Pôle 1 — Production alimentaire",
+      bloc: "Savoirs associés SC 1.6 — Hygiène et sécurité alimentaire",
+      lien: "Réception : 1re barrière de sécurité, contrôle qualitatif, quantitatif, T° et DLC.",
+      capacites: [
+        "Appliquer le contrôle de réception.",
+        "Refuser une marchandise non conforme.",
+        "Appliquer le PEPS dans le stockage."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer le contrôle de réception (qualité, quantité, T°, DLC)",
+      "savoir refuser une marchandise non conforme",
+      "remplir les documents de traçabilité de réception",
+      "appliquer le PEPS (Premier Entré, Premier Sorti)"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 4 contrôles à faire à la réception",
+        "Vérifier la T° avec une sonde",
+        "Reconnaître un carton non conforme",
+        "Refuser une livraison si nécessaire",
+        "Appliquer le PEPS dans le stockage"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Bon de livraison", def: "Document qui liste ce qui est livré. À comparer avec ce que tu reçois vraiment." },
+      { mot: "Contrôle qualitatif", def: "Vérifier l’état du produit (carton, emballage, aspect, odeur)." },
+      { mot: "Contrôle quantitatif", def: "Compter ce que tu reçois et vérifier que ça correspond au bon de livraison." },
+      { mot: "Contrôle de T°", def: "Mesurer la T° du produit à l’arrivée avec une sonde. Frais ≤ 4 °C, surgelé ≤ -18 °C." },
+      { mot: "PEPS / FIFO", def: "Premier Entré, Premier Sorti : on consomme d’abord les produits livrés en premier." },
+      { mot: "Non-conformité", def: "Quand un produit ne respecte pas les règles. On le REFUSE et on note." },
+      { mot: "Traçabilité de réception", def: "Garder par écrit ce qu’on a reçu, quand, à quelle T°, qui a contrôlé." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi contrôler à la réception ?",
+          texte:
+            "La réception, c’est la **1re barrière** de sécurité.\n\n" +
+            "- Si tu acceptes un mauvais produit, tu **transmets** le problème.\n" +
+            "- Si tu le refuses, tu **protèges** ton client.\n" +
+            "- Tu engages aussi la responsabilité de l’établissement.\n" +
+            "- Refuser, c’est ton **droit** ET ton **devoir**."
+        },
+        {
+          id: "c2",
+          titre: "🔍 Les 4 contrôles à faire",
+          texte:
+            "Pour chaque livraison, tu vérifies :\n\n" +
+            "1. **Quantitatif** : tu comptes les produits.\n" +
+            "2. **Qualitatif** : état du carton, emballage, aspect, odeur.\n" +
+            "3. **T°** : avec une sonde. Frais ≤ +4 °C, surgelé ≤ -18 °C.\n" +
+            "4. **DLC / DDM** : la date doit être lointaine."
+        },
+        {
+          id: "c3",
+          titre: "❌ Quand refuser une livraison ?",
+          texte:
+            "Tu refuses dès qu’un point n’est pas conforme :\n\n" +
+            "- Carton **mouillé** ou percé.\n" +
+            "- T° **trop haute**.\n" +
+            "- DLC **trop courte**.\n" +
+            "- Produit **absent** du bon de livraison.\n" +
+            "- Emballage **endommagé**.\n\n" +
+            "> 📝 Tu notes la **non-conformité** sur le bon."
+        },
+        {
+          id: "c4",
+          titre: "📋 Le PEPS — Premier Entré, Premier Sorti",
+          texte:
+            "Pour le rangement après contrôle :\n\n" +
+            "- Tu ranges les **nouveaux** produits **derrière**.\n" +
+            "- Les **anciens** restent **devant**.\n" +
+            "- Tu utilises **d’abord** les anciens.\n" +
+            "- Ça évite le gaspillage et les DLC dépassées."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or de la réception :**\n\n" +
+            "- 4 contrôles : quantitatif, qualitatif, T°, DLC.\n" +
+            "- Sonde alimentaire = ton amie.\n" +
+            "- Refuser, c’est ton droit ET ton devoir.\n" +
+            "- PEPS pour le rangement.\n" +
+            "- Traçabilité écrite à chaque livraison."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Pourquoi contrôler à la réception ?",
+          options: ["Pour passer le temps.", "C’est la 1re barrière contre les produits non conformes.", "Pour faire signer le livreur."],
+          correct: 1, explication: "C’est la 1re barrière de sécurité avant la cuisine." },
+        { id: "q2", lie_cours: "c2", question: "Combien de contrôles faut-il faire ?",
+          options: ["2.", "4 (quantitatif, qualitatif, T°, DLC/DDM).", "6."],
+          correct: 1, explication: "4 contrôles : quantitatif, qualitatif, T°, DLC/DDM." },
+        { id: "q3", lie_cours: "c2", question: "Avec quoi mesures-tu la T° ?",
+          options: ["Avec ton doigt.", "Une sonde alimentaire.", "À l’œil."],
+          correct: 1, explication: "La sonde alimentaire mesure la T° à cœur." },
+        { id: "q4", lie_cours: "c2", question: "T° max acceptable pour un produit frais à la réception ?",
+          options: ["+4 °C.", "+10 °C.", "+14 °C."],
+          correct: 0, explication: "Frais = +4 °C max à la réception." },
+        { id: "q5", lie_cours: "c3", question: "Carton mouillé et abîmé : que faire ?",
+          options: ["L’accepter quand même.", "Le refuser et noter la non-conformité.", "Le sécher et l’oublier."],
+          correct: 1, explication: "On refuse et on note. Risque de contamination." },
+        { id: "q6", lie_cours: "c2", question: "Le bon de livraison sert à…",
+          options: ["Décorer le mur.", "Vérifier que ce qui est livré correspond à ce qui est commandé.", "Payer le livreur."],
+          correct: 1, explication: "C’est l’outil du contrôle quantitatif." },
+        { id: "q7", lie_cours: "c4", question: "PEPS, ça veut dire ?",
+          options: ["Petit Emballage Produit Sain.", "Premier Entré, Premier Sorti.", "Plat En Préparation Sécurisée."],
+          correct: 1, explication: "Premier Entré, Premier Sorti." },
+        { id: "q8", lie_cours: "c4", question: "Tu reçois un nouveau lot. Tu le ranges…",
+          options: ["Devant les anciens.", "Derrière les anciens, pour utiliser d’abord les anciens.", "N’importe où."],
+          correct: 1, explication: "PEPS : nouveaux derrière, anciens devant." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_reception",
+          titre: "🔍 Repère ce qui ne va pas à la réception",
+          consigne: "Sur chaque photo, repère la non-conformité.",
+          items: [
+            { image: "ressources_eco/exo_reception/reception_carton_abime.jpg",
+              erreur: "Carton mouillé/percé : à refuser, contamination possible." },
+            { image: "ressources_eco/exo_reception/reception_thermo_camion_ko.jpg",
+              erreur: "T° camion à +12 °C : non conforme, à refuser." },
+            { image: "ressources_eco/exo_reception/reception_dlc_courte.jpg",
+              erreur: "DLC trop courte (2 jours) : à signaler ou refuser selon ton stock." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_reception",
+          titre: "✅ Conforme ou pas ?",
+          consigne: "Pour chaque scénario, clique sur la photo conforme.",
+          scenarios: [
+            { question: "Quel carton acceptes-tu ?",
+              choix: [
+                { image: "ressources_eco/exo_reception/reception_carton_correct.jpg", correct: true, label: "Carton A" },
+                { image: "ressources_eco/exo_reception/reception_carton_abime.jpg", correct: false, label: "Carton B" }
+              ] },
+            { question: "Quelle T° camion est acceptable ?",
+              choix: [
+                { image: "ressources_eco/exo_reception/reception_thermo_camion_ok.jpg", correct: true, label: "T° A" },
+                { image: "ressources_eco/exo_reception/reception_thermo_camion_ko.jpg", correct: false, label: "T° B" }
+              ] },
+            { question: "Quelle DLC est correcte ?",
+              choix: [
+                { image: "ressources_eco/exo_reception/reception_dlc_normale.jpg", correct: true, label: "DLC A" },
+                { image: "ressources_eco/exo_reception/reception_dlc_courte.jpg", correct: false, label: "DLC B" }
+              ] },
+            { question: "Comment vérifies-tu la T° à cœur d’un produit ?",
+              choix: [
+                { image: "ressources_eco/exo_reception/reception_thermometre_sonde.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/exo_reception/reception_camion_arrive.jpg", correct: false, label: "Geste B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_reception",
+        titre: "Épreuve d’attestation — Je sais réceptionner les marchandises",
+        verbe_action: "APPLIQUER",
+        objectif: "le contrôle de réception (qualité, quantité, T°, DLC) et le PEPS au rangement.",
+        mise_en_situation: "Tu commences ton service. Le livreur arrive avec une palette de produits frais et surgelés. Cette épreuve vérifie que tu sais contrôler la livraison et la ranger correctement.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien de contrôles fais-tu à la réception ?",
+            options: ["2.", "4 (quantitatif, qualitatif, T°, DLC).", "6."],
+            correct: 1, explication: "4 contrôles : quantitatif, qualitatif, T°, DLC/DDM." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "T° max d’un produit frais à la réception ?",
+            options: ["+4 °C.", "+10 °C.", "+14 °C."],
+            correct: 0, explication: "Frais = +4 °C max à la réception." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Avec quoi mesures-tu la T° ?",
+            options: ["Le doigt.", "Une sonde alimentaire.", "Le bon de livraison."],
+            correct: 1, explication: "La sonde alimentaire." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "PEPS, ça veut dire ?",
+            options: ["Premier Entré, Premier Sorti.", "Plat Emballé Précieux Sain.", "Produit En Procédure Spéciale."],
+            correct: 0, explication: "Premier Entré, Premier Sorti." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : si le carton est mouillé mais le produit a l’air bon, je peux l’accepter.",
+            correct: false, explication: "Faux. Carton mouillé = à refuser, risque de contamination." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 4 contrôles** à faire à la réception.",
+            indice_correction: "Réponse attendue : quantitatif (compter), qualitatif (état/emballage), T° (sonde), DLC/DDM." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique le PEPS** avec un exemple.",
+            indice_correction: "Réponse attendue : Premier Entré, Premier Sorti. On range les nouveaux produits derrière, on utilise d’abord les anciens. Évite le gaspillage et les DLC dépassées." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Citer les 4 contrôles", indicateur: "L’élève cite quantitatif, qualitatif, T°, DLC.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Refuser une livraison non conforme", indicateur: "L’élève dit refuser et noter la non-conformité.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Utiliser une sonde alimentaire", indicateur: "L’élève cite la sonde et la T° max +4 °C frais.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr4", capacite: "Appliquer le PEPS", indicateur: "L’élève explique nouveaux derrière, anciens devant.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Tracer la réception", indicateur: "L’élève cite la traçabilité écrite (date, T°, contrôleur).", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "mise_en_place_distribution",
+    titre: "Mettre en place la distribution",
+    emoji: "🛒",
+    description: "Comment préparer ton comptoir, tes vitrines et ton libre-service avant et pendant le service.",
+    referentiel: {
+      pole: "Pôle 2 — Service en restauration",
+      bloc: "Savoirs associés SC 2.3 — Distribution et service",
+      lien: "Mise en place du poste de distribution, respect des T° et étiquetage.",
+      capacites: [
+        "Préparer le poste de distribution.",
+        "Respecter les T° de service.",
+        "Réapprovisionner pendant le service."
+      ]
+    },
+    objectifs_eleve: [
+      "préparer la distribution avant le service",
+      "respecter les T° des vitrines (chaud ≥ 63 °C, froid ≤ 4 °C)",
+      "afficher des étiquettes claires et complètes",
+      "réapprovisionner pendant le service"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Préparer un comptoir avant ouverture",
+        "Connaître les T° de service (chaud/froid)",
+        "Mettre des étiquettes prix lisibles",
+        "Réapprovisionner sans interrompre le service",
+        "Repérer une vitrine non conforme"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Vitrine froide", def: "Présentoir réfrigéré pour entrées, salades, desserts. T° ≤ 4 °C." },
+      { mot: "Bain-marie", def: "Bac d’eau chaude qui maintient les plats à ≥ 63 °C." },
+      { mot: "Libre-service", def: "Le client se sert lui-même sur un linéaire, des îlots ou en ligne." },
+      { mot: "Étiquette prix", def: "Affichage clair du nom + prix de chaque produit. Obligatoire." },
+      { mot: "Réapprovisionnement", def: "Remplir les vitrines pendant le service, sans casser le froid ni le chaud." },
+      { mot: "Mise en place", def: "Tout ce qu’on prépare avant l’ouverture pour être prêt à servir." },
+      { mot: "Plat témoin", def: "Petit échantillon (100 g) gardé 5 jours à +3 °C en cas de problème." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi soigner la mise en place ?",
+          texte:
+            "Une **bonne mise en place** = service rapide, propre, sécurisé.\n\n" +
+            "- Le client achète aussi avec ses **yeux**.\n" +
+            "- Tout doit être **prêt** avant d’ouvrir.\n" +
+            "- Plus de mise en place = moins de stress pendant le coup de feu."
+        },
+        {
+          id: "c2",
+          titre: "🥶 Vitrine froide / 🔥 bain-marie : les T°",
+          texte:
+            "Tu respectes les T° de service :\n\n" +
+            "- **Froid ≤ 4 °C** : entrées, salades, desserts.\n" +
+            "- **Chaud ≥ 63 °C** : plats chauds en bain-marie.\n" +
+            "- Tu vérifies au **thermomètre** à chaque prise de poste.\n" +
+            "- Tu notes la T° sur la fiche de suivi."
+        },
+        {
+          id: "c3",
+          titre: "🏷️ L’étiquette prix",
+          texte:
+            "Chaque plat doit avoir son étiquette :\n\n" +
+            "- **Nom** du produit.\n" +
+            "- **Prix** clair.\n" +
+            "- **Allergènes** si applicable.\n" +
+            "- Lisible, **au-dessus** de chaque plat.\n\n" +
+            "> 📝 Sans étiquette = **pas de vente**."
+        },
+        {
+          id: "c4",
+          titre: "🔄 Pendant le service : le réappro",
+          texte:
+            "Tu surveilles tes vitrines en continu :\n\n" +
+            "- Vitrine qui se vide → tu **remplis**.\n" +
+            "- Tu sors un plat chaud avec une **pince** ou un **gant** à usage unique.\n" +
+            "- Tu ne touches **jamais** les aliments à mains nues.\n" +
+            "- Tu ne casses ni la chaîne du **froid**, ni celle du **chaud**."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or de la distribution :**\n\n" +
+            "- Mise en place = tout prêt avant ouverture.\n" +
+            "- T° vitrines à respecter (froid ≤ 4, chaud ≥ 63).\n" +
+            "- Étiquettes à jour.\n" +
+            "- Réappro continu sans interruption du service."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Une bonne mise en place sert à…",
+          options: ["Faire joli sur la photo.", "Servir vite, proprement, en toute sécurité.", "Gagner du temps de pause."],
+          correct: 1, explication: "Mise en place = service rapide, propre, sécurisé." },
+        { id: "q2", lie_cours: "c2", question: "T° d’une vitrine froide ?",
+          options: ["≤ 4 °C.", "≤ 10 °C.", "≤ 15 °C."],
+          correct: 0, explication: "Froid ≤ 4 °C pour entrées, salades, desserts." },
+        { id: "q3", lie_cours: "c2", question: "T° d’un bain-marie chaud ?",
+          options: ["≥ 40 °C.", "≥ 63 °C.", "≥ 80 °C."],
+          correct: 1, explication: "Chaud ≥ 63 °C, c’est la règle." },
+        { id: "q4", lie_cours: "c2", question: "Quand vérifies-tu la T° des vitrines ?",
+          options: ["Une fois par semaine.", "À chaque prise de poste.", "Jamais, c’est automatique."],
+          correct: 1, explication: "À chaque prise de poste, avec un thermomètre." },
+        { id: "q5", lie_cours: "c3", question: "Sur une étiquette prix, il faut…",
+          options: ["Juste le prix.", "Nom du produit, prix, allergènes.", "La date du jour."],
+          correct: 1, explication: "Nom + prix + allergènes (si applicable)." },
+        { id: "q6", lie_cours: "c3", question: "Un plat sans étiquette en vente, tu…",
+          options: ["Le mets en vente quand même.", "Ne le mets pas en vente.", "Demandes au client de deviner."],
+          correct: 1, explication: "Sans étiquette = pas de vente." },
+        { id: "q7", lie_cours: "c4", question: "Tu remplis une vitrine pendant le service en touchant les aliments…",
+          options: ["À mains nues, c’est plus rapide.", "Avec une pince ou un gant à usage unique, jamais à mains nues.", "Avec un torchon."],
+          correct: 1, explication: "Pince ou gant à usage unique, jamais à mains nues." },
+        { id: "q8", lie_cours: "c4", question: "Une vitrine à moitié vide pendant le service, c’est…",
+          options: ["Normal, ça vend mieux.", "Un problème : il faut réapprovisionner.", "Sans importance."],
+          correct: 1, explication: "Vitrine vide = problème, on réappro." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_distribution",
+          titre: "🔍 Repère les défauts de distribution",
+          consigne: "Sur chaque photo, repère le problème.",
+          items: [
+            { image: "ressources_eco/exo_distribution/distribution_erreur_etiquettes_manquantes.jpg",
+              erreur: "Étiquettes manquantes : le client ne sait pas ce qu’il achète." },
+            { image: "ressources_eco/exo_distribution/distribution_erreur_vitrine_videe.jpg",
+              erreur: "Vitrine quasi-vide pendant le service : il faut réapprovisionner." },
+            { image: "ressources_eco/exo_distribution/distribution_erreur_temperature.jpg",
+              erreur: "Vitrine à +8 °C : la chaîne du froid est rompue." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_distribution",
+          titre: "✅ Conforme ou pas ?",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle vitrine est conforme ?",
+              choix: [
+                { image: "ressources_eco/exo_distribution/distribution_vitrine_froide_ok.jpg", correct: true, label: "Vitrine A" },
+                { image: "ressources_eco/exo_distribution/distribution_erreur_temperature.jpg", correct: false, label: "Vitrine B" }
+              ] },
+            { question: "Quel comptoir est prêt à ouvrir ?",
+              choix: [
+                { image: "ressources_eco/exo_distribution/distribution_comptoir_pret.jpg", correct: true, label: "Comptoir A" },
+                { image: "ressources_eco/exo_distribution/distribution_erreur_vitrine_videe.jpg", correct: false, label: "Comptoir B" }
+              ] },
+            { question: "Comment sont les étiquettes prix ?",
+              choix: [
+                { image: "ressources_eco/exo_distribution/distribution_etiquettes_prix_correctes.jpg", correct: true, label: "Étiquettes A" },
+                { image: "ressources_eco/exo_distribution/distribution_erreur_etiquettes_manquantes.jpg", correct: false, label: "Étiquettes B" }
+              ] },
+            { question: "Lequel correspond à un libre-service en ligne ?",
+              choix: [
+                { image: "ressources_eco/exo_distribution/distribution_libre_service_lineaire.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_distribution/distribution_bain_marie_chaud.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_mise_en_place_distribution",
+        titre: "Épreuve d’attestation — Je sais préparer la distribution",
+        verbe_action: "PRÉPARER",
+        objectif: "le poste de distribution avant et pendant le service.",
+        mise_en_situation: "Tu prends ton poste avant l’ouverture. Cette épreuve vérifie que tu sais préparer le comptoir, contrôler les T° et réapprovisionner pendant le service.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "T° d’une vitrine froide ?",
+            options: ["≤ 4 °C.", "≤ 10 °C.", "≤ 15 °C."],
+            correct: 0, explication: "Froid ≤ 4 °C." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "T° d’un bain-marie chaud ?",
+            options: ["≥ 40 °C.", "≥ 63 °C.", "≥ 80 °C."],
+            correct: 1, explication: "Chaud ≥ 63 °C." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Sur une étiquette prix, il faut…",
+            options: ["Juste le prix.", "Nom + prix + allergènes.", "La date du jour."],
+            correct: 1, explication: "Nom + prix + allergènes." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Tu touches les aliments en vitrine…",
+            options: ["À mains nues.", "Avec une pince ou un gant à usage unique.", "Avec un torchon."],
+            correct: 1, explication: "Pince ou gant à usage unique." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : un plat sans étiquette peut être mis en vente.",
+            correct: false, explication: "Faux. Sans étiquette = pas de vente." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 2 T°** à respecter en distribution (froid et chaud).",
+            indice_correction: "Réponse attendue : froid ≤ 4 °C, chaud ≥ 63 °C." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique le réapprovisionnement** pendant le service.",
+            indice_correction: "Réponse attendue : surveiller les vitrines, remplir dès qu’elles se vident, utiliser pince ou gant à usage unique, jamais à mains nues, sans casser la chaîne du froid/chaud." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Préparer la mise en place", indicateur: "L’élève décrit ce qu’il prépare avant l’ouverture.", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr2", capacite: "Respecter les T° de service", indicateur: "L’élève cite froid ≤ 4 °C et chaud ≥ 63 °C.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Étiqueter les produits", indicateur: "L’élève cite nom, prix, allergènes.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Réapprovisionner sans risque", indicateur: "L’élève cite la pince/gant et le maintien des T°.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Repérer une non-conformité", indicateur: "L’élève sait dire ce qui cloche (T°, étiquette, vitrine vide).", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "accueil_client",
+    titre: "Accueillir le client",
+    emoji: "👋",
+    description: "Les gestes et mots qui font qu’un client se sent attendu, écouté et bien servi.",
+    referentiel: {
+      pole: "Pôle 2 — Service en restauration",
+      bloc: "Savoirs associés SC 2.1 — Communication professionnelle",
+      lien: "Accueil client : règles d’or, écoute active, vente additionnelle.",
+      capacites: [
+        "Appliquer les règles de l’accueil professionnel.",
+        "Écouter et reformuler une commande.",
+        "Proposer une vente additionnelle."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer les règles d’un accueil professionnel",
+      "utiliser des formules de politesse adaptées",
+      "écouter activement la commande du client",
+      "gérer un client allergique ou pressé"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 4 règles d’or de l’accueil",
+        "Utiliser 5 formules de politesse pro",
+        "Écouter et reformuler une commande",
+        "Conseiller un client (vente additionnelle)",
+        "Repérer les erreurs d’attitude"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Accueil professionnel", def: "Sourire, regard, posture droite, formule de politesse dès l’arrivée du client." },
+      { mot: "Écoute active", def: "Écouter sans couper, reformuler la commande pour vérifier qu’on a bien compris." },
+      { mot: "Vente additionnelle", def: "Proposer un complément (boisson, dessert) après la commande principale." },
+      { mot: "Formule de politesse", def: "Bonjour, merci, au revoir, bonne journée. Indispensable à chaque interaction." },
+      { mot: "Posture pro", def: "Droite, bras non croisés, mains visibles. Communique le respect et la disponibilité." },
+      { mot: "Reformulation", def: "Répéter la commande du client : « Donc 1 menu burger avec frites et un coca, c’est ça ? »" },
+      { mot: "Client mécontent", def: "On l’écoute jusqu’au bout, on s’excuse, on propose une solution. On ne discute pas." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi bien accueillir ?",
+          texte:
+            "Le client choisit ton resto pour le **repas** ET l’**accueil**.\n\n" +
+            "- Un client bien accueilli **revient**.\n" +
+            "- Il **parle** de toi en bien autour de lui.\n" +
+            "- Mauvais accueil = client perdu, et 10 autres avec lui."
+        },
+        {
+          id: "c2",
+          titre: "😊 Les 4 règles d’or de l’accueil",
+          texte:
+            "À chaque client qui entre :\n\n" +
+            "1. **Sourire**.\n" +
+            "2. **Regarder** dans les yeux.\n" +
+            "3. **Saluer** : « Bonjour ! ».\n" +
+            "4. Être **disponible** : pas de téléphone, pas de discussion entre collègues."
+        },
+        {
+          id: "c3",
+          titre: "👂 L’écoute active",
+          texte:
+            "Tu écoutes **sans couper** la parole.\n\n" +
+            "- Tu **reformules** : « Donc vous voulez un menu burger avec frites et un coca, c’est ça ? »\n" +
+            "- Tu **confirmes** le prix et le délai.\n" +
+            "- Tu vérifies les **allergies** si besoin.\n\n" +
+            "> 📝 Reformuler = éviter les erreurs de commande."
+        },
+        {
+          id: "c4",
+          titre: "💡 Conseiller et vendre en plus",
+          texte:
+            "Tu peux suggérer un complément :\n\n" +
+            "- « Avec ça, un **dessert** ? un **café** ? »\n" +
+            "- C’est la **vente additionnelle**.\n" +
+            "- Toujours **utile**, jamais **lourd**.\n" +
+            "- Si le client dit non, tu **n’insistes pas**."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les règles d’or de l’accueil :**\n\n" +
+            "- Sourire + regard + bonjour + disponibilité = la base.\n" +
+            "- Écoute active + reformulation = pro.\n" +
+            "- Vente additionnelle = plus pour le resto, plus pour le client."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Un client revient surtout grâce à…",
+          options: ["Le repas seulement.", "Le repas ET l’accueil.", "Le prix uniquement."],
+          correct: 1, explication: "Repas + accueil : les deux comptent." },
+        { id: "q2", lie_cours: "c2", question: "Combien de règles d’or de l’accueil ?",
+          options: ["2.", "4 (sourire, regard, salut, disponibilité).", "6."],
+          correct: 1, explication: "Sourire, regard, salut, disponibilité." },
+        { id: "q3", lie_cours: "c2", question: "Un client arrive, tu fais quoi en premier ?",
+          options: ["Je continue ce que je faisais.", "Je le regarde et je dis bonjour.", "J’attends qu’il parle."],
+          correct: 1, explication: "Regard + bonjour, c’est la base." },
+        { id: "q4", lie_cours: "c3", question: "Reformuler la commande sert à…",
+          options: ["Faire perdre du temps.", "Vérifier que tu as bien compris.", "Impressionner le client."],
+          correct: 1, explication: "Reformuler = éviter les erreurs." },
+        { id: "q5", lie_cours: "c3", question: "Tu coupes la parole d’un client, c’est…",
+          options: ["Pas grave.", "Une grosse erreur, on écoute jusqu’au bout.", "Recommandé pour gagner du temps."],
+          correct: 1, explication: "Jamais couper la parole d’un client." },
+        { id: "q6", lie_cours: "c4", question: "Vente additionnelle = ",
+          options: ["Forcer le client à acheter plus.", "Proposer un dessert ou une boisson après la commande principale.", "Doubler les prix."],
+          correct: 1, explication: "Suggérer un complément, sans forcer." },
+        { id: "q7", lie_cours: "c4", question: "Le client refuse une suggestion, tu…",
+          options: ["Insistes lourdement.", "Acceptes son refus sans insister.", "Lui en veux."],
+          correct: 1, explication: "Pas d’insistance, on respecte le choix." },
+        { id: "q8", lie_cours: "c2", question: "Tu es au téléphone derrière le comptoir, le client arrive, tu…",
+          options: ["Continues ton appel privé.", "Termines vite ou range le téléphone, tu accueilles le client.", "Lui fais signe d’attendre 10 minutes."],
+          correct: 1, explication: "Le client passe avant le téléphone privé." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_accueil",
+          titre: "🔍 Repère l’erreur d’accueil",
+          consigne: "Sur chaque photo, repère ce qui ne va pas.",
+          items: [
+            { image: "ressources_eco/exo_accueil/accueil_erreur_telephone.jpg",
+              erreur: "Vendeur sur son téléphone : le client n’est pas pris en charge." },
+            { image: "ressources_eco/exo_accueil/accueil_erreur_dos_client.jpg",
+              erreur: "Vendeur de dos : le client attend, pas accueilli." },
+            { image: "ressources_eco/exo_accueil/accueil_erreur_plusieurs_employes_discutent.jpg",
+              erreur: "Employés qui discutent entre eux : le client est ignoré." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_accueil",
+          titre: "✅ Choisis la bonne attitude",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quel vendeur accueille bien le client ?",
+              choix: [
+                { image: "ressources_eco/exo_accueil/accueil_sourire_pro.jpg", correct: true, label: "Vendeur A" },
+                { image: "ressources_eco/exo_accueil/accueil_erreur_telephone.jpg", correct: false, label: "Vendeur B" }
+              ] },
+            { question: "Quelle posture est pro pour écouter ?",
+              choix: [
+                { image: "ressources_eco/exo_accueil/accueil_ecoute_client.jpg", correct: true, label: "Posture A" },
+                { image: "ressources_eco/exo_accueil/accueil_erreur_dos_client.jpg", correct: false, label: "Posture B" }
+              ] },
+            { question: "Comment remettre une commande ?",
+              choix: [
+                { image: "ressources_eco/exo_accueil/accueil_main_tendue.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/exo_accueil/accueil_erreur_plusieurs_employes_discutent.jpg", correct: false, label: "Geste B" }
+              ] },
+            { question: "Comment conseiller un client sur le menu ?",
+              choix: [
+                { image: "ressources_eco/exo_accueil/accueil_pointer_carte.jpg", correct: true, label: "Conseil A" },
+                { image: "ressources_eco/exo_accueil/accueil_erreur_telephone.jpg", correct: false, label: "Conseil B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_accueil_client",
+        titre: "Épreuve d’attestation — Je sais accueillir le client",
+        verbe_action: "ACCUEILLIR",
+        objectif: "un client en respectant les règles de communication professionnelle.",
+        mise_en_situation: "Un client entre dans le restaurant. Cette épreuve vérifie que tu sais l’accueillir, prendre sa commande et lui proposer un complément.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien de règles d’or de l’accueil ?",
+            options: ["2.", "4 (sourire, regard, salut, disponibilité).", "6."],
+            correct: 1, explication: "Sourire, regard, salut, disponibilité." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Reformuler la commande sert à…",
+            options: ["Gagner du temps.", "Vérifier que tu as bien compris.", "Impressionner le client."],
+            correct: 1, explication: "Reformuler = éviter les erreurs." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Vente additionnelle = ",
+            options: ["Forcer le client à acheter plus.", "Proposer un dessert ou une boisson après la commande.", "Doubler les prix."],
+            correct: 1, explication: "Suggérer un complément, sans forcer." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Un client mécontent, tu…",
+            options: ["Discutes pour avoir raison.", "L’écoutes, t’excuses, proposes une solution.", "L’ignores."],
+            correct: 1, explication: "Écoute, excuses, solution." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : je peux rester sur mon téléphone si le client n’est pas pressé.",
+            correct: false, explication: "Faux. Le client passe avant le téléphone." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 4 règles d’or** de l’accueil.",
+            indice_correction: "Réponse attendue : sourire, regard, salut (« Bonjour »), disponibilité (pas de téléphone, pas de discussion entre collègues)." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Donne un exemple** de reformulation et un exemple de vente additionnelle.",
+            indice_correction: "Réponse attendue : reformulation (« Donc 1 menu burger avec frites et un coca, c’est ça ? ») ; vente additionnelle (« Avec ça, un dessert ? un café ? »)." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Appliquer les 4 règles d’or", indicateur: "L’élève cite sourire, regard, salut, disponibilité.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Pratiquer l’écoute active", indicateur: "L’élève reformule une commande sans couper la parole.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Proposer une vente additionnelle", indicateur: "L’élève suggère un dessert/boisson sans insister.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Gérer un client mécontent", indicateur: "L’élève écoute, s’excuse, propose une solution.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Adopter une posture pro", indicateur: "L’élève se tient droit, bras non croisés, sans téléphone.", niveau_attendu: "A", remediation: "Revoir cours c2." }
+        ]
+      }
+    }
+  },
+  {
+    id: "encaissement",
+    titre: "L’encaissement",
+    emoji: "💳",
+    description: "Comment encaisser un client correctement, gérer les moyens de paiement et tenir la caisse.",
+    referentiel: {
+      pole: "Pôle 2 — Service en restauration",
+      bloc: "Savoirs associés SC 2.2 — Encaissement et tenue de caisse",
+      lien: "Encaissement : moyens de paiement, monnaie, ticket, hygiène.",
+      capacites: [
+        "Encaisser une commande avec différents moyens de paiement.",
+        "Rendre la monnaie sans erreur.",
+        "Respecter l’hygiène et la sécurité de caisse."
+      ]
+    },
+    objectifs_eleve: [
+      "encaisser une commande avec différents moyens de paiement",
+      "rendre la monnaie sans erreur",
+      "remettre un ticket de caisse au client",
+      "ne jamais mélanger argent et aliments"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer 3 moyens de paiement",
+        "Rendre la monnaie correctement",
+        "Remettre un ticket à chaque vente",
+        "Se laver les mains après contact avec l’argent",
+        "Surveiller la caisse en permanence"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Encaissement", def: "Action de recevoir le paiement du client en échange de sa commande." },
+      { mot: "Tiroir-caisse", def: "Compartiment qui contient les billets et les pièces. Ne doit jamais rester ouvert sans surveillance." },
+      { mot: "TPE", def: "Terminal de Paiement Électronique : appareil pour les paiements par carte." },
+      { mot: "Ticket de caisse", def: "Reçu remis au client. Obligatoire à donner même si le client n’en veut pas (à proposer)." },
+      { mot: "Espèces", def: "Paiement en pièces et billets." },
+      { mot: "Sans contact", def: "Paiement par carte sans saisir le code (limite légale en France)." },
+      { mot: "Hygiène encaissement", def: "Ne jamais toucher d’argent puis un aliment. Lavage des mains entre les deux." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi soigner l’encaissement ?",
+          texte:
+            "C’est le **dernier moment** avec le client.\n\n" +
+            "- Une caisse claire = client **serein**.\n" +
+            "- Une caisse fausse = **problème grave** (vol, erreur).\n" +
+            "- Tu laisses la **dernière impression** au client."
+        },
+        {
+          id: "c2",
+          titre: "💶 Les moyens de paiement",
+          texte:
+            "Tu dois connaître :\n\n" +
+            "- **Espèces** (pièces + billets).\n" +
+            "- **Carte bancaire** (avec code ou sans contact).\n" +
+            "- **Tickets restaurant**.\n" +
+            "- Parfois **mobile** (Apple Pay, Google Pay)."
+        },
+        {
+          id: "c3",
+          titre: "🧮 Rendre la monnaie",
+          texte:
+            "Tu **annonces** le total.\n\n" +
+            "- Tu **prends** l’argent.\n" +
+            "- Tu **rends** la différence en comptant à voix haute.\n" +
+            "- Tu **refermes** le tiroir.\n\n" +
+            "> 📝 Compter à voix haute = pas d’erreur."
+        },
+        {
+          id: "c4",
+          titre: "🧾 Le ticket de caisse",
+          texte:
+            "**OBLIGATOIRE à proposer** à chaque vente.\n\n" +
+            "- Le client peut refuser, mais tu dois le **proposer**.\n" +
+            "- Sert pour les **retours**.\n" +
+            "- Sert pour la **comptabilité** du resto."
+        },
+        {
+          id: "c5",
+          titre: "🧼 Hygiène + sécurité",
+          texte:
+            "**Hygiène** :\n\n" +
+            "- Tu **laves tes mains** après chaque contact avec l’argent.\n" +
+            "- Jamais argent puis aliment sans lavage.\n\n" +
+            "**Sécurité** :\n\n" +
+            "- Tu ne laisses **JAMAIS** le tiroir ouvert sans surveillance.\n" +
+            "- Tu surveilles ce que tu fais."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Bien encaisser sert à…",
+          options: ["Faire passer le temps.", "Faire une caisse juste et laisser une bonne impression au client.", "Discuter avec les clients."],
+          correct: 1, explication: "Caisse juste + bonne impression finale." },
+        { id: "q2", lie_cours: "c2", question: "Cite 3 moyens de paiement…",
+          options: ["Chèque, troc, or.", "Espèces, carte bancaire, tickets restaurant.", "Bitcoin, dollars, livres."],
+          correct: 1, explication: "Espèces, CB, tickets restaurant." },
+        { id: "q3", lie_cours: "c2", question: "Le sans contact c’est…",
+          options: ["Un paiement sans carte.", "Un paiement par carte sans saisir le code (limite légale).", "Un paiement gratuit."],
+          correct: 1, explication: "CB sans code, sous une limite légale." },
+        { id: "q4", lie_cours: "c3", question: "Pour rendre la monnaie tu…",
+          options: ["Vas vite sans compter.", "Comptes à voix haute pour ne pas te tromper.", "Laisses le client compter."],
+          correct: 1, explication: "À voix haute = zéro erreur." },
+        { id: "q5", lie_cours: "c4", question: "Le ticket de caisse est…",
+          options: ["Inutile.", "Obligatoire à proposer à chaque vente.", "Réservé aux gros achats."],
+          correct: 1, explication: "Obligatoire à proposer à tous." },
+        { id: "q6", lie_cours: "c5", question: "Tu touches de l’argent puis un sandwich, tu…",
+          options: ["Continues.", "Te laves les mains avant.", "Mets des gants par-dessus."],
+          correct: 1, explication: "Lavage des mains obligatoire." },
+        { id: "q7", lie_cours: "c5", question: "Le tiroir-caisse doit rester…",
+          options: ["Ouvert pour aller plus vite.", "Toujours surveillé, jamais ouvert sans personne devant.", "Fermé à clé toute la journée."],
+          correct: 1, explication: "Jamais ouvert sans surveillance." },
+        { id: "q8", lie_cours: "c1", question: "Une erreur d’encaissement, c’est…",
+          options: ["Un client en retard.", "Une erreur de monnaie ou un produit non encaissé.", "Un client qui paie en retard."],
+          correct: 1, explication: "Erreur de monnaie ou produit oublié." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_encaissement",
+          titre: "🔍 Repère l’erreur d’encaissement",
+          consigne: "Sur chaque photo, repère ce qui ne va pas.",
+          items: [
+            { image: "ressources_eco/exo_encaissement/encaissement_erreur_caisse_ouverte.jpg",
+              erreur: "Tiroir ouvert sans surveillance : risque de vol et d’erreur." },
+            { image: "ressources_eco/exo_encaissement/encaissement_erreur_pas_de_ticket.jpg",
+              erreur: "Pas de ticket délivré : non-conformité légale." },
+            { image: "ressources_eco/exo_encaissement/encaissement_erreur_argent_aliments.jpg",
+              erreur: "Mains qui touchent argent puis aliments : contamination." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_encaissement",
+          titre: "✅ Choisis la bonne pratique",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle caisse est prête à servir ?",
+              choix: [
+                { image: "ressources_eco/exo_encaissement/encaissement_caisse_pret.jpg", correct: true, label: "Caisse A" },
+                { image: "ressources_eco/exo_encaissement/encaissement_erreur_caisse_ouverte.jpg", correct: false, label: "Caisse B" }
+              ] },
+            { question: "Comment payer par carte ?",
+              choix: [
+                { image: "ressources_eco/exo_encaissement/encaissement_paiement_cb.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/exo_encaissement/encaissement_erreur_argent_aliments.jpg", correct: false, label: "Geste B" }
+              ] },
+            { question: "Que dois-tu remettre au client ?",
+              choix: [
+                { image: "ressources_eco/exo_encaissement/encaissement_ticket_remis.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/exo_encaissement/encaissement_erreur_pas_de_ticket.jpg", correct: false, label: "Geste B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_encaissement",
+        titre: "Épreuve d’attestation — Je sais encaisser un client",
+        verbe_action: "ENCAISSER",
+        objectif: "un client en respectant les moyens de paiement, l’hygiène et la sécurité de caisse.",
+        mise_en_situation: "Un client passe à la caisse. Cette épreuve vérifie que tu sais encaisser, rendre la monnaie et remettre le ticket.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Cite 3 moyens de paiement…",
+            options: ["Chèque, troc, or.", "Espèces, carte bancaire, tickets restaurant.", "Bitcoin, dollars, livres."],
+            correct: 1, explication: "Espèces, CB, tickets restaurant." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Pour rendre la monnaie tu…",
+            options: ["Vas vite sans compter.", "Comptes à voix haute pour ne pas te tromper.", "Laisses le client compter."],
+            correct: 1, explication: "À voix haute = zéro erreur." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Le ticket de caisse est…",
+            options: ["Inutile.", "Obligatoire à proposer à chaque vente.", "Réservé aux gros achats."],
+            correct: 1, explication: "Obligatoire à proposer." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Tu touches de l’argent puis un sandwich, tu…",
+            options: ["Continues.", "Te laves les mains avant.", "Mets des gants par-dessus."],
+            correct: 1, explication: "Lavage des mains obligatoire." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : je peux laisser le tiroir-caisse ouvert si je m’absente 30 secondes.",
+            correct: false, explication: "Faux. Jamais ouvert sans surveillance." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Décris les étapes** pour rendre la monnaie correctement.",
+            indice_correction: "Réponse attendue : annoncer le total, prendre l’argent, rendre la différence en comptant à voix haute, refermer le tiroir." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique** pourquoi il ne faut jamais toucher d’argent puis un aliment sans se laver les mains.",
+            indice_correction: "Réponse attendue : l’argent est très sale (microbes, bactéries) ; toucher un aliment ensuite contamine le client." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Connaître les moyens de paiement", indicateur: "L’élève cite espèces, CB, tickets restaurant.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Rendre la monnaie", indicateur: "L’élève compte à voix haute et referme le tiroir.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Délivrer le ticket", indicateur: "L’élève propose le ticket à chaque vente.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Respecter l’hygiène", indicateur: "L’élève se lave les mains entre argent et aliment.", niveau_attendu: "A", remediation: "Revoir cours c5." },
+          { id: "cr5", capacite: "Surveiller la caisse", indicateur: "L’élève ne laisse jamais le tiroir ouvert sans surveillance.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "vente_emporter",
+    titre: "La vente à emporter",
+    emoji: "🥪",
+    description: "Comment conditionner un repas pour qu’il arrive sain, chaud (ou froid), et étiqueté chez le client.",
+    referentiel: {
+      pole: "Pôle 2 — Service en restauration",
+      bloc: "Savoirs associés SC 2.3 — Vente à emporter et conditionnement",
+      lien: "Conditionnement, étiquetage, séparation chaud/froid, remise au client.",
+      capacites: [
+        "Choisir un emballage adapté.",
+        "Étiqueter un produit fini.",
+        "Respecter la chaîne du froid à emporter."
+      ]
+    },
+    objectifs_eleve: [
+      "choisir le bon emballage selon le produit",
+      "étiqueter chaque produit (DLC, allergènes)",
+      "séparer le chaud et le froid",
+      "remettre proprement la commande au client"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Choisir un emballage adapté",
+        "Mettre une étiquette complète sur chaque produit",
+        "Séparer chaud et froid dans la livraison",
+        "Préparer un sac propre, fermé, étiqueté",
+        "Repérer un emballage non conforme"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Emballage à emporter", def: "Boîte, barquette, sachet kraft… qui protège le produit jusqu’au client." },
+      { mot: "Étiquetage produit fini", def: "Étiquette obligatoire avec nom, DLC, allergènes, lot." },
+      { mot: "Sac isotherme", def: "Sac avec packs réfrigérants pour transporter du frais en respectant la chaîne du froid." },
+      { mot: "Plat témoin", def: "Petit échantillon de chaque produit servi (100 g) gardé 5 jours à +3 °C." },
+      { mot: "Loi AGEC", def: "Loi anti-gaspillage qui interdit le plastique jetable et favorise les emballages compostables." },
+      { mot: "Couverts à usage unique", def: "Couverts en bois ou compostables fournis avec le repas." },
+      { mot: "Information allergène", def: "Le client à emporter doit connaître les allergènes (étiquette ou affichage)." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi bien emballer ?",
+          texte:
+            "Le client ne mange **pas tout de suite**.\n\n" +
+            "- L’emballage **protège** (chaleur, froid, microbes).\n" +
+            "- L’emballage **informe** (étiquette).\n" +
+            "- Mauvais emballage = client **malade** ou mécontent."
+        },
+        {
+          id: "c2",
+          titre: "📦 Choisir le bon emballage",
+          texte:
+            "À chaque produit son emballage :\n\n" +
+            "- **Sandwich** → sachet kraft.\n" +
+            "- **Salade** → barquette transparente.\n" +
+            "- **Plat chaud** → barquette compostable avec couvercle.\n" +
+            "- **Soupe** → contenant étanche.\n\n" +
+            "> 📝 Penser **AGEC** : pas de plastique inutile."
+        },
+        {
+          id: "c3",
+          titre: "🏷️ L’étiquette obligatoire",
+          texte:
+            "Sur **CHAQUE** produit :\n\n" +
+            "- **Nom** du produit.\n" +
+            "- **DLC** (date limite de consommation).\n" +
+            "- **Allergènes** en gras.\n" +
+            "- **Lot**.\n\n" +
+            "> ⚠️ Sans étiquette = pas de vente."
+        },
+        {
+          id: "c4",
+          titre: "🧊🔥 Séparer chaud et froid",
+          texte:
+            "Un plat chaud à côté d’un plat froid **réchauffe** le froid → microbes.\n\n" +
+            "- Solution : **2 sacs** ou compartiments séparés.\n" +
+            "- **Sac isotherme** pour le froid à transporter loin.\n" +
+            "- Jamais chaud + froid dans le même sac."
+        },
+        {
+          id: "c5",
+          titre: "🤝 Remettre la commande",
+          texte:
+            "Au moment de tendre :\n\n" +
+            "- **Sac fermé**, anses solides.\n" +
+            "- **Vérifier** le ticket et la commande.\n" +
+            "- **Sourire**, « Bon appétit ! ».\n" +
+            "- Tu **confirmes** le contenu avant de tendre."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Pourquoi bien emballer ?",
+          options: ["Pour la déco.", "Pour protéger l’aliment et informer le client.", "Pour gagner du temps."],
+          correct: 1, explication: "Protection + information." },
+        { id: "q2", lie_cours: "c2", question: "Quel emballage pour un sandwich ?",
+          options: ["Une assiette en porcelaine.", "Un sachet kraft.", "Un bocal en verre."],
+          correct: 1, explication: "Sandwich = sachet kraft." },
+        { id: "q3", lie_cours: "c2", question: "Loi AGEC veut dire…",
+          options: ["Agence Générale d’Emballage Commercial.", "Anti-Gaspillage et Économie Circulaire (limite le plastique jetable).", "Aide à la Gestion Écologique des Cuisines."],
+          correct: 1, explication: "Loi anti-gaspillage." },
+        { id: "q4", lie_cours: "c3", question: "Que doit contenir l’étiquette ?",
+          options: ["Le prix uniquement.", "Nom, DLC, allergènes en gras, lot.", "Le nom du chef."],
+          correct: 1, explication: "Nom, DLC, allergènes, lot." },
+        { id: "q5", lie_cours: "c3", question: "Un produit sans étiquette tu…",
+          options: ["Le vends quand même.", "Ne le vends pas.", "Inventes l’étiquette."],
+          correct: 1, explication: "Sans étiquette = pas de vente." },
+        { id: "q6", lie_cours: "c4", question: "Tu mets un plat chaud et un froid dans le même sac…",
+          options: ["Oui, ça gagne du temps.", "Non, jamais : risque microbien.", "Seulement si c’est rapide."],
+          correct: 1, explication: "Chaud + froid = microbes." },
+        { id: "q7", lie_cours: "c4", question: "Pour transporter du frais loin tu utilises…",
+          options: ["Un sac plastique simple.", "Un sac isotherme avec packs réfrigérants.", "Du papier journal."],
+          correct: 1, explication: "Sac isotherme + packs." },
+        { id: "q8", lie_cours: "c5", question: "Avant de tendre le sac au client tu…",
+          options: ["Le tends sans regarder.", "Vérifies que le contenu correspond au ticket.", "Demandes au client de vérifier."],
+          correct: 1, explication: "Vérification ticket + contenu." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_vente_emporter",
+          titre: "🔍 Repère l’erreur de conditionnement",
+          consigne: "Sur chaque photo, repère ce qui ne va pas.",
+          items: [
+            { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sans_etiquette.jpg",
+              erreur: "Barquette sans étiquette : non conforme à la loi (INCO)." },
+            { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sachet_ouvert.jpg",
+              erreur: "Sachet mal fermé : risque de contamination, fuite, perte du produit." },
+            { image: "ressources_eco/exo_vente_emporter/emporter_erreur_chaud_froid_meme_sac.jpg",
+              erreur: "Chaud et froid mélangés : rupture chaîne du froid." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_vente_emporter",
+          titre: "✅ Choisis le bon conditionnement",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quel sachet est correct ?",
+              choix: [
+                { image: "ressources_eco/exo_vente_emporter/emporter_sachet_correct.jpg", correct: true, label: "Sachet A" },
+                { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sachet_ouvert.jpg", correct: false, label: "Sachet B" }
+              ] },
+            { question: "Quelle barquette est conforme ?",
+              choix: [
+                { image: "ressources_eco/exo_vente_emporter/emporter_barquette_etiquette.jpg", correct: true, label: "Barquette A" },
+                { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sans_etiquette.jpg", correct: false, label: "Barquette B" }
+              ] },
+            { question: "Comment transporter du frais loin ?",
+              choix: [
+                { image: "ressources_eco/exo_vente_emporter/emporter_isotherme_glacons.jpg", correct: true, label: "Solution A" },
+                { image: "ressources_eco/exo_vente_emporter/emporter_erreur_chaud_froid_meme_sac.jpg", correct: false, label: "Solution B" }
+              ] },
+            { question: "Comment remettre la commande au client ?",
+              choix: [
+                { image: "ressources_eco/exo_vente_emporter/emporter_remise_sac_client.jpg", correct: true, label: "Geste A" },
+                { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sachet_ouvert.jpg", correct: false, label: "Geste B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_vente_emporter",
+        titre: "Épreuve d’attestation — Je sais conditionner pour la vente à emporter",
+        verbe_action: "CONDITIONNER",
+        objectif: "un repas à emporter en respectant l’emballage, l’étiquetage et la chaîne du froid.",
+        mise_en_situation: "Un client commande à emporter. Cette épreuve vérifie que tu sais conditionner, étiqueter et remettre la commande.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Quel emballage pour un sandwich ?",
+            options: ["Une assiette.", "Un sachet kraft.", "Un bocal en verre."],
+            correct: 1, explication: "Sandwich = sachet kraft." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Que doit contenir l’étiquette ?",
+            options: ["Le prix.", "Nom, DLC, allergènes en gras, lot.", "Le nom du chef."],
+            correct: 1, explication: "Nom, DLC, allergènes, lot." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Tu mets un plat chaud et un froid dans le même sac…",
+            options: ["Oui.", "Non, jamais : risque microbien.", "Seulement si c’est rapide."],
+            correct: 1, explication: "Jamais chaud + froid." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Pour transporter du frais loin tu utilises…",
+            options: ["Un sac plastique simple.", "Un sac isotherme avec packs réfrigérants.", "Rien."],
+            correct: 1, explication: "Isotherme + packs." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : un produit sans étiquette peut être vendu si je connais le contenu.",
+            correct: false, explication: "Faux. Sans étiquette = pas de vente." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 4 mentions** obligatoires d’une étiquette produit fini.",
+            indice_correction: "Réponse attendue : nom du produit, DLC, allergènes en gras, lot." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique** comment livrer un menu chaud + une salade froide à un client.",
+            indice_correction: "Réponse attendue : séparer chaud et froid (2 sacs ou compartiments) ; sac isotherme pour le froid si trajet long ; vérifier étiquettes et ticket avant remise." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Choisir l’emballage", indicateur: "L’élève associe produit et emballage adapté.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Étiqueter un produit fini", indicateur: "L’élève cite nom, DLC, allergènes, lot.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Séparer chaud et froid", indicateur: "L’élève sépare en 2 sacs ou compartiments.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Respecter la chaîne du froid", indicateur: "L’élève utilise un sac isotherme avec packs.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Remettre la commande", indicateur: "L’élève vérifie ticket et contenu, sac fermé, sourire.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "entretien_salle",
+    titre: "L’entretien de la salle et des sanitaires",
+    emoji: "🧹",
+    description: "Tenir une salle propre pendant le service et garder des sanitaires impeccables pour les clients.",
+    referentiel: {
+      pole: "Pôle 2 — Service en restauration",
+      bloc: "Savoirs associés SC 2.4 — Hygiène des locaux et sanitaires",
+      lien: "Plan de nettoyage, débarrassage, sanitaires clients, sécurité.",
+      capacites: [
+        "Débarrasser et nettoyer une table.",
+        "Sécuriser une zone humide.",
+        "Vérifier et réassortir les sanitaires."
+      ]
+    },
+    objectifs_eleve: [
+      "débarrasser et nettoyer une table entre chaque client",
+      "signaler une zone humide avec le panneau de sécurité",
+      "vérifier les sanitaires à chaque rotation",
+      "alerter quand savon ou papier manquent"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Débarrasser une table en moins de 2 minutes",
+        "Mettre un panneau « sol mouillé » obligatoire",
+        "Vérifier savon + papier dans les sanitaires",
+        "Suivre un plan de nettoyage régulier",
+        "Repérer une non-conformité visuelle"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Plan de nettoyage", def: "Tableau qui dit qui fait quoi, quand, comment, dans la salle et les sanitaires." },
+      { mot: "Panneau sol mouillé", def: "Panneau jaune obligatoire pendant et après le nettoyage du sol. Évite les chutes." },
+      { mot: "Coactivité", def: "Quand tu nettoies pendant que des clients sont présents. Demande des précautions." },
+      { mot: "Sanitaires clients", def: "Toilettes accessibles aux clients, à vérifier toutes les heures minimum." },
+      { mot: "Lavette de salle", def: "Lavette dédiée à la salle (souvent jaune ou bleue selon code couleur). Ne sort pas de la salle." },
+      { mot: "Débarrassage", def: "Enlever tout ce qui était sur la table après le départ du client." },
+      { mot: "Réassortir", def: "Remplir savon, papier, serviettes quand ça manque." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi entretenir la salle ?",
+          texte:
+            "Une salle **sale** = clients qui repartent.\n\n" +
+            "- Une salle **propre** = image de marque.\n" +
+            "- C’est un geste **pro** toutes les minutes.\n" +
+            "- Le client juge en **3 secondes**."
+        },
+        {
+          id: "c2",
+          titre: "🍽️ Débarrasser une table",
+          texte:
+            "Tu prends **plateau / chariot**.\n\n" +
+            "- Tu enlèves **tout en 1 fois**.\n" +
+            "- Tu **essuies** avec une lavette dédiée.\n" +
+            "- Tu **refais la mise en place** (couverts, sets si applicable).\n\n" +
+            "> 📝 Objectif : moins de **2 min** par table."
+        },
+        {
+          id: "c3",
+          titre: "⚠️ Le panneau sol mouillé",
+          texte:
+            "**OBLIGATOIRE** pendant et après nettoyage du sol.\n\n" +
+            "- Sans panneau, si un client tombe → tu es **responsable**.\n" +
+            "- Tu **retires** le panneau quand le sol est **SEC**.\n" +
+            "- Panneau **jaune**, bien visible."
+        },
+        {
+          id: "c4",
+          titre: "🚻 Les sanitaires clients",
+          texte:
+            "Vérification **toutes les heures**.\n\n" +
+            "Tu vérifies :\n\n" +
+            "- **Savon** plein.\n" +
+            "- **Papier** plein.\n" +
+            "- **Sol** propre.\n" +
+            "- **Miroir** net.\n" +
+            "- **Poubelle** pas pleine.\n\n" +
+            "Tu **réassortis** si besoin."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les bons réflexes :**\n\n" +
+            "- Salle = **image de marque**.\n" +
+            "- **Débarrassage** rapide.\n" +
+            "- **Panneau** obligatoire dès qu’il y a du mouillé.\n" +
+            "- **Sanitaires** vérifiés régulièrement.\n" +
+            "- Ne **jamais** ignorer un déchet visible."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Pourquoi entretenir la salle ?",
+          options: ["Pour faire plaisir au chef.", "Pour donner une bonne image et faire revenir les clients.", "Pour passer le temps."],
+          correct: 1, explication: "Image + fidélisation." },
+        { id: "q2", lie_cours: "c2", question: "Combien de temps pour débarrasser une table ?",
+          options: ["10 minutes.", "Moins de 2 minutes.", "Le temps qu’il faut."],
+          correct: 1, explication: "Moins de 2 min." },
+        { id: "q3", lie_cours: "c2", question: "Avec quoi essuyer une table ?",
+          options: ["Une serviette client.", "Une lavette dédiée à la salle.", "Du papier journal."],
+          correct: 1, explication: "Lavette dédiée salle." },
+        { id: "q4", lie_cours: "c3", question: "Pendant que tu nettoies le sol, tu mets…",
+          options: ["Rien.", "Un panneau jaune « sol mouillé ».", "Une chaise au milieu."],
+          correct: 1, explication: "Panneau jaune obligatoire." },
+        { id: "q5", lie_cours: "c3", question: "Quand retires-tu le panneau ?",
+          options: ["Tout de suite après avoir passé la serpillière.", "Quand le sol est complètement sec.", "À la fin du service."],
+          correct: 1, explication: "Sol sec = panneau retiré." },
+        { id: "q6", lie_cours: "c4", question: "Toutes les combien d’heures vérifies-tu les sanitaires ?",
+          options: ["Une fois par jour.", "Au moins toutes les heures.", "Une fois par semaine."],
+          correct: 1, explication: "Au moins toutes les heures." },
+        { id: "q7", lie_cours: "c4", question: "Tu vois un distributeur de savon vide tu…",
+          options: ["L’ignores.", "Le réassortis tout de suite.", "Préviens demain."],
+          correct: 1, explication: "Réassort immédiat." },
+        { id: "q8", lie_cours: "c5", question: "Une miette par terre tu…",
+          options: ["L’ignores.", "La ramasses sans attendre.", "Attends la fin du service."],
+          correct: 1, explication: "Ramasser tout de suite." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_entretien_salle",
+          titre: "🔍 Repère la non-conformité",
+          consigne: "Sur chaque photo, repère ce qui ne va pas.",
+          items: [
+            { image: "ressources_eco/exo_entretien_salle/salle_erreur_table_sale.jpg",
+              erreur: "Table avec restes : à débarrasser tout de suite." },
+            { image: "ressources_eco/exo_entretien_salle/salle_erreur_sol_sale.jpg",
+              erreur: "Sol avec déchets : à nettoyer + panneau si tu interviens pendant le service." },
+            { image: "ressources_eco/exo_entretien_salle/sanitaires_erreur_savon_vide.jpg",
+              erreur: "Distributeurs vides : à réassortir d’urgence." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_entretien_salle",
+          titre: "✅ Choisis la bonne pratique",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle salle est conforme ?",
+              choix: [
+                { image: "ressources_eco/exo_entretien_salle/salle_propre.jpg", correct: true, label: "Salle A" },
+                { image: "ressources_eco/exo_entretien_salle/salle_erreur_table_sale.jpg", correct: false, label: "Salle B" }
+              ] },
+            { question: "Pendant le nettoyage du sol tu mets quoi ?",
+              choix: [
+                { image: "ressources_eco/exo_entretien_salle/salle_panneau_sol_mouille.jpg", correct: true, label: "Choix A" },
+                { image: "ressources_eco/exo_entretien_salle/salle_erreur_sol_sale.jpg", correct: false, label: "Choix B" }
+              ] },
+            { question: "Quels sanitaires sont conformes ?",
+              choix: [
+                { image: "ressources_eco/exo_entretien_salle/sanitaires_propres.jpg", correct: true, label: "Sanitaires A" },
+                { image: "ressources_eco/exo_entretien_salle/sanitaires_erreur_savon_vide.jpg", correct: false, label: "Sanitaires B" }
+              ] },
+            { question: "Bon lavabo équipé ?",
+              choix: [
+                { image: "ressources_eco/exo_entretien_salle/sanitaires_lavabo_savon_papier.jpg", correct: true, label: "Lavabo A" },
+                { image: "ressources_eco/exo_entretien_salle/sanitaires_erreur_savon_vide.jpg", correct: false, label: "Lavabo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_entretien_salle",
+        titre: "Épreuve d’attestation — Je sais entretenir la salle et les sanitaires",
+        verbe_action: "ENTRETENIR",
+        objectif: "la salle et les sanitaires en respectant l’hygiène et la sécurité des clients.",
+        mise_en_situation: "Tu es en service. Cette épreuve vérifie que tu sais débarrasser, sécuriser le sol et vérifier les sanitaires.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien de temps pour débarrasser une table ?",
+            options: ["10 minutes.", "Moins de 2 minutes.", "Le temps qu’il faut."],
+            correct: 1, explication: "Moins de 2 min." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Pendant que tu nettoies le sol, tu mets…",
+            options: ["Rien.", "Un panneau jaune « sol mouillé ».", "Une chaise au milieu."],
+            correct: 1, explication: "Panneau jaune obligatoire." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Toutes les combien d’heures vérifies-tu les sanitaires ?",
+            options: ["Une fois par jour.", "Au moins toutes les heures.", "Une fois par semaine."],
+            correct: 1, explication: "Au moins toutes les heures." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Tu vois un distributeur de savon vide tu…",
+            options: ["L’ignores.", "Le réassortis tout de suite.", "Préviens demain."],
+            correct: 1, explication: "Réassort immédiat." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : je peux retirer le panneau sol mouillé dès la fin du coup de serpillière.",
+            correct: false, explication: "Faux. On attend que le sol soit complètement sec." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite 5 points** à vérifier dans des sanitaires clients.",
+            indice_correction: "Réponse attendue : savon plein, papier plein, sol propre, miroir net, poubelle pas pleine." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Décris** les étapes pour débarrasser une table proprement.",
+            indice_correction: "Réponse attendue : prendre plateau/chariot ; tout enlever en 1 fois ; essuyer avec la lavette dédiée ; refaire la mise en place ; en moins de 2 minutes." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Débarrasser une table", indicateur: "L’élève débarrasse + essuie en moins de 2 min.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Sécuriser une zone humide", indicateur: "L’élève pose le panneau jaune et le retire au sec.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Vérifier les sanitaires", indicateur: "L’élève contrôle savon, papier, sol, miroir, poubelle.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Réassortir", indicateur: "L’élève remplit savon et papier dès qu’il manque.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Maintenir la propreté en continu", indicateur: "L’élève ramasse les déchets visibles sans attendre.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "allergenes_14",
+    titre: "Les 14 allergènes obligatoires",
+    emoji: "🥜",
+    description: "Les 14 substances que la loi oblige à signaler sur chaque étiquette ou affichage en restauration.",
+    referentiel: {
+      pole: "Pôle 2 — Service en restauration",
+      bloc: "Savoirs associés SC 2.5 — Information du consommateur (allergènes)",
+      lien: "Règlement INCO 1169/2011, étiquetage, sécurité alimentaire.",
+      capacites: [
+        "Identifier les 14 allergènes obligatoires.",
+        "Repérer un allergène caché dans un plat.",
+        "Informer un client allergique."
+      ]
+    },
+    objectifs_eleve: [
+      "citer les 14 allergènes obligatoires",
+      "reconnaître un allergène caché dans un plat préparé",
+      "informer correctement un client allergique",
+      "éviter les contaminations croisées d’allergènes"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer au moins 10 allergènes sur 14",
+        "Reconnaître les 14 sur photo",
+        "Repérer un allergène caché dans un plat",
+        "Mettre en évidence les allergènes (gras/maj/souligné)",
+        "Gérer une demande client allergique"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Allergie alimentaire", def: "Réaction grave du corps à un aliment précis. Peut être mortelle (choc anaphylactique)." },
+      { mot: "Intolérance", def: "Réaction moins grave (digestive). Différente d’une allergie." },
+      { mot: "Règlement INCO 1169/2011", def: "Loi européenne qui oblige à signaler les 14 allergènes majeurs sur les étiquettes." },
+      { mot: "Mise en évidence", def: "Allergène écrit en GRAS, en MAJUSCULES ou souligné dans la liste des ingrédients." },
+      { mot: "Contamination croisée allergène", def: "Quand un allergène passe d’un plat à un autre par le matériel ou les mains." },
+      { mot: "Allergène caché", def: "Allergène présent dans un produit sans être évident (ex. lait dans une sauce industrielle)." },
+      { mot: "Choc anaphylactique", def: "Réaction allergique très grave : urgence vitale, appel SAMU." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 C’est quoi une allergie alimentaire ?",
+          texte:
+            "Une allergie = réaction **grave** du corps à un aliment.\n\n" +
+            "- Symptômes : démangeaisons, gonflement, gêne respiratoire.\n" +
+            "- Cas grave = **choc anaphylactique** : urgence vitale.\n" +
+            "- Différent d’une **intolérance** (digestive, moins grave).\n\n" +
+            "> ⚠️ En cas de choc, appel **SAMU 15**."
+        },
+        {
+          id: "c2",
+          titre: "📜 La loi : 14 allergènes obligatoires",
+          texte:
+            "**Règlement européen INCO 1169/2011**.\n\n" +
+            "- **14 allergènes** doivent être signalés.\n" +
+            "- **Mise en évidence** : GRAS, MAJUSCULES ou souligné.\n" +
+            "- Vente à emporter : **étiquette** obligatoire.\n" +
+            "- En salle : **affichage** ou mention sur la carte.\n\n" +
+            "Sans cette info, tu mets le client en **danger**."
+        },
+        {
+          id: "c3",
+          titre: "🥖 Les 14 allergènes — par 5 grandes familles",
+          texte:
+            "Pour mémoriser, on les groupe :\n\n" +
+            "- 🌾 **Céréales avec gluten** (1) — blé, seigle, orge, avoine\n" +
+            "- 🥚 **Produits animaux** (5) — œufs, lait, poisson, crustacés, mollusques\n" +
+            "- 🌱 **Graines et légumineuses** (4) — soja, arachide, sésame, lupin\n" +
+            "- 🌳 **Fruits à coque** (1) — amandes, noisettes, noix, cajou…\n" +
+            "- 🌿 **Autres** (3) — céleri, moutarde, sulfites\n\n" +
+            "Total = **14**. Chaque famille t’aide à retenir."
+        },
+        {
+          id: "c4",
+          titre: "🕵️ Les allergènes cachés",
+          texte:
+            "Beaucoup d’allergènes se cachent dans les produits transformés :\n\n" +
+            "- 🥧 **Quiche lorraine** : gluten (pâte) + œufs + lait (crème).\n" +
+            "- 🥖 **Pain aux graines** : gluten + sésame.\n" +
+            "- 🍶 **Sauce soja** : soja + parfois gluten.\n" +
+            "- 🌿 **Pesto** : lait (parmesan) + fruits à coque (pignons).\n" +
+            "- 🐟 **Tarama** : poisson + œufs.\n\n" +
+            "> 📝 **Toujours lire** la liste des ingrédients."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "**Les bons réflexes :**\n\n" +
+            "- **14 allergènes** obligatoires à signaler.\n" +
+            "- **Mise en évidence** : gras, MAJ, souligné.\n" +
+            "- Allergène = urgence possible (**choc anaphylactique**).\n" +
+            "- Allergènes cachés = **lis** toujours les ingrédients.\n" +
+            "- Si un client demande : tu **vérifies**, tu n’inventes JAMAIS."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Une allergie alimentaire peut être…",
+          options: ["Toujours bénigne.", "Mortelle si elle est grave (choc anaphylactique).", "Juste un mal de ventre."],
+          correct: 1, explication: "Une allergie grave = choc anaphylactique = urgence vitale." },
+        { id: "q2", lie_cours: "c1", question: "Différence entre allergie et intolérance ?",
+          options: ["C’est pareil.", "L’allergie est plus grave (réaction du corps), l’intolérance est digestive.", "L’intolérance est plus grave."],
+          correct: 1, explication: "L’allergie peut être mortelle, l’intolérance est digestive." },
+        { id: "q3", lie_cours: "c2", question: "Combien d’allergènes obligatoires en Europe ?",
+          options: ["7.", "14.", "20."],
+          correct: 1, explication: "14 allergènes selon le règlement INCO 1169/2011." },
+        { id: "q4", lie_cours: "c2", question: "Les allergènes doivent être…",
+          options: ["Cachés en petits caractères.", "Mis en évidence (gras, majuscules, souligné).", "Indiqués seulement si le client demande."],
+          correct: 1, explication: "Mise en évidence obligatoire : gras, MAJ ou souligné." },
+        { id: "q5", lie_cours: "c3", question: "Cite un exemple d’allergène « fruits à coque »…",
+          options: ["Cacahuète.", "Amande, noisette, noix, cajou.", "Graine de tournesol."],
+          correct: 1, explication: "L’arachide (cacahuète) est un allergène à part." },
+        { id: "q6", lie_cours: "c3", question: "Les crustacés et mollusques sont des allergènes différents ?",
+          options: ["Non, c’est le même.", "Oui, ce sont 2 allergènes distincts.", "Seuls les crustacés comptent."],
+          correct: 1, explication: "Crustacés (n°2) et mollusques (n°14) sont 2 allergènes." },
+        { id: "q7", lie_cours: "c4", question: "Une quiche lorraine contient quels allergènes ?",
+          options: ["Aucun.", "Gluten, œufs, lait.", "Juste du lait."],
+          correct: 1, explication: "Pâte (gluten) + œufs + crème (lait)." },
+        { id: "q8", lie_cours: "c5", question: "Un client te demande si un plat contient du lait, tu…",
+          options: ["Réponds au hasard.", "Vérifies les ingrédients, tu n’inventes pas.", "Dis « je ne sais pas » et tu passes."],
+          correct: 1, explication: "Toujours vérifier. Ne jamais inventer." }
+      ],
+      exercices_bonus: [
+        {
+          type: "multi_choix_image",
+          id: "exoA_allergenes_14",
+          titre: "🔎 Reconnaître les 14 allergènes",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle photo montre du GLUTEN ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_01_gluten.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_05_arachide.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre des CRUSTACÉS ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_02_crustaces.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_14_mollusques.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre des ŒUFS ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_03_oeufs.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_07_lait.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre du POISSON ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_04_poisson.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_02_crustaces.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre de l’ARACHIDE ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_05_arachide.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_08_fruits_a_coque.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre du SOJA ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_06_soja.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_13_lupin.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre du LAIT ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_07_lait.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_03_oeufs.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre des FRUITS À COQUE ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_08_fruits_a_coque.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_05_arachide.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre du CÉLERI ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_09_celeri.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_10_moutarde.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre de la MOUTARDE ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_10_moutarde.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_12_sulfites.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre du SÉSAME ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_11_sesame.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_06_soja.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre des SULFITES ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_12_sulfites.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_09_celeri.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre du LUPIN ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_13_lupin.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_06_soja.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle photo montre des MOLLUSQUES ?",
+              choix: [
+                { image: "ressources_eco/exo_allergenes/allergene_14_mollusques.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_allergenes/allergene_02_crustaces.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        },
+        {
+          type: "points_chauds",
+          id: "exoB_allergenes_14",
+          titre: "🕵️ Repère l’allergène caché",
+          consigne: "Sur chaque photo, repère les allergènes cachés dans le produit.",
+          items: [
+            { image: "ressources_eco/exo_allergenes/allergene_cache_quiche.jpg",
+              erreur: "Quiche : contient gluten (pâte), œufs, et lait (crème). 3 allergènes cachés." },
+            { image: "ressources_eco/exo_allergenes/allergene_cache_pain_grain.jpg",
+              erreur: "Pain aux graines : contient gluten (blé) et sésame (graines visibles)." },
+            { image: "ressources_eco/exo_allergenes/allergene_cache_sauce_soja.jpg",
+              erreur: "Sauce soja : contient soja, et parfois gluten dans les versions industrielles." },
+            { image: "ressources_eco/exo_allergenes/allergene_cache_pesto.jpg",
+              erreur: "Pesto : contient lait (parmesan) et fruits à coque (pignons)." },
+            { image: "ressources_eco/exo_allergenes/allergene_cache_taramaeufs.jpg",
+              erreur: "Tarama : contient poisson (œufs de poisson) et œufs." }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_allergenes_14",
+        titre: "Épreuve d’attestation — Je connais les 14 allergènes",
+        verbe_action: "IDENTIFIER",
+        objectif: "les 14 allergènes obligatoires et savoir informer un client à risque.",
+        mise_en_situation: "Une cliente te dit : « je suis allergique au gluten, qu’est-ce que je peux manger ? » Tu dois savoir reconnaître les allergènes dans tes plats et conseiller.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien d’allergènes obligatoires en Europe ?",
+            options: ["7.", "14.", "20."],
+            correct: 1, explication: "14 selon INCO 1169/2011." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Les allergènes doivent être…",
+            options: ["Cachés.", "Mis en évidence (gras, MAJ, souligné).", "Indiqués si le client demande."],
+            correct: 1, explication: "Mise en évidence obligatoire." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Une quiche lorraine contient quels allergènes ?",
+            options: ["Aucun.", "Gluten, œufs, lait.", "Juste du lait."],
+            correct: 1, explication: "Pâte + œufs + crème." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Un client te demande si un plat contient du lait, tu…",
+            options: ["Réponds au hasard.", "Vérifies les ingrédients, tu n’inventes pas.", "Refuses de répondre."],
+            correct: 1, explication: "Toujours vérifier." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : l’arachide et les fruits à coque sont le même allergène.",
+            correct: false, explication: "Faux. Ce sont 2 allergènes distincts." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite 5 allergènes** parmi les 14.",
+            indice_correction: "Réponse attendue : 5 parmi gluten, crustacés, œufs, poisson, arachide, soja, lait, fruits à coque, céleri, moutarde, sésame, sulfites, lupin, mollusques." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique** avec tes mots la différence entre allergie et intolérance.",
+            indice_correction: "Réponse attendue : allergie = réaction grave du corps, peut être mortelle (choc anaphylactique). Intolérance = réaction digestive, moins grave." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Citer les 14 allergènes", indicateur: "L’élève cite au moins 10 allergènes sur 14.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr2", capacite: "Reconnaître un allergène sur photo", indicateur: "L’élève identifie chaque allergène sur image.", niveau_attendu: "A", remediation: "Refaire exercice A." },
+          { id: "cr3", capacite: "Repérer un allergène caché dans un plat", indicateur: "L’élève cite les allergènes cachés d’un plat préparé.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Informer un client allergique correctement", indicateur: "L’élève vérifie les ingrédients et donne une réponse fiable.", niveau_attendu: "A", remediation: "Revoir cours c5." },
+          { id: "cr5", capacite: "Mettre en évidence les allergènes sur étiquette", indicateur: "L’élève écrit les allergènes en gras / MAJ / souligné.", niveau_attendu: "A", remediation: "Revoir cours c2." }
+        ]
+      }
+    }
+  },
+  {
+    id: "tracabilite",
+    titre: "La traçabilité",
+    emoji: "📋",
+    description: "Pouvoir suivre un produit du producteur au client : pourquoi et comment.",
+    referentiel: {
+      pole: "Pôle 1 — Production en restauration",
+      bloc: "Savoirs associés SC 1.4 — Hygiène, sécurité, traçabilité (PMS/HACCP)",
+      lien: "Paquet hygiène, Règlement (CE) 178/2002, PMS, HACCP.",
+      capacites: [
+        "Définir la traçabilité.",
+        "Renseigner les documents de traçabilité.",
+        "Construire un numéro de lot conforme."
+      ]
+    },
+    objectifs_eleve: [
+      "définir la traçabilité avec tes mots",
+      "citer les documents de traçabilité courants",
+      "remplir un numéro de lot conforme",
+      "comprendre l’utilité en cas de problème sanitaire"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Définir traçabilité amont/aval",
+        "Citer 3 documents de traçabilité",
+        "Construire un numéro de lot (L-PSR-JJMMAA-Gx-Produit)",
+        "Expliquer le rôle du plat témoin",
+        "Faire le lien avec HACCP/PMS"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Traçabilité", def: "Pouvoir suivre un produit, depuis l’origine de ses ingrédients jusqu’à l’assiette du client." },
+      { mot: "Traçabilité amont", def: "D’où vient le produit (producteur, fournisseur, livraison)." },
+      { mot: "Traçabilité aval", def: "Où est parti le produit (client, lot, date)." },
+      { mot: "Numéro de lot", def: "Code qui identifie un groupe de produits fabriqués ensemble. Format CAP : L-PSR-JJMMAA-G1-PRODUIT." },
+      { mot: "Plat témoin", def: "Échantillon de 100 g de chaque produit servi, conservé 5 jours à +3 °C en cas de problème." },
+      { mot: "Bon de livraison", def: "Document signé à la réception, avec quantités, T° et date." },
+      { mot: "Étiquette de fabrication", def: "Étiquette posée sur un produit fini avec nom, DLC, allergènes, lot." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 C’est quoi la traçabilité ?",
+          texte:
+            "**Suivre un produit** du début à la fin. 🔎\n\n" +
+            "- Du **producteur** 👨‍🌾 (la ferme, la mer) → fournisseur 🚚 → cuisine 👨‍🍳 → client 🍽️.\n" +
+            "- Si un client tombe malade, on retrouve la cause **en quelques heures**. ⏱️\n" +
+            "- Sans traçabilité, on ne sait pas et on ne peut pas réagir. ❌"
+        },
+        {
+          id: "c2",
+          titre: "⬅️➡️ Amont et aval",
+          texte:
+            "- **Amont** ⬅️ = avant ton arrivée en cuisine (qui a produit, qui a livré).\n" +
+            "- **Aval** ➡️ = après ton travail (à qui tu as servi, quel jour, quel lot).\n" +
+            "- Les 2 sont **obligatoires** en restauration.\n" +
+            "- Tu participes aux 2 : à la **réception** (amont) et à l’**étiquetage** (aval).\n\n" +
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 80' style='max-width:100%;height:auto;'>" +
+            "<rect x='5' y='25' width='80' height='30' rx='6' fill='#fde68a' stroke='#92400e'/>" +
+            "<text x='45' y='45' text-anchor='middle' font-size='12'>Producteur</text>" +
+            "<rect x='100' y='25' width='80' height='30' rx='6' fill='#fde68a' stroke='#92400e'/>" +
+            "<text x='140' y='45' text-anchor='middle' font-size='12'>Cuisine</text>" +
+            "<rect x='195' y='25' width='80' height='30' rx='6' fill='#fde68a' stroke='#92400e'/>" +
+            "<text x='235' y='45' text-anchor='middle' font-size='12'>Client</text>" +
+            "<text x='90' y='20' font-size='11' fill='#1e3a8a'>AMONT</text>" +
+            "<text x='195' y='20' font-size='11' fill='#065f46'>AVAL</text>" +
+            "<path d='M85 40 L100 40 M180 40 L195 40 M275 40 L290 40' stroke='#111' stroke-width='2' marker-end='url(#a)'/>" +
+            "<defs><marker id='a' viewBox='0 0 10 10' refX='10' refY='5' markerWidth='6' markerHeight='6' orient='auto'><path d='M0 0 L10 5 L0 10 z' fill='#111'/></marker></defs>" +
+            "</svg>"
+        },
+        {
+          id: "c3",
+          titre: "🔢 Le numéro de lot",
+          texte:
+            "Format conseillé pour le **CAP PSR** :\n\n" +
+            "```\nL - PSR - JJMMAA - Groupe - Produit\n```\n\n" +
+            "Exemple : `L-PSR-090526-G2-WRAP` 🌯\n\n" +
+            "- **L** = lettre officielle pour « lot »\n" +
+            "- **PSR** = ta classe\n" +
+            "- **JJMMAA** = date de fabrication (ex : 09/05/2026)\n" +
+            "- **G2** = groupe de TP\n" +
+            "- **WRAP** = produit\n\n" +
+            "Un bon lot répond à **4 questions** : ❓ QUI ? 📅 QUAND ? 👥 QUEL groupe ? 🍽️ QUEL produit ?"
+        },
+        {
+          id: "c4",
+          titre: "📝 Les documents à remplir",
+          texte:
+            "Documents courants en cuisine pro :\n\n" +
+            "- 📥 **Bon de livraison** signé (réception)\n" +
+            "- 🌡️ **Relevé de températures** (frigos, vitrines, livraison)\n" +
+            "- 🏷️ **Étiquettes de fabrication** (DLC, lot)\n" +
+            "- 🍱 **Plats témoins** (100 g, 5 jours à +3 °C)\n" +
+            "- ⚠️ **Fiche de non-conformité** si problème\n\n" +
+            "> Ces papiers ne servent à rien… **sauf le jour où il y a un souci**. Là, ils sauvent l’établissement et les clients. 🛡️"
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "- Traçabilité = **suivre un produit** de la ferme à l’assiette. 🌾➡️🍽️\n" +
+            "- **Amont** (avant moi) + **Aval** (après moi).\n" +
+            "- Numéro de lot répond à **4 questions**.\n" +
+            "- Documents simples à remplir au quotidien. 📝\n" +
+            "- Si problème → on retrouve la cause **vite**. ⏱️"
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "La traçabilité, c’est…",
+          options: ["Suivre un produit du producteur au client.", "Cacher l’origine d’un produit.", "Un papier inutile."],
+          correct: 0, explication: "Suivre un produit du début (producteur) à la fin (client)." },
+        { id: "q2", lie_cours: "c1", question: "Pourquoi tracer un produit ?",
+          options: ["Pour faire joli.", "Pour retrouver vite la cause d’un problème sanitaire.", "Pour gagner du temps en cuisine."],
+          correct: 1, explication: "En cas de TIAC, on remonte la chaîne en quelques heures." },
+        { id: "q3", lie_cours: "c2", question: "La traçabilité amont, c’est…",
+          options: ["Avant moi : producteur, fournisseur.", "Après moi : le client.", "Pendant la cuisson."],
+          correct: 0, explication: "Amont = ce qui se passe avant ton arrivée en cuisine." },
+        { id: "q4", lie_cours: "c2", question: "La traçabilité aval, c’est…",
+          options: ["Le fournisseur.", "Après moi : à qui j’ai servi, quel lot.", "Le nettoyage."],
+          correct: 1, explication: "Aval = qui a reçu le produit, avec quel lot." },
+        { id: "q5", lie_cours: "c3", question: "Le format de lot conseillé pour CAP PSR est…",
+          options: ["L-PSR-JJMMAA-Groupe-Produit.", "Juste la date.", "Le nom du prof."],
+          correct: 0, explication: "Format conseillé : L-PSR-JJMMAA-Gx-PRODUIT." },
+        { id: "q6", lie_cours: "c3", question: "À combien de questions un bon numéro de lot doit répondre ?",
+          options: ["1.", "2.", "4 (QUI, QUAND, QUEL groupe, QUEL produit)."],
+          correct: 2, explication: "QUI, QUAND, QUEL groupe, QUEL produit." },
+        { id: "q7", lie_cours: "c4", question: "Combien de temps garde-t-on un plat témoin ?",
+          options: ["1 jour à température ambiante.", "5 jours à +3 °C.", "1 mois au congélateur."],
+          correct: 1, explication: "100 g, 5 jours, à +3 °C." },
+        { id: "q8", lie_cours: "c4", question: "Le relevé de T° du frigo se fait…",
+          options: ["1 fois par mois.", "Au moins 1 fois par jour.", "Jamais."],
+          correct: 1, explication: "Au minimum 1 fois par jour, parfois plus." }
+      ],
+      exercices_bonus: [
+        {
+          type: "multi_choix_image",
+          id: "exoA_tracabilite",
+          titre: "🔎 Conforme ou pas ?",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle barquette est tracée correctement ?",
+              choix: [
+                { image: "ressources_eco/exo_vente_emporter/emporter_barquette_etiquette.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sans_etiquette.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quel bon de livraison est conforme ?",
+              choix: [
+                { image: "ressources_eco/exo_reception/reception_bon_livraison.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_reception/reception_carton_abime.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment vérifier la T° d’un produit à la réception ?",
+              choix: [
+                { image: "ressources_eco/exo_reception/reception_thermometre_sonde.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_reception/reception_camion_arrive.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        },
+        {
+          type: "points_chauds",
+          id: "exoB_tracabilite",
+          titre: "🕵️ Repère le défaut de traçabilité",
+          consigne: "Sur chaque photo, repère ce qui rend la traçabilité impossible.",
+          items: [
+            { image: "ressources_eco/exo_vente_emporter/emporter_erreur_sans_etiquette.jpg",
+              erreur: "Pas d’étiquette = pas de traçabilité aval. Impossible de retrouver le lot." },
+            { image: "ressources_eco/exo_avant_apres/frigo_avant_2_fouillis.jpg",
+              erreur: "Frigo sans étiquettes ni dates : aucune traçabilité possible." }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_tracabilite",
+        titre: "Épreuve d’attestation — J’assure la traçabilité",
+        verbe_action: "ASSURER",
+        objectif: "la traçabilité d’un produit, de sa réception à son service au client.",
+        mise_en_situation: "Un client revient le lendemain : il dit avoir été malade après ton wrap. Tu dois pouvoir prouver d’où venait chaque ingrédient et à qui le lot a été servi.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "La traçabilité, c’est…",
+            options: ["Cacher l’origine.", "Suivre un produit du producteur au client.", "Un papier inutile."],
+            correct: 1, explication: "Suivre du début à la fin." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Le format de lot conseillé pour CAP PSR est…",
+            options: ["L-PSR-JJMMAA-Groupe-Produit.", "Juste la date.", "Le nom du plat seul."],
+            correct: 0, explication: "L-PSR-JJMMAA-Gx-PRODUIT." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Combien de temps garde-t-on un plat témoin ?",
+            options: ["1 jour.", "5 jours à +3 °C.", "1 mois."],
+            correct: 1, explication: "100 g, 5 jours à +3 °C." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "À la réception, on…",
+            options: ["Signe sans regarder.", "Vérifie quantités, T° et DLC, puis on signe.", "Refuse toujours."],
+            correct: 1, explication: "Contrôle puis signature du bon de livraison." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : la traçabilité aval concerne le fournisseur.",
+            correct: false, explication: "Faux. L’aval concerne le client (après moi)." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite 3 documents** de traçabilité utilisés en cuisine.",
+            indice_correction: "Réponse attendue : 3 parmi bon de livraison, relevé de T°, étiquette de fabrication, plat témoin, fiche de non-conformité." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Construis** un numéro de lot pour un wrap fabriqué aujourd’hui par le groupe G1.",
+            indice_correction: "Réponse attendue : L-PSR-JJMMAA-G1-WRAP avec la date du jour." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Définir la traçabilité", indicateur: "L’élève définit la traçabilité avec ses mots.", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr2", capacite: "Distinguer amont et aval", indicateur: "L’élève explique les 2 sens de la traçabilité.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Construire un numéro de lot", indicateur: "L’élève écrit un lot conforme L-PSR-JJMMAA-Gx-PRODUIT.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Citer les documents de traçabilité", indicateur: "L’élève cite au moins 3 documents.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Expliquer le rôle du plat témoin", indicateur: "L’élève explique 100 g / 5 jours / +3 °C.", niveau_attendu: "A", remediation: "Revoir cours c4." }
+        ]
+      }
+    }
+  },
+  {
+    id: "tiac",
+    titre: "Les TIAC (intoxications alimentaires)",
+    emoji: "🤒",
+    description: "Comprendre ce qu’est une toxi-infection alimentaire collective et comment l’éviter.",
+    referentiel: {
+      pole: "Pôle 1 — Production en restauration",
+      bloc: "Savoirs associés SC 1.4 — Microbiologie appliquée et sécurité sanitaire",
+      lien: "Paquet hygiène, déclaration obligatoire ARS, HACCP.",
+      capacites: [
+        "Définir une TIAC.",
+        "Identifier les microbes les plus fréquents.",
+        "Mettre en œuvre les mesures de prévention."
+      ]
+    },
+    objectifs_eleve: [
+      "définir une TIAC",
+      "citer les 3 microbes les plus fréquents",
+      "comprendre la déclaration obligatoire",
+      "citer 3 gestes pro pour éviter une TIAC"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Définir une TIAC (au moins 2 cas groupés)",
+        "Citer Salmonella, Staph aureus, C. perfringens",
+        "Connaître les symptômes courants",
+        "Citer le rôle du plat témoin",
+        "Lier les 5M et les TIAC"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "TIAC", def: "Toxi-Infection Alimentaire Collective : au moins 2 personnes malades après avoir mangé le même aliment." },
+      { mot: "Déclaration obligatoire", def: "Dès suspicion de TIAC, on prévient l’ARS (Agence Régionale de Santé)." },
+      { mot: "Salmonella", def: "Bactérie présente surtout dans œufs et volailles crus. Provoque diarrhée + fièvre." },
+      { mot: "Staphylocoque doré", def: "Bactérie venant des mains et de la peau. Toxine résistante à la cuisson." },
+      { mot: "C. perfringens", def: "Bactérie qui se développe dans les plats refroidis trop lentement (sauces, viandes en sauce)." },
+      { mot: "Plat témoin", def: "Échantillon gardé 5 jours à +3 °C : permet d’identifier la cause d’une TIAC." },
+      { mot: "ARS", def: "Agence Régionale de Santé : organisme à qui on déclare une TIAC. Ils enquêtent." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 C’est quoi une TIAC ?",
+          texte:
+            "**TIAC** = **T**oxi-**I**nfection **A**limentaire **C**ollective. 🤒\n\n" +
+            "- Au moins **2 personnes malades** 👥 après avoir mangé le même aliment.\n" +
+            "- Symptômes : 🚽 diarrhée, 🤮 vomissements, 🌡️ fièvre, 😖 douleurs.\n" +
+            "- Apparaît entre **2 h et 72 h** après le repas selon le microbe. ⏱️"
+        },
+        {
+          id: "c2",
+          titre: "🦠 Les 3 microbes vedettes",
+          texte:
+            "**🥚 Salmonella**\n" +
+            "- Source : œufs et volailles crus.\n" +
+            "- Symptômes : diarrhée + fièvre, **12 à 24 h** après.\n\n" +
+            "**🤚 Staphylocoque doré**\n" +
+            "- Source : mains, peau, plaies.\n" +
+            "- Symptômes : vomissements rapides, **1 à 6 h** après.\n" +
+            "- ⚠️ Sa toxine **résiste à la cuisson** !\n\n" +
+            "**🥘 Clostridium perfringens**\n" +
+            "- Source : plats refroidis trop lentement (sauces, viandes en sauce).\n" +
+            "- Symptômes : diarrhée, **8 à 24 h** après.\n\n" +
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 110' style='max-width:100%;height:auto;'>" +
+            "<circle cx='60' cy='55' r='35' fill='#fecaca' stroke='#991b1b'/>" +
+            "<text x='60' y='50' text-anchor='middle' font-size='13'>🥚</text>" +
+            "<text x='60' y='75' text-anchor='middle' font-size='10'>Salmonella</text>" +
+            "<circle cx='180' cy='55' r='35' fill='#fed7aa' stroke='#9a3412'/>" +
+            "<text x='180' y='50' text-anchor='middle' font-size='13'>🤚</text>" +
+            "<text x='180' y='75' text-anchor='middle' font-size='10'>Staph. doré</text>" +
+            "<circle cx='300' cy='55' r='35' fill='#fde68a' stroke='#92400e'/>" +
+            "<text x='300' y='50' text-anchor='middle' font-size='13'>🥘</text>" +
+            "<text x='300' y='75' text-anchor='middle' font-size='10'>C. perfringens</text>" +
+            "</svg>"
+        },
+        {
+          id: "c3",
+          titre: "📞 Que faire en cas de suspicion ?",
+          texte:
+            "1. 🍱 **Garder les plats témoins** des derniers jours.\n" +
+            "2. 📞 **Appeler l’ARS** (Agence Régionale de Santé) → déclaration **obligatoire**.\n" +
+            "3. 📋 **Lister tous les clients** servis (registre).\n" +
+            "4. 🤝 **Coopérer** avec l’enquête sanitaire.\n" +
+            "5. 🚫 **NE JAMAIS** jeter les preuves (plats témoins, étiquettes)."
+        },
+        {
+          id: "c4",
+          titre: "🛡️ Comment éviter une TIAC ?",
+          texte:
+            "Tous tes gestes pro convergent vers ça :\n\n" +
+            "- 🧼 **Lavage des mains** régulier\n" +
+            "- ❄️ **Chaîne du froid** respectée (zone dangereuse +10 à +63 °C)\n" +
+            "- 🌡️ **Cuisson à cœur** (volaille **74 °C**, hachée **70 °C**, autres **63 °C**)\n" +
+            "- 🔄 **Marche en avant** respectée\n" +
+            "- 🧽 **Nettoyage et désinfection**\n" +
+            "- 🥚 **Pas d’œufs crus** dans la mayo maison (si pas pasteurisés)"
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "- TIAC = au moins **2 personnes** malades. 👥\n" +
+            "- 3 microbes vedettes : **Salmonella, Staph aureus, C. perfringens**. 🦠\n" +
+            "- Suspicion = **déclaration ARS obligatoire**. 📞\n" +
+            "- **Plat témoin** = preuve qui sauve. 🍱\n" +
+            "- Tous tes gestes pro existent **pour éviter ça**. 🛡️"
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "TIAC veut dire…",
+          options: ["Toxi-Infection Alimentaire Collective.", "Très Importante Action Culinaire.", "Tableau Indicatif d’Allergènes Communs."],
+          correct: 0, explication: "Toxi-Infection Alimentaire Collective." },
+        { id: "q2", lie_cours: "c1", question: "Pour parler de TIAC il faut…",
+          options: ["1 seule personne.", "Au moins 2 personnes malades par le même aliment.", "10 personnes minimum."],
+          correct: 1, explication: "Au moins 2 cas groupés." },
+        { id: "q3", lie_cours: "c2", question: "Salmonella vient surtout…",
+          options: ["Des œufs et volailles crus.", "Des fruits secs.", "Du pain."],
+          correct: 0, explication: "Œufs et volailles crus = sources principales." },
+        { id: "q4", lie_cours: "c2", question: "Staphylocoque doré vient…",
+          options: ["Du sol.", "Des mains et de la peau (plaies).", "Du frigo."],
+          correct: 1, explication: "Mains, peau, plaies = source du Staph aureus." },
+        { id: "q5", lie_cours: "c2", question: "C. perfringens se développe…",
+          options: ["Dans les plats refroidis trop lentement.", "Dans le sel.", "Dans le sucre."],
+          correct: 0, explication: "Refroidissement trop lent = idéal pour C. perfringens." },
+        { id: "q6", lie_cours: "c3", question: "Suspicion de TIAC, on appelle…",
+          options: ["Le SAMU seulement.", "L’ARS (Agence Régionale de Santé).", "Le restaurateur d’à côté."],
+          correct: 1, explication: "Déclaration obligatoire à l’ARS." },
+        { id: "q7", lie_cours: "c3", question: "Combien de temps garde-t-on les plats témoins ?",
+          options: ["1 jour.", "5 jours à +3 °C.", "1 an au congélateur."],
+          correct: 1, explication: "100 g / 5 jours / +3 °C." },
+        { id: "q8", lie_cours: "c4", question: "Quelle T° à cœur pour la volaille ?",
+          options: ["50 °C.", "63 °C.", "74 °C."],
+          correct: 2, explication: "Volaille = 74 °C à cœur." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_tiac",
+          titre: "🕵️ Repère le risque TIAC",
+          consigne: "Sur chaque photo, repère le geste qui peut provoquer une TIAC.",
+          items: [
+            { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_1_planche_meme_couteau.jpg",
+              erreur: "Couteau partagé viande crue / légumes : risque Salmonella par contamination croisée." },
+            { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pansement_chair.jpg",
+              erreur: "Pansement couleur chair sur coupure : s’il tombe, Staph aureus dans le plat." },
+            { image: "ressources_eco/marche_en_avant/2_erreurs_a_identifier/05_erreur_retour_arriere_plat_prepare_zone_sale.jpg",
+              erreur: "Retour en arrière en zone sale : grosse contamination, gros risque TIAC." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_tiac",
+          titre: "🛡️ Le bon geste anti-TIAC",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quel geste évite la salmonelle ?",
+              choix: [
+                { image: "ressources_eco/exo_lavage_mains/lavage_etape_3_paumes.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_erreurs_cuisine/cuisine_pro_1_planche_meme_couteau.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment éviter le Staphylocoque doré sur une coupure ?",
+              choix: [
+                { image: "ressources_eco/exo_tenue_pro/tenue_correcte_pansement_bleu.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_tenue_pro/tenue_erreur_pansement_chair.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_tiac",
+        titre: "Épreuve d’attestation — Je préviens les TIAC",
+        verbe_action: "PRÉVENIR",
+        objectif: "les toxi-infections alimentaires collectives par des gestes pro adaptés.",
+        mise_en_situation: "3 clients ont été malades hier soir après avoir mangé ton plat. Tu dois savoir reconnaître une TIAC, citer les microbes possibles et expliquer comment l’éviter à l’avenir.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "TIAC veut dire…",
+            options: ["Toxi-Infection Alimentaire Collective.", "Test Important d’Aliments Cuits.", "Total d’Ingrédients À Conserver."],
+            correct: 0, explication: "Toxi-Infection Alimentaire Collective." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Salmonella vient surtout…",
+            options: ["Du sucre.", "Des œufs et volailles crus.", "Du sel."],
+            correct: 1, explication: "Œufs et volailles crus." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Suspicion de TIAC, on appelle…",
+            options: ["L’ARS (Agence Régionale de Santé).", "Personne.", "Le client suivant."],
+            correct: 0, explication: "Déclaration obligatoire à l’ARS." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Quelle T° à cœur pour la volaille ?",
+            options: ["50 °C.", "63 °C.", "74 °C."],
+            correct: 2, explication: "Volaille = 74 °C à cœur." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : la toxine du Staphylocoque doré est détruite à la cuisson.",
+            correct: false, explication: "Faux. La toxine résiste à la cuisson : seul le geste pro évite le danger." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 3 microbes** les plus souvent responsables de TIAC.",
+            indice_correction: "Réponse attendue : Salmonella, Staphylocoque doré, Clostridium perfringens." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Cite 3 gestes pro** qui permettent d’éviter une TIAC.",
+            indice_correction: "Réponse attendue : 3 parmi lavage des mains, chaîne du froid, cuisson à cœur, marche en avant, nettoyage/désinfection, plat témoin, pas d’œufs crus." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Définir une TIAC", indicateur: "L’élève dit « au moins 2 personnes malades par le même aliment ».", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr2", capacite: "Citer les microbes responsables", indicateur: "L’élève cite Salmonella, Staph aureus, C. perfringens.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Connaître la déclaration obligatoire", indicateur: "L’élève cite l’ARS comme destinataire.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Citer 3 gestes de prévention", indicateur: "L’élève cite au moins 3 gestes pro adaptés.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Expliquer le rôle du plat témoin", indicateur: "L’élève explique 100 g / 5 jours / +3 °C.", niveau_attendu: "A", remediation: "Revoir cours c4." }
+        ]
+      }
+    }
+  },
+  {
+    id: "operations_preliminaires",
+    titre: "Les opérations préliminaires",
+    emoji: "🥣",
+    description: "Tout ce qu’on fait sur un aliment avant de le cuire : laver, décontaminer, éplucher, tailler, décongeler.",
+    referentiel: {
+      pole: "Pôle 1 — Production en restauration",
+      bloc: "Savoirs associés SC 1.2 — Techniques culinaires de base",
+      lien: "Paquet hygiène, GBPH restauration, HACCP.",
+      capacites: [
+        "Réaliser les opérations préliminaires.",
+        "Décontaminer les fruits et légumes crus.",
+        "Décongeler en sécurité."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer les bonnes techniques de lavage des légumes",
+      "décontaminer les fruits et légumes avec un produit adapté",
+      "tailler les légumes proprement et en sécurité",
+      "décongeler en respectant la chaîne du froid"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Laver tous les légumes terreux avant utilisation",
+        "Décontaminer crudités à l’eau javellisée 5 ppm",
+        "Tailler en sécurité (gestes corrects)",
+        "Décongeler au frigo, jamais à T° ambiante",
+        "Repérer les erreurs sur photo"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Opérations préliminaires", def: "Toutes les actions sur un aliment AVANT de le cuire (lavage, taillage, décongélation)." },
+      { mot: "Décontamination", def: "Trempage dans une eau légèrement javellisée pour tuer les microbes des légumes crus." },
+      { mot: "Brunoise", def: "Légumes taillés en très petits cubes (2-3 mm)." },
+      { mot: "Julienne", def: "Légumes taillés en fins bâtonnets de 4-5 cm." },
+      { mot: "Décongélation au frigo", def: "Seule méthode sûre : produit qui passe de -18 °C à 0-4 °C lentement, sans rupture de chaîne du froid." },
+      { mot: "PEPS", def: "Premier Entré Premier Sorti : on consomme d’abord les produits livrés en premier." },
+      { mot: "Économe", def: "Petit couteau ou pelle-pomme pour éplucher légumes et fruits." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi les opérations préliminaires ?",
+          texte:
+            "Avant de cuire un aliment, il faut le **préparer**. 🥣\n\n" +
+            "- 🧼 **Nettoyer** : enlever terre et microbes.\n" +
+            "- 🔪 **Éplucher et tailler** : préparer la cuisson.\n" +
+            "- ❄️ **Décongeler** : sortir du congélateur sans danger.\n\n" +
+            "⚠️ Sans ça, on apporte microbes et terre dans le plat."
+        },
+        {
+          id: "c2",
+          titre: "🥬 Lavage et décontamination",
+          texte:
+            "**🚿 Légumes terreux** (pommes de terre, carottes, poireaux)\n" +
+            "- Lavage à **l’eau claire**, plusieurs fois si besoin.\n\n" +
+            "**🥗 Crudités servies crues** (salade, tomate, fraise)\n" +
+            "- **Décontamination** : eau javellisée à **5 ppm**, **5 à 15 min**.\n" +
+            "- Puis **rinçage** abondant à l’eau claire.\n" +
+            "- 👉 But : tuer les microbes sans laisser de goût."
+        },
+        {
+          id: "c3",
+          titre: "🔪 Épluchage et taillage",
+          texte:
+            "**Outils**\n" +
+            "- 🥄 **Économe** pour éplucher.\n" +
+            "- 🔪 **Couteau de chef** pour tailler.\n\n" +
+            "**Tailles classiques**\n" +
+            "- 🟦 **Brunoise** : petits cubes de 2-3 mm.\n" +
+            "- 🟨 **Julienne** : bâtonnets fins de 4-5 cm.\n\n" +
+            "**Sécurité**\n" +
+            "- ✋ Main à plat sur l’aliment, doigts repliés.\n" +
+            "- 🧱 Planche stable (lavette mouillée dessous)."
+        },
+        {
+          id: "c4",
+          titre: "❄️ Décongélation",
+          texte:
+            "**4 méthodes officielles** :\n\n" +
+            "1. ✅ **Au frigo** (la meilleure, lente et sûre)\n" +
+            "2. ✅ **Eau froide étanche** (sac fermé)\n" +
+            "3. ✅ **Micro-ondes** (cuisson juste après)\n" +
+            "4. ✅ **Cuisson directe** (du congelé à la poêle)\n\n" +
+            "🚫 **JAMAIS à T° ambiante** : zone dangereuse +10 à +63 °C, microbes en folie."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "- 🚿 **Lavage** des légumes terreux avant cuisson.\n" +
+            "- 🥗 **Décontamination** obligatoire pour le cru.\n" +
+            "- 🔪 **Taillage** sécurisé (main repliée).\n" +
+            "- ❄️ **Décongélation au frigo**, jamais à T° ambiante.\n" +
+            "- 📦 **PEPS** : Premier Entré, Premier Sorti."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Les opérations préliminaires se font…",
+          options: ["Avant la cuisson.", "Après le service.", "Pendant la plonge."],
+          correct: 0, explication: "Avant la cuisson." },
+        { id: "q2", lie_cours: "c2", question: "Les légumes terreux doivent être…",
+          options: ["Cuits directement.", "Lavés à l’eau claire.", "Congelés tout de suite."],
+          correct: 1, explication: "Lavés à l’eau claire." },
+        { id: "q3", lie_cours: "c2", question: "Décontamination des crudités à l’eau javellisée…",
+          options: ["5 ppm, 5-15 min, puis rinçage.", "100 ppm pendant 1 h.", "Sans rinçage après."],
+          correct: 0, explication: "5 ppm, 5-15 min, puis rinçage." },
+        { id: "q4", lie_cours: "c3", question: "Brunoise = ",
+          options: ["Bâtonnets fins.", "Petits cubes de 2-3 mm.", "Grosses rondelles."],
+          correct: 1, explication: "Petits cubes de 2-3 mm." },
+        { id: "q5", lie_cours: "c3", question: "Comment poser ta main pour tailler ?",
+          options: ["À plat sur l’aliment, doigts repliés.", "Doigts tendus vers la lame.", "Main loin de l’aliment."],
+          correct: 0, explication: "À plat sur l’aliment, doigts repliés." },
+        { id: "q6", lie_cours: "c4", question: "Meilleure méthode de décongélation ?",
+          options: ["Sur le plan de travail.", "Au frigo (lent, sûr).", "Au soleil."],
+          correct: 1, explication: "Au frigo (lent, sûr)." },
+        { id: "q7", lie_cours: "c4", question: "Décongélation à T° ambiante…",
+          options: ["Recommandée.", "INTERDITE : risque microbien.", "Obligatoire."],
+          correct: 1, explication: "INTERDITE : risque microbien." },
+        { id: "q8", lie_cours: "c1", question: "Si je ne lave pas mes légumes terreux…",
+          options: ["Aucun risque.", "J’apporte microbes et terre dans le plat.", "Ça améliore le goût."],
+          correct: 1, explication: "J’apporte microbes et terre dans le plat." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_operations_preliminaires",
+          titre: "🕵️ Repère l’erreur",
+          consigne: "Repère l’erreur d’opération préliminaire sur la photo.",
+          items: [
+            { image: "ressources_eco/exo_operations_prelim/prelim_erreur_legumes_pas_laves.jpg",
+              erreur: "Légumes terreux posés sans lavage : terre + microbes en cuisine." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_operations_preliminaires",
+          titre: "✅ Le bon geste préliminaire",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle action est correcte avant cuisson ?",
+              choix: [
+                { image: "ressources_eco/exo_operations_prelim/prelim_lavage_legumes.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_operations_prelim/prelim_erreur_legumes_pas_laves.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment décontaminer une salade verte ?",
+              choix: [
+                { image: "ressources_eco/exo_operations_prelim/prelim_decontamination_javel.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_operations_prelim/prelim_erreur_legumes_pas_laves.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle technique d’épluchage ?",
+              choix: [
+                { image: "ressources_eco/exo_operations_prelim/prelim_epluchage.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_operations_prelim/prelim_erreur_legumes_pas_laves.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Brunoise correcte ?",
+              choix: [
+                { image: "ressources_eco/exo_operations_prelim/prelim_taillage_brunoise.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_operations_prelim/prelim_lavage_legumes.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Décongélation correcte ?",
+              choix: [
+                { image: "ressources_eco/exo_operations_prelim/prelim_decongelation_frigo.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_operations_prelim/prelim_erreur_legumes_pas_laves.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_operations_preliminaires",
+        titre: "Épreuve d’attestation — Je réalise les opérations préliminaires",
+        verbe_action: "RÉALISER",
+        objectif: "les opérations préliminaires sur les aliments avant cuisson.",
+        mise_en_situation: "Tu prépares un menu : carottes terreuses, salade verte servie crue, et un poisson congelé. Tu dois choisir les bonnes méthodes de lavage, décontamination, taillage et décongélation.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Les opérations préliminaires se font…",
+            options: ["Avant la cuisson.", "Après le service.", "Pendant le dressage."],
+            correct: 0, explication: "Avant la cuisson." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Décontamination des crudités…",
+            options: ["Eau javellisée 5 ppm, 5-15 min, puis rinçage.", "Eau bouillante 30 min.", "Rien, on les sert."],
+            correct: 0, explication: "Eau javellisée 5 ppm, 5-15 min, puis rinçage." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Brunoise = ",
+            options: ["Petits cubes de 2-3 mm.", "Grosses rondelles.", "Lamelles longues."],
+            correct: 0, explication: "Petits cubes de 2-3 mm." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Meilleure méthode de décongélation ?",
+            options: ["À T° ambiante.", "Au frigo.", "Au soleil."],
+            correct: 1, explication: "Au frigo." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : on peut décongeler une viande sur le plan de travail toute la journée.",
+            correct: false, explication: "Faux. La décongélation à T° ambiante est interdite (zone dangereuse)." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 4 méthodes** de décongélation autorisées.",
+            indice_correction: "Réponse attendue : frigo, eau froide étanche, micro-ondes, cuisson directe." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique** comment tu tailles un légume en sécurité.",
+            indice_correction: "Réponse attendue : main à plat sur l’aliment, doigts repliés, planche stable, couteau adapté." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Laver les légumes terreux", indicateur: "L’élève cite le lavage à l’eau claire avant cuisson.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Décontaminer les crudités", indicateur: "L’élève cite eau javellisée 5 ppm + rinçage.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr3", capacite: "Tailler en sécurité", indicateur: "L’élève cite main repliée + planche stable.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Décongeler en sécurité", indicateur: "L’élève cite la décongélation au frigo.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Repérer une erreur sur photo", indicateur: "L’élève identifie l’erreur dans l’exercice points chauds.", niveau_attendu: "A", remediation: "Revoir tous les cours." }
+        ]
+      }
+    }
+  },
+  {
+    id: "plonge",
+    titre: "La plonge",
+    emoji: "🧴",
+    description: "Comment laver la vaisselle et le matériel pour qu’ils soient propres ET désinfectés.",
+    referentiel: {
+      pole: "Pôle 1 — Production en restauration",
+      bloc: "Savoirs associés SC 1.3 — Hygiène et sécurité",
+      lien: "Paquet hygiène, GBPH restauration, marche en avant.",
+      capacites: [
+        "Appliquer la méthode des 3 bacs.",
+        "Utiliser un lave-vaisselle pro.",
+        "Séparer zone sale et zone propre."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer la méthode des 3 bacs en plonge manuelle",
+      "utiliser un lave-vaisselle pro selon les bonnes températures",
+      "séparer la vaisselle sale de la propre",
+      "ranger la vaisselle propre à l’air libre (sans torchon)"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Citer les 3 bacs (lavage, rinçage, désinfection)",
+        "Connaître les T° du lave-vaisselle pro (lavage > 60 °C, rinçage > 82 °C)",
+        "Séparer zone sale et zone propre",
+        "Sécher à l’air, pas au torchon",
+        "Repérer une erreur de plonge"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Plonge", def: "Zone et action de laver la vaisselle, les ustensiles, le matériel après usage." },
+      { mot: "Plonge manuelle 3 bacs", def: "Lavage (détergent + eau chaude), rinçage (eau claire), désinfection." },
+      { mot: "Lave-vaisselle pro", def: "Machine qui lave en 1-2 min à haute T° (>60 °C lavage, >82 °C rinçage)." },
+      { mot: "Séchage à l’air", def: "Vaisselle posée tête en bas, sèche toute seule. Plus hygiénique qu’un torchon." },
+      { mot: "Zone propre / zone sale en plonge", def: "Côté sale = vaisselle qui arrive. Côté propre = vaisselle lavée. Jamais mélangées." },
+      { mot: "Bionettoyage du matériel", def: "Méthode 5 étapes (prélaver, laver, rincer, désinfecter, sécher) appliquée au matériel." },
+      { mot: "Lavette de plonge", def: "Lavette spécifique à la plonge, ne sort pas de la zone." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi soigner la plonge ?",
+          texte:
+            "Une vaisselle mal lavée **recontamine** le plat suivant. 🦠\n\n" +
+            "- 🍽️ Assiette sale = microbes du client précédent.\n" +
+            "- 👨‍🍳 La plonge est aussi importante que la cuisine.\n" +
+            "- 🧴 Lavette de plonge = reste en zone plonge."
+        },
+        {
+          id: "c2",
+          titre: "🪣 La méthode 3 bacs (manuelle)",
+          texte:
+            "**Toujours dans cet ordre** :\n\n" +
+            "1. 🧼 **Bac 1 — Lavage** : eau chaude + détergent.\n" +
+            "2. 💧 **Bac 2 — Rinçage** : eau claire.\n" +
+            "3. 🧪 **Bac 3 — Désinfection** : produit + temps de contact.\n\n" +
+            "👉 Puis on laisse **sécher à l’air**."
+        },
+        {
+          id: "c3",
+          titre: "🤖 Le lave-vaisselle pro",
+          texte:
+            "Plus rapide, plus sûr.\n\n" +
+            "- 🌡️ **Lavage** : plus de **60 °C**.\n" +
+            "- 🌡️ **Rinçage** : plus de **82 °C**.\n" +
+            "- ⏱️ Cycle : 1 à 2 min.\n\n" +
+            "📋 **Autocontrôle** : tu vérifies les T° régulièrement."
+        },
+        {
+          id: "c4",
+          titre: "🚦 Zone sale ≠ zone propre",
+          texte:
+            "**Marche en avant en plonge** :\n\n" +
+            "- ➡️ Vaisselle **sale** entre par un côté.\n" +
+            "- ⬅️ Vaisselle **propre** sort de l’autre.\n" +
+            "- 🚫 **JAMAIS de croisement**.\n" +
+            "- 🪣 Étagères de séchage **en zone propre**.\n" +
+            "- 🚫 **Pas de torchon** : il recontamine."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "- 🪣 **3 bacs** ou **machine pro**.\n" +
+            "- 🌡️ T° élevées (>60 / >82 °C).\n" +
+            "- 💨 Séchage **à l’air**, pas torchon.\n" +
+            "- 🚦 Sale et propre **séparés**.\n" +
+            "- 🧴 Lavette **dédiée** à la plonge."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Plonge mal faite = ",
+          options: ["Aucun problème.", "Recontamination du plat suivant.", "Économie d’eau."],
+          correct: 1, explication: "Recontamination du plat suivant." },
+        { id: "q2", lie_cours: "c2", question: "Méthode 3 bacs : ordre ?",
+          options: ["Lavage → Rinçage → Désinfection.", "Désinfection → Lavage → Rinçage.", "Rinçage seul."],
+          correct: 0, explication: "Lavage → Rinçage → Désinfection." },
+        { id: "q3", lie_cours: "c3", question: "T° de lavage en machine pro ?",
+          options: ["Moins de 30 °C.", "Plus de 60 °C.", "Exactement 100 °C."],
+          correct: 1, explication: "Plus de 60 °C." },
+        { id: "q4", lie_cours: "c3", question: "T° de rinçage en machine pro ?",
+          options: ["Plus de 82 °C.", "Moins de 40 °C.", "Eau froide."],
+          correct: 0, explication: "Plus de 82 °C." },
+        { id: "q5", lie_cours: "c4", question: "Vaisselle sale et propre, on les…",
+          options: ["Mélange pour gagner du temps.", "Sépare strictement (zones distinctes).", "Range ensemble."],
+          correct: 1, explication: "Sépare strictement (zones distinctes)." },
+        { id: "q6", lie_cours: "c4", question: "Pourquoi ne pas essuyer avec un torchon ?",
+          options: ["Trop long.", "Le torchon recontamine. Séchage à l’air.", "Le torchon raye."],
+          correct: 1, explication: "Le torchon recontamine. Séchage à l’air." },
+        { id: "q7", lie_cours: "c2", question: "Bac 2 sert à…",
+          options: ["Désinfecter.", "Rincer (eau claire).", "Faire tremper."],
+          correct: 1, explication: "Rincer (eau claire)." },
+        { id: "q8", lie_cours: "c1", question: "Lavette de plonge, elle…",
+          options: ["Sert partout en cuisine.", "Reste en zone plonge.", "S’utilise sur les plats."],
+          correct: 1, explication: "Reste en zone plonge." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_plonge",
+          titre: "🕵️ Repère l’erreur de plonge",
+          consigne: "Sur chaque photo, repère l’erreur de plonge.",
+          items: [
+            { image: "ressources_eco/exo_plonge/plonge_erreur_vaisselle_propre_pres_sale.jpg",
+              erreur: "Vaisselle propre à côté de la sale : risque de contamination croisée." },
+            { image: "ressources_eco/exo_plonge/plonge_erreur_torchon_essuyage.jpg",
+              erreur: "Essuyage au torchon : interdit, le torchon recontamine." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_plonge",
+          titre: "✅ Le bon geste de plonge",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Comment laver à la main la vaisselle ?",
+              choix: [
+                { image: "ressources_eco/exo_plonge/plonge_3_bacs.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_plonge/plonge_erreur_vaisselle_propre_pres_sale.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Que fais-tu de la vaisselle propre ?",
+              choix: [
+                { image: "ressources_eco/exo_plonge/plonge_vaisselle_propre_rangee.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_plonge/plonge_erreur_torchon_essuyage.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment doit être organisée la zone plonge ?",
+              choix: [
+                { image: "ressources_eco/exo_plonge/plonge_zone_separee.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_plonge/plonge_erreur_vaisselle_propre_pres_sale.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quel matériel utiliser ?",
+              choix: [
+                { image: "ressources_eco/exo_plonge/plonge_lave_vaisselle_pro.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_plonge/plonge_erreur_torchon_essuyage.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_plonge",
+        titre: "Épreuve d’attestation — Je nettoie la vaisselle et le matériel",
+        verbe_action: "NETTOYER",
+        objectif: "la vaisselle et le matériel selon les règles d’hygiène pro.",
+        mise_en_situation: "Le service est terminé. Tu dois laver la vaisselle, ranger la zone plonge, et t’assurer qu’aucun risque de contamination ne menace le service du soir.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Méthode 3 bacs : ordre ?",
+            options: ["Lavage → Rinçage → Désinfection.", "Rinçage seul.", "Désinfection en premier."],
+            correct: 0, explication: "Lavage → Rinçage → Désinfection." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "T° de rinçage en machine pro ?",
+            options: ["Plus de 82 °C.", "Moins de 40 °C.", "Tiède."],
+            correct: 0, explication: "Plus de 82 °C." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Comment sécher la vaisselle ?",
+            options: ["Au torchon.", "À l’air libre.", "Avec une serviette en papier."],
+            correct: 1, explication: "À l’air libre." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Vaisselle sale et propre…",
+            options: ["Sont mélangées.", "Sont strictement séparées.", "Sont rangées ensemble."],
+            correct: 1, explication: "Sont strictement séparées." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : essuyer la vaisselle avec un torchon est plus hygiénique que la laisser sécher à l’air.",
+            correct: false, explication: "Faux. Le torchon recontamine. Séchage à l’air = règle pro." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite les 3 bacs** de la plonge manuelle dans l’ordre.",
+            indice_correction: "Réponse attendue : Bac 1 lavage, Bac 2 rinçage, Bac 3 désinfection." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique** pourquoi on sépare la zone sale de la zone propre.",
+            indice_correction: "Réponse attendue : éviter la contamination croisée entre vaisselle sale et propre." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Appliquer la méthode 3 bacs", indicateur: "L’élève cite lavage, rinçage, désinfection dans l’ordre.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Connaître les T° machine pro", indicateur: "L’élève cite >60 °C lavage et >82 °C rinçage.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Séparer zone sale et propre", indicateur: "L’élève explique la marche en avant en plonge.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Sécher à l’air", indicateur: "L’élève cite le séchage à l’air et refuse le torchon.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr5", capacite: "Repérer une erreur de plonge", indicateur: "L’élève identifie l’erreur dans l’exercice points chauds.", niveau_attendu: "A", remediation: "Revoir tous les cours." }
+        ]
+      }
+    }
+  },
+  {
+    id: "maintien_temperature",
+    titre: "Maintien et remise en température",
+    emoji: "🌡️",
+    description: "Comment garder un plat chaud chaud, un plat froid froid, et le réchauffer en sécurité.",
+    referentiel: {
+      pole: "Pôle 1 — Production en restauration",
+      bloc: "Savoirs associés SC 1.3 — Hygiène et sécurité",
+      lien: "Paquet hygiène, HACCP, liaison chaude/froide.",
+      capacites: [
+        "Maîtriser le maintien au chaud.",
+        "Réaliser un refroidissement rapide.",
+        "Effectuer une remise en température sûre."
+      ]
+    },
+    objectifs_eleve: [
+      "maintenir un plat chaud à ≥ 63 °C",
+      "respecter le refroidissement rapide +63 → +10 °C en moins de 2 h",
+      "remettre en T° à ≥ 63 °C en moins d’1 h",
+      "vérifier les T° avec une sonde alimentaire"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Maintien chaud ≥ 63 °C",
+        "Refroidissement +63 → +10 °C < 2 h",
+        "Remise chaud ≥ 63 °C en < 1 h",
+        "Zone dangereuse +10 à +63 °C",
+        "Utiliser une sonde alimentaire"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Maintien au chaud", def: "Garder un plat à ≥ 63 °C jusqu’au service. Bain-marie ou armoire chaude." },
+      { mot: "Refroidissement rapide", def: "Passer de +63 °C à +10 °C en moins de 2 h. Cellule de refroidissement obligatoire." },
+      { mot: "Remise en T°", def: "Réchauffer un plat froid pour le servir. T° à cœur ≥ 63 °C en moins d’1 h." },
+      { mot: "Zone dangereuse", def: "Entre +10 et +63 °C : les microbes adorent. À éviter au maximum." },
+      { mot: "Cellule de refroidissement", def: "Frigo très puissant qui refroidit en 1-2 h. Obligatoire en restauration collective." },
+      { mot: "Sonde alimentaire", def: "Petit thermomètre qu’on pique dans le cœur du plat pour vérifier la T°." },
+      { mot: "Liaison chaude / froide", def: "Chaude = on sert tout de suite chaud. Froide = on refroidit, stocke, réchauffe au moment de servir." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi gérer la T° ?",
+          texte:
+            "Les microbes **adorent** la zone **+10 à +63 °C**. 🦠\n\n" +
+            "- 🔥 Soit le plat est **chaud** (≥ 63 °C).\n" +
+            "- ❄️ Soit le plat est **froid** (≤ 4 °C).\n" +
+            "- 🚫 **Jamais entre les deux longtemps**.\n\n" +
+            "👉 C’est la règle de base de l’hygiène en cuisine."
+        },
+        {
+          id: "c2",
+          titre: "🔥 Maintien au chaud (≥ 63 °C)",
+          texte:
+            "**Outils**\n" +
+            "- 🍲 **Bain-marie** ou **armoire chaude**.\n\n" +
+            "**Règle**\n" +
+            "- 🌡️ T° vérifiée à la **sonde**.\n" +
+            "- Si la T° descend **sous 63 °C** :\n" +
+            "  - on réchauffe ⬆️\n" +
+            "  - ou on jette 🗑️."
+        },
+        {
+          id: "c3",
+          titre: "❄️ Refroidissement rapide",
+          texte:
+            "Plat cuit pas servi tout de suite ?\n\n" +
+            "- ❄️ **Cellule de refroidissement** obligatoire.\n" +
+            "- 🌡️ **+63 °C → +10 °C** en **moins de 2 h**.\n" +
+            "- 🚫 Sinon : C. perfringens et autres microbes."
+        },
+        {
+          id: "c4",
+          titre: "🔥 Remise en T°",
+          texte:
+            "Plat froid à réchauffer ?\n\n" +
+            "- 🌡️ **T° à cœur ≥ 63 °C** en **moins d’1 h**.\n" +
+            "- 🔍 Vérifier à la **sonde alimentaire**.\n" +
+            "- 🚫 Pas de **tiédissement long**."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "- 🔥 **Chaud ≥ 63 °C** / ❄️ **Froid ≤ 4 °C**.\n" +
+            "- ❄️ **Refroid +63→+10 °C < 2 h**.\n" +
+            "- 🔥 **Remise ≥ 63 °C < 1 h**.\n" +
+            "- 🌡️ **Sonde alimentaire** = ton amie.\n" +
+            "- 🚫 Zone dangereuse +10 à +63 °C."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Zone dangereuse pour les microbes ?",
+          options: ["+10 à +63 °C.", "-18 à 0 °C.", "Au-dessus de 100 °C."],
+          correct: 0, explication: "+10 à +63 °C." },
+        { id: "q2", lie_cours: "c2", question: "T° de maintien au chaud ?",
+          options: ["≥ 63 °C.", "≥ 30 °C.", "≥ 10 °C."],
+          correct: 0, explication: "≥ 63 °C." },
+        { id: "q3", lie_cours: "c2", question: "Avec quoi maintenir au chaud ?",
+          options: ["Bain-marie ou armoire chaude.", "Frigo.", "Plan de travail."],
+          correct: 0, explication: "Bain-marie ou armoire chaude." },
+        { id: "q4", lie_cours: "c3", question: "Refroidissement rapide : de combien à combien ?",
+          options: ["+63 °C à +10 °C.", "+100 °C à +50 °C.", "0 °C à -18 °C."],
+          correct: 0, explication: "+63 °C à +10 °C." },
+        { id: "q5", lie_cours: "c3", question: "En combien de temps ?",
+          options: ["Moins de 2 h.", "Moins de 24 h.", "En 5 min."],
+          correct: 0, explication: "Moins de 2 h." },
+        { id: "q6", lie_cours: "c3", question: "Avec quoi refroidir vite ?",
+          options: ["Une cellule de refroidissement.", "Une fenêtre ouverte.", "Le frigo familial."],
+          correct: 0, explication: "Une cellule de refroidissement." },
+        { id: "q7", lie_cours: "c4", question: "Remise en T° : T° à cœur et durée ?",
+          options: ["≥ 63 °C en moins d’1 h.", "30 °C en 3 h.", "Tiède en 2 h."],
+          correct: 0, explication: "≥ 63 °C en moins d’1 h." },
+        { id: "q8", lie_cours: "c5", question: "Comment vérifier la T° à cœur ?",
+          options: ["Avec une sonde alimentaire.", "Au doigt.", "Au goût."],
+          correct: 0, explication: "Avec une sonde alimentaire." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_maintien_temperature",
+          titre: "🕵️ Repère le risque T°",
+          consigne: "Repère le risque lié à la T° sur la photo.",
+          items: [
+            { image: "ressources_eco/exo_maintien_temperature/temp_erreur_zone_dangereuse.jpg",
+              erreur: "Plat à +25 °C : zone dangereuse, microbes en multiplication. À jeter ou refroidir vite." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_maintien_temperature",
+          titre: "✅ La bonne pratique de T°",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle T° pour maintien chaud ?",
+              choix: [
+                { image: "ressources_eco/exo_maintien_temperature/temp_bain_marie_63.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_maintien_temperature/temp_erreur_zone_dangereuse.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment refroidir un plat ?",
+              choix: [
+                { image: "ressources_eco/exo_maintien_temperature/temp_cellule_refroidissement.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_maintien_temperature/temp_erreur_zone_dangereuse.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle T° après remise au chaud ?",
+              choix: [
+                { image: "ressources_eco/exo_maintien_temperature/temp_remise_chaud_67.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_maintien_temperature/temp_erreur_zone_dangereuse.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment vérifier la T° à cœur ?",
+              choix: [
+                { image: "ressources_eco/exo_maintien_temperature/temp_sonde_alimentaire.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_maintien_temperature/temp_erreur_zone_dangereuse.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_maintien_temperature",
+        titre: "Épreuve d’attestation — Je maîtrise les températures",
+        verbe_action: "MAÎTRISER",
+        objectif: "le maintien et la remise en température des plats.",
+        mise_en_situation: "Tu prépares à 10 h une blanquette pour le service de 20 h. Tu dois savoir comment la refroidir, la stocker, puis la remettre en température correctement.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Zone dangereuse pour les microbes ?",
+            options: ["+10 à +63 °C.", "-20 à -10 °C.", "Au-dessus de 100 °C."],
+            correct: 0, explication: "+10 à +63 °C." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Refroidissement rapide : de combien à combien et en combien de temps ?",
+            options: ["+63 → +10 °C en moins de 2 h.", "+100 → +50 °C en 5 h.", "Aucune règle."],
+            correct: 0, explication: "+63 → +10 °C en moins de 2 h." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Remise en T° à cœur ?",
+            options: ["≥ 63 °C en moins d’1 h.", "30 °C en 3 h.", "Tiède."],
+            correct: 0, explication: "≥ 63 °C en moins d’1 h." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Comment vérifier la T° à cœur ?",
+            options: ["Sonde alimentaire.", "Au doigt.", "Au goût."],
+            correct: 0, explication: "Sonde alimentaire." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : on peut laisser un plat cuit refroidir lentement à T° ambiante.",
+            correct: false, explication: "Faux. Cellule de refroidissement obligatoire : +63 → +10 °C en < 2 h." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite la règle** de refroidissement rapide.",
+            indice_correction: "Réponse attendue : +63 °C → +10 °C en moins de 2 h, en cellule." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Explique** ce qu’est la zone dangereuse et pourquoi il faut l’éviter.",
+            indice_correction: "Réponse attendue : +10 à +63 °C, les microbes s’y multiplient très vite." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Maintenir au chaud", indicateur: "L’élève cite ≥ 63 °C, bain-marie ou armoire chaude.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Refroidir rapidement", indicateur: "L’élève cite +63 → +10 °C en moins de 2 h.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr3", capacite: "Remettre en T°", indicateur: "L’élève cite ≥ 63 °C en moins d’1 h.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr4", capacite: "Connaître la zone dangereuse", indicateur: "L’élève cite +10 à +63 °C.", niveau_attendu: "A", remediation: "Revoir cours c1." },
+          { id: "cr5", capacite: "Utiliser une sonde alimentaire", indicateur: "L’élève cite la sonde pour vérifier la T° à cœur.", niveau_attendu: "A", remediation: "Revoir cours c5." }
+        ]
+      }
+    }
+  },
+  {
+    id: "assemblage_dressage",
+    titre: "L’assemblage et le dressage",
+    emoji: "🍱",
+    description: "Comment dresser un plat pour qu’il donne envie ET respecte les règles d’hygiène.",
+    referentiel: {
+      pole: "Pôle 1 — Production en restauration",
+      bloc: "Savoirs associés SC 1.4 — Assemblage et dressage",
+      lien: "Règles d’hygiène, équilibre alimentaire, plat témoin.",
+      capacites: [
+        "Dresser un plat avec soin.",
+        "Manipuler les aliments avec les bons outils.",
+        "Appliquer la règle ½ ¼ ¼."
+      ]
+    },
+    objectifs_eleve: [
+      "appliquer les règles de dressage (couleurs, hauteur, propreté)",
+      "utiliser les bons outils (pince, gant) sans toucher l’aliment à mains nues",
+      "appliquer la règle ½ ¼ ¼ pour un menu équilibré",
+      "préparer un plat témoin"
+    ],
+    bilan_eleve: {
+      titre: "🎓 Tu sais maintenant",
+      points: [
+        "Dresser un plat avec couleurs, hauteur et propreté",
+        "Utiliser pince ou gant à usage unique",
+        "Appliquer la règle ½ ¼ ¼",
+        "Garder un plat témoin (100 g, 5 j à +3 °C)",
+        "Repérer les défauts de dressage"
+      ],
+      message: "Bravo ! Tu peux passer l’épreuve d’attestation."
+    },
+    mots_cles: [
+      { mot: "Dressage", def: "Comment on pose la nourriture dans l’assiette pour qu’elle soit belle et donne envie." },
+      { mot: "Assemblage", def: "Réunir plusieurs éléments d’un plat (entrée, plat, dessert) dans un contenant." },
+      { mot: "Règle des 3 couleurs", def: "Avoir 3 couleurs différentes minimum dans l’assiette pour la rendre attractive." },
+      { mot: "Pince de service", def: "Outil inox qui sert à attraper la nourriture sans la toucher avec les doigts." },
+      { mot: "Gant à usage unique", def: "Gant fin qu’on jette après chaque manipulation. Alternative à la pince." },
+      { mot: "Règle ½ ¼ ¼", def: "½ légumes, ¼ féculents, ¼ protéines : la base de l’équilibre alimentaire." },
+      { mot: "Plat témoin", def: "Échantillon de 100 g de chaque produit servi, gardé 5 jours à +3 °C." }
+    ],
+    module: {
+      cours: [
+        {
+          id: "c1",
+          titre: "🤔 Pourquoi soigner le dressage ?",
+          texte:
+            "Le client mange aussi **avec les yeux**. 👀\n\n" +
+            "- ✨ Un plat bien dressé donne **envie**.\n" +
+            "- 😖 Un plat dressé en vrac fait **fuir**.\n" +
+            "- 👨‍🍳 C’est aussi l’**image de ton métier**.\n\n" +
+            "👉 Bon dressage = **couleurs + hauteur + propreté + équilibre**."
+        },
+        {
+          id: "c2",
+          titre: "🎨 Les règles d’or du dressage",
+          texte:
+            "1. 🎨 **Couleurs** : minimum **3 couleurs** différentes (vert, orange, rouge, blanc…).\n" +
+            "2. ⛰️ **Hauteur** : un peu de relief au centre (quenelle, dôme).\n" +
+            "3. ✨ **Propreté** : bord d’assiette **toujours net** (essuie avec un papier propre).\n" +
+            "4. 🌬️ **Espace** : ne surcharge pas. Mieux vaut un plat **aéré**.\n" +
+            "5. 🤝 **Cohérence** : tout doit aller ensemble (saveurs, textures)."
+        },
+        {
+          id: "c3",
+          titre: "🍽️ La règle ½ ¼ ¼ pour l’équilibre",
+          texte:
+            "- 🥦 **½ assiette** = **légumes** (cuits ou crus).\n" +
+            "- 🍚 **¼ assiette** = **féculents** (riz, pâtes, pommes de terre, pain).\n" +
+            "- 🍗 **¼ assiette** = **protéines** (viande, poisson, œufs, légumineuses).\n\n" +
+            "👉 C’est la **base** d’une assiette équilibrée.\n" +
+            "Tu peux ajouter **un fruit + un produit laitier** en complément."
+        },
+        {
+          id: "c4",
+          titre: "🥢 Comment manipuler les aliments ?",
+          texte:
+            "🚫 **JAMAIS à mains nues**. Toujours :\n\n" +
+            "- 🥢 **Pince inox** (la plus pro).\n" +
+            "- 🧤 **Gant à usage unique** (jeté après chaque manipulation).\n" +
+            "- 🥄 **Cuillère** pour les sauces et purées.\n\n" +
+            "👉 Sinon : **contamination** + non-respect des règles d’hygiène."
+        },
+        {
+          id: "c5",
+          titre: "📌 À retenir",
+          texte:
+            "- 👀 Le client mange **avec les yeux**.\n" +
+            "- 🎨 **Couleurs + hauteur + propreté + espace + cohérence**.\n" +
+            "- 🍽️ Règle **½ ¼ ¼** pour l’équilibre.\n" +
+            "- 🥢 **Pince ou gant**, jamais à mains nues.\n" +
+            "- 🧪 Garde toujours un **plat témoin** (100 g, 5 jours à +3 °C)."
+        }
+      ],
+      qcm: [
+        { id: "q1", lie_cours: "c1", question: "Le client mange…",
+          options: ["Aussi avec les yeux. Le dressage compte.", "Seulement avec la bouche.", "Sans regarder l’assiette."],
+          correct: 0, explication: "Aussi avec les yeux. Le dressage compte." },
+        { id: "q2", lie_cours: "c2", question: "Combien de couleurs minimum dans l’assiette ?",
+          options: ["3.", "1.", "10."],
+          correct: 0, explication: "3." },
+        { id: "q3", lie_cours: "c2", question: "Le bord de l’assiette doit être…",
+          options: ["Toujours net (essuyé).", "Avec des traces de sauce.", "On s’en fiche."],
+          correct: 0, explication: "Toujours net (essuyé)." },
+        { id: "q4", lie_cours: "c3", question: "Règle ½ ¼ ¼ : ½ d’assiette = ",
+          options: ["Légumes.", "Féculents.", "Protéines."],
+          correct: 0, explication: "Légumes." },
+        { id: "q5", lie_cours: "c3", question: "¼ pour les féculents : exemples ?",
+          options: ["Riz, pâtes, pommes de terre, pain.", "Viande et poisson.", "Fruits et yaourts."],
+          correct: 0, explication: "Riz, pâtes, pommes de terre, pain." },
+        { id: "q6", lie_cours: "c4", question: "Tu manipules un aliment dressé avec…",
+          options: ["Une pince ou un gant à usage unique.", "Tes doigts propres.", "Un torchon."],
+          correct: 0, explication: "Une pince ou un gant à usage unique." },
+        { id: "q7", lie_cours: "c4", question: "Tu touches un aliment à mains nues, c’est…",
+          options: ["Une faute : risque de contamination.", "Autorisé si mains lavées.", "Recommandé."],
+          correct: 0, explication: "Une faute : risque de contamination." },
+        { id: "q8", lie_cours: "c5", question: "Plat témoin = ",
+          options: ["100 g gardé 5 jours à +3 °C en cas de problème.", "Le plat du chef.", "Un plat à jeter."],
+          correct: 0, explication: "100 g gardé 5 jours à +3 °C en cas de problème." }
+      ],
+      exercices_bonus: [
+        {
+          type: "points_chauds",
+          id: "exoA_assemblage_dressage",
+          titre: "🕵️ Repère le défaut de dressage",
+          consigne: "Repère l’erreur de dressage ou d’hygiène sur la photo.",
+          items: [
+            { image: "ressources_eco/exo_assemblage_dressage/dressage_avant_banal.jpg",
+              erreur: "Plat dressé en vrac : couleurs ternes, sauce qui déborde, pas de hauteur. Manque de soin." },
+            { image: "ressources_eco/exo_assemblage_dressage/dressage_erreur_bord_sale.jpg",
+              erreur: "Bord d’assiette sale : à essuyer toujours avant le service." },
+            { image: "ressources_eco/exo_assemblage_dressage/dressage_erreur_mains_nues.jpg",
+              erreur: "Mains nues sur l’aliment : interdit. Pince ou gant obligatoire." }
+          ]
+        },
+        {
+          type: "multi_choix_image",
+          id: "exoB_assemblage_dressage",
+          titre: "✅ Le bon dressage",
+          consigne: "Pour chaque scénario, clique sur la bonne photo.",
+          scenarios: [
+            { question: "Quelle assiette donne envie ?",
+              choix: [
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_apres_soigne.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_avant_banal.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Bord d’assiette correct ?",
+              choix: [
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_apres_soigne.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_erreur_bord_sale.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Comment manipuler les aliments ?",
+              choix: [
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_couverts_pince.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_erreur_mains_nues.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Quelle assiette respecte la règle ½ ¼ ¼ ?",
+              choix: [
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_assiette_3_couleurs.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_avant_banal.jpg", correct: false, label: "Photo B" }
+              ] },
+            { question: "Bonne barquette à emporter ?",
+              choix: [
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_barquette_emporter.jpg", correct: true, label: "Photo A" },
+                { image: "ressources_eco/exo_assemblage_dressage/dressage_erreur_bord_sale.jpg", correct: false, label: "Photo B" }
+              ] }
+          ]
+        }
+      ],
+      epreuve: {
+        id: "ep_assemblage_dressage",
+        titre: "Épreuve d’attestation — Je sais dresser un plat",
+        verbe_action: "DRESSER",
+        objectif: "un plat soigné qui donne envie ET respecte les règles d’hygiène.",
+        mise_en_situation: "Tu prépares en CAP cuisine une assiette du jour : légumes, féculents, protéines. Tu dois la dresser pour le service et garder un plat témoin.",
+        seuil: 12,
+        duree: "20 à 30 minutes",
+        questions: [
+          { id: "ep1", type: "qcm", points: 2,
+            question: "Combien de couleurs minimum dans l’assiette ?",
+            options: ["3.", "1.", "5 obligatoires."],
+            correct: 0, explication: "3 couleurs minimum." },
+          { id: "ep2", type: "qcm", points: 2,
+            question: "Règle ½ ¼ ¼ : ½ = ?",
+            options: ["Légumes.", "Féculents.", "Protéines."],
+            correct: 0, explication: "Légumes." },
+          { id: "ep3", type: "qcm", points: 2,
+            question: "Comment manipuler les aliments dressés ?",
+            options: ["Pince ou gant à usage unique.", "Mains nues lavées.", "Un torchon."],
+            correct: 0, explication: "Pince ou gant à usage unique." },
+          { id: "ep4", type: "qcm", points: 2,
+            question: "Plat témoin : combien et combien de temps ?",
+            options: ["100 g, 5 jours à +3 °C.", "1 kg, 1 jour.", "Pas obligatoire."],
+            correct: 0, explication: "100 g, 5 jours à +3 °C." },
+          { id: "ep5", type: "vrai_faux", points: 2,
+            question: "Vrai ou faux : on peut toucher un aliment dressé à mains nues si elles sont propres.",
+            correct: false, explication: "Faux. Pince ou gant à usage unique obligatoire." },
+          { id: "ep6", type: "phrase_libre", points: 3,
+            question: "**Cite 3 règles** de dressage.",
+            indice_correction: "Réponse attendue : couleurs (3 min), hauteur, propreté du bord, espace, cohérence." },
+          { id: "ep7", type: "phrase_libre", points: 3,
+            question: "**Pourquoi** utiliser une pince plutôt que les mains ?",
+            indice_correction: "Réponse attendue : éviter la contamination des aliments par les microbes des mains." }
+        ],
+        criteres: [
+          { id: "cr1", capacite: "Appliquer les règles d’or", indicateur: "L’élève cite couleurs, hauteur, propreté.", niveau_attendu: "A", remediation: "Revoir cours c2." },
+          { id: "cr2", capacite: "Utiliser les bons outils", indicateur: "L’élève cite pince ou gant à usage unique.", niveau_attendu: "A", remediation: "Revoir cours c4." },
+          { id: "cr3", capacite: "Respecter la règle ½ ¼ ¼", indicateur: "L’élève cite ½ légumes, ¼ féculents, ¼ protéines.", niveau_attendu: "A", remediation: "Revoir cours c3." },
+          { id: "cr4", capacite: "Préparer un plat témoin", indicateur: "L’élève cite 100 g, 5 jours à +3 °C.", niveau_attendu: "A", remediation: "Revoir cours c5." },
+          { id: "cr5", capacite: "Repérer un défaut de dressage", indicateur: "L’élève identifie une erreur dans l’exercice points chauds.", niveau_attendu: "A", remediation: "Revoir tous les cours." }
+        ]
+      }
+    }
+  }
+];
+
+/* =====================================================================
    3. ÉTAT & STOCKAGE
    ===================================================================== */
 
@@ -3061,6 +8024,13 @@ function saveState(markSaved = true) {
   if (markSaved) updateSaveIndicator(true);
   // V4.60 : met à jour le rappel "à exporter" même quand saveState est appelé directement
   if (typeof updateExportIndicator === "function") updateExportIndicator();
+  // Phase 4 : synchro cloud (debounced 5 s côté firebase_psr.js, photos filtrées)
+  try {
+    if (!demoModeActive && !window.IS_TEACHER_TOOL &&
+        window.PSR_FIREBASE && typeof window.PSR_FIREBASE.savePortfolioState === "function") {
+      window.PSR_FIREBASE.savePortfolioState(state);
+    }
+  } catch (e) { console.warn("[Phase4] savePortfolioState:", e); }
 }
 
 function scheduleAutoSave() {
@@ -3085,17 +8055,7 @@ function buildDefaultState() {
       date_derniere_modification: now,
       date_dernier_export: null, // V4.13 : suivi du dernier export JSON
     },
-    // RGPD : nom/prenom/lycee retirés. userCode et classe viennent de PSR_USER (auth.js).
-    // On garde des clés vides nom/prenom/lycee pour la compatibilité du code existant
-    // qui lit ces champs (ils ne seront jamais affichés ni saisis).
-    infos_eleve: {
-      userCode: (window.PSR_USER && window.PSR_USER.userCode) || "",
-      classe:   (window.PSR_USER && window.PSR_USER.classe)   || "",
-      annee_scolaire: "",
-      titre_dossier: "",
-      // shims RGPD-vides pour éviter des "undefined" dans les anciens accès
-      nom: "", prenom: "", lycee: "",
-    },
+    infos_eleve: { nom: "", prenom: "", lycee: "", classe: (window.PSR_USER && window.PSR_USER.classe) || "", annee_scolaire: "", titre_dossier: "", userCode: (window.PSR_USER && window.PSR_USER.userCode) || "" },
     // V4.20 : préférences utilisateur (additif, sûr pour l'existant)
     preferences: { couleur_theme: "bleu", contraste: false, avatar: null },
     // V4.20 : notes personnelles type post-it
@@ -3122,6 +8082,8 @@ function buildDefaultState() {
     referentiel_psr: {},
     // V4.61 : drapeau pour ne montrer le tutoriel "Première visite" qu'1x
     tutoriel_termine: false,
+    // FORMATION PSR — état des chapitres (qcm, exos, épreuve) par id de chapitre
+    formation_psr: {},
   };
 }
 
@@ -3187,15 +8149,6 @@ function mergeWithSchema(loaded) {
   const base = buildDefaultState();
   if (loaded.meta) Object.assign(base.meta, loaded.meta);
   if (loaded.infos_eleve) Object.assign(base.infos_eleve, loaded.infos_eleve);
-  // RGPD : on neutralise systématiquement nom/prenom/lycee même si présents dans un ancien export
-  base.infos_eleve.nom = "";
-  base.infos_eleve.prenom = "";
-  base.infos_eleve.lycee = "";
-  // RGPD : userCode + classe sont maîtrisés par PSR_USER (auth.js)
-  if (window.PSR_USER) {
-    base.infos_eleve.userCode = window.PSR_USER.userCode || "";
-    base.infos_eleve.classe   = window.PSR_USER.classe   || base.infos_eleve.classe || "";
-  }
   if (Array.isArray(loaded.sections)) {
     base.sections = base.sections.map(defSec => {
       const prev = loaded.sections.find(s => s.id === defSec.id);
@@ -3249,12 +8202,14 @@ function mergeWithSchema(loaded) {
   if (loaded.referentiel_psr && typeof loaded.referentiel_psr === "object") base.referentiel_psr = loaded.referentiel_psr;
   // V4.61 : drapeau tutoriel
   if (loaded.tutoriel_termine) base.tutoriel_termine = true;
+  // FORMATION PSR — préserver l'état des chapitres
+  if (loaded.formation_psr && typeof loaded.formation_psr === "object") base.formation_psr = loaded.formation_psr;
   // V4.84 : préserver les clés inconnues dans extras (évite les pertes lors d'évolutions futures)
   const KNOWN_KEYS = new Set([
     "meta","infos_eleve","sections","progression","evaluations","preferences",
     "notes","flashcards_state","conversations_state","meteo_emotions","meteo_last_check",
     "bilans_seance","auto_evaluations","sondages","suggestions_aliments",
-    "referentiel_psr","tutoriel_termine","extras"
+    "referentiel_psr","tutoriel_termine","formation_psr","extras"
   ]);
   const extras = (loaded.extras && typeof loaded.extras === "object") ? { ...loaded.extras } : {};
   Object.keys(loaded).forEach(k => {
@@ -3359,7 +8314,7 @@ function selectView(type) {
 
 /* V4.77 — Routeur unifié : décide entre une vue custom (creer-etiquettes,
    choisir-fournisseurs, dossier, projet, parcours) et une section classique. */
-const CUSTOM_VIEWS = new Set(["creer-etiquettes", "choisir-fournisseurs", "dossier", "projet", "parcours", "jalons", "oral-summary", "revision", "home"]);
+const CUSTOM_VIEWS = new Set(["creer-etiquettes", "choisir-fournisseurs", "dossier", "projet", "parcours", "jalons", "oral-summary", "revision", "home", "formation"]);
 let pendingScrollToCompo = null; // V4.78 — Cible de scroll après navigation
 function navigateGoto(target, opts) {
   if (!target) return;
@@ -3410,6 +8365,18 @@ function renderMain() {
     container.appendChild(renderRevisionView());
     return;
   }
+  if (currentView.type === "formation") {
+    container.appendChild(renderFormationPSR());
+    return;
+  }
+  if (currentView.type === "formation-epreuve") {
+    container.appendChild(renderEpreuveViewFormation(currentView.id));
+    return;
+  }
+  if (currentView.type === "formation-chapitre") {
+    container.appendChild(renderFormationChapitre(currentView.id));
+    return;
+  }
   if (currentView.type === "projet") {
     container.appendChild(renderProjetView());
     return;
@@ -3447,8 +8414,7 @@ function renderWelcomeBanner() {
   const banner = document.createElement("div");
   banner.className = "welcome-banner no-print";
   const e = state.infos_eleve;
-  // RGPD : on s'adresse à l'élève sans utiliser de nom/prénom
-  const prenom = "à toi";
+  const prenom = e.prenom ? escapeHtml(e.prenom) : "à toi";
   const total = state.sections.length;
   const done = state.sections.filter(s => s.statut_eleve === "done").length;
   const pct = Math.round(done / total * 100);
@@ -3607,7 +8573,7 @@ function renderSection(sectionId) {
     actions.className = "module-actions";
     actions.innerHTML = `
       <button type="button" class="btn" id="btn-fiche-preview">Aperçu plein écran</button>
-      <button type="button" class="btn btn-accent" id="btn-fiche-word">Exporter ma fiche en Word</button>
+      <button type="button" class="btn btn-accent" id="btn-fiche-word" style="display:none">Exporter ma fiche en Word</button>
       <button type="button" class="btn" id="btn-fiche-pdf">Imprimer / PDF</button>
     `;
     actions.querySelector("#btn-fiche-preview").addEventListener("click", () => openFichePreview(false));
@@ -4800,7 +9766,7 @@ function renderOralSummary() {
 
   wrap.innerHTML = `
     <h2>🎤 Synthèse orale finale — plan prêt à apprendre</h2>
-    <p><b>${escapeHtml(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + escapeHtml(e.classe) : ""}</p>
+    <p><b>${escapeHtml(e.prenom)} ${escapeHtml(e.nom)}</b> — ${escapeHtml(e.classe)} (${escapeHtml(e.annee_scolaire)})</p>
     <p class="hint">Cette synthèse est construite automatiquement à partir de vos réponses.
        Choisissez la <b>version concise</b> pour un aide-mémoire, ou la <b>version détaillée</b> pour tout revoir.</p>
     ${controls}
@@ -4845,7 +9811,7 @@ function renderOralSummary() {
 function copyOralText(parts) {
   const e = state.infos_eleve;
   const lines = [];
-  lines.push(`SYNTHÈSE ORALE — ${e.userCode || "Élève anonyme"}${e.classe ? " (" + e.classe + ")" : ""}`);
+  lines.push(`SYNTHÈSE ORALE — ${e.prenom || ""} ${e.nom || ""} (${e.classe || ""} / ${e.annee_scolaire || ""})`);
   lines.push("");
   parts.forEach(part => {
     lines.push(part.titre.toUpperCase());
@@ -5095,7 +10061,10 @@ function exportSectionWord(sec, schema) {
   <div class="head">
     <div class="eyebrow">Chef-d'œuvre — ${escapeHtml(stripEmoji(sec.titre))}</div>
     <h1>${escapeHtml(titreEtape)}</h1>
-    <div class="author">${escapeHtml(e.userCode || "")}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
+    <div class="author">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}
+      ${e.classe ? " · " + escapeHtml(e.classe) : ""}
+      ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
+    </div>
   </div>
   ${body || "<p><i>Aucune information saisie.</i></p>"}
   <div class="foot">
@@ -5107,7 +10076,7 @@ function exportSectionWord(sec, schema) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `${sec.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -5171,8 +10140,12 @@ function buildFicheIdentiteHTML(forPrint) {
 <div class="fiche-live">
   <div class="band">
     <div class="eyebrow">Fiche de présentation — Chef-d'œuvre CAP</div>
-    <div class="name">${escapeHtml(e.userCode || "Élève anonyme")}</div>
-    <div class="meta">${e.classe ? escapeHtml(e.classe) : ""}</div>
+    <div class="name">${escapeHtml(e.prenom||"Prénom")} ${escapeHtml(e.nom||"Nom")}</div>
+    <div class="meta">
+      ${escapeHtml(e.classe||"Classe")}
+      ${e.lycee ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.lycee) : ""}
+      ${e.annee_scolaire ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.annee_scolaire) : ""}
+    </div>
     ${titre ? `<div class="projet">${escapeHtml(titre)}</div>` : ""}
   </div>
   <div class="body">
@@ -5208,7 +10181,7 @@ function buildFicheIdentiteHTML(forPrint) {
 <!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Fiche de présentation — ${escapeHtml(e.userCode || "Élève")}</title>
+<head><meta charset="UTF-8"><title>Fiche de présentation — ${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</title>
 <style>
   @page { size: 21cm 29.7cm; margin: 0.7cm; }
   body { font-family: "Calibri", "Helvetica Neue", Arial, sans-serif; color: #1a2330; font-size: 11pt; line-height: 1.55; margin: 0; }
@@ -5274,8 +10247,11 @@ function buildFicheIdentiteHTML(forPrint) {
 <div class="fiche-page">
   <div class="fiche-band">
     <div class="fiche-eyebrow">Fiche de présentation — Chef-d'œuvre CAP</div>
-    <h1 class="fiche-name">${escapeHtml(e.userCode || "Élève anonyme")}</h1>
-    <div class="fiche-meta">${e.classe ? escapeHtml(e.classe) : ""}</div>
+    <h1 class="fiche-name">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</h1>
+    <div class="fiche-meta">
+      ${escapeHtml(e.classe||"")}
+      ${e.annee_scolaire ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.annee_scolaire) : ""}
+    </div>
     ${titre ? `<div class="fiche-projet">${escapeHtml(titre)}</div>` : ""}
   </div>
 
@@ -5362,12 +10338,13 @@ function openFichePreview(autoPrint) {
 }
 
 function exportFicheIdentiteWord() {
+  console.warn("Export Word désactivé: exportFicheIdentiteWord"); return;
   const html = buildFicheIdentiteHTML(false);
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const e = state.infos_eleve;
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `FichePresentation_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -5612,7 +10589,12 @@ function renderProjetView() {
     <header class="projet-header-v2">
       <div class="ph-eyebrow">Mon chef-d'œuvre</div>
       <h1 class="ph-titre">${escapeHtml(nomMenu)}</h1>
-      <div class="ph-author">${escapeHtml(e.userCode || "")}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
+      <div class="ph-author">
+        ${escapeHtml(e.prenom || "")} ${escapeHtml(e.nom || "")}
+        ${e.classe ? " · " + escapeHtml(e.classe) : ""}
+        ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
+        ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
+      </div>
 
       <div class="ph-row">
         <div class="ph-photo">
@@ -5717,7 +10699,7 @@ function renderProjetView() {
   const actions = document.createElement("div");
   actions.className = "projet-actions no-print";
   actions.innerHTML = `
-    <button class="btn btn-accent btn-lg" id="btn-projet-word">📝 Exporter ma fiche projet en Word</button>
+    <button class="btn btn-accent btn-lg" id="btn-projet-word" style="display:none">📝 Exporter ma fiche projet en Word</button>
     <button class="btn"     id="btn-projet-print">🖨️ Imprimer cette fiche</button>
   `;
   actions.querySelector("#btn-projet-word").addEventListener("click", exportFicheProjetWord);
@@ -5776,8 +10758,7 @@ function proposerSuggestionAliment(aliment, groupe) {
     state.suggestions_aliments.push({
       aliment: aliment,
       groupe: groupe || "Autre",
-      // RGPD : pas de nom/prénom — uniquement le code élève (vide si non connecté)
-      eleve: (state.infos_eleve && state.infos_eleve.userCode) || "",
+      eleve: (state.infos_eleve && state.infos_eleve.prenom) || "",
       date: new Date().toISOString(),
     });
     scheduleAutoSave();
@@ -6907,7 +11888,12 @@ function renderDossierProjetView() {
   cover.innerHTML = `
     <div class="doss-eyebrow">Mon chef-d'œuvre · Dossier projet</div>
     <h1 class="doss-titre">${escapeHtml(nomMenu)}</h1>
-    <div class="doss-author">${escapeHtml(e.userCode || "")}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
+    <div class="doss-author">
+      ${escapeHtml(e.prenom || "")} ${escapeHtml(e.nom || "")}
+      ${e.classe ? " · " + escapeHtml(e.classe) : ""}
+      ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
+      ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
+    </div>
     ${desc ? `<p class="doss-desc">${escapeHtml(desc)}</p>` : ""}
     ${photo ? `<img class="doss-photo" src="${photo.contenu}" alt="" />` : ""}
   `;
@@ -7053,6 +12039,7 @@ function blocCout() {
 
 /* ---------- Export Word "Fiche projet" ---------- */
 function exportFicheProjetWord() {
+  console.warn("Export Word désactivé: exportFicheProjetWord"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const nomMenu = fv("mon_menu","nom_menu") || "(menu sans nom)";
@@ -7203,7 +12190,11 @@ function exportFicheProjetWord() {
   <div class="cover">
     <div class="eyebrow">Mon chef-d'œuvre · Dossier projet · Année 1</div>
     <h1>${br(nomMenu)}</h1>
-    <div class="author">${br(e.userCode || "")}${e.classe ? " · " + br(e.classe) : ""} · Édité le ${new Date().toLocaleDateString("fr-FR")}</div>
+    <div class="author">${br(e.prenom || "")} ${br(e.nom || "")}
+      ${e.classe ? " · " + br(e.classe) : ""}
+      ${e.lycee ? " · " + br(e.lycee) : ""}
+      ${e.annee_scolaire ? " · " + br(e.annee_scolaire) : ""}
+      · Édité le ${new Date().toLocaleDateString("fr-FR")}</div>
     ${desc ? `<p>${br(desc)}</p>` : ""}
   </div>
 
@@ -7257,7 +12248,7 @@ function exportFicheProjetWord() {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `FicheProjet_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -7325,7 +12316,7 @@ function renderHomeView() {
     <div class="h2-greet-main">
       <span class="h2-greet-emoji">${emojiSalut}</span>
       <div>
-        <div class="h2-greet-text">${escapeHtml(salutation)} !</div>
+        <div class="h2-greet-text">${escapeHtml(salutation)}${e.prenom ? ", " : ""}<b>${escapeHtml(e.prenom || "")}</b> !</div>
         <div class="h2-greet-meta">${escapeHtml(today)}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
       </div>
     </div>
@@ -7333,18 +12324,17 @@ function renderHomeView() {
   `;
   wrap.appendChild(greet);
 
-  /* ===== 2. ALERTE si fiche présentation vide (RGPD : pas de nom/prénom) ===== */
-  const ficheVide = !(e.titre_dossier);
-  if (ficheVide) {
+  /* ===== 2. ALERTE si fiche identité vide ===== */
+  if (!e.prenom && !e.nom) {
     const alerte = document.createElement("section");
     alerte.className = "h2-alerte-identite";
     alerte.innerHTML = `
       <span class="hai-emoji">👋</span>
       <div class="hai-text">
-        <b>Bienvenue ! Personnalise ton portfolio.</b>
-        <small>Choisis un avatar, donne un titre à ton projet, indique tes valeurs et qualités.</small>
+        <b>Bienvenue ! On commence par te présenter ?</b>
+        <small>Remplis ta fiche identité (nom, prénom, classe…) pour personnaliser ton portfolio.</small>
       </div>
-      <button type="button" class="btn btn-primary" id="hai-btn">🎓 Je personnalise →</button>
+      <button type="button" class="btn btn-primary" id="hai-btn">🎓 Je remplis maintenant →</button>
     `;
     alerte.querySelector("#hai-btn").addEventListener("click", () => selectSection("identite"));
     wrap.appendChild(alerte);
@@ -8086,6 +13076,22 @@ function renderPedagogicalModule(sec, mod) {
     wrap.appendChild(renderOrderingExercise(sec, mod.exercice));
   } else if (mod.exercice && mod.exercice.type === "classification") {
     wrap.appendChild(renderClassificationExercise(sec, mod.exercice));
+  } else if (mod.exercice && mod.exercice.type === "image_yesno") {
+    wrap.appendChild(renderImageYesNoExercise(sec, mod.exercice));
+  }
+  // V4.80 : un 2e exercice optionnel (mod.exercice2)
+  if (mod.exercice2 && mod.exercice2.type === "image_yesno") {
+    wrap.appendChild(renderImageYesNoExercise(sec, mod.exercice2));
+  }
+  // V5 : tableau d'exercices bonus (visuels v2)
+  if (mod.exercices_bonus && Array.isArray(mod.exercices_bonus)) {
+    mod.exercices_bonus.forEach((exo, idx) => {
+      if (exo.type === "points_chauds")          wrap.appendChild(renderPointsChaudsExercise(sec, exo, idx));
+      else if (exo.type === "multi_choix_image") wrap.appendChild(renderMultiChoixImageExercise(sec, exo, idx));
+      else if (exo.type === "compare_avant_apres") wrap.appendChild(renderCompareAvantApresExercise(sec, exo, idx));
+      else if (exo.type === "assemble_assiette") wrap.appendChild(renderAssembleAssietteExercise(sec, exo, idx));
+      else if (exo.type === "audit_zones")       wrap.appendChild(renderAuditZonesExercise(sec, exo, idx));
+    });
   }
 
   // V3.2 : bibliothèque de ressources (PDF, images, liens)
@@ -8136,12 +13142,14 @@ function renderPedagogicalModule(sec, mod) {
       btnAtt.type = "button";
       btnAtt.className = "btn btn-accent";
       btnAtt.textContent = "Télécharger mon attestation (Word)";
+      btnAtt.style.display = "none";
       btnAtt.addEventListener("click", () => exportAttestationOfficielle(sec, mod));
       actions.appendChild(btnAtt);
       const btnGr = document.createElement("button");
       btnGr.type = "button";
       btnGr.className = "btn";
       btnGr.textContent = "Grille d'évaluation pour l'enseignant (Word)";
+      btnGr.style.display = "none";
       btnGr.addEventListener("click", () => exportGrilleEvaluation(sec, mod));
       actions.appendChild(btnGr);
     }
@@ -8187,9 +13195,11 @@ function buildEpreuveFeedback(q, isOk, sec, mode) {
       ? `<b>Validé par l'enseignant.</b>`
       : `<b>Non validé par l'enseignant.</b>`;
   } else if (q.type === "qcm") {
+    const rappelOk = q.explication ? escapeHtml(q.explication) : `Retiens bien : <b>${escapeHtml(q.options[q.correct])}</b>.`;
+    const rappelKo = q.explication ? escapeHtml(q.explication) : `Retiens bien : la bonne réponse est <b>${escapeHtml(q.options[q.correct])}</b>.`;
     fb.innerHTML = isOk
-      ? `<b>Bonne réponse.</b> ${q.explication ? escapeHtml(q.explication) : ""}`
-      : `<b>Réponse incorrecte.</b> Bonne réponse : <b>${escapeHtml(q.options[q.correct])}</b>. ${q.explication ? escapeHtml(q.explication) : ""}`;
+      ? `✅ <b>Bonne réponse.</b> <span class="qcm-rappel">💡 ${rappelOk}</span>`
+      : `❌ <b>Réponse incorrecte.</b> Bonne réponse : <b>${escapeHtml(q.options[q.correct])}</b>. <span class="qcm-rappel">💡 ${rappelKo}</span>`;
   } else if (q.type === "mots") {
     fb.innerHTML = isOk
       ? `<b>Réponse acceptée.</b>`
@@ -8604,6 +13614,37 @@ function syncEpreuveToEvaluations(sec) {
 }
 
 /* ----- Recalcul de la note avec validations enseignant + note manuelle (V4.68) ---- */
+/* V4.69 — Phase 2 : pont Firestore (auto-publication des notes d'épreuves).
+   Helper safe : no-op si firebase_psr.js n'est pas chargé. */
+function _psrPushEvaluation({ devoirId, titre, type, module_id, st }) {
+  try {
+    if (!window.PSR_FIREBASE || typeof window.PSR_FIREBASE.saveEvaluation !== "function") return;
+    if (!st || typeof st.note_sur_20 !== "number") return;
+    const note = st.note_sur_20;
+    const tentative = st.tentative || 1;
+    const appreciation = "Auto-correction. Score : " + note + "/20. Tentative " + tentative + ".";
+    window.PSR_FIREBASE.saveEvaluation({
+      devoirId,
+      titre,
+      note_finale: note,
+      bareme: 20,
+      appreciation,
+      publie: true,
+      autocorrected: true,
+      type,
+      module_id,
+      reponses: (st.reponses && typeof st.reponses === "object") ? st.reponses : {}
+    });
+    window.PSR_FIREBASE.saveCopie && window.PSR_FIREBASE.saveCopie({
+      devoirId,
+      titre,
+      reponses: (st.reponses && typeof st.reponses === "object") ? st.reponses : {},
+      type,
+      module_id
+    });
+  } catch (e) { /* silencieux : Firestore est best-effort */ }
+}
+
 function recomputeEpreuveScore(sec) {
   const ep = SECTIONS_SCHEMA.find(s => s.id === sec.id).module.epreuve;
   const st = sec.module_state.epreuve_state;
@@ -8661,6 +13702,18 @@ function recomputeEpreuveScore(sec) {
   }
   // V4.8 : synchronise automatiquement la note dans les évaluations visibles à l'élève
   syncEpreuveToEvaluations(sec);
+  // V4.69 — Phase 2 : auto-publie la note dans Firestore (Mon espace + cockpit prof)
+  try {
+    const schemaSec = SECTIONS_SCHEMA.find(s => s.id === sec.id);
+    const titre = "Épreuve — " + ((schemaSec && schemaSec.titre) || sec.id);
+    _psrPushEvaluation({
+      devoirId: "psr_jd_" + sec.id,
+      titre,
+      type: "chef_oeuvre",
+      module_id: sec.id,
+      st
+    });
+  } catch (e) {}
 }
 
 /* =====================================================================
@@ -9186,18 +14239,31 @@ function renderEpreuveView(secId) {
     const aValider = ep.questions.some(q => q.type === "phrase" &&
       (!(st.validations && st.validations[q.id]) || st.validations[q.id].state === "a_valider"));
 
-    // 1) Remédiation (QCM ratés) — utile à l'élève quel que soit le seuil
+    // 1) Corrigé complet — TOUTES les questions QCM, juste ou faux,
+    //    avec distinction claire : question / réponse de l'élève / bonne réponse / explication.
+    //    Permet à l'élève de revoir et de comprendre, qu'il ait réussi ou non.
     const remed = document.createElement("div");
-    remed.className = "epreuve-remediation";
-    remed.innerHTML = `<h3>${reussi ? "Points à consolider" : "Points à retravailler"}</h3>`;
-    const list = document.createElement("ul");
+    remed.className = "epreuve-remediation epreuve-corrige";
+    remed.innerHTML = `<h3>📝 Corrigé : tes réponses expliquées</h3>
+      <p class="corrige-intro">Pour chaque question, tu retrouves ce que tu as répondu, la bonne réponse et un petit rappel pour bien comprendre.</p>`;
+    const list = document.createElement("ol");
+    list.className = "corrige-list";
     ep.questions.forEach((q, qi) => {
       if (q.type !== "qcm") return;
-      if (st.reponses[q.id] !== q.correct) {
-        const li = document.createElement("li");
-        li.innerHTML = `<b>Question ${qi+1} :</b> ${escapeHtml(q.question)}<br /><i>Bonne réponse : ${escapeHtml(q.options[q.correct])}</i>${q.explication ? "<br />" + escapeHtml(q.explication) : ""}`;
-        list.appendChild(li);
-      }
+      const userAnsIdx = st.reponses[q.id];
+      const userAns = (userAnsIdx !== undefined && userAnsIdx !== null) ? q.options[userAnsIdx] : null;
+      const isOk = userAnsIdx === q.correct;
+      const explication = q.explication
+        ? escapeHtml(q.explication)
+        : `Retiens bien : la bonne réponse est <b>${escapeHtml(q.options[q.correct])}</b>.`;
+      const li = document.createElement("li");
+      li.className = "corrige-item " + (isOk ? "corrige-ok" : "corrige-ko");
+      li.innerHTML = `
+        <div class="corrige-q"><span class="corrige-badge">${isOk ? "✅" : "❌"}</span> <b>Question ${qi+1} :</b> ${escapeHtml(q.question)}</div>
+        <div class="corrige-row corrige-eleve"><span class="corrige-label">Ta réponse :</span> ${userAns !== null ? escapeHtml(userAns) : "<i>Pas de réponse</i>"}</div>
+        <div class="corrige-row corrige-bonne"><span class="corrige-label">Bonne réponse :</span> <b>${escapeHtml(q.options[q.correct])}</b></div>
+        <div class="corrige-row corrige-explic"><span class="corrige-label">💡 Pour comprendre :</span> ${explication}</div>`;
+      list.appendChild(li);
     });
     if (list.children.length > 0) {
       remed.appendChild(list);
@@ -9222,6 +14288,7 @@ function renderEpreuveView(secId) {
       btnA.type = "button"; btnA.className = "btn btn-accent btn-lg";
       btnA.textContent = "🏆 Télécharger mon attestation (Word)";
       btnA.style.marginTop = "8px";
+      btnA.style.display = "none";
       btnA.addEventListener("click", () => exportAttestationOfficielle(sec, mod));
       teach.appendChild(btnA);
 
@@ -9296,7 +14363,7 @@ function renderEpreuveView(secId) {
       btnG.type = "button"; btnG.className = "btn";
       btnG.textContent = "Télécharger la grille d'évaluation (Word)";
       btnG.style.marginTop = "8px";
-      btnG.style.display = "block";
+      btnG.style.display = "none";
       btnG.addEventListener("click", () => exportGrilleEvaluation(sec, mod));
       teach.appendChild(btnG);
     }
@@ -9323,6 +14390,7 @@ function renderEpreuveView(secId) {
 
 /* ---------- ATTESTATION OFFICIELLE (Word, paysage, sérieuse, sans emojis) ---------- */
 function exportAttestationOfficielle(sec, mod) {
+  console.warn("Export Word désactivé: exportAttestationOfficielle"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const ep = mod.epreuve;
@@ -9389,9 +14457,11 @@ function exportAttestationOfficielle(sec, mod) {
       <hr class="att-rule" />
 
       <div class="att-delivree">Délivrée à</div>
-      <div class="att-name">${escapeHtml(e.userCode || "—")}</div>
+      <div class="att-name">${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</div>
       <hr class="att-name-rule" />
-      <div class="att-classe">${e.classe ? escapeHtml(e.classe) : ""}</div>
+      <div class="att-classe">
+        ${e.classe ? escapeHtml(e.classe) : ""}${e.lycee ? " &middot; " + escapeHtml(e.lycee) : ""}${e.annee_scolaire ? " &middot; année scolaire " + escapeHtml(e.annee_scolaire) : ""}
+      </div>
 
       <p class="att-text">
         A satisfait avec succès aux exigences de l'épreuve d'attestation portant sur
@@ -9424,7 +14494,7 @@ function exportAttestationOfficielle(sec, mod) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `Attestation_${ep.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -9441,6 +14511,7 @@ function exportAttestationOfficielle(sec, mod) {
    niveaux NT/I/A/M cochés automatiquement à partir des réponses, note totale,
    remédiations CIBLÉES par critère faiblement réussi. */
 function exportGrilleEvaluation(sec, mod) {
+  console.warn("Export Word désactivé: exportGrilleEvaluation"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const ep = mod.epreuve;
@@ -9605,8 +14676,9 @@ function exportGrilleEvaluation(sec, mod) {
   </table>
   <div class="head-rule"></div>
   <p class="head-id-line">
-    <span><b>Code élève&nbsp;:</b> ${escapeHtml(e.userCode || "—")}</span>
+    <span><b>Élève&nbsp;:</b> ${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</span>
     <span><b>Classe&nbsp;:</b> ${escapeHtml(e.classe||"—")}</span>
+    <span><b>Année scolaire&nbsp;:</b> ${escapeHtml(e.annee_scolaire||"—")}</span>
     <span><b>Date&nbsp;:</b> ${escapeHtml(date)}</span>
   </p>
 
@@ -9664,7 +14736,7 @@ function exportGrilleEvaluation(sec, mod) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `GrilleEval_${ep.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -9678,6 +14750,7 @@ function exportGrilleEvaluation(sec, mod) {
 
 /* ---------- (Ancienne) Attestation J2 simple — conservée pour compat ---------- */
 function exportAttestationAssiette(sec, mod) {
+  console.warn("Export Word désactivé: exportAttestationAssiette"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const st = sec.module_state;
@@ -9710,8 +14783,8 @@ function exportAttestationAssiette(sec, mod) {
     <h1>Attestation de connaissances</h1>
     <h2>Je sais composer une assiette équilibrée</h2>
 
-    <div class="att-name">${escapeHtml(e.userCode || "Élève anonyme")}</div>
-    <div class="att-classe">${escapeHtml(e.classe||"")}</div>
+    <div class="att-name">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</div>
+    <div class="att-classe">${escapeHtml(e.classe||"")}${e.annee_scolaire ? " — " + escapeHtml(e.annee_scolaire) : ""}</div>
 
     <p class="att-text">
       A étudié les <b>groupes alimentaires</b>, les <b>constituants alimentaires</b>,
@@ -9733,7 +14806,7 @@ function exportAttestationAssiette(sec, mod) {
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `Attestation_Assiette_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -10066,17 +15139,16 @@ function renderSingleQcm(sec, mod, q, qi) {
     const fb = document.createElement("div");
     const isOk = answered === q.correct;
     fb.className = "qcm-feedback " + (isOk ? "ok" : "ko");
+    const rappel = q.explication ? escapeHtml(q.explication)
+                                 : `Retiens bien : la bonne réponse est <b>${escapeHtml(q.options[q.correct])}</b>.`;
+    let link = "";
+    if (q.lie_cours) {
+      link = ` <a class="link-revoir" href="#cours-${sec.id}-${q.lie_cours}">📘 Revoir le cours</a>`;
+    }
     if (isOk) {
-      fb.innerHTML = `<b>Bonne réponse.</b> ${q.explication ? escapeHtml(q.explication) : ""}`;
+      fb.innerHTML = `✅ <b>Bonne réponse.</b> <span class="qcm-rappel">💡 ${rappel}</span>${link}`;
     } else {
-      // V4 : feedback pédagogique enrichi avec lien "Revoir le cours"
-      let explication = q.explication ? escapeHtml(q.explication)
-                       : `La bonne réponse était : <b>${escapeHtml(q.options[q.correct])}</b>.`;
-      let link = "";
-      if (q.lie_cours) {
-        link = ` <a class="link-revoir" href="#cours-${sec.id}-${q.lie_cours}">Revoir le cours</a>`;
-      }
-      fb.innerHTML = `<b>Réponse incorrecte.</b> Bonne réponse : <b>${escapeHtml(q.options[q.correct])}</b>. ${explication}${link}
+      fb.innerHTML = `❌ <b>Réponse incorrecte.</b> Bonne réponse : <b>${escapeHtml(q.options[q.correct])}</b>. <span class="qcm-rappel">💡 ${rappel}</span>${link}
         <div class="retry-line"><button type="button" class="btn btn-sm retry-q">Réessayer cette question</button></div>`;
       // bouton réessayer cette question
       setTimeout(() => {
@@ -10164,9 +15236,11 @@ function renderQcm(sec, mod) {
       const fb = document.createElement("div");
       const isOk = answered === q.correct;
       fb.className = "qcm-feedback " + (isOk ? "ok" : "ko");
+      const rappelMod = q.explication ? escapeHtml(q.explication)
+                                      : `Retiens bien : la bonne réponse est <b>${escapeHtml(q.options[q.correct])}</b>.`;
       fb.innerHTML = isOk
-        ? `✅ <b>Bonne réponse !</b> ${q.explication ? escapeHtml(q.explication) : ""}`
-        : `❌ <b>Pas tout à fait.</b> Bonne réponse : <b>${escapeHtml(q.options[q.correct])}</b>. ${q.explication ? escapeHtml(q.explication) : ""}`;
+        ? `✅ <b>Bonne réponse !</b> <span class="qcm-rappel">💡 ${rappelMod}</span>`
+        : `❌ <b>Pas tout à fait.</b> Bonne réponse : <b>${escapeHtml(q.options[q.correct])}</b>. <span class="qcm-rappel">💡 ${rappelMod}</span>`;
       qBlock.appendChild(fb);
     }
     wrap.appendChild(qBlock);
@@ -10229,9 +15303,12 @@ function renderOrderingExercise(sec, exo) {
     if (!item) return;
     const li = document.createElement("li");
     li.className = "exo-item";
-    const isCorrect = st.exercice_ok && (item.order === idx + 1);
     if (st.exercice_ok !== null) {
       li.classList.add(item.order === idx + 1 ? "item-ok" : "item-ko");
+    }
+    // Animation visuelle : item déplacé au tour précédent
+    if (st.exercice_last_moved === id) {
+      li.classList.add("just-moved", st.exercice_last_dir === "up" ? "moved-up" : "moved-down");
     }
     li.innerHTML = `
       <span class="exo-num">${idx + 1}.</span>
@@ -10243,11 +15320,19 @@ function renderOrderingExercise(sec, exo) {
     `;
     li.querySelector(".btn-up").addEventListener("click", () => {
       [st.exercice_order[idx - 1], st.exercice_order[idx]] = [st.exercice_order[idx], st.exercice_order[idx - 1]];
-      st.exercice_ok = null; scheduleAutoSave(); renderMain();
+      st.exercice_ok = null;
+      st.exercice_last_moved = id;
+      st.exercice_last_dir = "up";
+      scheduleAutoSave(); renderMain();
+      setTimeout(() => { st.exercice_last_moved = null; st.exercice_last_dir = null; renderMain(); }, 600);
     });
     li.querySelector(".btn-down").addEventListener("click", () => {
       [st.exercice_order[idx], st.exercice_order[idx + 1]] = [st.exercice_order[idx + 1], st.exercice_order[idx]];
-      st.exercice_ok = null; scheduleAutoSave(); renderMain();
+      st.exercice_ok = null;
+      st.exercice_last_moved = id;
+      st.exercice_last_dir = "down";
+      scheduleAutoSave(); renderMain();
+      setTimeout(() => { st.exercice_last_moved = null; st.exercice_last_dir = null; renderMain(); }, 600);
     });
     list.appendChild(li);
   });
@@ -10272,9 +15357,21 @@ function renderOrderingExercise(sec, exo) {
   if (st.exercice_ok !== null) {
     const fb = document.createElement("div");
     fb.className = "exo-feedback " + (st.exercice_ok ? "ok" : "ko");
-    fb.innerHTML = st.exercice_ok
-      ? "<b>Ordre correct.</b>"
-      : "<b>Certaines étapes ne sont pas au bon endroit.</b> Les lignes en rouge sont mal placées, déplace-les.";
+    if (st.exercice_ok) {
+      fb.innerHTML = "✅ <b>Bravo, l’ordre est correct !</b> Tu maîtrises la marche en avant.";
+    } else {
+      // Indice personnalisé : on prend la 1re étape mal placée et on dit où elle devrait être
+      let hintHtml = "";
+      for (let i = 0; i < st.exercice_order.length; i++) {
+        const it = exo.items.find(x => x.id === st.exercice_order[i]);
+        if (it && it.order !== i + 1) {
+          const expectedItem = exo.items.find(x => x.order === i + 1);
+          hintHtml = `<div class="exo-hint">💡 <b>Indice :</b> à la position <b>${i + 1}</b>, on attend l’étape <b>« ${escapeHtml(expectedItem.label)} »</b>. Toi tu as mis « ${escapeHtml(it.label)} ».<br><span class="exo-hint-rule">📌 Souviens-toi : on avance du <b>SALE</b> (réception, déconditionnement) vers le <b>PROPRE</b> (cuisson, distribution).</span></div>`;
+          break;
+        }
+      }
+      fb.innerHTML = "❌ <b>Pas tout à fait.</b> Les lignes en rouge sont mal placées, déplace-les avec les flèches ↑ ↓." + hintHtml;
+    }
     wrap.appendChild(fb);
   }
   return wrap;
@@ -10395,6 +15492,701 @@ function renderClassificationExercise(sec, exo) {
       : `<b>Score : ${st.classif_score} / ${st.classif_total}.</b> Les éléments en rouge sont mal classés. Clique dessus pour les retirer puis place-les ailleurs.`;
     wrap.appendChild(fb);
   }
+  return wrap;
+}
+
+/* ---------- Exercice "image_yesno" (étiquettes : conforme ou pas ?) ----
+   Pour chaque étiquette illustrée, l'élève répond OUI/NON.
+   - 1er essai faux  : indice progressif + invitation à réessayer
+   - 2e essai faux  : explication complète du défaut + zone surlignée
+   - Bonne réponse  : explication systématique (pédagogique)
+------------------------------------------------------------------------ */
+function renderImageYesNoExercise(sec, exo) {
+  const st = sec.module_state;
+  if (!st.iyn_state) {
+    st.iyn_state = {}; // map item.id -> { tries:0, status:"open"|"ok"|"ko" }
+    exo.items.forEach(it => { st.iyn_state[it.id] = { tries: 0, status: "open", lastAns: null }; });
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo iyn-exo";
+  wrap.innerHTML = `<h3>🎯 ${escapeHtml(exo.titre)}</h3>
+    <p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const grid = document.createElement("div");
+  grid.className = "iyn-grid";
+
+  exo.items.forEach((it, idx) => {
+    const s = st.iyn_state[it.id];
+    const card = document.createElement("div");
+    card.className = "iyn-card status-" + s.status;
+    if (s.status === "ko" && it.zoneIndice) card.classList.add("highlight-" + it.zoneIndice);
+
+    // Étiquette illustrée
+    const labelHtml = `
+      <div class="iyn-label">
+        <div class="iyn-label-photo"><img src="${escapeHtml(it.photo)}" alt="${escapeHtml(it.nom)}" loading="lazy"></div>
+        <div class="iyn-label-body">
+          <div class="iyn-label-title">${escapeHtml(it.nom)}</div>
+          ${it.slogan ? `<div class="iyn-label-slogan">« ${escapeHtml(it.slogan)} »</div>` : ""}
+          <div class="iyn-row iyn-ingredients"><span class="iyn-key">Ingrédients :</span> ${it.ingredients}</div>
+          <div class="iyn-row iyn-allergenes"><span class="iyn-key">Allergènes :</span> ${it.allergenes}</div>
+          <div class="iyn-row iyn-date"><span class="iyn-key">Date :</span> ${it.type_date && it.date ? `<b>${escapeHtml(it.type_date)}</b> — ${escapeHtml(it.date)}` : "<i>—</i>"}</div>
+          <div class="iyn-row iyn-poids"><span class="iyn-key">Quantité :</span> ${escapeHtml(it.poids || "—")}</div>
+          <div class="iyn-row iyn-conservation"><span class="iyn-key">Conservation :</span> ${escapeHtml(it.conservation || "—")}</div>
+          <div class="iyn-row iyn-lot"><span class="iyn-key">Lot :</span> ${escapeHtml(it.lot || "—")}</div>
+          <div class="iyn-row iyn-fab"><span class="iyn-key">Fabricant :</span> ${escapeHtml(it.fabricant || "—")}</div>
+        </div>
+      </div>`;
+
+    // Question + boutons
+    const askHtml = `
+      <div class="iyn-ask">
+        <div class="iyn-q"><b>Étiquette ${idx + 1} :</b> est-elle conforme à la loi ?</div>
+        <div class="iyn-btns">
+          <button type="button" class="btn iyn-btn-yes" ${s.status !== "open" ? "disabled" : ""}>✅ Oui, conforme</button>
+          <button type="button" class="btn iyn-btn-no"  ${s.status !== "open" ? "disabled" : ""}>❌ Non, problème</button>
+        </div>
+      </div>`;
+
+    card.innerHTML = labelHtml + askHtml;
+
+    // Feedback éventuel
+    let fbHtml = "";
+    if (s.status === "ok") {
+      fbHtml = `<div class="iyn-fb iyn-fb-ok">✅ <b>Bonne réponse.</b> 💡 ${escapeHtml(it.indice)}${!it.conforme ? `<br><b>Défaut :</b> ${escapeHtml(it.defaut)}` : ""}</div>`;
+    } else if (s.status === "ko") {
+      // 2 essais loupés : on révèle tout
+      fbHtml = `<div class="iyn-fb iyn-fb-ko">❌ <b>Pas tout à fait.</b> ${it.conforme
+        ? "Cette étiquette est en réalité conforme."
+        : `Le défaut : ${escapeHtml(it.defaut)}`}<br>💡 ${escapeHtml(it.indice)}</div>`;
+    } else if (s.tries === 1) {
+      // 1er essai faux : indice progressif
+      fbHtml = `<div class="iyn-fb iyn-fb-hint">💡 <b>Indice :</b> ${escapeHtml(it.indice)}<br><i>Regarde encore l’étiquette et réessaie.</i></div>`;
+    }
+    if (fbHtml) {
+      const fb = document.createElement("div");
+      fb.innerHTML = fbHtml;
+      card.appendChild(fb.firstElementChild);
+    }
+
+    // Handlers
+    const onAnswer = (ans) => {
+      const correct = (ans === "yes" && it.conforme) || (ans === "no" && !it.conforme);
+      s.lastAns = ans;
+      if (correct) {
+        s.status = "ok";
+      } else {
+        s.tries += 1;
+        if (s.tries >= 2) s.status = "ko";
+      }
+      scheduleAutoSave();
+      renderMain();
+    };
+    card.querySelectorAll(".iyn-btn-yes").forEach(b => b.addEventListener("click", () => onAnswer("yes")));
+    card.querySelectorAll(".iyn-btn-no").forEach(b => b.addEventListener("click", () => onAnswer("no")));
+
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+
+  // Bouton recommencer
+  const actions = document.createElement("div");
+  actions.className = "exo-actions";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "btn";
+  reset.textContent = "🔄 Recommencer l’exercice";
+  reset.addEventListener("click", () => {
+    exo.items.forEach(it => { st.iyn_state[it.id] = { tries: 0, status: "open", lastAns: null }; });
+    scheduleAutoSave();
+    renderMain();
+  });
+  actions.appendChild(reset);
+
+  // Score si tout terminé
+  const total = exo.items.length;
+  const done = exo.items.filter(it => st.iyn_state[it.id].status !== "open").length;
+  const ok = exo.items.filter(it => st.iyn_state[it.id].status === "ok").length;
+  if (done === total) {
+    const score = document.createElement("div");
+    score.className = "exo-feedback " + (ok === total ? "ok" : "ko");
+    score.innerHTML = `<b>Score : ${ok} / ${total}.</b> ${ok === total ? "Bravo, tu sais lire une étiquette !" : "Tu peux recommencer pour t’améliorer."}`;
+    wrap.appendChild(score);
+  }
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
+/* =====================================================================
+   V5 — EXERCICES VISUELS BONUS (5 nouveaux types)
+   ---------------------------------------------------------------------
+   Tous suivent le pattern : (sec, exo, idx) -> DOM element, état persisté
+   dans sec.module_state[<prefix>_state_<idx>].
+   ===================================================================== */
+
+/* ---- Exercice 1 : points_chauds (trouve les erreurs sur la photo) ---- */
+function renderPointsChaudsExercise(sec, exo, idx) {
+  const stKey = "pc_state_" + idx;
+  if (!sec.module_state[stKey]) {
+    sec.module_state[stKey] = { current: 0, results: exo.items.map(() => null), tries: exo.items.map(() => 0) };
+  }
+  const st = sec.module_state[stKey];
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo pc-exo";
+  wrap.innerHTML = `<h3>${escapeHtml(exo.titre)}</h3><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const total = exo.items.length;
+  const i = Math.min(st.current, total - 1);
+  const allDone = st.results.every(r => r !== null);
+
+  if (!allDone) {
+    const it = exo.items[i];
+    const card = document.createElement("div");
+    card.className = "pc-card";
+    card.innerHTML = `
+      <div class="pc-progress">Photo ${i + 1} / ${total}</div>
+      <div class="pc-photo-wrap">
+        <img src="${escapeHtml(it.photo)}" alt="Photo ${i + 1}" class="pc-photo" loading="lazy">
+        <div class="pc-overlay"></div>
+      </div>
+      <div class="pc-feedback"></div>
+      <div class="pc-actions"></div>`;
+    const wrapImg = card.querySelector(".pc-photo-wrap");
+    const overlay = card.querySelector(".pc-overlay");
+    const fb = card.querySelector(".pc-feedback");
+    const acts = card.querySelector(".pc-actions");
+
+    const showZone = (cls) => {
+      const z = document.createElement("div");
+      z.className = "pc-zone " + cls;
+      z.style.left = it.zone.x0 + "%";
+      z.style.top = it.zone.y0 + "%";
+      z.style.width = (it.zone.x1 - it.zone.x0) + "%";
+      z.style.height = (it.zone.y1 - it.zone.y0) + "%";
+      overlay.appendChild(z);
+    };
+
+    const next = () => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-accent";
+      btn.textContent = (i + 1 < total) ? "Photo suivante →" : "Voir mon score";
+      btn.addEventListener("click", () => {
+        st.current = i + 1;
+        scheduleAutoSave();
+        renderMain();
+      });
+      acts.appendChild(btn);
+    };
+
+    if (st.results[i] === "ok") {
+      showZone("found");
+      fb.innerHTML = `<div class="pc-fb pc-fb-ok">✅ <b>Bravo !</b> Tu as trouvé l’erreur.<br>💡 ${escapeHtml(it.explication)}</div>`;
+      next();
+    } else if (st.results[i] === "ko") {
+      showZone("revealed");
+      fb.innerHTML = `<div class="pc-fb pc-fb-ko">❌ L’erreur était ici.<br>💡 ${escapeHtml(it.explication)}</div>`;
+      next();
+    } else {
+      const onClick = (ev) => {
+        const rect = wrapImg.getBoundingClientRect();
+        const x = ((ev.clientX - rect.left) / rect.width) * 100;
+        const y = ((ev.clientY - rect.top) / rect.height) * 100;
+        const inZone = x >= it.zone.x0 && x <= it.zone.x1 && y >= it.zone.y0 && y <= it.zone.y1;
+        if (inZone) {
+          st.results[i] = "ok";
+        } else {
+          st.tries[i] += 1;
+          if (st.tries[i] >= 2) {
+            st.results[i] = "ko";
+          } else {
+            fb.innerHTML = `<div class="pc-fb pc-fb-hint">❌ Pas ici. Regarde encore.</div>`;
+            return;
+          }
+        }
+        scheduleAutoSave();
+        renderMain();
+      };
+      wrapImg.addEventListener("click", onClick);
+      if (st.tries[i] === 1) {
+        fb.innerHTML = `<div class="pc-fb pc-fb-hint">❌ Pas ici. Regarde encore.</div>`;
+      }
+    }
+    wrap.appendChild(card);
+  } else {
+    const ok = st.results.filter(r => r === "ok").length;
+    const score = document.createElement("div");
+    score.className = "exo-feedback " + (ok === total ? "ok" : "ko");
+    score.innerHTML = `<b>Score : ${ok} / ${total}.</b> ${ok === total ? "Bravo, tu as l’œil !" : "Tu peux recommencer pour t’améliorer."}`;
+    wrap.appendChild(score);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "exo-actions";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "btn";
+  reset.textContent = "🔄 Recommencer";
+  reset.addEventListener("click", () => {
+    sec.module_state[stKey] = { current: 0, results: exo.items.map(() => null), tries: exo.items.map(() => 0) };
+    scheduleAutoSave();
+    renderMain();
+  });
+  actions.appendChild(reset);
+  wrap.appendChild(actions);
+  return wrap;
+}
+
+/* ---- Exercice 2 : multi_choix_image (le client allergique) ---- */
+function renderMultiChoixImageExercise(sec, exo, idx) {
+  const stKey = "mci_state_" + idx;
+  if (!sec.module_state[stKey]) {
+    sec.module_state[stKey] = { current: 0, results: exo.scenarios.map(() => null) };
+  }
+  const st = sec.module_state[stKey];
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo mci-exo";
+  wrap.innerHTML = `<h3>${escapeHtml(exo.titre)}</h3><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const total = exo.scenarios.length;
+  const allDone = st.results.every(r => r !== null);
+  const i = Math.min(st.current, total - 1);
+
+  if (!allDone) {
+    const sc = exo.scenarios[i];
+    const card = document.createElement("div");
+    card.className = "mci-card";
+    card.innerHTML = `
+      <div class="mci-progress">Scénario ${i + 1} / ${total}</div>
+      <div class="mci-enonce">${escapeHtml(sc.enonce)}</div>
+      <div class="mci-grid"></div>
+      <div class="mci-feedback"></div>
+      <div class="mci-actions"></div>`;
+    const grid = card.querySelector(".mci-grid");
+    const fb = card.querySelector(".mci-feedback");
+    const acts = card.querySelector(".mci-actions");
+
+    sc.plats.forEach((p, pi) => {
+      const choice = document.createElement("button");
+      choice.type = "button";
+      choice.className = "mci-choice";
+      if (st.results[i] !== null) choice.disabled = true;
+      if (st.results[i] !== null && pi === sc.bonne) choice.classList.add("is-correct");
+      if (st.results[i] === "ko" && pi === st.results_choice_index) choice.classList.add("is-wrong");
+      choice.innerHTML = `
+        <img src="${escapeHtml(p.photo)}" alt="${escapeHtml(p.nom)}" loading="lazy">
+        <div class="mci-nom">${escapeHtml(p.nom)}</div>`;
+      choice.addEventListener("click", () => {
+        st.results[i] = (pi === sc.bonne) ? "ok" : "ko";
+        st.results_choice_index = pi;
+        scheduleAutoSave();
+        renderMain();
+      });
+      grid.appendChild(choice);
+    });
+
+    if (st.results[i] === "ok") {
+      fb.innerHTML = `<div class="mci-fb mci-fb-ok">✅ <b>Bravo !</b> ${escapeHtml(sc.explication)}</div>`;
+    } else if (st.results[i] === "ko") {
+      fb.innerHTML = `<div class="mci-fb mci-fb-ko">❌ <b>Pas ce plat.</b> ${escapeHtml(sc.explication)}</div>`;
+    }
+
+    if (st.results[i] !== null) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-accent";
+      btn.textContent = (i + 1 < total) ? "Scénario suivant →" : "Voir mon score";
+      btn.addEventListener("click", () => {
+        st.current = i + 1;
+        st.results_choice_index = null;
+        scheduleAutoSave();
+        renderMain();
+      });
+      acts.appendChild(btn);
+    }
+    wrap.appendChild(card);
+  } else {
+    const ok = st.results.filter(r => r === "ok").length;
+    const score = document.createElement("div");
+    score.className = "exo-feedback " + (ok === total ? "ok" : "ko");
+    score.innerHTML = `<b>Score : ${ok} / ${total}.</b>`;
+    wrap.appendChild(score);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "exo-actions";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "btn";
+  reset.textContent = "🔄 Recommencer";
+  reset.addEventListener("click", () => {
+    sec.module_state[stKey] = { current: 0, results: exo.scenarios.map(() => null) };
+    scheduleAutoSave();
+    renderMain();
+  });
+  actions.appendChild(reset);
+  wrap.appendChild(actions);
+  return wrap;
+}
+
+/* ---- Exercice 3 : compare_avant_apres ---- */
+function renderCompareAvantApresExercise(sec, exo, idx) {
+  const stKey = "cap_state_" + idx;
+  if (!sec.module_state[stKey]) {
+    sec.module_state[stKey] = {
+      current: 0,
+      checked: exo.paires.map(p => p.choix.map(() => false)),
+      validated: exo.paires.map(() => false),
+      scores: exo.paires.map(() => null),
+    };
+  }
+  const st = sec.module_state[stKey];
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo cap-exo";
+  wrap.innerHTML = `<h3>${escapeHtml(exo.titre)}</h3><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const total = exo.paires.length;
+  const allDone = st.validated.every(v => v);
+  const i = Math.min(st.current, total - 1);
+
+  if (!allDone) {
+    const p = exo.paires[i];
+    const card = document.createElement("div");
+    card.className = "cap-card";
+    card.innerHTML = `
+      <div class="cap-progress">Paire ${i + 1} / ${total}</div>
+      <div class="cap-photos">
+        <figure><figcaption>AVANT</figcaption><img src="${escapeHtml(p.avant)}" alt="avant" loading="lazy"></figure>
+        <figure><figcaption>APRÈS</figcaption><img src="${escapeHtml(p.apres)}" alt="après" loading="lazy"></figure>
+      </div>
+      <div class="cap-question">Coche les bonnes choses qui ont été faites :</div>
+      <div class="cap-choices"></div>
+      <div class="cap-feedback"></div>
+      <div class="cap-actions"></div>`;
+    const choicesDiv = card.querySelector(".cap-choices");
+    const fb = card.querySelector(".cap-feedback");
+    const acts = card.querySelector(".cap-actions");
+
+    p.choix.forEach((c, ci) => {
+      const lab = document.createElement("label");
+      lab.className = "cap-choice";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = st.checked[i][ci];
+      cb.disabled = st.validated[i];
+      cb.addEventListener("change", () => {
+        st.checked[i][ci] = cb.checked;
+        scheduleAutoSave();
+      });
+      lab.appendChild(cb);
+      const span = document.createElement("span");
+      span.textContent = " " + c.texte;
+      lab.appendChild(span);
+      if (st.validated[i]) {
+        if (c.vrai && st.checked[i][ci]) lab.classList.add("cap-good");
+        else if (c.vrai && !st.checked[i][ci]) lab.classList.add("cap-missed");
+        else if (!c.vrai && st.checked[i][ci]) lab.classList.add("cap-wrong");
+      }
+      choicesDiv.appendChild(lab);
+    });
+
+    if (!st.validated[i]) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-accent";
+      btn.textContent = "Vérifier";
+      btn.addEventListener("click", () => {
+        const bons = p.choix.filter((c, ci) => c.vrai && st.checked[i][ci]).length;
+        const erreurs = p.choix.filter((c, ci) => !c.vrai && st.checked[i][ci]).length;
+        const totalBons = p.choix.filter(c => c.vrai).length;
+        st.scores[i] = (bons === totalBons && erreurs === 0) ? "ok" : "ko";
+        st.scores_detail = { bons, erreurs, totalBons };
+        st.validated[i] = true;
+        scheduleAutoSave();
+        renderMain();
+      });
+      acts.appendChild(btn);
+    } else {
+      const bons = p.choix.filter((c, ci) => c.vrai && st.checked[i][ci]).length;
+      const erreurs = p.choix.filter((c, ci) => !c.vrai && st.checked[i][ci]).length;
+      const totalBons = p.choix.filter(c => c.vrai).length;
+      const allOk = bons === totalBons && erreurs === 0;
+      fb.innerHTML = `<div class="cap-fb ${allOk ? "cap-fb-ok" : "cap-fb-ko"}">${allOk ? "✅" : "❌"} ${bons} bonne(s) coche(s) sur ${totalBons}. ${erreurs} erreur(s) (cases cochées à tort).</div>`;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-accent";
+      btn.textContent = (i + 1 < total) ? "Paire suivante →" : "Voir mon score";
+      btn.addEventListener("click", () => {
+        st.current = i + 1;
+        scheduleAutoSave();
+        renderMain();
+      });
+      acts.appendChild(btn);
+    }
+    wrap.appendChild(card);
+  } else {
+    const ok = st.scores.filter(s => s === "ok").length;
+    const score = document.createElement("div");
+    score.className = "exo-feedback " + (ok === total ? "ok" : "ko");
+    score.innerHTML = `<b>Score : ${ok} / ${total} paires parfaites.</b>`;
+    wrap.appendChild(score);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "exo-actions";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "btn";
+  reset.textContent = "🔄 Recommencer";
+  reset.addEventListener("click", () => {
+    sec.module_state[stKey] = {
+      current: 0,
+      checked: exo.paires.map(p => p.choix.map(() => false)),
+      validated: exo.paires.map(() => false),
+      scores: exo.paires.map(() => null),
+    };
+    scheduleAutoSave();
+    renderMain();
+  });
+  actions.appendChild(reset);
+  wrap.appendChild(actions);
+  return wrap;
+}
+
+/* ---- Exercice 4 : assemble_assiette ---- */
+function renderAssembleAssietteExercise(sec, exo, idx) {
+  const stKey = "aa_state_" + idx;
+  if (!sec.module_state[stKey]) {
+    sec.module_state[stKey] = { placements: {}, selected: null, validated: false };
+  }
+  const st = sec.module_state[stKey];
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo aa-exo";
+  wrap.innerHTML = `<h3>${escapeHtml(exo.titre)}</h3><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const board = document.createElement("div");
+  board.className = "aa-board";
+  board.innerHTML = `
+    <div class="aa-plate">
+      <img src="${escapeHtml(exo.assiette)}" alt="Assiette vide" class="aa-plate-bg">
+      <div class="aa-zone aa-zone-legumes" data-zone="legumes"><span>½ Légumes</span></div>
+      <div class="aa-zone aa-zone-feculents" data-zone="feculents"><span>¼ Féculents</span></div>
+      <div class="aa-zone aa-zone-proteines" data-zone="proteines"><span>¼ Protéines</span></div>
+    </div>
+    <div class="aa-pile-wrap">
+      <div class="aa-pile-title">Aliments à placer (clique un aliment, puis une zone) :</div>
+      <div class="aa-pile"></div>
+    </div>
+    <div class="aa-feedback"></div>
+    <div class="aa-actions"></div>`;
+  const pile = board.querySelector(".aa-pile");
+  const fb = board.querySelector(".aa-feedback");
+  const acts = board.querySelector(".aa-actions");
+
+  // Render zones content
+  ["legumes", "feculents", "proteines"].forEach(z => {
+    const zd = board.querySelector(`.aa-zone[data-zone="${z}"]`);
+    Object.entries(st.placements).forEach(([alimId, zone]) => {
+      if (zone === z) {
+        const al = exo.aliments.find(a => a.id === alimId);
+        if (al) {
+          const img = document.createElement("img");
+          img.src = al.photo;
+          img.className = "aa-placed";
+          img.title = al.nom;
+          zd.appendChild(img);
+        }
+      }
+    });
+    zd.addEventListener("click", () => {
+      if (st.selected) {
+        st.placements[st.selected] = z;
+        st.selected = null;
+        scheduleAutoSave();
+        renderMain();
+      }
+    });
+  });
+
+  // Pile (only unplaced aliments)
+  exo.aliments.forEach(al => {
+    if (st.placements[al.id]) return;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "aa-pile-item" + (st.selected === al.id ? " is-selected" : "");
+    item.innerHTML = `<img src="${escapeHtml(al.photo)}" alt="${escapeHtml(al.nom)}"><span>${escapeHtml(al.nom)}</span>`;
+    item.addEventListener("click", () => {
+      st.selected = (st.selected === al.id) ? null : al.id;
+      renderMain();
+    });
+    pile.appendChild(item);
+  });
+
+  if (st.validated) {
+    let allGood = true;
+    const messages = [];
+    ["legumes", "feculents", "proteines"].forEach(z => {
+      const placed = exo.aliments.filter(a => st.placements[a.id] === z);
+      const goodCount = placed.filter(a => a.type === z).length;
+      const badCount = placed.length - goodCount;
+      if (placed.length === 0) {
+        allGood = false;
+        messages.push(`Il manque un aliment dans la zone « ${z} ».`);
+      } else if (badCount > 0) {
+        allGood = false;
+        messages.push(`Un aliment est mal placé dans la zone « ${z} ».`);
+      }
+    });
+    fb.innerHTML = allGood
+      ? `<div class="aa-fb aa-fb-ok">✅ <b>Bravo, ton assiette est équilibrée !</b> ½ légumes, ¼ féculents, ¼ protéines.</div>`
+      : `<div class="aa-fb aa-fb-ko">❌ <b>Pas tout à fait :</b><br>${messages.map(escapeHtml).join("<br>")}</div>`;
+  }
+
+  const verifBtn = document.createElement("button");
+  verifBtn.type = "button";
+  verifBtn.className = "btn btn-accent";
+  verifBtn.textContent = "Vérifier";
+  verifBtn.addEventListener("click", () => {
+    st.validated = true;
+    scheduleAutoSave();
+    renderMain();
+  });
+  acts.appendChild(verifBtn);
+
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "btn";
+  reset.textContent = "🔄 Recommencer";
+  reset.addEventListener("click", () => {
+    sec.module_state[stKey] = { placements: {}, selected: null, validated: false };
+    scheduleAutoSave();
+    renderMain();
+  });
+  acts.appendChild(reset);
+
+  wrap.appendChild(board);
+  return wrap;
+}
+
+/* ---- Exercice 5 : audit_zones ---- */
+function renderAuditZonesExercise(sec, exo, idx) {
+  const stKey = "az_state_" + idx;
+  if (!sec.module_state[stKey]) {
+    sec.module_state[stKey] = {
+      current: 0,
+      step: 0, // 0 = q1, 1 = q2, 2 = done-this-photo
+      answers: exo.items.map(() => ({ q1: null, q2: null })),
+    };
+  }
+  const st = sec.module_state[stKey];
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo az-exo";
+  wrap.innerHTML = `<h3>${escapeHtml(exo.titre)}</h3><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const total = exo.items.length;
+  const allDone = st.current >= total;
+
+  if (!allDone) {
+    const i = st.current;
+    const it = exo.items[i];
+    const ans = st.answers[i];
+    const card = document.createElement("div");
+    card.className = "az-card";
+    card.innerHTML = `
+      <div class="az-progress">Photo ${i + 1} / ${total}</div>
+      <div class="az-photo"><img src="${escapeHtml(it.photo)}" alt="Photo ${i + 1}" loading="lazy"></div>
+      <div class="az-q"></div>
+      <div class="az-feedback"></div>
+      <div class="az-actions"></div>`;
+    const qDiv = card.querySelector(".az-q");
+    const fb = card.querySelector(".az-feedback");
+    const acts = card.querySelector(".az-actions");
+
+    const renderQ = (qKey, qData) => {
+      qDiv.innerHTML = `<div class="az-question">${escapeHtml(qData.label)}</div>`;
+      const opts = document.createElement("div");
+      opts.className = "az-options";
+      qData.options.forEach((opt, oi) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "az-opt";
+        btn.textContent = opt;
+        if (ans[qKey] !== null) {
+          btn.disabled = true;
+          if (oi === qData.bonne) btn.classList.add("is-correct");
+          else if (oi === ans[qKey]) btn.classList.add("is-wrong");
+        }
+        btn.addEventListener("click", () => {
+          ans[qKey] = oi;
+          scheduleAutoSave();
+          renderMain();
+        });
+        opts.appendChild(btn);
+      });
+      qDiv.appendChild(opts);
+    };
+
+    if (ans.q1 === null) {
+      renderQ("q1", { label: "Quelle zone est-ce ?", options: it.q1_options, bonne: it.q1_correct });
+    } else if (ans.q2 === null) {
+      renderQ("q2", { label: "C’est une zone…", options: it.q2_options, bonne: it.q2_correct });
+      const isOk1 = ans.q1 === it.q1_correct;
+      fb.innerHTML = `<div class="az-fb ${isOk1 ? "az-fb-ok" : "az-fb-ko"}">${isOk1 ? "✅ Bonne réponse." : "❌ La bonne zone était : " + escapeHtml(it.q1_options[it.q1_correct]) + "."}</div>`;
+    } else {
+      const isOk1 = ans.q1 === it.q1_correct;
+      const isOk2 = ans.q2 === it.q2_correct;
+      fb.innerHTML = `
+        <div class="az-fb ${isOk1 ? "az-fb-ok" : "az-fb-ko"}">${isOk1 ? "✅" : "❌"} Zone : ${escapeHtml(it.q1_options[it.q1_correct])}.</div>
+        <div class="az-fb ${isOk2 ? "az-fb-ok" : "az-fb-ko"}">${isOk2 ? "✅" : "❌"} ${escapeHtml(it.q2_options[it.q2_correct])}.</div>
+        <div class="az-explain">💡 ${escapeHtml(it.explication)}</div>`;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-accent";
+      btn.textContent = (i + 1 < total) ? "Photo suivante →" : "Voir mon score";
+      btn.addEventListener("click", () => {
+        st.current = i + 1;
+        scheduleAutoSave();
+        renderMain();
+      });
+      acts.appendChild(btn);
+    }
+    wrap.appendChild(card);
+  } else {
+    let okCount = 0;
+    let totalQ = 0;
+    st.answers.forEach((a, i) => {
+      const it = exo.items[i];
+      if (a.q1 === it.q1_correct) okCount++;
+      if (a.q2 === it.q2_correct) okCount++;
+      totalQ += 2;
+    });
+    const score = document.createElement("div");
+    score.className = "exo-feedback " + (okCount === totalQ ? "ok" : "ko");
+    score.innerHTML = `<b>Score : ${okCount} / ${totalQ}.</b>`;
+    wrap.appendChild(score);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "exo-actions";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "btn";
+  reset.textContent = "🔄 Recommencer";
+  reset.addEventListener("click", () => {
+    sec.module_state[stKey] = { current: 0, step: 0, answers: exo.items.map(() => ({ q1: null, q2: null })) };
+    scheduleAutoSave();
+    renderMain();
+  });
+  actions.appendChild(reset);
+  wrap.appendChild(actions);
   return wrap;
 }
 
@@ -11398,8 +17190,6 @@ function openGaleriePicker(opts = {}) {
   `;
   back.appendChild(modal);
   document.body.appendChild(back);
-  // Mobile : on bloque le scroll du body pour éviter le double-scroll
-  document.body.classList.add("body-modal-open");
 
   const tabsEl = modal.querySelector(".galerie-tabs");
   cats.forEach(c => {
@@ -11696,8 +17486,6 @@ function closeGaleriePicker() {
     document.removeEventListener("keydown", _galerieState._escHandler);
   }
   _galerieState = null;
-  // Mobile : on relâche le scroll du body
-  document.body.classList.remove("body-modal-open");
 }
 
 /* V4.49 — Bouton dans la barre latérale (remplace l'ancien bouton flottant). */
@@ -12200,7 +17988,7 @@ function exportModuleWord(sec, mod) {
 <body>
   <h1>${br(sec.titre)}</h1>
   <div class="identity">
-    <b>${br(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + br(e.classe) : ""}
+    <b>${br(e.prenom)} ${br(e.nom)}</b> — ${br(e.classe)} (${br(e.annee_scolaire)})
     — ${new Date().toLocaleDateString("fr-FR")}
   </div>
 
@@ -12216,7 +18004,7 @@ function exportModuleWord(sec, mod) {
   const blob = new Blob(["\ufeff", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `Fiche_${sec.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -12511,12 +18299,13 @@ function applyEvaluationImport(data) {
     throw new Error("Ce fichier n'est pas une évaluation enseignant.");
   }
   if (data.eleve) {
-    // RGPD : on compare uniquement les codes élèves (jamais les noms/prénoms)
-    const expected = String(state.infos_eleve.userCode || "").trim().toUpperCase();
-    const incoming = String(data.eleve.userCode || "").trim().toUpperCase();
-    if (expected && incoming && expected !== incoming) {
-      const ok = confirm("Attention : ce retour d'évaluation ne semble pas correspondre à ce code élève.\n\nImporter quand même ?");
-      if (!ok) throw new Error("Import annulé : code élève différent.");
+    const expected = [state.infos_eleve.nom, state.infos_eleve.prenom, state.infos_eleve.classe]
+      .map(v => String(v || "").trim().toLowerCase()).join("|");
+    const incoming = [data.eleve.nom, data.eleve.prenom, data.eleve.classe]
+      .map(v => String(v || "").trim().toLowerCase()).join("|");
+    if (expected !== "||" && incoming !== "||" && expected !== incoming) {
+      const ok = confirm("Attention : ce retour d'évaluation ne semble pas correspondre à cet élève.\n\nImporter quand même ?");
+      if (!ok) throw new Error("Import annulé : élève différent.");
     }
   }
   if (!Array.isArray(state.evaluations)) state.evaluations = [];
@@ -12569,6 +18358,7 @@ function fieldValue(sectionId, fieldId) {
 }
 
 function exportFicheMenuWord() {
+  console.warn("Export Word désactivé: exportFicheMenuWord"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const mainPhoto = findMainPhoto();
@@ -12615,7 +18405,7 @@ function exportFicheMenuWord() {
   <h1>${br(nomMenu)}</h1>
   <div class="subtitle">Fiche menu — Chef-d'œuvre CAP</div>
   <div class="identity">
-    <b>${br(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + br(e.classe) : ""}
+    <b>${br(e.prenom)} ${br(e.nom)}</b> — ${br(e.classe)} (${br(e.annee_scolaire)})
     — ${new Date().toLocaleDateString("fr-FR")}
   </div>
 
@@ -12649,7 +18439,7 @@ function exportFicheMenuWord() {
   const blob = new Blob(["\ufeff", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const n = (e.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (e.nom || "eleve").replace(/\s+/g, "_");
   a.href = url;
   a.download = `FicheMenu_${n}_${new Date().toISOString().slice(0,10)}.doc`;
   a.style.display = "none";
@@ -12685,9 +18475,10 @@ function bindGlobalEvents() {
   on("import-file", "change", importJSON);
   on("btn-print-dossier", "click", printDossier);
   on("btn-print-oral", "click", printOralOnly);
-  // RGPD : export Word retiré
-  on("btn-logout", "click", () => { if (window.PSR_AUTH) window.PSR_AUTH.logout(); });
+  on("btn-word-menu", "click", exportFicheMenuWord);
   on("btn-reset", "click", resetAll);
+  // Phase 4 : restauration depuis le cloud
+  on("btn-cloud-restore", "click", cloudRestoreState);
 
   document.querySelectorAll(".view-btn").forEach(b => {
     b.addEventListener("click", () => selectView(b.dataset.view));
@@ -12700,43 +18491,6 @@ function bindGlobalEvents() {
   // V4.25 : avatar header cliquable pour ouvrir l'éditeur
   const headerAvatar = document.getElementById("header-avatar");
   if (headerAvatar) headerAvatar.addEventListener("click", openAvatarEditor);
-
-  // ===== Mobile : drawer sidebar =====
-  setupMobileDrawer();
-}
-
-function setupMobileDrawer() {
-  const sidebar  = document.getElementById("sidebar");
-  const overlay  = document.getElementById("sidebar-overlay");
-  const btnOpen  = document.getElementById("menu-toggle");
-  const btnClose = document.getElementById("sidebar-close-mobile");
-  if (!sidebar || !overlay || !btnOpen) return;
-
-  function openDrawer() {
-    sidebar.classList.add("sidebar-open");
-    overlay.classList.add("visible");
-    document.body.classList.add("sidebar-open-state");
-  }
-  function closeDrawer() {
-    sidebar.classList.remove("sidebar-open");
-    overlay.classList.remove("visible");
-    document.body.classList.remove("sidebar-open-state");
-  }
-  btnOpen.addEventListener("click", openDrawer);
-  if (btnClose) btnClose.addEventListener("click", closeDrawer);
-  overlay.addEventListener("click", closeDrawer);
-
-  // Auto-fermeture du drawer après navigation (clic sur un onglet ou une section)
-  sidebar.addEventListener("click", (e) => {
-    if (window.innerWidth > 900) return;
-    const navBtn = e.target.closest(".view-btn, .section-list a, .section-list button, .sidebar-tool-btn");
-    if (navBtn) setTimeout(closeDrawer, 120);
-  });
-
-  // Fermeture sur Escape
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && sidebar.classList.contains("sidebar-open")) closeDrawer();
-  });
 }
 
 /* =====================================================================
@@ -12754,8 +18508,7 @@ function doExportJSON() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  // RGPD : nom de fichier basé sur le code élève (anonymisé), jamais sur le nom
-  const n = (state.infos_eleve.userCode || "anonyme").replace(/\s+/g, "_");
+  const n = (state.infos_eleve.nom || "eleve").replace(/\s+/g, "_");
   a.href = url; a.download = `portfolio_${n}_${new Date().toISOString().slice(0,10)}.json`;
   a.style.display = "none";
   document.body.appendChild(a);
@@ -12827,8 +18580,10 @@ function buildDossierHTML() {
       <div class="project-title">${escapeHtml(state.meta.projet_titre)}</div>
       <div class="project-title"><b>${escapeHtml(e.titre_dossier || "Sans titre")}</b></div>
       <div class="identity">
-        <div><b>Code élève :</b> ${escapeHtml(e.userCode || "—")}</div>
-        <div><b>Classe :</b> ${escapeHtml(e.classe || "—")}</div>
+        <div><b>Nom :</b> ${escapeHtml(e.nom)}</div>
+        <div><b>Prénom :</b> ${escapeHtml(e.prenom)}</div>
+        <div><b>Classe :</b> ${escapeHtml(e.classe)}</div>
+        <div><b>Année scolaire :</b> ${escapeHtml(e.annee_scolaire)}</div>
         <div style="margin-top:14px;"><b>Date d'édition :</b> ${today}</div>
       </div>
     </div>
@@ -12904,7 +18659,7 @@ function buildOralHTML(asFullDoc) {
   const parts = buildOralParts();
   let html = asFullDoc ? `<div class="print-doc"><div class="print-oral" style="page-break-before:auto;">` : `<div class="print-oral">`;
   html += `<h2>🎤 Synthèse orale finale</h2>`;
-  html += `<p><b>${escapeHtml(e.userCode || "Élève anonyme")}</b>${e.classe ? " — " + escapeHtml(e.classe) : ""}</p>`;
+  html += `<p><b>${escapeHtml(e.prenom)} ${escapeHtml(e.nom)}</b> — ${escapeHtml(e.classe)} (${escapeHtml(e.annee_scolaire)})</p>`;
   parts.forEach(part => {
     html += `<div class="oral-part"><h3>${escapeHtml(part.titre)}</h3>`;
     if (part.lines.length === 0) {
@@ -13129,16 +18884,72 @@ function updateHeaderAvatar() {
   } else if (state.preferences && state.preferences.avatar) {
     visu.innerHTML = `<span class="hav-emoji">${escapeHtml(state.preferences.avatar)}</span>`;
   } else {
-    // RGPD : initiales basées sur le code élève (1-2 premiers caractères)
-    const code = e.userCode || "?";
-    const initials = code.slice(0, 2).toUpperCase();
+    const initials = ((e.prenom||"?").charAt(0) + (e.nom||"").charAt(0)).toUpperCase() || "?";
     visu.innerHTML = `<span class="hav-initials">${escapeHtml(initials)}</span>`;
   }
-  // RGPD : on affiche le code élève (jamais le prénom/nom)
-  name.textContent = e.userCode || "Mon profil";
+  // V4.27 : on affiche uniquement le prénom (ou "Mon profil" si pas encore renseigné)
+  name.textContent = e.prenom || "Mon profil";
 }
 
-function init() {
+/* Phase 4 — réinjecte les photos locales (data:image/...) dans un state cloud,
+   où les photos ont été remplacées par "<photo locale>". Best effort, par chemin équivalent. */
+function _mergeLocalPhotos(target, localSrc) {
+  if (!target || !localSrc) return target;
+  function walk(t, l) {
+    if (!t || !l || typeof t !== "object" || typeof l !== "object") return;
+    if (Array.isArray(t) && Array.isArray(l)) {
+      const n = Math.min(t.length, l.length);
+      for (let i = 0; i < n; i++) {
+        if (typeof t[i] === "string" && t[i] === "<photo locale>" &&
+            typeof l[i] === "string" && l[i].startsWith("data:image/")) {
+          t[i] = l[i];
+        } else walk(t[i], l[i]);
+      }
+      return;
+    }
+    for (const k of Object.keys(t)) {
+      if (!(k in l)) continue;
+      if (typeof t[k] === "string" && t[k] === "<photo locale>" &&
+          typeof l[k] === "string" && l[k].startsWith("data:image/")) {
+        t[k] = l[k];
+      } else walk(t[k], l[k]);
+    }
+  }
+  walk(target, localSrc);
+  return target;
+}
+
+/* Phase 4 — bouton "Récupérer mon travail depuis Mon espace" */
+async function cloudRestoreState() {
+  if (!window.PSR_FIREBASE || typeof window.PSR_FIREBASE.loadPortfolioState !== "function") {
+    alert("La synchronisation cloud n'est pas disponible.");
+    return;
+  }
+  if (!window.PSR_USER || !window.PSR_USER.userCode) {
+    alert("Tu dois être connecté avec ton code élève pour récupérer ton travail.");
+    return;
+  }
+  const ok = confirm(
+    "Cela va récupérer ton travail depuis Mon espace (cloud) et écraser tes modifications locales non synchronisées.\n\n" +
+    "Continuer ?"
+  );
+  if (!ok) return;
+  try {
+    const remote = await window.PSR_FIREBASE.loadPortfolioState();
+    if (!remote) { alert("Aucun travail trouvé dans Mon espace pour ce code."); return; }
+    const merged = mergeWithSchema(remote);
+    // Conserve les photos locales si présentes
+    state = _mergeLocalPhotos(merged, state);
+    saveState(true);
+    renderAll();
+    alert("✅ Travail restauré depuis Mon espace.");
+  } catch (e) {
+    console.error("[Phase4] cloudRestoreState:", e);
+    alert("Erreur lors de la récupération : " + e.message);
+  }
+}
+
+async function init() {
   // V4.15 : si on est dans correction.html, l'outil enseignant gère lui-même son init
   if (window.IS_TEACHER_TOOL) {
     if (typeof initTeacherCorrection === "function") {
@@ -13147,6 +18958,27 @@ function init() {
     return;
   }
   state = loadState();
+  // Phase 4 : tente une fusion cloud → local AVANT le rendu initial.
+  // Stratégie : si l'état distant est plus récent (date_derniere_modification), on l'adopte.
+  // Sinon on garde le local (cas offline ou travail local plus récent → push au prochain save).
+  try {
+    if (!demoModeActive && !window.IS_TEACHER_TOOL &&
+        window.PSR_USER && window.PSR_USER.userCode &&
+        window.PSR_FIREBASE && typeof window.PSR_FIREBASE.loadPortfolioState === "function") {
+      const remote = await window.PSR_FIREBASE.loadPortfolioState();
+      if (remote && remote.meta && remote.meta.date_derniere_modification) {
+        const tRemote = new Date(remote.meta.date_derniere_modification).getTime() || 0;
+        const tLocal  = new Date(state?.meta?.date_derniere_modification || 0).getTime() || 0;
+        if (tRemote > tLocal) {
+          // remote gagne — fusionne avec schéma puis ré-applique les photos locales (non envoyées au cloud).
+          const merged = mergeWithSchema(remote);
+          // Re-injecte les photos locales (les valeurs cloud étant "<photo locale>")
+          state = _mergeLocalPhotos(merged, state);
+          console.info("[Phase4] State remote plus récent — adopté.");
+        }
+      }
+    }
+  } catch (e) { console.warn("[Phase4] init merge cloud:", e); }
   // V2.1 : sync bidirectionnelle identité / infos_eleve à l'ouverture
   syncInfosToIdentite();
   syncIdentiteToInfos();
@@ -13290,7 +19122,7 @@ function openTutorielPremiereVisite() {
     },
     {
       emoji: "🆘", titre: "Si tu galères ou si tu veux réviser",
-      texte: "<b>💪 Entraîne-toi</b> (en bas à gauche) regroupe :<br>📖 Glossaire · 🃏 Flashcards · 📱 Conversations · 🎯 Pendu · 💡 Trouve le mot · 🎡 Roue des défis · 🎈 Bulles détente<br><br><b>💬 Donner mon avis</b> : dis-nous ce qui marche ou pas.<br><br><b>👤 Mon avatar</b> : personnalise ton profil 😊",
+      texte: "<b>💪 Entraîne-toi</b> (en bas à gauche) regroupe :<br>📖 Glossaire (40 mots-clés expliqués)<br>🃏 Flashcards · 📱 Conversations · 🎯 Pendu · 💡 Trouve le mot<br>📋 Référentiel PSR (toutes tes compétences)<br><br><b>💬 Donner mon avis</b> : dis-nous ce qui marche ou pas.<br><br><b>👤 Mon avatar</b> : personnalise ton profil 😊",
       cta: "Suivant →",
     },
     {
@@ -13929,7 +19761,7 @@ function recordMeteoEmotion(emo, nuance, modal) {
       <p class="hint">Ton émotion a été enregistrée.</p>
     </div>
     <div class="meteo-confirm">
-      <p style="text-align:center;">Bonne séance !</p>
+      <p style="text-align:center;">Bonne séance${state.infos_eleve.prenom ? ", " + escapeHtml(state.infos_eleve.prenom) : ""} !</p>
       <button type="button" class="btn btn-primary btn-lg" id="meteo-go">Commencer ma séance</button>
     </div>
   `;
@@ -14093,8 +19925,7 @@ function showSplashScreen() {
   const splash = document.createElement("div");
   splash.id = "splash-screen";
   splash.className = "splash";
-  // RGPD : initiales basées sur le code élève
-  const initials = escapeHtml((e.userCode || "?").slice(0, 2)).toUpperCase();
+  const initials = (escapeHtml((e.prenom||"?").charAt(0)) + escapeHtml((e.nom||"").charAt(0))).toUpperCase() || "?";
   splash.innerHTML = `
     <div class="splash-content">
       <div class="splash-eyebrow">Portfolio Chef-d'œuvre · CAP</div>
@@ -14108,8 +19939,12 @@ function showSplashScreen() {
               : `<div class="splash-photo-empty">${initials}</div>`}
         </div>
         <div class="splash-meta">
-          <h1 class="splash-name">${escapeHtml(e.userCode || "Bienvenue")}</h1>
-          <div class="splash-classe">${escapeHtml(e.classe || "")}</div>
+          <h1 class="splash-name">${escapeHtml(e.prenom || "Bienvenue")} ${escapeHtml(e.nom || "")}</h1>
+          <div class="splash-classe">
+            ${escapeHtml(e.classe || "")}
+            ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
+            ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
+          </div>
           ${e.titre_dossier ? `<div class="splash-projet">${escapeHtml(e.titre_dossier)}</div>` : ""}
         </div>
       </div>
@@ -14212,8 +20047,8 @@ const GLOSSAIRE = [
   { mot: "Congélation", def: "Conservation à -18 °C ou moins. Stoppe la multiplication des bactéries. Conservation longue (plusieurs mois)." },
   { mot: "Conserve", def: "Aliment stérilisé puis fermé dans un récipient hermétique (boîte, bocal). Se conserve plusieurs années à température ambiante." },
   { mot: "Constituants alimentaires", def: "Éléments contenus dans les aliments : protides, glucides, lipides, vitamines, minéraux, eau. Chacun a un rôle pour la santé." },
-  { mot: "Contamination croisée", def: "Quand des microbes passent d'un aliment cru ou sale vers un aliment cuit ou propre (ex : couteau qui sert à la viande crue puis aux légumes). Cause majeure d'intoxication." },
-  { mot: "Cuisson à cœur", def: "Cuire l'aliment jusqu'à ce que la température au centre atteigne 63 °C (au moins). Détruit la majorité des bactéries." },
+  { mot: "Contamination croisée", def: "Quand un danger (microbes, mais aussi allergènes, produit chimique, corps étranger) passe d'un aliment ou support sale vers un aliment propre (ex : couteau qui sert à la viande crue puis aux légumes ; planche utilisée pour des arachides puis pour un plat sans allergène). Cause majeure d'intoxications et de réactions allergiques." },
+  { mot: "Cuisson à cœur", def: "Cuire l'aliment jusqu'à ce que la température au centre atteigne le seuil de sécurité du produit : volaille 74 °C, viande hachée 70 °C, poisson et autres viandes 63 °C minimum. Détruit la majorité des bactéries. À ne pas confondre avec le maintien au chaud (≥ 63 °C, arrêté du 21/12/2009)." },
   { mot: "DLC", def: "Date Limite de Consommation. À ne pas dépasser sur les produits frais (yaourt, viande). Affichée « À consommer jusqu'au… »." },
   { mot: "DDM", def: "Date de Durabilité Minimale. Le produit reste sain après cette date, mais peut perdre du goût. Affichée « À consommer de préférence avant… »." },
   { mot: "DLUO", def: "Date Limite d'Utilisation Optimale. Ancien nom de la DDM, encore parfois employé. Même signification." },
@@ -14253,7 +20088,8 @@ const GLOSSAIRE = [
   { mot: "SIQO", def: "Signes Officiels d'Identification de la Qualité et de l'Origine. Regroupe AB, Label Rouge, AOP, AOC, IGP, STG." },
   { mot: "Surgelé", def: "Aliment congelé très rapidement à très basse température (-30 °C ou moins). Préserve la qualité et la texture mieux qu'une congélation classique." },
   { mot: "TIAC", def: "Toxi-Infection Alimentaire Collective. Quand au moins 2 personnes tombent malades après avoir mangé le même aliment. À déclarer obligatoirement." },
-  { mot: "Traçabilité", def: "Pouvoir savoir d'où vient un produit, qui l'a fait, quand. Permet de retirer un produit s'il y a un problème." },
+  { mot: "Lot (numéro de lot)", def: "Numéro qu’on met sur un produit pour savoir QUI l’a fait, QUAND, avec QUEL groupe, et QUEL produit. Si un client est malade, on peut tout de suite retrouver les autres produits du même lot. Format simple : L-PSR-JJMMAA-G1-PRODUIT. Exemple : L-PSR-090526-G2-WRAP." },
+  { mot: "Traçabilité", def: "Pouvoir dire d’où vient un produit, qui l’a fait, et quand. Si un client tombe malade, ça permet de retrouver les autres produits du même lot et de les retirer." },
   { mot: "Vente à emporter", def: "Activité commerciale où le client achète un repas qu'il consomme ailleurs. Soumise à la réglementation INCO (étiquetage) et HACCP (hygiène)." },
   { mot: "Vitamines", def: "Petites quantités, grands rôles : protègent l'organisme et le maintiennent en bonne santé. Dans les fruits, légumes, produits laitiers." },
   { mot: "VPO", def: "Viandes - Poissons - Œufs. Groupe alimentaire qui apporte les protéines animales." },
@@ -15611,9 +21447,8 @@ function openAvatarEditor() {
       canvas.toBlob((png) => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(png);
-        // RGPD : nom de fichier sans donnée personnelle
-        const code = (state.infos_eleve.userCode || "avatar").replace(/\s+/g, "_");
-        a.download = `Avatar_${code}_${new Date().toISOString().slice(0,10)}.png`;
+        const nom = (state.infos_eleve.prenom || "avatar").replace(/\s+/g, "_");
+        a.download = `Avatar_${nom}_${new Date().toISOString().slice(0,10)}.png`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       }, "image/png");
@@ -17411,3 +23246,1541 @@ function setupFloatingTools() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+/* =====================================================================
+   FORMATION PSR — RENDU
+   Vue indépendante du parcours chef-d'œuvre. Liste des chapitres + détail
+   d'un chapitre (cours + QCM + exos + épreuve). État dans state.formation_psr.
+   ===================================================================== */
+
+function getFormationChapState(chapId) {
+  if (!state.formation_psr) state.formation_psr = {};
+  if (!state.formation_psr[chapId]) {
+    state.formation_psr[chapId] = {
+      qcm_answers: {},
+      qcm_score: null,
+      qcm_completed: false,
+      exos: {},          // exoId -> { done: bool, score: number }
+      epreuve: {
+        reponses: {},
+        score: null,
+        valide: false,
+        date: null
+      }
+    };
+  }
+  // Garde-fous au cas où l'objet vient du localStorage avec champs manquants
+  const st = state.formation_psr[chapId];
+  if (!st.qcm_answers) st.qcm_answers = {};
+  if (!st.exos) st.exos = {};
+  if (!st.epreuve) st.epreuve = { reponses: {}, score: null, valide: false, date: null };
+  if (!st.epreuve.reponses) st.epreuve.reponses = {};
+  if (st.epreuve.tentative === undefined) st.epreuve.tentative = 0;
+  if (!st.epreuve.auto_eval_done) st.epreuve.auto_eval_done = {};
+  // V5 — alignement sur le shape de l’épreuve « Je découvre » (zéro perte de données)
+  if (!st.epreuve.validations) st.epreuve.validations = {};
+  if (st.epreuve.validation_finale === undefined) st.epreuve.validation_finale = null;
+  if (st.epreuve.mode_facile === undefined) st.epreuve.mode_facile = false;
+  if (!st.epreuve.mode_facile_qcm) st.epreuve.mode_facile_qcm = {};
+  if (st.epreuve.note_brute === undefined) st.epreuve.note_brute = null;
+  if (st.epreuve.note_max === undefined) st.epreuve.note_max = null;
+  if (st.epreuve.note_sur_20 === undefined) {
+    // Si on a un ancien score chiffré et le chapitre est connu, on le promeut
+    st.epreuve.note_sur_20 = null;
+  }
+  if (st.epreuve.note_calculee_sur_20 === undefined) st.epreuve.note_calculee_sur_20 = null;
+  if (st.epreuve.note_override === undefined) st.epreuve.note_override = null;
+  // Migration douce : si un ancien `score` existe mais pas de note_sur_20, on convertit
+  if (st.epreuve.note_sur_20 === null && typeof st.epreuve.score === "number") {
+    // On n'a pas le total ici → on attendra renderEpreuveViewFormation pour finaliser.
+    st.epreuve._legacy_score = st.epreuve.score;
+  }
+  return st;
+}
+
+function renderFormationPSR() {
+  const wrap = document.createElement("section");
+  wrap.className = "section-card formation-psr-home";
+
+  const back = document.createElement("div");
+  back.className = "back-bar no-print";
+  back.innerHTML = `<button type="button" class="btn btn-back">← Retour à l'accueil</button>`;
+  back.querySelector("button").addEventListener("click", () => selectView("home"));
+  wrap.appendChild(back);
+
+  const head = document.createElement("div");
+  head.className = "formation-head";
+  head.innerHTML = `
+    <h2>🌟 Ma formation PSR</h2>
+    <p class="formation-sub">Tout ce que tu apprends pour ton CAP, en plus de ton chef-d'œuvre.</p>
+    <p class="formation-hint">Choisis un chapitre. Chaque chapitre contient un cours, un QCM, des exercices et une épreuve d'attestation.</p>
+  `;
+  wrap.appendChild(head);
+
+  const grid = document.createElement("div");
+  grid.className = "formation-cards";
+  FORMATION_PSR_CHAPITRES.forEach(chap => {
+    const st = getFormationChapState(chap.id);
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "formation-card";
+    let badge = "";
+    if (st.epreuve && st.epreuve.valide) badge = `<span class="formation-badge ok">✅ Attestation validée</span>`;
+    else if (st.qcm_completed) badge = `<span class="formation-badge progress">📚 Cours fait</span>`;
+    else badge = `<span class="formation-badge new">🆕 À découvrir</span>`;
+    card.innerHTML = `
+      <div class="formation-card-emoji">${chap.emoji}</div>
+      <div class="formation-card-body">
+        <h3>${escapeHtml(chap.titre)}</h3>
+        <p>${escapeHtml(chap.description)}</p>
+        <div class="formation-card-ref">📚 ${escapeHtml(chap.referentiel.pole)} — ${escapeHtml(chap.referentiel.bloc)}</div>
+        ${badge}
+      </div>
+      <div class="formation-card-arrow">→</div>
+    `;
+    card.addEventListener("click", () => {
+      currentView = { type: "formation-chapitre", id: chap.id };
+      renderSidebar(); renderMain();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+
+  // Placeholder pour les chapitres à venir
+  const teaser = document.createElement("div");
+  teaser.className = "formation-teaser";
+  teaser.innerHTML = `<p>D'autres chapitres arriveront bientôt : marche en avant, lavage des mains, allergènes, gestes de service…</p>`;
+  wrap.appendChild(teaser);
+
+  return wrap;
+}
+
+function renderFormationChapitre(chapId) {
+  const chap = FORMATION_PSR_CHAPITRES.find(c => c.id === chapId);
+  if (!chap) {
+    const div = document.createElement("div");
+    div.textContent = "Chapitre introuvable.";
+    return div;
+  }
+  const st = getFormationChapState(chap.id);
+  const wrap = document.createElement("section");
+  wrap.className = "section-card formation-chapitre";
+
+  const back = document.createElement("div");
+  back.className = "back-bar no-print";
+  back.innerHTML = `
+    <button type="button" class="btn btn-back" data-go="formation">← Retour à Ma formation PSR</button>
+    <button type="button" class="btn btn-back-projet" data-go="home">Accueil</button>
+  `;
+  back.querySelector("[data-go='formation']").addEventListener("click", () => selectView("formation"));
+  back.querySelector("[data-go='home']").addEventListener("click", () => selectView("home"));
+  wrap.appendChild(back);
+
+  const head = document.createElement("div");
+  head.className = "section-head formation-chapitre-head";
+  const objectifsHtml = (chap.objectifs_eleve && chap.objectifs_eleve.length)
+    ? `
+      <div class="formation-objectifs-box">
+        <h3>🎯 Ce que tu vas apprendre</h3>
+        <p class="formation-objectifs-intro">À la fin de ce chapitre, tu seras capable de :</p>
+        <ul class="formation-objectifs-list">
+          ${chap.objectifs_eleve.map(o => `<li>${escapeHtml(o)}</li>`).join("")}
+        </ul>
+      </div>`
+    : "";
+  head.innerHTML = `
+    <div>
+      <h2>${chap.emoji} ${escapeHtml(chap.titre)}</h2>
+      <p class="desc">${escapeHtml(chap.description)}</p>
+    </div>
+    ${objectifsHtml}
+  `;
+  wrap.appendChild(head);
+
+  // --- COURS ---
+  const coursWrap = document.createElement("div");
+  coursWrap.className = "module-cours";
+  coursWrap.innerHTML = `<h3>📘 Le cours</h3><p class="hint">Lis chaque partie. Tu peux écouter avec 🔊. Réponds aux questions au fur et à mesure.</p>`;
+  chap.module.cours.forEach(c => {
+    const card = document.createElement("div");
+    card.className = "cours-card";
+    card.innerHTML = `
+      <div class="cours-head">
+        <h4>${escapeHtml(c.titre)}</h4>
+        <button type="button" class="btn btn-sm btn-audio" title="Écouter">🔊 Écouter</button>
+      </div>
+      <div class="cours-body">${renderRichText(c.texte)}</div>
+    `;
+    card.querySelector(".btn-audio").addEventListener("click", (ev) => {
+      const clean = (c.texte || "")
+        .replace(/\*\*(.+?)\*\*/g, "$1")
+        .replace(/^>\s*(💡|⚠️|📌|📚)\s*/gm, "")
+        .replace(/^[-•]\s+/gm, "")
+        .replace(/^\d+\.\s+/gm, "");
+      speakText(clean, ev.currentTarget);
+    });
+    coursWrap.appendChild(card);
+
+    // Questions liées à ce cours
+    const qLiees = chap.module.qcm.filter(q => q.lie_cours === c.id);
+    if (qLiees.length) {
+      const qb = document.createElement("div");
+      qb.className = "qcm-after-cours";
+      qb.innerHTML = `<div class="qcm-after-label">À toi : ${qLiees.length} question${qLiees.length>1?"s":""} pour vérifier.</div>`;
+      qLiees.forEach(q => qb.appendChild(renderFormationQcmQuestion(chap, q, st)));
+      coursWrap.appendChild(qb);
+    }
+  });
+  wrap.appendChild(coursWrap);
+
+  // --- Score QCM global ---
+  const scoreBox = document.createElement("div");
+  scoreBox.className = "formation-qcm-score";
+  scoreBox.id = `formation-score-${chap.id}`;
+  refreshFormationQcmScore(chap, st, scoreBox);
+  wrap.appendChild(scoreBox);
+
+  // --- EXERCICES BONUS ---
+  if (chap.module.exercices_bonus && chap.module.exercices_bonus.length) {
+    const exoTitle = document.createElement("h3");
+    exoTitle.textContent = "🎯 Exercices visuels";
+    exoTitle.className = "formation-section-title";
+    wrap.appendChild(exoTitle);
+    chap.module.exercices_bonus.forEach(exo => {
+      if (exo.type === "points_chauds") wrap.appendChild(renderFormationPointsChauds(chap, exo, st));
+      else if (exo.type === "multi_choix_image") wrap.appendChild(renderFormationMultiChoix(chap, exo, st));
+      else if (exo.type === "ordering_photos") wrap.appendChild(renderFormationOrderingPhotos(chap, exo, st));
+    });
+  }
+
+  // --- BILAN DE FIN DE CHAPITRE ---
+  if (chap.bilan_eleve) {
+    const bilan = document.createElement("div");
+    bilan.className = "formation-bilan-box";
+    bilan.innerHTML = `
+      <h3>${escapeHtml(chap.bilan_eleve.titre)}</h3>
+      <ul class="formation-bilan-list">
+        ${chap.bilan_eleve.points.map(p => `<li>${escapeHtml(p)}</li>`).join("")}
+      </ul>
+      ${chap.bilan_eleve.message ? `<p class="formation-bilan-msg">${escapeHtml(chap.bilan_eleve.message)}</p>` : ""}
+    `;
+    wrap.appendChild(bilan);
+  }
+
+  // --- MOTS-CLÉS ---
+  if (chap.mots_cles && chap.mots_cles.length) {
+    const mcWrap = document.createElement("div");
+    mcWrap.className = "formation-mots-cles";
+    mcWrap.innerHTML = `
+      <h3>🔑 Mots-clés à connaître</h3>
+      <p class="hint">Les mots du métier que tu dois retenir pour ce chapitre.</p>
+      <ul class="formation-mc-list">
+        ${chap.mots_cles.map(mc => `<li><b>${escapeHtml(mc.mot)}</b> — ${escapeHtml(mc.def)}</li>`).join("")}
+      </ul>
+    `;
+    wrap.appendChild(mcWrap);
+  }
+
+  // --- ÉPREUVE D'ATTESTATION (V5 : page dédiée, alignée sur Je découvre) ---
+  if (chap.module.epreuve) {
+    const ep = chap.module.epreuve;
+    const epSt = st.epreuve || {};
+    const validee = epSt && epSt.validation_finale && epSt.validation_finale.state === "validee";
+    const noteConnue = epSt && epSt.note_sur_20 !== null && epSt.note_sur_20 !== undefined;
+
+    const card = document.createElement("div");
+    card.className = "formation-epreuve-card";
+    card.style.cssText = "margin-top:18px; padding:18px 20px; border:2px solid #d4a350; border-radius:12px; background:linear-gradient(135deg,#fff8e0 0%,#fff 100%);";
+    card.innerHTML = `
+      <h3 style="margin-top:0;">🏅 Épreuve d’attestation</h3>
+      <p><b>${escapeHtml(ep.titre)}</b></p>
+      <p class="hint">Durée : ${escapeHtml(ep.duree || "")} — Seuil : ${ep.seuil}/20</p>
+      <p>${escapeHtml(ep.mise_en_situation || "")}</p>
+      ${validee
+        ? `<p style="color:#2e7d32; font-weight:700;">✅ Attestation validée par l’enseignant·e (note : ${epSt.note_sur_20}/20)</p>`
+        : noteConnue
+          ? `<p>Dernière tentative : <b>${epSt.note_sur_20}/20</b> ${epSt.note_sur_20 >= ep.seuil ? "(au-dessus du seuil)" : "(en dessous du seuil)"}.</p>`
+          : `<p>Tu n’as pas encore passé l’épreuve.</p>`
+      }
+    `;
+    const btnEp = document.createElement("button");
+    btnEp.type = "button";
+    btnEp.className = validee ? "btn" : "btn btn-primary btn-lg";
+    btnEp.textContent = validee
+      ? "Revoir mon épreuve"
+      : noteConnue
+        ? `Recommencer l’épreuve (note précédente : ${epSt.note_sur_20}/20)`
+        : "Commencer l’épreuve d’attestation";
+    btnEp.addEventListener("click", () => {
+      currentView = { type: "formation-epreuve", id: chap.id };
+      renderSidebar(); renderMain();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    card.appendChild(btnEp);
+    wrap.appendChild(card);
+  }
+
+  return wrap;
+}
+
+function renderFormationQcmQuestion(chap, q, st) {
+  const wrap = document.createElement("div");
+  wrap.className = "qcm-question formation-qcm-q";
+  const userAns = st.qcm_answers[q.id];
+  const answered = userAns !== undefined;
+
+  const head = document.createElement("div");
+  head.className = "qcm-q-text";
+  head.innerHTML = renderRichText(q.question);
+  wrap.appendChild(head);
+
+  q.options.forEach((opt, i) => {
+    const lbl = document.createElement("label");
+    lbl.className = "qcm-opt";
+    if (answered) {
+      if (i === q.correct) lbl.classList.add("correct");
+      if (userAns === i && i !== q.correct) lbl.classList.add("wrong");
+    }
+    lbl.innerHTML = `<input type="radio" name="fpsr-${chap.id}-${q.id}" value="${i}" ${userAns === i ? "checked" : ""} ${answered ? "disabled" : ""}/> <span>${escapeHtml(opt)}</span>`;
+    lbl.querySelector("input").addEventListener("change", () => {
+      st.qcm_answers[q.id] = i;
+      // recalcul score
+      const total = chap.module.qcm.length;
+      let score = 0;
+      chap.module.qcm.forEach(qq => {
+        if (st.qcm_answers[qq.id] === qq.correct) score++;
+      });
+      st.qcm_score = score;
+      st.qcm_completed = Object.keys(st.qcm_answers).length >= total;
+      saveState();
+      // Re-render parent chapitre pour montrer le feedback verrouillé
+      renderMain();
+    });
+    wrap.appendChild(lbl);
+  });
+
+  if (answered) {
+    const feedback = document.createElement("div");
+    feedback.className = userAns === q.correct ? "qcm-feedback ok" : "qcm-feedback ko";
+    feedback.innerHTML = (userAns === q.correct ? "✅ " : "❌ ") + escapeHtml(q.explication || "");
+    wrap.appendChild(feedback);
+  }
+
+  return wrap;
+}
+
+function refreshFormationQcmScore(chap, st, box) {
+  const total = chap.module.qcm.length;
+  const repondues = Object.keys(st.qcm_answers).length;
+  const score = st.qcm_score || 0;
+  box.innerHTML = `
+    <div class="formation-score-bar">
+      <b>Mon score QCM :</b> ${score} / ${total} bonnes réponses (${repondues}/${total} questions répondues)
+    </div>
+  `;
+}
+
+function renderFormationPointsChauds(chap, exo, st) {
+  const wrap = document.createElement("div");
+  wrap.className = "formation-exo formation-points-chauds";
+  wrap.innerHTML = `<h4>${escapeHtml(exo.titre)}</h4><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+  const grid = document.createElement("div");
+  grid.className = "fpc-grid";
+  exo.items.forEach((item, idx) => {
+    const cardId = `${exo.id}-${idx}`;
+    const exoState = st.exos[cardId] || { revealed: false };
+    const card = document.createElement("div");
+    card.className = "fpc-card";
+    card.innerHTML = `
+      <div class="fpc-img-wrap"><img src="${encodeURI(item.image)}" alt="Photo ${idx+1}" onerror="this.classList.add('img-missing')"/></div>
+      <button type="button" class="btn btn-sm">${exoState.revealed ? "Masquer la correction" : "Voir l'erreur"}</button>
+      ${exoState.revealed ? `<div class="fpc-erreur">⚠️ ${escapeHtml(item.erreur)}</div>` : ""}
+    `;
+    card.querySelector("button").addEventListener("click", () => {
+      st.exos[cardId] = { revealed: !exoState.revealed };
+      saveState();
+      renderMain();
+    });
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+/* ---------- Exercice ordering avec photos (formation) ----------
+   L'élève remet N items photos dans le bon ordre via flèches ↑↓.
+   Items : { id, image, label, order } (order = position attendue, 1..N)
+------------------------------------------------------------------ */
+function renderFormationOrderingPhotos(chap, exo, st) {
+  if (!st[exo.id]) st[exo.id] = { order: null, ok: null, last_moved: null, last_dir: null };
+  const ex_st = st[exo.id];
+  if (!ex_st.order) ex_st.order = exo.items.map(it => it.id).sort(() => Math.random() - 0.5);
+
+  const wrap = document.createElement("div");
+  wrap.className = "module-exo formation-exo-ordering";
+  wrap.innerHTML = `<h3>🎯 ${escapeHtml(exo.titre)}</h3>
+    <p class="hint">${escapeHtml(exo.consigne)}</p>`;
+
+  const list = document.createElement("ol");
+  list.className = "exo-ordering";
+  ex_st.order.forEach((id, idx) => {
+    const item = exo.items.find(i => i.id === id);
+    if (!item) return;
+    const li = document.createElement("li");
+    li.className = "exo-item";
+    if (ex_st.ok !== null) {
+      li.classList.add(item.order === idx + 1 ? "item-ok" : "item-ko");
+    }
+    if (ex_st.last_moved === id) {
+      li.classList.add("just-moved", ex_st.last_dir === "up" ? "moved-up" : "moved-down");
+    }
+    li.innerHTML = `
+      <span class="exo-num">${idx + 1}.</span>
+      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.label)}" loading="lazy" class="exo-photo-small" />
+      <span class="exo-label">${escapeHtml(item.label)}</span>
+      <span class="exo-btns">
+        <button type="button" class="btn btn-sm btn-up"   ${idx === 0 ? "disabled" : ""}>↑</button>
+        <button type="button" class="btn btn-sm btn-down" ${idx === ex_st.order.length - 1 ? "disabled" : ""}>↓</button>
+      </span>`;
+    li.querySelector(".btn-up").addEventListener("click", () => {
+      [ex_st.order[idx - 1], ex_st.order[idx]] = [ex_st.order[idx], ex_st.order[idx - 1]];
+      ex_st.ok = null; ex_st.last_moved = id; ex_st.last_dir = "up";
+      saveState(); renderMain();
+      setTimeout(() => { ex_st.last_moved = null; renderMain(); }, 600);
+    });
+    li.querySelector(".btn-down").addEventListener("click", () => {
+      [ex_st.order[idx], ex_st.order[idx + 1]] = [ex_st.order[idx + 1], ex_st.order[idx]];
+      ex_st.ok = null; ex_st.last_moved = id; ex_st.last_dir = "down";
+      saveState(); renderMain();
+      setTimeout(() => { ex_st.last_moved = null; renderMain(); }, 600);
+    });
+    list.appendChild(li);
+  });
+  wrap.appendChild(list);
+
+  const actions = document.createElement("div");
+  actions.className = "exo-actions";
+  const btnCheck = document.createElement("button");
+  btnCheck.type = "button";
+  btnCheck.className = "btn btn-primary";
+  btnCheck.textContent = "Vérifier mon ordre";
+  btnCheck.addEventListener("click", () => {
+    ex_st.ok = ex_st.order.every((id, idx) => {
+      const it = exo.items.find(i => i.id === id);
+      return it && it.order === idx + 1;
+    });
+    saveState(); renderMain();
+  });
+  actions.appendChild(btnCheck);
+  const btnReset = document.createElement("button");
+  btnReset.type = "button";
+  btnReset.className = "btn";
+  btnReset.textContent = "🔄 Mélanger";
+  btnReset.addEventListener("click", () => {
+    ex_st.order = exo.items.map(it => it.id).sort(() => Math.random() - 0.5);
+    ex_st.ok = null;
+    saveState(); renderMain();
+  });
+  actions.appendChild(btnReset);
+  wrap.appendChild(actions);
+
+  if (ex_st.ok !== null) {
+    const fb = document.createElement("div");
+    fb.className = "exo-feedback " + (ex_st.ok ? "ok" : "ko");
+    if (ex_st.ok) {
+      fb.innerHTML = "✅ <b>Bravo, l’ordre est correct !</b>";
+    } else {
+      let hintHtml = "";
+      for (let i = 0; i < ex_st.order.length; i++) {
+        const it = exo.items.find(x => x.id === ex_st.order[i]);
+        if (it && it.order !== i + 1) {
+          const expected = exo.items.find(x => x.order === i + 1);
+          hintHtml = `<div class="exo-hint">💡 <b>Indice :</b> à la position <b>${i + 1}</b>, on attend l’étape <b>« ${escapeHtml(expected.label)} »</b>.</div>`;
+          break;
+        }
+      }
+      fb.innerHTML = "❌ <b>Pas tout à fait.</b> Les lignes en rouge sont mal placées." + hintHtml;
+    }
+    wrap.appendChild(fb);
+  }
+  return wrap;
+}
+
+function renderFormationMultiChoix(chap, exo, st) {
+  const wrap = document.createElement("div");
+  wrap.className = "formation-exo formation-multi-choix";
+  wrap.innerHTML = `<h4>${escapeHtml(exo.titre)}</h4><p class="hint">${escapeHtml(exo.consigne)}</p>`;
+  exo.scenarios.forEach((sc, sIdx) => {
+    const scId = `${exo.id}-sc${sIdx}`;
+    const scState = st.exos[scId] || { choix: null };
+    const sBlock = document.createElement("div");
+    sBlock.className = "fmc-scenario";
+    sBlock.innerHTML = `<div class="fmc-question">${escapeHtml(sc.question)}</div>`;
+    const opts = document.createElement("div");
+    opts.className = "fmc-opts";
+    sc.choix.forEach((ch, cIdx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "fmc-opt";
+      if (scState.choix === cIdx) btn.classList.add(ch.correct ? "ok" : "ko");
+      btn.innerHTML = `
+        <img src="${encodeURI(ch.image)}" alt="${escapeHtml(ch.label)}" onerror="this.classList.add('img-missing')"/>
+        <span>${escapeHtml(ch.label)}</span>
+      `;
+      btn.addEventListener("click", () => {
+        st.exos[scId] = { choix: cIdx, correct: ch.correct };
+        saveState();
+        renderMain();
+      });
+      opts.appendChild(btn);
+    });
+    sBlock.appendChild(opts);
+    if (scState.choix !== null && scState.choix !== undefined) {
+      const fb = document.createElement("div");
+      const ok = sc.choix[scState.choix].correct;
+      fb.className = "qcm-feedback " + (ok ? "ok" : "ko");
+      fb.textContent = ok ? "✅ Bonne réponse !" : "❌ Pas la bonne photo, regarde mieux.";
+      sBlock.appendChild(fb);
+    }
+    wrap.appendChild(sBlock);
+  });
+  return wrap;
+}
+
+function renderFormationEpreuve(chap, st) {
+  const ep = chap.module.epreuve;
+  const wrap = document.createElement("div");
+  wrap.className = "formation-epreuve";
+  wrap.innerHTML = `
+    <h3>🏅 Épreuve d'attestation</h3>
+    <div class="ep-head">
+      <h4>${escapeHtml(ep.titre)}</h4>
+      <div class="ep-meta">
+        <div><b>Verbe d'action :</b> ${escapeHtml(ep.verbe_action)}</div>
+        <div><b>Objectif :</b> ${escapeHtml(ep.objectif)}</div>
+        <div><b>Durée :</b> ${escapeHtml(ep.duree)} — <b>Seuil :</b> ${ep.seuil} points</div>
+      </div>
+      <div class="ep-situation">${escapeHtml(ep.mise_en_situation)}</div>
+    </div>
+  `;
+
+  const totalPts = ep.questions.reduce((s, q) => s + (q.points || 0), 0);
+
+  ep.questions.forEach(q => {
+    const qb = document.createElement("div");
+    qb.className = "ep-question";
+    const ans = st.epreuve.reponses[q.id];
+    const answered = ans !== undefined && ans !== "";
+
+    const ttl = document.createElement("div");
+    ttl.className = "ep-q-title";
+    ttl.innerHTML = `<b>Question (${q.points} pts)</b> — ${renderRichText(q.question)}`;
+    qb.appendChild(ttl);
+
+    if (q.type === "qcm") {
+      q.options.forEach((opt, i) => {
+        const lbl = document.createElement("label");
+        lbl.className = "qcm-opt";
+        if (answered) {
+          if (i === q.correct) lbl.classList.add("correct");
+          if (ans === i && i !== q.correct) lbl.classList.add("wrong");
+        }
+        lbl.innerHTML = `<input type="radio" name="fpsr-ep-${q.id}" ${ans === i ? "checked" : ""} ${answered ? "disabled" : ""}/> <span>${escapeHtml(opt)}</span>`;
+        lbl.querySelector("input").addEventListener("change", () => {
+          st.epreuve.reponses[q.id] = i;
+          saveState(); renderMain();
+        });
+        qb.appendChild(lbl);
+      });
+    } else if (q.type === "vrai_faux") {
+      ["Vrai", "Faux"].forEach((opt, i) => {
+        const val = i === 0;
+        const lbl = document.createElement("label");
+        lbl.className = "qcm-opt";
+        if (answered) {
+          if (val === q.correct) lbl.classList.add("correct");
+          if (ans === val && val !== q.correct) lbl.classList.add("wrong");
+        }
+        lbl.innerHTML = `<input type="radio" name="fpsr-ep-${q.id}" ${ans === val ? "checked" : ""} ${answered ? "disabled" : ""}/> <span>${opt}</span>`;
+        lbl.querySelector("input").addEventListener("change", () => {
+          st.epreuve.reponses[q.id] = val;
+          saveState(); renderMain();
+        });
+        qb.appendChild(lbl);
+      });
+    } else if (q.type === "phrase_libre") {
+      const ta = document.createElement("textarea");
+      ta.className = "ep-textarea";
+      ta.rows = 3;
+      ta.placeholder = "Écris ta réponse ici…";
+      ta.value = ans || "";
+      ta.addEventListener("input", () => {
+        st.epreuve.reponses[q.id] = ta.value;
+        saveState();
+      });
+      qb.appendChild(ta);
+      if (q.indice_correction) {
+        const ind = document.createElement("details");
+        ind.className = "ep-indice";
+        ind.innerHTML = `<summary>💡 Indice de correction</summary><div>${escapeHtml(q.indice_correction)}</div>`;
+        qb.appendChild(ind);
+      }
+    }
+
+    if (answered && q.explication && (q.type === "qcm" || q.type === "vrai_faux")) {
+      const fb = document.createElement("div");
+      const isOk = (q.type === "qcm" ? ans === q.correct : ans === q.correct);
+      fb.className = "qcm-feedback " + (isOk ? "ok" : "ko");
+      fb.innerHTML = (isOk ? "✅ " : "❌ ") + escapeHtml(q.explication);
+      qb.appendChild(fb);
+    }
+    wrap.appendChild(qb);
+  });
+
+  // Bouton de calcul
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btn-primary";
+  btn.textContent = st.epreuve.score !== null ? "Recalculer mon score" : "Calculer mon score";
+  btn.addEventListener("click", () => {
+    let score = 0;
+    ep.questions.forEach(q => {
+      const ans = st.epreuve.reponses[q.id];
+      if (q.type === "qcm" && ans === q.correct) score += q.points;
+      else if (q.type === "vrai_faux" && ans === q.correct) score += q.points;
+      else if (q.type === "phrase_libre" && typeof ans === "string" && ans.trim().length >= 20) score += q.points; // auto-créditée si réponse rédigée
+    });
+    st.epreuve.score = score;
+    st.epreuve.valide = score >= ep.seuil;
+    st.epreuve.date = new Date().toISOString();
+    st.epreuve.tentative = (st.epreuve.tentative || 0) + 1;
+    saveState();
+    renderMain();
+    // Auto-évaluation post-épreuve (alignée sur le flow Je découvre)
+    setTimeout(() => showAutoEvalEpreuveChapitre(chap, st), 600);
+  });
+  wrap.appendChild(btn);
+
+  if (st.epreuve.score !== null) {
+    const res = document.createElement("div");
+    res.className = "ep-result " + (st.epreuve.valide ? "ok" : "ko");
+    res.innerHTML = st.epreuve.valide
+      ? `🎉 <b>Bravo !</b> Tu as obtenu ${st.epreuve.score}/${totalPts} points (seuil : ${ep.seuil}). Attestation validée.`
+      : `📉 Tu as obtenu ${st.epreuve.score}/${totalPts} points (seuil : ${ep.seuil}). Reprends les cours et recommence.`;
+    wrap.appendChild(res);
+
+    // --- Boutons de fin d'épreuve : exports Word + attestation ---
+    const actions = document.createElement("div");
+    actions.className = "ep-actions formation-ep-actions";
+    actions.style.marginTop = "12px";
+    actions.style.display = "flex";
+    actions.style.flexWrap = "wrap";
+    actions.style.gap = "8px";
+
+    const btnFiche = document.createElement("button");
+    btnFiche.type = "button";
+    btnFiche.className = "btn";
+    btnFiche.textContent = "📝 Exporter ma fiche en Word";
+    btnFiche.style.display = "none";
+    btnFiche.addEventListener("click", () => exportFormationChapitreFicheWord(chap, st));
+    actions.appendChild(btnFiche);
+
+    if (st.epreuve.valide) {
+      const btnAtt = document.createElement("button");
+      btnAtt.type = "button";
+      btnAtt.className = "btn btn-accent";
+      btnAtt.textContent = "🏆 Télécharger mon attestation Word";
+      btnAtt.style.display = "none";
+      btnAtt.addEventListener("click", () => exportFormationChapitreAttestationWord(chap, st));
+      actions.appendChild(btnAtt);
+    }
+
+    const btnAuto = document.createElement("button");
+    btnAuto.type = "button";
+    btnAuto.className = "btn";
+    btnAuto.textContent = "📌 Faire mon auto-évaluation";
+    btnAuto.addEventListener("click", () => showAutoEvalEpreuveChapitre(chap, st));
+    actions.appendChild(btnAuto);
+
+    wrap.appendChild(actions);
+  }
+
+  // Critères d'évaluation — vue ÉLÈVE (sans la colonne "indicateur" du prof)
+  if (ep.criteres && ep.criteres.length) {
+    const grille = document.createElement("details");
+    grille.className = "ep-grille";
+    grille.innerHTML = `<summary>📋 Ce qui est attendu de toi</summary>`;
+    const tbl = document.createElement("table");
+    tbl.className = "ep-grille-table";
+    tbl.innerHTML = `
+      <thead><tr><th>Capacité</th><th>Niveau attendu</th><th>Si tu n'y arrives pas</th></tr></thead>
+      <tbody>
+        ${ep.criteres.map(cr => `
+          <tr>
+            <td>${escapeHtml(cr.capacite)}</td>
+            <td><b>${escapeHtml(cr.niveau_attendu)}</b></td>
+            <td>${escapeHtml(cr.remediation)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+    grille.appendChild(tbl);
+    wrap.appendChild(grille);
+  }
+
+  return wrap;
+}
+
+/* ----- Auto-évaluation post-épreuve pour un chapitre formation PSR ----- */
+function showAutoEvalEpreuveChapitre(chap, st) {
+  if (!st || !st.epreuve) return;
+  st.epreuve.auto_eval_done = st.epreuve.auto_eval_done || {};
+  const tent = st.epreuve.tentative || 1;
+  // Permet de relancer manuellement, mais pas auto-doublon
+  const old = document.getElementById("autoeval-modal");
+  if (old) old.remove();
+  const m = document.createElement("div");
+  m.id = "autoeval-modal"; m.className = "modal";
+  m.innerHTML = `
+    <div class="modal-content" style="max-width:520px;">
+      <button class="modal-close" id="aec-close">×</button>
+      <h2 style="color:var(--c-primary-dark); margin-top:0;">📌 Comment tu as vécu cette épreuve ?</h2>
+      <p class="hint">Réponse rapide, ça aide ton enseignant·e à mieux t'accompagner.</p>
+      <div class="ae2-block">
+        <label>Comment tu te sens après ?</label>
+        <div class="ae2-emos">
+          <button type="button" class="ae2-emo" data-mood="bien">😊<br /><small>Bien</small></button>
+          <button type="button" class="ae2-emo" data-mood="moyen">😐<br /><small>Moyen</small></button>
+          <button type="button" class="ae2-emo" data-mood="dur">😟<br /><small>Difficile</small></button>
+        </div>
+      </div>
+      <div class="ae2-block">
+        <label>Qu'est-ce qui a été le plus dur ? (optionnel)</label>
+        <input type="text" id="aec-dur" maxlength="200" placeholder="Une phrase…" style="width:100%; padding:10px; border:1px solid var(--c-border); border-radius:8px;" />
+      </div>
+      <div class="ae2-block">
+        <label>Qu'est-ce que tu sens vraiment acquis ? (optionnel)</label>
+        <input type="text" id="aec-acquis" maxlength="200" placeholder="Une phrase…" style="width:100%; padding:10px; border:1px solid var(--c-border); border-radius:8px;" />
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+        <button type="button" class="btn" id="aec-skip">Passer</button>
+        <button type="button" class="btn btn-primary" id="aec-save">Enregistrer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  let mood = null;
+  m.querySelectorAll(".ae2-emo").forEach(b => {
+    b.addEventListener("click", () => {
+      mood = b.dataset.mood;
+      m.querySelectorAll(".ae2-emo").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+    });
+  });
+  const close = () => m.remove();
+  m.querySelector("#aec-close").addEventListener("click", close);
+  m.querySelector("#aec-skip").addEventListener("click", close);
+  m.querySelector("#aec-save").addEventListener("click", () => {
+    st.epreuve.auto_eval_done[tent] = true;
+    if (!Array.isArray(state.auto_evaluations)) state.auto_evaluations = [];
+    state.auto_evaluations.push({
+      date: new Date().toISOString(),
+      epreuve: chap.module.epreuve.id,
+      formation_chapitre: chap.id,
+      tentative: tent,
+      mood: mood,
+      difficile: m.querySelector("#aec-dur").value.trim() || null,
+      acquis: m.querySelector("#aec-acquis").value.trim() || null,
+    });
+    saveState();
+    close();
+  });
+}
+
+/* =====================================================================
+   V5 — VUE ÉPREUVE D’ATTESTATION POUR « Ma formation PSR »
+   ---------------------------------------------------------------------
+   Duplicate de renderEpreuveView (Je découvre) adapté aux chapitres
+   formation_psr. Ne touche PAS à renderEpreuveView original — zéro
+   régression sur Je découvre.
+   ===================================================================== */
+function _makeFormationSecProxy(chapId) {
+  // Construit un objet « sec-like » qui pointe sur state.formation_psr[chapId].epreuve.
+  const chapState = getFormationChapState(chapId);
+  return {
+    id: chapId,
+    _isFormationProxy: true,
+    _chapId: chapId,
+    module_state: { epreuve_state: chapState.epreuve },
+  };
+}
+
+function recomputeEpreuveScoreFormation(chap, st) {
+  const ep = chap.module.epreuve;
+  let pointsObtenus = 0, pointsMax = 0;
+  ep.questions.forEach(q => {
+    const pts = q.points || 1;
+    pointsMax += pts;
+    const valState = (st.validations || {})[q.id];
+    if (valState && typeof valState.note_manuelle === "number" && !isNaN(valState.note_manuelle)) {
+      pointsObtenus += Math.max(0, Math.min(pts, valState.note_manuelle));
+      return;
+    }
+    if (valState && valState.state) {
+      if (valState.state === "ok")      { pointsObtenus += pts;     return; }
+      if (valState.state === "presque") { pointsObtenus += pts / 2; return; }
+      if (valState.state === "ko")      {                            return; }
+    }
+    let isOk = false;
+    if (q.type === "qcm" || q.type === "image_choice") isOk = st.reponses[q.id] === q.correct;
+    else if (q.type === "vrai_faux") isOk = st.reponses[q.id] === q.correct;
+    else if (q.type === "mots") {
+      const effN = st.mode_facile ? 1 : (q.n_champs || 3);
+      const r = st.reponses[q.id];
+      let count = 0;
+      if (Array.isArray(r)) r.forEach(x => { if (motMatch(x, q.cles)) count++; });
+      isOk = count >= effN;
+    } else if (q.type === "classify") {
+      const choix = st.reponses[q.id] || {};
+      const total = q.items.length;
+      const ok = q.items.filter(it => choix[it.id] === it.zone).length;
+      pointsObtenus += pts * (ok / total);
+      return;
+    } else if (q.type === "ordering_eval") {
+      const order = Array.isArray(st.reponses[q.id]) ? st.reponses[q.id] : [];
+      const goodOrder = q.items.map(it => it.id);
+      const okCount = order.filter((iid, idx) => goodOrder[idx] === iid).length;
+      pointsObtenus += pts * (okCount / goodOrder.length);
+      return;
+    }
+    // phrase / phrase_libre : laissé à la validation enseignant (sinon 0)
+    if (isOk) pointsObtenus += pts;
+  });
+  const noteCalculee = pointsMax > 0 ? Math.round((pointsObtenus / pointsMax) * 20 * 10) / 10 : 0;
+  st.note_brute = pointsObtenus;
+  st.note_max = pointsMax;
+  st.note_calculee_sur_20 = noteCalculee;
+  if (!(st.note_override && st.note_override.active)) {
+    st.note_sur_20 = noteCalculee;
+  }
+  // Maintien des champs « legacy » (compat avec exportFormationChapitreAttestationWord)
+  st.score = st.note_brute;
+  st.valide = st.note_sur_20 >= ep.seuil;
+  // V4.69 — Phase 2 : auto-publie la note dans Firestore
+  try {
+    const titre = "Épreuve — " + (chap.titre || chap.id);
+    _psrPushEvaluation({
+      devoirId: "psr_fpsr_" + chap.id,
+      titre,
+      type: "formation_psr",
+      module_id: chap.id,
+      st
+    });
+  } catch (e) {}
+}
+
+function openTeacherValidationFormation(chap, q) {
+  const st = getFormationChapState(chap.id).epreuve;
+  if (!st.validations) st.validations = {};
+  const cur = st.validations[q.id] || { state: "a_valider", commentaire: "" };
+  const old = document.getElementById("teach-modal");
+  if (old) old.remove();
+  const m = document.createElement("div");
+  m.id = "teach-modal"; m.className = "modal";
+  m.innerHTML = `
+    <div class="modal-content" style="max-width:520px;">
+      <button class="modal-close" id="tm-close">×</button>
+      <h3 style="color:var(--c-primary-dark); margin-top:0;">Validation enseignant</h3>
+      <p style="font-size:.92rem; color:var(--c-muted);">Question : ${escapeHtml(q.question)}</p>
+      ${q.indice_correction ? `<p style="font-size:.85rem; background:#fff8e0; padding:8px 12px; border-radius:6px;"><b>Correction attendue :</b> ${escapeHtml(q.indice_correction)}</p>` : ""}
+      <div style="margin:12px 0;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Décision rapide</label>
+        <div style="display:flex; gap:6px; flex-wrap: wrap;">
+          <button type="button" class="btn ${cur.state === "ok" ? "btn-accent" : ""}" data-set="ok">✅ Juste (${q.points || 1} pt${(q.points||1)>1?"s":""})</button>
+          <button type="button" class="btn ${cur.state === "presque" ? "btn-warning" : ""}" data-set="presque">🟡 Partiel (½)</button>
+          <button type="button" class="btn ${cur.state === "ko" ? "btn-danger" : ""}" data-set="ko">❌ Faux (0)</button>
+          <button type="button" class="btn ${cur.state === "a_valider" ? "btn-primary" : ""}" data-set="a_valider">⏳ À revoir</button>
+        </div>
+      </div>
+      <div style="margin:12px 0; padding:10px 14px; background:#fff7e8; border:1px dashed #f0c98c; border-radius:8px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px; color:#6d4400;">
+          🎯 Ou note manuelle (entre 0 et ${q.points || 1}, par pas de 0,5)
+        </label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="number" id="tm-note" min="0" max="${q.points || 1}" step="0.5"
+            value="${cur.note_manuelle != null ? cur.note_manuelle : ""}"
+            placeholder="Ex: 0.5"
+            style="width:90px; padding:8px 10px; border:1px solid #d4a350; border-radius:6px; font-weight:700; font-size:1.05rem; text-align:center;" />
+          <span style="color:#6d4400;">/ ${q.points || 1}</span>
+          <button type="button" class="btn btn-small" id="tm-note-clear" title="Effacer la note manuelle">✕ Effacer</button>
+        </div>
+      </div>
+      <div>
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Commentaire (facultatif)</label>
+        <textarea id="tm-com" rows="3" style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:8px;">${escapeHtml(cur.commentaire || "")}</textarea>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="tm-cancel">Annuler</button>
+        <button class="btn btn-primary" id="tm-save">Enregistrer la modification</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  let pickedState = cur.state;
+  m.querySelectorAll("[data-set]").forEach(b => {
+    b.addEventListener("click", () => {
+      pickedState = b.dataset.set;
+      m.querySelectorAll("[data-set]").forEach(x => x.classList.remove("btn-accent","btn-danger","btn-primary","btn-warning"));
+      if (pickedState === "ok") b.classList.add("btn-accent");
+      if (pickedState === "presque") b.classList.add("btn-warning");
+      if (pickedState === "ko") b.classList.add("btn-danger");
+      if (pickedState === "a_valider") b.classList.add("btn-primary");
+      const noteInp = m.querySelector("#tm-note");
+      if (noteInp) noteInp.value = "";
+    });
+  });
+  const tmNoteClear = m.querySelector("#tm-note-clear");
+  if (tmNoteClear) tmNoteClear.addEventListener("click", () => { m.querySelector("#tm-note").value = ""; });
+  const close = () => m.remove();
+  m.querySelector("#tm-close").addEventListener("click", close);
+  m.querySelector("#tm-cancel").addEventListener("click", close);
+  m.querySelector("#tm-save").addEventListener("click", () => {
+    const noteInp = m.querySelector("#tm-note");
+    const noteRaw = (noteInp && noteInp.value || "").trim();
+    let noteManuelle = null;
+    if (noteRaw !== "") {
+      const n = parseFloat(noteRaw.replace(",", "."));
+      const max = q.points || 1;
+      if (!isNaN(n) && n >= 0 && n <= max) noteManuelle = Math.round(n * 2) / 2;
+    }
+    st.validations[q.id] = {
+      state: pickedState,
+      commentaire: m.querySelector("#tm-com").value,
+      modifie_le: new Date().toISOString(),
+      par: "enseignant",
+      modifie_apres_par_eleve: false,
+      note_manuelle: noteManuelle,
+    };
+    recomputeEpreuveScoreFormation(chap, st);
+    saveState(); close(); renderMain();
+  });
+}
+
+function openValidationFinaleEnseignantFormation(chap) {
+  const st = getFormationChapState(chap.id).epreuve;
+  const old = document.getElementById("vf-modal");
+  if (old) old.remove();
+  const m = document.createElement("div");
+  m.id = "vf-modal"; m.className = "modal";
+  m.innerHTML = `
+    <div class="modal-content" style="max-width:520px;">
+      <button class="modal-close" id="vf-close">×</button>
+      <h3 style="color:var(--c-primary-dark); margin-top:0;">Validation finale par l’enseignant·e</h3>
+      <p style="font-size:.92rem;">En validant, vous confirmez que :</p>
+      <ul style="font-size:.92rem; line-height:1.6;">
+        <li>Les réponses ont été vérifiées (notamment les phrases rédigées).</li>
+        <li>La note finale (${st.note_sur_20}/20) reflète le niveau de l’élève.</li>
+        <li>L’élève peut télécharger son attestation officielle.</li>
+      </ul>
+      <div style="margin-top:14px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Nom de l’enseignant·e</label>
+        <input type="text" id="vf-name" style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:8px;" placeholder="Ex : Mme Martin">
+      </div>
+      <div style="margin-top:10px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Commentaire (facultatif)</label>
+        <textarea id="vf-com" rows="2" style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:8px;"></textarea>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" id="vf-cancel">Annuler</button>
+        <button class="btn btn-accent" id="vf-save">Valider l’attestation</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  m.querySelector("#vf-close").addEventListener("click", () => m.remove());
+  m.querySelector("#vf-cancel").addEventListener("click", () => m.remove());
+  m.querySelector("#vf-save").addEventListener("click", () => {
+    st.validation_finale = {
+      state: "validee",
+      enseignant: m.querySelector("#vf-name").value.trim(),
+      commentaire: m.querySelector("#vf-com").value.trim(),
+      date: new Date().toISOString(),
+    };
+    st.valide = true;
+    saveState(); m.remove(); renderMain();
+  });
+}
+
+function openFinalNoteOverrideFormation(chap) {
+  const st = getFormationChapState(chap.id).epreuve;
+  const old = document.getElementById("note-modal");
+  if (old) old.remove();
+  const currentNote = st.note_sur_20 ?? st.note_calculee_sur_20 ?? 0;
+  const calcNote = st.note_calculee_sur_20 ?? st.note_sur_20 ?? 0;
+  const override = st.note_override && st.note_override.active ? st.note_override : null;
+
+  const m = document.createElement("div");
+  m.id = "note-modal";
+  m.className = "modal";
+  m.innerHTML = `
+    <div class="modal-content" style="max-width:520px;">
+      <button class="modal-close" id="note-close">×</button>
+      <h3 style="color:var(--c-primary-dark); margin-top:0;">Modifier la note finale</h3>
+      <p style="font-size:.92rem; color:var(--c-muted);">
+        Note calculée automatiquement : <b>${calcNote} / 20</b>.
+      </p>
+      <div style="margin-top:14px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Note finale sur 20</label>
+        <input type="number" id="note-value" min="0" max="20" step="0.5"
+          value="${escapeHtml(currentNote)}"
+          style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:8px;">
+      </div>
+      <div style="margin-top:10px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Justification / commentaire (facultatif)</label>
+        <textarea id="note-comment" rows="3" style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:8px;">${escapeHtml(override?.commentaire || "")}</textarea>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+        ${override ? `<button class="btn btn-danger" id="note-remove">Revenir à la note automatique</button>` : ""}
+        <button class="btn" id="note-cancel">Annuler</button>
+        <button class="btn btn-primary" id="note-save">Enregistrer la note</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  const close = () => m.remove();
+  m.querySelector("#note-close").addEventListener("click", close);
+  m.querySelector("#note-cancel").addEventListener("click", close);
+  const remove = m.querySelector("#note-remove");
+  if (remove) {
+    remove.addEventListener("click", () => {
+      st.note_override = null;
+      recomputeEpreuveScoreFormation(chap, st);
+      saveState(); close(); renderMain();
+    });
+  }
+  m.querySelector("#note-save").addEventListener("click", () => {
+    let value = parseFloat(m.querySelector("#note-value").value);
+    if (!Number.isFinite(value)) value = 0;
+    value = Math.max(0, Math.min(20, Math.round(value * 10) / 10));
+    st.note_sur_20 = value;
+    st.note_override = {
+      active: true, value,
+      commentaire: m.querySelector("#note-comment").value.trim(),
+      modifie_le: new Date().toISOString(),
+    };
+    saveState(); close(); renderMain();
+  });
+}
+
+function renderEpreuveViewFormation(chapId) {
+  const chap = FORMATION_PSR_CHAPITRES.find(c => c.id === chapId);
+  if (!chap || !chap.module || !chap.module.epreuve) {
+    const err = document.createElement("div");
+    err.textContent = "Pas d’épreuve disponible pour ce chapitre.";
+    return err;
+  }
+  const ep = chap.module.epreuve;
+  const chapState = getFormationChapState(chapId);
+  const st = chapState.epreuve;
+  if (!st.reponses) st.reponses = {};
+  if (!st.validations) st.validations = {};
+  // Proxy `sec` pour réutiliser exportAttestationOfficielle / exportGrilleEvaluation
+  const sec = _makeFormationSecProxy(chapId);
+  const mod = chap.module;
+
+  const wrap = document.createElement("div");
+  wrap.className = "epreuve-view";
+
+  // Barre retour
+  const back = document.createElement("div");
+  back.className = "back-bar no-print";
+  back.innerHTML = `<button type="button" class="btn btn-back">← Retour au chapitre</button>`;
+  back.querySelector("button").addEventListener("click", () => {
+    currentView = { type: "formation-chapitre", id: chapId };
+    renderSidebar(); renderMain();
+  });
+  wrap.appendChild(back);
+
+  // En-tête
+  const head = document.createElement("header");
+  head.className = "epreuve-head";
+  head.innerHTML = `
+    <div class="epreuve-eyebrow">Épreuve d’attestation — ${escapeHtml(chap.titre)}</div>
+    <h1>${escapeHtml(ep.titre)}</h1>
+    <div class="epreuve-meta">Durée indicative : ${escapeHtml(ep.duree)} · Seuil de réussite : ${ep.seuil}/20</div>
+  `;
+  wrap.appendChild(head);
+
+  // Toggle "Mode facile"
+  const corrigeeForMode = st.note_sur_20 !== null;
+  const modeFacile = !!st.mode_facile;
+  const modeBox = document.createElement("section");
+  modeBox.className = "epreuve-mode" + (modeFacile ? " on" : "");
+  modeBox.innerHTML = `
+    <div class="em-icon">${modeFacile ? "🌱" : "🎯"}</div>
+    <div class="em-text">
+      <b>${modeFacile ? "Mode facile activé" : "Niveau standard"}</b>
+      <small>${modeFacile
+        ? "Les questions sont simplifiées : QCM avec 2 options, indices visibles."
+        : "Tu galères ? Active le mode facile pour des questions simplifiées."}</small>
+    </div>
+    <button type="button" class="btn ${modeFacile ? "" : "btn-primary"}" id="em-toggle">
+      ${modeFacile ? "Revenir au niveau standard" : "🌱 Activer le mode facile"}
+    </button>
+  `;
+  modeBox.querySelector("#em-toggle").addEventListener("click", () => {
+    if (corrigeeForMode) {
+      if (!confirm("Tu as déjà passé cette épreuve. Si tu changes de mode, tes réponses seront effacées.\n\nContinuer ?")) return;
+      st.reponses = {}; st.note_sur_20 = null; st.note_brute = null; st.note_calculee_sur_20 = null;
+    } else if (Object.keys(st.reponses || {}).length > 0) {
+      if (!confirm("Changer de mode va réinitialiser les réponses en cours.\nContinuer ?")) return;
+      st.reponses = {};
+    }
+    st.mode_facile = !modeFacile;
+    st.mode_facile_qcm = {};
+    saveState(); renderMain();
+  });
+  wrap.appendChild(modeBox);
+
+  // Mise en situation
+  const situ = document.createElement("section");
+  situ.className = "epreuve-situation";
+  situ.innerHTML = `<h3>Mise en situation</h3><p>${escapeHtml(ep.mise_en_situation)}</p>`;
+  wrap.appendChild(situ);
+
+  const qSec = document.createElement("section");
+  qSec.className = "epreuve-questions";
+  qSec.innerHTML = `<h3>Tes réponses</h3>`;
+  const corrigee = st.note_sur_20 !== null;
+
+  ep.questions.forEach((q, qi) => {
+    const block = document.createElement("div");
+    // Normalise phrase_libre → on l'affiche comme phrase
+    const qType = q.type === "phrase_libre" ? "phrase" : q.type;
+    block.className = "epreuve-q epreuve-q-" + qType;
+    const typeBadge = qType === "qcm" ? "QCM"
+                    : qType === "mots" ? "Mots à écrire"
+                    : qType === "image_choice" ? "Image à choisir"
+                    : qType === "classify" ? "Glisser-déposer"
+                    : qType === "vrai_faux" ? "Vrai / Faux"
+                    : qType === "ordering_eval" ? "À remettre dans l’ordre"
+                    : "Phrase à rédiger";
+    const pts = q.points || 1;
+    block.innerHTML = `<div class="q-label">
+      <span class="q-type-badge q-type-${qType}">${typeBadge}</span>
+      <b>${qi+1}. </b>${escapeHtml(q.question)}
+      <span class="q-points">${pts} point${pts>1?"s":""}</span>
+    </div>`;
+
+    if (qType === "qcm") {
+      let optionIdxs = q.options.map((_, i) => i);
+      if (st.mode_facile) {
+        if (!st.mode_facile_qcm) st.mode_facile_qcm = {};
+        if (!st.mode_facile_qcm[q.id]) {
+          const distractors = q.options.map((_, i) => i).filter(i => i !== q.correct);
+          const distIdx = distractors[Math.floor(Math.random() * distractors.length)];
+          const newOpts = [q.correct, distIdx];
+          if (Math.random() > 0.5) newOpts.reverse();
+          st.mode_facile_qcm[q.id] = newOpts;
+        }
+        optionIdxs = st.mode_facile_qcm[q.id];
+      }
+      const opts = document.createElement("div");
+      opts.className = "qcm-options";
+      optionIdxs.forEach((oi, displayIdx) => {
+        const opt = q.options[oi];
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "qcm-opt";
+        b.textContent = String.fromCharCode(65 + displayIdx) + ". " + opt;
+        if (st.reponses[q.id] === oi) b.classList.add("selected");
+        if (corrigee) {
+          b.disabled = true;
+          if (oi === q.correct) b.classList.add("correct");
+          if (oi === st.reponses[q.id] && oi !== q.correct) b.classList.add("wrong");
+        }
+        b.addEventListener("click", () => {
+          if (corrigee) return;
+          st.reponses[q.id] = oi;
+          markResponseModified(st, q.id);
+          scheduleAutoSave(); renderMain();
+        });
+        opts.appendChild(b);
+      });
+      block.appendChild(opts);
+      if (corrigee) {
+        const isOk = st.reponses[q.id] === q.correct;
+        block.appendChild(buildEpreuveFeedback(q, isOk, sec, "auto"));
+      }
+    }
+
+    if (qType === "vrai_faux") {
+      const opts = document.createElement("div");
+      opts.className = "vf-options";
+      [{ v: true, l: "✅ Vrai" }, { v: false, l: "❌ Faux" }].forEach(({ v, l }) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "vf-opt";
+        b.textContent = l;
+        if (st.reponses[q.id] === v) b.classList.add("selected");
+        if (corrigee) {
+          b.disabled = true;
+          if (v === q.correct) b.classList.add("correct");
+          if (v === st.reponses[q.id] && v !== q.correct) b.classList.add("wrong");
+        }
+        b.addEventListener("click", () => {
+          if (corrigee) return;
+          st.reponses[q.id] = v;
+          markResponseModified(st, q.id);
+          scheduleAutoSave(); renderMain();
+        });
+        opts.appendChild(b);
+      });
+      block.appendChild(opts);
+      if (corrigee) {
+        const isOk = st.reponses[q.id] === q.correct;
+        block.appendChild(buildEpreuveFeedback(q, isOk, sec, "auto"));
+      }
+    }
+
+    if (qType === "phrase") {
+      const ta = document.createElement("textarea");
+      ta.rows = st.mode_facile ? 2 : 3;
+      ta.placeholder = "Écris ta réponse en quelques phrases.";
+      ta.value = st.reponses[q.id] || "";
+      ta.disabled = corrigee;
+      ta.addEventListener("input", () => {
+        st.reponses[q.id] = ta.value;
+        markResponseModified(st, q.id);
+        scheduleAutoSave();
+      });
+      block.appendChild(ta);
+      if (st.mode_facile && !corrigee && q.indice_correction) {
+        const ind = document.createElement("div");
+        ind.className = "pmc-indice";
+        ind.innerHTML = `<small>📘 <b>Indice :</b> ${escapeHtml(q.indice_correction)}</small>`;
+        block.appendChild(ind);
+      }
+      if (corrigee) {
+        const valState = (st.validations && st.validations[q.id]) || { state: "a_valider" };
+        const isOk = valState.state === "ok";
+        const isKo = valState.state === "ko";
+        const isPending = valState.state === "a_valider";
+        const fb = document.createElement("div");
+        fb.className = "qcm-feedback " + (isOk ? "ok" : isKo ? "ko" : "warn");
+        const pendingMsg = isPending && !isTeacherMode()
+          ? "📨 <b>En attente de correction par ton·ta enseignant·e</b>.<br /><small>Ta réponse a bien été enregistrée. Cette question vaut <b>0 point pour le moment</b> ; ta note sera mise à jour <b>dès que ton·ta prof aura corrigé</b>.</small>"
+          : "";
+        const alerteModifPost = valState.modifie_apres_par_eleve
+          ? `<div class="alerte-modif-post"><b>⚠️ ATTENTION ENSEIGNANT·E</b><br />L’élève a modifié sa réponse <b>APRÈS ta validation</b>. Pense à revérifier.</div>`
+          : "";
+        const noteManuelleHTML = (valState && typeof valState.note_manuelle === "number")
+          ? `<br /><b style="color:#6d4400;">📝 Note attribuée : ${valState.note_manuelle} / ${q.points || 1}</b>`
+          : (valState && valState.state === "presque")
+            ? `<br /><b style="color:#8a5500;">🟡 Réponse partielle (½ des points)</b>`
+            : "";
+        const stateLabel = isOk ? "✅ Validé"
+                          : isKo ? "❌ Non validé"
+                          : (valState && valState.state === "presque") ? "🟡 Partiellement validé"
+                          : "⏳ À valider par l’enseignant";
+        fb.innerHTML = `
+          <b>${stateLabel}</b>
+          ${noteManuelleHTML}
+          ${pendingMsg ? "<br />" + pendingMsg : ""}
+          ${valState.commentaire ? "<br /><i>Commentaire : " + escapeHtml(valState.commentaire) + "</i>" : ""}
+          ${q.indice_correction ? `<br /><small><b>Indice de correction :</b> ${escapeHtml(q.indice_correction)}</small>` : ""}
+          ${alerteModifPost}
+        `;
+        block.appendChild(fb);
+        if (isTeacherMode()) {
+          const teach = document.createElement("button");
+          teach.type = "button"; teach.className = "btn btn-sm";
+          teach.textContent = "🔓 Validation enseignant";
+          teach.style.marginTop = "8px";
+          teach.addEventListener("click", () => openTeacherValidationFormation(chap, q));
+          block.appendChild(teach);
+        }
+      }
+    }
+
+    qSec.appendChild(block);
+  });
+  wrap.appendChild(qSec);
+
+  // Action / résultat
+  const actionBox = document.createElement("section");
+  actionBox.className = "epreuve-action";
+
+  if (st.note_sur_20 === null) {
+    const answeredCount = ep.questions.filter(q => {
+      const ans = st.reponses[q.id];
+      if (ans === undefined || ans === null) return false;
+      if (Array.isArray(ans)) return ans.some(v => String(v || "").trim());
+      return String(ans).trim() !== "";
+    }).length;
+    const missingCount = ep.questions.length - answeredCount;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-primary btn-lg";
+    btn.textContent = "Valider mon épreuve";
+    if (missingCount > 0) {
+      const info = document.createElement("p");
+      info.className = "hint";
+      info.textContent = `${missingCount} question(s) sans réponse : tu peux quand même valider. Elles compteront 0 ou seront vérifiées par l’enseignant.`;
+      actionBox.appendChild(info);
+    }
+    btn.addEventListener("click", () => {
+      st.date = new Date().toISOString().slice(0, 10);
+      st.tentative = (st.tentative || 0) + 1;
+      st.validations = st.validations || {};
+      ep.questions.forEach(q => {
+        if ((q.type === "phrase" || q.type === "phrase_libre") && !st.validations[q.id]) {
+          st.validations[q.id] = { state: "a_valider", commentaire: "" };
+        }
+      });
+      recomputeEpreuveScoreFormation(chap, st);
+      saveState(); renderMain();
+      setTimeout(() => showAutoEvalEpreuve(sec, ep), 600);
+    });
+    actionBox.appendChild(btn);
+  } else {
+    const reussi = st.note_sur_20 >= ep.seuil;
+    const noteOverrideActive = st.note_override && st.note_override.active;
+    const noteAuto = st.note_calculee_sur_20 ?? st.note_sur_20;
+    actionBox.innerHTML = `
+      <div class="epreuve-result ${reussi ? "ok" : "ko"}">
+        <div class="er-eyebrow">Résultat — Tentative ${st.tentative}</div>
+        <div class="er-note">${st.note_sur_20} <small>/ 20</small></div>
+        ${noteOverrideActive ? `<div class="er-msg"><small>Note finale ajustée par l’enseignant·e. Calcul automatique : ${noteAuto} / 20.</small></div>` : ""}
+        <div class="er-msg">
+          ${reussi
+            ? "Note au-dessus du seuil. Ton enseignant·e doit maintenant valider l’attestation pour que tu puisses la télécharger."
+            : `Note actuellement en dessous du seuil (${ep.seuil}/20). L’enseignant·e peut corriger les questions à phrase ; la note se recalculera automatiquement.`}
+        </div>
+      </div>
+    `;
+    const validee = st.validation_finale && st.validation_finale.state === "validee";
+    const aValider = ep.questions.some(q => (q.type === "phrase" || q.type === "phrase_libre") &&
+      (!(st.validations && st.validations[q.id]) || st.validations[q.id].state === "a_valider"));
+
+    // Corrigé QCM
+    const remed = document.createElement("div");
+    remed.className = "epreuve-remediation epreuve-corrige";
+    remed.innerHTML = `<h3>📝 Corrigé : tes réponses expliquées</h3>
+      <p class="corrige-intro">Pour chaque question, tu retrouves ce que tu as répondu, la bonne réponse et un petit rappel.</p>`;
+    const list = document.createElement("ol");
+    list.className = "corrige-list";
+    ep.questions.forEach((q, qi) => {
+      if (q.type !== "qcm") return;
+      const userAnsIdx = st.reponses[q.id];
+      const userAns = (userAnsIdx !== undefined && userAnsIdx !== null) ? q.options[userAnsIdx] : null;
+      const isOk = userAnsIdx === q.correct;
+      const explication = q.explication
+        ? escapeHtml(q.explication)
+        : `Retiens bien : la bonne réponse est <b>${escapeHtml(q.options[q.correct])}</b>.`;
+      const li = document.createElement("li");
+      li.className = "corrige-item " + (isOk ? "corrige-ok" : "corrige-ko");
+      li.innerHTML = `
+        <div class="corrige-q"><span class="corrige-badge">${isOk ? "✅" : "❌"}</span> <b>Question ${qi+1} :</b> ${escapeHtml(q.question)}</div>
+        <div class="corrige-row corrige-eleve"><span class="corrige-label">Ta réponse :</span> ${userAns !== null ? escapeHtml(userAns) : "<i>Pas de réponse</i>"}</div>
+        <div class="corrige-row corrige-bonne"><span class="corrige-label">Bonne réponse :</span> <b>${escapeHtml(q.options[q.correct])}</b></div>
+        <div class="corrige-row corrige-explic"><span class="corrige-label">💡 Pour comprendre :</span> ${explication}</div>`;
+      list.appendChild(li);
+    });
+    if (list.children.length > 0) {
+      remed.appendChild(list);
+      actionBox.appendChild(remed);
+    }
+
+    // Espace enseignant / résultat
+    const teach = document.createElement("div");
+    teach.className = "epreuve-await-teacher" + (validee ? " ok" : "");
+    if (validee) {
+      teach.innerHTML = `
+        <h3>✅ Attestation validée</h3>
+        <p>Validée par <b>${escapeHtml(st.validation_finale.enseignant || "—")}</b>
+        ${st.validation_finale.date ? " — " + escapeHtml(new Date(st.validation_finale.date).toLocaleDateString("fr-FR")) : ""}</p>
+        ${st.validation_finale.commentaire ? `<p><i>« ${escapeHtml(st.validation_finale.commentaire)} »</i></p>` : ""}
+      `;
+      const btnA = document.createElement("button");
+      btnA.type = "button"; btnA.className = "btn btn-accent btn-lg";
+      btnA.textContent = "🏆 Télécharger mon attestation (Word)";
+      btnA.style.marginTop = "8px";
+      btnA.style.display = "none";
+      btnA.addEventListener("click", () => {
+        // Réutilise l’export attestation officielle générique en passant le proxy + module
+        try { exportAttestationOfficielle(sec, mod); }
+        catch (e) {
+          console.warn("Export attestation officielle échoue, fallback sur attestation chapitre.", e);
+          exportFormationChapitreAttestationWord(chap, chapState);
+        }
+      });
+      teach.appendChild(btnA);
+
+      if (isTeacherMode()) {
+        const btnUndo = document.createElement("button");
+        btnUndo.type = "button"; btnUndo.className = "btn";
+        btnUndo.textContent = "Retirer la validation (enseignant)";
+        btnUndo.style.marginTop = "6px";
+        btnUndo.style.marginLeft = "6px";
+        btnUndo.style.fontSize = ".85rem";
+        btnUndo.addEventListener("click", () => {
+          if (!confirm("Retirer la validation enseignant ?")) return;
+          st.validation_finale = { state: "en_attente" };
+          saveState(); renderMain();
+        });
+        teach.appendChild(btnUndo);
+      }
+    } else if (isTeacherMode()) {
+      teach.innerHTML = `
+        <h3>🔓 Espace enseignant</h3>
+        <p>Note actuelle : <b>${st.note_sur_20} / 20</b>
+        ${reussi ? "(au-dessus du seuil de " + ep.seuil + "/20)" : "(en dessous du seuil de " + ep.seuil + "/20)"}.</p>
+        <p>Tu peux corriger chaque question à phrase ci-dessus (bouton « 🔓 Validation enseignant »).</p>
+      `;
+      if (aValider) {
+        const w = document.createElement("p");
+        w.style.color = "#8a5a00"; w.style.fontWeight = "600";
+        w.innerHTML = "⚠ Certaines questions à phrase doivent encore être corrigées.";
+        teach.appendChild(w);
+      }
+      const btnVal = document.createElement("button");
+      btnVal.type = "button";
+      btnVal.className = reussi ? "btn btn-primary btn-lg" : "btn btn-danger btn-lg";
+      btnVal.textContent = reussi
+        ? "Valider l’attestation (enseignant)"
+        : "Valider l’attestation malgré tout (sous le seuil)";
+      btnVal.style.marginTop = "8px";
+      btnVal.addEventListener("click", () => {
+        if (!reussi && !confirm("L’élève est en dessous du seuil de validation (" + ep.seuil + "/20).\nValider l’attestation quand même ?")) return;
+        openValidationFinaleEnseignantFormation(chap);
+      });
+      teach.appendChild(btnVal);
+    }
+
+    if (st.note_override && st.note_override.active) {
+      const noteInfo = document.createElement("p");
+      noteInfo.style.marginTop = "10px";
+      noteInfo.innerHTML = `<b>Note finale ajustée :</b> ${escapeHtml(st.note_sur_20)} / 20
+        <small>(calcul automatique : ${escapeHtml(st.note_calculee_sur_20 ?? st.note_sur_20)} / 20)</small>
+        ${st.note_override.commentaire ? `<br /><i>${escapeHtml(st.note_override.commentaire)}</i>` : ""}`;
+      teach.appendChild(noteInfo);
+    }
+    if (isTeacherMode()) {
+      const btnNote = document.createElement("button");
+      btnNote.type = "button"; btnNote.className = "btn";
+      btnNote.textContent = "Modifier la note finale (enseignant)";
+      btnNote.style.marginTop = "8px";
+      btnNote.style.marginRight = "6px";
+      btnNote.addEventListener("click", () => openFinalNoteOverrideFormation(chap));
+      teach.appendChild(btnNote);
+
+      const btnG = document.createElement("button");
+      btnG.type = "button"; btnG.className = "btn";
+      btnG.textContent = "Télécharger la grille d’évaluation (Word)";
+      btnG.style.marginTop = "8px"; btnG.style.display = "block";
+      btnG.addEventListener("click", () => {
+        try { exportGrilleEvaluation(sec, mod); }
+        catch (e) { console.warn("Grille indisponible : ", e); alert("Grille d’évaluation indisponible pour ce chapitre."); }
+      });
+      teach.appendChild(btnG);
+    }
+
+    actionBox.appendChild(teach);
+
+    // Bouton auto-évaluation manuelle (toujours dispo après note)
+    const btnAuto = document.createElement("button");
+    btnAuto.type = "button"; btnAuto.className = "btn";
+    btnAuto.textContent = "📌 Faire mon auto-évaluation";
+    btnAuto.style.marginTop = "10px"; btnAuto.style.marginRight = "6px";
+    btnAuto.addEventListener("click", () => showAutoEvalEpreuve(sec, ep));
+    actionBox.appendChild(btnAuto);
+
+    // Recommencer
+    const btnReset = document.createElement("button");
+    btnReset.type = "button"; btnReset.className = "btn";
+    btnReset.textContent = "Recommencer l’épreuve";
+    btnReset.style.marginTop = "10px";
+    btnReset.addEventListener("click", () => {
+      if (!confirm("Recommencer l’épreuve effacera les réponses précédentes.\nContinuer ?")) return;
+      st.reponses = {}; st.note_brute = null; st.note_sur_20 = null; st.date = null;
+      st.note_calculee_sur_20 = null; st.note_override = null;
+      st.validations = {}; st.validation_finale = null;
+      saveState(); renderMain();
+    });
+    actionBox.appendChild(btnReset);
+  }
+  wrap.appendChild(actionBox);
+  return wrap;
+}
+
+/* ----- Export Word : fiche élève (réponses du chapitre) ----- */
+function exportFormationChapitreFicheWord(chap, st) {
+  console.warn("Export Word désactivé: exportFormationChapitreFicheWord"); return;
+  if (typeof syncIdentiteToInfos === "function") syncIdentiteToInfos();
+  const e = state.infos_eleve || {};
+  const ep = chap.module.epreuve;
+  const totalPts = ep.questions.reduce((s, q) => s + (q.points || 0), 0);
+  const date = (st.epreuve && st.epreuve.date) ? new Date(st.epreuve.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR");
+  const reponsesHtml = ep.questions.map((q, i) => {
+    const ans = st.epreuve.reponses[q.id];
+    let rep = "<i>Pas de réponse</i>";
+    if (ans !== undefined && ans !== "" && ans !== null) {
+      if (q.type === "qcm" && typeof ans === "number" && q.options[ans]) rep = escapeHtml(q.options[ans]);
+      else if (q.type === "vrai_faux") rep = ans === true ? "Vrai" : "Faux";
+      else if (q.type === "phrase_libre") rep = escapeHtml(String(ans));
+    }
+    return `<p><b>Q${i+1} (${q.points} pts) — ${escapeHtml(q.question)}</b><br />Ma réponse : ${rep}</p>`;
+  }).join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fiche — ${escapeHtml(chap.titre)}</title>
+  <style>body{font-family:Calibri,Arial,sans-serif;color:#1a2330;font-size:11pt;line-height:1.4;}h1{color:#1f4f86;}h2{color:#1f4f86;border-bottom:1pt solid #1f4f86;padding-bottom:2pt;}p{margin:6pt 0;}</style>
+  </head><body>
+    <h1>Ma fiche — ${escapeHtml(chap.titre)}</h1>
+    <p><b>Élève :</b> ${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"} &nbsp; <b>Classe :</b> ${escapeHtml(e.classe||"—")} &nbsp; <b>Date :</b> ${escapeHtml(date)}</p>
+    <h2>Score</h2>
+    <p><b>${st.epreuve.score ?? "—"} / ${totalPts}</b> points (seuil : ${ep.seuil}) — ${st.epreuve.valide ? "✅ Attestation validée" : "À retravailler"}</p>
+    <h2>Mes réponses</h2>
+    ${reponsesHtml}
+    <h2>Ce que je dois retenir</h2>
+    <ul>${(chap.objectifs_eleve || []).map(o => `<li>Être capable de ${escapeHtml(o)}.</li>`).join("")}</ul>
+  </body></html>`;
+  const blob = new Blob(["﻿", html], { type: "application/msword" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `Fiche_${chap.id}_${(e.nom||"eleve")}.doc`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+/* ----- Export Word : attestation simple pour un chapitre formation PSR ----- */
+function exportFormationChapitreAttestationWord(chap, st) {
+  console.warn("Export Word désactivé: exportFormationChapitreAttestationWord"); return;
+  if (typeof syncIdentiteToInfos === "function") syncIdentiteToInfos();
+  const e = state.infos_eleve || {};
+  const ep = chap.module.epreuve;
+  const totalPts = ep.questions.reduce((s, q) => s + (q.points || 0), 0);
+  const date = (st.epreuve && st.epreuve.date) ? new Date(st.epreuve.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR");
+  const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="UTF-8"><title>Attestation — ${escapeHtml(chap.titre)}</title>
+  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+  <style>@page{size:29.7cm 21cm;mso-page-orientation:landscape;margin:1.5cm;}body{font-family:"Times New Roman",serif;color:#1a2330;text-align:center;}h1{color:#1f4f86;font-size:28pt;margin-top:30pt;}h2{font-size:18pt;color:#1f4f86;}.cadre{border:3pt double #1f4f86;padding:30pt;margin:20pt auto;max-width:24cm;}p{font-size:13pt;line-height:1.6;}.note{font-size:16pt;font-weight:bold;color:#1f6b3d;}</style>
+  </head><body>
+  <div class="cadre">
+    <h1>ATTESTATION DE FORMATION</h1>
+    <h2>Formation PSR — ${escapeHtml(chap.titre)}</h2>
+    <p>Il est attesté que</p>
+    <p style="font-size:18pt;"><b>${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</b></p>
+    <p>élève en ${escapeHtml(e.classe || "CAP PSR")} au ${escapeHtml(e.lycee || "—")},</p>
+    <p>a satisfait avec succès aux exigences de l'épreuve d'attestation portant sur</p>
+    <p><b><i>${escapeHtml(ep.objectif || chap.titre)}</i></b></p>
+    <p class="note">Note : ${st.epreuve.score} / ${totalPts} (seuil : ${ep.seuil})</p>
+    <p>Fait le ${escapeHtml(date)}.</p>
+  </div>
+  </body></html>`;
+  const blob = new Blob(["﻿", html], { type: "application/msword" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `Attestation_${chap.id}_${(e.nom||"eleve")}.doc`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
