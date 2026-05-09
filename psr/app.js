@@ -376,7 +376,7 @@ const EXOS_DND = {
           photo: "ressources_eco/materiel_et_fournitures_pour_plats_a_emporter/sachets/sac_plastique_reutilisable.jpg" },
       ],
       mots_cles: [
-        { mot: "Loi AGEC",      def: "Loi Anti-Gaspillage et Économie Circulaire (2020) : interdit de plus en plus de plastiques jetables." },
+        { mot: "Loi AGEC",      def: "Loi Anti-Gaspillage et Économie Circulaire (10 février 2020) : limite progressivement les plastiques à usage unique (sacs, pailles, gobelets…)." },
         { mot: "Recyclable",    def: "Peut être transformé en nouveau produit." },
         { mot: "Compostable",   def: "Se décompose naturellement en compost (engrais)." },
         { mot: "Réutilisable",  def: "Peut servir plusieurs fois → zéro déchet." },
@@ -393,9 +393,9 @@ const EXOS_DND = {
         { id: "igp",       label: "IGP",         sub: "Indication géographique" },
       ],
       items: [
-        { id: "i1", label: "Pas de pesticides chimiques ni d'OGM",            bucket: "ab",        why: "Définition officielle du label AB (Agriculture Biologique)." },
+        { id: "i1", label: "Pas de pesticides de synthèse ni d'OGM",            bucket: "ab",        why: "Définition officielle du label AB (Agriculture Biologique)." },
         { id: "i2", label: "Lentille verte du Puy",                          bucket: "aop",       why: "Lien à un terroir précis (Auvergne) → AOP." },
-        { id: "i3", label: "Poulet de Bresse fermier",                       bucket: "labelrouge",why: "Qualité supérieure liée à un mode d'élevage particulier." },
+        { id: "i3", label: "Poulet de Bresse fermier",                       bucket: "aop",       why: "Le Poulet de Bresse est le seul poulet AOP au monde (zone géographique strictement délimitée en Bresse)." },
         { id: "i4", label: "Jambon de Bayonne",                              bucket: "igp",       why: "Lien plus large à une région → IGP." },
         { id: "i5", label: "Roquefort",                                       bucket: "aop",       why: "AOP célèbre, lien à un terroir précis." },
         { id: "i6", label: "Logo vert avec une feuille européenne",          bucket: "ab",        why: "Le logo officiel européen Bio est vert avec une feuille étoilée." },
@@ -404,7 +404,7 @@ const EXOS_DND = {
       ],
       mots_cles: [
         { mot: "SIQO",  def: "Signes Officiels d'Identification de la Qualité et de l'Origine." },
-        { mot: "AB",    def: "Agriculture Biologique : sans pesticides chimiques, sans OGM." },
+        { mot: "AB",    def: "Agriculture Biologique : sans pesticides de synthèse, sans OGM." },
         { mot: "AOP",   def: "Appellation d'Origine Protégée. Ex : Roquefort, Beaufort, Lentille du Puy." },
         { mot: "IGP",   def: "Indication Géographique Protégée. Lien plus large à une région." },
       ],
@@ -784,7 +784,7 @@ const EXOS_DND = {
         { id: "vf5", label: "La plonge (vaisselle sale) est une zone PROPRE.", bucket: "f", why: "FAUX. La plonge est une zone SALE." },
         { id: "vf6", label: "La chaîne du froid pour les produits frais c'est 0 à 4 °C.", bucket: "v", why: "VRAI. Au-dessus de 4 °C, les bactéries se multiplient vite." },
         { id: "vf7", label: "Si je n'ai pas la place pour 2 zones, je peux ignorer la marche en avant.", bucket: "f", why: "FAUX. On l'applique DANS LE TEMPS : sale → nettoyage → propre." },
-        { id: "vf8", label: "Le règlement européen CE 852/2004 oblige à respecter la marche en avant.", bucket: "v", why: "VRAI. C'est une obligation légale en France et en Europe." },
+        { id: "vf8", label: "Le règlement européen CE 852/2004 impose l'hygiène et l'HACCP ; la marche en avant est la méthode pratique recommandée pour les respecter.", bucket: "v", why: "VRAI. Le règlement CE 852/2004 impose les principes d'hygiène et HACCP. La marche en avant est l'organisation pratique (recommandée par les Bonnes Pratiques d'Hygiène) pour les appliquer." },
       ],
       mots_cles: [
         { mot: "Règle d'or",          def: "On avance du sale vers le propre, on ne revient JAMAIS en arrière." },
@@ -886,9 +886,11 @@ const SECTIONS_SCHEMA = [
       attentes: "Une fiche complète, sérieuse, valorisante.",
     },
     fields: [
-      // RGPD : champs identité personnelle retirés du formulaire (nom, prénom, lycée, classe, année scolaire)
-      // Conservés en données pour rétro-compat (import JSON ancien). Le code élève et la classe
-      // viennent désormais de window.PSR_USER (auth.js).
+      { id: "nom",             label: "Nom",                                  type: "text" },
+      { id: "prenom",          label: "Prénom",                               type: "text" },
+      { id: "lycee",           label: "Lycée",                                type: "text", hint: "Nom de l'établissement" },
+      { id: "classe",          label: "Classe",                               type: "text" },
+      { id: "annee_scolaire",  label: "Année scolaire",                       type: "text", hint: "Ex : 2025-2026" },
       { id: "titre_dossier",   label: "Titre de mon dossier (mon projet)",   type: "text", hint: "Ex : Ma cuisine éco-responsable" },
       { id: "photo_profil",    label: "Une photo de moi (optionnelle)",       type: "photo_profil" },
       { id: "valeurs",         label: "Mes valeurs",                          type: "checklist",
@@ -1680,9 +1682,9 @@ Tu peux remplacer parfois la viande par un plat de lentilles ou de pois chiches.
         {
           id: "c3",
           titre: "❄️ Bien ranger son frigo : un geste anti-gaspi essentiel",
-          texte: `Le frigo n'est pas un endroit uniforme : il a des **zones de températures différentes** !
+          texte: `Le frigo **domestique à froid statique** n'est pas un endroit uniforme : il a des **zones de températures différentes** ! (En cuisine pro, la chambre froide est à 0–4 °C partout.)
 
-**Les 5 zones du frigo**
+**Les 5 zones du frigo domestique**
 
 - 🔝 **Le haut** (4-6 °C) — restes, fromages, yaourts
 - ➖ **Le milieu** (3-4 °C) — viandes cuites, plats préparés
@@ -1754,7 +1756,7 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
 
 **Les principaux labels**
 
-- 🌿 **AB** (Agriculture Biologique) — sans pesticides chimiques ni OGM. Certification européenne.
+- 🌿 **AB** (Agriculture Biologique) — sans pesticides de synthèse ni OGM. Certification européenne.
 - 🏆 **Label Rouge** — garantit une qualité supérieure liée à un mode de production particulier
 - 🇪🇺 **AOP** (Appellation d'Origine Protégée européenne) — produit lié à un terroir précis. *Exemples : Roquefort, Beaufort, Lentille du Puy.*
 - 🇫🇷 **AOC** — équivalent français de l'AOP
@@ -1810,8 +1812,8 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
           options: ["Date à ne jamais dépasser", "Date de dégustation maximale", "Date de Durabilité Minimale : le produit reste sûr après, mais peut perdre du goût", "Date de mise en rayon"],
           correct: 2, explication: "DDM = Date de Durabilité Minimale. Après cette date, le produit reste sain mais peut perdre du goût." },
         { id: "q7",  lie_cours: "c6", question: "Le label AB garantit :",
-          options: ["Un très bon goût", "Une agriculture sans pesticides chimiques ni OGM", "Le meilleur prix", "Un produit français"],
-          correct: 1, explication: "Le label AB (Agriculture Biologique) garantit pas de pesticides chimiques ni d’OGM." },
+          options: ["Un très bon goût", "Une agriculture sans pesticides de synthèse ni OGM", "Le meilleur prix", "Un produit français"],
+          correct: 1, explication: "Le label AB (Agriculture Biologique) garantit pas de pesticides de synthèse ni d’OGM." },
         { id: "q8",  lie_cours: "c6", question: "AOP signifie :",
           options: ["À offrir aux parents", "Appellation d'Origine Protégée (produit d'un terroir précis)", "Agriculture Officielle de Paris", "Association des Origines Produites"],
           correct: 1, explication: "AOP = Appellation d’Origine Protégée. Le produit vient d’un terroir précis (ex. lentille du Puy)." },
@@ -2164,7 +2166,7 @@ C'est le fait d'acheter des produits cultivés ou fabriqués **près de chez nou
 5. Se **laver les mains** régulièrement (avant chaque nouvelle tâche)
 6. Respecter la **chaîne du froid** (0 à 4 °C pour les produits sensibles)
 
-> ⚠️ Important : ces règles ne sont pas optionnelles. Ce sont des **obligations légales** (règlement européen CE 852/2004 sur l'hygiène des denrées alimentaires).`,
+> ⚠️ Important : le règlement européen **CE 852/2004** impose les principes d'**hygiène** et l'**HACCP**. La marche en avant est la **méthode pratique** recommandée par les Bonnes Pratiques d'Hygiène (BPH) pour respecter ces obligations et éviter les contaminations croisées.`,
         },
       ],
       qcm: [
@@ -4308,7 +4310,7 @@ const FORMATION_PSR_CHAPITRES = [
     mots_cles: [
       { mot: "HACCP", def: "Méthode pour analyser les dangers et les maîtriser. Vient de l’anglais : Hazard Analysis Critical Control Points (en gros : repérer où ça peut mal tourner)." },
       { mot: "PMS (Plan de Maîtrise Sanitaire)", def: "Document obligatoire qui décrit comment ton établissement applique les règles d’hygiène. C’est la « bible » de la cuisine." },
-      { mot: "Point critique (CCP)", def: "Étape clé où un danger peut survenir. On la surveille de près (ex. cuisson à cœur ≥ 63 °C)." },
+      { mot: "Point critique (CCP)", def: "Étape clé où un danger peut survenir. On la surveille de près (ex. cuisson à cœur : volaille 74 °C, viande hachée 70 °C, autres viandes/poisson ≥ 63 °C)." },
       { mot: "Bonnes Pratiques d’Hygiène (BPH)", def: "Toutes les règles de base à appliquer tous les jours : tenue, lavage des mains, marche en avant, nettoyage…" },
       { mot: "Traçabilité", def: "Pouvoir suivre un produit depuis sa livraison jusqu’au client. Permet de retrouver vite un problème." },
       { mot: "Plat témoin", def: "Petit échantillon (100 g) gardé 5 jours à +3 °C pour pouvoir l’analyser en cas de souci." },
@@ -4388,7 +4390,7 @@ const FORMATION_PSR_CHAPITRES = [
           correct: 1, explication: "L’HACCP repose sur 7 principes (L-R-F-S-C-V-E)." },
         { id: "q4", lie_cours: "c2", question: "Un point critique (CCP), c’est…",
           options: ["Une étape clé où un danger doit être maîtrisé (ex. cuisson à cœur).", "Le moment du service du midi.", "Un défaut sur un aliment."],
-          correct: 0, explication: "Un CCP est une étape où le danger doit absolument être maîtrisé (ex. cuisson ≥ 63 °C)." },
+          correct: 0, explication: "Un CCP est une étape où le danger doit absolument être maîtrisé (ex. cuisson à cœur : volaille 74 °C, hachée 70 °C, autres ≥ 63 °C)." },
         { id: "q5", lie_cours: "c3", question: "Le PMS contient…",
           options: ["Seulement des recettes.", "Les BPH, le plan HACCP et la traçabilité.", "La liste des fournisseurs."],
           correct: 1, explication: "Le PMS = 3 parties : BPH + plan HACCP + traçabilité." },
@@ -6031,7 +6033,7 @@ const FORMATION_PSR_CHAPITRES = [
       { mot: "Étiquetage produit fini", def: "Étiquette obligatoire avec nom, DLC, allergènes, lot." },
       { mot: "Sac isotherme", def: "Sac avec packs réfrigérants pour transporter du frais en respectant la chaîne du froid." },
       { mot: "Plat témoin", def: "Petit échantillon de chaque produit servi (100 g) gardé 5 jours à +3 °C." },
-      { mot: "Loi AGEC", def: "Loi anti-gaspillage qui interdit le plastique jetable et favorise les emballages compostables." },
+      { mot: "Loi AGEC", def: "Loi anti-gaspillage (2020) qui limite progressivement les plastiques à usage unique (sacs, pailles, gobelets…) et favorise les emballages compostables." },
       { mot: "Couverts à usage unique", def: "Couverts en bois ou compostables fournis avec le repas." },
       { mot: "Information allergène", def: "Le client à emporter doit connaître les allergènes (étiquette ou affichage)." }
     ],
@@ -7983,46 +7985,7 @@ let savedRealState = null;
 let recapFilter = "all"; // all | not_started | in_progress | done | to_review | validated
 let oralMode = "detailed"; // detailed | concise
 
-/* =====================================================================
-   AUTH GUARD — Bloque les épreuves d'attestation en mode invité
-   ===================================================================== */
-function requireUserForEpreuve(onSuccess) {
-  if (window.PSR_USER) { onSuccess(); return; }
-  // Overlay de blocage stylé
-  let ov = document.getElementById("psr-epreuve-block-overlay");
-  if (ov) ov.remove();
-  ov = document.createElement("div");
-  ov.id = "psr-epreuve-block-overlay";
-  ov.style.cssText = "position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.85);display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,sans-serif;";
-  ov.innerHTML = `
-    <div style="background:#fff;border-radius:16px;padding:32px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">
-      <div style="font-size:48px;margin-bottom:8px">🔒</div>
-      <h2 style="margin:0 0 12px;color:#0f172a">Épreuve d'attestation</h2>
-      <p style="color:#475569;line-height:1.5;margin:0 0 8px">Pour passer cette épreuve, entre ton <b>code élève</b>.</p>
-      <p style="color:#64748b;font-size:14px;margin:0 0 20px">Ta note sera enregistrée dans « Mon espace ».</p>
-      <button id="psr-eb-login" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;margin-right:8px">🔐 Entrer mon code</button>
-      <button id="psr-eb-later" style="background:#e2e8f0;color:#0f172a;border:none;border-radius:10px;padding:12px 22px;font-weight:600;font-size:15px;cursor:pointer">Plus tard</button>
-    </div>`;
-  document.body.appendChild(ov);
-  document.getElementById("psr-eb-login").onclick = () => {
-    ov.remove();
-    if (window.PSR_AUTH && typeof window.PSR_AUTH.requireLogin === "function") {
-      window.PSR_AUTH.requireLogin(() => {
-        // Recharger pour activer la sync cloud + chargement state Firebase
-        location.reload();
-      }, { title: "Code élève requis", subtitle: "Entre ton code pour passer l'épreuve d'attestation." });
-    } else {
-      alert("Module d'authentification indisponible.");
-    }
-  };
-  document.getElementById("psr-eb-later").onclick = () => ov.remove();
-}
-
 function loadState() {
-  // Mode invité : pas de chargement local, on démarre toujours sur un état vierge
-  if (!window.PSR_USER && !window.IS_TEACHER_TOOL) {
-    return buildDefaultState();
-  }
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try { return mergeWithSchema(JSON.parse(raw)); }
@@ -8032,13 +7995,6 @@ function loadState() {
 }
 
 function saveState(markSaved = true) {
-  // Mode invité : aucune sauvegarde (ni locale ni cloud)
-  if (!window.PSR_USER && !window.IS_TEACHER_TOOL) {
-    if (markSaved && typeof updateSaveIndicator === "function") {
-      updateSaveIndicator(false, "Mode invité — non sauvegardé");
-    }
-    return;
-  }
   state.meta.date_derniere_modification = new Date().toISOString();
   // V4.60 : toute modification doit déclencher le rappel "à exporter"
   dirtySinceExport = true;
@@ -8070,23 +8026,9 @@ function saveState(markSaved = true) {
   if (markSaved) updateSaveIndicator(true);
   // V4.60 : met à jour le rappel "à exporter" même quand saveState est appelé directement
   if (typeof updateExportIndicator === "function") updateExportIndicator();
-  // Phase 4 : synchro cloud (debounced 5 s côté firebase_psr.js, photos filtrées)
-  try {
-    if (!demoModeActive && !window.IS_TEACHER_TOOL &&
-        window.PSR_FIREBASE && typeof window.PSR_FIREBASE.savePortfolioState === "function") {
-      window.PSR_FIREBASE.savePortfolioState(state);
-    }
-  } catch (e) { console.warn("[Phase4] savePortfolioState:", e); }
 }
 
 function scheduleAutoSave() {
-  // Mode invité : pas d'auto-save
-  if (!window.PSR_USER && !window.IS_TEACHER_TOOL) {
-    if (typeof updateSaveIndicator === "function") {
-      updateSaveIndicator(false, "🔓 Mode invité — non sauvegardé");
-    }
-    return;
-  }
   clearTimeout(autoSaveTimer);
   updateSaveIndicator(false, "Modifications non enregistrées…");
   // V4.13 : marqueur de modifications non exportées
@@ -8108,7 +8050,7 @@ function buildDefaultState() {
       date_derniere_modification: now,
       date_dernier_export: null, // V4.13 : suivi du dernier export JSON
     },
-    infos_eleve: { nom: "", prenom: "", lycee: "", classe: (window.PSR_USER && window.PSR_USER.classe) || "", annee_scolaire: "", titre_dossier: "", userCode: (window.PSR_USER && window.PSR_USER.userCode) || "" },
+    infos_eleve: { nom: "", prenom: "", lycee: "", classe: "", annee_scolaire: "", titre_dossier: "" },
     // V4.20 : préférences utilisateur (additif, sûr pour l'existant)
     preferences: { couleur_theme: "bleu", contraste: false, avatar: null },
     // V4.20 : notes personnelles type post-it
@@ -8626,7 +8568,7 @@ function renderSection(sectionId) {
     actions.className = "module-actions";
     actions.innerHTML = `
       <button type="button" class="btn" id="btn-fiche-preview">Aperçu plein écran</button>
-      <button type="button" class="btn btn-accent" id="btn-fiche-word" style="display:none">Exporter ma fiche en Word</button>
+      <button type="button" class="btn btn-accent" id="btn-fiche-word">Exporter ma fiche en Word</button>
       <button type="button" class="btn" id="btn-fiche-pdf">Imprimer / PDF</button>
     `;
     actions.querySelector("#btn-fiche-preview").addEventListener("click", () => openFichePreview(false));
@@ -10391,7 +10333,6 @@ function openFichePreview(autoPrint) {
 }
 
 function exportFicheIdentiteWord() {
-  console.warn("Export Word désactivé: exportFicheIdentiteWord"); return;
   const html = buildFicheIdentiteHTML(false);
   const blob = new Blob(["﻿", html], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
@@ -10752,7 +10693,7 @@ function renderProjetView() {
   const actions = document.createElement("div");
   actions.className = "projet-actions no-print";
   actions.innerHTML = `
-    <button class="btn btn-accent btn-lg" id="btn-projet-word" style="display:none">📝 Exporter ma fiche projet en Word</button>
+    <button class="btn btn-accent btn-lg" id="btn-projet-word">📝 Exporter ma fiche projet en Word</button>
     <button class="btn"     id="btn-projet-print">🖨️ Imprimer cette fiche</button>
   `;
   actions.querySelector("#btn-projet-word").addEventListener("click", exportFicheProjetWord);
@@ -12092,7 +12033,6 @@ function blocCout() {
 
 /* ---------- Export Word "Fiche projet" ---------- */
 function exportFicheProjetWord() {
-  console.warn("Export Word désactivé: exportFicheProjetWord"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const nomMenu = fv("mon_menu","nom_menu") || "(menu sans nom)";
@@ -12376,33 +12316,6 @@ function renderHomeView() {
     ${nomMenu ? `<div class="h2-greet-menu">🍽️ <b>${escapeHtml(nomMenu)}</b></div>` : ""}
   `;
   wrap.appendChild(greet);
-
-  /* ===== 1bis. BANNIÈRE Mode invité ===== */
-  if (!window.PSR_USER) {
-    const guest = document.createElement("section");
-    guest.style.cssText = "background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #fcd34d;border-radius:12px;padding:16px 20px;margin:12px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap;";
-    guest.innerHTML = `
-      <div style="font-size:36px">🔓</div>
-      <div style="flex:1;min-width:240px;color:#78350f">
-        <b style="font-size:16px">Tu es en mode invité</b>
-        <div style="font-size:13px;margin-top:4px;line-height:1.4">
-          Tu peux explorer librement tous les cours et exercices.<br>
-          Pour <b>sauvegarder ton travail</b> et <b>passer les épreuves d'attestation</b>, entre ton code élève (donné par ton enseignant).
-        </div>
-      </div>
-      <button type="button" id="home-guest-login" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer">🔐 Entrer mon code</button>
-    `;
-    setTimeout(() => {
-      const b = document.getElementById("home-guest-login");
-      if (b) b.onclick = () => {
-        if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
-          window.PSR_AUTH.requireLogin(() => location.reload(),
-            { title: "Code élève", subtitle: "Entre ton code pour sauvegarder ton travail." });
-        }
-      };
-    }, 0);
-    wrap.appendChild(guest);
-  }
 
   /* ===== 2. ALERTE si fiche identité vide ===== */
   if (!e.prenom && !e.nom) {
@@ -12888,7 +12801,7 @@ const GLOTERMES = {
   "ab": {
     titre: "Label AB (Agriculture Biologique)",
     mots: ["label ab", "agriculture biologique"],
-    def: "Logo officiel français qui garantit qu'un produit est issu de l'agriculture biologique : sans pesticides chimiques, OGM ni engrais de synthèse.",
+    def: "Logo officiel français qui garantit qu'un produit est issu de l'agriculture biologique : sans pesticides de synthèse, sans OGM ni engrais chimiques.",
   },
   "aop": {
     titre: "AOP (Appellation d'Origine Protégée)",
@@ -13211,11 +13124,9 @@ function renderPedagogicalModule(sec, mod) {
       // Pour la 1re tentative seulement (sinon trop intrusif aux re-tentatives)
       const dejaPasse = noteConnue;
       if (!validee && !dejaPasse && !verifierPretPourEpreuve(sec, mod)) return;
-      requireUserForEpreuve(() => {
-        currentView = { type: "epreuve", id: sec.id };
-        renderMain(); renderSidebar();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+      currentView = { type: "epreuve", id: sec.id };
+      renderMain(); renderSidebar();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
     actions.appendChild(btnEp);
 
@@ -13224,14 +13135,12 @@ function renderPedagogicalModule(sec, mod) {
       btnAtt.type = "button";
       btnAtt.className = "btn btn-accent";
       btnAtt.textContent = "Télécharger mon attestation (Word)";
-      btnAtt.style.display = "none";
       btnAtt.addEventListener("click", () => exportAttestationOfficielle(sec, mod));
       actions.appendChild(btnAtt);
       const btnGr = document.createElement("button");
       btnGr.type = "button";
       btnGr.className = "btn";
       btnGr.textContent = "Grille d'évaluation pour l'enseignant (Word)";
-      btnGr.style.display = "none";
       btnGr.addEventListener("click", () => exportGrilleEvaluation(sec, mod));
       actions.appendChild(btnGr);
     }
@@ -13696,37 +13605,6 @@ function syncEpreuveToEvaluations(sec) {
 }
 
 /* ----- Recalcul de la note avec validations enseignant + note manuelle (V4.68) ---- */
-/* V4.69 — Phase 2 : pont Firestore (auto-publication des notes d'épreuves).
-   Helper safe : no-op si firebase_psr.js n'est pas chargé. */
-function _psrPushEvaluation({ devoirId, titre, type, module_id, st }) {
-  try {
-    if (!window.PSR_FIREBASE || typeof window.PSR_FIREBASE.saveEvaluation !== "function") return;
-    if (!st || typeof st.note_sur_20 !== "number") return;
-    const note = st.note_sur_20;
-    const tentative = st.tentative || 1;
-    const appreciation = "Auto-correction. Score : " + note + "/20. Tentative " + tentative + ".";
-    window.PSR_FIREBASE.saveEvaluation({
-      devoirId,
-      titre,
-      note_finale: note,
-      bareme: 20,
-      appreciation,
-      publie: true,
-      autocorrected: true,
-      type,
-      module_id,
-      reponses: (st.reponses && typeof st.reponses === "object") ? st.reponses : {}
-    });
-    window.PSR_FIREBASE.saveCopie && window.PSR_FIREBASE.saveCopie({
-      devoirId,
-      titre,
-      reponses: (st.reponses && typeof st.reponses === "object") ? st.reponses : {},
-      type,
-      module_id
-    });
-  } catch (e) { /* silencieux : Firestore est best-effort */ }
-}
-
 function recomputeEpreuveScore(sec) {
   const ep = SECTIONS_SCHEMA.find(s => s.id === sec.id).module.epreuve;
   const st = sec.module_state.epreuve_state;
@@ -13784,18 +13662,6 @@ function recomputeEpreuveScore(sec) {
   }
   // V4.8 : synchronise automatiquement la note dans les évaluations visibles à l'élève
   syncEpreuveToEvaluations(sec);
-  // V4.69 — Phase 2 : auto-publie la note dans Firestore (Mon espace + cockpit prof)
-  try {
-    const schemaSec = SECTIONS_SCHEMA.find(s => s.id === sec.id);
-    const titre = "Épreuve — " + ((schemaSec && schemaSec.titre) || sec.id);
-    _psrPushEvaluation({
-      devoirId: "psr_jd_" + sec.id,
-      titre,
-      type: "chef_oeuvre",
-      module_id: sec.id,
-      st
-    });
-  } catch (e) {}
 }
 
 /* =====================================================================
@@ -14277,7 +14143,6 @@ function renderEpreuveView(secId) {
       actionBox.appendChild(info);
     }
     btn.addEventListener("click", () => {
-      if (!window.PSR_USER) { requireUserForEpreuve(() => location.reload()); return; }
       // V4.7 : calcul mixte (QCM + mots auto + phrases en attente enseignant)
       st.date = new Date().toISOString().slice(0, 10);
       st.tentative = (st.tentative || 0) + 1;
@@ -14371,7 +14236,6 @@ function renderEpreuveView(secId) {
       btnA.type = "button"; btnA.className = "btn btn-accent btn-lg";
       btnA.textContent = "🏆 Télécharger mon attestation (Word)";
       btnA.style.marginTop = "8px";
-      btnA.style.display = "none";
       btnA.addEventListener("click", () => exportAttestationOfficielle(sec, mod));
       teach.appendChild(btnA);
 
@@ -14446,7 +14310,7 @@ function renderEpreuveView(secId) {
       btnG.type = "button"; btnG.className = "btn";
       btnG.textContent = "Télécharger la grille d'évaluation (Word)";
       btnG.style.marginTop = "8px";
-      btnG.style.display = "none";
+      btnG.style.display = "block";
       btnG.addEventListener("click", () => exportGrilleEvaluation(sec, mod));
       teach.appendChild(btnG);
     }
@@ -14473,7 +14337,6 @@ function renderEpreuveView(secId) {
 
 /* ---------- ATTESTATION OFFICIELLE (Word, paysage, sérieuse, sans emojis) ---------- */
 function exportAttestationOfficielle(sec, mod) {
-  console.warn("Export Word désactivé: exportAttestationOfficielle"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const ep = mod.epreuve;
@@ -14594,7 +14457,6 @@ function exportAttestationOfficielle(sec, mod) {
    niveaux NT/I/A/M cochés automatiquement à partir des réponses, note totale,
    remédiations CIBLÉES par critère faiblement réussi. */
 function exportGrilleEvaluation(sec, mod) {
-  console.warn("Export Word désactivé: exportGrilleEvaluation"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const ep = mod.epreuve;
@@ -14833,7 +14695,6 @@ function exportGrilleEvaluation(sec, mod) {
 
 /* ---------- (Ancienne) Attestation J2 simple — conservée pour compat ---------- */
 function exportAttestationAssiette(sec, mod) {
-  console.warn("Export Word désactivé: exportAttestationAssiette"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const st = sec.module_state;
@@ -18441,7 +18302,6 @@ function fieldValue(sectionId, fieldId) {
 }
 
 function exportFicheMenuWord() {
-  console.warn("Export Word désactivé: exportFicheMenuWord"); return;
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const mainPhoto = findMainPhoto();
@@ -18560,8 +18420,6 @@ function bindGlobalEvents() {
   on("btn-print-oral", "click", printOralOnly);
   on("btn-word-menu", "click", exportFicheMenuWord);
   on("btn-reset", "click", resetAll);
-  // Phase 4 : restauration depuis le cloud
-  on("btn-cloud-restore", "click", cloudRestoreState);
 
   document.querySelectorAll(".view-btn").forEach(b => {
     b.addEventListener("click", () => selectView(b.dataset.view));
@@ -18974,65 +18832,7 @@ function updateHeaderAvatar() {
   name.textContent = e.prenom || "Mon profil";
 }
 
-/* Phase 4 — réinjecte les photos locales (data:image/...) dans un state cloud,
-   où les photos ont été remplacées par "<photo locale>". Best effort, par chemin équivalent. */
-function _mergeLocalPhotos(target, localSrc) {
-  if (!target || !localSrc) return target;
-  function walk(t, l) {
-    if (!t || !l || typeof t !== "object" || typeof l !== "object") return;
-    if (Array.isArray(t) && Array.isArray(l)) {
-      const n = Math.min(t.length, l.length);
-      for (let i = 0; i < n; i++) {
-        if (typeof t[i] === "string" && t[i] === "<photo locale>" &&
-            typeof l[i] === "string" && l[i].startsWith("data:image/")) {
-          t[i] = l[i];
-        } else walk(t[i], l[i]);
-      }
-      return;
-    }
-    for (const k of Object.keys(t)) {
-      if (!(k in l)) continue;
-      if (typeof t[k] === "string" && t[k] === "<photo locale>" &&
-          typeof l[k] === "string" && l[k].startsWith("data:image/")) {
-        t[k] = l[k];
-      } else walk(t[k], l[k]);
-    }
-  }
-  walk(target, localSrc);
-  return target;
-}
-
-/* Phase 4 — bouton "Récupérer mon travail depuis Mon espace" */
-async function cloudRestoreState() {
-  if (!window.PSR_FIREBASE || typeof window.PSR_FIREBASE.loadPortfolioState !== "function") {
-    alert("La synchronisation cloud n'est pas disponible.");
-    return;
-  }
-  if (!window.PSR_USER || !window.PSR_USER.userCode) {
-    alert("Tu dois être connecté avec ton code élève pour récupérer ton travail.");
-    return;
-  }
-  const ok = confirm(
-    "Cela va récupérer ton travail depuis Mon espace (cloud) et écraser tes modifications locales non synchronisées.\n\n" +
-    "Continuer ?"
-  );
-  if (!ok) return;
-  try {
-    const remote = await window.PSR_FIREBASE.loadPortfolioState();
-    if (!remote) { alert("Aucun travail trouvé dans Mon espace pour ce code."); return; }
-    const merged = mergeWithSchema(remote);
-    // Conserve les photos locales si présentes
-    state = _mergeLocalPhotos(merged, state);
-    saveState(true);
-    renderAll();
-    alert("✅ Travail restauré depuis Mon espace.");
-  } catch (e) {
-    console.error("[Phase4] cloudRestoreState:", e);
-    alert("Erreur lors de la récupération : " + e.message);
-  }
-}
-
-async function init() {
+function init() {
   // V4.15 : si on est dans correction.html, l'outil enseignant gère lui-même son init
   if (window.IS_TEACHER_TOOL) {
     if (typeof initTeacherCorrection === "function") {
@@ -19041,27 +18841,6 @@ async function init() {
     return;
   }
   state = loadState();
-  // Phase 4 : tente une fusion cloud → local AVANT le rendu initial.
-  // Stratégie : si l'état distant est plus récent (date_derniere_modification), on l'adopte.
-  // Sinon on garde le local (cas offline ou travail local plus récent → push au prochain save).
-  try {
-    if (!demoModeActive && !window.IS_TEACHER_TOOL &&
-        window.PSR_USER && window.PSR_USER.userCode &&
-        window.PSR_FIREBASE && typeof window.PSR_FIREBASE.loadPortfolioState === "function") {
-      const remote = await window.PSR_FIREBASE.loadPortfolioState();
-      if (remote && remote.meta && remote.meta.date_derniere_modification) {
-        const tRemote = new Date(remote.meta.date_derniere_modification).getTime() || 0;
-        const tLocal  = new Date(state?.meta?.date_derniere_modification || 0).getTime() || 0;
-        if (tRemote > tLocal) {
-          // remote gagne — fusionne avec schéma puis ré-applique les photos locales (non envoyées au cloud).
-          const merged = mergeWithSchema(remote);
-          // Re-injecte les photos locales (les valeurs cloud étant "<photo locale>")
-          state = _mergeLocalPhotos(merged, state);
-          console.info("[Phase4] State remote plus récent — adopté.");
-        }
-      }
-    }
-  } catch (e) { console.warn("[Phase4] init merge cloud:", e); }
   // V2.1 : sync bidirectionnelle identité / infos_eleve à l'ouverture
   syncInfosToIdentite();
   syncIdentiteToInfos();
@@ -19083,72 +18862,6 @@ async function init() {
   showSplashScreen();
   // V4.61 : tutoriel "Première visite" pour les nouveaux élèves
   setTimeout(() => maybeShowTutorielPremiereVisite(), 1500);
-  // Modèle d'accès invité / connecté
-  renderAuthUI();
-}
-
-/* =====================================================================
-   AUTH UI — Badge top + bloc sidebar + bannière home
-   ===================================================================== */
-function renderAuthUI() {
-  const badge = document.getElementById("psr-auth-badge");
-  const sideBlock = document.getElementById("sidebar-auth-block");
-  const u = window.PSR_USER;
-
-  if (badge) {
-    if (u) {
-      badge.style.background = "#dcfce7";
-      badge.style.color = "#166534";
-      badge.style.border = "1px solid #86efac";
-      badge.innerHTML = `✅ Connecté · <b style="margin:0 4px">${escapeHtml(u.userCode)}</b>
-        <button id="psr-badge-logout" type="button" style="background:#475569;border:none;color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px">🚪 Déconnexion</button>`;
-      const lo = document.getElementById("psr-badge-logout");
-      if (lo) lo.onclick = () => { if (window.PSR_AUTH) window.PSR_AUTH.logout(); };
-    } else {
-      badge.style.background = "#fef3c7";
-      badge.style.color = "#92400e";
-      badge.style.border = "1px solid #fcd34d";
-      badge.innerHTML = `🔓 Mode invité
-        <button id="psr-badge-login" type="button" style="background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px">🔐 Connexion</button>`;
-      const li = document.getElementById("psr-badge-login");
-      if (li) li.onclick = () => {
-        if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
-          window.PSR_AUTH.requireLogin(() => location.reload(),
-            { title: "Code élève", subtitle: "Entre ton code pour sauvegarder ton travail." });
-        }
-      };
-    }
-  }
-
-  if (sideBlock) {
-    if (u) {
-      sideBlock.innerHTML = `
-        <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:8px 10px;font-size:12px;color:#166534;margin-bottom:6px">
-          👤 Connecté en tant que <b>${escapeHtml(u.userCode)}</b>
-        </div>
-        <button id="sb-auth-reload" class="btn" type="button" style="margin-bottom:4px">🔄 Recharger mon travail</button>
-        <button id="sb-auth-logout" class="btn btn-danger" type="button">🚪 Me déconnecter</button>
-      `;
-      const r = document.getElementById("sb-auth-reload");
-      if (r) r.onclick = () => { if (typeof cloudRestoreState === "function") cloudRestoreState(); };
-      const lo = document.getElementById("sb-auth-logout");
-      if (lo) lo.onclick = () => { if (window.PSR_AUTH) window.PSR_AUTH.logout(); };
-    } else {
-      sideBlock.innerHTML = `
-        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400e;margin-bottom:6px">
-          🔓 Mode invité — rien n'est sauvegardé
-        </div>
-        <button id="sb-auth-login" class="btn btn-primary" type="button">🔐 Entrer mon code pour sauvegarder</button>
-      `;
-      const li = document.getElementById("sb-auth-login");
-      if (li) li.onclick = () => {
-        if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
-          window.PSR_AUTH.requireLogin(() => location.reload(),
-            { title: "Code élève", subtitle: "Entre ton code pour sauvegarder ton travail." });
-        }
-      };
-    }
-  }
 }
 
 /* V4.61 — Helpers pré-remplissage étiquetage depuis le menu composé */
@@ -20181,11 +19894,11 @@ const GLOSSAIRE = [
   { mot: "AMAP", def: "Association pour le Maintien d'une Agriculture Paysanne. Tu commandes ton panier directement à un producteur, sans intermédiaire. C'est de la vente directe (circuit court)." },
   { mot: "AOP", def: "Appellation d'Origine Protégée. Label européen qui garantit qu'un produit vient d'un endroit précis (ex : Lentille verte du Puy)." },
   { mot: "AOC", def: "Appellation d'Origine Contrôlée. Version française de l'AOP. Garantit l'origine et le savoir-faire." },
-  { mot: "AB (Agriculture Biologique)", def: "Label européen. Garantit que le produit est cultivé sans pesticides chimiques ni OGM." },
+  { mot: "AB (Agriculture Biologique)", def: "Label européen. Garantit que le produit est cultivé sans pesticides de synthèse ni OGM." },
   { mot: "AGEC (Loi)", def: "Loi Anti-Gaspillage et Économie Circulaire (2020). Interdit de jeter les invendus, encadre les emballages plastiques." },
   { mot: "Anti-gaspi", def: "Tout ce qui aide à ne pas jeter de la nourriture : faire une liste, utiliser les restes, bien conserver, etc." },
   { mot: "Bâtisseur", def: "Rôle des protéines : construire les muscles, les os, les cheveux. On en a besoin pour grandir et se réparer." },
-  { mot: "Bio", def: "Produit cultivé sans pesticides chimiques, conformément aux règles de l'agriculture biologique. Souvent labellisé AB." },
+  { mot: "Bio", def: "Produit cultivé sans pesticides de synthèse, conformément aux règles de l'agriculture biologique. Souvent labellisé AB." },
   { mot: "Bioplastique", def: "Plastique fabriqué à partir de plantes (maïs, canne à sucre). Souvent compostable, plus écolo que le plastique classique." },
   { mot: "Biodégradable", def: "Qui peut se décomposer naturellement sous l'action des bactéries. Pas forcément compostable (peut prendre des années)." },
   { mot: "Calcium", def: "Minéral indispensable pour les os et les dents. On en trouve surtout dans les produits laitiers (lait, yaourt, fromage)." },
@@ -20401,7 +20114,7 @@ const FLASHCARDS_DECKS = [
     id: "labels",
     titre: "Les labels officiels (SIQO)",
     cartes: [
-      { recto: "Que garantit le label AB ?", verso: "Agriculture Biologique : sans pesticides chimiques ni OGM." },
+      { recto: "Que garantit le label AB ?", verso: "Agriculture Biologique : sans pesticides de synthèse ni OGM." },
       { recto: "Que veut dire AOP ?", verso: "Appellation d'Origine Protégée (label européen, lié à un terroir)." },
       { recto: "Que veut dire AOC ?", verso: "Appellation d'Origine Contrôlée (version française de l'AOP)." },
       { recto: "Que garantit le Label Rouge ?", verso: "Une qualité supérieure liée au mode de production." },
@@ -20451,7 +20164,7 @@ const FLASHCARDS_DECKS = [
       { recto: "Peut-on utiliser le même couteau pour la viande crue et la salade ?", verso: "NON. Toujours des ustensiles séparés ou parfaitement désinfectés." },
       { recto: "Que faire si on n'a pas la place pour 2 zones séparées ?", verso: "On respecte la marche en avant DANS LE TEMPS : sale → nettoyage → propre." },
       { recto: "Cite 3 erreurs typiques de contamination croisée.", verso: "Cartons sur plan propre · Même couteau cru/prêt-à-manger · Pas de lavage des mains · Déchets en zone propre." },
-      { recto: "Pourquoi la marche en avant est-elle obligatoire ?", verso: "Pour éviter les intoxications alimentaires des clients (obligation légale CE 852/2004)." },
+      { recto: "Pourquoi appliquer la marche en avant ?", verso: "Pour éviter les contaminations croisées et les intoxications alimentaires. C'est la méthode pratique des Bonnes Pratiques d'Hygiène (BPH) pour respecter le règlement CE 852/2004 (hygiène + HACCP)." },
     ],
   },
 ];
@@ -22051,9 +21764,9 @@ const CONVERSATIONS = [
     echanges: [
       { from: "pnj", txt: "Eh, pourquoi tu mets que des trucs bio dans ton menu ? Le bio c'est juste un truc qui coûte cher pour rien 🤷" },
       { from: "choix", options: [
-        { txt: "Le bio garantit qu'il n'y a pas de pesticides chimiques ni d'OGM. C'est un vrai label.", ok: true },
-        { txt: "Tu as raison, c'est juste pour faire bien.", ok: false, retour: "Le bio garantit pourtant l'absence de pesticides chimiques." },
-        { txt: "Aucune idée, je fais comme on m'a dit.", ok: false, retour: "Tu sais pourquoi en fait : c'est cultivé sans pesticides chimiques." },
+        { txt: "Le bio garantit qu'il n'y a pas de pesticides de synthèse ni d'OGM. C'est un vrai label.", ok: true },
+        { txt: "Tu as raison, c'est juste pour faire bien.", ok: false, retour: "Le bio garantit pourtant l'absence de pesticides de synthèse." },
+        { txt: "Aucune idée, je fais comme on m'a dit.", ok: false, retour: "Tu sais pourquoi en fait : c'est cultivé sans pesticides de synthèse." },
       ] },
       { from: "pnj", txt: "Mouais. Mais pourquoi tu vas au marché alors qu'au supermarché c'est moins cher ?" },
       { from: "choix", options: [
@@ -22064,7 +21777,7 @@ const CONVERSATIONS = [
       { from: "pnj", txt: "OK… et les emballages plastiques alors ? Tout le monde en utilise non ?" },
       { from: "choix", options: [
         { txt: "Justement la loi AGEC (2020) interdit certains plastiques jetables. Je préfère du carton recyclable.", ok: true },
-        { txt: "Je m'en fiche, je prends ce qu'il y a.", ok: false, retour: "Non, il y a une loi (AGEC) qui en interdit beaucoup." },
+        { txt: "Je m'en fiche, je prends ce qu'il y a.", ok: false, retour: "Non, il y a une loi (AGEC) qui en interdit certains (sacs, pailles, gobelets…)." },
         { txt: "Le plastique c'est pareil que le carton.", ok: false, retour: "Pas vraiment : le carton est recyclable, le plastique pollue beaucoup plus." },
       ] },
       { from: "pnj", txt: "Et c'est quoi en vrai un produit de saison ?" },
@@ -23662,11 +23375,9 @@ function renderFormationChapitre(chapId) {
         ? `Recommencer l’épreuve (note précédente : ${epSt.note_sur_20}/20)`
         : "Commencer l’épreuve d’attestation";
     btnEp.addEventListener("click", () => {
-      requireUserForEpreuve(() => {
-        currentView = { type: "formation-epreuve", id: chap.id };
-        renderSidebar(); renderMain();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+      currentView = { type: "formation-epreuve", id: chap.id };
+      renderSidebar(); renderMain();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
     card.appendChild(btnEp);
     wrap.appendChild(card);
@@ -23995,7 +23706,6 @@ function renderFormationEpreuve(chap, st) {
   btn.className = "btn btn-primary";
   btn.textContent = st.epreuve.score !== null ? "Recalculer mon score" : "Calculer mon score";
   btn.addEventListener("click", () => {
-    if (!window.PSR_USER) { requireUserForEpreuve(() => location.reload()); return; }
     let score = 0;
     ep.questions.forEach(q => {
       const ans = st.epreuve.reponses[q.id];
@@ -24034,7 +23744,6 @@ function renderFormationEpreuve(chap, st) {
     btnFiche.type = "button";
     btnFiche.className = "btn";
     btnFiche.textContent = "📝 Exporter ma fiche en Word";
-    btnFiche.style.display = "none";
     btnFiche.addEventListener("click", () => exportFormationChapitreFicheWord(chap, st));
     actions.appendChild(btnFiche);
 
@@ -24043,7 +23752,6 @@ function renderFormationEpreuve(chap, st) {
       btnAtt.type = "button";
       btnAtt.className = "btn btn-accent";
       btnAtt.textContent = "🏆 Télécharger mon attestation Word";
-      btnAtt.style.display = "none";
       btnAtt.addEventListener("click", () => exportFormationChapitreAttestationWord(chap, st));
       actions.appendChild(btnAtt);
     }
@@ -24219,17 +23927,6 @@ function recomputeEpreuveScoreFormation(chap, st) {
   // Maintien des champs « legacy » (compat avec exportFormationChapitreAttestationWord)
   st.score = st.note_brute;
   st.valide = st.note_sur_20 >= ep.seuil;
-  // V4.69 — Phase 2 : auto-publie la note dans Firestore
-  try {
-    const titre = "Épreuve — " + (chap.titre || chap.id);
-    _psrPushEvaluation({
-      devoirId: "psr_fpsr_" + chap.id,
-      titre,
-      type: "formation_psr",
-      module_id: chap.id,
-      st
-    });
-  } catch (e) {}
 }
 
 function openTeacherValidationFormation(chap, q) {
@@ -24757,7 +24454,6 @@ function renderEpreuveViewFormation(chapId) {
       btnA.type = "button"; btnA.className = "btn btn-accent btn-lg";
       btnA.textContent = "🏆 Télécharger mon attestation (Word)";
       btnA.style.marginTop = "8px";
-      btnA.style.display = "none";
       btnA.addEventListener("click", () => {
         // Réutilise l’export attestation officielle générique en passant le proxy + module
         try { exportAttestationOfficielle(sec, mod); }
@@ -24867,7 +24563,6 @@ function renderEpreuveViewFormation(chapId) {
 
 /* ----- Export Word : fiche élève (réponses du chapitre) ----- */
 function exportFormationChapitreFicheWord(chap, st) {
-  console.warn("Export Word désactivé: exportFormationChapitreFicheWord"); return;
   if (typeof syncIdentiteToInfos === "function") syncIdentiteToInfos();
   const e = state.infos_eleve || {};
   const ep = chap.module.epreuve;
@@ -24905,7 +24600,6 @@ function exportFormationChapitreFicheWord(chap, st) {
 
 /* ----- Export Word : attestation simple pour un chapitre formation PSR ----- */
 function exportFormationChapitreAttestationWord(chap, st) {
-  console.warn("Export Word désactivé: exportFormationChapitreAttestationWord"); return;
   if (typeof syncIdentiteToInfos === "function") syncIdentiteToInfos();
   const e = state.infos_eleve || {};
   const ep = chap.module.epreuve;
