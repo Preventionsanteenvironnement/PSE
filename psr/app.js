@@ -12315,31 +12315,61 @@ function renderHomeView() {
   const nomMenu = fv("mon_menu", "nom_menu") || "";
   const greet = document.createElement("section");
   greet.className = "h2-greet";
+  const userCode = (window.PSR_USER && window.PSR_USER.userCode) || "";
+  const userClasse = (window.PSR_USER && window.PSR_USER.classe) || "";
   greet.innerHTML = `
     <div class="h2-greet-main">
       <span class="h2-greet-emoji">${emojiSalut}</span>
       <div>
-        <div class="h2-greet-text">${escapeHtml(salutation)}${e.prenom ? ", " : ""}<b>${escapeHtml(e.prenom || "")}</b> !</div>
-        <div class="h2-greet-meta">${escapeHtml(today)}${e.classe ? " · " + escapeHtml(e.classe) : ""}</div>
+        <div class="h2-greet-text">${escapeHtml(salutation)}${userCode ? ", " : " 👋"}<b>${escapeHtml(userCode)}</b>${userCode ? " !" : ""}</div>
+        <div class="h2-greet-meta">${escapeHtml(today)}${userClasse ? " · " + escapeHtml(userClasse) : ""}</div>
       </div>
     </div>
     ${nomMenu ? `<div class="h2-greet-menu">🍽️ <b>${escapeHtml(nomMenu)}</b></div>` : ""}
   `;
   wrap.appendChild(greet);
 
-  /* ===== 2. ALERTE si fiche identité vide ===== */
-  if (!e.prenom && !e.nom) {
+  /* ===== 2. BIENVENUE / Connexion code (uniquement si invité) ===== */
+  if (!window.PSR_USER) {
     const alerte = document.createElement("section");
-    alerte.className = "h2-alerte-identite";
+    alerte.className = "h2-alerte-identite h2-welcome-rgpd";
     alerte.innerHTML = `
-      <span class="hai-emoji">👋</span>
+      <span class="hai-emoji">🔓</span>
       <div class="hai-text">
-        <b>Bienvenue ! On commence par te présenter ?</b>
-        <small>Remplis ta fiche identité (nom, prénom, classe…) pour personnaliser ton portfolio.</small>
+        <b>Bienvenue dans ton Portfolio PSR !</b>
+        <small>Tu peux explorer librement (cours, exercices, glossaire). Pour <b>sauvegarder ton travail</b> et <b>passer les épreuves d'attestation</b>, entre ton <b>code élève</b> — il te suffit d'un seul clic. Aucun nom ni prénom n'est demandé (RGPD).</small>
       </div>
-      <button type="button" class="btn btn-primary" id="hai-btn">🎓 Je remplis maintenant →</button>
+      <div class="hai-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" id="hai-btn-code">🔐 Entrer mon code élève</button>
+        <button type="button" class="btn" id="hai-btn-import">📥 J'ai déjà un fichier JSON</button>
+      </div>
     `;
-    alerte.querySelector("#hai-btn").addEventListener("click", () => selectSection("identite"));
+    const btnCode = alerte.querySelector("#hai-btn-code");
+    if (btnCode) btnCode.addEventListener("click", () => {
+      if (window.PSR_AUTH && window.PSR_AUTH.requireLogin) {
+        window.PSR_AUTH.requireLogin(async () => {
+          // Recharger l'état cloud depuis Firebase (loadPortfolioState)
+          if (window.PSR_FIREBASE && window.PSR_FIREBASE.loadPortfolioState) {
+            try {
+              const cloudState = await window.PSR_FIREBASE.loadPortfolioState();
+              if (cloudState) {
+                state = mergeWithSchema(cloudState);
+                saveState();
+              }
+            } catch (e) { console.warn("Reload cloud:", e); }
+          }
+          renderAll();
+        }, {
+          title: "🔐 Code élève",
+          subtitle: "Entre ton code élève pour <b>charger ton travail</b> et le synchroniser sur tous tes appareils."
+        });
+      }
+    });
+    const btnImport = alerte.querySelector("#hai-btn-import");
+    if (btnImport) btnImport.addEventListener("click", () => {
+      const fileInput = document.getElementById("import-file");
+      if (fileInput) fileInput.click();
+    });
     wrap.appendChild(alerte);
   }
 
