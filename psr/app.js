@@ -8596,6 +8596,22 @@ function renderSection(sectionId) {
      formulaire à gauche, aperçu live de la fiche à droite, qui se met à
      jour à chaque saisie. + boutons d'export en bas. */
   if (sec.id === "identite") {
+    // Bouton bien visible pour ouvrir le constructeur d'avatar
+    const avatarCTA = document.createElement("div");
+    avatarCTA.className = "fiche-avatar-cta";
+    avatarCTA.innerHTML = `
+      <div class="fac-icon">🎨</div>
+      <div class="fac-text">
+        <b>Crée ou modifie ton avatar</b>
+        <small>Personnalise ton visage, tes cheveux, tes vêtements… (anonyme, fun, à refaire à volonté)</small>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-open-avatar-editor">🎨 Ouvrir l'éditeur</button>
+    `;
+    avatarCTA.querySelector("#btn-open-avatar-editor").addEventListener("click", () => {
+      if (typeof openAvatarEditor === "function") openAvatarEditor();
+    });
+    card.appendChild(avatarCTA);
+
     const split = document.createElement("div");
     split.className = "fiche-split";
     split.id = "fiche-live-preview";
@@ -10170,12 +10186,11 @@ function buildFicheIdentiteHTML(forPrint) {
 </style>
 <div class="fiche-live">
   <div class="band">
-    <div class="eyebrow">Fiche de présentation — Chef-d'œuvre CAP</div>
-    <div class="name">${escapeHtml(e.prenom||"Prénom")} ${escapeHtml(e.nom||"Nom")}</div>
+    <div class="eyebrow">Fiche de présentation — Portfolio PSR</div>
+    <div class="name">${(window.PSR_USER && window.PSR_USER.userCode) ? "Code élève : " + escapeHtml(window.PSR_USER.userCode) : "Mode invité"}</div>
     <div class="meta">
-      ${escapeHtml(e.classe||"Classe")}
-      ${e.lycee ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.lycee) : ""}
-      ${e.annee_scolaire ? "&nbsp;&middot;&nbsp;" + escapeHtml(e.annee_scolaire) : ""}
+      ${(window.PSR_USER && window.PSR_USER.classe) ? escapeHtml(window.PSR_USER.classe) : ""}
+      ${(window.PSR_USER && window.PSR_USER.promo) ? "&nbsp;&middot;&nbsp;Promo " + escapeHtml(window.PSR_USER.promo) : ""}
     </div>
     ${titre ? `<div class="projet">${escapeHtml(titre)}</div>` : ""}
   </div>
@@ -10212,7 +10227,7 @@ function buildFicheIdentiteHTML(forPrint) {
 <!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Fiche de présentation — ${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</title>
+<head><meta charset="UTF-8"><title>Fiche de présentation — Portfolio PSR ${(window.PSR_USER && window.PSR_USER.userCode) ? "(" + escapeHtml(window.PSR_USER.userCode) + ")" : ""}</title>
 <style>
   @page { size: 21cm 29.7cm; margin: 0.7cm; }
   body { font-family: "Calibri", "Helvetica Neue", Arial, sans-serif; color: #1a2330; font-size: 11pt; line-height: 1.55; margin: 0; }
