@@ -854,6 +854,34 @@ const KEYWORDS_BANKS = {
    Chaque section contient un bloc pedago (consigne/production/attentes)
    ===================================================================== */
 
+/* =====================================================================
+   2.0 MULTI-PROMO — Chef-d'œuvre par promotion d'élèves
+   Permet d'héberger plusieurs chef-d'œuvres en parallèle (2025-2027,
+   2026-2028…). Le contenu pédagogique reste dans SECTIONS_SCHEMA, on
+   marque seulement quels ids appartiennent à quelle promo.
+   ===================================================================== */
+const CHEFS_DOEUVRE_PROMOS = {
+  "2025-2027": {
+    titre: "Menu équilibré et éco-responsable",
+    description: "Concevoir un menu équilibré et éco-responsable à emporter, le présenter et le défendre à l'oral.",
+    annee_oral: "2027",
+    sections_ids: ["accueil", "identite", "comprendre", "equilibre", "eco_responsable", "etiquetage", "repas_equilibre", "mon_menu"],
+    actif: true
+  }
+  // Futur : "2026-2028": { ... }
+};
+
+function getActiveCdOPromo() {
+  return (window.PSR_USER && window.PSR_USER.promo) || "2025-2027";
+}
+function getChefDoeuvreConfig() {
+  return CHEFS_DOEUVRE_PROMOS[getActiveCdOPromo()] || CHEFS_DOEUVRE_PROMOS["2025-2027"];
+}
+function isSectionForActivePromo(secId) {
+  const cfg = getChefDoeuvreConfig();
+  return cfg.sections_ids.includes(secId);
+}
+
 const SECTIONS_SCHEMA = [
   {
     id: "accueil",
@@ -18530,6 +18558,8 @@ function exportJSON() {
 }
 function doExportJSON() {
   state.meta.date_dernier_export = new Date().toISOString();
+  // Multi-promo : on tague l'export avec la promo active
+  state.meta.promo = (window.PSR_USER && window.PSR_USER.promo) || state.meta.promo || "2025-2027";
   saveState(true);
   dirtySinceExport = false;
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -18553,7 +18583,15 @@ function importJSON(e) {
   const r = new FileReader();
   r.onload = () => {
     try {
-      state = mergeWithSchema(JSON.parse(r.result));
+      const parsed = JSON.parse(r.result);
+      // Multi-promo : avertir si la promo du JSON ne correspond pas à l'utilisateur
+      const importedPromo = (parsed && parsed.meta && parsed.meta.promo) || "2025-2027";
+      const userPromo = (window.PSR_USER && window.PSR_USER.promo) || null;
+      if (userPromo && importedPromo && userPromo !== importedPromo) {
+        alert("Attention : ce JSON provient de la promo " + importedPromo + " alors que tu es connecté en " + userPromo + ". L'import est accepté mais certaines sections peuvent ne pas correspondre.");
+      }
+      state = mergeWithSchema(parsed);
+      if (!state.meta.promo) state.meta.promo = importedPromo;
       saveState();
       // V4.13 : un import vient d'être fait, donc l'état est cohérent avec le dernier export
       dirtySinceExport = false;
@@ -18967,19 +19005,30 @@ function renderSidebarAuthBlock() {
 function updateHeaderAvatar() {
   const visu = document.getElementById("header-avatar-visu");
   const name = document.getElementById("header-avatar-name");
+  const btn  = document.getElementById("header-avatar");
   if (!visu || !name) return;
   const e = state.infos_eleve || {};
   const conf = state.preferences && state.preferences.avatar_compose;
+  let hasAvatar = false;
   if (conf) {
-    visu.innerHTML = buildAvatarSVG(conf, 36);
+    visu.innerHTML = buildAvatarSVG(conf, 54);
+    hasAvatar = true;
   } else if (e.photo_profil) {
     visu.innerHTML = `<img src="${e.photo_profil}" alt="" />`;
+    hasAvatar = true;
   } else if (state.preferences && state.preferences.avatar) {
     visu.innerHTML = `<span class="hav-emoji">${escapeHtml(state.preferences.avatar)}</span>`;
-  } else {
+    hasAvatar = true;
+  } else if (e.prenom || e.nom) {
     const initials = ((e.prenom||"?").charAt(0) + (e.nom||"").charAt(0)).toUpperCase() || "?";
     visu.innerHTML = `<span class="hav-initials">${escapeHtml(initials)}</span>`;
+    hasAvatar = true;
+  } else {
+    visu.innerHTML = `<span class="hav-emoji">👤</span>`;
+    hasAvatar = false;
   }
+  // V5 : toggle l'état "no-avatar" pour le bord pointillé + tooltip "Crée ton avatar"
+  if (btn) btn.classList.toggle("no-avatar", !hasAvatar);
   // V4.27 : on affiche uniquement le prénom (ou "Mon profil" si pas encore renseigné)
   name.textContent = e.prenom || "Mon profil";
 }

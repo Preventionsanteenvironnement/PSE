@@ -37,6 +37,7 @@
     window.PSR_USER = {
       userCode: eleve.userCode,
       classe:   eleve.classe || "",
+      promo:    eleve.promo || "2025-2027",  // NOUVEAU : multi-promo
       isTeacher: false,  // ce portfolio est exclusivement élève
     };
   }
