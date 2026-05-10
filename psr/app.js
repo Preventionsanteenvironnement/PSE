@@ -18927,10 +18927,29 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+function updateSidebarChefDoeuvreTitle() {
+  const titleEl = document.getElementById("sidebar-cdo-title");
+  if (titleEl) {
+    const promo = (window.PSR_USER && window.PSR_USER.promo) ? window.PSR_USER.promo : "";
+    titleEl.textContent = promo ? `📚 Mon chef-d'œuvre ${promo}` : `📚 Mon chef-d'œuvre`;
+  }
+  const oralEl = document.getElementById("sidebar-oral-label");
+  if (oralEl) {
+    try {
+      const cfg = (typeof getChefDoeuvreConfig === "function") ? getChefDoeuvreConfig() : null;
+      const annee = cfg && cfg.annee_oral ? cfg.annee_oral : "";
+      oralEl.textContent = annee ? `🎓 Épreuve orale ${annee}` : `🎓 Épreuve orale`;
+    } catch(_) {
+      oralEl.textContent = `🎓 Épreuve orale`;
+    }
+  }
+}
+
 function renderAll() {
   renderSidebar();
   renderMain();
   updateProgress();
+  try { updateSidebarChefDoeuvreTitle(); } catch(_) {}
   // V4.25 : met à jour l'avatar + prénom dans le header (permanent)
   updateHeaderAvatar();
   // PSR Auth : badge header + bloc sidebar
@@ -23308,18 +23327,15 @@ function setupFloatingTools() {
   // Branchement des boutons sidebar isolés
   const btnGlo = document.getElementById("sidebar-glossaire");
   if (btnGlo) btnGlo.addEventListener("click", openGlossaireComplet);
-  const btnAvatar = document.getElementById("sidebar-mon-avatar");
-  // V4.84 — Le bouton « Ma fiche de présentation » ouvre la section complète
-  // (état civil, lycée, classe, photo, valeurs, qualités, intérêts, projet…).
-  if (btnAvatar) btnAvatar.addEventListener("click", () => selectSection("identite"));
+  // V4.85 — Bouton TOP « Ma fiche de présentation » (panneau jaune)
+  const btnFiche = document.getElementById("sidebar-fiche-presentation");
+  if (btnFiche) btnFiche.addEventListener("click", () => selectSection("identite"));
   // V4.84 — Bouton dédié pour composer l'avatar (apparence visuelle)
   const btnEditAvatar = document.getElementById("sidebar-edit-avatar");
   if (btnEditAvatar) btnEditAvatar.addEventListener("click", openAvatarEditor);
   const btnMonAvis = document.getElementById("sidebar-mon-avis");
   if (btnMonAvis) btnMonAvis.addEventListener("click", openMonAvis);
-  const btnModeEns = document.getElementById("sidebar-mode-enseignant");
-  if (btnModeEns) btnModeEns.addEventListener("click", toggleModeEnseignant);
-  updateModeEnseignantBadge();
+  // V4.85 — Mode enseignant retiré du portfolio élève (cockpit séparé).
 }
 
 document.addEventListener("DOMContentLoaded", init);
