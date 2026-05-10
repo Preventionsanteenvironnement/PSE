@@ -19444,25 +19444,26 @@ function showSplashScreen() {
   const splash = document.createElement("div");
   splash.id = "splash-screen";
   splash.className = "splash";
-  const initials = (escapeHtml((e.prenom||"?").charAt(0)) + escapeHtml((e.nom||"").charAt(0))).toUpperCase() || "?";
+  // RGPD : on n'utilise QUE PSR_USER (jamais state.infos_eleve qui peut contenir d'anciennes données)
+  const _userCode = (window.PSR_USER && window.PSR_USER.userCode) || "";
+  const _classe = (window.PSR_USER && window.PSR_USER.classe) || "";
+  const _promo = (window.PSR_USER && window.PSR_USER.promo) || "";
+  const initials = _userCode ? escapeHtml(_userCode.slice(0, 2)) : "👤";
   splash.innerHTML = `
     <div class="splash-content">
-      <div class="splash-eyebrow">Portfolio Chef-d'œuvre · CAP</div>
+      <div class="splash-eyebrow">📘 Portfolio PSR</div>
 
       <div class="splash-identity">
         <div class="splash-photo">
           ${(state.preferences && state.preferences.avatar_compose)
             ? `<div class="splash-svg-avatar">${buildAvatarSVG(state.preferences.avatar_compose, 80)}</div>`
-            : photo
-              ? `<img src="${photo}" alt="" />`
-              : `<div class="splash-photo-empty">${initials}</div>`}
+            : `<div class="splash-photo-empty">${initials}</div>`}
         </div>
         <div class="splash-meta">
-          <h1 class="splash-name">${escapeHtml(e.prenom || "Bienvenue")} ${escapeHtml(e.nom || "")}</h1>
+          <h1 class="splash-name">${_userCode ? "Bonjour, " + escapeHtml(_userCode) + " !" : "Bienvenue !"}</h1>
           <div class="splash-classe">
-            ${escapeHtml(e.classe || "")}
-            ${e.lycee ? " · " + escapeHtml(e.lycee) : ""}
-            ${e.annee_scolaire ? " · " + escapeHtml(e.annee_scolaire) : ""}
+            ${_classe ? escapeHtml(_classe) : ""}
+            ${_promo ? " · Promo " + escapeHtml(_promo) : ""}
           </div>
           ${e.titre_dossier ? `<div class="splash-projet">${escapeHtml(e.titre_dossier)}</div>` : ""}
         </div>
