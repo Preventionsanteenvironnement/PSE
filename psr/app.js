@@ -8606,11 +8606,9 @@ function renderSection(sectionId) {
     actions.className = "module-actions";
     actions.innerHTML = `
       <button type="button" class="btn" id="btn-fiche-preview">Aperçu plein écran</button>
-      <button type="button" class="btn btn-accent" id="btn-fiche-word">Exporter ma fiche en Word</button>
       <button type="button" class="btn" id="btn-fiche-pdf">Imprimer / PDF</button>
     `;
     actions.querySelector("#btn-fiche-preview").addEventListener("click", () => openFichePreview(false));
-    actions.querySelector("#btn-fiche-word").addEventListener("click", exportFicheIdentiteWord);
     actions.querySelector("#btn-fiche-pdf").addEventListener("click", () => openFichePreview(true));
     card.appendChild(actions);
   }
@@ -10347,7 +10345,6 @@ function openFichePreview(autoPrint) {
       <span>Aperçu de ma fiche</span>
       <div>
         <button class="btn" id="preview-print">Imprimer / PDF</button>
-        <button class="btn" id="preview-word">Télécharger en Word</button>
         <button class="btn btn-back" id="preview-close">Fermer</button>
       </div>
     </div>
@@ -10358,7 +10355,6 @@ function openFichePreview(autoPrint) {
   iframe.srcdoc = html;
 
   modal.querySelector("#preview-close").addEventListener("click", () => modal.remove());
-  modal.querySelector("#preview-word").addEventListener("click", exportFicheIdentiteWord);
   modal.querySelector("#preview-print").addEventListener("click", () => {
     try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch {}
   });
@@ -10370,20 +10366,7 @@ function openFichePreview(autoPrint) {
   }
 }
 
-function exportFicheIdentiteWord() {
-  const html = buildFicheIdentiteHTML(false);
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const e = state.infos_eleve;
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
-  a.href = url;
-  a.download = `FichePresentation_${n}_${new Date().toISOString().slice(0,10)}.doc`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-}
+function exportFicheIdentiteWord() { /* Word disabled — use HTML print instead */ }
 
 /* =====================================================================
    V4 — DÉTECTION INTELLIGENTE DES GROUPES ALIMENTAIRES
@@ -10731,10 +10714,8 @@ function renderProjetView() {
   const actions = document.createElement("div");
   actions.className = "projet-actions no-print";
   actions.innerHTML = `
-    <button class="btn btn-accent btn-lg" id="btn-projet-word">📝 Exporter ma fiche projet en Word</button>
     <button class="btn"     id="btn-projet-print">🖨️ Imprimer cette fiche</button>
   `;
-  actions.querySelector("#btn-projet-word").addEventListener("click", exportFicheProjetWord);
   actions.querySelector("#btn-projet-print").addEventListener("click", () => window.print());
   wrap.appendChild(actions);
 
@@ -11902,10 +11883,8 @@ function renderDossierProjetView() {
 
   const back = document.createElement("div");
   back.className = "back-bar no-print";
-  back.innerHTML = `<button type="button" class="btn btn-back">← Retour à l'accueil</button>
-    <button type="button" class="btn btn-primary" id="dossier-print">🖨️ Exporter en Word</button>`;
+  back.innerHTML = `<button type="button" class="btn btn-back">← Retour à l'accueil</button>`;
   back.querySelector(".btn-back").addEventListener("click", () => selectView("home"));
-  back.querySelector("#dossier-print").addEventListener("click", exportFicheProjetWord);
   wrap.appendChild(back);
 
   const nomMenu = fv("mon_menu","nom_menu") || fv("infos_eleve","titre_dossier") || "Mon menu";
@@ -12070,223 +12049,7 @@ function blocCout() {
 }
 
 /* ---------- Export Word "Fiche projet" ---------- */
-function exportFicheProjetWord() {
-  syncIdentiteToInfos();
-  const e = state.infos_eleve;
-  const nomMenu = fv("mon_menu","nom_menu") || "(menu sans nom)";
-  const desc    = fv("mon_menu","description");
-  const photo   = findMainPhoto();
-  const fournisseurs = fa("eco_responsable", "fournisseurs");
-  const etiquettes   = fa("etiquetage", "etiquettes");
-  const br = s => escapeHtml(s).replace(/\n/g, "<br>");
-
-  // V4.76 — Composantes du menu avec leur étiquette + leurs fournisseurs liés
-  const composantes = [
-    { id: "entree",  lbl: "Entrée",         icon: "🥗" },
-    { id: "plat",    lbl: "Plat principal", icon: "🍛" },
-    { id: "laitage", lbl: "Laitage",        icon: "🧀" },
-    { id: "dessert", lbl: "Dessert",        icon: "🍎" },
-    { id: "boisson", lbl: "Boisson",        icon: "🥤" },
-  ];
-
-  const renderCompoCard = (c) => {
-    const raw = fvRaw("repas_equilibre", c.id);
-    const isObj = raw && typeof raw === "object" && !Array.isArray(raw) && "ingredients" in raw;
-    const nom = isObj ? (raw.nom || "") : (typeof raw === "string" ? raw : "");
-    const ingredients = isObj && Array.isArray(raw.ingredients) ? raw.ingredients : [];
-    const et = findEtiquetteForComposante(c.id);
-    const fournLies = findFournisseursForComposante(c.id);
-    if (!nom && !ingredients.length && !et && !fournLies.length) return "";
-
-    const ingHtml = ingredients.length
-      ? `<div class="ing-list">${ingredients.map(i => `<span class="ing-pill">${br(i.aliment || "")}${i.quantite ? ` <small>(${br(i.quantite)})</small>` : ""}</span>`).join("")}</div>`
-      : "";
-
-    const dateMention = et && et.type_date && et.date
-      ? `${et.type_date.includes("DLC") ? "DLC" : "DDM"}&nbsp;: ${br(et.date)}`
-      : "";
-    const etCard = et ? `
-      <div class="cw-etiq">
-        <div class="cw-etiq-head"><span class="cw-tag cw-tag-blue">🏷️ Étiquette</span> <b>${br(et.nom_produit || "(sans nom)")}</b>
-        ${et.slogan ? ` <i>« ${br(et.slogan)} »</i>` : ""}</div>
-        <table class="cw-etiq-tab">
-          ${et.ingredients ? `<tr><th>Ingrédients</th><td>${br(et.ingredients)}</td></tr>` : ""}
-          ${et.allergenes  ? `<tr><th>Allergènes</th><td class="alerte">⚠️ ${br(et.allergenes)}</td></tr>` : ""}
-          ${dateMention   ? `<tr><th>Date</th><td>${dateMention}</td></tr>` : ""}
-          ${et.poids       ? `<tr><th>Quantité</th><td>${br(et.poids)}</td></tr>` : ""}
-          ${et.tracabilite ? `<tr><th>Traçabilité</th><td>${br(et.tracabilite)}</td></tr>` : ""}
-          ${et.conservation? `<tr><th>Conservation</th><td>${br(et.conservation)}</td></tr>` : ""}
-        </table>
-      </div>` : `<div class="cw-warn">⚠️ Pas encore d'étiquette pour cette composante.</div>`;
-
-    const sourcing = fournLies.length ? `
-      <div class="cw-sourcing">
-        <div class="cw-sourcing-head"><span class="cw-tag cw-tag-green">🛒 Où j'achète</span></div>
-        <table class="cw-srcs-tab">
-          <thead><tr><th>Produit</th><th>Type de commerce</th><th>Lieu / adresse</th><th>Labels &amp; critères éco</th><th>Prix</th></tr></thead>
-          <tbody>
-          ${fournLies.map(f => {
-            const labels = Array.isArray(f.labels) ? f.labels : [];
-            const crits  = Array.isArray(f.criteres_eco) ? f.criteres_eco : [];
-            const tags = [...labels, ...crits].map(x => x.split(" (")[0]);
-            const tagsHtml = tags.length ? tags.map(t => `<span class="cw-pill">${br(t)}</span>`).join(" ") : (f.label ? br(f.label) : "—");
-            return `<tr>
-              <td><b>${br(f.produit || "—")}</b></td>
-              <td>${br(f.type_commerce && f.type_commerce !== "—" ? f.type_commerce : "—")}</td>
-              <td>${br(f.lieu || "—")}</td>
-              <td>${tagsHtml}</td>
-              <td>${br(f.prix_unitaire || "—")}</td>
-            </tr>`;
-          }).join("")}
-          </tbody>
-        </table>
-      </div>` : `<div class="cw-warn">🛒 Aucun fournisseur indiqué pour cette composante.</div>`;
-
-    return `
-      <section class="compo-bloc">
-        <div class="compo-banner"><span class="cb-icon">${c.icon}</span><span class="cb-label">${c.lbl.toUpperCase()}</span></div>
-        ${nom ? `<div class="compo-nom">${br(nom)}</div>` : `<div class="compo-nom-empty">— Pas encore nommé —</div>`}
-        ${ingHtml}
-        ${etCard}
-        ${sourcing}
-      </section>`;
-  };
-
-  // Étiquettes orphelines (pas liées à une composante du menu)
-  const composanteLabels = composantes.map(c => COMPOSANTE_LABEL_MAP[c.id]);
-  const etOrphelines = etiquettes.filter(et => !composanteLabels.includes(et.composante_liee));
-  const fournOrphelins = fournisseurs.filter(f => {
-    return !composanteLabels.includes(f.composante_liee);
-  });
-
-  // Stats globales
-  const total = fournisseurs.length;
-  const compteCriteres = (cri) => fournisseurs.filter(f => Array.isArray(f.criteres_eco) && f.criteres_eco.includes(cri)).length;
-  const nbBio = compteCriteres("Bio");
-  const nbSaison = compteCriteres("De saison") || fournisseurs.filter(f => f.saison === "Oui").length;
-  const nbCircuit = compteCriteres("Circuit court (≤ 1 intermédiaire)") || fournisseurs.filter(f => f.circuit && f.circuit.startsWith("Oui")).length;
-  const budgetTotal = fournisseurs.reduce((s, f) => {
-    const m = String(f.prix_unitaire || "").match(/(\d+[.,]?\d*)/);
-    return s + (m ? parseFloat(m[1].replace(",", ".")) : 0);
-  }, 0);
-
-  const html = `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Fiche projet — ${br(nomMenu)}</title>
-<style>
-  @page { size: 21cm 29.7cm; margin: 0.7cm; }
-  body { font-family: Calibri, Arial, sans-serif; color: #222; font-size: 10.5pt; line-height: 1.5; }
-  .cover { border-bottom: 3pt solid #2f6fb5; padding-bottom: 12pt; margin-bottom: 14pt; }
-  .eyebrow { color: #5b6b7b; text-transform: uppercase; letter-spacing: .12em; font-size: 9pt; }
-  h1 { color: #1f4f86; font-size: 24pt; margin: 4pt 0 4pt; }
-  .author { color: #444; font-size: 11pt; }
-  h2 { color: #1f6b3d; font-size: 13pt; border-bottom: 1pt solid #2e8b57; padding-bottom: 2pt; margin-top: 14pt; }
-  h3 { color: #1f4f86; font-size: 11pt; margin: 8pt 0 4pt; }
-  table { width: 100%; border-collapse: collapse; margin: 4pt 0; }
-  td, th { border: .8pt solid #d2dae3; padding: 4pt 6pt; vertical-align: top; font-size: 9.5pt; }
-  th { background: #eef2f6; color: #1f4f86; text-align: left; }
-  .photo { float: right; width: 6cm; max-height: 5cm; border: 1pt solid #2f6fb5; margin-left: 12pt; }
-
-  /* V4.76 — bloc composante (page-break: avoid si possible) */
-  .compo-bloc { margin: 10pt 0; padding: 8pt 10pt; border: 1pt solid #d4dee8; border-radius: 4pt; background: #fafdff; page-break-inside: avoid; }
-  .compo-banner { background: #1f4f86; color: #fff; padding: 4pt 10pt; border-radius: 4pt; font-weight: 700; letter-spacing: .08em; margin-bottom: 6pt; font-size: 10pt; }
-  .cb-icon { font-size: 12pt; margin-right: 6pt; }
-  .compo-nom { font-size: 13pt; color: #1f4f86; font-weight: 700; margin: 4pt 0; }
-  .compo-nom-empty { color: #999; font-style: italic; }
-  .ing-list { margin: 4pt 0 6pt; }
-  .ing-pill { display: inline-block; background: #fff; border: .5pt solid #d4dee8; border-radius: 10pt; padding: 1pt 8pt; margin: 2pt 4pt 2pt 0; font-size: 9pt; }
-  .cw-tag { display: inline-block; padding: 1pt 6pt; border-radius: 3pt; font-size: 8.5pt; font-weight: 700; letter-spacing: .04em; margin-right: 4pt; }
-  .cw-tag-blue { background: #1f4f86; color: #fff; }
-  .cw-tag-green { background: #2e8b57; color: #fff; }
-  .cw-etiq { margin-top: 6pt; padding: 6pt 8pt; border: 1pt dashed #1f4f86; border-radius: 4pt; background: #fff; }
-  .cw-etiq-head { margin-bottom: 4pt; }
-  .cw-etiq-tab th { width: 22%; font-size: 9pt; }
-  .cw-etiq-tab td { font-size: 9pt; }
-  .cw-sourcing { margin-top: 6pt; padding: 6pt 8pt; border: 1pt solid #2e8b57; border-radius: 4pt; background: #f6fbf7; }
-  .cw-srcs-tab th { background: #d4ebd9; color: #1f6b3d; font-size: 8.5pt; }
-  .cw-srcs-tab td { font-size: 9pt; }
-  .cw-pill { display: inline-block; background: #d4ebd9; color: #1f6b3d; border-radius: 8pt; padding: 1pt 6pt; margin: 1pt 2pt 1pt 0; font-size: 8.5pt; font-weight: 600; }
-  .cw-warn { margin-top: 6pt; padding: 5pt 8pt; background: #fff7eb; border: 1pt dashed #d97706; border-radius: 4pt; color: #7c4a00; font-size: 9pt; }
-  .alerte { color: #b23a48; font-weight: bold; }
-
-  .stats-row { display: table; width: 100%; margin: 6pt 0; }
-  .stat-cell { display: table-cell; padding: 6pt 8pt; background: #f6fbf7; border: 1pt solid #2e8b57; border-radius: 4pt; text-align: center; width: 25%; }
-  .stat-cell b { display: block; color: #1f6b3d; font-size: 16pt; }
-  .stat-cell span { display: block; font-size: 8.5pt; color: #2a3340; font-weight: 600; }
-</style>
-</head>
-<body>
-  <div class="cover">
-    <div class="eyebrow">Mon chef-d'œuvre · Dossier projet · Année 1</div>
-    <h1>${br(nomMenu)}</h1>
-    <div class="author">${br(e.prenom || "")} ${br(e.nom || "")}
-      ${e.classe ? " · " + br(e.classe) : ""}
-      ${e.lycee ? " · " + br(e.lycee) : ""}
-      ${e.annee_scolaire ? " · " + br(e.annee_scolaire) : ""}
-      · Édité le ${new Date().toLocaleDateString("fr-FR")}</div>
-    ${desc ? `<p>${br(desc)}</p>` : ""}
-  </div>
-
-  ${photo ? `<img class="photo" src="${photo.contenu}" alt="" />` : ""}
-
-  <h2>Mon projet</h2>
-  <p><b>Pourquoi ce menu est équilibré :</b> ${br(fv("mon_menu","equilibre") || fv("repas_equilibre","equilibre_global") || "—")}</p>
-  <p><b>Pourquoi ce menu est éco-responsable :</b> ${br(fv("mon_menu","eco") || "—")}</p>
-
-  <h2>Composition de mon repas, étiquettes et fournisseurs</h2>
-  ${composantes.map(renderCompoCard).join("")}
-
-  ${total > 0 ? `
-    <h2>Récapitulatif éco-responsable</h2>
-    <div class="stats-row">
-      <div class="stat-cell"><b>${nbBio}</b><span>Bio</span></div>
-      <div class="stat-cell"><b>${nbSaison}</b><span>De saison</span></div>
-      <div class="stat-cell"><b>${nbCircuit}</b><span>Circuit court</span></div>
-      ${budgetTotal > 0 ? `<div class="stat-cell" style="background:#fff7eb; border-color:#d97706;"><b style="color:#7c4a00;">${budgetTotal.toFixed(2)} €</b><span style="color:#7c4a00;">Budget estimé</span></div>` : ""}
-    </div>
-  ` : ""}
-
-  ${etOrphelines.length || fournOrphelins.length ? `
-    <h2>Autres éléments</h2>
-    ${etOrphelines.length ? `
-      <h3>Étiquettes non liées à une composante</h3>
-      ${etOrphelines.map(et => `
-        <div class="cw-etiq">
-          <div class="cw-etiq-head"><b>${br(et.nom_produit || "(sans nom)")}</b>${et.composante_liee ? ` — <i>${br(et.composante_liee)}</i>` : ""}</div>
-          <table class="cw-etiq-tab">
-            ${et.ingredients ? `<tr><th>Ingrédients</th><td>${br(et.ingredients)}</td></tr>` : ""}
-            ${et.allergenes ? `<tr><th>Allergènes</th><td class="alerte">${br(et.allergenes)}</td></tr>` : ""}
-            ${et.date ? `<tr><th>Date</th><td>${br(et.type_date||"")} ${br(et.date)}</td></tr>` : ""}
-          </table>
-        </div>`).join("")}
-    ` : ""}
-    ${fournOrphelins.length ? `
-      <h3>Fournisseurs non liés à une composante</h3>
-      <table>
-        <thead><tr><th>Produit</th><th>Type de commerce</th><th>Lieu</th><th>Prix</th></tr></thead>
-        <tbody>${fournOrphelins.map(f => `
-          <tr><td>${br(f.produit||"—")}</td><td>${br(f.type_commerce||"—")}</td><td>${br(f.lieu||"—")}</td><td>${br(f.prix_unitaire||"—")}</td></tr>`).join("")}</tbody>
-      </table>` : ""}
-  ` : ""}
-
-  <h2>Mon plateau à emporter (emballage)</h2>
-  <p><b>Type d'emballage :</b> ${br(fv("eco_responsable","packaging") || "—")}</p>
-  <p><b>Où le trouver :</b> ${br(fv("eco_responsable","packaging_lieu") || "—")}</p>
-</body></html>`;
-
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
-  a.href = url;
-  a.download = `FicheProjet_${n}_${new Date().toISOString().slice(0,10)}.doc`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-}
+function exportFicheProjetWord() { /* Word disabled — use HTML print instead */ }
 
 /* =====================================================================
    V4 — VUE "MON PARCOURS" (page d'accueil élève)
@@ -14450,428 +14213,16 @@ function renderEpreuveView(secId) {
 }
 
 /* ---------- ATTESTATION OFFICIELLE (Word, paysage, sérieuse, sans emojis) ---------- */
-function exportAttestationOfficielle(sec, mod) {
-  syncIdentiteToInfos();
-  const e = state.infos_eleve;
-  const ep = mod.epreuve;
-  const st = sec.module_state.epreuve_state;
-  const date = (st && st.date) ? new Date(st.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR");
-
-  // V4.71 — Mention selon la note
-  const noteEleve = (st && typeof st.note_sur_20 === "number") ? st.note_sur_20 : 0;
-  let mention = "Acquis";
-  if (noteEleve >= 18) mention = "Excellent — Félicitations du jury";
-  else if (noteEleve >= 16) mention = "Très bien";
-  else if (noteEleve >= 14) mention = "Bien";
-  else if (noteEleve >= 12) mention = "Assez bien";
-
-  // Thème court (sans le préfixe « Épreuve d'attestation — »)
-  const themeAttestation = (ep.titre || "")
-    .replace(/^Épreuve d'attestation\s*[—–-]\s*/i, "")
-    .replace(/^Épreuve\s*[—–-]\s*/i, "")
-    .trim();
-
-  // Nom de l'enseignant·e (s'il a validé l'attestation)
-  const enseignantNom = (st && st.validation_finale && st.validation_finale.enseignant) || "";
-
-  const html = `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Attestation officielle — Chef-d'œuvre CAP</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
-<style>
-  @page WordSection1 { size: 29.7cm 21cm; mso-page-orientation: landscape; margin: 1cm; }
-  div.WordSection1 { page: WordSection1; }
-  body { font-family: "Garamond", "Times New Roman", serif; color: #1a2330; margin: 0; padding: 0; }
-  .att-outer { border: 5pt double #1f3a68; padding: 6pt; }
-  .att-inner { border: 1pt solid #c9a14a; padding: 18pt 40pt 14pt; text-align: center; }
-  .att-republic { font-size: 9.5pt; letter-spacing: .42em; text-transform: uppercase; color: #1f3a68; font-weight: 700; }
-  .att-program { font-size: 9pt; letter-spacing: .25em; text-transform: uppercase; color: #6b7785; margin-top: 2pt; }
-  .att-rule { border: 0; border-top: .8pt solid #c9a14a; width: 60%; margin: 10pt auto 6pt; }
-  .att-orn { color: #c9a14a; font-size: 14pt; letter-spacing: .8em; margin: 4pt 0 2pt; }
-  .att-title { color: #1f3a68; font-size: 38pt; font-weight: 700; letter-spacing: .04em; margin: 4pt 0 2pt; font-variant: small-caps; }
-  .att-subtitle { color: #2e6b3f; font-size: 17pt; font-style: italic; margin: 0 0 14pt; }
-  .att-delivree { font-size: 12pt; color: #444; letter-spacing: .15em; text-transform: uppercase; margin: 8pt 0 2pt; }
-  .att-name { font-size: 30pt; font-style: italic; color: #1a2330; margin: 2pt 0 4pt; }
-  .att-name-rule { border: 0; border-top: .5pt solid #aaa; width: 42%; margin: 0 auto 8pt; }
-  .att-classe { font-size: 11pt; color: #555; margin-bottom: 14pt; }
-  .att-text { font-size: 13pt; line-height: 1.65; margin: 6pt auto; max-width: 22cm; color: #1a2330; }
-  .att-text b { color: #1f3a68; }
-  .att-medaille-wrap { margin: 14pt 0 8pt; }
-  .att-medaille { display: inline-block; border: 2.5pt solid #c9a14a; border-radius: 50%; width: 3.6cm; height: 3.6cm; line-height: 3.6cm; background: #fdf8ec; color: #1f3a68; font-size: 30pt; font-weight: 700; vertical-align: middle; }
-  .att-mention { font-size: 14pt; font-style: italic; color: #2e6b3f; margin-top: 4pt; }
-  .att-foot-table { width: 100%; margin-top: 18pt; border-collapse: collapse; }
-  .att-foot-table td { width: 50%; vertical-align: top; padding: 0 6pt; font-size: 10.5pt; color: #1a2330; }
-  .att-sig-rule { border: 0; border-top: .5pt solid #555; margin: 22pt 12pt 4pt; }
-  .att-sig-label { font-size: 9pt; color: #6b7785; letter-spacing: .12em; text-transform: uppercase; }
-  .att-ref { margin-top: 10pt; font-size: 8pt; color: #8a93a0; font-style: italic; letter-spacing: .03em; }
-</style></head>
-<body><div class="WordSection1">
-  <div class="att-outer">
-    <div class="att-inner">
-      <div class="att-republic">Certificat d'aptitude professionnelle &middot; Chef-d'œuvre</div>
-      <div class="att-orn">&#10086; &#10022; &#10086;</div>
-      <div class="att-title">Attestation de connaissances</div>
-      <div class="att-subtitle">${escapeHtml(themeAttestation)}</div>
-      <hr class="att-rule" />
-
-      <div class="att-delivree">Délivrée à</div>
-      <div class="att-name">${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</div>
-      <hr class="att-name-rule" />
-      <div class="att-classe">
-        ${e.classe ? escapeHtml(e.classe) : ""}${e.lycee ? " &middot; " + escapeHtml(e.lycee) : ""}${e.annee_scolaire ? " &middot; année scolaire " + escapeHtml(e.annee_scolaire) : ""}
-      </div>
-
-      <p class="att-text">
-        A satisfait avec succès aux exigences de l'épreuve d'attestation portant sur
-        <b>${escapeHtml(themeAttestation)}</b> et démontré la maîtrise des connaissances et
-        des capacités attendues à ce stade du chef-d'œuvre du certificat d'aptitude professionnelle.
-      </p>
-
-      <div class="att-medaille-wrap">
-        <div class="att-mention">Mention&nbsp;: ${escapeHtml(mention)}</div>
-      </div>
-
-      <table class="att-foot-table">
-        <tr>
-          <td style="text-align:left;">
-            <hr class="att-sig-rule" style="margin-left:0;" />
-            <div class="att-sig-label">Délivrée le</div>
-            <div style="font-size:11pt; margin-top:2pt;">${escapeHtml(date)}</div>
-          </td>
-          <td style="text-align:right;">
-            <hr class="att-sig-rule" style="margin-right:0;" />
-            <div class="att-sig-label">Signature de l'enseignant·e</div>
-            <div style="font-size:11pt; margin-top:2pt; font-style:italic;">${escapeHtml(enseignantNom) || "&nbsp;"}</div>
-          </td>
-        </tr>
-      </table>
-
-    </div>
-  </div>
-</div></body></html>`;
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
-  a.href = url;
-  a.download = `Attestation_${ep.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-    a.remove();
-  }, 1000);
-}
+function exportAttestationOfficielle(sec, mod) { /* Word disabled — use HTML print instead */ }
 
 /* ---------- GRILLE D'ÉVALUATION POUR L'ENSEIGNANT (Word, sérieuse, V4.8) ----------
    Inclut : objectif avec verbe d'action, critères + indicateurs + capacités,
    niveaux NT/I/A/M cochés automatiquement à partir des réponses, note totale,
    remédiations CIBLÉES par critère faiblement réussi. */
-function exportGrilleEvaluation(sec, mod) {
-  syncIdentiteToInfos();
-  const e = state.infos_eleve;
-  const ep = mod.epreuve;
-  const st = sec.module_state.epreuve_state || {};
-  const date = (st.date) ? new Date(st.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR");
-
-  // Calcule niveau NT/I/A/M par critère selon la performance sur ses questions.
-  // Règles : 100% bonnes = M, ≥50% = A, >0% = I, sinon NT.
-  const evalCritere = (crit) => {
-    const qIds = crit.questions || [];
-    let total = 0, ok = 0, nbReponses = 0;
-    qIds.forEach(qid => {
-      const q = ep.questions.find(x => x.id === qid);
-      if (!q) return;
-      total++;
-      const ans = st.reponses?.[q.id];
-      const v = (st.validations || {})[q.id];
-      if (ans !== undefined && ans !== null && (Array.isArray(ans) ? ans.some(x => x) : true)) nbReponses++;
-      let isOk = false;
-      if (v && (v.state === "ok" || v.state === "ko")) isOk = v.state === "ok";
-      else if (q.type === "qcm" || q.type === "image_choice") isOk = ans === q.correct;
-      else if (q.type === "vrai_faux") isOk = ans === q.correct;
-      else if (q.type === "mots") isOk = isMotsQuestionOk(q, ans);
-      else if (q.type === "classify") {
-        const choix = ans || {};
-        isOk = q.items.every(it => choix[it.id] === it.zone);
-      }
-      else if (q.type === "ordering_eval") {
-        const order = Array.isArray(ans) ? ans : [];
-        const good = q.items.map(it => it.id);
-        isOk = JSON.stringify(order) === JSON.stringify(good);
-      }
-      if (isOk) ok++;
-    });
-    if (total === 0) return { niveau: "NT", points: 0 };
-    if (nbReponses === 0) return { niveau: "NT", points: 0 };
-    const ratio = ok / total;
-    if (ratio >= 0.99) return { niveau: "M", points: 4 };
-    if (ratio >= 0.5)  return { niveau: "A", points: 3 };
-    if (ratio > 0)     return { niveau: "I", points: 1 };
-    return { niveau: "NT", points: 0 };
-  };
-
-  // V4.19 — La note finale est TOUJOURS st.note_sur_20 (la vraie note calculée
-  // à partir des points par question). Les niveaux NT/I/A/M par critère sont
-  // affichés comme indicateurs visuels mais ne sont PAS sommés (sinon
-  // incohérence avec la note vue par l'élève dans Mes évaluations).
-  const critRows = (ep.criteres_grille || []).map((c, i) => {
-    const r = evalCritere(c);
-    const cell = (lvl) => `<td style="text-align:center; ${r.niveau === lvl ? "background:#1f4f86; color:#fff; font-weight:700;" : ""}">${r.niveau === lvl ? "✓" : ""}</td>`;
-    return `<tr>
-      <td style="text-align:center; font-weight:700;">${i+1}</td>
-      <td><b>${escapeHtml(c.label)}</b><br /><span style="font-size:9pt; color:#444;">Capacité : ${escapeHtml(c.capacite || "")}</span></td>
-      <td style="font-size:9pt;">${escapeHtml(c.indicateur || "")}</td>
-      ${cell("NT")}${cell("I")}${cell("A")}${cell("M")}
-    </tr>`;
-  }).join("");
-
-  // Note finale = la VRAIE note de l'épreuve (cohérente avec Mes évaluations
-  // et avec ce que voit l'élève dans son écran d'épreuve).
-  const noteG = st.note_sur_20 ?? 0;
-  // Si l'enseignant a ajusté manuellement, on récupère la note auto pour info
-  const noteOverrideActive = st.note_override && st.note_override.active;
-  const noteAutoCalculee = st.note_calculee_sur_20;
-  const noteOverrideRow = noteOverrideActive
-    ? `<tr><th>Note finale ajustée</th><td>${escapeHtml(noteG)} / 20
-        <br /><small>Note automatique calculée : ${escapeHtml(noteAutoCalculee ?? "—")} / 20${st.note_override.commentaire ? " — " + escapeHtml(st.note_override.commentaire) : ""}</small></td></tr>`
-    : "";
-
-  // Remédiations ciblées : ne lister que les critères avec niveau < A
-  const remediations = (ep.criteres_grille || [])
-    .map(c => ({ c, r: evalCritere(c) }))
-    .filter(x => x.r.niveau === "NT" || x.r.niveau === "I")
-    .map(x => `<li><b>${escapeHtml(x.c.label)}</b> — ${escapeHtml(x.c.remediation || "À retravailler.")}</li>`)
-    .join("");
-
-  // Points forts : critères au niveau M
-  const pointsForts = (ep.criteres_grille || [])
-    .map(c => ({ c, r: evalCritere(c) }))
-    .filter(x => x.r.niveau === "M")
-    .map(x => `<li>${escapeHtml(x.c.capacite || x.c.label)}</li>`)
-    .join("");
-
-  // Points à consolider : critères A
-  const pointsConsolider = (ep.criteres_grille || [])
-    .map(c => ({ c, r: evalCritere(c) }))
-    .filter(x => x.r.niveau === "A")
-    .map(x => `<li>${escapeHtml(x.c.capacite || x.c.label)} — bien acquis, à consolider sur des cas plus variés.</li>`)
-    .join("");
-
-  // V4.70 — « Être capable de/d' » + objectif avec verbe à l'infinitif (sans pastille).
-  // Le champ `objectif` commence déjà par un verbe à l'infinitif → on le passe
-  // en minuscule et on gère l'élision (de/d') selon la 1re lettre.
-  let objectifTexte = mod.epreuve.objectif || "Composer une assiette équilibrée respectant la règle ½ légumes / ¼ féculents / ¼ protéines.";
-  const firstChar = (objectifTexte.charAt(0) || "").toLowerCase();
-  const voyellesOuH = "aeiouhâàäéèêëîïôöùûüy";
-  const liaison = voyellesOuH.includes(firstChar) ? "d'" : "de ";
-  const objectifMinuscule = objectifTexte.charAt(0).toLowerCase() + objectifTexte.slice(1);
-
-  // V4.70 — Titre court « Évaluation — <thème> » (sans Année)
-  const themeBrut = (ep.titre || "")
-    .replace(/^Épreuve d'attestation\s*[—–-]\s*/i, "")
-    .replace(/^Épreuve\s*[—–-]\s*/i, "")
-    .trim();
-  const titreCourt = `Évaluation — ${themeBrut}`;
-
-  // Statut
-  const reussi = (noteG >= ep.seuil);
-  const validationFinaleOk = st.validation_finale && st.validation_finale.state === "validee";
-  const statutLabel = validationFinaleOk
-    ? `<b style="color:#1f6b3d;">VALIDÉE</b> — Validation finale enseignant·e enregistrée`
-    : reussi
-    ? `<b style="color:#1f6b3d;">SEUIL ATTEINT</b> — En attente de validation finale enseignant·e`
-    : `<b style="color:#b23a48;">NON VALIDÉE</b> — Reprise de l'épreuve nécessaire`;
-
-  const validateurFinal = validationFinaleOk
-    ? `${escapeHtml(st.validation_finale.enseignant || "—")} &mdash; le ${escapeHtml(new Date(st.validation_finale.date).toLocaleDateString("fr-FR"))}`
-    : "À renseigner";
-
-  const observationsAuto = noteOverrideActive
-    ? `Note finale ajustée par l'enseignant·e. Note automatique calculée : ${escapeHtml(noteAutoCalculee ?? "—")} / 20.${st.note_override.commentaire ? " " + escapeHtml(st.note_override.commentaire) : ""}`
-    : "";
-
-  const html = `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Grille d'évaluation</title>
-<style>
-  @page { size: 21cm 29.7cm; margin: 0.7cm; }
-  body { font-family: "Calibri", Arial, sans-serif; color: #1a2330; font-size: 10pt; line-height: 1.35; }
-  h1 { color: #1f4f86; font-size: 14pt; margin: 0; }
-  h2 { color: #1f4f86; font-size: 10.5pt; border-bottom: 1pt solid #1f4f86; padding-bottom: 1pt; margin: 8pt 0 4pt; text-transform: uppercase; letter-spacing: .04em; }
-  h2.page-break { page-break-before: always; }
-  .head-table { width: 100%; border-collapse: collapse; }
-  .head-table td { vertical-align: top; padding: 0; border: 0; }
-  .head-note { text-align: right; white-space: nowrap; color: #1f6b3d; font-weight: 700; font-size: 10.5pt; }
-  .head-note b { font-size: 16pt; }
-  .head-rule { border-top: 2pt solid #1f4f86; margin: 5pt 0 6pt; height: 0; line-height: 0; font-size: 0; }
-  .head-id-line { font-size: 9.5pt; margin: 0; padding: 0; }
-  .head-id-line span { margin-right: 16pt; }
-  .head-id-line b { color: #1f4f86; }
-  .objectif { background: #f1f7ff; border-left: 3pt solid #1f4f86; padding: 5pt 10pt; margin: 4pt 0; font-size: 10pt; }
-  .objectif b { color: #1f4f86; }
-  table.criteres { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 3pt; }
-  table.criteres th, table.criteres td { border: .8pt solid #1a2330; padding: 3pt 5pt; vertical-align: top; }
-  table.criteres th { background: #eef2f6; color: #1f4f86; font-weight: 700; text-align: center; font-size: 8.5pt; }
-  .legend { font-size: 8pt; color: #555; margin: 3pt 0; }
-  .legend b { color: #1f4f86; }
-  .appreciation table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-  .appreciation th, .appreciation td { border: .6pt solid #999; padding: 3pt 6pt; vertical-align: top; }
-  .appreciation th { width: 28%; background: #eef2f6; color: #1f4f86; text-align: left; }
-  ul.appr { margin: 2pt 0 2pt 14pt; padding: 0; }
-  ul.appr li { margin: 1pt 0; }
-</style></head>
-<body>
-  <table class="head-table">
-    <tr>
-      <td><h1>${escapeHtml(titreCourt)}</h1></td>
-      <td class="head-note">Note&nbsp;: <b>${noteG}</b>&nbsp;/&nbsp;20</td>
-    </tr>
-  </table>
-  <div class="head-rule"></div>
-  <p class="head-id-line">
-    <span><b>Élève&nbsp;:</b> ${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</span>
-    <span><b>Classe&nbsp;:</b> ${escapeHtml(e.classe||"—")}</span>
-    <span><b>Année scolaire&nbsp;:</b> ${escapeHtml(e.annee_scolaire||"—")}</span>
-    <span><b>Date&nbsp;:</b> ${escapeHtml(date)}</span>
-  </p>
-
-  <h2>I. Objectif de l'épreuve</h2>
-  <div class="objectif">
-    Être capable ${liaison}${escapeHtml(objectifMinuscule)}
-  </div>
-
-  <h2>II. Critères d'évaluation et indicateurs</h2>
-  <div class="legend">
-    <b>NT</b> Non traité (0 pt) ·
-    <b>I</b> Insuffisamment maîtrisé (1 pt) ·
-    <b>A</b> Acceptable (3 pts) ·
-    <b>M</b> Maîtrisé (4 pts).
-  </div>
-  <table class="criteres">
-    <thead><tr>
-      <th style="width:6%">N°</th>
-      <th style="width:30%">Critère</th>
-      <th style="width:42%">Indicateur observable</th>
-      <th style="width:5.5%">NT</th><th style="width:5.5%">I</th><th style="width:5.5%">A</th><th style="width:5.5%">M</th>
-    </tr></thead>
-    <tbody>${critRows}</tbody>
-    <tfoot><tr>
-      <th colspan="6" style="text-align:right; background:#eef2f6;">Note finale de l'épreuve</th>
-      <th style="background:#2e8b57; color:#fff;">${noteG} / 20</th>
-    </tr></tfoot>
-  </table>
-
-  <h2 class="page-break">III. Appréciation pédagogique</h2>
-  <div class="appreciation">
-    <table>
-      <tr>
-        <th>Capacités acquises</th>
-        <td>${pointsForts ? `<ul class="appr">${pointsForts}</ul>` : "<i>Aucune capacité maîtrisée à ce stade.</i>"}</td>
-      </tr>
-      <tr>
-        <th>Capacités à consolider</th>
-        <td>${pointsConsolider ? `<ul class="appr">${pointsConsolider}</ul>` : "<i>—</i>"}</td>
-      </tr>
-      <tr>
-        <th>Capacités à retravailler — remédiation</th>
-        <td>${remediations ? `<ul class="appr">${remediations}</ul>` : "<i>Aucune remédiation nécessaire.</i>"}</td>
-      </tr>
-      <tr>
-        <th>Observations de l'enseignant·e</th>
-        <td style="height:46pt;">${observationsAuto}</td>
-      </tr>
-    </table>
-  </div>
-
-
-</body></html>`;
-
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
-  a.href = url;
-  a.download = `GrilleEval_${ep.id}_${n}_${new Date().toISOString().slice(0,10)}.doc`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-    a.remove();
-  }, 1000);
-}
+function exportGrilleEvaluation(sec, mod) { /* Word disabled — use HTML print instead */ }
 
 /* ---------- (Ancienne) Attestation J2 simple — conservée pour compat ---------- */
-function exportAttestationAssiette(sec, mod) {
-  syncIdentiteToInfos();
-  const e = state.infos_eleve;
-  const st = sec.module_state;
-  const score20 = Math.round((st.qcm_score / st.qcm_total) * 20);
-  const date = new Date().toLocaleDateString("fr-FR");
-
-  const html = `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Attestation</title>
-<style>
-  @page { size: 21cm 29.7cm; margin: 0.7cm; }
-  body { font-family: "Garamond", "Times New Roman", serif; color: #1a2330; text-align: center; }
-  .att-frame { border: 4pt double #1f4f86; padding: 30pt; margin-top: 30pt; }
-  .att-eyebrow { font-size: 9pt; letter-spacing: .35em; text-transform: uppercase; color: #6b7785; }
-  h1 { color: #1f4f86; font-size: 30pt; margin: 14pt 0 10pt; letter-spacing: .03em; }
-  h2 { color: #2e8b57; font-size: 18pt; margin: 16pt 0 6pt; font-style: italic; font-weight: normal; }
-  .att-name { font-size: 22pt; font-weight: 700; margin: 18pt 0 4pt; color: #1a2330; }
-  .att-classe { font-size: 12pt; color: #6b7785; }
-  .att-text { font-size: 13pt; margin: 22pt auto; max-width: 14cm; line-height: 1.7; }
-  .att-text b { color: #1f4f86; }
-  .att-score { font-size: 14pt; margin-top: 14pt; }
-  .att-score .num { font-size: 26pt; font-weight: 700; color: #2e8b57; }
-  .att-foot { margin-top: 38pt; display: flex; justify-content: space-between; font-size: 10pt; color: #6b7785; }
-</style></head>
-<body>
-  <div class="att-frame">
-    <div class="att-eyebrow">Chef-d'œuvre — CAP — Jalon 2</div>
-    <h1>Attestation de connaissances</h1>
-    <h2>Je sais composer une assiette équilibrée</h2>
-
-    <div class="att-name">${escapeHtml(e.prenom||"")} ${escapeHtml(e.nom||"")}</div>
-    <div class="att-classe">${escapeHtml(e.classe||"")}${e.annee_scolaire ? " — " + escapeHtml(e.annee_scolaire) : ""}</div>
-
-    <p class="att-text">
-      A étudié les <b>groupes alimentaires</b>, les <b>constituants alimentaires</b>,
-      les <b>besoins de l'organisme</b> et la règle de composition d'une assiette équilibrée
-      (½ légumes, ¼ féculents, ¼ protéines).
-      <br /><br />
-      A validé l'évaluation de connaissances avec un score de :
-    </p>
-
-    <div class="att-score"><span class="num">${score20}</span> / 20</div>
-
-    <div class="att-foot">
-      <span>Délivré le ${date}</span>
-      <span>Portfolio Chef-d'œuvre — Année 1</span>
-    </div>
-  </div>
-</body></html>`;
-
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
-  a.href = url;
-  a.download = `Attestation_Assiette_${n}_${new Date().toISOString().slice(0,10)}.doc`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-}
+function exportAttestationAssiette(sec, mod) { /* Word disabled — use HTML print instead */ }
 
 /* ---------- V4.12 : Vérification automatique du menu final ----------
    Croise les données de plusieurs sections pour détecter en direct
@@ -18415,95 +17766,7 @@ function fieldValue(sectionId, fieldId) {
   return f ? (f.valeur || "") : "";
 }
 
-function exportFicheMenuWord() {
-  syncIdentiteToInfos();
-  const e = state.infos_eleve;
-  const mainPhoto = findMainPhoto();
-
-  const nomMenu      = fieldValue("mon_menu", "nom_menu") || "(sans titre)";
-  const description  = fieldValue("mon_menu", "description");
-  const entree       = fieldValue("repas_equilibre", "entree");
-  const plat         = fieldValue("repas_equilibre", "plat");
-  const laitage      = fieldValue("repas_equilibre", "laitage");
-  const dessert      = fieldValue("repas_equilibre", "dessert");
-  const equilibre    = fieldValue("mon_menu", "equilibre") || fieldValue("repas_equilibre", "equilibre_global");
-  const justif       = fieldValue("repas_equilibre", "justification");
-  const ecoResp      = fieldValue("mon_menu", "eco");
-  const saison       = fieldValue("eco_responsable", "saison");
-  const circuits     = fieldValue("eco_responsable", "circuits");
-  const gaspi        = fieldValue("eco_responsable", "gaspillage");
-  const packaging    = fieldValue("eco_responsable", "packaging");
-  const pointsForts  = fieldValue("mon_menu", "points_forts");
-
-  const br = s => escapeHtml(s).replace(/\n/g, "<br>");
-
-  const html = `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Fiche menu — ${br(nomMenu)}</title>
-<style>
-  @page WordSection1 { size: 21cm 29.7cm; margin: 0.7cm; }
-  body { font-family: Calibri, Arial, sans-serif; color: #222; font-size: 12pt; }
-  h1 { color: #1f4f86; font-size: 28pt; margin: 0 0 6pt; }
-  h2 { color: #1f6b3d; font-size: 16pt; border-bottom: 2pt solid #2e8b57; padding-bottom: 4pt; margin-top: 20pt; }
-  .subtitle { color: #5b6b7b; font-style: italic; font-size: 14pt; margin-bottom: 12pt; }
-  .identity { font-size: 11pt; color: #333; margin-bottom: 16pt; }
-  .photo-main { text-align: center; margin: 14pt 0; }
-  .photo-main img { max-width: 14cm; max-height: 10cm; border: 1pt solid #2f6fb5; }
-  .menu-parts { width: 100%; border-collapse: collapse; margin: 10pt 0; }
-  .menu-parts td { border: 1pt solid #d2dae3; padding: 8pt 10pt; vertical-align: top; }
-  .menu-parts td.label { background: #eef2f6; font-weight: bold; width: 30%; color: #1f4f86; }
-  .block { margin: 10pt 0; }
-  .block b.label { color: #1f4f86; display: block; margin-bottom: 2pt; }
-</style>
-</head>
-<body>
-  <h1>${br(nomMenu)}</h1>
-  <div class="subtitle">Fiche menu — Chef-d'œuvre CAP</div>
-  <div class="identity">
-    <b>${br(e.prenom)} ${br(e.nom)}</b> — ${br(e.classe)} (${br(e.annee_scolaire)})
-    — ${new Date().toLocaleDateString("fr-FR")}
-  </div>
-
-  ${mainPhoto ? `<div class="photo-main"><img src="${mainPhoto.contenu}" alt="" /></div>` : ""}
-
-  ${description ? `<div class="block"><b class="label">Description du menu</b>${br(description)}</div>` : ""}
-
-  <h2>Composition du menu</h2>
-  <table class="menu-parts">
-    ${entree  ? `<tr><td class="label">Entrée</td><td>${br(entree)}</td></tr>` : ""}
-    ${plat    ? `<tr><td class="label">Plat principal</td><td>${br(plat)}</td></tr>` : ""}
-    ${laitage ? `<tr><td class="label">Laitage</td><td>${br(laitage)}</td></tr>` : ""}
-    ${dessert ? `<tr><td class="label">Dessert</td><td>${br(dessert)}</td></tr>` : ""}
-  </table>
-
-  <h2>Pourquoi ce menu est équilibré</h2>
-  ${equilibre ? `<div class="block">${br(equilibre)}</div>` : ""}
-  ${justif    ? `<div class="block"><b class="label">Justification nutritionnelle</b>${br(justif)}</div>` : ""}
-
-  <h2>Pourquoi ce menu est éco-responsable</h2>
-  ${ecoResp   ? `<div class="block">${br(ecoResp)}</div>` : ""}
-  ${saison    ? `<div class="block"><b class="label">Produits de saison</b>${br(saison)}</div>` : ""}
-  ${circuits  ? `<div class="block"><b class="label">Circuits courts / proximité</b>${br(circuits)}</div>` : ""}
-  ${gaspi     ? `<div class="block"><b class="label">Lutte contre le gaspillage</b>${br(gaspi)}</div>` : ""}
-  ${packaging ? `<div class="block"><b class="label">Packaging éco-responsable</b>${br(packaging)}</div>` : ""}
-
-  ${pointsForts ? `<h2>Points forts</h2><div class="block">${br(pointsForts)}</div>` : ""}
-
-</body></html>`;
-
-  const blob = new Blob(["\ufeff", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const n = (e.nom || "eleve").replace(/\s+/g, "_");
-  a.href = url;
-  a.download = `FicheMenu_${n}_${new Date().toISOString().slice(0,10)}.doc`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-}
+function exportFicheMenuWord() { /* Word disabled — use HTML print instead */ }
 
 function computeTotals() {
   const t = { done: 0, validated: 0, to_review: 0, in_progress: 0, not_started: 0 };
@@ -18532,7 +17795,7 @@ function bindGlobalEvents() {
   on("import-file", "change", importJSON);
   on("btn-print-dossier", "click", printDossier);
   on("btn-print-oral", "click", printOralOnly);
-  on("btn-word-menu", "click", exportFicheMenuWord);
+  on("btn-download-html", "click", downloadDossierHTML);
   on("btn-reset", "click", resetAll);
 
   document.querySelectorAll(".view-btn").forEach(b => {
@@ -18621,7 +17884,9 @@ function resetAll() {
 
 function printDossier() {
   const area = document.getElementById("print-area");
-  area.innerHTML = buildDossierHTML();
+  // Inject the dossier CSS (scoped to .psr-print) so the print rendering
+  // looks the same as the standalone HTML download.
+  area.innerHTML = `<style>${dossierPrintCSS()}</style>` + buildDossierHTML();
   window.print();
 }
 
@@ -18631,92 +17896,235 @@ function printOralOnly() {
   window.print();
 }
 
+/* CSS partagé entre l'impression et le téléchargement HTML autonome.
+   Scope : .psr-print pour ne pas polluer l'app. */
+function dossierPrintCSS() {
+  return `
+@page { size: A4; margin: 18mm 14mm 20mm 14mm; }
+@page { @bottom-right { content: counter(page) " / " counter(pages); font-family: system-ui, sans-serif; font-size: 9pt; color:#64748b; } }
+.psr-print, .psr-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+.psr-print { font-family: "Inter", system-ui, -apple-system, sans-serif; color: #0f172a; font-size: 11pt; line-height: 1.45; }
+.psr-print h1, .psr-print h2, .psr-print h3 { font-family: "Inter", system-ui, sans-serif; color: #0f172a; }
+.psr-print .pp-cover { min-height: 24cm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2cm 1cm; page-break-after: always; }
+.psr-print .pp-cover .pp-badge { font-size: 11pt; letter-spacing: .12em; text-transform: uppercase; color: #2563eb; font-weight: 700; margin-bottom: 18pt; }
+.psr-print .pp-cover h1 { font-size: 28pt; margin: 0 0 8pt; color: #0f172a; }
+.psr-print .pp-cover .pp-subtitle { font-size: 14pt; color: #475569; margin-bottom: 36pt; font-style: italic; }
+.psr-print .pp-cover .pp-meta { background: #f1f5f9; border-radius: 12px; padding: 18pt 24pt; display: inline-block; min-width: 12cm; }
+.psr-print .pp-cover .pp-meta div { margin: 4pt 0; font-size: 11pt; }
+.psr-print .pp-cover .pp-meta b { color: #1e293b; }
+.psr-print .pp-cover .pp-footer { margin-top: 36pt; font-size: 9pt; color: #94a3b8; }
+.psr-print .pp-toc { page-break-after: always; padding-top: 1cm; }
+.psr-print .pp-toc h2 { border-bottom: 2pt solid #2563eb; padding-bottom: 6pt; font-size: 18pt; }
+.psr-print .pp-toc ol { font-size: 11pt; line-height: 1.8; padding-left: 1.4em; }
+.psr-print .pp-toc ol li { padding: 2pt 0; }
+.psr-print .pp-section { page-break-before: always; padding-top: 6pt; }
+.psr-print .pp-section-banner { background: linear-gradient(90deg, #dbeafe, #ede9fe); border-left: 6pt solid #2563eb; padding: 10pt 14pt; border-radius: 6px; margin-bottom: 12pt; }
+.psr-print .pp-section-banner .pp-num { font-size: 9pt; color: #2563eb; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.psr-print .pp-section-banner h2 { margin: 2pt 0 0; font-size: 16pt; color: #0f172a; }
+.psr-print .pp-section-banner .pp-desc { font-style: italic; color: #475569; font-size: 10pt; margin-top: 4pt; }
+.psr-print .pp-pedago { background: #f8fafc; border: 1pt solid #e2e8f0; border-radius: 6px; padding: 8pt 12pt; margin: 8pt 0 12pt; font-size: 9.5pt; color: #475569; }
+.psr-print .pp-pedago b { color: #334155; }
+.psr-print .pp-field { background: #ffffff; border: 1pt solid #e2e8f0; border-left: 3pt solid #2563eb; padding: 6pt 10pt; margin: 6pt 0; border-radius: 4px; page-break-inside: avoid; }
+.psr-print .pp-field b { color: #1e293b; display: block; margin-bottom: 2pt; font-size: 10pt; }
+.psr-print .pp-meta-line { font-size: 9.5pt; color: #64748b; margin: 4pt 0 8pt; }
+.psr-print .pp-comment { background: #fef3c7; border-left: 3pt solid #d97706; padding: 6pt 10pt; margin: 8pt 0; border-radius: 4px; }
+.psr-print .pp-comment b { color: #92400e; }
+.psr-print .pp-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10pt; margin-top: 10pt; }
+.psr-print .pp-photo { border: 1pt solid #e2e8f0; border-radius: 6px; overflow: hidden; page-break-inside: avoid; }
+.psr-print .pp-photo img { width: 100%; max-height: 9cm; object-fit: cover; display: block; }
+.psr-print .pp-photo .pp-cap { font-size: 8.5pt; padding: 4pt 6pt; color: #475569; background: #f8fafc; }
+.psr-print .pp-oral { page-break-before: always; }
+.psr-print .pp-oral h2 { background: #fce7f3; border-left: 6pt solid #db2777; padding: 8pt 12pt; border-radius: 6px; margin-bottom: 12pt; }
+.psr-print .pp-oral .oral-part { margin-bottom: 14pt; page-break-inside: avoid; }
+.psr-print .pp-oral .oral-part h3 { color: #be185d; font-size: 12pt; margin-bottom: 4pt; }
+.psr-print .pp-end { page-break-before: always; padding-top: 2cm; }
+.psr-print .pp-end h2 { color: #2563eb; }
+.psr-print .pp-end .pp-summary { background: #f1f5f9; padding: 14pt; border-radius: 8px; margin: 12pt 0; }
+.psr-print .pp-end .pp-summary div { padding: 3pt 0; }
+.psr-print .pp-end .pp-doc-footer { margin-top: 3cm; text-align: center; font-size: 9pt; color: #94a3b8; border-top: 1pt solid #e2e8f0; padding-top: 10pt; }
+@media print { .no-print { display: none !important; } }
+`;
+}
+
+/* Petites stats résumées pour la page de fin */
+function computeDossierSummary() {
+  const sections = state.sections || [];
+  const totalSec = sections.length;
+  const validees = sections.filter(s => s.statut_enseignant === "validated").length;
+  let totalEpreuves = 0, epreuvesValidees = 0, sumNotes = 0, nbNotes = 0;
+  sections.forEach(s => {
+    const ep = s.module_state && s.module_state.epreuve_state;
+    if (ep && (ep.note_sur_20 !== null && ep.note_sur_20 !== undefined)) {
+      totalEpreuves++;
+      if (ep.validation_finale && ep.validation_finale.state === "validee") epreuvesValidees++;
+      const n = Number(ep.note_sur_20);
+      if (!isNaN(n)) { sumNotes += n; nbNotes++; }
+    }
+  });
+  const moyenne = nbNotes > 0 ? (sumNotes / nbNotes).toFixed(1) : null;
+  return { totalSec, validees, totalEpreuves, epreuvesValidees, moyenne };
+}
+
 function buildDossierHTML() {
   // V2.1 : resynchronisation de sécurité avant impression
   syncIdentiteToInfos();
   const e = state.infos_eleve;
   const today = new Date().toLocaleDateString("fr-FR");
+  const userCode = (window.PSR_USER && window.PSR_USER.userCode) || "—";
+  const promo = (window.PSR_USER && window.PSR_USER.promo) || (state.meta && state.meta.promo) || "";
+  let cfg = null;
+  try { cfg = (typeof getChefDoeuvreConfig === "function") ? getChefDoeuvreConfig() : null; } catch(_) {}
+  const anneeOral = cfg && cfg.annee_oral ? cfg.annee_oral : "";
+  const summary = computeDossierSummary();
+
+  let html = `<div class="psr-print">`;
 
   /* Page de garde */
-  let html = `<div class="print-doc">`;
   html += `
-    <div class="print-cover">
-      <h1>Portfolio — Chef-d'œuvre</h1>
-      <div class="project-title">${escapeHtml(state.meta.projet_titre)}</div>
-      <div class="project-title"><b>${escapeHtml(e.titre_dossier || "Sans titre")}</b></div>
-      <div class="identity">
-        <div><b>Nom :</b> ${escapeHtml(e.nom)}</div>
-        <div><b>Prénom :</b> ${escapeHtml(e.prenom)}</div>
-        <div><b>Classe :</b> ${escapeHtml(e.classe)}</div>
+    <section class="pp-cover">
+      <div class="pp-badge">Portfolio numérique · CAP PSR</div>
+      <h1>${escapeHtml(e.titre_dossier || "Sans titre")}</h1>
+      <div class="pp-subtitle">Dossier final — Chef-d'œuvre ${escapeHtml(state.meta.projet_titre || "")}</div>
+      <div class="pp-meta">
+        <div><b>Élève :</b> ${escapeHtml(e.prenom)} ${escapeHtml(e.nom)}</div>
+        <div><b>Code élève :</b> ${escapeHtml(userCode)}</div>
+        <div><b>Classe :</b> ${escapeHtml(e.classe)} ${promo ? "· Promo " + escapeHtml(promo) : ""}</div>
         <div><b>Année scolaire :</b> ${escapeHtml(e.annee_scolaire)}</div>
-        <div style="margin-top:14px;"><b>Date d'édition :</b> ${today}</div>
+        ${anneeOral ? `<div><b>Année de l'oral :</b> ${escapeHtml(anneeOral)}</div>` : ""}
+        <div><b>Date d'édition :</b> ${today}</div>
       </div>
-    </div>
+      <div class="pp-footer">Document généré depuis le Portfolio PSR</div>
+    </section>
   `;
 
   /* Sommaire */
-  html += `<div class="print-toc"><h2>Sommaire</h2><ol>`;
+  html += `<section class="pp-toc"><h2>Sommaire</h2><ol>`;
   state.sections.forEach((sec) => {
     html += `<li>${escapeHtml(sec.titre)}</li>`;
   });
   html += `<li><b>Synthèse orale finale</b></li>`;
   html += `<li><b>Annexes photos</b></li>`;
-  html += `</ol></div>`;
-
-  /* Séparateur : début du dossier principal */
-  html += `<div class="print-divider"><span>PARTIE 1 — DOSSIER PRINCIPAL</span></div>`;
+  html += `<li><b>Synthèse de fin</b></li>`;
+  html += `</ol></section>`;
 
   /* Sections numérotées */
   state.sections.forEach((sec, idx) => {
-    html += `<div class="print-section">`;
-    html += `<div class="print-section-num">${idx + 1}</div>`;
-    html += `<h2>${idx + 1}. ${escapeHtml(sec.titre)}</h2>`;
-    html += `<p><em>${escapeHtml(sec.description)}</em></p>`;
-    html += `<p><b>Statut :</b> ${shortStatus(sec)}`;
+    html += `<section class="pp-section">`;
+    html += `<div class="pp-section-banner">`;
+    html += `<div class="pp-num">Section ${idx + 1}</div>`;
+    html += `<h2>${escapeHtml(sec.titre)}</h2>`;
+    if (sec.description) html += `<div class="pp-desc">${escapeHtml(sec.description)}</div>`;
+    html += `</div>`;
+
+    // Encart pédagogique (consigne / production / attentes)
+    const ped = sec.encart_pedagogique || sec.pedago || null;
+    if (ped && (ped.consigne || ped.production || ped.attentes)) {
+      html += `<div class="pp-pedago">`;
+      if (ped.consigne)   html += `<div><b>Consigne :</b> ${escapeHtml(ped.consigne)}</div>`;
+      if (ped.production) html += `<div><b>Production attendue :</b> ${escapeHtml(ped.production)}</div>`;
+      if (ped.attentes)   html += `<div><b>Attentes :</b> ${escapeHtml(ped.attentes)}</div>`;
+      html += `</div>`;
+    }
+
+    html += `<div class="pp-meta-line"><b>Statut :</b> ${shortStatus(sec)}`;
     if (sec.date_validation) html += ` · <b>Validé le :</b> ${escapeHtml(sec.date_validation)}`;
-    html += `</p>`;
+    html += `</div>`;
 
     sec.champs.forEach(c => {
       const v = typeof c.valeur === "boolean" ? (c.valeur ? "Oui" : "Non") : (c.valeur || "");
       if (!v) return;
-      html += `<div class="print-field"><b>${escapeHtml(c.label)} :</b>${escapeHtml(String(v)).replace(/\n/g, "<br>")}</div>`;
+      const text = (typeof v === "string") ? v : (Array.isArray(v) ? v.join(", ") : String(v));
+      if (!text) return;
+      html += `<div class="pp-field"><b>${escapeHtml(c.label)}</b>${escapeHtml(text).replace(/\n/g, "<br>")}</div>`;
     });
+
+    // Photos en grand (intra-section)
+    const photos = (sec.preuves || []).filter(p => p.type === "photo");
+    if (photos.length) {
+      html += `<div class="pp-photos">`;
+      photos.forEach(p => {
+        html += `<div class="pp-photo"><img src="${p.contenu}" alt="${escapeHtml(p.nom_fichier || '')}" />`;
+        if (p.commentaire) html += `<div class="pp-cap">${escapeHtml(p.commentaire)}</div>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
 
     if (sec.commentaires_enseignant) {
-      html += `<div class="print-field" style="background:#fff8e0;padding:6px;border-left:3px solid #c47a00;">
-               <b>Commentaire enseignant :</b> ${escapeHtml(sec.commentaires_enseignant)}</div>`;
+      html += `<div class="pp-comment"><b>Commentaire enseignant :</b> ${escapeHtml(sec.commentaires_enseignant)}</div>`;
     }
-    if (sec.note) html += `<div class="print-field"><b>Note :</b> ${escapeHtml(sec.note)}</div>`;
-    html += `</div>`;
+    if (sec.note) html += `<div class="pp-field"><b>Note</b>${escapeHtml(sec.note)}</div>`;
+    html += `</section>`;
   });
 
-  /* Séparateur : synthèse orale */
-  html += `<div class="print-divider"><span>PARTIE 2 — SYNTHÈSE ORALE FINALE</span></div>`;
+  /* Synthèse orale */
+  html += `<section class="pp-oral"><h2>🎤 Synthèse orale finale</h2>`;
   html += buildOralHTML(false);
+  html += `</section>`;
 
-  /* Séparateur : annexes */
-  html += `<div class="print-divider"><span>PARTIE 3 — ANNEXES PHOTOS</span></div>`;
-  html += `<div class="print-annex"><h2>Annexes photos</h2>`;
-  let hasPhoto = false;
-  state.sections.forEach((sec, idx) => {
-    const photos = sec.preuves.filter(p => p.type === "photo");
-    if (!photos.length) return;
-    hasPhoto = true;
-    html += `<h3>${idx + 1}. ${escapeHtml(sec.titre)}</h3>`;
-    html += `<div class="photos-grid">`;
-    photos.forEach(p => {
-      html += `<div class="photo-item">
-        <img src="${p.contenu}" alt="${escapeHtml(p.nom_fichier || '')}" />
-        <div style="font-size:.85rem;padding:4px;">${escapeHtml(p.commentaire || "")}</div>
-      </div>`;
-    });
-    html += `</div>`;
-  });
-  if (!hasPhoto) html += `<p><em>Aucune photo déposée.</em></p>`;
+  /* Page de fin — synthèse */
+  html += `<section class="pp-end">`;
+  html += `<h2>📊 Synthèse</h2>`;
+  html += `<div class="pp-summary">`;
+  html += `<div><b>Chef-d'œuvre :</b> ${summary.validees} / ${summary.totalSec} sections validées</div>`;
+  if (summary.totalEpreuves > 0) {
+    html += `<div><b>Formation PSR :</b> ${summary.totalEpreuves} épreuve(s) passée(s), ${summary.epreuvesValidees} validée(s)</div>`;
+    if (summary.moyenne !== null) html += `<div><b>Moyenne des notes :</b> ${escapeHtml(summary.moyenne)} / 20</div>`;
+  } else {
+    html += `<div><b>Formation PSR :</b> aucune épreuve passée pour le moment</div>`;
+  }
   html += `</div>`;
+  html += `<div class="pp-doc-footer">Portfolio numérique CAP PSR · ${today} · Code ${escapeHtml(userCode)}</div>`;
+  html += `</section>`;
 
-  html += `</div>`; // .print-doc
+  html += `</div>`; // .psr-print
   return html;
+}
+
+/* Génère un document HTML COMPLET et autonome (DOCTYPE, head, body, CSS inline)
+   pour téléchargement. Les images en data:image/ sont inline ; les chemins
+   relatifs (peu probables ici car localStorage stocke en base64) ne sont pas
+   réécrits — l'utilisateur perdra alors les images dans l'archive. */
+function generateDossierHTMLStandalone() {
+  const inner = buildDossierHTML();
+  const e = state.infos_eleve || {};
+  const title = `Portfolio PSR — ${(e.prenom || "")} ${(e.nom || "")}`.trim();
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${escapeHtml(title)}</title>
+<style>
+body { margin: 0; background: #f1f5f9; font-family: "Inter", system-ui, sans-serif; }
+.psr-print-wrap { max-width: 21cm; margin: 0 auto; background: #fff; padding: 1cm 1.4cm; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+@media print { body { background: #fff; } .psr-print-wrap { max-width: none; margin: 0; padding: 0; box-shadow: none; } }
+${dossierPrintCSS()}
+</style>
+</head>
+<body>
+<div class="psr-print-wrap">
+${inner}
+</div>
+</body>
+</html>`;
+}
+
+function downloadDossierHTML() {
+  syncIdentiteToInfos();
+  const html = generateDossierHTMLStandalone();
+  const code = (window.PSR_USER && window.PSR_USER.userCode) || (state.infos_eleve && state.infos_eleve.nom) || "ANONYME";
+  const safeCode = String(code).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const date = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Portfolio_PSR_${safeCode}_${date}.html`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 }
 
 function buildOralHTML(asFullDoc) {
@@ -24839,71 +24247,8 @@ function renderEpreuveViewFormation(chapId) {
 }
 
 /* ----- Export Word : fiche élève (réponses du chapitre) ----- */
-function exportFormationChapitreFicheWord(chap, st) {
-  if (typeof syncIdentiteToInfos === "function") syncIdentiteToInfos();
-  const e = state.infos_eleve || {};
-  const ep = chap.module.epreuve;
-  const totalPts = ep.questions.reduce((s, q) => s + (q.points || 0), 0);
-  const date = (st.epreuve && st.epreuve.date) ? new Date(st.epreuve.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR");
-  const reponsesHtml = ep.questions.map((q, i) => {
-    const ans = st.epreuve.reponses[q.id];
-    let rep = "<i>Pas de réponse</i>";
-    if (ans !== undefined && ans !== "" && ans !== null) {
-      if (q.type === "qcm" && typeof ans === "number" && q.options[ans]) rep = escapeHtml(q.options[ans]);
-      else if (q.type === "vrai_faux") rep = ans === true ? "Vrai" : "Faux";
-      else if (q.type === "phrase_libre") rep = escapeHtml(String(ans));
-    }
-    return `<p><b>Q${i+1} (${q.points} pts) — ${escapeHtml(q.question)}</b><br />Ma réponse : ${rep}</p>`;
-  }).join("");
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fiche — ${escapeHtml(chap.titre)}</title>
-  <style>body{font-family:Calibri,Arial,sans-serif;color:#1a2330;font-size:11pt;line-height:1.4;}h1{color:#1f4f86;}h2{color:#1f4f86;border-bottom:1pt solid #1f4f86;padding-bottom:2pt;}p{margin:6pt 0;}</style>
-  </head><body>
-    <h1>Ma fiche — ${escapeHtml(chap.titre)}</h1>
-    <p><b>Élève :</b> ${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"} &nbsp; <b>Classe :</b> ${escapeHtml(e.classe||"—")} &nbsp; <b>Date :</b> ${escapeHtml(date)}</p>
-    <h2>Score</h2>
-    <p><b>${st.epreuve.score ?? "—"} / ${totalPts}</b> points (seuil : ${ep.seuil}) — ${st.epreuve.valide ? "✅ Attestation validée" : "À retravailler"}</p>
-    <h2>Mes réponses</h2>
-    ${reponsesHtml}
-    <h2>Ce que je dois retenir</h2>
-    <ul>${(chap.objectifs_eleve || []).map(o => `<li>Être capable de ${escapeHtml(o)}.</li>`).join("")}</ul>
-  </body></html>`;
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `Fiche_${chap.id}_${(e.nom||"eleve")}.doc`;
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-}
+function exportFormationChapitreFicheWord(chap, st) { /* Word disabled — use HTML print instead */ }
 
 /* ----- Export Word : attestation simple pour un chapitre formation PSR ----- */
-function exportFormationChapitreAttestationWord(chap, st) {
-  if (typeof syncIdentiteToInfos === "function") syncIdentiteToInfos();
-  const e = state.infos_eleve || {};
-  const ep = chap.module.epreuve;
-  const totalPts = ep.questions.reduce((s, q) => s + (q.points || 0), 0);
-  const date = (st.epreuve && st.epreuve.date) ? new Date(st.epreuve.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR");
-  const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-  <head><meta charset="UTF-8"><title>Attestation — ${escapeHtml(chap.titre)}</title>
-  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
-  <style>@page{size:29.7cm 21cm;mso-page-orientation:landscape;margin:1.5cm;}body{font-family:"Times New Roman",serif;color:#1a2330;text-align:center;}h1{color:#1f4f86;font-size:28pt;margin-top:30pt;}h2{font-size:18pt;color:#1f4f86;}.cadre{border:3pt double #1f4f86;padding:30pt;margin:20pt auto;max-width:24cm;}p{font-size:13pt;line-height:1.6;}.note{font-size:16pt;font-weight:bold;color:#1f6b3d;}</style>
-  </head><body>
-  <div class="cadre">
-    <h1>ATTESTATION DE FORMATION</h1>
-    <h2>Formation PSR — ${escapeHtml(chap.titre)}</h2>
-    <p>Il est attesté que</p>
-    <p style="font-size:18pt;"><b>${escapeHtml(((e.prenom||"") + " " + (e.nom||"")).trim()) || "—"}</b></p>
-    <p>élève en ${escapeHtml(e.classe || "CAP PSR")} au ${escapeHtml(e.lycee || "—")},</p>
-    <p>a satisfait avec succès aux exigences de l'épreuve d'attestation portant sur</p>
-    <p><b><i>${escapeHtml(ep.objectif || chap.titre)}</i></b></p>
-    <p class="note">Note : ${st.epreuve.score} / ${totalPts} (seuil : ${ep.seuil})</p>
-    <p>Fait le ${escapeHtml(date)}.</p>
-  </div>
-  </body></html>`;
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `Attestation_${chap.id}_${(e.nom||"eleve")}.doc`;
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-}
+function exportFormationChapitreAttestationWord(chap, st) { /* Word disabled — use HTML print instead */ }
 
