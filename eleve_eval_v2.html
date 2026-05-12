@@ -663,12 +663,29 @@
         } catch(e) {}
     }
 
-    function clearAutoSave() {
+    function clearAutoSave(preserveSubmitBackup) {
         if (!currentUser || !currentEvalId) return;
         try {
             localStorage.removeItem('eval_autosave_' + currentUser.userCode + '_' + currentEvalId);
-            localStorage.removeItem('eval_submit_backup_' + currentUser.userCode + '_' + currentEvalId);
+            if (!preserveSubmitBackup) {
+                localStorage.removeItem('eval_submit_backup_' + currentUser.userCode + '_' + currentEvalId);
+            }
         } catch(e) {}
+    }
+
+    function setSubmitUiState(submitting) {
+        const submitBtn = document.getElementById('btn-submit');
+        const prevBtn = document.getElementById('btn-prev');
+        const nextBtn = document.getElementById('btn-next');
+        if (submitBtn) {
+            submitBtn.disabled = !!submitting;
+            submitBtn.textContent = submitting ? 'Envoi en cours...' : 'Soumettre ✓';
+        }
+        if (prevBtn) prevBtn.disabled = !!submitting || currentQuestionIndex === 0;
+        if (nextBtn) {
+            const total = (currentEval && currentEval.questions ? currentEval.questions.length : 0);
+            nextBtn.disabled = !!submitting || currentQuestionIndex >= total - 1;
+        }
     }
 
     function flushPendingEval() {
@@ -848,8 +865,8 @@
             });
             // Sort client-side by updatedAt descending
             evals.sort((a, b) => {
-                const ta = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : (a.updatedAt || 0);
-                const tb = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : (b.updatedAt || 0);
+                const ta = a.updatedAt && a.updatedAt.toMillis ? a.updatedAt.toMillis() : (a.updatedAt || 0);
+                const tb = b.updatedAt && b.updatedAt.toMillis ? b.updatedAt.toMillis() : (b.updatedAt || 0);
                 return tb - ta;
             });
 
@@ -1129,7 +1146,8 @@
 
             seg.questionIndices.forEach(i => {
                 const btn = document.createElement('button');
-                btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (answers[qs[i]?.id] !== undefined ? ' answered' : '');
+                var qAtIndex = qs[i];
+                btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (qAtIndex && answers[qAtIndex.id] !== undefined ? ' answered' : '');
                 btn.textContent = (i + 1);
                 btn.dataset.qIndex = i;
                 btn.onclick = () => { currentQuestionIndex = i; displayQuestion(i); updateNav(); };
@@ -1145,7 +1163,8 @@
         const qs = currentEval.questions || [];
         document.querySelectorAll('.nav-btn[data-q-index]').forEach(btn => {
             const i = parseInt(btn.dataset.qIndex);
-            btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (answers[qs[i]?.id] !== undefined ? ' answered' : '');
+            var qAtIndex = qs[i];
+            btn.className = 'nav-btn' + (i === currentQuestionIndex ? ' active' : '') + (qAtIndex && answers[qAtIndex.id] !== undefined ? ' answered' : '');
         });
         updateProgress();
         autoSaveAnswers();
@@ -1166,6 +1185,7 @@
         // Prev/Next buttons
         document.getElementById('btn-prev').disabled = currentQuestionIndex === 0;
         document.getElementById('btn-next').disabled = currentQuestionIndex >= total - 1;
+        if (isSubmitting) setSubmitUiState(true);
     }
 
     // === DOCUMENT DISPLAY ===
@@ -1699,6 +1719,7 @@
         }
 
         isSubmitting = true;
+        setSubmitUiState(true);
         if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
         try {
@@ -1719,8 +1740,13 @@
             var respData = {
                 eleveCode: currentUser.userCode,
                 evalId: currentEvalId,
+                titre: 'Auto-evaluation : ' + (currentEval.titre || 'Evaluation'),
                 classe: currentUser.classe,
                 reponses: answers,
+                correction: correctionResult,
+                modeNotation: getModeNotation(currentEval),
+                nonNote: isHorsMoyenneMode(getModeNotation(currentEval)),
+                bareme: correctionResult.bareme,
                 submittedAt: new Date().toISOString(),
                 tabSwitchCount,
                 copyPasteCount,
@@ -1771,8 +1797,9 @@
                 console.warn("Erreur writeResults:", e.message);
             }
 
-            // Nettoyer auto-save (soumission faite)
-            clearAutoSave();
+            // Nettoyer auto-save. Si l'envoi principal a echoue, garder le backup
+            // local pour permettre un renvoi automatique a la prochaine connexion.
+            clearAutoSave(!evalReponsesSent);
 
             // Desactiver la protection fermeture (copie envoyee)
             window.onbeforeunload = null;
@@ -1785,6 +1812,7 @@
         } catch(fatalErr) {
             console.error("Erreur fatale submitEval:", fatalErr);
             isSubmitting = false;
+            setSubmitUiState(false);
             alert("Erreur lors de la soumission. Reessaie ou contacte ton prof.\n\n(" + fatalErr.message + ")");
         }
     };
@@ -2116,15 +2144,17 @@
         if (q.type === 'nombre') return String(answer);
         if (q.type === 'ordonner') return (answer || []).map(i => (q.items || [])[i]).join(' → ');
         if (q.type === 'pad') {
+            const padAnswer = answer || {};
             return [
-                'Danger: ' + (answer?.danger || ''),
-                'Situation: ' + (answer?.sitdang || ''),
-                'Evenement: ' + (answer?.event || ''),
-                'Dommage: ' + (answer?.dommage || '')
+                'Danger: ' + (padAnswer.danger || ''),
+                'Situation: ' + (padAnswer.sitdang || ''),
+                'Evenement: ' + (padAnswer.event || ''),
+                'Dommage: ' + (padAnswer.dommage || '')
             ].join(' | ');
         }
         if (q.type === 'prevention') {
-            return ensurePreventionLevels(q).map(n => (n.label || n.niveau) + ': ' + (answer?.[n.niveau] || '')).join(' | ');
+            const preventionAnswer = answer || {};
+            return ensurePreventionLevels(q).map(n => (n.label || n.niveau) + ': ' + (preventionAnswer[n.niveau] || '')).join(' | ');
         }
         return String(answer);
     }
