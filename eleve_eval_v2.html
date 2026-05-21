@@ -47,12 +47,17 @@
         .login-error.visible { display: block; }
 
         /* === EVAL LIST === */
+        .eval-list-screen, #screen-warning, #screen-chrono-warning {
+            justify-content: flex-start;
+            padding-top: 24px;
+            padding-bottom: 24px;
+        }
         .eval-list-screen { background: #f0f4f8; }
         .student-banner {
             background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
             padding: 16px 24px; border-radius: 16px; margin-bottom: 24px;
             display: flex; justify-content: space-between; align-items: center;
-            width: 100%; max-width: 700px;
+            width: 100%; max-width: 700px; flex-shrink: 0;
         }
         .student-banner .sb-info { font-weight: 700; font-size: 1.1rem; }
         .student-banner .sb-class { opacity: 0.8; font-size: 0.9rem; }
@@ -62,7 +67,7 @@
         }
 
         .eval-list-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 16px; text-align: center; }
-        .eval-list-container { width: 100%; max-width: 700px; }
+        .eval-list-container { width: 100%; max-width: 700px; flex-shrink: 0; }
         .eval-list-empty { text-align: center; color: #94a3b8; padding: 40px; }
 
         .eval-card {
@@ -851,7 +856,7 @@
         try {
             // Get all published evals (no orderBy to avoid composite index requirement)
             const qEvals = query(collection(db, "eval_banque_v2"), where("publie", "==", true));
-            const snap = await getDocs(qEvals);
+            const snap = await getDocsWithRetry(qEvals, 'Chargement des evaluations');
 
             const evals = [];
             snap.forEach(d => {
@@ -874,8 +879,8 @@
             const submittedSet = new Set();
             for (const ev of evals) {
                 const respDocId = currentUser.userCode + '_' + ev.id;
-                const respSnap = await getDoc(doc(db, "eval_reponses", respDocId));
-                if (respSnap.exists()) submittedSet.add(ev.id);
+                const respSnap = await getDocSafe(doc(db, "eval_reponses", respDocId));
+                if (respSnap && respSnap.exists()) submittedSet.add(ev.id);
             }
 
             if (evals.length === 0) {
@@ -897,9 +902,9 @@
                 const doneInfo = isDone ? '<span class="ecm-done">✓ Deja fait</span>' : '';
                 const evClasseIds = ev.classeIds || (ev.classeId ? [ev.classeId] : []);
                 const classeInfo = evClasseIds.length > 0
-                    ? '<span class="ecm-classe">🎯 ' + evClasseIds.join(', ') + '</span>'
+                    ? '<span class="ecm-classe">🎯 ' + escHtml(evClasseIds.join(', ')) + '</span>'
                     : '<span class="ecm-classe ecm-all">Toutes classes</span>';
-                const moduleInfo = ev.moduleId ? '<span class="ecm-module">📘 ' + ev.moduleId + '</span>' : '';
+                const moduleInfo = ev.moduleId ? '<span class="ecm-module">📘 ' + escHtml(ev.moduleId) + '</span>' : '';
                 const pastilleInfo = buildPastilleChip(ev.pastilleNiveau, true);
                 const modeNotation = getModeNotation(ev);
                 let nonNoteInfo = '';
@@ -909,7 +914,7 @@
                     nonNoteInfo = '<span class="ecm-module" style="background:rgba(59,130,246,0.15);color:#93c5fd;">🧪 Note formative</span>';
                 }
 
-                card.innerHTML = '<div class="eval-card-title">' + (ev.titre || 'Evaluation') + '</div>' +
+                card.innerHTML = '<div class="eval-card-title">' + escHtml(ev.titre || 'Evaluation') + '</div>' +
                     '<div class="eval-card-meta">' +
                     classeInfo + moduleInfo + pastilleInfo + nonNoteInfo +
                     '<span class="ecm-questions">' + qCount + ' questions</span>' +
@@ -920,13 +925,54 @@
 
         } catch(e) {
             console.error("Erreur chargement evals:", e);
-            container.innerHTML = '<p style="text-align:center; color:#ef4444;">Erreur : ' + e.message + '</p>';
+            container.innerHTML = renderLoadError(e.message);
+            const retryBtn = container.querySelector('.retry-load-evals');
+            if (retryBtn) retryBtn.addEventListener('click', loadAvailableEvals);
         }
     }
 
     function isInGroup(groupId, classeId) {
         const classes = getClassesFromGroupe(groupId);
         return classes.includes(classeId);
+    }
+
+    function withTimeout(promise, ms, label) {
+        let timeoutId = null;
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error((label || 'Operation') + ' : delai depasse')), ms);
+        });
+        return Promise.race([promise, timeoutPromise]).finally(() => {
+            if (timeoutId) clearTimeout(timeoutId);
+        });
+    }
+
+    function renderLoadError(message) {
+        const safeMessage = escHtml(message || 'La connexion aux evaluations a echoue.');
+        return '<div class="eval-list-empty">' +
+            '<div style="font-size:3rem;margin-bottom:12px;">⚠️</div>' +
+            '<p style="color:#dc2626;font-weight:700;margin-bottom:8px;">Impossible de charger les evaluations.</p>' +
+            '<p style="color:#64748b;margin-bottom:16px;">' + safeMessage + '</p>' +
+            '<button class="login-btn retry-load-evals" style="max-width:260px;margin:0 auto;">Reessayer</button>' +
+            '</div>';
+    }
+
+    async function getDocsWithRetry(q, label) {
+        try {
+            return await withTimeout(getDocs(q), 10000, label);
+        } catch(firstErr) {
+            console.warn('[EVALS] Premiere tentative echouee:', firstErr.message);
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            return await withTimeout(getDocs(q), 12000, label + ' (retry)');
+        }
+    }
+
+    async function getDocSafe(ref) {
+        try {
+            return await withTimeout(getDoc(ref), 5000, 'Verification copie deja rendue');
+        } catch(e) {
+            console.warn('[EVALS] Verification copie deja rendue impossible:', e.message);
+            return null;
+        }
     }
 
     // === START EVAL ===
@@ -2095,8 +2141,8 @@
                 const resultClass = result.level === 'NT' ? '' : (result.isCorrect ? 'dc-correct' : 'dc-incorrect');
 
                 html += '<div class="detail-card ' + cardClass + '">';
-                html += '<div class="dc-header"><span class="dc-num">Q' + (i + 1) + (q.competence ? ' — ' + q.competence : '') + '</span><span class="dc-result ' + resultClass + '">' + resultLabel + ' (' + (result.earnedPoints || 0) + '/' + (q.points || 0) + ' pts)</span></div>';
-                html += '<div class="dc-question">' + q.question + '</div>';
+                html += '<div class="dc-header"><span class="dc-num">Q' + (i + 1) + (q.competence ? ' — ' + escHtml(q.competence) : '') + '</span><span class="dc-result ' + resultClass + '">' + resultLabel + ' (' + (result.earnedPoints || 0) + '/' + (q.points || 0) + ' pts)</span></div>';
+                html += '<div class="dc-question">' + escHtml(q.question || '') + '</div>';
 
                 // Your answer
                 if (result.studentAnswer !== null && result.studentAnswer !== undefined) {
@@ -2110,12 +2156,12 @@
 
                 // Correction
                 if (q.correction) {
-                    html += '<div class="dc-answer-block dc-correction"><div class="dc-label">📝 Correction :</div>' + q.correction + '</div>';
+                    html += '<div class="dc-answer-block dc-correction"><div class="dc-label">📝 Correction :</div>' + escHtml(q.correction).replace(/\n/g, '<br>') + '</div>';
                 }
 
                 // Explication
                 if (q.explication) {
-                    html += '<div class="dc-answer-block dc-explication"><div class="dc-label">💡 Explication :</div>' + q.explication + '</div>';
+                    html += '<div class="dc-answer-block dc-explication"><div class="dc-label">💡 Explication :</div>' + escHtml(q.explication).replace(/\n/g, '<br>') + '</div>';
                 }
 
                 html += '</div>';
@@ -2137,40 +2183,40 @@
     }
 
     function formatAnswer(q, answer) {
-        if (q.type === 'qcm_single') return (q.choices || [])[answer] || '?';
-        if (q.type === 'qcm_multi') return (answer || []).map(i => (q.choices || [])[i]).join(', ') || '?';
+        if (q.type === 'qcm_single') return escHtml((q.choices || [])[answer] || '?');
+        if (q.type === 'qcm_multi') return escHtml((answer || []).map(i => (q.choices || [])[i]).join(', ') || '?');
         if (q.type === 'vf') return answer ? 'Vrai' : 'Faux';
-        if (q.type === 'mot') return String(answer);
-        if (q.type === 'nombre') return String(answer);
-        if (q.type === 'ordonner') return (answer || []).map(i => (q.items || [])[i]).join(' → ');
+        if (q.type === 'mot') return escHtml(String(answer));
+        if (q.type === 'nombre') return escHtml(String(answer));
+        if (q.type === 'ordonner') return escHtml((answer || []).map(i => (q.items || [])[i]).join(' → '));
         if (q.type === 'pad') {
             const padAnswer = answer || {};
-            return [
+            return escHtml([
                 'Danger: ' + (padAnswer.danger || ''),
                 'Situation: ' + (padAnswer.sitdang || ''),
                 'Evenement: ' + (padAnswer.event || ''),
                 'Dommage: ' + (padAnswer.dommage || '')
-            ].join(' | ');
+            ].join(' | '));
         }
         if (q.type === 'prevention') {
             const preventionAnswer = answer || {};
-            return ensurePreventionLevels(q).map(n => (n.label || n.niveau) + ': ' + (preventionAnswer[n.niveau] || '')).join(' | ');
+            return escHtml(ensurePreventionLevels(q).map(n => (n.label || n.niveau) + ': ' + (preventionAnswer[n.niveau] || '')).join(' | '));
         }
-        return String(answer);
+        return escHtml(String(answer));
     }
 
     function formatCorrectAnswer(q) {
-        if (q.type === 'qcm_single') return (q.choices || [])[q.correct] || '?';
-        if (q.type === 'qcm_multi') return (q.correct || []).map(i => (q.choices || [])[i]).join(', ') || '?';
+        if (q.type === 'qcm_single') return escHtml((q.choices || [])[q.correct] || '?');
+        if (q.type === 'qcm_multi') return escHtml((q.correct || []).map(i => (q.choices || [])[i]).join(', ') || '?');
         if (q.type === 'vf') return q.correct ? 'Vrai' : 'Faux';
-        if (q.type === 'mot') return q.correct || q.reponse || '?';
-        if (q.type === 'nombre') return String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : '');
-        if (q.type === 'ordonner') return (q.correct || []).map(i => (q.items || [])[i]).join(' → ');
+        if (q.type === 'mot') return escHtml(q.correct || q.reponse || '?');
+        if (q.type === 'nombre') return escHtml(String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : ''));
+        if (q.type === 'ordonner') return escHtml((q.correct || []).map(i => (q.items || [])[i]).join(' → '));
         if (q.type === 'pad') {
-            return [q.danger, q.situation_dangereuse, q.evenement_declencheur, q.dommage].filter(Boolean).join(' → ');
+            return escHtml([q.danger, q.situation_dangereuse, q.evenement_declencheur, q.dommage].filter(Boolean).join(' → '));
         }
         if (q.type === 'prevention') {
-            return ensurePreventionLevels(q).map(n => (n.label || n.niveau) + ': ' + (n.bonne_reponse || '')).join(' | ');
+            return escHtml(ensurePreventionLevels(q).map(n => (n.label || n.niveau) + ': ' + (n.bonne_reponse || '')).join(' | '));
         }
         return '?';
     }
