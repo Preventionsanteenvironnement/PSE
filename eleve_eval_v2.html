@@ -1833,16 +1833,6 @@
                 try { localStorage.removeItem(backupKey); } catch(e) {}
             }
 
-            // 3. Write notes + copies to resultats (ne bloque pas l'affichage)
-            try {
-                await withSubmitTimeout(
-                    writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes),
-                    'Enregistrement des resultats'
-                );
-            } catch(e) {
-                console.warn("Erreur writeResults:", e.message);
-            }
-
             // Nettoyer auto-save. Si l'envoi principal a echoue, garder le backup
             // local pour permettre un renvoi automatique a la prochaine connexion.
             clearAutoSave(!evalReponsesSent);
@@ -1850,11 +1840,18 @@
             // Desactiver la protection fermeture (copie envoyee)
             window.onbeforeunload = null;
 
-            // 4. TOUJOURS afficher les resultats a l'eleve (meme si Firebase a eu un souci)
+            // 3. TOUJOURS afficher les resultats a l'eleve, TOUT DE SUITE
+            //    (meme si Firebase a eu un souci) — sans attendre l'enregistrement secondaire
             if (!evalReponsesSent) {
                 alert("Tes reponses sont sauvegardees localement. Elles seront envoyees au prof des que la connexion revient.");
             }
             showResults(correctionResult);
+
+            // 4. Ecriture note + copie EN ARRIERE-PLAN (ne bloque plus l'affichage du resultat)
+            withSubmitTimeout(
+                writeResults(currentUser.userCode, currentEvalId, currentEval, correctionResult, tempsSecondes),
+                'Enregistrement des resultats'
+            ).catch(function(e) { console.warn("Erreur writeResults (arriere-plan):", e.message); });
         } catch(fatalErr) {
             console.error("Erreur fatale submitEval:", fatalErr);
             isSubmitting = false;
