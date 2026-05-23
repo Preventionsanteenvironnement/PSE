@@ -652,6 +652,7 @@
     let timerRemaining = 0;
     let isSubmitting = false;
     const SUBMIT_TIMEOUT_MS = 15000;
+    let lastEmergencyCopy = null;
 
     // === FILET DE SECURITE : auto-save localStorage ===
     function autoSaveAnswers() {
@@ -733,6 +734,55 @@
             if (timeoutId) clearTimeout(timeoutId);
         }
     }
+
+    function safeFilePart(str) {
+        return String(str || 'copie').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'copie';
+    }
+
+    function buildEmergencyCopy(respDocId, respData, correctionResult, tempsSecondes) {
+        return {
+            version: 1,
+            type: 'mapse_auto_eval_secours',
+            exportedAt: new Date().toISOString(),
+            respDocId: respDocId,
+            eleveCode: currentUser && currentUser.userCode,
+            classe: currentUser && currentUser.classe,
+            evalId: currentEvalId,
+            evalTitre: currentEval && currentEval.titre,
+            evalData: currentEval,
+            response: respData,
+            correction: correctionResult,
+            answers: answers,
+            tempsSecondes: tempsSecondes,
+            alertes: {
+                tabSwitchCount,
+                copyPasteCount,
+                rightClickCount,
+                screenshotCount
+            }
+        };
+    }
+
+    function downloadJsonFile(payload) {
+        const code = safeFilePart(payload.eleveCode || (currentUser && currentUser.userCode));
+        const evalId = safeFilePart(payload.evalId || currentEvalId);
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'copie_secours_' + code + '_' + evalId + '_' + stamp + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    window.downloadEmergencyCopy = function() {
+        if (!lastEmergencyCopy) {
+            alert("Aucune copie de secours disponible pour le moment.");
+            return;
+        }
+        downloadJsonFile(lastEmergencyCopy);
+    };
 
     // === MOBILE DETECTION ===
     function isMobile() { return window.innerWidth <= 600; }
@@ -1800,6 +1850,7 @@
                 screenshotCount,
                 tempsSecondes
             };
+            lastEmergencyCopy = buildEmergencyCopy(respDocId, respData, correctionResult, tempsSecondes);
 
             // Backup localStorage AVANT tentative Firebase
             var backupKey = 'eval_submit_backup_' + currentUser.userCode + '_' + currentEvalId;
@@ -1843,7 +1894,8 @@
             // 3. TOUJOURS afficher les resultats a l'eleve, TOUT DE SUITE
             //    (meme si Firebase a eu un souci) — sans attendre l'enregistrement secondaire
             if (!evalReponsesSent) {
-                alert("Tes reponses sont sauvegardees localement. Elles seront envoyees au prof des que la connexion revient.");
+                alert("Tes reponses sont sauvegardees localement. Telecharge aussi la copie JSON de secours avant de quitter la salle.");
+                downloadJsonFile(lastEmergencyCopy);
             }
             showResults(correctionResult);
 
@@ -2173,6 +2225,7 @@
 
         // Boutons de navigation
         html += '<div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:28px;">' +
+            '<button onclick="downloadEmergencyCopy()" style="padding:14px 22px; background:#f59e0b; color:#111827; border:none; border-radius:10px; font-weight:800; font-size:1rem; cursor:pointer;">💾 Télécharger ma copie JSON</button>' +
             '<button onclick="retourAListe()" style="padding:14px 22px; background:#2563eb; color:#fff; border:none; border-radius:10px; font-weight:800; font-size:1rem; cursor:pointer;">📋 Faire une autre evaluation</button>' +
             '<a href="https://mapse.fr" style="padding:14px 22px; background:#e2e8f0; color:#1e293b; border-radius:10px; font-weight:800; font-size:1rem; text-decoration:none;">🏠 Retour a l\'accueil</a>' +
             '</div>';
