@@ -666,7 +666,7 @@
                     console.log('[FLUSH] Renvoi backup eval:', backup.respDocId);
                     // Tenter de renvoyer en arriere-plan
                     (function(bk, storageKey) {
-                        setDoc(doc(db, "eval_reponses", bk.respDocId), bk.data)
+                        setDoc(doc(db, "eval_reponses", bk.respDocId), { ...bk.data, submittedAt: serverTimestamp() })
                             .then(function() {
                                 console.log('[FLUSH] Backup eval envoye:', bk.respDocId);
                                 try { localStorage.removeItem(storageKey); } catch(e) {}
@@ -1574,7 +1574,7 @@
                 modeNotation: getModeNotation(currentEval),
                 nonNote: isHorsMoyenneMode(getModeNotation(currentEval)),
                 bareme: correctionResult.bareme,
-                submittedAt: new Date().toISOString(),
+                submittedAtClient: new Date().toISOString(),
                 tabSwitchCount,
                 copyPasteCount,
                 rightClickCount,
@@ -1595,14 +1595,14 @@
 
             var evalReponsesSent = false;
             try {
-                await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), respData), 'Envoi des reponses');
+                await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), { ...respData, submittedAt: serverTimestamp() }), 'Envoi des reponses');
                 evalReponsesSent = true;
             } catch(e) {
                 console.error("Erreur envoi eval_reponses (tentative 1):", e);
                 // Retry apres 2s
                 try {
                     await new Promise(function(r) { setTimeout(r, 2000); });
-                    await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), respData), 'Envoi des reponses (retry)');
+                    await withSubmitTimeout(setDoc(doc(db, "eval_reponses", respDocId), { ...respData, submittedAt: serverTimestamp() }), 'Envoi des reponses (retry)');
                     evalReponsesSent = true;
                 } catch(e2) {
                     console.error("Erreur envoi eval_reponses (tentative 2):", e2);
