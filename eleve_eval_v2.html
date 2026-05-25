@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Evaluation PSE V2</title>
+    <title>Auto-Evaluation PSE</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -507,7 +507,7 @@
 <div class="screen" id="screen-login">
     <div class="login-card">
         <div class="login-icon">📋</div>
-        <div class="login-title">Auto-Evaluation PSE V2</div>
+        <div class="login-title">Auto-Evaluation PSE</div>
         <div class="login-sub">Entre ton code eleve pour acceder a tes evaluations.</div>
         <input type="text" class="login-input" id="login-code" maxlength="10" placeholder="CODE" autocomplete="off">
         <button class="login-btn" id="btn-login" onclick="doLogin()">Se connecter</button>
@@ -904,20 +904,26 @@
         container.innerHTML = '<p style="text-align:center; color:#94a3b8;">Chargement...</p>';
 
         try {
-            // Get all published evals (no orderBy to avoid composite index requirement)
-            const qEvals = query(collection(db, "eval_banque_v2"), where("publie", "==", true));
-            const snap = await getDocsWithRetry(qEvals, 'Chargement des evaluations');
-
+            // Lit les DEUX banques (auto-evaluations unifiees v1 + v2)
+            const banks = ["eval_banque", "eval_banque_v2"];
             const evals = [];
-            snap.forEach(d => {
-                const data = d.data();
-                // Filter by class: support both classeIds (array) and classeId (string) for backward compat
-                // PROF bypass: show ALL evals for teacher testing
-                const evalClasseIds = data.classeIds || (data.classeId ? [data.classeId] : []);
-                if (currentUser.classe === 'PROF' || evalClasseIds.length === 0 || evalClasseIds.includes(currentUser.classe) || evalClasseIds.some(id => isInGroup(id, currentUser.classe))) {
-                    evals.push({ id: d.id, ...data });
-                }
-            });
+            const seenIds = new Set();
+            for (const bank of banks) {
+                let snap;
+                try {
+                    snap = await getDocsWithRetry(query(collection(db, bank), where("publie", "==", true)), 'Chargement des evaluations');
+                } catch (e) { console.warn('Lecture ' + bank + ' impossible:', e && e.message); continue; }
+                snap.forEach(d => {
+                    if (seenIds.has(d.id)) return;
+                    const data = d.data();
+                    // Filtre par classe ; PROF bypass : tout afficher
+                    const evalClasseIds = data.classeIds || (data.classeId ? [data.classeId] : []);
+                    if (currentUser.classe === 'PROF' || evalClasseIds.length === 0 || evalClasseIds.includes(currentUser.classe) || evalClasseIds.some(id => isInGroup(id, currentUser.classe))) {
+                        seenIds.add(d.id);
+                        evals.push({ id: d.id, _bank: bank, ...data });
+                    }
+                });
+            }
             // Sort client-side by updatedAt descending
             evals.sort((a, b) => {
                 const ta = a.updatedAt && a.updatedAt.toMillis ? a.updatedAt.toMillis() : (a.updatedAt || 0);
