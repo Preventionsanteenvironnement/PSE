@@ -605,6 +605,7 @@ function answerMCQ(i){
 
 /* ---- SORT (tap to place) ---- */
 let sortState = {};
+function sortHint(){ return ' rangées — clique un mot puis une colonne. Tu peux re-cliquer un mot déjà rangé pour le reprendre.'; }
 function renderSort(ex){
     sortState = { selected:null, placed:{} };
     let h = '<div class="prompt">'+ex.prompt+'</div>';
@@ -615,12 +616,27 @@ function renderSort(ex){
     h += '<div class="baskets">';
     ex.baskets.forEach(b=>{ h += '<div class="basket"><h4>'+b.label+'</h4><div class="drop" id="drop-'+b.key+'" onclick="placeChip(\''+b.key+'\')"></div></div>'; });
     h += '</div>';
-    h += '<div class="build-hint">Astuce : clique un mot, puis clique la colonne où le ranger.</div>';
-    h += '<button class="btn-next" id="checkBtn" onclick="checkSort()" disabled style="opacity:.5">Vérifier</button><div id="fb"></div>';
+    h += '<div class="build-hint" id="sortCount">0 / '+ex.items.length+sortHint()+'</div>';
+    h += '<button class="btn-next" id="checkBtn" onclick="checkSort()">Vérifier</button><div id="fb"></div>';
     $('exbody').innerHTML = h;
 }
+function sortPlacedCount(){ return Object.keys(sortState.placed).length; }
+function updateSortCount(){
+    const ex = MISSIONS[mi].ex[xi];
+    const el = $('sortCount');
+    if(el) el.textContent = sortPlacedCount()+' / '+ex.items.length+sortHint();
+}
 function selectChip(i){
-    if(sortState.placed[i]!==undefined) return;
+    if(sortState.placed[i]!==undefined){
+        // reprendre une étiquette déjà rangée
+        delete sortState.placed[i];
+        const chip = $('chip'+i);
+        chip.classList.remove('selected','placed-ok','placed-bad');
+        $('pool').appendChild(chip);
+        sortState.selected = null;
+        updateSortCount();
+        return;
+    }
     sortState.selected = i;
     document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
     $('chip'+i).classList.add('selected');
@@ -632,15 +648,16 @@ function placeChip(key){
     const chip = $('chip'+i);
     chip.classList.remove('selected');
     $('drop-'+key).appendChild(chip);
-    chip.onclick = null;
     sortState.selected = null;
-    const ex = MISSIONS[mi].ex[xi];
-    if(Object.keys(sortState.placed).length === ex.items.length){
-        const cb = $('checkBtn'); cb.disabled=false; cb.style.opacity=1;
-    }
+    updateSortCount();
 }
 function checkSort(){
     const ex = MISSIONS[mi].ex[xi];
+    if(sortPlacedCount() < ex.items.length){
+        const reste = ex.items.length - sortPlacedCount();
+        $('fb').innerHTML = '<div class="feedback-card wrong"><b>✋ Pas encore fini</b>Il te reste '+reste+' étiquette'+(reste>1?'s':'')+' à ranger avant de vérifier.</div>';
+        return;
+    }
     let good=0;
     ex.items.forEach((it,i)=>{
         const chip = $('chip'+i);
@@ -651,7 +668,7 @@ function checkSort(){
     const allgood = good===ex.items.length;
     $('checkBtn').style.display='none';
     let msg = allgood ? "Parfait, tout est bien rangé ! "+ex.explain
-                      : "Presque ! Les cases en rouge sont mal placées. "+ex.explain;
+                      : "Presque ! Les étiquettes en rouge sont mal placées. "+ex.explain;
     $('fb').innerHTML = fbBox(allgood, msg) +
         (allgood? nextBtn('nextExercise()') :
          '<button class="btn-ghost" onclick="renderSort(MISSIONS[mi].ex[xi]); total--;">↺ Je recommence ce tri</button>'+nextBtn('nextExercise()','Continuer'));
