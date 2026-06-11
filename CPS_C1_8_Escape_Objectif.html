@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escape : la chaîne de l'objectif</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #1e293b; line-height: 1.6; min-height: 100vh; padding-bottom: 50px; }
+.container { max-width: 560px; margin: 0 auto; padding: 16px; }
+.back-btn { display: inline-flex; align-items: center; gap: 4px; color: #c4b5fd; text-decoration: none; font-size: 0.95rem; font-weight: 500; margin-bottom: 12px; }
+.back-btn:hover { color: #ede9fe; }
+.header-card { background: linear-gradient(135deg, #4c1d95, #7c3aed); border-radius: 15px; padding: 24px 22px; color: white; text-align: center; margin-bottom: 14px; box-shadow: 0 4px 20px rgba(124,58,237,0.4); border: 1px solid #6d28d9; }
+.header-card .emoji { font-size: 2.2rem; margin-bottom: 6px; }
+.header-card h1 { font-size: 1.5rem; margin-bottom: 6px; font-weight: 800; }
+.header-card p { font-size: 0.9rem; opacity: 0.93; }
+.progress-text { font-size: 0.78rem; color: #94a3b8; text-align: center; margin-bottom: 12px; }
+.card { background: white; border-radius: 15px; padding: 22px; margin-bottom: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.25); animation: fadeIn 0.35s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes pop { 0%{transform:scale(.6);} 60%{transform:scale(1.15);} 100%{transform:scale(1);} }
+@keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+.section { display: none; }
+.section.active { display: block; }
+.card-title { font-size: 1.15rem; font-weight: 800; color: #6d28d9; margin-bottom: 14px; }
+.intro-text { font-size: 0.92rem; color: #475569; margin-bottom: 14px; }
+.intro-text strong { color: #1e293b; }
+
+.scenario-btn { display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:16px; border-radius:14px; border:2px solid #e2e8f0; background:#fff; cursor:pointer; font-family:inherit; margin-bottom:10px; transition:all .18s; }
+.scenario-btn:hover { border-color:#8b5cf6; background:#f5f3ff; transform:translateY(-1px); }
+.scenario-btn .sc-emoji { font-size:2rem; flex-shrink:0; }
+.scenario-btn .sc-title { font-size:1.02rem; font-weight:700; color:#1e293b; }
+.scenario-btn .sc-sub { font-size:0.82rem; color:#64748b; }
+
+/* Objective live panel */
+.obj-panel { background:linear-gradient(135deg,#faf5ff,#f3e8ff); border:2px solid #e9d5ff; border-radius:14px; padding:14px 16px; margin-bottom:16px; }
+.obj-panel .obj-head { font-size:0.78rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#7c3aed; margin-bottom:8px; }
+.obj-dream { font-size:1.02rem; font-weight:700; color:#4c1d95; line-height:1.4; }
+.obj-line { font-size:0.92rem; color:#5b21b6; margin-top:6px; padding-left:14px; border-left:3px solid #c4b5fd; line-height:1.45; animation:fadeIn .4s ease; }
+.obj-line b { color:#6d28d9; }
+
+/* Lock / door */
+.lock-wrap { text-align:center; margin:10px 0 16px; }
+.lock-icon { font-size:3rem; display:inline-block; }
+.lock-icon.open { animation:pop .4s ease; }
+.door-count { font-size:0.8rem; color:#64748b; margin-bottom:10px; text-align:center; }
+
+.prompt { font-size:0.98rem; font-weight:700; color:#1e293b; margin-bottom:6px; }
+.prompt .why { display:block; font-size:0.8rem; font-weight:600; color:#94a3b8; margin-top:2px; }
+.choice-grid { display:grid; gap:10px; margin-bottom:10px; }
+.choice-btn { padding:14px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; font-family:inherit; font-size:0.92rem; font-weight:600; transition:all .18s; text-align:left; line-height:1.45; color:#334155; }
+.choice-btn:hover:not(:disabled){ border-color:#8b5cf6; background:#f5f3ff; }
+.choice-btn:disabled{ cursor:default; }
+.choice-btn.good{ border-color:#86efac; background:#dcfce7; color:#166534; }
+.choice-btn.bad{ border-color:#fca5a5; background:#fee2e2; color:#991b1b; animation:shake .3s ease; }
+
+.feedback-card { border-radius:12px; padding:13px 15px; margin-bottom:12px; font-size:0.88rem; line-height:1.5; animation:fadeIn .3s ease; }
+.feedback-card.correct{ background:#dcfce7; border:2px solid #86efac; color:#166534; }
+.feedback-card.wrong{ background:#fef3c7; border:2px solid #fcd34d; color:#92400e; }
+.feedback-card b{ display:block; margin-bottom:2px; }
+
+.btn-primary { display:block; width:100%; background:linear-gradient(135deg,#7c3aed,#8b5cf6); color:white; border:none; border-radius:12px; padding:15px 24px; font-size:1.02rem; font-weight:800; cursor:pointer; font-family:inherit; margin-top:8px; box-shadow:0 3px 12px rgba(124,58,237,0.3); transition:transform .15s; }
+.btn-primary:hover{ transform:translateY(-1px); }
+.btn-next { display:block; width:100%; background:#8b5cf6; color:white; border:none; border-radius:10px; padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-next:hover{ background:#7c3aed; }
+.btn-ghost { display:block; width:100%; background:#fff; color:#7c3aed; border:2px solid #ddd6fe; border-radius:10px; padding:11px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:8px; }
+
+.field-input { width:100%; border:2px solid #e2e8f0; border-radius:10px; padding:11px 13px; font-family:inherit; font-size:0.92rem; color:#1e293b; margin-bottom:10px; }
+.field-input:focus{ outline:none; border-color:#8b5cf6; }
+.field-label { font-size:0.88rem; font-weight:700; margin-bottom:6px; color:#334155; }
+.hint { font-size:0.78rem; color:#94a3b8; margin-bottom:8px; }
+
+/* final plan */
+.plan-step { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:#f5f3ff; border-radius:12px; margin-bottom:8px; animation:fadeIn .35s ease; }
+.plan-num { width:30px; height:30px; border-radius:50%; background:#7c3aed; color:white; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0; }
+.plan-step.dream { background:linear-gradient(135deg,#fef3c7,#fde68a); }
+.plan-step.dream .plan-num{ background:#d97706; }
+.plan-txt { font-size:0.9rem; color:#1e293b; line-height:1.45; padding-top:3px; }
+.win-emoji { font-size:3rem; text-align:center; animation:pop .5s ease; }
+@media print { .back-btn,.btn-primary,.btn-next,.btn-ghost{ display:none !important; } body{ background:white; } }
+</style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back-btn">← Retour</a>
+    <div class="header-card">
+        <div class="emoji">🔐</div>
+        <h1>Escape : la chaîne de l'objectif</h1>
+        <p>Franchis les portes verrouillées en remontant ton objectif jusqu'à ton tout premier pas !</p>
+    </div>
+    <div class="progress-text" id="ptext">Choisis ta mission</div>
+
+    <div id="screen-choose" class="section active">
+        <div class="card">
+            <div class="card-title">🎯 Choisis ta mission</div>
+            <p class="intro-text">Tu as un grand objectif… mais pour l'atteindre, il faut d'abord franchir plusieurs <strong>portes</strong>. À chaque porte, trouve <strong>ce qu'il faut faire AVANT</strong>. À la fin, tu obtiens ton <strong>plan d'action complet</strong> !</p>
+            <div id="scenList"></div>
+        </div>
+    </div>
+
+    <div id="screen-play" class="section"></div>
+    <div id="screen-free" class="section"></div>
+    <div id="screen-win" class="section"></div>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const SCENARIOS = {
+vacances: { emoji:"🏖️", title:"Partir en vacances cet été", sub:"vacances → argent → job → candidatures → 1er pas",
+  dream:"Je veux partir en vacances cet été.",
+  chain:[
+    { ask:"Pour partir en vacances, qu'est-ce qu'il te faut d'abord ?", why:"De quoi as-tu besoin pour payer ?",
+      options:[{text:"De l'argent pour payer le voyage.", ok:true},
+               {text:"Juste avoir très envie de partir.", ok:false, fb:"L'envie ne paie pas le billet. Il manque quelque chose de concret."},
+               {text:"Attendre que quelqu'un m'invite.", ok:false, fb:"Ça dépend des autres. Qu'est-ce que TOI tu peux obtenir ?"}],
+      refine:"donc je dois gagner de l'argent",
+      precise:{ ask:"Précise : combien, et pour quand ?",
+        options:[{text:"600 € avant le 30 juin", ok:true},
+                 {text:"beaucoup d'argent", ok:false, fb:"« Beaucoup » ne se mesure pas. Mets un montant et une date."},
+                 {text:"de l'argent un jour", ok:false, fb:"Sans date, ça n'avance jamais."}]} },
+    { ask:"Pour gagner cet argent, qu'est-ce qu'il faut AVANT ?", why:"Comment obtenir de l'argent par toi-même ?",
+      options:[{text:"Trouver un petit job cet été.", ok:true},
+               {text:"Espérer gagner au loto.", ok:false, fb:"Le hasard ne dépend pas de toi."},
+               {text:"Demander à mes parents de tout payer.", ok:false, fb:"Ça dépend d'eux, pas de toi."}],
+      refine:"en trouvant un job d'été",
+      precise:{ ask:"Précise le job :",
+        options:[{text:"un job en juillet, près de chez moi", ok:true},
+                 {text:"un travail sympa", ok:false, fb:"Trop vague : quel type ? quand ? où ?"},
+                 {text:"un job très bien payé", ok:false, fb:"Ce n'est pas une précision utile pour agir."}]} },
+    { ask:"Pour trouver ce job, qu'est-ce qu'il faut AVANT ?", why:"Comment se faire connaître des employeurs ?",
+      options:[{text:"Envoyer des candidatures aux employeurs.", ok:true},
+               {text:"Attendre qu'on m'appelle.", ok:false, fb:"Attendre passivement ne dépend pas de toi."},
+               {text:"Compter sur la chance.", ok:false, fb:"La chance n'est pas une action."}],
+      refine:"en envoyant des candidatures",
+      precise:{ ask:"Précise :",
+        options:[{text:"à 5 employeurs avant fin mai", ok:true},
+                 {text:"à plein de gens", ok:false, fb:"Combien exactement ? Et pour quand ?"},
+                 {text:"quand j'aurai le temps", ok:false, fb:"Fixe une date, sinon ça traîne."}]} },
+    { ask:"Pour envoyer une candidature, qu'est-ce qu'il te faut AVANT ?", why:"Avec quoi convainc-t-on un employeur ?",
+      options:[{text:"Un CV et une lettre de motivation.", ok:true},
+               {text:"Rien, j'y vais comme ça.", ok:false, fb:"Sans CV, difficile de convaincre."},
+               {text:"Des vêtements de marque.", ok:false, fb:"Ce n'est pas ça qui compte pour postuler."}],
+      refine:"avec un CV et une lettre prêts",
+      precise:{ ask:"Précise :",
+        options:[{text:"finis ce week-end", ok:true},
+                 {text:"un de ces jours", ok:false, fb:"Mets une échéance claire."},
+                 {text:"plus tard", ok:false, fb:"« Plus tard » = jamais. Choisis quand."}]} },
+    { ask:"Pour faire ton CV et savoir où postuler, quel est ton TOUT PREMIER PAS, dès ce soir ?", why:"La plus petite action possible, maintenant.",
+      options:[{text:"Chercher et noter 5 employeurs sur Internet.", ok:true},
+               {text:"Décrocher le job tout de suite.", ok:false, fb:"C'est le but, pas le premier pas !"},
+               {text:"Être déjà en vacances.", ok:false, fb:"On parle de la 1re action, pas du rêve final."}],
+      refine:"en commençant CE SOIR par lister 5 employeurs sur Internet",
+      precise:null, isFirst:true }
+  ]},
+
+permis: { emoji:"🚗", title:"Passer mon permis de conduire", sub:"permis → examens → conduite → auto-école → 1er pas",
+  dream:"Je veux passer mon permis de conduire.",
+  chain:[
+    { ask:"Pour avoir ton permis, qu'est-ce qu'il faut réussir d'abord ?", why:"Qu'est-ce qui dépend de toi ?",
+      options:[{text:"Réussir le code, puis la conduite.", ok:true},
+               {text:"Avoir de la chance le jour J.", ok:false, fb:"La chance ne dépend pas de toi : c'est ta préparation qui compte."},
+               {text:"Que l'examinateur soit gentil.", ok:false, fb:"Ça dépend de lui, pas de toi."}],
+      refine:"donc je dois réussir le code et la conduite",
+      precise:{ ask:"Précise : quand viser le code ?",
+        options:[{text:"le code réussi avant juin", ok:true},
+                 {text:"le code un jour", ok:false, fb:"Sans date, on repousse toujours."},
+                 {text:"le code vite fait", ok:false, fb:"« Vite » n'est pas une date."}]} },
+    { ask:"Pour réussir le code et la conduite, qu'est-ce qu'il faut AVANT ?", why:"Comment apprendre vraiment ?",
+      options:[{text:"Prendre des cours et des heures de conduite.", ok:true},
+               {text:"Regarder une vidéo une seule fois.", ok:false, fb:"Une vidéo ne suffit pas pour réussir."},
+               {text:"Conduire seul sans moniteur.", ok:false, fb:"Interdit et dangereux : il faut un moniteur."}],
+      refine:"en prenant des heures de conduite",
+      precise:{ ask:"Précise le rythme :",
+        options:[{text:"2 heures par semaine", ok:true},
+                 {text:"beaucoup d'heures", ok:false, fb:"Combien ? Mets un nombre."},
+                 {text:"de temps en temps", ok:false, fb:"Trop flou pour progresser."}]} },
+    { ask:"Pour prendre des heures de conduite, qu'est-ce qu'il faut AVANT ?", why:"Où apprend-on à conduire ?",
+      options:[{text:"M'inscrire dans une auto-école.", ok:true},
+               {text:"Attendre d'avoir 30 ans.", ok:false, fb:"Rien ne t'oblige à attendre : tu peux agir maintenant."},
+               {text:"Espérer qu'on m'apprenne gratuitement.", ok:false, fb:"Ça dépend des autres."}],
+      refine:"en m'inscrivant à l'auto-école",
+      precise:{ ask:"Précise : quand ?",
+        options:[{text:"ce mois-ci", ok:true},
+                 {text:"bientôt", ok:false, fb:"« Bientôt » n'est pas une date."},
+                 {text:"un jour peut-être", ok:false, fb:"Décide-toi sur un moment précis."}]} },
+    { ask:"Pour t'inscrire à l'auto-école, qu'est-ce qu'il te faut AVANT ?", why:"Comment financer ?",
+      options:[{text:"Mettre de l'argent de côté.", ok:true},
+               {text:"Gagner au loto.", ok:false, fb:"Le hasard ne dépend pas de toi."},
+               {text:"Voler une voiture.", ok:false, fb:"Non ! On cherche une action légale et réaliste."}],
+      refine:"en économisant pour l'inscription",
+      precise:{ ask:"Précise : combien par mois ?",
+        options:[{text:"50 € chaque mois", ok:true},
+                 {text:"un peu", ok:false, fb:"Mets un montant régulier."},
+                 {text:"quand je peux", ok:false, fb:"Une somme fixe, c'est plus efficace."}]} },
+    { ask:"Quel est ton TOUT PREMIER PAS, dès demain ?", why:"La plus petite action possible, maintenant.",
+      options:[{text:"Appeler 2 auto-écoles pour comparer les prix.", ok:true},
+               {text:"Réussir l'examen du permis.", ok:false, fb:"C'est le but final, pas le premier pas."},
+               {text:"Acheter une voiture.", ok:false, fb:"Bien trop tôt : commence petit."}],
+      refine:"en commençant DEMAIN par appeler 2 auto-écoles",
+      precise:null, isFirst:true }
+  ]},
+
+stage: { emoji:"💼", title:"Décrocher un stage", sub:"stage → entretien → candidature → CV → 1er pas",
+  dream:"Je veux décrocher un stage.",
+  chain:[
+    { ask:"Pour décrocher un stage, qu'est-ce qu'il faut réussir avant ?", why:"Qu'est-ce qui dépend de toi ?",
+      options:[{text:"Convaincre lors d'un entretien.", ok:true},
+               {text:"Attendre qu'on me choisisse au hasard.", ok:false, fb:"Attendre ne dépend pas de toi."},
+               {text:"Avoir de la chance.", ok:false, fb:"Ce n'est pas une action."}],
+      refine:"donc je dois réussir un entretien",
+      precise:{ ask:"Précise : quoi préparer ?",
+        options:[{text:"3 arguments sur mes qualités", ok:true},
+                 {text:"rien, j'improvise", ok:false, fb:"Sans préparation, l'entretien est risqué."},
+                 {text:"un beau sourire", ok:false, fb:"Utile, mais pas suffisant pour convaincre."}]} },
+    { ask:"Pour obtenir un entretien, qu'est-ce qu'il faut AVANT ?", why:"Comment se faire repérer ?",
+      options:[{text:"Envoyer ma candidature aux entreprises.", ok:true},
+               {text:"Espérer un appel.", ok:false, fb:"Attendre passivement ne marche pas."},
+               {text:"Passer devant l'entreprise.", ok:false, fb:"Ça ne fait pas candidature."}],
+      refine:"en envoyant des candidatures",
+      precise:{ ask:"Précise :",
+        options:[{text:"à 5 entreprises cette semaine", ok:true},
+                 {text:"à beaucoup d'entreprises", ok:false, fb:"Combien ? Et pour quand ?"},
+                 {text:"un jour", ok:false, fb:"Fixe une échéance."}]} },
+    { ask:"Pour candidater, qu'est-ce qu'il te faut AVANT ?", why:"Avec quoi se présente-t-on ?",
+      options:[{text:"Un CV et une lettre de motivation.", ok:true},
+               {text:"Juste mon prénom.", ok:false, fb:"Trop peu pour convaincre."},
+               {text:"Une photo de vacances.", ok:false, fb:"Ce n'est pas ce qu'attend un employeur."}],
+      refine:"avec un CV et une lettre prêts",
+      precise:{ ask:"Précise : pour quand ?",
+        options:[{text:"prêts pour vendredi", ok:true},
+                 {text:"plus tard", ok:false, fb:"« Plus tard » repousse sans fin."},
+                 {text:"quand j'y penserai", ok:false, fb:"Mets une date précise."}]} },
+    { ask:"Pour écrire ta lettre, qu'est-ce qu'il faut AVANT ?", why:"À qui vas-tu écrire ?",
+      options:[{text:"Une liste d'entreprises qui m'intéressent.", ok:true},
+               {text:"Postuler complètement au hasard.", ok:false, fb:"Cibler augmente tes chances."},
+               {text:"Rien de spécial.", ok:false, fb:"Il faut savoir où envoyer ta lettre."}],
+      refine:"en ciblant des entreprises précises",
+      precise:{ ask:"Précise :",
+        options:[{text:"5 entreprises près de chez moi", ok:true},
+                 {text:"des entreprises", ok:false, fb:"Combien ? Où ?"},
+                 {text:"les plus connues du monde", ok:false, fb:"Reste réaliste et proche de toi."}]} },
+    { ask:"Quel est ton TOUT PREMIER PAS, ce soir ?", why:"La plus petite action possible, maintenant.",
+      options:[{text:"Chercher 5 entreprises sur Internet et noter leurs contacts.", ok:true},
+               {text:"Commencer le stage.", ok:false, fb:"C'est le but, pas le premier pas."},
+               {text:"Signer un contrat de travail.", ok:false, fb:"Bien trop tôt : commence petit."}],
+      refine:"en commençant CE SOIR par lister 5 entreprises",
+      precise:null, isFirst:true }
+  ]}
+};
+
+/* ============ ENGINE ============ */
+let SC=null, ci=0, builtLines=[], doorOpen=false;
+const $ = id => document.getElementById(id);
+function show(id){ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); $(id).classList.add('active'); window.scrollTo(0,0); }
+
+function renderScenList(){
+    let h='';
+    for(const k in SCENARIOS){ const s=SCENARIOS[k];
+        h+='<button class="scenario-btn" onclick="startScenario(\''+k+'\')"><span class="sc-emoji">'+s.emoji+'</span><span><span class="sc-title">'+s.title+'</span><br><span class="sc-sub">'+s.sub+'</span></span></button>'; }
+    h+='<button class="scenario-btn" onclick="startFree()" style="border-style:dashed;"><span class="sc-emoji">✏️</span><span><span class="sc-title">Mon propre rêve</span><br><span class="sc-sub">j\'entre mon objectif et je construis ma chaîne</span></span></button>';
+    $('scenList').innerHTML=h;
+}
+
+function objPanel(){
+    let h='<div class="obj-panel"><div class="obj-head">🎯 Ton objectif se précise</div><div class="obj-dream">'+SC.dream+'</div>';
+    builtLines.forEach(l=>{ h+='<div class="obj-line">→ '+l.clause+' <b>('+l.precision+')</b></div>'; });
+    h+='</div>';
+    return h;
+}
+
+function startScenario(k){ SC=SCENARIOS[k]; ci=0; builtLines=[]; doorOpen=false; renderDoor(); show('screen-play'); }
+
+function renderDoor(){
+    const d=SC.chain[ci];
+    $('ptext').textContent='Porte '+(ci+1)+' / '+SC.chain.length;
+    let h='<div class="card">'+objPanel();
+    h+='<div class="door-count">🚪 Porte '+(ci+1)+' sur '+SC.chain.length+'</div>';
+    h+='<div class="lock-wrap"><span class="lock-icon" id="lock">🔒</span></div>';
+    h+='<div class="prompt">'+d.ask+'<span class="why">'+d.why+'</span></div>';
+    h+='<div class="choice-grid" id="opts">';
+    d.options.forEach((o,i)=>{ h+='<button class="choice-btn" data-i="'+i+'" onclick="answerUnlock('+i+')">'+o.text+'</button>'; });
+    h+='</div><div id="fb"></div></div>';
+    $('screen-play').innerHTML=h;
+}
+
+function answerUnlock(i){
+    const d=SC.chain[ci];
+    const o=d.options[i];
+    if(o.ok){
+        document.querySelectorAll('#opts .choice-btn').forEach(b=>{ b.disabled=true; if(parseInt(b.dataset.i)===i) b.classList.add('good'); });
+        const lk=$('lock'); lk.textContent='🔓'; lk.classList.add('open');
+        if(d.precise){
+            $('fb').innerHTML='<div class="feedback-card correct"><b>🔓 Porte déverrouillée !</b>Bonne réponse. Maintenant, entre le code : précise cette étape.</div><button class="btn-next" onclick="renderCode()">🔑 Entrer le code</button>';
+        } else {
+            // last step: no precision, finalize
+            builtLines.push({clause:d.refine, precision:'premier pas'});
+            $('fb').innerHTML='<div class="feedback-card correct"><b>🔓 Dernière porte ouverte !</b>Tu as trouvé ton tout premier pas. La sortie s\'ouvre…</div><button class="btn-primary" onclick="finishEscape()">🎉 Sortir et voir mon plan</button>';
+        }
+    } else {
+        const btn=document.querySelector('#opts .choice-btn[data-i="'+i+'"]');
+        btn.classList.add('bad'); btn.disabled=true;
+        $('fb').innerHTML='<div class="feedback-card wrong"><b>🔒 La porte reste fermée…</b>'+o.fb+'</div><div class="hint">Réessaie : clique une autre réponse.</div>';
+    }
+}
+
+function renderCode(){
+    const d=SC.chain[ci];
+    const p=d.precise;
+    let h='<div class="card">'+objPanel();
+    h+='<div class="lock-wrap"><span class="lock-icon">🔑</span></div>';
+    h+='<div class="prompt">'+p.ask+'<span class="why">Un bon objectif est précis : quand, où, combien.</span></div>';
+    h+='<div class="choice-grid" id="copts">';
+    p.options.forEach((o,i)=>{ h+='<button class="choice-btn" data-i="'+i+'" onclick="answerCode('+i+')">'+o.text+'</button>'; });
+    h+='</div><div id="fb"></div></div>';
+    $('screen-play').innerHTML=h;
+}
+
+function answerCode(i){
+    const d=SC.chain[ci];
+    const o=d.precise.options[i];
+    if(o.ok){
+        document.querySelectorAll('#copts .choice-btn').forEach(b=>{ b.disabled=true; if(parseInt(b.dataset.i)===i) b.classList.add('good'); });
+        builtLines.push({clause:d.refine, precision:o.text});
+        const last = (ci+1>=SC.chain.length);
+        $('fb').innerHTML='<div class="feedback-card correct"><b>✅ Code validé !</b>Ton objectif se précise. '+(last?'Tu approches de la sortie !':'En route vers la porte suivante.')+'</div>'+
+            '<button class="btn-next" onclick="nextDoor()">'+(last?'➡️ Continuer':'🚪 Porte suivante')+'</button>';
+    } else {
+        const btn=document.querySelector('#copts .choice-btn[data-i="'+i+'"]');
+        btn.classList.add('bad'); btn.disabled=true;
+        $('fb').innerHTML='<div class="feedback-card wrong"><b>❌ Mauvais code.</b>'+o.fb+'</div><div class="hint">Réessaie : choisis la version la plus précise.</div>';
+    }
+}
+
+function nextDoor(){ ci++; if(ci<SC.chain.length) renderDoor(); else finishEscape(); }
+
+function finishEscape(){
+    $('ptext').textContent='Évasion réussie 🎉';
+    // reverse the chain into an action plan (first step -> dream)
+    const steps = builtLines.slice().reverse();
+    let h='<div class="card"><div class="win-emoji">🔓🎉</div>';
+    h+='<div class="card-title" style="text-align:center;">Évasion réussie !</div>';
+    h+='<p class="intro-text" style="text-align:center;">Tu as remonté toute la chaîne. Voici ton <strong>plan d\'action</strong>, du premier pas jusqu\'à ton objectif :</p>';
+    steps.forEach((l,idx)=>{
+        h+='<div class="plan-step"><span class="plan-num">'+(idx+1)+'</span><span class="plan-txt"><b>'+cap(l.clause)+'</b> — <i>'+l.precision+'</i></span></div>';
+    });
+    h+='<div class="plan-step dream"><span class="plan-num">🏁</span><span class="plan-txt"><b>'+SC.dream+'</b></span></div>';
+    h+='<div class="obj-panel" style="margin-top:14px;"><div class="obj-head">🎯 Mon objectif complet</div><div class="obj-dream">'+fullSentence()+'</div></div>';
+    h+='<button class="btn-primary" onclick="window.print()">🖨️ Imprimer mon plan</button>';
+    h+='<button class="btn-ghost" onclick="restart()">↺ Choisir une autre mission</button></div>';
+    $('screen-win').innerHTML=h; show('screen-win');
+}
+
+function fullSentence(){
+    let s=SC.dream.replace(/\.$/,'');
+    builtLines.forEach(l=>{ s+=', '+l.clause+(l.precision!=='premier pas'?' ('+l.precision+')':''); });
+    return s+'.';
+}
+function cap(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
+function restart(){ show('screen-choose'); $('ptext').textContent='Choisis ta mission'; }
+
+/* ============ FREE MODE ============ */
+let freeDream='', freeChain=[];
+function startFree(){
+    $('ptext').textContent='Mon propre rêve';
+    let h='<div class="card"><div class="card-title">✏️ Mon grand objectif</div>';
+    h+='<p class="intro-text">Écris ton rêve ou ton grand objectif. On va le décortiquer ensemble, étape par étape.</p>';
+    h+='<div class="field-label">Mon objectif :</div><div class="hint">Ex : « Je veux partir en vacances cet été. »</div>';
+    h+='<input class="field-input" id="fdream" placeholder="Je veux…">';
+    h+='<button class="btn-primary" onclick="freeStart2()">🚪 Entrer dans l\'escape</button></div>';
+    $('screen-free').innerHTML=h; show('screen-free');
+}
+function freeStart2(){
+    const v=$('fdream').value.trim();
+    if(!v){ alert('Écris d\'abord ton objectif.'); return; }
+    freeDream=v; freeChain=[]; renderFree();
+}
+function freeTarget(){ return freeChain.length? freeChain[freeChain.length-1].need : freeDream; }
+function renderFree(){
+    $('ptext').textContent='Porte '+(freeChain.length+1);
+    let h='<div class="card"><div class="obj-panel"><div class="obj-head">🎯 Ton objectif se précise</div><div class="obj-dream">'+freeDream+'</div>';
+    freeChain.forEach(l=>{ h+='<div class="obj-line">→ il faut d\'abord <b>'+l.need+'</b>'+(l.precision?' ('+l.precision+')':'')+'</div>'; });
+    h+='</div>';
+    h+='<div class="lock-wrap"><span class="lock-icon">🔒</span></div>';
+    h+='<div class="prompt">Pour « '+freeTarget()+' »,<br>qu\'est-ce qu\'il faut faire <u>AVANT</u> ?<span class="why">Une seule chose, qui dépend de toi.</span></div>';
+    h+='<input class="field-input" id="fneed" placeholder="Il faut d\'abord…">';
+    h+='<div class="field-label">Précise (où / quand / comment) :</div>';
+    h+='<input class="field-input" id="fprec" placeholder="Ex : 5 employeurs avant fin mai">';
+    h+='<button class="btn-next" onclick="freeAddStep()">🚪 Encore une étape avant (porte suivante)</button>';
+    h+='<button class="btn-primary" onclick="freeFinish()" style="margin-top:10px;">🏁 C\'est mon premier pas concret → j\'ai fini</button>';
+    h+='<div id="fwarn" class="hint" style="margin-top:8px;"></div></div>';
+    $('screen-free').innerHTML=h; show('screen-free');
+}
+function freeCapture(){
+    const need=$('fneed').value.trim();
+    if(!need){ $('fwarn').textContent='⚠️ Écris ce qu\'il faut faire avant.'; return false; }
+    freeChain.push({need:need, precision:$('fprec').value.trim()});
+    return true;
+}
+function freeAddStep(){ if(!freeCapture()) return; if(freeChain.length>=7){ freeFinish(); return; } renderFree(); }
+function freeFinish(){
+    if($('fneed').value.trim()){ freeCapture(); }
+    if(freeChain.length===0){ $('fwarn').textContent='⚠️ Ajoute au moins une étape avant de finir.'; return; }
+    $('ptext').textContent='Évasion réussie 🎉';
+    const steps=freeChain.slice().reverse();
+    let h='<div class="card"><div class="win-emoji">🔓🎉</div><div class="card-title" style="text-align:center;">Bravo, tu as construit ta chaîne !</div>';
+    h+='<p class="intro-text" style="text-align:center;">Voici ton <strong>plan d\'action</strong>, du premier pas jusqu\'à ton objectif :</p>';
+    steps.forEach((l,idx)=>{ h+='<div class="plan-step"><span class="plan-num">'+(idx+1)+'</span><span class="plan-txt"><b>'+cap(l.need)+'</b>'+(l.precision?' — <i>'+l.precision+'</i>':'')+'</span></div>'; });
+    h+='<div class="plan-step dream"><span class="plan-num">🏁</span><span class="plan-txt"><b>'+freeDream+'</b></span></div>';
+    h+='<button class="btn-primary" onclick="window.print()">🖨️ Imprimer mon plan</button>';
+    h+='<button class="btn-ghost" onclick="restart()">↺ Choisir une autre mission</button></div>';
+    $('screen-win').innerHTML=h; show('screen-win');
+}
+
+renderScenList();
+</script>
+</body>
+</html>
