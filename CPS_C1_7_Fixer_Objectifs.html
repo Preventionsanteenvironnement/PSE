@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Se fixer des objectifs</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8; color: #1e293b; line-height: 1.6;
+    min-height: 100vh; padding-bottom: 50px;
+}
+.container { max-width: 540px; margin: 0 auto; padding: 16px; }
+.back-btn {
+    display: inline-flex; align-items: center; gap: 4px; color: #3b82f6;
+    text-decoration: none; font-size: 0.95rem; font-weight: 500; margin-bottom: 12px;
+}
+.back-btn:hover { color: #1d4ed8; }
+.header-card {
+    background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+    border-radius: 15px; padding: 26px 22px; color: white; text-align: center;
+    margin-bottom: 16px; box-shadow: 0 4px 15px rgba(109,40,217,0.3);
+}
+.header-card .emoji { font-size: 2.2rem; margin-bottom: 6px; }
+.header-card h1 { font-size: 1.55rem; margin-bottom: 6px; font-weight: 700; }
+.header-card p { font-size: 0.9rem; opacity: 0.93; }
+
+.progress-bar { height: 8px; background: #e2e8f0; border-radius: 20px; overflow: hidden; margin-bottom: 6px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); width: 0%; transition: width 0.4s ease; }
+.progress-text { font-size: 0.78rem; color: #94a3b8; text-align: right; margin-bottom: 14px; }
+
+.card {
+    background: white; border-radius: 15px; padding: 22px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); animation: fadeIn 0.35s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes pop { 0%{transform:scale(.9);} 60%{transform:scale(1.04);} 100%{transform:scale(1);} }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.mission-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.mission-icon { width: 56px; height: 56px; flex-shrink: 0; object-fit: contain;
+    background: #f8fafc; border-radius: 14px; padding: 4px; }
+.mission-step { font-size: 0.72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.mission-title { font-size: 1.15rem; font-weight: 800; line-height: 1.2; }
+.mission-goal { font-size: 0.88rem; color: #475569; margin-bottom: 14px; }
+
+.intro-text { font-size: 0.92rem; color: #475569; margin-bottom: 14px; }
+.intro-text strong { color: #1e293b; }
+.highlight-text {
+    font-size: 0.88rem; background: #f5f3ff; border-left: 3px solid #8b5cf6;
+    padding: 12px 14px; border-radius: 0 10px 10px 0; margin: 14px 0; line-height: 1.55;
+}
+
+.prompt { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+.scenario-text {
+    background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 14px; font-size: 0.92rem; color: #475569; line-height: 1.5;
+}
+.statement-card {
+    background: #faf5ff; border: 2px solid #e9d5ff; border-radius: 12px;
+    padding: 20px 16px; margin-bottom: 16px; text-align: center; animation: pop 0.3s ease;
+}
+.statement-text { font-size: 1.08rem; font-weight: 700; color: #1e293b; line-height: 1.45; }
+
+.choice-grid { display: grid; gap: 10px; margin-bottom: 12px; }
+.choice-grid.two { grid-template-columns: 1fr 1fr; }
+.choice-btn {
+    padding: 14px 14px; border-radius: 12px; border: 2px solid #e2e8f0; background: white;
+    cursor: pointer; font-family: inherit; font-size: 0.92rem; font-weight: 600;
+    transition: all 0.18s; text-align: center; line-height: 1.4; color: #334155;
+}
+.choice-btn:hover:not(:disabled) { border-color: #8b5cf6; background: #f5f3ff; }
+.choice-btn:disabled { cursor: default; }
+.choice-btn.good { border-color: #86efac; background: #dcfce7; color: #166534; }
+.choice-btn.bad { border-color: #fca5a5; background: #fee2e2; color: #991b1b; }
+.choice-btn.text-left { text-align: left; }
+
+.feedback-card {
+    border-radius: 12px; padding: 13px 15px; margin-bottom: 12px;
+    font-size: 0.88rem; line-height: 1.5; animation: fadeIn 0.3s ease;
+}
+.feedback-card.correct { background: #dcfce7; border: 2px solid #86efac; color: #166534; }
+.feedback-card.wrong { background: #fef3c7; border: 2px solid #fcd34d; color: #92400e; }
+.feedback-card b { display:block; margin-bottom: 2px; }
+
+.btn-primary {
+    display: block; width: 100%; background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    color: white; border: none; border-radius: 12px; padding: 15px 24px; font-size: 1.02rem;
+    font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 8px;
+    transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 3px 12px rgba(124,58,237,0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(124,58,237,0.35); }
+.btn-next {
+    display: block; width: 100%; background: #8b5cf6; color: white; border: none;
+    border-radius: 10px; padding: 12px; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: background 0.2s;
+}
+.btn-next:hover { background: #7c3aed; }
+.btn-ghost {
+    display:block; width:100%; background:#fff; color:#7c3aed; border:2px solid #ddd6fe;
+    border-radius:10px; padding:11px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:8px;
+}
+
+/* SORT (tap to place) */
+.sort-pool { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; min-height: 10px; }
+.chip {
+    padding: 10px 13px; border-radius: 20px; border: 2px solid #e2e8f0; background:#fff;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all .15s; color:#334155;
+}
+.chip:hover { border-color:#8b5cf6; }
+.chip.selected { border-color:#7c3aed; background:#ede9fe; box-shadow:0 0 0 3px rgba(124,58,237,.15); }
+.chip.placed-ok { border-color:#86efac; background:#dcfce7; color:#166534; cursor:default; }
+.chip.placed-bad { border-color:#fca5a5; background:#fee2e2; color:#991b1b; }
+.baskets { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.basket { border:2px dashed #cbd5e1; border-radius:12px; padding:12px; min-height:90px; background:#f8fafc; }
+.basket h4 { font-size:0.85rem; text-align:center; margin-bottom:8px; color:#475569; }
+.basket .drop { display:flex; flex-direction:column; gap:6px; }
+
+/* REORDER */
+.order-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.order-item {
+    display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px;
+    border:2px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.9rem; font-weight:600; transition:all .15s;
+}
+.order-item:hover { border-color:#8b5cf6; }
+.order-item .num { width:26px; height:26px; border-radius:50%; background:#ede9fe; color:#7c3aed;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0; }
+.order-item.ok { border-color:#86efac; background:#dcfce7; }
+.order-item.ko { border-color:#fca5a5; background:#fee2e2; }
+
+/* BUILD */
+.build-field { margin-bottom: 14px; }
+.build-label { font-size:0.9rem; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.build-label img { width:30px; height:30px; object-fit:contain; }
+.build-hint { font-size:0.78rem; color:#94a3b8; margin-bottom:6px; }
+.build-field textarea, .build-field input {
+    width:100%; border:2px solid #e2e8f0; border-radius:10px; padding:10px 12px;
+    font-family:inherit; font-size:0.9rem; resize:vertical; color:#1e293b;
+}
+.build-field textarea:focus, .build-field input:focus { outline:none; border-color:#8b5cf6; }
+
+.recap-item { display:flex; gap:10px; padding:11px 13px; background:#f5f3ff; border-radius:10px;
+    margin-bottom:8px; font-size:0.88rem; line-height:1.45; }
+.recap-item img { width:26px; height:26px; object-fit:contain; flex-shrink:0; }
+.recap-item .q { font-weight:700; color:#6d28d9; display:block; font-size:0.78rem; }
+
+.score-display { text-align:center; padding:10px 0 4px; }
+.score-number { font-size:3rem; font-weight:800; color:#7c3aed; line-height:1.1; }
+.score-total { font-size:1.1rem; color:#94a3b8; font-weight:500; }
+.score-message { margin-top:12px; font-size:1.05rem; font-weight:600; color:#1e293b; }
+.badge-step { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; }
+@media print {
+    .back-btn, .btn-primary, .btn-next, .btn-ghost, .progress-bar, .progress-text { display:none !important; }
+    body { background:white; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back-btn">← Retour</a>
+
+    <div class="header-card">
+        <div class="emoji">🎯</div>
+        <h1>Se fixer des objectifs</h1>
+        <p>Étape par étape, apprends à construire un objectif clair, qui dépend de toi et que tu peux vraiment atteindre.</p>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="pfill"></div></div>
+    <div class="progress-text" id="ptext">Bienvenue</div>
+
+    <!-- INTRO -->
+    <div id="screen-intro" class="section active">
+        <div class="card">
+            <div class="card-title" style="font-size:1.15rem;font-weight:700;color:#7c3aed;margin-bottom:14px;">🎯 Bienvenue&nbsp;!</div>
+            <p class="intro-text">Un <strong>objectif</strong>, c'est quelque chose que tu veux atteindre. Mais tous les objectifs ne se valent pas&nbsp;! Un <strong>bon</strong> objectif respecte 7 règles. On va les découvrir une par une, avec des petits défis.</p>
+            <p class="intro-text">À la fin, tu seras capable de <strong>construire ton propre objectif complet</strong>, tout seul. C'est parti&nbsp;!</p>
+            <div id="introSteps"></div>
+            <button class="btn-primary" onclick="startJourney()">🚀 Je commence le parcours</button>
+        </div>
+    </div>
+
+    <!-- DYNAMIC SCREEN -->
+    <div id="screen-play" class="section"></div>
+
+    <!-- FINAL BUILD -->
+    <div id="screen-build" class="section"></div>
+
+    <!-- BILAN -->
+    <div id="screen-end" class="section"></div>
+</div>
+
+<script>
+/* ===================== DATA ===================== */
+const IMG = 'img/objectifs/';
+const STEPS = [
+    {n:1, icon:'etape1.png', color:'#1F6FB2', bg:'#E8F1FB', q:"Qu'est-ce que je veux ?"},
+    {n:2, icon:'etape2.png', color:'#2E8B57', bg:'#E9F6EC', q:"Est-ce que ça dépend de moi ?"},
+    {n:3, icon:'etape3.png', color:'#E07B1C', bg:'#FEF1E3', q:"C'est quoi exactement ?"},
+    {n:4, icon:'etape4.png', color:'#C24A6B', bg:'#FDEBEF', q:"Comment je saurai que j'ai réussi ?"},
+    {n:5, icon:'etape5.png', color:'#7A52B3', bg:'#F1ECF9', q:"De quoi j'ai besoin ?"},
+    {n:6, icon:'etape6.png', color:'#5B8C5A', bg:'#EAF2EC', q:"Est-ce que ça va avec le reste de ma vie ?"},
+    {n:7, icon:'etape7.png', color:'#1F9E91', bg:'#E6F5F4', q:"C'est quoi mon premier pas ?"}
+];
+
+// Each mission = a step, with a short goal + a list of exercises.
+const MISSIONS = [
+{ step:1, goal:"Un bon objectif dit ce que je VEUX, pas ce que je ne veux pas.",
+  ex:[
+    {type:'classify', prompt:"Cette phrase dit-elle ce qu'on VEUT ou ce qu'on ne veut PAS ?",
+     baskets:[{key:'veux',label:'✅ Ce que je VEUX'},{key:'non',label:'🚫 Ce que je ne veux PAS'}],
+     rounds:[
+        {text:"« Je veux réussir mon année. »", a:'veux'},
+        {text:"« Je ne veux plus être en retard. »", a:'non'},
+        {text:"« Je veux me sentir en forme. »", a:'veux'},
+        {text:"« Je ne veux plus stresser avant les contrôles. »", a:'non'}
+     ],
+     tipWrong:"Astuce : si la phrase contient « ne… plus » ou « ne… pas », elle dit ce qu'on veut ÉVITER. Un bon objectif tourne la phrase à l'endroit.",
+     tipRight:"Bravo ! Tu repères bien le positif du négatif."},
+    {type:'mcq', prompt:"Transforme cet objectif en positif :",
+     scenario:"« Je ne veux plus rater le bus le matin. »",
+     options:[
+        {text:"Je veux partir 10 minutes plus tôt pour avoir mon bus.", ok:true, fb:"Parfait ! On dit ce qu'on veut FAIRE, c'est plus motivant et plus clair."},
+        {text:"Je ne veux plus me lever en retard.", ok:false, fb:"Encore une phrase « ne… plus ». On cherche ce que tu veux faire, pas ce que tu veux éviter."},
+        {text:"Le bus part toujours trop tôt.", ok:false, fb:"Là c'est une plainte, pas un objectif. Et ça ne dépend pas de toi !"}
+     ]}
+  ]},
+
+{ step:2, goal:"Un bon objectif dépend de MOI : c'est moi qui peux agir.",
+  ex:[
+    {type:'classify', prompt:"Est-ce que ça dépend de MOI, ou des autres / du hasard ?",
+     baskets:[{key:'moi',label:'🙋 Ça dépend de moi'},{key:'autre',label:'🌍 Des autres / du hasard'}],
+     rounds:[
+        {text:"« Je veux réviser le code 20 min chaque soir. »", a:'moi'},
+        {text:"« Je veux gagner au loto. »", a:'autre'},
+        {text:"« Je veux que le prof me mette une bonne note. »", a:'autre'},
+        {text:"« Je veux rendre mon dossier à l'heure. »", a:'moi'},
+        {text:"« Je veux qu'il fasse beau pour ma sortie. »", a:'autre'}
+     ],
+     tipWrong:"Pose-toi la question : est-ce MOI qui peux le faire ? Si ça dépend de la chance ou de la décision de quelqu'un d'autre, ce n'est pas un bon objectif.",
+     tipRight:"Exactement : tu gardes les commandes en main !"},
+    {type:'mcq', prompt:"Reformule pour que ça dépende de TOI :",
+     scenario:"« Je veux que mes amis m'invitent plus souvent. »",
+     options:[
+        {text:"Je veux proposer moi-même une sortie chaque semaine.", ok:true, fb:"Oui ! Tu transformes une attente en action que TU peux faire."},
+        {text:"Je veux que les autres pensent à moi.", ok:false, fb:"Ça dépend encore des autres. Qu'est-ce que TU peux faire, toi ?"},
+        {text:"Je veux avoir plus d'amis sympas.", ok:false, fb:"C'est un souhait, mais ça ne dit pas ce que TOI tu vas faire."}
+     ]}
+  ]},
+
+{ step:3, goal:"Un bon objectif est PRÉCIS : quand, où, combien. Pas flou.",
+  ex:[
+    {type:'classify', prompt:"Cet objectif est-il PRÉCIS ou FLOU ?",
+     baskets:[{key:'precis',label:'🔍 Précis'},{key:'flou',label:'🌫️ Flou'}],
+     rounds:[
+        {text:"« Je veux faire plus de sport. »", a:'flou'},
+        {text:"« Je veux courir 20 min, 3 fois par semaine. »", a:'precis'},
+        {text:"« Je veux mieux manger. »", a:'flou'},
+        {text:"« Je veux manger un fruit à chaque déjeuner. »", a:'precis'}
+     ],
+     tipWrong:"Un objectif précis répond à : QUAND ? OÙ ? COMBIEN ? « Plus » ou « mieux » ne sont pas mesurables.",
+     tipRight:"Top ! Plus c'est précis, plus c'est facile à atteindre."},
+    {type:'mcq', prompt:"Quelle est la version la plus PRÉCISE ?",
+     scenario:"Objectif de départ : « Je veux réviser. »",
+     options:[
+        {text:"Je révise l'histoire 30 min chaque soir à mon bureau.", ok:true, fb:"Parfait : on sait quoi, combien de temps, quand et où !"},
+        {text:"Je vais réviser sérieusement cette année.", ok:false, fb:"« Sérieusement » et « cette année » restent flous. Combien ? Quand exactement ?"},
+        {text:"Je veux réviser un peu plus qu'avant.", ok:false, fb:"« Un peu plus » ne se mesure pas. Mets un chiffre et un moment précis."}
+     ]},
+    {type:'sort', prompt:"Range chaque mot dans la bonne colonne : aide-t-il à préciser un objectif ?",
+     scenario:"Un objectif précis répond à des questions concrètes.",
+     baskets:[{key:'oui',label:'✅ Ça précise'},{key:'non',label:'❌ Ça reste flou'}],
+     items:[
+        {text:"Chaque lundi", a:'oui'},
+        {text:"Bientôt", a:'non'},
+        {text:"2 fois par semaine", a:'oui'},
+        {text:"Beaucoup", a:'non'},
+        {text:"À la maison", a:'oui'},
+        {text:"Un peu", a:'non'}
+     ],
+     explain:"Les repères de temps, de lieu et de quantité rendent un objectif précis. Les mots vagues (« bientôt », « un peu ») le laissent flou."}
+  ]},
+
+{ step:4, goal:"Un bon objectif a une PREUVE : je sais comment je verrai que c'est gagné.",
+  ex:[
+    {type:'mcq', prompt:"Quelle est la bonne PREUVE de réussite ?",
+     scenario:"Objectif : « Je veux savoir nager. »",
+     options:[
+        {text:"Je traverse la piscine sans m'arrêter ni avoir pied.", ok:true, fb:"Oui ! C'est concret : on voit clairement que c'est réussi."},
+        {text:"Je me sens un peu plus à l'aise dans l'eau.", ok:false, fb:"C'est un début, mais « un peu plus à l'aise » est difficile à vérifier vraiment."},
+        {text:"J'aime aller à la piscine.", ok:false, fb:"Aimer la piscine ne prouve pas que tu sais nager. Quelle action montrerait que c'est gagné ?"}
+     ]},
+    {type:'mcq', prompt:"Choisis la preuve la plus claire :",
+     scenario:"Objectif : « Je veux progresser en anglais. »",
+     options:[
+        {text:"Je tiens une conversation de 5 minutes en anglais.", ok:true, fb:"Bravo : c'est observable, on sait quand c'est atteint."},
+        {text:"Je trouve l'anglais plus facile.", ok:false, fb:"« Plus facile » est une impression. Quelle action prouverait ton progrès ?"},
+        {text:"Je regarde des séries en anglais parfois.", ok:false, fb:"C'est une activité, pas une preuve que tu as progressé."}
+     ]}
+  ]},
+
+{ step:5, goal:"Un bon objectif demande des RESSOURCES : ce que j'ai déjà, ce qu'il me manque.",
+  ex:[
+    {type:'sort', prompt:"Objectif : décrocher un stage. Range chaque ressource.",
+     scenario:"Théo veut trouver un stage. Qu'a-t-il DÉJÀ, et que doit-il ENCORE trouver ?",
+     baskets:[{key:'deja',label:"🎒 J'ai déjà"},{key:'manque',label:'🛒 Il me manque'}],
+     items:[
+        {text:"Un CV à jour", a:'deja'},
+        {text:"La liste des entreprises à contacter", a:'manque'},
+        {text:"De la motivation", a:'deja'},
+        {text:"Un rendez-vous fixé", a:'manque'},
+        {text:"Une tenue correcte", a:'deja'},
+        {text:"Le numéro du tuteur", a:'manque'}
+     ],
+     explain:"Faire ce tri permet de voir ce qui reste à préparer. On part de ses points forts (« j'ai déjà ») et on agit sur ce qui manque."}
+  ]},
+
+{ step:6, goal:"Un bon objectif est en accord avec le RESTE de ma vie.",
+  ex:[
+    {type:'mcq', prompt:"Où est le problème d'équilibre ?",
+     scenario:"Léa veut s'entraîner au foot 3 h tous les soirs. Mais du coup elle n'a plus le temps de faire ses devoirs et dort très peu.",
+     options:[
+        {text:"L'objectif lui coûte trop : il l'empêche de réviser et de dormir.", ok:true, fb:"Exact ! Un bon objectif ne doit pas faire perdre quelque chose d'important (santé, études)."},
+        {text:"Il n'y a aucun problème, c'est très bien.", ok:false, fb:"Regarde mieux : elle ne dort plus et ne fait plus ses devoirs. L'équilibre est rompu."},
+        {text:"Le foot n'est pas un bon objectif.", ok:false, fb:"Le foot peut être un super objectif ! Le souci, c'est le déséquilibre avec le reste de sa vie."}
+     ]},
+    {type:'mcq', prompt:"Quelle solution garde le mieux l'équilibre ?",
+     scenario:"Karim veut économiser pour un scooter, mais il dépense tout son argent le week-end.",
+     options:[
+        {text:"Mettre une petite somme de côté chaque semaine, sans tout se priver.", ok:true, fb:"Oui : il avance vers son but sans sacrifier tout son plaisir. C'est équilibré."},
+        {text:"Ne plus jamais rien dépenser pour personne.", ok:false, fb:"Trop dur à tenir : un objectif trop extrême finit souvent par être abandonné."},
+        {text:"Oublier le scooter, c'est trop compliqué.", ok:false, fb:"Abandonner n'est pas la solution : on cherche un équilibre, pas à renoncer."}
+     ]}
+  ]},
+
+{ step:7, goal:"Un bon objectif commence par un PREMIER PAS : une action tout de suite.",
+  ex:[
+    {type:'mcq', prompt:"Quel est le meilleur PREMIER PAS ?",
+     scenario:"Objectif : « Passer mon permis de conduire. »",
+     options:[
+        {text:"Demain, j'appelle l'auto-école pour me renseigner.", ok:true, fb:"Parfait : c'est petit, concret et faisable tout de suite."},
+        {text:"Réussir l'examen du permis.", ok:false, fb:"C'est le but final, pas le premier pas ! Trop gros pour commencer."},
+        {text:"Devenir un super conducteur.", ok:false, fb:"C'est un rêve lointain. Quelle toute petite action peux-tu faire dès demain ?"}
+     ]},
+    {type:'mcq', prompt:"Choisis le premier pas le plus simple :",
+     scenario:"Objectif : « Lire un livre en entier ce mois-ci. »",
+     options:[
+        {text:"Ce soir, je choisis le livre et je lis la première page.", ok:true, fb:"Bravo : un premier pas doit être si petit qu'on ne peut pas le rater."},
+        {text:"Finir le livre cette semaine.", ok:false, fb:"C'est presque tout l'objectif d'un coup. Commence plus petit."},
+        {text:"Aimer la lecture.", ok:false, fb:"C'est un souhait, pas une action. Que peux-tu faire concrètement ce soir ?"}
+     ]}
+  ]}
+];
+
+// Final recap reorder
+const ORDER_TASK = {
+    prompt:"Avant l'épreuve finale : remets les 7 étapes dans le bon ordre. Clique-les de la 1re à la 7e.",
+};
+
+/* ===================== ENGINE ===================== */
+let mi = 0;   // mission index
+let xi = 0;   // exercise index
+let ri = 0;   // round index (classify)
+let score = 0, total = 0;
+let phase = 'missions'; // missions -> reorder -> build -> end
+let orderPicks = [];
+
+const $ = id => document.getElementById(id);
+
+function renderIntroSteps(){
+    let h = '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 16px;">';
+    STEPS.forEach(s=>{ h += '<img src="'+IMG+s.icon+'" alt="" style="width:42px;height:42px;object-fit:contain;background:'+s.bg+';border-radius:10px;padding:3px;">'; });
+    h += '</div>';
+    $('introSteps').innerHTML = h;
+}
+
+function setProgress(){
+    let done;
+    if(phase==='missions') done = mi;
+    else if(phase==='reorder') done = 7;
+    else done = 7.5;
+    const pct = Math.min(100, (done/8)*100);
+    $('pfill').style.width = pct + '%';
+    if(phase==='missions') $('ptext').textContent = 'Étape '+(mi+1)+' / 7';
+    else if(phase==='reorder') $('ptext').textContent = 'Révision des 7 étapes';
+    else $('ptext').textContent = 'Épreuve finale';
+}
+
+function show(id){ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); $(id).classList.add('active'); window.scrollTo(0,0); }
+
+function startJourney(){ mi=0; xi=0; ri=0; score=0; total=0; phase='missions'; renderMission(); show('screen-play'); }
+
+function missionHead(step){
+    const s = STEPS[step-1];
+    return '<div class="mission-head">'+
+        '<img class="mission-icon" src="'+IMG+s.icon+'" alt="" style="background:'+s.bg+'">'+
+        '<div><div class="mission-step" style="color:'+s.color+'">Étape '+s.n+'</div>'+
+        '<div class="mission-title" style="color:'+s.color+'">'+s.q+'</div></div></div>';
+}
+
+function renderMission(){
+    setProgress();
+    const M = MISSIONS[mi];
+    const ex = M.ex[xi];
+    let h = '<div class="card">' + missionHead(M.step);
+    if(xi===0) h += '<div class="mission-goal">'+M.goal+'</div>';
+    h += '<div id="exbody"></div></div>';
+    $('screen-play').innerHTML = h;
+    renderExercise(ex);
+}
+
+function renderExercise(ex){
+    if(ex.type==='classify') return renderClassify(ex);
+    if(ex.type==='mcq') return renderMCQ(ex);
+    if(ex.type==='sort') return renderSort(ex);
+}
+
+/* ---- CLASSIFY ---- */
+function renderClassify(ex){
+    const r = ex.rounds[ri];
+    let h = '<div class="prompt">'+ex.prompt+'</div>';
+    h += '<div class="statement-card"><div class="statement-text">'+r.text+'</div></div>';
+    h += '<div class="choice-grid two" id="opts">';
+    ex.baskets.forEach(b=>{ h += '<button class="choice-btn" data-k="'+b.key+'" onclick="answerClassify(\''+b.key+'\')">'+b.label+'</button>'; });
+    h += '</div><div id="fb"></div>';
+    $('exbody').innerHTML = h;
+}
+function answerClassify(key){
+    const ex = MISSIONS[mi].ex[xi];
+    const r = ex.rounds[ri];
+    const correct = key===r.a;
+    total++;
+    document.querySelectorAll('#opts .choice-btn').forEach(b=>{
+        if(b.dataset.k===r.a) b.classList.add('good');
+        if(b.dataset.k===key && !correct) b.classList.add('bad');
+        b.disabled = true;
+    });
+    if(correct){
+        score++;
+        $('fb').innerHTML = fbBox(true, ex.tipRight||"Bien joué !") + nextBtn('afterClassify()');
+    } else {
+        $('fb').innerHTML = fbBox(false, ex.tipWrong) +
+            '<button class="btn-ghost" onclick="retryClassify()">↺ Je réessaie</button>' +
+            nextBtn('afterClassify()','Continuer quand même');
+    }
+}
+function retryClassify(){ total--; if(MISSIONS[mi].ex[xi].rounds[ri]) renderClassify(MISSIONS[mi].ex[xi]); }
+function afterClassify(){
+    const ex = MISSIONS[mi].ex[xi];
+    ri++;
+    if(ri < ex.rounds.length){ renderClassify(ex); }
+    else { ri=0; nextExercise(); }
+}
+
+/* ---- MCQ ---- */
+function renderMCQ(ex){
+    let h = '<div class="prompt">'+ex.prompt+'</div>';
+    if(ex.scenario) h += '<div class="scenario-text">'+ex.scenario+'</div>';
+    h += '<div class="choice-grid" id="opts">';
+    ex.options.forEach((o,i)=>{ h += '<button class="choice-btn text-left" data-i="'+i+'" onclick="answerMCQ('+i+')">'+o.text+'</button>'; });
+    h += '</div><div id="fb"></div>';
+    $('exbody').innerHTML = h;
+    MCQ_done = false;
+}
+let MCQ_done=false;
+function answerMCQ(i){
+    const ex = MISSIONS[mi].ex[xi];
+    const o = ex.options[i];
+    if(!MCQ_done){ total++; }
+    if(o.ok){
+        if(!MCQ_done) score++;
+        MCQ_done=true;
+        document.querySelectorAll('#opts .choice-btn').forEach(b=>{ b.disabled=true; if(parseInt(b.dataset.i)===i) b.classList.add('good'); });
+        $('fb').innerHTML = fbBox(true, o.fb) + nextBtn('nextExercise()');
+    } else {
+        const btn = document.querySelector('#opts .choice-btn[data-i="'+i+'"]');
+        btn.classList.add('bad'); btn.disabled=true;
+        $('fb').innerHTML = fbBox(false, o.fb) + '<div class="build-hint" style="margin-bottom:8px;">Réessaie : clique sur une autre réponse.</div>';
+    }
+}
+
+/* ---- SORT (tap to place) ---- */
+let sortState = {};
+function renderSort(ex){
+    sortState = { selected:null, placed:{} };
+    let h = '<div class="prompt">'+ex.prompt+'</div>';
+    if(ex.scenario) h += '<div class="scenario-text">'+ex.scenario+'</div>';
+    h += '<div class="sort-pool" id="pool">';
+    ex.items.forEach((it,i)=>{ h += '<button class="chip" id="chip'+i+'" onclick="selectChip('+i+')">'+it.text+'</button>'; });
+    h += '</div>';
+    h += '<div class="baskets">';
+    ex.baskets.forEach(b=>{ h += '<div class="basket"><h4>'+b.label+'</h4><div class="drop" id="drop-'+b.key+'" onclick="placeChip(\''+b.key+'\')"></div></div>'; });
+    h += '</div>';
+    h += '<div class="build-hint">Astuce : clique un mot, puis clique la colonne où le ranger.</div>';
+    h += '<button class="btn-next" id="checkBtn" onclick="checkSort()" disabled style="opacity:.5">Vérifier</button><div id="fb"></div>';
+    $('exbody').innerHTML = h;
+}
+function selectChip(i){
+    if(sortState.placed[i]!==undefined) return;
+    sortState.selected = i;
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+    $('chip'+i).classList.add('selected');
+}
+function placeChip(key){
+    const i = sortState.selected;
+    if(i===null || i===undefined) return;
+    sortState.placed[i] = key;
+    const chip = $('chip'+i);
+    chip.classList.remove('selected');
+    $('drop-'+key).appendChild(chip);
+    chip.onclick = null;
+    sortState.selected = null;
+    const ex = MISSIONS[mi].ex[xi];
+    if(Object.keys(sortState.placed).length === ex.items.length){
+        const cb = $('checkBtn'); cb.disabled=false; cb.style.opacity=1;
+    }
+}
+function checkSort(){
+    const ex = MISSIONS[mi].ex[xi];
+    let good=0;
+    ex.items.forEach((it,i)=>{
+        const chip = $('chip'+i);
+        if(sortState.placed[i]===it.a){ chip.classList.add('placed-ok'); good++; }
+        else chip.classList.add('placed-bad');
+    });
+    total++; if(good===ex.items.length) score++;
+    const allgood = good===ex.items.length;
+    $('checkBtn').style.display='none';
+    let msg = allgood ? "Parfait, tout est bien rangé ! "+ex.explain
+                      : "Presque ! Les cases en rouge sont mal placées. "+ex.explain;
+    $('fb').innerHTML = fbBox(allgood, msg) +
+        (allgood? nextBtn('nextExercise()') :
+         '<button class="btn-ghost" onclick="renderSort(MISSIONS[mi].ex[xi]); total--;">↺ Je recommence ce tri</button>'+nextBtn('nextExercise()','Continuer'));
+}
+
+/* ---- shared ---- */
+function fbBox(ok, text){
+    return '<div class="feedback-card '+(ok?'correct':'wrong')+'"><b>'+(ok?'✅ Bravo !':'💡 Réfléchis…')+'</b>'+text+'</div>';
+}
+function nextBtn(action, label){ return '<button class="btn-next" onclick="'+action+'">'+(label||'Continuer →')+'</button>'; }
+
+function nextExercise(){
+    ri=0;
+    xi++;
+    if(xi < MISSIONS[mi].ex.length){ renderMission(); }
+    else { xi=0; mi++; if(mi < MISSIONS.length){ renderMission(); } else { startReorder(); } }
+}
+
+/* ---- REORDER ---- */
+function startReorder(){
+    phase='reorder'; setProgress(); orderPicks=[];
+    const shuffled = STEPS.map((s,i)=>i);
+    for(let k=shuffled.length-1;k>0;k--){ const j=Math.floor(((k*7+3)%(k+1))); [shuffled[k],shuffled[j]]=[shuffled[j],shuffled[k]]; }
+    let h='<div class="card"><div class="card-title" style="font-size:1.1rem;font-weight:700;color:#7c3aed;margin-bottom:10px;">🧩 Révision : les 7 étapes</div>';
+    h+='<div class="prompt">'+ORDER_TASK.prompt+'</div><div class="order-list" id="orderList">';
+    shuffled.forEach(idx=>{ const s=STEPS[idx];
+        h+='<div class="order-item" id="oi'+idx+'" data-idx="'+idx+'" onclick="pickOrder('+idx+')"><span class="num">?</span> '+s.q+'</div>'; });
+    h+='</div><div id="fb"></div></div>';
+    $('screen-play').innerHTML=h; show('screen-play');
+}
+function pickOrder(idx){
+    if(orderPicks.includes(idx)) return;
+    orderPicks.push(idx);
+    $('oi'+idx).querySelector('.num').textContent = orderPicks.length;
+    if(orderPicks.length===7){
+        let ok=true;
+        orderPicks.forEach((idx,pos)=>{ const item=$('oi'+idx);
+            if(idx===pos){ item.classList.add('ok'); } else { item.classList.add('ko'); ok=false; } });
+        total++; if(ok) score++;
+        $('fb').innerHTML = fbBox(ok, ok? "Excellent ! Tu maîtrises l'ordre des 7 étapes. Place à l'épreuve finale !"
+            : "Quelques étapes sont mal placées (en rouge). L'ordre logique : je veux → ça dépend de moi → précis → preuve → ressources → équilibre → premier pas.")
+            + (ok? nextBtn('startBuild()','🏆 Épreuve finale') : '<button class="btn-ghost" onclick="startReorder()">↺ Je recommence</button>'+nextBtn('startBuild()',"Continuer vers l'épreuve"));
+    }
+}
+
+/* ---- FINAL BUILD ---- */
+function startBuild(){
+    phase='build'; setProgress();
+    const saved = JSON.parse(localStorage.getItem('cps_objectif')||'{}');
+    let h='<div class="card"><div class="mission-head"><img class="mission-icon" src="'+IMG+'etape7.png" alt="" style="background:#ede9fe"><div><div class="mission-step" style="color:#7c3aed">Épreuve finale</div><div class="mission-title" style="color:#7c3aed">Mon objectif à moi</div></div></div>';
+    h+='<p class="intro-text">À toi de jouer ! Choisis un vrai objectif pour toi, et remplis les 7 étapes. Quand tu as fini, tu pourras voir et imprimer ton objectif complet.</p>';
+    const fields=[
+        {k:'q1', s:0, hint:"Dis ce que tu veux, en positif. Ex : « Je veux avoir mon permis. »"},
+        {k:'q2', s:1, hint:"En quoi est-ce TOI qui agis ? Ex : « C'est à moi d'aller aux cours et de réviser. »"},
+        {k:'q3', s:2, hint:"Quand, où, combien ? Ex : « Je révise le code 20 min chaque soir. »"},
+        {k:'q4', s:3, hint:"Comment sauras-tu que c'est gagné ? Ex : « Le jour où j'ai mon permis en main. »"},
+        {k:'q5', s:4, hint:"Ce que tu as déjà / ce qu'il te manque. Ex : « M'inscrire à l'auto-école. »"},
+        {k:'q6', s:5, hint:"Est-ce que ça va avec le reste de ta vie ? Ex : « Ça me prend du temps le soir, mais ça reste gérable. »"},
+        {k:'q7', s:6, hint:"Ta toute première action. Ex : « Demain, j'appelle l'auto-école. »"}
+    ];
+    fields.forEach(f=>{ const s=STEPS[f.s];
+        h+='<div class="build-field"><div class="build-label"><img src="'+IMG+s.icon+'" alt="">'+
+           '<span style="color:'+s.color+'">Étape '+s.n+' — '+s.q+'</span></div>'+
+           '<div class="build-hint">'+f.hint+'</div>'+
+           '<textarea id="'+f.k+'" rows="2" oninput="saveBuild()">'+(saved[f.k]||'')+'</textarea></div>';
+    });
+    h+='<button class="btn-primary" onclick="finishBuild()">✨ Voir mon objectif complet</button>';
+    h+='<div id="buildErr"></div></div>';
+    $('screen-build').innerHTML=h; show('screen-build');
+}
+function saveBuild(){
+    const o={}; ['q1','q2','q3','q4','q5','q6','q7'].forEach(k=>o[k]=($(k)?$(k).value:''));
+    localStorage.setItem('cps_objectif', JSON.stringify(o));
+}
+function finishBuild(){
+    const ks=['q1','q2','q3','q4','q5','q6','q7'];
+    const empty = ks.filter(k=>!$(k).value.trim());
+    if(empty.length){
+        $('buildErr').innerHTML = fbBox(false, "Il reste "+empty.length+" étape(s) à compléter. Chaque étape compte pour un objectif solide !");
+        return;
+    }
+    saveBuild(); renderEnd();
+}
+
+/* ---- BILAN ---- */
+function renderEnd(){
+    phase='end'; $('pfill').style.width='100%'; $('ptext').textContent='Terminé 🎉';
+    const o=JSON.parse(localStorage.getItem('cps_objectif')||'{}');
+    let h='<div class="card"><div class="score-display"><div class="score-number">'+score+'<span class="score-total"> / '+total+'</span></div>';
+    let msg = score>=total*0.8 ? "Excellent ! Tu sais construire un objectif solide. 🌟"
+            : score>=total*0.5 ? "Bien joué ! Tu as compris l'essentiel. Continue à t'entraîner. 💪"
+            : "C'est un début ! Reprends le parcours pour bien ancrer chaque étape. 🌱";
+    h+='<div class="score-message">'+msg+'</div></div></div>';
+    h+='<div class="card"><div class="card-title" style="font-size:1.1rem;font-weight:700;color:#7c3aed;margin-bottom:12px;">🎯 Mon objectif complet</div>';
+    STEPS.forEach((s,i)=>{ const val=o['q'+(i+1)]||'—';
+        h+='<div class="recap-item"><img src="'+IMG+s.icon+'" alt=""><div><span class="q">Étape '+s.n+' · '+s.q+'</span>'+escapeHtml(val)+'</div></div>'; });
+    h+='</div>';
+    h+='<button class="btn-primary" onclick="window.print()">🖨️ Imprimer mon objectif</button>';
+    h+='<button class="btn-ghost" onclick="startBuild()">✏️ Modifier mon objectif</button>';
+    h+='<button class="btn-ghost" onclick="startJourney()">↺ Recommencer tout le parcours</button>';
+    $('screen-end').innerHTML=h; show('screen-end');
+}
+function escapeHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+renderIntroSteps();
+</script>
+</body>
+</html>
