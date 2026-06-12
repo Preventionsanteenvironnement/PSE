@@ -41,6 +41,19 @@ function listenBtn(getText){
   return b;
 }
 
+/* ---------- préférences d'accessibilité (localStorage) ---------- */
+var A11Y_KEY='cps_a11y_v1';
+function loadPrefs(){ try{ return JSON.parse(localStorage.getItem(A11Y_KEY))||{}; }catch(e){ return {}; } }
+var PREFS=loadPrefs();
+function savePrefs(){ try{ localStorage.setItem(A11Y_KEY, JSON.stringify(PREFS)); }catch(e){} }
+function applyPrefs(){
+  var b=document.body;
+  b.classList.remove('fs-s','fs-l','fs-xl','dys','calme');
+  if(PREFS.fs) b.classList.add('fs-'+PREFS.fs);
+  if(PREFS.dys) b.classList.add('dys');
+  if(PREFS.calme) b.classList.add('calme');
+}
+
 var TEMPS=[
   {k:'decouvre', n:'①', l:'Je découvre'},
   {k:'entraine', n:'②', l:"Je m'entraîne"},
@@ -53,14 +66,39 @@ function tempsIndex(k){ for(var i=0;i<TEMPS.length;i++) if(TEMPS[i].k===k) retur
 function Ctrl(cfg){
   this.cfg=cfg;
   this.parc=cfg.parcours||[];
+  for(var di=0; di<this.parc.length; di++){ if(this.parc[di].type==='cardpick'){ this.parc[di]._demo=true; break; } }
   this.idx=0; this.score=0; this.max=0;
   this.build();
   this.render();
 }
+Ctrl.prototype.buildA11y=function(){
+  var bar=el('div','cps-a11y');
+  var grp=el('div','cps-a11y-grp');
+  grp.appendChild(el('span','cps-a11y-lab','Texte'));
+  function markFs(){ var bs=grp.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('act', bs[i].getAttribute('data-fs')===(PREFS.fs||'')); }
+  [['A−','s'],['A',''],['A+','l'],['A++','xl']].forEach(function(o){
+    var b=el('button','cps-a11y-btn',o[0]); b.title='Taille du texte'; b.setAttribute('data-fs',o[1]);
+    b.onclick=function(){ PREFS.fs=o[1]||undefined; savePrefs(); applyPrefs(); markFs(); };
+    grp.appendChild(b);
+  });
+  bar.appendChild(grp); markFs();
+  var dys=el('button','cps-a11y-btn','Aa Dys'); dys.title='Police pour la dyslexie'; if(PREFS.dys) dys.classList.add('act');
+  dys.onclick=function(){ PREFS.dys=!PREFS.dys; savePrefs(); applyPrefs(); dys.classList.toggle('act', !!PREFS.dys); };
+  bar.appendChild(dys);
+  var calme=el('button','cps-a11y-btn','🌙 Calme'); calme.title='Mode calme : animations et couleurs réduites'; if(PREFS.calme) calme.classList.add('act');
+  calme.onclick=function(){ PREFS.calme=!PREFS.calme; savePrefs(); applyPrefs(); calme.classList.toggle('act', !!PREFS.calme); };
+  bar.appendChild(calme);
+  var pr=el('button','cps-a11y-btn','🖨️'); pr.title='Imprimer'; pr.onclick=function(){ try{ window.print(); }catch(e){} };
+  bar.appendChild(pr);
+  return bar;
+};
 Ctrl.prototype.build=function(){
-  document.body.className='t-'+(this.cfg.theme||'cog');
+  document.body.classList.remove('t-emo','t-soc','t-cog');
+  document.body.classList.add('t-'+(this.cfg.theme||'cog'));
   var app=document.getElementById('cps-app')||document.body;
   clear(app);
+  app.appendChild(this.buildA11y());
+  applyPrefs();
   var wrap=el('div','cps');
 
   var back=el('a','cps-back','← Retour'); back.href=this.cfg.back||'index.html';
@@ -159,24 +197,18 @@ RENDER.cardpick=function(stage, d, ctx){
   var bar=el('div','cps-bar','<i></i>'); card.appendChild(bar);
   var instr=el('div','cps-instr',''); card.appendChild(instr);
   var promptBox=el('div',null,''); card.appendChild(promptBox);
+  var ctrls=el('div','cps-ctrls'); card.appendChild(ctrls);
   var listen=listenBtn(function(){ var it=items[i]; return it ? (it.audio||it.text) : ''; });
-  card.appendChild(listen);
+  ctrls.appendChild(listen);
+  var hint=el('button','cps-hint','💡 Indice'); ctrls.appendChild(hint);
   var optBox=el('div',null,''); card.appendChild(optBox);
   var fb=el('div',null,''); card.appendChild(fb);
   stage.appendChild(card);
 
-  function currentTempsLocal(){ return d.temps||'entraine'; }
-
-  function draw(){
-    var it=items[i];
-    count.textContent=(i+1)+' / '+items.length;
-    bar.firstChild.style.width=Math.round(i/items.length*100)+'%';
-    instr.textContent=it.instr || d.instr || '';
-    clear(promptBox); clear(optBox); clear(fb);
-
+  function buildPrompt(it){
+    clear(promptBox);
     if(d.variant==='phone'){
-      var ph=el('div','cps-phone');
-      ph.appendChild(el('div','bar',''));
+      var ph=el('div','cps-phone'); ph.appendChild(el('div','bar',''));
       var body=el('div','body');
       if(it.em) body.appendChild(el('span','em',it.em));
       body.appendChild(el('div','tx',it.text||''));
@@ -188,39 +220,70 @@ RENDER.cardpick=function(stage, d, ctx){
       p.appendChild(el('div','tx',it.text||''));
       promptBox.appendChild(p);
     }
-
+  }
+  function buildOptions(it, o){
     var sort=(d.variant==='sort');
     var grid=el('div', sort?'cps-bins':'cps-opts');
-    if((sort?2:it.opts.length)===2 || it.opts.length===2) grid.classList.add('two');
-    if(sort && it.opts.length>2) grid.classList.remove('two');
-    it.opts.forEach(function(o,oi){
-      var b=el('button', sort?'cps-bin':'cps-opt', o.l);
-      b.onclick=function(){ pick(oi,b); };
+    if(it.opts.length===2) grid.classList.add('two');
+    it.opts.forEach(function(opt,oi){
+      var b=el('button', sort?'cps-bin':'cps-opt', opt.l);
+      if(o.disabled) b.disabled=true;
+      if(o.reveal){ if(opt.ok) b.classList.add('ok'); else b.classList.add('dim'); }
+      if(o.onPick) b.onclick=function(){ o.onPick(oi,b); };
       grid.appendChild(b);
     });
-    optBox.appendChild(grid);
-    /* lecture à la demande seulement (bouton 🔊) */
+    clear(optBox); optBox.appendChild(grid);
   }
+
+  function drawDemo(){
+    count.textContent='Exemple'; instr.textContent=items[0].instr || d.instr || '';
+    bar.firstChild.style.width='0%'; clear(fb); hint.style.display='none';
+    buildPrompt(items[0]);
+    promptBox.insertBefore(el('div','cps-demo','👀 <strong>Exemple</strong> — on te montre comment faire.'), promptBox.firstChild);
+    buildOptions(items[0], {disabled:true, reveal:true});
+    fb.appendChild(el('div','cps-fb good', '✓ '+(items[0].ex||'')));
+    var nb=el('button','cps-next','👉 À toi de jouer !');
+    nb.onclick=function(){ hint.style.display=''; draw(); };
+    fb.appendChild(nb);
+  }
+
+  function draw(){
+    var it=items[i];
+    count.textContent=(i+1)+' / '+items.length;
+    bar.firstChild.style.width=Math.round(i/items.length*100)+'%';
+    instr.textContent=it.instr || d.instr || '';
+    clear(fb); hint.disabled=false; hint.style.display='';
+    buildPrompt(it);
+    buildOptions(it, {onPick:pick});
+  }
+
+  hint.onclick=function(){
+    var it=items[i];
+    var btns=optBox.querySelectorAll('button');
+    if(it.opts.length>=3){
+      for(var k=0;k<it.opts.length;k++){ if(!it.opts[k].ok && btns[k] && !btns[k].disabled){ btns[k].classList.add('dim'); btns[k].disabled=true; break; } }
+    }
+    clear(fb); fb.appendChild(el('div','cps-fb tip','💡 Relis bien la situation (tu peux l’écouter avec 🔊), puis choisis.'));
+    hint.disabled=true;
+  };
 
   function pick(oi,btn){
     var it=items[i];
     var good=!!it.opts[oi].ok;
     if(good) earned++;
     var btns=optBox.querySelectorAll('button');
-    for(var k=0;k<btns.length;k++){
-      btns[k].disabled=true;
-      if(it.opts[k].ok) btns[k].classList.add('ok');
-      else btns[k].classList.add('dim');
-    }
-    if(!good) btn.classList.remove('dim'),btn.classList.add('no');
-    var box=el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(it.ex||''));
-    fb.appendChild(box);
+    for(var k=0;k<btns.length;k++){ btns[k].disabled=true; if(it.opts[k].ok) btns[k].classList.add('ok'); else btns[k].classList.add('dim'); }
+    if(!good){ btn.classList.remove('dim'); btn.classList.add('no'); }
+    hint.disabled=true;
+    clear(fb);
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(it.ex||'')));
     var last=(i>=items.length-1);
-    var nb=el('button','cps-next', last?'Continuer →':'Suivant →');
+    var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); bar.firstChild.style.width='100%'; ctx.next(); } else { i++; draw(); } };
     fb.appendChild(nb);
   }
-  draw();
+
+  if(d._demo) drawDemo(); else draw();
 };
 function currentTemps(d){ return d.temps||'entraine'; }
 
@@ -370,7 +433,7 @@ RENDER.scenario=function(stage, d, ctx){
     conseq.appendChild(el('div','cps-fb '+(c.good?'good':'bad'), c.fb||''));
     body.appendChild(conseq);
     var last=(i>=scenes.length-1);
-    var nb=el('button','cps-next', last?'Continuer →':'La suite →');
+    var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ if(last){ ctx.addScore(good, scenes.length); bar.firstChild.style.width='100%'; ctx.next(); } else { i++; scene(); } };
     body.appendChild(nb);
   }
