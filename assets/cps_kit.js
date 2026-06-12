@@ -82,7 +82,7 @@ Ctrl.prototype.buildA11y=function(){
     grp.appendChild(b);
   });
   bar.appendChild(grp); markFs();
-  var dys=el('button','cps-a11y-btn','Aa Dys'); dys.title='Police pour la dyslexie'; if(PREFS.dys) dys.classList.add('act');
+  var dys=el('button','cps-a11y-btn','Aa Confort'); dys.title='Lecture plus confortable'; if(PREFS.dys) dys.classList.add('act');
   dys.onclick=function(){ PREFS.dys=!PREFS.dys; savePrefs(); applyPrefs(); dys.classList.toggle('act', !!PREFS.dys); };
   bar.appendChild(dys);
   var calme=el('button','cps-a11y-btn','🌙 Calme'); calme.title='Mode calme : animations et couleurs réduites'; if(PREFS.calme) calme.classList.add('act');
@@ -476,9 +476,116 @@ RENDER.wrap=function(stage, d, ctx){
   stage.appendChild(c2);
 };
 
+/* ---------- ESCAPE GAME (habillage narratif des mécaniques, sans chrono) ---------- */
+function EscapeCtrl(cfg){
+  this.cfg=cfg;
+  this.salles=cfg.salles||[];
+  this.found=[];
+  this.build();
+  this.showCover();
+}
+EscapeCtrl.prototype.build=function(){
+  document.body.classList.remove('t-emo','t-soc','t-cog');
+  document.body.classList.add('t-'+(this.cfg.theme||'cog'));
+  var app=document.getElementById('cps-app')||document.body;
+  clear(app);
+  app.appendChild(Ctrl.prototype.buildA11y());
+  applyPrefs();
+  var wrap=el('div','cps');
+  var back=el('a','cps-back','← Retour'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
+  var head=el('div','cps-head');
+  if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
+  head.appendChild(el('h1',null,this.cfg.title||''));
+  if(this.cfg.subtitle) head.appendChild(el('p',null,this.cfg.subtitle));
+  wrap.appendChild(head);
+  this.mapEl=el('div','cps-locks');
+  for(var i=0;i<this.salles.length;i++) this.mapEl.appendChild(el('div','cps-lock','🔒'));
+  wrap.appendChild(this.mapEl);
+  this.stage=el('div','cps-stage'); wrap.appendChild(this.stage);
+  app.appendChild(wrap);
+  var foot=el('div','cps-foot'); foot.innerHTML='Escape game — Compétences psychosociales · Santé publique France 2025 · Niveau CAP'; app.appendChild(foot);
+};
+EscapeCtrl.prototype.updateMap=function(){
+  var locks=this.mapEl.children;
+  for(var i=0;i<this.salles.length;i++){
+    if(i<this.found.length){ locks[i].textContent=this.found[i]; locks[i].className='cps-lock open'; }
+    else { locks[i].textContent='🔒'; locks[i].className='cps-lock'; }
+  }
+};
+EscapeCtrl.prototype.showCover=function(){
+  stopSpeech(); clear(this.stage); this.updateMap();
+  var self=this, c=el('div','cps-card');
+  c.appendChild(el('div','cps-title','🎯 Ta mission'));
+  if(this.cfg.intro){
+    c.appendChild(listenBtn((function(t){return function(){return t;};})(this.cfg.audio||this.cfg.intro)));
+    c.appendChild(el('div','cps-instr',this.cfg.intro));
+  }
+  var b=el('button','cps-btn','▶️ Commencer la mission');
+  b.onclick=function(){ self.startSalle(0); };
+  c.appendChild(b); this.stage.appendChild(c);
+};
+EscapeCtrl.prototype.startSalle=function(i){
+  stopSpeech(); clear(this.stage);
+  var self=this, s=this.salles[i], c=el('div','cps-card');
+  c.appendChild(el('div','cps-title','🔐 '+(s.titre||('Épreuve '+(i+1)))));
+  if(s.intro){ c.appendChild(listenBtn((function(t){return function(){return t;};})(s.audio||s.intro))); c.appendChild(el('div','cps-instr',s.intro)); }
+  var b=el('button','cps-btn','▶️ Commencer l’épreuve');
+  b.onclick=function(){ self.runSalle(i); };
+  c.appendChild(b); this.stage.appendChild(c);
+};
+EscapeCtrl.prototype.runSalle=function(i){
+  stopSpeech(); clear(this.stage);
+  var self=this, mod=this.salles[i].module||{};
+  mod.tag=mod.tag||('🔐 '+(this.salles[i].titre||('Épreuve '+(i+1))));
+  var ctx={ addScore:function(){}, next:function(){ self.reveal(i); }, total:function(){return 0;}, score:function(){return 0;}, restart:function(){} };
+  var fn=RENDER[mod.type];
+  if(fn) fn(this.stage, mod, ctx); else this.reveal(i);
+};
+EscapeCtrl.prototype.reveal=function(i){
+  stopSpeech(); clear(this.stage);
+  var self=this, s=this.salles[i];
+  this.found.push(String(s.digit)); this.updateMap();
+  var c=el('div','cps-card');
+  c.appendChild(el('div','cps-title','🔓 Cadenas ouvert !'));
+  c.appendChild(el('div','cps-reveal','Tu as trouvé le chiffre <strong>'+s.digit+'</strong>'));
+  var last=(i>=this.salles.length-1);
+  var b=el('button','cps-btn', last?'🧰 Aller au coffre →':'Épreuve suivante →');
+  b.onclick=function(){ if(last) self.showFinal(); else self.startSalle(i+1); };
+  c.appendChild(b); this.stage.appendChild(c);
+};
+EscapeCtrl.prototype.showFinal=function(){
+  stopSpeech(); clear(this.stage); this.updateMap();
+  var self=this, code=this.salles.map(function(s){return String(s.digit);}).join(''), entry=[];
+  var c=el('div','cps-card');
+  c.appendChild(el('div','cps-title','🧰 Le coffre'));
+  c.appendChild(el('div','cps-instr','Entre le code que tu as trouvé. Les chiffres sont en haut.'));
+  var slots=el('div','cps-codeslots');
+  for(var k=0;k<code.length;k++) slots.appendChild(el('div','cps-codeslot',''));
+  c.appendChild(slots);
+  var fb=el('div',null,'');
+  var pad=el('div','cps-pad');
+  function refresh(){ for(var k=0;k<code.length;k++) slots.children[k].textContent=entry[k]||''; }
+  function check(){ if(entry.join('')===code){ self.showVictory(); } else { fb.innerHTML='<div class="cps-fb tip">💡 Ce n’est pas le bon code. Regarde bien les chiffres en haut, puis réessaie.</div>'; entry.length=0; refresh(); } }
+  for(var n=0;n<=9;n++){ (function(n){ var b=el('button','cps-padkey',String(n)); b.onclick=function(){ if(entry.length<code.length){ entry.push(String(n)); refresh(); fb.innerHTML=''; if(entry.length===code.length) check(); } }; pad.appendChild(b); })(n); }
+  var del=el('button','cps-padkey cps-paddel','⌫'); del.onclick=function(){ entry.pop(); refresh(); fb.innerHTML=''; }; pad.appendChild(del);
+  c.appendChild(pad); c.appendChild(fb); this.stage.appendChild(c);
+};
+EscapeCtrl.prototype.showVictory=function(){
+  stopSpeech(); clear(this.stage);
+  var self=this;
+  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-win','🎉')); c1.appendChild(el('div','cps-msg','Bravo ! Tu as ouvert le coffre.')); this.stage.appendChild(c1);
+  if(this.cfg.keep && this.cfg.keep.length){
+    var c2=el('div','cps-card'); c2.appendChild(el('div','cps-title','📌 Ce que tu as appris'));
+    this.cfg.keep.forEach(function(k){ var kk=el('div','cps-keep'); kk.appendChild(el('span','ic',k.ic||'•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk); });
+    this.stage.appendChild(c2);
+  }
+  var c3=el('div','cps-card'); var again=el('button','cps-btn','🔄 Rejouer'); again.onclick=function(){ self.found=[]; self.showCover(); }; c3.appendChild(again); this.stage.appendChild(c3);
+};
+
 /* ---------- API ---------- */
 window.CPS={
   init:function(cfg){ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',function(){ new Ctrl(cfg); }); } else { new Ctrl(cfg); } },
+  escape:function(cfg){ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',function(){ new EscapeCtrl(cfg); }); } else { new EscapeCtrl(cfg); } },
   speak:speak
 };
 })();
