@@ -21,9 +21,23 @@ function speak(txt){
     window.speechSynthesis.speak(u);
   }catch(e){}
 }
+function stopSpeech(){ try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){} }
 function listenBtn(getText){
   var b=el('button','cps-listen','🔊 Écouter');
-  b.onclick=function(){ speak(getText()); };
+  function reset(){ b.innerHTML='🔊 Écouter'; b.classList.remove('on'); }
+  b.onclick=function(){
+    try{
+      // si une lecture est en cours sur ce bouton -> on l'ARRÊTE
+      if(b.classList.contains('on')){ stopSpeech(); reset(); return; }
+      var txt=getText(); if(!txt) return;
+      stopSpeech();
+      var u=new SpeechSynthesisUtterance(txt);
+      u.lang='fr-FR'; u.rate=0.95;
+      u.onend=reset; u.onerror=reset;
+      b.innerHTML='⏹️ Arrêter'; b.classList.add('on');
+      window.speechSynthesis.speak(u);
+    }catch(e){ reset(); }
+  };
   return b;
 }
 
@@ -85,6 +99,7 @@ Ctrl.prototype.setStep=function(k){
 Ctrl.prototype.render=function(){
   var sc=this.parc[this.idx];
   if(!sc) return;
+  stopSpeech();           // on coupe toute lecture en cours quand on change d'écran
   this.setStep(sc.temps||'entraine');
   clear(this.stage);
   window.scrollTo({top:0,behavior:'smooth'});
