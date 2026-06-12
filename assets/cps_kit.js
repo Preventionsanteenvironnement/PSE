@@ -582,10 +582,95 @@ EscapeCtrl.prototype.showVictory=function(){
   var c3=el('div','cps-card'); var again=el('button','cps-btn','🔄 Rejouer'); again.onclick=function(){ self.found=[]; self.showCover(); }; c3.appendChild(again); this.stage.appendChild(c3);
 };
 
+/* ---------- FLASHCARDS (révision active + auto-test + collection) ---------- */
+function FlashCtrl(cfg){
+  this.cfg=cfg;
+  this.emos=cfg.emotions||[];
+  this.byKey={}; for(var i=0;i<this.emos.length;i++) this.byKey[this.emos[i].key]=this.emos[i];
+  this.build();
+  this.showCover();
+}
+FlashCtrl.prototype.build=function(){
+  document.body.classList.remove('t-emo','t-soc','t-cog');
+  document.body.classList.add('t-'+(this.cfg.theme||'emo'));
+  var app=document.getElementById('cps-app')||document.body; clear(app);
+  app.appendChild(Ctrl.prototype.buildA11y()); applyPrefs();
+  var wrap=el('div','cps');
+  var back=el('a','cps-back','← Retour'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
+  var head=el('div','cps-head');
+  if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
+  head.appendChild(el('h1',null,this.cfg.title||''));
+  if(this.cfg.subtitle) head.appendChild(el('p',null,this.cfg.subtitle));
+  wrap.appendChild(head);
+  this.badgeRow=el('div','cps-badges'); this.badges={};
+  for(var j=0;j<this.emos.length;j++){ var e=this.emos[j]; var b=el('div','cps-badge', e.emoji+'<span>'+e.label+'</span>'); this.badgeRow.appendChild(b); this.badges[e.key]=b; }
+  wrap.appendChild(this.badgeRow);
+  this.stage=el('div','cps-stage'); wrap.appendChild(this.stage);
+  app.appendChild(wrap);
+  var foot=el('div','cps-foot'); foot.innerHTML='Flashcards émotions — Compétences psychosociales · Santé publique France 2025 · Niveau CAP'; app.appendChild(foot);
+};
+FlashCtrl.prototype.resetBadges=function(){ for(var k in this.badges) this.badges[k].classList.remove('on'); };
+FlashCtrl.prototype.showCover=function(){
+  stopSpeech(); clear(this.stage); this.resetBadges();
+  var self=this, c=el('div','cps-card');
+  c.appendChild(el('div','cps-title','🃏 Comment jouer'));
+  var howto='Lis la situation. Devine l’émotion dans ta tête. Retourne la carte pour vérifier. Puis dis si tu savais. But : débloquer les 7 émotions !';
+  c.appendChild(listenBtn(function(){ return howto; }));
+  c.appendChild(el('div','cps-instr',howto));
+  var b=el('button','cps-btn','▶️ Commencer'); b.onclick=function(){ self.start(); }; c.appendChild(b);
+  this.stage.appendChild(c);
+};
+FlashCtrl.prototype.start=function(){ this.remaining=shuffle(this.cfg.cards.slice()); this.total=this.cfg.cards.length; this.known=0; this.showCard(); };
+FlashCtrl.prototype.flipTo=function(box,fn){ box.classList.add('cps-flip-anim'); setTimeout(function(){ fn(); },170); setTimeout(function(){ box.classList.remove('cps-flip-anim'); },340); };
+FlashCtrl.prototype.showCard=function(){
+  stopSpeech();
+  if(!this.remaining.length){ this.showEnd(); return; }
+  clear(this.stage);
+  var self=this, card=this.remaining[0];
+  var top=el('div','cps-pgwrap'); top.appendChild(el('span','cps-tag','🃏 Carte')); top.appendChild(el('span','cps-count', this.known+' / '+this.total+' maîtrisées'));
+  this.stage.appendChild(top);
+  var box=el('div','cps-flash'); this.stage.appendChild(box);
+  function front(){
+    clear(box);
+    if(card.emoji) box.appendChild(el('div','cps-flash-em',card.emoji));
+    box.appendChild(el('div','cps-flash-sit',card.situation||''));
+    box.appendChild(el('div','cps-flash-q','Quelle émotion ?'));
+  }
+  front();
+  var ctrls=el('div','cps-ctrls');
+  ctrls.appendChild(listenBtn(function(){ return card.audio || card.situation; }));
+  this.stage.appendChild(ctrls);
+  var flipBtn=el('button','cps-btn','🔄 Retourner la carte');
+  flipBtn.onclick=function(){ self.flipTo(box, function(){ self.showBack(box,card); }); flipBtn.style.display='none'; ctrls.style.display='none'; };
+  this.stage.appendChild(flipBtn);
+};
+FlashCtrl.prototype.showBack=function(box,card){
+  var self=this, e=this.byKey[card.emotion]||{label:card.emotion,emoji:'',color:'#64748b'};
+  clear(box); box.classList.add('back');
+  var band=el('div','cps-flash-band', e.emoji+' '+e.label); band.style.background=e.color; box.appendChild(band);
+  if(card.message) box.appendChild(el('div','cps-flash-line','💬 <strong>Message :</strong> '+card.message));
+  if(card.corps) box.appendChild(el('div','cps-flash-line','👋 <strong>Dans le corps :</strong> '+card.corps));
+  var row=el('div','cps-flash-rate');
+  var ok=el('button','cps-rate ok','👍 Je savais');
+  ok.onclick=function(){ self.badges[card.emotion]&&self.badges[card.emotion].classList.add('on'); self.remaining.shift(); self.known++; self.showCard(); };
+  var rev=el('button','cps-rate rev','🔄 À revoir');
+  rev.onclick=function(){ self.remaining.push(self.remaining.shift()); self.showCard(); };
+  row.appendChild(ok); row.appendChild(rev);
+  this.stage.appendChild(row);
+};
+FlashCtrl.prototype.showEnd=function(){
+  stopSpeech(); clear(this.stage);
+  var self=this;
+  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-win','🎉')); c1.appendChild(el('div','cps-msg','Bravo ! Tu as révisé toutes les émotions.')); this.stage.appendChild(c1);
+  for(var k in this.badges) this.badges[k].classList.add('on');
+  var c2=el('div','cps-card'); var again=el('button','cps-btn','🔄 Recommencer'); again.onclick=function(){ self.showCover(); }; c2.appendChild(again); this.stage.appendChild(c2);
+};
+
 /* ---------- API ---------- */
 window.CPS={
   init:function(cfg){ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',function(){ new Ctrl(cfg); }); } else { new Ctrl(cfg); } },
   escape:function(cfg){ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',function(){ new EscapeCtrl(cfg); }); } else { new EscapeCtrl(cfg); } },
+  flash:function(cfg){ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',function(){ new FlashCtrl(cfg); }); } else { new FlashCtrl(cfg); } },
   speak:speak
 };
 })();
