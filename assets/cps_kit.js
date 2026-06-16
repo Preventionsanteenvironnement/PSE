@@ -669,7 +669,7 @@ FlashCtrl.prototype.showCover=function(){
   stopSpeech(); clear(this.stage); this.resetBadges();
   var self=this, c=el('div','cps-card');
   c.appendChild(el('div','cps-title','🃏 Comment jouer'));
-  var howto='Lis la situation. Devine l’émotion dans ta tête. Retourne la carte pour vérifier. Puis dis si tu savais. But : débloquer les 7 émotions !';
+  var howto='Lis la situation. Devine l’émotion dans ta tête. Retourne la carte pour vérifier. Puis dis si tu savais. But : débloquer les '+this.emos.length+' émotions !';
   c.appendChild(listenBtn(function(){ return howto; }));
   c.appendChild(el('div','cps-instr',howto));
   var b=el('button','cps-btn','▶️ Commencer'); b.onclick=function(){ self.start(); }; c.appendChild(b);
