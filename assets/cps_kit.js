@@ -246,13 +246,18 @@ RENDER.cardpick=function(stage, d, ctx){
   }
   function buildOptions(it, o){
     var sort=(d.variant==='sort');
+    var shouldShuffle = !sort && d.shuffleOptions !== false && o.shuffle !== false;
+    var shown = it.opts.map(function(opt,oi){ return {opt:opt, idx:oi}; });
+    if(shouldShuffle) shown = shuffle(shown);
+    buildOptions.current = shown;
     var grid=el('div', sort?'cps-bins':'cps-opts');
     if(it.opts.length===2) grid.classList.add('two');
-    it.opts.forEach(function(opt,oi){
+    shown.forEach(function(entry){
+      var opt=entry.opt;
       var b=el('button', sort?'cps-bin':'cps-opt', opt.l);
       if(o.disabled) b.disabled=true;
       if(o.reveal){ if(opt.ok) b.classList.add('ok'); else b.classList.add('dim'); }
-      if(o.onPick) b.onclick=function(){ o.onPick(oi,b); };
+      if(o.onPick) b.onclick=function(){ o.onPick(entry,b); };
       grid.appendChild(b);
     });
     clear(optBox); optBox.appendChild(grid);
@@ -281,21 +286,22 @@ RENDER.cardpick=function(stage, d, ctx){
   }
 
   hint.onclick=function(){
-    var it=items[i];
     var btns=optBox.querySelectorAll('button');
-    if(it.opts.length>=3){
-      for(var k=0;k<it.opts.length;k++){ if(!it.opts[k].ok && btns[k] && !btns[k].disabled){ btns[k].classList.add('dim'); btns[k].disabled=true; break; } }
+    var shown=buildOptions.current||[];
+    if(shown.length>=3){
+      for(var k=0;k<shown.length;k++){ if(!shown[k].opt.ok && btns[k] && !btns[k].disabled){ btns[k].classList.add('dim'); btns[k].disabled=true; break; } }
     }
     clear(fb); fb.appendChild(el('div','cps-fb tip','💡 Relis bien la situation (tu peux l’écouter avec 🔊), puis choisis.'));
     hint.disabled=true;
   };
 
-  function pick(oi,btn){
+  function pick(entry,btn){
     var it=items[i];
-    var good=!!it.opts[oi].ok;
+    var shown=buildOptions.current||[];
+    var good=!!entry.opt.ok;
     if(good) earned++;
     var btns=optBox.querySelectorAll('button');
-    for(var k=0;k<btns.length;k++){ btns[k].disabled=true; if(it.opts[k].ok) btns[k].classList.add('ok'); else btns[k].classList.add('dim'); }
+    for(var k=0;k<btns.length;k++){ btns[k].disabled=true; if(shown[k] && shown[k].opt.ok) btns[k].classList.add('ok'); else btns[k].classList.add('dim'); }
     if(!good){ btn.classList.remove('dim'); btn.classList.add('no'); }
     hint.disabled=true;
     clear(fb);
@@ -570,7 +576,7 @@ RENDER.grid=function(stage, d, ctx){
 /* SCÉNARIO (tu décides) */
 RENDER.scenario=function(stage, d, ctx){
   var scenes=d.scenes||[];
-  var i=0, good=0;
+  var i=0, good=0, shownChoices=[];
   var card=el('div','cps-card');
   var head=el('div','cps-pgwrap');
   head.appendChild(el('span','cps-tag', d.tag||'En situation'));
@@ -592,7 +598,10 @@ RENDER.scenario=function(stage, d, ctx){
     body.appendChild(sc);
     body.appendChild(listenBtn(function(){ return s.audio||s.text; }));
     var opts=el('div','cps-opts');
-    s.choices.forEach(function(c,ci){
+    shownChoices=s.choices.map(function(c,ci){ return {choice:c, idx:ci}; });
+    if(d.shuffleChoices !== false) shownChoices=shuffle(shownChoices);
+    shownChoices.forEach(function(entry,ci){
+      var c=entry.choice;
       var b=el('button','cps-opt',c.l);
       b.onclick=function(){ choose(ci,b); };
       opts.appendChild(b);
@@ -601,10 +610,10 @@ RENDER.scenario=function(stage, d, ctx){
     /* lecture à la demande seulement (bouton 🔊) */
   }
   function choose(ci,btn){
-    var s=scenes[i]; var c=s.choices[ci];
+    var c=shownChoices[ci].choice;
     if(c.good) good++;
     var btns=body.querySelectorAll('.cps-opt');
-    for(var k=0;k<btns.length;k++){ btns[k].disabled=true; if(!s.choices[k].good) btns[k].classList.add('dim'); }
+    for(var k=0;k<btns.length;k++){ btns[k].disabled=true; if(!shownChoices[k].choice.good) btns[k].classList.add('dim'); }
     btn.classList.remove('dim'); btn.classList.add(c.good?'ok':'no');
     var conseq=el('div','cps-conseq');
     conseq.appendChild(el('span','face', c.good?'😀':'😕'));
