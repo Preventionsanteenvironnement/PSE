@@ -493,6 +493,48 @@ RENDER.imagepick=function(stage, d, ctx){
   draw();
 };
 
+/* CLIQUER UNE ZONE DU CORPS (bodymap) : silhouette + zones cliquables */
+RENDER.bodymap=function(stage, d, ctx){
+  var items=d.items||[], zones=d.zones||[];
+  var i=0, earned=0;
+  var card=el('div','cps-card');
+  if(d.title) card.appendChild(el('div','cps-title',d.title));
+  card.appendChild(el('div','cps-instr', d.instr||'Clique sur la bonne partie du corps.'));
+  var ask=el('div','cps-bodymap-ask'); card.appendChild(ask);
+  var ctrls=el('div','cps-ctrls'); ctrls.appendChild(listenBtn(function(){ return items[i]?items[i].ask:''; })); card.appendChild(ctrls);
+  var wrap=el('div','cps-bodymap');
+  var im=el('img','cps-bodymap-img'); im.src=d.image; im.alt=d.alt||'silhouette du corps'; im.setAttribute('loading','lazy'); wrap.appendChild(im);
+  var hot=el('div','cps-bodymap-zones'); wrap.appendChild(hot);
+  card.appendChild(wrap);
+  var fb=el('div',null,''); card.appendChild(fb);
+  stage.appendChild(card);
+  function draw(){
+    var it=items[i];
+    ask.textContent=it.ask||'';
+    clear(hot); clear(fb);
+    zones.forEach(function(z){
+      var b=el('button','cps-zone'); b.style.left=z.x+'%'; b.style.top=z.y+'%';
+      b.setAttribute('aria-label', z.ans||'zone');
+      b.onclick=function(){ pick(z,b,it); };
+      hot.appendChild(b);
+    });
+  }
+  function pick(z,b,it){
+    var good=(z.ans===it.ok);
+    if(good) earned++;
+    var bs=hot.querySelectorAll('.cps-zone');
+    for(var k=0;k<bs.length;k++){ bs[k].disabled=true; if(zones[k] && zones[k].ans===it.ok) bs[k].classList.add('ok'); }
+    if(!good) b.classList.add('no');
+    clear(fb);
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(it.ex||'')));
+    var last=(i>=items.length-1);
+    var nb=el('button','cps-next','Continuer →');
+    nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); ctx.next(); } else { i++; draw(); } };
+    fb.appendChild(nb);
+  }
+  draw();
+};
+
 /* MUR DES VISAGES (grid) : taper tous les visages d'une émotion */
 RENDER.grid=function(stage, d, ctx){
   var faces=d.faces||[], need=0, got=0;
