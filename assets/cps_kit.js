@@ -687,7 +687,8 @@ FlashCtrl.prototype.showCard=function(){
   var box=el('div','cps-flash'); this.stage.appendChild(box);
   function front(){
     clear(box);
-    if(card.emoji) box.appendChild(el('div','cps-flash-em',card.emoji));
+    if(card.img) box.appendChild(imgEl(card.img, card.alt||card.situation||''));
+    else if(card.emoji) box.appendChild(el('div','cps-flash-em',card.emoji));
     box.appendChild(el('div','cps-flash-sit',card.situation||''));
     box.appendChild(el('div','cps-flash-q','Quelle émotion ?'));
   }
