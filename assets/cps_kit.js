@@ -264,12 +264,13 @@ RENDER.cardpick=function(stage, d, ctx){
   }
 
   function drawDemo(){
-    count.textContent='Exemple'; instr.textContent=items[0].instr || d.instr || '';
+    var demo = d.demo || items[0];
+    count.textContent='Exemple'; instr.textContent=demo.instr || d.instr || '';
     bar.firstChild.style.width='0%'; clear(fb); hint.style.display='none';
-    buildPrompt(items[0]);
+    buildPrompt(demo);
     promptBox.insertBefore(el('div','cps-demo','👀 <strong>Exemple</strong> — on te montre comment faire.'), promptBox.firstChild);
-    buildOptions(items[0], {disabled:true, reveal:true});
-    fb.appendChild(el('div','cps-fb good', '✓ '+(items[0].ex||'')));
+    buildOptions(demo, {disabled:true, reveal:true});
+    fb.appendChild(el('div','cps-fb good', '✓ '+(demo.ex||'')));
     var nb=el('button','cps-next','👉 À toi de jouer !');
     nb.onclick=function(){ hint.style.display=''; draw(); };
     fb.appendChild(nb);
