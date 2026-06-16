@@ -367,6 +367,8 @@ RENDER.match=function(stage, d, ctx){
 /* REMETTRE DANS L'ORDRE (order) */
 RENDER.order=function(stage, d, ctx){
   var steps=d.steps||[];
+  var stepImages=d.stepImages||d.images||[];
+  var stepAlts=d.stepAlts||[];
   var card=el('div','cps-card');
   if(d.title) card.appendChild(el('div','cps-title',d.title));
   card.appendChild(el('div','cps-instr', d.instr || 'Remets les étapes dans le bon ordre.'));
@@ -378,13 +380,20 @@ RENDER.order=function(stage, d, ctx){
   });
   card.appendChild(slots);
   var pool=el('div','cps-pool');
+  if(stepImages.length) pool.classList.add('image-pool');
   card.appendChild(pool);
   var fb=el('div',null,''); card.appendChild(fb);
   stage.appendChild(card);
 
   var expect=0; var pts=0; var slotErr=false;
   shuffle(steps.map(function(s,idx){ return {idx:idx,s:s}; })).forEach(function(o){
-    var chip=el('button','cps-chip',o.s);
+    var chip=el('button','cps-chip'+(stepImages[o.idx]?' has-img':''));
+    if(stepImages[o.idx]){
+      var im=el('img','cps-chip-img');
+      im.src=stepImages[o.idx]; im.alt=stepAlts[o.idx]||''; im.setAttribute('loading','lazy');
+      chip.appendChild(im);
+    }
+    chip.appendChild(el('span','cps-chip-label',o.s));
     chip.onclick=function(){ tap(o.idx, chip); };
     pool.appendChild(chip);
   });
@@ -394,6 +403,11 @@ RENDER.order=function(stage, d, ctx){
       chip.classList.add('used');
       var sl=slots.children[expect];
       sl.classList.add('full'); sl.querySelector('.lab').textContent=' '+steps[expect];
+      if(stepImages[expect] && !sl.querySelector('img')){
+        var slotImg=el('img','cps-slot-img');
+        slotImg.src=stepImages[expect]; slotImg.alt=stepAlts[expect]||''; slotImg.setAttribute('loading','lazy');
+        sl.insertBefore(slotImg, sl.querySelector('.lab'));
+      }
       if(!slotErr) pts++;
       slotErr=false; expect++;
       clear(fb);
