@@ -54,6 +54,23 @@ function applyPrefs(){
   if(PREFS.calme) b.classList.add('calme');
 }
 
+/* ---------- images : agrandissement (lightbox) ---------- */
+function lightbox(src,alt){
+  var ov=document.getElementById('cps-lightbox');
+  if(!ov){ ov=el('div','cps-lightbox'); ov.id='cps-lightbox';
+    ov.appendChild(el('img')); ov.appendChild(el('div','cps-lightbox-x','✕'));
+    ov.onclick=function(){ ov.classList.remove('open'); };
+    document.body.appendChild(ov);
+  }
+  var im=ov.querySelector('img'); im.src=src; im.alt=alt||'';
+  ov.classList.add('open');
+}
+function imgEl(src,alt){
+  var i=el('img','cps-img cps-zoom'); i.src=src; i.alt=alt||''; i.setAttribute('loading','lazy');
+  i.onclick=function(e){ e.stopPropagation(); lightbox(src,alt); };
+  return i;
+}
+
 var TEMPS=[
   {k:'decouvre', n:'①', l:'Je découvre'},
   {k:'entraine', n:'②', l:"Je m'entraîne"},
@@ -164,7 +181,12 @@ RENDER.lesson=function(stage, d, ctx){
   if(d.title) card.appendChild(el('div','cps-title',d.title));
   if(d.audio) card.appendChild(listenBtn(function(){ return d.audio; }));
   (d.blocks||[]).forEach(function(b){
-    if(b.words){
+    if(b.img){
+      var li=el('div','cps-lesson'); li.style.flexDirection='column';
+      if(b.html) li.appendChild(el('div','tx','<div style="text-align:center;width:100%">'+b.html+'</div>'));
+      li.appendChild(imgEl(b.img, b.alt||''));
+      card.appendChild(li);
+    }else if(b.words){
       var l=el('div','cps-lesson'); l.style.flexDirection='column';
       if(b.html) l.appendChild(el('div','tx','<div style="text-align:center;width:100%">'+b.html+'</div>'));
       var w=el('div','cps-words');
@@ -216,8 +238,9 @@ RENDER.cardpick=function(stage, d, ctx){
       ph.appendChild(body); promptBox.appendChild(ph);
     }else{
       var p=el('div','cps-prompt');
+      if(it.img) p.appendChild(imgEl(it.img, it.alt||it.text||''));
       if(it.em) p.appendChild(el('span','em',it.em));
-      p.appendChild(el('div','tx',it.text||''));
+      if(it.text) p.appendChild(el('div','tx',it.text));
       promptBox.appendChild(p);
     }
   }
@@ -388,6 +411,38 @@ RENDER.order=function(stage, d, ctx){
     }
   }
   /* lecture à la demande seulement (bouton 🔊) */
+};
+
+/* MUR DES VISAGES (grid) : taper tous les visages d'une émotion */
+RENDER.grid=function(stage, d, ctx){
+  var faces=d.faces||[], need=0, got=0;
+  for(var n=0;n<faces.length;n++) if(faces[n].ok) need++;
+  var card=el('div','cps-card');
+  if(d.title) card.appendChild(el('div','cps-title',d.title));
+  card.appendChild(el('div','cps-instr', d.instr||''));
+  if(d.audio) card.appendChild(listenBtn(function(){ return d.audio; }));
+  var grid=el('div','cps-grid'), fb=el('div',null,'');
+  faces.forEach(function(f){
+    var tile=el('button','cps-gtile');
+    var im=el('img','cps-gimg'); im.src=f.img; im.alt=f.alt||''; im.setAttribute('loading','lazy'); tile.appendChild(im);
+    var z=el('span','cps-gzoom','🔍'); z.onclick=function(e){ e.stopPropagation(); lightbox(f.img,f.alt||''); }; tile.appendChild(z);
+    tile.onclick=function(){
+      if(tile.classList.contains('on')) return;
+      if(f.ok){
+        tile.classList.add('on'); got++; clear(fb);
+        if(got>=need){
+          fb.appendChild(el('div','cps-fb good','✓ '+(d.success||'Bravo ! Tu as trouvé tous les visages.')));
+          var nb=el('button','cps-next','Continuer →'); nb.onclick=function(){ ctx.addScore(need,need); ctx.next(); }; fb.appendChild(nb);
+        }
+      } else {
+        tile.classList.add('off'); setTimeout(function(){ tile.classList.remove('off'); },500);
+        clear(fb); fb.appendChild(el('div','cps-fb bad','💡 '+(d.miss||'Non, ce visage ne montre pas cette émotion.')));
+      }
+    };
+    grid.appendChild(tile);
+  });
+  card.appendChild(grid); card.appendChild(fb);
+  stage.appendChild(card);
 };
 
 /* SCÉNARIO (tu décides) */
