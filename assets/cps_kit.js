@@ -586,6 +586,7 @@ RENDER.scenario=function(stage, d, ctx){
     bar.firstChild.style.width=Math.round(i/scenes.length*100)+'%';
     clear(body);
     var sc=el('div','cps-scene');
+    if(s.img) sc.appendChild(imgEl(s.img, s.alt||s.text||''));
     if(s.em) sc.appendChild(el('span','em',s.em));
     sc.appendChild(el('div','tx',s.text||''));
     body.appendChild(sc);
