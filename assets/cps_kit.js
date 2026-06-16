@@ -427,6 +427,69 @@ RENDER.order=function(stage, d, ctx){
   /* lecture à la demande seulement (bouton 🔊) */
 };
 
+/* CHOISIR UNE IMAGE PARMI DES CARTES MÉLANGÉES */
+RENDER.imagepick=function(stage, d, ctx){
+  var items=d.items||[];
+  var i=0, earned=0;
+  var card=el('div','cps-card');
+  var head=el('div','cps-pgwrap');
+  head.appendChild(el('span','cps-tag', d.tag||'Images mélangées'));
+  var count=el('span','cps-count',''); head.appendChild(count);
+  card.appendChild(head);
+  var bar=el('div','cps-bar','<i></i>'); card.appendChild(bar);
+  var instr=el('div','cps-instr',d.instr||'Choisis la bonne image.'); card.appendChild(instr);
+  var prompt=el('div','cps-prompt'); card.appendChild(prompt);
+  var ctrls=el('div','cps-ctrls'); card.appendChild(ctrls);
+  var listen=listenBtn(function(){ var it=items[i]; return it ? (it.audio||it.text||d.instr||'') : ''; });
+  ctrls.appendChild(listen);
+  var grid=el('div','cps-image-options'); card.appendChild(grid);
+  var fb=el('div',null,''); card.appendChild(fb);
+  stage.appendChild(card);
+
+  function draw(){
+    var it=items[i];
+    count.textContent=(i+1)+' / '+items.length;
+    bar.firstChild.style.width=Math.round(i/items.length*100)+'%';
+    prompt.innerHTML='';
+    if(it.text) prompt.appendChild(el('div','tx',it.text));
+    clear(grid); clear(fb);
+    shuffle(it.options||[]).forEach(function(opt){
+      var b=el('button','cps-image-opt');
+      if(opt.img){
+        var im=el('img','cps-image-opt-img');
+        im.src=opt.img; im.alt=opt.alt||opt.l||''; im.setAttribute('loading','lazy');
+        b.appendChild(im);
+      }
+      b.appendChild(el('span','cps-image-opt-label',opt.l||'Choisir cette image'));
+      b.onclick=function(){ pick(opt,b); };
+      grid.appendChild(b);
+    });
+  }
+  function pick(opt,btn){
+    var good=!!opt.ok;
+    if(good) earned++;
+    var btns=grid.querySelectorAll('button');
+    for(var k=0;k<btns.length;k++) btns[k].disabled=true;
+    for(var j=0;j<(items[i].options||[]).length;j++){
+      if(items[i].options[j].ok){
+        var imgs=grid.querySelectorAll('img');
+        for(var n=0;n<imgs.length;n++){
+          if(imgs[n].getAttribute('src')===items[i].options[j].img) imgs[n].parentNode.classList.add('ok');
+        }
+      }
+    }
+    btn.classList.add(good?'ok':'no');
+    clear(fb);
+    var msg = good ? (opt.ex||items[i].ex||'') : (opt.bad||items[i].bad||'Pas celle-ci. Regarde la carte entourée en vert, puis continue.');
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+msg));
+    var last=(i>=items.length-1);
+    var nb=el('button','cps-next','Continuer →');
+    nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); bar.firstChild.style.width='100%'; ctx.next(); } else { i++; draw(); } };
+    fb.appendChild(nb);
+  }
+  draw();
+};
+
 /* MUR DES VISAGES (grid) : taper tous les visages d'une émotion */
 RENDER.grid=function(stage, d, ctx){
   var faces=d.faces||[], need=0, got=0;
