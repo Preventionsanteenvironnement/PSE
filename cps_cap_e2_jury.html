@@ -35,6 +35,11 @@ h1{position:relative;margin:12px 0 8px;font-size:clamp(2rem,4vw,3.45rem);line-he
 .art{background:#f8fafc;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;padding:10px}
 .art img{display:block;max-width:100%;max-height:430px;width:auto;height:auto;margin:0 auto;border-radius:12px;border:1px solid #e5e7eb;background:#fff;cursor:zoom-in}
 .art-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.dialogue{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 18px;background:#fff;border-bottom:1px solid #eef2f7}
+.dialogue .bubble{border:2px solid #dbe2ea;border-radius:14px;padding:10px 12px;background:#f8fafc;font-weight:800;line-height:1.35}
+.dialogue .bubble.right{background:#fff7e6;border-color:#f3d891}
+.dialogue .bubble strong{display:block;color:#be185d;font-size:.78rem;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.dialogue .bubble span{display:block}
 .mini{border:2px solid #e5e7eb;background:#fff;color:#334155;border-radius:11px;padding:8px 11px;font-weight:850;cursor:pointer}
 .mini:hover{border-color:#0f766e;background:#f0fdfa;color:#115e59}
 .evidence{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 18px;background:#fafafa;border-bottom:1px solid #eef2f7}
@@ -92,6 +97,7 @@ body.calm *{transition:none!important;animation:none!important}
   .topline{grid-template-columns:1fr}
   .scorebox{text-align:left}
   .hero{border-radius:15px;padding:23px 17px}
+  .dialogue{grid-template-columns:1fr;padding:10px}
   .evidence{grid-template-columns:1fr 1fr;padding:10px}
   .panel,.recap{padding:14px}
   .instr{display:block;font-size:1rem}
@@ -143,6 +149,7 @@ body.calm *{transition:none!important;animation:none!important}
         <img id="caseImg" src="assets/emotions/scenes/scene-peur-oral.png" alt="Élève inquiet avant de passer à l'oral devant la classe" width="1180" height="664">
         <div class="art-actions"><button class="mini" type="button" id="zoomBtn">Agrandir l'image</button></div>
       </div>
+      <div class="dialogue" id="caseDialogue" aria-label="Mini dialogue du dossier"></div>
       <div class="evidence" id="evidence"></div>
       <div class="panel" id="questionPanel">
         <span class="phase" id="phase"></span>
@@ -182,6 +189,10 @@ var dossiers = [
     img:"assets/emotions/scenes/scene-peur-oral.png",
     alt:"Élève inquiet avant de passer à l'oral devant la classe",
     scene:"Noa doit parler devant le groupe dans dix minutes. Son ventre se serre, son souffle accélère et il pense qu'il va rater.",
+    dialogue:[
+      ["Noa","Je sens que je vais rater, mon souffle accélère."],
+      ["Adulte","On commence par redescendre, puis tu prépares trois idées."]
+    ],
     memo:[
       ["Diagnostic","Déclencheur : oral proche. Émotion : stress/inquiétude. Intensité : forte."],
       ["Besoin","Clarté, sécurité, préparation."],
@@ -221,6 +232,10 @@ var dossiers = [
     img:"assets/emotions/scenes/scene-colere-atelier.png",
     alt:"Élève en colère devant un travail abîmé en atelier",
     scene:"En atelier, le matériel de Noa a été déplacé. Son travail est abîmé. Il sent la colère monter et serre les poings.",
+    dialogue:[
+      ["Noa","Je suis en colère quand mon matériel est déplacé."],
+      ["Adulte","Formule le fait, ton besoin, puis une demande de réparation."]
+    ],
     memo:[
       ["Diagnostic","Colère/frustration, intensité moyenne à forte."],
       ["Besoin","Respect du matériel, réparation, prévention."],
@@ -260,6 +275,10 @@ var dossiers = [
     img:"assets/emotions/e1-jury/dossier-exclusion-groupe.jpg",
     alt:"Mini-BD : élève isolé puis inclusion dans une activité de groupe",
     scene:"Pendant une activité, Noa reste sur le côté. Les autres se répartissent les tâches sans lui donner de rôle.",
+    dialogue:[
+      ["Noa","Je me sens seul quand je n'ai pas de rôle."],
+      ["Groupe","Tu peux demander une tâche précise pour participer."]
+    ],
     memo:[
       ["Diagnostic","Tristesse, solitude ou frustration."],
       ["Besoin","Lien, participation, place dans le groupe."],
@@ -299,6 +318,10 @@ var dossiers = [
     img:"assets/emotions/e1-jury/dossier-consigne-securite.jpg",
     alt:"Mini-BD : consigne de sécurité, inquiétude, demande de précision",
     scene:"Une consigne change juste avant une tâche de sécurité. Noa hésite : il veut faire correctement mais ne sait pas par quoi commencer.",
+    dialogue:[
+      ["Noa","Je suis inquiet, je ne sais pas quelle étape faire en premier."],
+      ["Adulte","Tu peux demander une précision avant d'agir."]
+    ],
     memo:[
       ["Diagnostic","Inquiétude liée à une consigne floue."],
       ["Besoin","Clarté et sécurité."],
@@ -338,6 +361,10 @@ var dossiers = [
     img:"assets/emotions/e1-jury/dossier-reussite-feedback.jpg",
     alt:"Mini-BD : élève réussit une tâche et reçoit un retour positif",
     scene:"Noa réussit une tâche difficile. Son professeur remarque son effort et lui dit qu'il a progressé.",
+    dialogue:[
+      ["Professeur","Ton geste est plus précis, tu as progressé."],
+      ["Noa","Je peux savourer, remercier et garder ce qui a fonctionné."]
+    ],
     memo:[
       ["Diagnostic","Fierté, joie, motivation."],
       ["Besoin","Reconnaissance, confiance, compétence."],
@@ -379,7 +406,7 @@ var $ = function(id){return document.getElementById(id);};
 var refs = {
   intro:$("intro"), board:$("board"), final:$("final"), progressText:$("progressText"), progressBar:$("progressBar"),
   scoreText:$("scoreText"), caseNumber:$("caseNumber"), caseTitle:$("caseTitle"), caseScene:$("caseScene"),
-  caseImg:$("caseImg"), evidence:$("evidence"), panel:$("questionPanel"), phase:$("phase"), question:$("question"),
+  caseImg:$("caseImg"), dialogue:$("caseDialogue"), evidence:$("evidence"), panel:$("questionPanel"), phase:$("phase"), question:$("question"),
   options:$("options"), feedback:$("feedback"), nextBtn:$("nextBtn"), recap:$("recap"), modal:$("modal"), modalImg:$("modalImg")
 };
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -407,12 +434,25 @@ function renderCase(){
   refs.caseTitle.textContent=d.title;
   refs.caseScene.textContent=d.scene;
   refs.caseImg.src=d.img; refs.caseImg.alt=d.alt;
+  renderDialogue(d.dialogue);
   refs.evidence.innerHTML="";
   Object.keys(labels).forEach(function(k){
     var s=document.createElement("span"); s.textContent=labels[k]; s.dataset.key=k; refs.evidence.appendChild(s);
   });
   updateTop();
   renderQuestion();
+}
+function renderDialogue(lines){
+  refs.dialogue.innerHTML="";
+  if(!lines || !lines.length){ refs.dialogue.hidden=true; return; }
+  refs.dialogue.hidden=false;
+  lines.forEach(function(line,i){
+    var bubble=document.createElement("div"); bubble.className="bubble "+(i%2?"right":"left");
+    var speaker=document.createElement("strong"); speaker.textContent=line[0];
+    var text=document.createElement("span"); text.textContent=line[1];
+    bubble.appendChild(speaker); bubble.appendChild(text);
+    refs.dialogue.appendChild(bubble);
+  });
 }
 function updateTop(){
   var doneBefore = dossiers.slice(0,state.d).reduce(function(n,d){return n+d.tasks.length;},0)+state.q;

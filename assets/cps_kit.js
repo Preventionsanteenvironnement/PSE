@@ -227,6 +227,37 @@ RENDER.cardpick=function(stage, d, ctx){
   var fb=el('div',null,''); card.appendChild(fb);
   stage.appendChild(card);
 
+  function buildComic(comic){
+    var box=el('div','cps-comic');
+    var panels = comic.panels || comic;
+    for(var pi=0; pi<panels.length; pi++){
+      var panel=panels[pi];
+      var p=el('div','cps-comic-panel');
+      if(panel.label) p.appendChild(el('div','cps-comic-label',panel.label));
+      var people=el('div','cps-comic-people');
+      var list=panel.people || [{name:'A'},{name:'B'}];
+      for(var ai=0; ai<list.length; ai++){
+        var person=list[ai];
+        var name = typeof person==='string' ? person : person.name;
+        var cls='cps-comic-avatar';
+        if(person.side) cls+=' '+person.side;
+        if(person.tone) cls+=' '+person.tone;
+        people.appendChild(el('span',cls,name||'?'));
+      }
+      p.appendChild(people);
+      var bubbles=panel.bubbles || [];
+      for(var bi=0; bi<bubbles.length; bi++){
+        var b=bubbles[bi];
+        var bcls='cps-bubble '+(b.who==='right'?'right':'left');
+        if(b.kind) bcls+=' '+b.kind;
+        p.appendChild(el('div',bcls,b.text||''));
+      }
+      if(panel.note) p.appendChild(el('div','cps-comic-note',panel.note));
+      box.appendChild(p);
+    }
+    return box;
+  }
+
   function buildPrompt(it){
     clear(promptBox);
     if(d.variant==='phone'){
@@ -239,6 +270,7 @@ RENDER.cardpick=function(stage, d, ctx){
     }else{
       var p=el('div','cps-prompt');
       if(it.img) p.appendChild(imgEl(it.img, it.alt||it.text||''));
+      if(it.comic) p.appendChild(buildComic(it.comic));
       if(it.em) p.appendChild(el('span','em',it.em));
       if(it.text) p.appendChild(el('div','tx',it.text));
       promptBox.appendChild(p);
