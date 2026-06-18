@@ -234,24 +234,30 @@ RENDER.cardpick=function(stage, d, ctx){
       var panel=panels[pi];
       var p=el('div','cps-comic-panel');
       if(panel.label) p.appendChild(el('div','cps-comic-label',panel.label));
-      var people=el('div','cps-comic-people');
-      var list=panel.people || [{name:'A'},{name:'B'}];
-      for(var ai=0; ai<list.length; ai++){
-        var person=list[ai];
-        var name = typeof person==='string' ? person : person.name;
-        var label = name==='A' ? 'Élève' : (name==='B' ? 'Autre' : name);
-        var cls='cps-comic-avatar';
-        if(person.side) cls+=' '+person.side;
-        if(person.tone) cls+=' '+person.tone;
-        var avatar=el('span',cls);
-        avatar.setAttribute('aria-label',label||'Personnage');
-        avatar.title=label||'Personnage';
-        avatar.appendChild(el('i','cps-comic-head'));
-        avatar.appendChild(el('i','cps-comic-body'));
-        avatar.appendChild(el('small',null,label||'?'));
-        people.appendChild(avatar);
+      if(panel.img){
+        var scene=el('div','cps-comic-photo');
+        scene.appendChild(imgEl(panel.img, panel.alt||panel.label||''));
+        p.appendChild(scene);
+      }else{
+        var people=el('div','cps-comic-people');
+        var list=panel.people || [{name:'A'},{name:'B'}];
+        for(var ai=0; ai<list.length; ai++){
+          var person=list[ai];
+          var name = typeof person==='string' ? person : person.name;
+          var label = name==='A' ? 'Élève' : (name==='B' ? 'Autre' : name);
+          var cls='cps-comic-avatar';
+          if(person.side) cls+=' '+person.side;
+          if(person.tone) cls+=' '+person.tone;
+          var avatar=el('span',cls);
+          avatar.setAttribute('aria-label',label||'Personnage');
+          avatar.title=label||'Personnage';
+          avatar.appendChild(el('i','cps-comic-head'));
+          avatar.appendChild(el('i','cps-comic-body'));
+          avatar.appendChild(el('small',null,label||'?'));
+          people.appendChild(avatar);
+        }
+        p.appendChild(people);
       }
-      p.appendChild(people);
       var bubbles=panel.bubbles || [];
       for(var bi=0; bi<bubbles.length; bi++){
         var b=bubbles[bi];
