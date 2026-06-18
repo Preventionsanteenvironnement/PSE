@@ -323,6 +323,12 @@ RENDER.cardpick=function(stage, d, ctx){
     });
     clear(optBox); optBox.appendChild(grid);
   }
+  function focusCard(){
+    setTimeout(function(){
+      try{ stage.scrollIntoView({block:'start', behavior:'smooth'}); }
+      catch(e){ stage.scrollIntoView(); }
+    }, 0);
+  }
 
   function drawDemo(){
     var demo = d.demo || items[0];
@@ -345,6 +351,7 @@ RENDER.cardpick=function(stage, d, ctx){
     clear(fb); hint.disabled=false; hint.style.display='';
     buildPrompt(it);
     buildOptions(it, {onPick:pick});
+    focusCard();
   }
 
   hint.onclick=function(){
