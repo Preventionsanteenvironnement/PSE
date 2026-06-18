@@ -294,7 +294,8 @@ RENDER.cardpick=function(stage, d, ctx){
       if(it.text){
         if(it.context){
           var q=el('div','tx cps-phrase');
-          q.appendChild(el('strong',null,'Phrase à analyser'));
+          var phraseLabel = it.speaker ? (it.speaker+' dit :') : (it.phraseLabel || 'La personne dit :');
+          q.appendChild(el('strong',null,phraseLabel));
           q.appendChild(el('span',null,it.text));
           p.appendChild(q);
         }else{
