@@ -285,7 +285,22 @@ RENDER.cardpick=function(stage, d, ctx){
       if(it.img) p.appendChild(imgEl(it.img, it.alt||it.text||''));
       if(it.comic) p.appendChild(buildComic(it.comic));
       if(it.em) p.appendChild(el('span','em',it.em));
-      if(it.text) p.appendChild(el('div','tx',it.text));
+      if(it.context){
+        var c=el('div','cps-context');
+        c.appendChild(el('strong',null,'Situation'));
+        c.appendChild(el('span',null,it.context));
+        p.appendChild(c);
+      }
+      if(it.text){
+        if(it.context){
+          var q=el('div','tx cps-phrase');
+          q.appendChild(el('strong',null,'Phrase à analyser'));
+          q.appendChild(el('span',null,it.text));
+          p.appendChild(q);
+        }else{
+          p.appendChild(el('div','tx',it.text));
+        }
+      }
       promptBox.appendChild(p);
     }
   }
@@ -337,7 +352,7 @@ RENDER.cardpick=function(stage, d, ctx){
     if(shown.length>=3){
       for(var k=0;k<shown.length;k++){ if(!shown[k].opt.ok && btns[k] && !btns[k].disabled){ btns[k].classList.add('dim'); btns[k].disabled=true; break; } }
     }
-    clear(fb); fb.appendChild(el('div','cps-fb tip','💡 Relis bien la situation (tu peux l’écouter avec 🔊), puis choisis.'));
+    clear(fb); fb.appendChild(el('div','cps-fb tip','💡 '+(it.hint || d.hint || 'Relis bien la situation (tu peux l’écouter avec 🔊), puis choisis.')));
     hint.disabled=true;
   };
 
