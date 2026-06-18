@@ -239,10 +239,17 @@ RENDER.cardpick=function(stage, d, ctx){
       for(var ai=0; ai<list.length; ai++){
         var person=list[ai];
         var name = typeof person==='string' ? person : person.name;
+        var label = name==='A' ? 'Élève' : (name==='B' ? 'Autre' : name);
         var cls='cps-comic-avatar';
         if(person.side) cls+=' '+person.side;
         if(person.tone) cls+=' '+person.tone;
-        people.appendChild(el('span',cls,name||'?'));
+        var avatar=el('span',cls);
+        avatar.setAttribute('aria-label',label||'Personnage');
+        avatar.title=label||'Personnage';
+        avatar.appendChild(el('i','cps-comic-head'));
+        avatar.appendChild(el('i','cps-comic-body'));
+        avatar.appendChild(el('small',null,label||'?'));
+        people.appendChild(avatar);
       }
       p.appendChild(people);
       var bubbles=panel.bubbles || [];
