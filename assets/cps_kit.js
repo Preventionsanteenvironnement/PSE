@@ -175,6 +175,56 @@ Ctrl.prototype.render=function(){
 /* ---------- rendus de mécaniques ---------- */
 var RENDER={};
 
+/* CHOIX -> CONSÉQUENCE : on choisit ce que dit la personne, on voit l'effet */
+RENDER.consequence=function(stage, d, ctx){
+  var items=d.items||[]; var i=0, earned=0;
+  var card=el('div','cps-card');
+  var head=el('div','cps-pgwrap');
+  head.appendChild(el('span','cps-tag', d.tag||'Et si…'));
+  var count=el('span','cps-count',''); head.appendChild(count);
+  card.appendChild(head);
+  var bar=el('div','cps-bar','<i></i>'); card.appendChild(bar);
+  if(d.title) card.appendChild(el('div','cps-title',d.title));
+  card.appendChild(el('div','cps-instr', d.instr||'Choisis ce que dit la personne. Regarde ce que ça fait.'));
+  var stageBox=el('div',null,''); card.appendChild(stageBox);
+  var fb=el('div',null,''); card.appendChild(fb);
+  stage.appendChild(card);
+
+  function draw(){
+    var it=items[i];
+    count.textContent=(i+1)+' / '+items.length;
+    bar.firstChild.style.width=Math.round(i/items.length*100)+'%';
+    clear(stageBox); clear(fb);
+    var prompt=el('div','cps-prompt');
+    if(it.img) prompt.appendChild(imgEl(it.img, it.alt||''));
+    if(it.context){ var c=el('div','cps-context'); c.appendChild(el('strong',null,'Situation')); c.appendChild(el('span',null,it.context)); prompt.appendChild(c); }
+    stageBox.appendChild(prompt);
+    var ctr=el('div','cps-ctrls'); ctr.appendChild(listenBtn(function(){ return it.audio||it.context||''; })); stageBox.appendChild(ctr);
+    if(it.question) stageBox.appendChild(el('div','cps-q','👉 '+it.question));
+    var opts=el('div','cps-opts');
+    shuffle((it.choices||[]).slice()).forEach(function(ch){
+      var b=el('button','cps-opt',ch.l);
+      b.onclick=function(){ pick(ch); };
+      opts.appendChild(b);
+    });
+    stageBox.appendChild(opts);
+  }
+  function pick(ch){
+    var bs=stageBox.querySelectorAll('.cps-opt');
+    for(var k=0;k<bs.length;k++){ bs[k].disabled=true; }
+    var img=stageBox.querySelector('.cps-prompt img');
+    if(ch.img && img){ img.src=ch.img; img.alt=ch.alt||''; }
+    if(ch.good) earned++;
+    clear(fb);
+    fb.appendChild(el('div','cps-fb '+(ch.good?'good':'bad'), (ch.good?'✓ ':'💡 ')+(ch.fb||'')));
+    var last=(i>=items.length-1);
+    var nb=el('button','cps-next', last?'Continuer →':'Scène suivante →');
+    nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); ctx.next(); } else { i++; draw(); } };
+    fb.appendChild(nb);
+  }
+  draw();
+};
+
 /* ① LEÇON */
 RENDER.lesson=function(stage, d, ctx){
   var card=el('div','cps-card');
