@@ -175,6 +175,49 @@ Ctrl.prototype.render=function(){
 /* ---------- rendus de mécaniques ---------- */
 var RENDER={};
 
+/* JAUGE : on essaie des stratégies, on voit l'effet sur une jauge (ex. stress) */
+RENDER.gauge=function(stage, d, ctx){
+  var sits=d.situations||[]; var i=0;
+  var card=el('div','cps-card');
+  var head=el('div','cps-pgwrap'); head.appendChild(el('span','cps-tag', d.tag||'Essaie'));
+  var count=el('span','cps-count',''); head.appendChild(count); card.appendChild(head);
+  var bar=el('div','cps-bar','<i></i>'); card.appendChild(bar);
+  if(d.title) card.appendChild(el('div','cps-title',d.title));
+  card.appendChild(el('div','cps-instr', d.instr||'Essaie une stratégie. Regarde l’effet sur ta jauge.'));
+  var box=el('div',null,''); card.appendChild(box);
+  var fb=el('div',null,''); card.appendChild(fb);
+  stage.appendChild(card);
+  function colour(n){ return n<=3 ? '#22c55e' : (n<=6 ? '#f59e0b' : '#ef4444'); }
+  function setG(g,n){ var f=g.querySelector('i'); f.style.width=(n*10)+'%'; f.style.background=colour(n); g.querySelector('.cps-gauge-val').textContent=n+' / 10'; }
+  function draw(){
+    var s=sits[i];
+    count.textContent=(i+1)+' / '+sits.length;
+    bar.firstChild.style.width=Math.round(i/sits.length*100)+'%';
+    clear(box); clear(fb);
+    var prompt=el('div','cps-prompt'); prompt.appendChild(el('div','tx',s.context||'')); box.appendChild(prompt);
+    var ctr=el('div','cps-ctrls'); ctr.appendChild(listenBtn(function(){ return s.audio||s.context||''; })); box.appendChild(ctr);
+    var g=el('div','cps-gauge','<div class="cps-gauge-top"><span>'+(d.label||'Ton stress')+'</span><span class="cps-gauge-val"></span></div><div class="cps-gauge-track"><i></i></div>');
+    box.appendChild(g); setG(g, s.start);
+    box.appendChild(el('div','cps-q','👉 '+(s.question||'Qu’est-ce que tu essaies ?')));
+    var opts=el('div','cps-opts'); box.appendChild(opts);
+    (s.strategies||[]).forEach(function(st){
+      var b=el('button','cps-opt',st.l);
+      b.onclick=function(){
+        setG(g, st.to);
+        var calm=(st.to < s.start);
+        clear(fb);
+        fb.appendChild(el('div','cps-fb '+(calm?'good':'bad'), (calm?'✓ ':'💡 ')+(st.fb||'')));
+        var last=(i>=sits.length-1);
+        var nb=el('button','cps-next', last?'Continuer →':'Situation suivante →');
+        nb.onclick=function(){ if(last){ ctx.addScore(1,1); ctx.next(); } else { i++; draw(); } };
+        fb.appendChild(nb);
+      };
+      opts.appendChild(b);
+    });
+  }
+  draw();
+};
+
 /* CHOIX -> CONSÉQUENCE : on choisit ce que dit la personne, on voit l'effet */
 RENDER.consequence=function(stage, d, ctx){
   var items=d.items||[]; var i=0, earned=0;
