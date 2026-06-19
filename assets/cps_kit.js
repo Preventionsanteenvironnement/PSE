@@ -118,7 +118,7 @@ Ctrl.prototype.build=function(){
   applyPrefs();
   var wrap=el('div','cps');
 
-  var back=el('a','cps-back','← Retour'); back.href=this.cfg.back||'index.html';
+  var back=el('a','cps-back','← Accueil'); back.href=this.cfg.back||'index.html';
   wrap.appendChild(back);
 
   var head=el('div','cps-head');
@@ -798,7 +798,7 @@ EscapeCtrl.prototype.build=function(){
   app.appendChild(Ctrl.prototype.buildA11y());
   applyPrefs();
   var wrap=el('div','cps');
-  var back=el('a','cps-back','← Retour'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
+  var back=el('a','cps-back','← Accueil'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
   var head=el('div','cps-head');
   if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
   head.appendChild(el('h1',null,this.cfg.title||''));
@@ -902,7 +902,7 @@ FlashCtrl.prototype.build=function(){
   var app=document.getElementById('cps-app')||document.body; clear(app);
   app.appendChild(Ctrl.prototype.buildA11y()); applyPrefs();
   var wrap=el('div','cps');
-  var back=el('a','cps-back','← Retour'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
+  var back=el('a','cps-back','← Accueil'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
   var head=el('div','cps-head');
   if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
   head.appendChild(el('h1',null,this.cfg.title||''));
