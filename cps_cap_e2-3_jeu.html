@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS E2.3 — Une journée sous tension</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8f5f7;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#be185d;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+
+/* HUD */
+.hud{position:sticky;top:0;z-index:5;background:#fff;border:2px solid #f4c0d1;border-radius:16px;padding:12px 14px;margin-bottom:14px;box-shadow:0 4px 14px rgba(219,39,119,.08)}
+.hud .day{font-weight:900;color:#be185d;font-size:.95rem;margin-bottom:8px;text-align:center;letter-spacing:.3px}
+.meter{margin-bottom:8px}
+.meter:last-child{margin-bottom:0}
+.meter-top{display:flex;justify-content:space-between;font-weight:800;font-size:.8rem;color:#475569;margin-bottom:3px}
+.track{height:16px;background:#eef1f5;border-radius:20px;overflow:hidden;border:2px solid #e2e8f0}
+.track > i{display:block;height:100%;width:0;border-radius:20px;transition:width .5s ease,background .5s ease}
+
+/* CARD / scene */
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#db2777,#ec4899);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#fdf2f8;border-left:6px solid #db2777;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#be185d;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #f4c0d1;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt:hover:not(:disabled){border-color:#db2777;background:#fdf2f8}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.opt.dim{opacity:.45}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#fce7f3;border:2px solid #f9a8d4;color:#9d174d;font-size:1.05rem}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#db2777,#ec4899);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#ede9fe;color:#6d28d9}
+.say{float:right;background:#fbeaf0;color:#be185d;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#be185d;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="hud" id="hud"></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var hud=document.getElementById('hud');
+  var stress=3, energie=7, idx=0;
+  function clamp(n){ return Math.max(0,Math.min(10,n)); }
+  function col(type,v){
+    if(type==='stress') return v<=3?'#22c55e':(v<=6?'#f59e0b':'#ef4444');
+    return v>=6?'#22c55e':(v>=3?'#f59e0b':'#ef4444');
+  }
+  function meterHTML(type,v){
+    var lab=type==='stress'?'😣 Stress':'⚡ Énergie';
+    return '<div class="meter"><div class="meter-top"><span>'+lab+'</span><span>'+v+' / 10</span></div>'+
+      '<div class="track"><i style="width:'+(v*10)+'%;background:'+col(type,v)+'"></i></div></div>';
+  }
+  function renderHUD(day){
+    hud.innerHTML='<div class="day">'+(day||'')+'</div>'+meterHTML('stress',stress)+meterHTML('energie',energie);
+  }
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; speak && speechSynthesis && speechSynthesis.cancel(); render(); }
+  function continueBtn(label){
+    var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →';
+    b.onclick=function(){ go(idx+1); };
+    return b;
+  }
+
+  var STEPS=[
+    { type:'intro' },
+    { type:'notion', day:'🌅 Matin',
+      teach:"Aujourd’hui, Sami a un contrôle. Il sent son cœur battre vite et son ventre se serrer : c’est le <strong>stress</strong>. Le stress, c’est ce qu’on ressent quand une situation nous semble difficile. <strong>Tout le monde en vit</strong>, ce n’est pas grave.",
+      q:"Alors, le stress, c’est quoi ?",
+      options:[
+        {l:"Une maladie qu’on attrape",ok:false},
+        {l:"Ce qu’on ressent face à une situation difficile",ok:true},
+        {l:"Un truc qui n’arrive qu’aux gens faibles",ok:false}
+      ],
+      wrong:"Pas tout à fait. Le stress n’est ni une maladie, ni un défaut : c’est une <strong>réaction normale</strong> du corps face à une situation difficile.",
+      good:"Exactement. Le stress est une réaction normale — et on peut apprendre à le gérer." },
+    { type:'choice', day:'🌅 Matin',
+      text:"7h, le réveil sonne. Sami est fatigué et il a son contrôle aujourd’hui. Que fait-il ?",
+      choices:[
+        {l:"🥣 Il déjeune et relit 5 minutes",good:true,ds:-1,de:1,fb:"Bon réflexe : il a mangé et revu l’essentiel, il se sent un peu plus prêt."},
+        {l:"📱 Il reste au lit à scroller",good:false,ds:1,de:-1,fb:"Le temps passe… il part en retard et plus stressé."}
+      ] },
+    { type:'choice', day:'☀️ Midi',
+      text:"Le contrôle commence. La pression monte. Que fait Sami avant d’écrire ?",
+      choices:[
+        {l:"🫁 Il respire lentement, puis lit toutes les questions",good:true,ds:-1,de:0,fb:"Il se calme et commence par ce qu’il sait : c’est plus efficace."},
+        {l:"😵 Il se jette dessus sans lire, le cœur emballé",good:false,ds:1,de:-1,fb:"Dans la précipitation, il oublie une question entière."}
+      ] },
+    { type:'notion', day:'🕒 Après-midi',
+      teach:"Cet après-midi, Sami passe un <strong>oral</strong>. Il a peur. Pourquoi ? Parce qu’il a <strong>besoin de réussir</strong> et d’être reconnu. Derrière une émotion, il y a souvent un <strong>besoin</strong> : réussir, être en sécurité, être respecté, être avec les autres.",
+      q:"Sami a peur avant son oral. De quoi a-t-il besoin ?",
+      options:[
+        {l:"De réussir et d’être rassuré",ok:true},
+        {l:"De rien du tout",ok:false},
+        {l:"De manger",ok:false}
+      ],
+      wrong:"Pas tout à fait. Sa peur cache un <strong>besoin</strong> : réussir son oral, être reconnu. Repérer le besoin aide à se calmer.",
+      good:"Oui. Derrière la peur, il y a le besoin de réussir. Nommer le besoin, ça aide déjà." },
+    { type:'combine', day:'🕒 Après-midi',
+      text:"Dans 10 minutes, l’oral. Le stress de Sami grimpe à 8 ! Combine des stratégies pour le faire descendre <strong>sous 3</strong>.",
+      target:3, start:8,
+      strategies:[
+        {l:"🫁 Respirer lentement",eff:-3,fb:"Le souffle ralentit, ça descend bien."},
+        {l:"🚶 Marcher un peu",eff:-2,fb:"Bouger fait redescendre la tension."},
+        {l:"🗒️ Relire ses 3 idées",eff:-2,fb:"L’essentiel est en tête : rassurant."},
+        {l:"🤝 Demander un conseil",eff:-2,fb:"Demander de l’aide enlève de la pression."},
+        {l:"💭 Se dire « je vais rater »",eff:1,fb:"Cette pensée fait MONTER le stress."},
+        {l:"📱 Scroller le téléphone",eff:0,fb:"Ça occupe, mais ça ne fait pas baisser le stress."}
+      ],
+      success:"Bravo ! En enchaînant plusieurs stratégies, Sami a fait redescendre son stress. Il est prêt pour l’oral." },
+    { type:'choice', day:'🕒 Après-midi',
+      text:"Après l’oral, un camarade prend les affaires de Sami sans demander. Il est agacé. Que dit-il ?",
+      choices:[
+        {l:"🙂 « Je suis embêté, j’ai besoin de mes affaires. »",good:true,ds:-1,de:0,fb:"Il parle de lui, sans accuser : le camarade comprend et lui rend ses affaires."},
+        {l:"🛑 « Tu fais vraiment n’importe quoi ! »",good:false,ds:1,de:-1,fb:"Le camarade se braque, le ton monte : rien n’est réglé."}
+      ] },
+    { type:'choice', day:'🌙 Soir',
+      text:"Le soir, à la maison. Comment Sami récupère-t-il ?",
+      choices:[
+        {l:"🛌 Il parle un peu de sa journée, puis se couche tôt",good:true,ds:-1,de:2,fb:"Il récupère : demain, il sera en forme."},
+        {l:"📱 Il reste sur les écrans très tard",good:false,ds:1,de:-1,fb:"Il dort mal : la fatigue s’accumule pour demain."}
+      ] },
+    { type:'bilan' }
+  ];
+
+  function render(){
+    var s=STEPS[idx];
+    renderHUD(s.day);
+    window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🎮</span><h1>Une journée sous tension</h1>'+
+        '<p>Compétence E2.3 · Santé publique France 2025</p></div>'+
+        '<div class="card"><p class="txt">Tu vas vivre la journée de <strong>Sami</strong>. À chaque moment, tes choix font bouger son <strong>Stress</strong> et son <strong>Énergie</strong>. Le but : l’aider à <strong>bien traverser sa journée</strong>. Tu pourras la rejouer pour faire mieux !</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer la journée';
+      b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b);
+      return;
+    }
+
+    if(s.type==='choice'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), picked=false;
+      s.choices.forEach(function(c){
+        var b=document.createElement('button'); b.className='opt'; b.innerHTML=c.l;
+        b.onclick=function(){
+          if(picked) return; picked=true;
+          stress=clamp(stress+(c.ds||0)); energie=clamp(energie+(c.de||0)); renderHUD(s.day);
+          var bs=opts.querySelectorAll('.opt'); for(var k=0;k<bs.length;k++){ bs[k].disabled=true; }
+          b.classList.add(c.good?'ok':'no');
+          fb.innerHTML='<div class="msg '+(c.good?'good':'bad')+'">'+(c.good?'✓ ':'💡 ')+c.fb+'</div>';
+          fb.appendChild(continueBtn());
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div>'+
+        '<div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done) return;
+          if(o.ok){
+            done=true;
+            var bs=opts.querySelectorAll('.opt'); for(var k=0;k<bs.length;k++){ bs[k].disabled=true; }
+            b.classList.add('ok');
+            fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>';
+            fb.appendChild(continueBtn());
+          } else {
+            b.classList.add('no'); b.disabled=true;
+            fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <br><strong>Réessaie.</strong></div>';
+          }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='combine'){
+      stress=s.start; renderHUD(s.day);
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">🏆 LE DÉFI. '+s.text+'</p><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), won=false;
+      s.strategies.forEach(function(st){
+        var b=document.createElement('button'); b.className='opt'; b.innerHTML=st.l;
+        b.onclick=function(){
+          if(won||b.disabled) return;
+          b.disabled=true; b.classList.add('dim');
+          stress=clamp(stress+(st.eff||0)); renderHUD(s.day);
+          var good=(st.eff||0)<0;
+          fb.innerHTML='<div class="msg '+(good?'good':'bad')+'">'+(good?'✓ ':'💡 ')+st.fb+'</div>';
+          if(stress<=s.target){
+            won=true;
+            var bs=opts.querySelectorAll('.opt'); for(var k=0;k<bs.length;k++){ bs[k].disabled=true; }
+            fb.innerHTML='<div class="msg win">🎉 '+s.success+'</div>';
+            fb.appendChild(continueBtn());
+          }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='bilan'){
+      var bonne=(stress<=4 && energie>=5);
+      var titre=bonne?'🌟 Belle journée !':'😌 Journée difficile';
+      var sous=bonne?'Sami a su faire baisser son stress et garder de l’énergie. Bravo de l’avoir aidé !'
+                    :'La journée a été rude. Rejoue-la pour aider Sami à mieux la traverser.';
+      scene.innerHTML='<div class="hero"><span class="ic">🏁</span><h1>'+titre+'</h1><p>'+sous+'</p></div>'+
+        '<div class="card"><div class="badge">💪 Tu as traversé la journée de Sami</div>'+
+        '<p class="txt" style="font-size:1rem;font-weight:800;color:#be185d;">Ce que tu as appris aujourd’hui :</p>'+
+        '<ul class="recap">'+
+          '<li>🌀 Le <strong>stress</strong> = une réaction normale face à une situation difficile.</li>'+
+          '<li>❤️ Derrière une émotion, il y a un <strong>besoin</strong> (réussir, sécurité, respect, lien).</li>'+
+          '<li>🧰 On fait baisser le stress en <strong>combinant des stratégies</strong> : respirer, bouger, préparer, demander de l’aide.</li>'+
+          '<li>🙂 <strong>Parler de soi</strong> (« je… ») apaise les conflits.</li>'+
+        '</ul></div>';
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Rejouer la journée';
+      rb.onclick=function(){ stress=3; energie=7; go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.style.textAlign='center'; hb.style.textDecoration='none'; hb.href='index.html'; hb.textContent='← Retour à l’accueil';
+      c.appendChild(hb);
+      return;
+    }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
