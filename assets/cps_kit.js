@@ -190,27 +190,47 @@ RENDER.gauge=function(stage, d, ctx){
   function colour(n){ return n<=3 ? '#22c55e' : (n<=6 ? '#f59e0b' : '#ef4444'); }
   function setG(g,n){ var f=g.querySelector('i'); f.style.width=(n*10)+'%'; f.style.background=colour(n); g.querySelector('.cps-gauge-val').textContent=n+' / 10'; }
   function draw(){
-    var s=sits[i];
+    var s=sits[i]; var combine=(s.target!=null); var cur=s.start;
     count.textContent=(i+1)+' / '+sits.length;
     bar.firstChild.style.width=Math.round(i/sits.length*100)+'%';
     clear(box); clear(fb);
     var prompt=el('div','cps-prompt'); prompt.appendChild(el('div','tx',s.context||'')); box.appendChild(prompt);
     var ctr=el('div','cps-ctrls'); ctr.appendChild(listenBtn(function(){ return s.audio||s.context||''; })); box.appendChild(ctr);
     var g=el('div','cps-gauge','<div class="cps-gauge-top"><span>'+(d.label||'Ton stress')+'</span><span class="cps-gauge-val"></span></div><div class="cps-gauge-track"><i></i></div>');
-    box.appendChild(g); setG(g, s.start);
-    box.appendChild(el('div','cps-q','👉 '+(s.question||'Qu’est-ce que tu essaies ?')));
+    box.appendChild(g); setG(g, cur);
+    var q = combine ? ('🎯 '+(s.question||'Combine des stratégies pour descendre sous '+s.target+' / 10.'))
+                    : ('👉 '+(s.question||'Qu’est-ce que tu essaies ?'));
+    box.appendChild(el('div','cps-q', q));
     var opts=el('div','cps-opts'); box.appendChild(opts);
+    function goNext(){
+      var last=(i>=sits.length-1);
+      var nb=el('button','cps-next', last?'Continuer →':'Situation suivante →');
+      nb.onclick=function(){ if(last){ ctx.addScore(1,1); ctx.next(); } else { i++; draw(); } };
+      fb.appendChild(nb);
+    }
     (s.strategies||[]).forEach(function(st){
       var b=el('button','cps-opt',st.l);
       b.onclick=function(){
-        setG(g, st.to);
-        var calm=(st.to < s.start);
-        clear(fb);
-        fb.appendChild(el('div','cps-fb '+(calm?'good':'bad'), (calm?'✓ ':'💡 ')+(st.fb||'')));
-        var last=(i>=sits.length-1);
-        var nb=el('button','cps-next', last?'Continuer →':'Situation suivante →');
-        nb.onclick=function(){ if(last){ ctx.addScore(1,1); ctx.next(); } else { i++; draw(); } };
-        fb.appendChild(nb);
+        if(combine){
+          if(b.disabled) return;
+          b.disabled=true; b.classList.add('dim');
+          cur=Math.max(0, Math.min(10, cur + (st.effect||0)));
+          setG(g, cur);
+          clear(fb);
+          var good=(st.effect||0) < 0;
+          fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(st.fb||'')));
+          if(cur <= s.target){
+            var bs=opts.querySelectorAll('.cps-opt'); for(var k=0;k<bs.length;k++) bs[k].disabled=true;
+            fb.appendChild(el('div','cps-fb good','🎉 '+(s.success||'Bravo ! Ta jauge est bien redescendue : tu es prêt.')));
+            goNext();
+          }
+        } else {
+          setG(g, st.to);
+          var calm=(st.to < s.start);
+          clear(fb);
+          fb.appendChild(el('div','cps-fb '+(calm?'good':'bad'), (calm?'✓ ':'💡 ')+(st.fb||'')));
+          goNext();
+        }
       };
       opts.appendChild(b);
     });
