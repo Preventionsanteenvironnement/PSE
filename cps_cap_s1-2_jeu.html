@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS S1.2 — Vraiment écouter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f7f5fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#7c3aed;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f7f5fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#6d28d9;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#ede9fe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#f5f3ff;border-left:6px solid #7c3aed;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#6d28d9;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #ddd6fe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt.center{text-align:center}
+.opt:hover:not(:disabled){border-color:#7c3aed;background:#f5f3ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.bubble{background:#ede9fe;border-radius:14px 14px 14px 4px;padding:11px 14px;font-size:1.05rem;font-weight:600;margin-bottom:6px}
+.bubble .who{font-size:.78rem;font-weight:800;color:#6d28d9;display:block;margin-bottom:2px}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#f5f3ff;border:2px solid #c4b5fd;color:#6d28d9}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#ede9fe;color:#5b21b6}
+.say{float:right;background:#f5f3ff;color:#7c3aed;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#faf9ff;border:1px solid #ede9fe;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#6d28d9;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Écouter, ce n’est pas juste se taire en attendant son tour. C’est <strong>comprendre vraiment</strong> l’autre : ce qu’il dit, et ce qu’il ressent. Entraînons-nous." },
+
+    { type:'notion',
+      teach:"Bien écouter : je <strong>regarde</strong> la personne, je ne <strong>coupe pas</strong> la parole, et je montre que j’ai compris en <strong>redisant avec mes mots</strong>.",
+      q:"Bien écouter, c’est…",
+      options:[
+        {l:"regarder, ne pas couper, et montrer qu’on a compris",ok:true},
+        {l:"attendre son tour pour enfin parler de soi",ok:false},
+        {l:"faire semblant en regardant ailleurs",ok:false}
+      ],
+      wrong:"Pas tout à fait. Écouter, ce n’est pas attendre son tour ni faire semblant : c’est s’intéresser vraiment.",
+      good:"Exactement. On est présent, on laisse parler, et on vérifie qu’on a bien compris." },
+
+    { type:'sort',
+      teach:"Pour chaque attitude : est-ce une <strong>bonne</strong> ou une <strong>mauvaise</strong> écoute ?",
+      q:"Bonne écoute, ou mauvaise écoute ?",
+      items:[
+        {l:"Pendant qu’il parle, vous regardez votre téléphone.",good:false,ex:"Mauvaise écoute : la personne sent qu’elle ne compte pas."},
+        {l:"Vous le regardez et vous hochez la tête.",good:true,ex:"Bonne écoute : vous montrez que vous suivez."},
+        {l:"Vous lui coupez la parole pour raconter votre histoire.",good:false,ex:"Mauvaise écoute : vous ramenez tout à vous."},
+        {l:"Quand il a fini, vous redites : « Si je comprends bien, tu… »",good:true,ex:"Bonne écoute : vous vérifiez que vous avez compris."}
+      ] },
+
+    { type:'cases',
+      teach:"Se mettre <strong>à la place</strong> de l’autre aide à mieux lui répondre. Devinez ce qu’il vit.",
+      q:"Que ressent cette personne, et de quoi a-t-elle besoin ?",
+      items:[
+        { text:"Votre amie n’a pas été prise dans l’équipe. Elle ne dit rien et regarde par terre.",
+          options:[
+            {l:"De la déception : elle a besoin qu’on l’écoute et qu’on la réconforte",good:true,fb:"Oui : son corps et son silence montrent la déception."},
+            {l:"De la joie : elle a besoin qu’on la félicite",good:false,fb:"Sa posture dit le contraire : elle ne va pas bien."},
+            {l:"Rien de spécial : inutile de s’en occuper",good:false,fb:"Au contraire, c’est le moment d’être présent pour elle."}
+          ] },
+        { text:"Un camarade s’énerve : il n’arrive pas à réparer une pièce en atelier.",
+          options:[
+            {l:"De la frustration : il aurait besoin d’un coup de main ou d’une pause",good:true,fb:"Oui : la colère cache souvent une difficulté qu’on n’arrive pas à régler."},
+            {l:"De l’ennui : il a besoin qu’on le laisse seul",good:false,fb:"Il n’est pas en train de s’ennuyer : il bloque et ça l’agace."},
+            {l:"De la fierté : tout va bien pour lui",good:false,fb:"S’énerver n’est pas un signe que tout va bien."}
+          ] }
+      ] },
+
+    { type:'cases',
+      teach:"Pour montrer qu’on a compris, on <strong>redit avec ses mots</strong> — sans juger ni ramener à soi.",
+      q:"Quelle réponse montre que vous avez vraiment écouté ?",
+      items:[
+        { text:"Votre ami : « J’en peux plus, j’ai trois contrôles demain et je n’ai rien révisé. »",
+          options:[
+            {l:"« Si je comprends bien, tu es stressé parce que tu ne te sens pas prêt ? »",good:true,fb:"Oui : vous redites son ressenti, il se sent compris."},
+            {l:"« Bah t’avais qu’à réviser avant. »",good:false,fb:"C’est un jugement : il se referme aussitôt."},
+            {l:"« Moi aussi j’ai plein de trucs à faire, tu sais. »",good:false,fb:"Vous ramenez tout à vous : il ne se sent pas écouté."}
+          ] },
+        { text:"Votre sœur : « Personne ne m’écoute jamais à la maison. »",
+          options:[
+            {l:"« Tu te sens mise de côté, c’est ça ? »",good:true,fb:"Oui : vous nommez ce qu’elle ressent, sans la contredire."},
+            {l:"« Mais non, n’importe quoi. »",good:false,fb:"Vous niez son ressenti : elle se sent encore moins écoutée."},
+            {l:"« Bon, et sinon, quoi de neuf ? »",good:false,fb:"Changer de sujet, c’est ignorer ce qu’elle vit."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Pensez à quelqu’un qui vous a parlé d’un <strong>souci</strong> récemment. Que <strong>ressentait-il</strong> ? Comment auriez-vous pu lui <strong>montrer</strong> que vous aviez compris ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🎧 Bien écouter : je <strong>regarde</strong>, je ne <strong>coupe pas</strong>, je montre que j’ai compris.",
+        "🧠 Je me mets <strong>à la place</strong> de l’autre : qu’est-ce qu’il ressent, de quoi a-t-il besoin ?",
+        "🔁 Je <strong>redis avec mes mots</strong> : « Si je comprends bien, tu… »"
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🎧</span><h1>Vraiment écouter</h1><p>Compétence S1.2 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='sort'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="so"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#so');
+      function drawItem(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.l+'</p><div class="two"><button class="opt center" data-v="1">👂 Bonne écoute</button><button class="opt center" data-v="0">🙉 Mauvaise</button></div><div class="fb"></div>';
+        var fb=area.querySelector('.fb'), answered=false;
+        area.querySelectorAll('.opt').forEach(function(b){
+          b.onclick=function(){
+            if(answered)return; answered=true;
+            var ok=((b.getAttribute('data-v')==='1')===it.good);
+            area.querySelectorAll('.opt').forEach(function(x){x.disabled=true;});
+            b.classList.add(ok?'ok':'no');
+            fb.innerHTML='<div class="msg '+(ok?'good':'bad')+'">'+(ok?'✓ ':'💡 ')+it.ex+'</div>';
+            var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →';
+            nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1); } else { j++; drawItem(); } };
+            fb.appendChild(nb);
+          };
+        });
+      }
+      drawItem();
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<div class="bubble"><span class="who">On vous dit…</span>'+it.text+'</div><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#f5f3ff;border:2px solid #ddd6fe;color:#6d28d9">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🎧</span><h1>Bravo !</h1><p>Vous savez écouter pour comprendre.</p></div><div class="card"><div class="badge">🎧 Vraie écoute</div><p class="txt" style="font-size:1rem;font-weight:800;color:#6d28d9">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
