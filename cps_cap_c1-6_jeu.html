@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS C1.6 — Revenir à l'instant</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#1d4ed8;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f4f7fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#1e40af;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#dbeafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#eff6ff;border-left:6px solid #1d4ed8;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#1e40af;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #bfdbfe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt.center{text-align:center}
+.opt:hover:not(:disabled){border-color:#1d4ed8;background:#eff6ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.breathwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:26px 0 10px}
+.breath{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#bfdbfe,#1d4ed8);transition:transform 4s ease-in-out;transform:scale(.7);box-shadow:0 6px 24px rgba(29,78,216,.35)}
+.breathlabel{font-size:1.4rem;font-weight:900;color:#1e40af;min-height:1.5em}
+.sense{text-align:center;padding:8px 0}
+.sense .si{font-size:3.4rem;display:block;margin-bottom:8px}
+.sense .sp{font-size:1.15rem;font-weight:700}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#dbeafe;border:2px solid #93c5fd;color:#1e40af}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#e0e7ff;color:#3730a3}
+.say{float:right;background:#eff6ff;color:#1d4ed8;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Souvent, on agit sans être vraiment là : on mange sans goûter, on écoute sans entendre. C’est le <strong>« pilote automatique »</strong>. Vous allez apprendre à <strong>revenir à l’instant présent</strong> — ça apaise et ça aide à se concentrer." },
+
+    { type:'notion',
+      teach:"Être <strong>au présent</strong>, c’est porter attention à ce que vous faites et ressentez <strong>maintenant</strong> — pas à hier, pas à demain.",
+      q:"Être attentif au présent, c’est…",
+      options:[
+        {l:"être attentif à ce que je fais et ressens maintenant",ok:true},
+        {l:"penser sans cesse à hier et à demain",ok:false},
+        {l:"ne plus penser à rien du tout",ok:false}
+      ],
+      wrong:"Pas tout à fait. Le présent, c’est l’attention à l’instant — pas le vide, ni les soucis du passé ou du futur.",
+      good:"Exactement. C’est être présent à ce qui se passe ici et maintenant." },
+
+    { type:'sort',
+      teach:"Repérez la différence : <strong>présent</strong> (attentif à l’instant) ou <strong>pilote automatique</strong> (l’esprit ailleurs).",
+      q:"Présent, ou pilote automatique ?",
+      items:[
+        {l:"Vous mangez en regardant votre téléphone, sans sentir le goût.",present:false,ex:"Pilote automatique : le corps mange, mais l’esprit est ailleurs."},
+        {l:"Vous marchez en remarquant l’air frais et les bruits autour.",present:true,ex:"Présent : vous êtes attentif à l’instant."},
+        {l:"En cours, vous écrivez mais vous repensez à votre dispute d’hier.",present:false,ex:"Pilote automatique : l’esprit est resté dans le passé."},
+        {l:"Vous écoutez vraiment un ami, sans penser à votre réponse.",present:true,ex:"Présent : toute votre attention est là, avec lui."}
+      ] },
+
+    { type:'breath',
+      title:"🫁 La respiration qui calme",
+      intro:"Suivez le cercle : il grossit quand vous <strong>inspirez</strong>, il rétrécit quand vous <strong>expirez</strong>. Respirez doucement, plusieurs fois.",
+      audio:"Suivez le cercle. Inspirez quand il grossit, expirez quand il rétrécit. Respirez doucement.",
+      done:"Vous sentez ? Quelques respirations lentes suffisent à apaiser le corps." },
+
+    { type:'senses',
+      title:"🖐️ L’ancrage des 5 sens",
+      intro:"Pour revenir ici, passez par vos sens. Pour chacun, remarquez <strong>une</strong> chose, puis validez.",
+      items:[
+        {si:"👀",sp:"Regardez autour de vous. Trouvez UNE chose que vous voyez."},
+        {si:"👂",sp:"Tendez l’oreille. Repérez UN son que vous entendez."},
+        {si:"✋",sp:"Touchez quelque chose. Sentez UNE matière sous vos doigts."},
+        {si:"👃",sp:"Respirez par le nez. Notez UNE odeur, ou simplement l’air."},
+        {si:"🦶",sp:"Sentez vos deux pieds posés au sol, bien stables."}
+      ],
+      done:"Vous voilà revenu <strong>ici et maintenant</strong>. C’est l’ancrage." },
+
+    { type:'notion',
+      teach:"Revenir au présent (respirer, sentir ses pieds au sol, ses sens) calme le corps et libère l’attention.",
+      q:"Très stressé avant un contrôle, revenir au présent vous aide surtout à…",
+      options:[
+        {l:"vous calmer et mieux vous concentrer",ok:true},
+        {l:"oublier complètement le contrôle",ok:false},
+        {l:"vous endormir sur la table",ok:false}
+      ],
+      wrong:"Pas tout à fait : il ne s’agit pas de fuir ni de dormir, mais de revenir au calme pour être disponible.",
+      good:"Oui : le corps s’apaise, et l’esprit redevient disponible pour la tâche." },
+
+    { type:'perso',
+      text:"À vous. La prochaine fois que vous vous sentez agité, essayez : <strong>trois respirations lentes</strong>, puis <strong>nommez trois choses</strong> autour de vous. À quel moment de votre journée cela pourrait-il vous aider ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🤖 Le <strong>« pilote automatique »</strong>, c’est agir sans être vraiment là.",
+        "🍃 Pour revenir au présent : ma <strong>respiration</strong>, mon corps, mes <strong>5 sens</strong>.",
+        "🎯 Cela aide à se <strong>calmer</strong> et à mieux se <strong>concentrer</strong>."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🍃</span><h1>Revenir à l’instant</h1><p>Compétence C1.6 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='sort'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="so"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#so');
+      function drawItem(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.l+'</p><div class="two"><button class="opt center" data-v="1">🍃 Présent</button><button class="opt center" data-v="0">🤖 Pilote auto</button></div><div class="fb"></div>';
+        var fb=area.querySelector('.fb'), answered=false;
+        area.querySelectorAll('.opt').forEach(function(b){
+          b.onclick=function(){
+            if(answered)return; answered=true;
+            var said=b.getAttribute('data-v')==='1';
+            var ok=(said===it.present);
+            area.querySelectorAll('.opt').forEach(function(x){x.disabled=true;});
+            b.classList.add(ok?'ok':'no');
+            fb.innerHTML='<div class="msg '+(ok?'good':'bad')+'">'+(ok?'✓ ':'💡 ')+it.ex+'</div>';
+            var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →';
+            nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1); } else { j++; drawItem(); } };
+            fb.appendChild(nb);
+          };
+        });
+      }
+      drawItem();
+      return;
+    }
+
+    if(s.type==='breath'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="breathwrap"><div class="breathlabel">Prêt…</div><div class="breath"></div></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.audio); };
+      var circle=scene.querySelector('.breath'), label=scene.querySelector('.breathlabel'), fb=scene.querySelector('.fb');
+      var phase=0;
+      function stepB(){
+        if(!document.body.contains(circle))return;
+        if(phase%2===0){ label.textContent='Inspirez…'; circle.style.transform='scale(1.45)'; }
+        else { label.textContent='Expirez…'; circle.style.transform='scale(0.7)'; }
+        phase++;
+        setTimeout(stepB,4200);
+      }
+      setTimeout(stepB,500);
+      fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(continueBtn("J’ai respiré →"));
+      return;
+    }
+
+    if(s.type==='senses'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div id="se"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.intro); };
+      var area=scene.querySelector('#se');
+      function drawSense(){
+        var it=s.items[j];
+        area.innerHTML='<div class="sense"><span class="si">'+it.si+'</span><div class="sp">'+it.sp+'</div></div><div class="fb"></div>';
+        var fb=area.querySelector('.fb');
+        var b=document.createElement('button'); b.className='btn'; b.textContent='✓ J’en ai trouvé une';
+        b.onclick=function(){
+          if(j>=s.items.length-1){ fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(continueBtn()); }
+          else { j++; drawSense(); }
+        };
+        fb.appendChild(b);
+      }
+      drawSense();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🍃</span><h1>Bravo !</h1><p>Vous savez revenir à l’instant présent.</p></div><div class="card"><div class="badge">🍃 Ancré dans le présent</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
