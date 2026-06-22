@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS S1.3 — Créer du lien</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f7f5fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#7c3aed;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f7f5fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#6d28d9;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#ede9fe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#f5f3ff;border-left:6px solid #7c3aed;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#6d28d9;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #ddd6fe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt.center{text-align:center}
+.opt:hover:not(:disabled){border-color:#7c3aed;background:#f5f3ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#f5f3ff;border:2px solid #c4b5fd;color:#6d28d9}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#ede9fe;color:#5b21b6}
+.say{float:right;background:#f5f3ff;color:#7c3aed;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#faf9ff;border:1px solid #ede9fe;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#6d28d9;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Les bonnes relations se construisent avec de <strong>petits gestes</strong> : aller vers les autres, coopérer, et savoir dire merci <strong>pour de vrai</strong>. Voyons comment." },
+
+    { type:'notion',
+      teach:"Un <strong>merci qui touche</strong> est <strong>précis</strong> : on dit <strong>pourquoi</strong> on remercie (« merci de m’avoir aidé à porter ça, ça m’a sauvé »). Un « merci » vague compte beaucoup moins.",
+      q:"Un merci qui touche, c’est…",
+      options:[
+        {l:"un merci précis, où je dis pourquoi je remercie",ok:true},
+        {l:"un « merci » lâché vite fait, sans regarder",ok:false},
+        {l:"ne rien dire, l’autre devine bien",ok:false}
+      ],
+      wrong:"Pas tout à fait. Un merci vague ou absent ne montre pas grand-chose. Le détail, lui, touche.",
+      good:"Exactement. Dire pourquoi on remercie rend le merci sincère et fort." },
+
+    { type:'cases',
+      teach:"Entraînons-nous à remercier <strong>pour de vrai</strong>.",
+      q:"Quel est le merci qui touche le plus ?",
+      items:[
+        { text:"Un camarade a pris le temps de vous expliquer un exercice.",
+          options:[
+            {l:"« Merci de m’avoir expliqué, j’ai enfin compris grâce à toi. »",good:true,fb:"Oui : précis et sincère, il sait exactement pourquoi vous le remerciez."},
+            {l:"« Mouais, merci. »",good:false,fb:"Trop vague et froid : ça ne montre pas votre reconnaissance."},
+            {l:"Vous ne dites rien.",good:false,fb:"Sans merci, son geste passe inaperçu."}
+          ] },
+        { text:"Votre voisin vous a prêté son matériel quand vous aviez oublié le vôtre.",
+          options:[
+            {l:"« Merci de m’avoir dépanné, ça m’a vraiment sauvé aujourd’hui. »",good:true,fb:"Oui : vous nommez son geste et son effet. Ça crée du lien."},
+            {l:"« Bon, c’est normal entre nous. »",good:false,fb:"Vous minimisez son geste au lieu de le remercier."},
+            {l:"Vous reposez le matériel sans un mot.",good:false,fb:"Un geste rendu mérite au moins un merci."}
+          ] }
+      ] },
+
+    { type:'sort',
+      teach:"Certains gestes <strong>créent</strong> du lien, d’autres l’<strong>abîment</strong>. Faites le tri.",
+      q:"Ça crée du lien, ou ça l’abîme ?",
+      items:[
+        {l:"Dire bonjour avec le sourire.",good:true,ex:"Crée du lien : un petit geste simple qui ouvre la relation."},
+        {l:"Se moquer de quelqu’un devant les autres.",good:false,ex:"Abîme le lien : l’humiliation casse la confiance."},
+        {l:"Proposer ton aide à quelqu’un qui galère.",good:true,ex:"Crée du lien : l’entraide rapproche."},
+        {l:"Ignorer quelqu’un qui te parle.",good:false,ex:"Abîme le lien : la personne se sent rejetée."}
+      ] },
+
+    { type:'cases',
+      teach:"<strong>Coopérer</strong>, c’est faire de la place à chacun et s’entraider.",
+      q:"Quelle est l’attitude qui coopère ?",
+      items:[
+        { text:"En travail de groupe, un camarade n’ose pas donner son idée.",
+          options:[
+            {l:"« Et toi, t’en penses quoi ? On t’écoute. »",good:true,fb:"Oui : vous faites de la place à chacun, c’est coopérer."},
+            {l:"Vous décidez tout seul de tout",good:false,fb:"Décider seul, ce n’est pas coopérer : les autres décrochent."},
+            {l:"Vous vous moquez de son silence",good:false,fb:"Se moquer ferme la personne et casse le groupe."}
+          ] },
+        { text:"Vous avez fini votre partie ; un autre galère encore.",
+          options:[
+            {l:"Je propose de l’aider à terminer",good:true,fb:"Oui : l’entraide fait avancer tout le groupe."},
+            {l:"Je le laisse se débrouiller, c’est son problème",good:false,fb:"Dans un groupe, la réussite est commune."},
+            {l:"Je dis au prof qu’il est trop lent",good:false,fb:"Dénoncer n’aide pas et abîme la relation."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Pensez à quelqu’un qui vous a <strong>aidé</strong> récemment. Comment pourriez-vous le remercier de façon <strong>précise et sincère</strong> ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🫶 De <strong>petits gestes</strong> créent du lien : un sourire, un bonjour, une aide proposée.",
+        "🤝 <strong>Coopérer</strong>, c’est écouter les idées de chacun et s’entraider.",
+        "🙏 Un <strong>merci qui touche</strong> est précis : je dis pourquoi je remercie."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🫶</span><h1>Créer du lien</h1><p>Compétence S1.3 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='sort'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="so"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#so');
+      function drawItem(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.l+'</p><div class="two"><button class="opt center" data-v="1">🌱 Crée du lien</button><button class="opt center" data-v="0">🥀 Abîme</button></div><div class="fb"></div>';
+        var fb=area.querySelector('.fb'), answered=false;
+        area.querySelectorAll('.opt').forEach(function(b){
+          b.onclick=function(){
+            if(answered)return; answered=true;
+            var ok=((b.getAttribute('data-v')==='1')===it.good);
+            area.querySelectorAll('.opt').forEach(function(x){x.disabled=true;});
+            b.classList.add(ok?'ok':'no');
+            fb.innerHTML='<div class="msg '+(ok?'good':'bad')+'">'+(ok?'✓ ':'💡 ')+it.ex+'</div>';
+            var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →';
+            nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1); } else { j++; drawItem(); } };
+            fb.appendChild(nb);
+          };
+        });
+      }
+      drawItem();
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#f5f3ff;border:2px solid #ddd6fe;color:#6d28d9">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🫶</span><h1>Bravo !</h1><p>Vous savez créer du lien.</p></div><div class="card"><div class="badge">🫶 Liens tissés</div><p class="txt" style="font-size:1rem;font-weight:800;color:#6d28d9">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
