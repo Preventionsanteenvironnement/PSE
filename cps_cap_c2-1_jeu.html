@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS C2.1 — L'escalier vers mon objectif</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#1d4ed8;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f4f7fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#1e40af;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#dbeafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#eff6ff;border-left:6px solid #1d4ed8;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.goal{background:#1d4ed8;color:#fff;border-radius:14px;padding:12px 14px;font-weight:800;font-size:1.05rem;text-align:center;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#1e40af;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #bfdbfe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt:hover:not(:disabled){border-color:#1d4ed8;background:#eff6ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.opt.shake{animation:shake .3s}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#dbeafe;border:2px solid #93c5fd;color:#1e40af}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#e0e7ff;color:#3730a3}
+.say{float:right;background:#eff6ff;color:#1d4ed8;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Avoir un objectif, c’est bien. L’atteindre, c’est mieux ! Le secret : le <strong>découper en étapes</strong> et ne pas lâcher au premier obstacle." },
+
+    { type:'notion',
+      teach:"Un grand objectif fait peur. Découpé en <strong>petites étapes</strong>, il devient faisable : on avance pas à pas.",
+      q:"Pour atteindre un objectif, le mieux est de…",
+      options:[
+        {l:"le découper en petites étapes",ok:true},
+        {l:"tout faire d’un seul coup",ok:false},
+        {l:"attendre d’avoir envie un jour",ok:false}
+      ],
+      wrong:"Pas tout à fait. Tout d’un coup, c’est décourageant ; attendre l’envie, c’est ne jamais commencer.",
+      good:"Exactement. On découpe en étapes et on avance pas à pas." },
+
+    { type:'order',
+      intro:"Voici un objectif. Remettez les étapes <strong>dans le bon ordre</strong> : cliquez sur la première, puis la suivante…",
+      goal:"🎯 Objectif : présenter un exposé en classe",
+      steps:[
+        {l:"M’entraîner à voix haute",pos:4},
+        {l:"Choisir mon sujet",pos:1},
+        {l:"Présenter le jour J",pos:5},
+        {l:"Chercher les informations",pos:2},
+        {l:"Préparer mes notes",pos:3}
+      ],
+      hint:"Pas encore : cherchez l’étape qui vient maintenant.",
+      done:"Bravo : étape après étape, l’objectif devient atteignable." },
+
+    { type:'cases',
+      teach:"Sur le chemin, des <strong>obstacles</strong> arrivent. Le bon réflexe : chercher une solution, pas abandonner.",
+      q:"Que faites-vous ?",
+      items:[
+        { text:"Vous cherchez des informations, mais vous ne trouvez presque rien.",
+          options:[
+            {l:"Je demande au prof où chercher et j’essaie d’autres mots-clés",good:true,fb:"Bien : un obstacle se contourne en cherchant de l’aide et une autre voie."},
+            {l:"J’abandonne l’exposé",good:false,fb:"Abandonner au premier obstacle, c’est renoncer trop tôt."},
+            {l:"Je recopie n’importe quoi",good:false,fb:"Bâcler ne fait pas avancer vraiment vers l’objectif."}
+          ] },
+        { text:"À deux jours du jour J, le stress monte.",
+          options:[
+            {l:"Je m’entraîne à voix haute, une partie à la fois",good:true,fb:"Oui : on découpe encore, et s’entraîner fait baisser le stress."},
+            {l:"Je n’y pense plus, advienne que pourra",good:false,fb:"Éviter laisse le stress entier et la préparation incomplète."},
+            {l:"Je prévois d’être « malade » ce jour-là",good:false,fb:"Fuir repousse le problème sans le régler."}
+          ] }
+      ] },
+
+    { type:'cases',
+      teach:"Pour <strong>tenir jusqu’au bout</strong>, on s’encourage et on garde son « pourquoi » en tête.",
+      q:"Qu’est-ce qui aide le plus à garder la motivation ?",
+      items:[
+        { text:"Vous avez encore plusieurs étapes devant vous.",
+          options:[
+            {l:"Me féliciter à chaque étape franchie et repenser à pourquoi je le fais",good:true,fb:"Oui : célébrer les progrès et se rappeler le but, ça donne de l’élan."},
+            {l:"Me répéter que je n’y arriverai jamais",good:false,fb:"Cette pensée décourage : c’est un avis, pas une vérité."},
+            {l:"Me comparer sans cesse aux meilleurs",good:false,fb:"Se comparer démotive. Mesurez vos propres progrès."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Pensez à un <strong>objectif</strong> que vous avez. Quelles seraient les <strong>3 premières étapes</strong> ? Et un obstacle possible — comment le franchiriez-vous ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🪜 Je découpe mon objectif en <strong>petites étapes</strong>.",
+        "💪 Face à un obstacle, je <strong>cherche une solution</strong> au lieu d’abandonner.",
+        "🎉 Je me <strong>félicite</strong> à chaque étape et je garde mon « pourquoi » en tête."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🪜</span><h1>L’escalier vers mon objectif</h1><p>Compétence C2.1 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='order'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="goal">'+s.goal+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="opts" id="ord"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.goal+'. '+s.intro); };
+      var ord=scene.querySelector('#ord'), fb=scene.querySelector('.fb'), expected=1;
+      s.steps.forEach(function(st){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=st.l;
+        b.onclick=function(){
+          if(b.disabled)return;
+          if(st.pos===expected){ b.classList.add('ok'); b.disabled=true; b.textContent=expected+'. '+st.l; expected++;
+            if(expected>s.steps.length){ fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(continueBtn()); }
+          } else {
+            b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },350);
+            fb.innerHTML='<div class="msg bad">💡 '+s.hint+'</div>';
+          }
+        };
+        ord.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🏆</span><h1>Objectif en vue !</h1><p>Vous savez avancer pas à pas.</p></div><div class="card"><div class="badge">🪜 Pas à pas</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
