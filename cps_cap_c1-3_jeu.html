@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS C1.3 — Ce qui compte pour moi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#1d4ed8;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f4f7fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#1e40af;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#dbeafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#eff6ff;border-left:6px solid #1d4ed8;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#1e40af;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #bfdbfe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt:hover:not(:disabled){border-color:#1d4ed8;background:#eff6ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:6px 0}
+.chip{border:2px solid #bfdbfe;background:#fff;border-radius:30px;padding:10px 15px;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;color:#1e293b;transition:.12s}
+.chip:hover{border-color:#1d4ed8}
+.chip.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.hint{font-size:.92rem;color:#64748b;font-weight:700;text-align:center;margin-top:4px}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#dbeafe;border:2px solid #93c5fd;color:#1e40af}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#e0e7ff;color:#3730a3}
+.say{float:right;background:#eff6ff;color:#1d4ed8;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Qu’est-ce qui compte vraiment pour vous ? Et qu’avez-vous envie d’atteindre ? Connaître ses <strong>valeurs</strong> et ses <strong>buts</strong> aide à avancer dans la bonne direction." },
+
+    { type:'pick',
+      teach:"Une <strong>valeur</strong>, c’est quelque chose d’important pour vous, qui guide vos choix (par exemple le respect, la famille, l’honnêteté).",
+      q:"Choisissez ce qui compte le plus pour VOUS.",
+      min:3, max:5,
+      options:["La famille","Les amis","Le respect","L’honnêteté","La santé","Réussir mes études","Le sport","Aider les autres","La justice","La liberté","Le calme","La nature"],
+      done:"Voilà <strong>vos valeurs</strong> : ce qui compte pour vous. Elles vous aident à faire vos choix." },
+
+    { type:'notion',
+      teach:"Une valeur n’est pas un objet : c’est ce qui est <strong>important</strong> pour vous et qui guide vos décisions.",
+      q:"Une valeur, c’est…",
+      options:[
+        {l:"ce qui compte pour moi et guide mes choix",ok:true},
+        {l:"un objet qui coûte cher",ok:false},
+        {l:"l’avis des autres sur moi",ok:false}
+      ],
+      wrong:"Pas tout à fait. Ici, une valeur, c’est ce qui compte pour vous (le respect, la santé…), pas un objet.",
+      good:"Exactement. C’est ce qui est important pour vous et qui oriente vos choix." },
+
+    { type:'cases',
+      teach:"Un <strong>but</strong>, c’est ce qu’on veut atteindre. Un bon but est <strong>précis</strong> et <strong>possible</strong>.",
+      q:"Choisissez le but le plus précis et réalisable.",
+      items:[
+        { text:"Au lieu de « je veux réussir »…",
+          options:[
+            {l:"« Avoir la moyenne en maths ce trimestre. »",good:true,fb:"Précis et possible : on sait quoi viser et quand."},
+            {l:"« Être le meilleur partout. »",good:false,fb:"Trop large et difficile à tenir : on se décourage vite."},
+            {l:"« On verra bien. »",good:false,fb:"Ce n’est pas un but : rien de précis à viser."}
+          ] },
+        { text:"Au lieu de « je veux être en forme »…",
+          options:[
+            {l:"« Marcher 30 minutes, trois fois par semaine. »",good:true,fb:"Précis et réalisable : c’est un vrai but."},
+            {l:"« Devenir un grand sportif. »",good:false,fb:"Un rêve, mais trop vague pour commencer dès demain."},
+            {l:"« Faire du sport un jour. »",good:false,fb:"« Un jour » n’engage à rien : ce n’est pas un but."}
+          ] }
+      ] },
+
+    { type:'cases',
+      teach:"On atteint un but par <strong>petits pas</strong>. On commence par le premier, simple et faisable.",
+      q:"Quel est le bon premier pas ?",
+      items:[
+        { text:"But : « Avoir la moyenne en maths ce trimestre. » Premier pas ?",
+          options:[
+            {l:"Ce soir, refaire les deux exercices que j’ai ratés.",good:true,fb:"Un pas simple et concret : on peut le faire tout de suite."},
+            {l:"Tout réviser en une seule nuit.",good:false,fb:"Trop d’un coup : épuisant et inefficace."},
+            {l:"Attendre le prochain contrôle pour voir.",good:false,fb:"Attendre, ce n’est pas avancer."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Citez <strong>une valeur</strong> importante pour vous, puis <strong>un but précis</strong> que vous aimeriez atteindre ce trimestre. Quel serait votre <strong>premier petit pas</strong> ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🧭 Mes <strong>valeurs</strong>, c’est ce qui compte pour moi ; elles guident mes choix.",
+        "🎯 Un bon <strong>but</strong> est précis et possible.",
+        "👣 J’avance par <strong>petits pas</strong>, en commençant par le premier."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🧭</span><h1>Ce qui compte pour moi</h1><p>Compétence C1.3 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='pick'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="chips"></div><div class="hint"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var chips=scene.querySelector('.chips'), hint=scene.querySelector('.hint'), fb=scene.querySelector('.fb'), sel=[];
+      var cont=continueBtn('Valider mon choix →'); cont.disabled=true;
+      function refresh(){ hint.textContent=sel.length+' sélectionné(s) — choisissez-en '+s.min+' à '+s.max+'.'; cont.disabled=(sel.length<s.min||sel.length>s.max); }
+      s.options.forEach(function(o){
+        var c=document.createElement('button'); c.className='chip'; c.textContent=o;
+        c.onclick=function(){
+          var i=sel.indexOf(o);
+          if(i>=0){ sel.splice(i,1); c.classList.remove('on'); }
+          else { if(sel.length>=s.max) return; sel.push(o); c.classList.add('on'); }
+          refresh();
+        };
+        chips.appendChild(c);
+      });
+      cont.onclick=function(){ go(idx+1); };
+      fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(cont);
+      refresh();
+      return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🏁</span><h1>Bien joué !</h1><p>Vous savez ce qui compte et où vous voulez aller.</p></div><div class="card"><div class="badge">🧭 Cap fixé</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
