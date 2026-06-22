@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS C2.2 — La vague de l'envie</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#1d4ed8;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f4f7fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#1e40af;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#dbeafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#eff6ff;border-left:6px solid #1d4ed8;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.steps3{list-style:none;margin:8px 0}
+.steps3 li{background:#eff6ff;border-radius:12px;padding:11px 13px;margin-bottom:8px;font-size:1.03rem;font-weight:600}
+.steps3 b{color:#1e40af}
+.q{font-size:1.12rem;font-weight:800;color:#1e40af;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #bfdbfe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt:hover:not(:disabled){border-color:#1d4ed8;background:#eff6ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.wavelevel{font-weight:900;text-align:center;font-size:1.15rem;margin-top:6px}
+.wavebar{height:28px;background:#e2e8f0;border-radius:20px;overflow:hidden;margin:8px 0 14px}
+.wavebar > i{display:block;height:100%;width:90%;border-radius:20px;transition:width .5s ease, background .5s ease;background:#ef4444}
+.waveact{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.waveact button{border:2px solid #bfdbfe;background:#fff;border-radius:14px;padding:13px;font-weight:800;cursor:pointer;font-family:inherit;font-size:1rem;color:#1e293b}
+.waveact button.wait{border-color:#86efac;background:#f0fdf4;color:#166534}
+.waveact button.act{border-color:#fed7aa;background:#fff7ed;color:#9a3412}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#dbeafe;border:2px solid #93c5fd;color:#1e40af}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#e0e7ff;color:#3730a3}
+.say{float:right;background:#eff6ff;color:#1d4ed8;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Parfois, une envie monte d’un coup : répondre sèchement, claquer une porte, envoyer un message, tout acheter. C’est une <strong>impulsion</strong>. Bonne nouvelle : si on <strong>attend un peu</strong>, la vague redescend." },
+
+    { type:'notion',
+      teach:"Une <strong>impulsion</strong>, c’est une envie soudaine d’agir <strong>tout de suite</strong>, sous le coup de l’émotion.",
+      q:"Une impulsion, c’est…",
+      options:[
+        {l:"une envie soudaine d’agir tout de suite",ok:true},
+        {l:"une décision longuement réfléchie",ok:false},
+        {l:"un objectif qu’on prépare à l’avance",ok:false}
+      ],
+      wrong:"Pas tout à fait. Une impulsion arrive d’un coup, sans réfléchir — c’est le contraire d’une décision préparée.",
+      good:"Exactement. C’est une envie brutale d’agir immédiatement." },
+
+    { type:'wave',
+      title:"🌊 La vague de l’envie",
+      intro:"Quelqu’un vous a vexé : l’envie de réagir est <strong>très forte</strong>. Que faites-vous ?",
+      start:90, step:30,
+      regret:"⚡ Vous avez agi sur le coup… et la vague était au plus haut : c’est là qu’on dit ou fait ce qu’on regrette. Essayez plutôt d’attendre.",
+      lower:"⏸️ La vague redescend… continuez à attendre.",
+      done:"L’envie est retombée. <strong>Maintenant</strong>, vous pouvez décider calmement. C’est ça, laisser passer la vague." },
+
+    { type:'method', title:"🧰 Pour laisser passer la vague",
+      intro:"Quand l’envie monte, ces réflexes aident à attendre :",
+      steps:[
+        "<b>① STOP</b> — je ne fais rien tout de suite.",
+        "<b>② Je respire</b> ou je compte lentement jusqu’à 10.",
+        "<b>③ Je m’éloigne</b> un instant si je peux.",
+        "<b>④ Je décide</b> une fois redevenu calme."
+      ],
+      cta:"Je m’entraîne →" },
+
+    { type:'cases',
+      teach:"À vous. Repérez le choix qui consiste à <strong>attendre avant d’agir</strong>.",
+      q:"Que faites-vous ?",
+      items:[
+        { text:"Un élève vous bouscule, la colère monte d’un coup.",
+          options:[
+            {l:"Je respire et j’attends quelques secondes avant de réagir",good:true,fb:"Oui : vous laissez la vague redescendre avant de répondre."},
+            {l:"Je le pousse aussitôt",good:false,fb:"Agir au sommet de la vague, c’est la bagarre et les ennuis."},
+            {l:"Je l’insulte devant tout le monde",good:false,fb:"L’émotion décide à votre place, et ça dégénère."}
+          ] },
+        { text:"Vous recevez un message qui vous énerve vraiment.",
+          options:[
+            {l:"Je ne réponds pas à chaud : j’attends d’être calme",good:true,fb:"Oui : un message envoyé sous la colère, on le regrette souvent."},
+            {l:"Je réponds tout de suite, très sèchement",good:false,fb:"Réponse impulsive : la dispute s’aggrave."},
+            {l:"Je capture l’écran et je le partage partout",good:false,fb:"Encore une réaction à chaud, qui crée d’autres problèmes."}
+          ] },
+        { text:"Devant une paire de baskets, l’envie de tout dépenser maintenant est énorme.",
+          options:[
+            {l:"J’attends : je verrai ce soir si j’en ai vraiment besoin",good:true,fb:"Oui : l’envie forte redescend, et on évite l’achat regretté."},
+            {l:"J’achète immédiatement, peu importe le prix",good:false,fb:"Achat impulsif : souvent suivi de regrets."},
+            {l:"J’emprunte de l’argent à tout le monde pour l’avoir",good:false,fb:"L’impulsion pousse à des choix qu’on regrette."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Repensez à une fois où vous avez <strong>agi trop vite</strong> et regretté. Qu’auriez-vous pu faire en <strong>attendant quelques secondes</strong> ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🌊 Une <strong>impulsion</strong>, c’est une envie soudaine d’agir tout de suite.",
+        "⏸️ Si j’<strong>attends</strong> quelques secondes, la vague redescend.",
+        "🧰 STOP, je respire ou je compte, je m’éloigne, puis je décide <strong>calmement</strong>."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">⏸️</span><h1>La vague de l’envie</h1><p>Compétence C2.2 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='wave'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="wavelevel"></div><div class="wavebar"><i></i></div><div class="waveact"><button class="wait">⏸️ J’attends, je respire</button><button class="act">⚡ J’agis maintenant</button></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.intro); };
+      var bar=scene.querySelector('.wavebar > i'), lvlTxt=scene.querySelector('.wavelevel'), fb=scene.querySelector('.fb');
+      var waitBtn=scene.querySelector('.wait'), actBtn=scene.querySelector('.act');
+      var lvl=s.start;
+      function colour(n){ return n>60?'#ef4444':(n>30?'#f59e0b':'#22c55e'); }
+      function word(n){ return n>60?'Envie : FORTE':(n>30?'Envie : moyenne':'Envie : faible'); }
+      function paint(){ bar.style.width=lvl+'%'; bar.style.background=colour(lvl); lvlTxt.textContent=word(lvl); }
+      paint();
+      waitBtn.onclick=function(){
+        lvl=Math.max(0,lvl-s.step); paint();
+        if(lvl<=10){ fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(continueBtn()); waitBtn.disabled=true; actBtn.disabled=true; }
+        else { fb.innerHTML='<div class="msg good">'+s.lower+'</div>'; }
+      };
+      actBtn.onclick=function(){
+        fb.innerHTML='<div class="msg bad">'+s.regret+'</div>';
+        lvl=s.start; paint();
+      };
+      return;
+    }
+
+    if(s.type==='method'){
+      var h='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><ul class="steps3">';
+      s.steps.forEach(function(x){ h+='<li>'+x+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      scene.querySelector('.say').onclick=function(){ speak(s.intro+' '+s.steps.join('. ')); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent=s.cta; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b);
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🌊</span><h1>Bien maîtrisé !</h1><p>Vous savez laisser passer la vague.</p></div><div class="card"><div class="badge">⏸️ J’attends avant d’agir</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
