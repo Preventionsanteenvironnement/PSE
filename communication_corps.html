@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Communication — Le corps qui parle</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f3fbfd;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#0e7490;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f3fbfd;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#155e75;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#cffafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0891b2,#06b6d4);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#ecfeff;border-left:6px solid #0891b2;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.steps3{list-style:none;margin:8px 0}
+.steps3 li{background:#ecfeff;border-radius:12px;padding:11px 13px;margin-bottom:8px;font-size:1.03rem;font-weight:600}
+.steps3 b{color:#155e75}
+.q{font-size:1.12rem;font-weight:800;color:#155e75;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #a5f3fc;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt.center{text-align:center}
+.opt:hover:not(:disabled){border-color:#0891b2;background:#ecfeff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#ecfeff;border:2px solid #67e8f9;color:#155e75}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#cffafe;color:#155e75}
+.say{float:right;background:#ecfeff;color:#0e7490;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#155e75;margin:10px 0}
+.tip{background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:12px 14px;font-size:1rem;font-weight:600;color:#78350f;margin-top:6px}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Avant même votre premier mot, votre <strong>corps parle</strong>. Posture, regard, gestes, voix : tout cela compte autant — parfois plus — que ce que vous dites. Apprenons à en faire un allié." },
+
+    { type:'notion',
+      teach:"Quand on écoute quelqu’un, on est convaincu surtout par le <strong>corps</strong> et la <strong>voix</strong>, et assez peu par les mots seuls. On vous voit d’abord, on vous entend ensuite, on vous comprend enfin.",
+      q:"Dans une prise de parole, ce qui compte le plus, c’est…",
+      options:[
+        {l:"le corps et la voix, autant que les mots",ok:true},
+        {l:"uniquement le contenu des mots",ok:false},
+        {l:"le décor de la salle",ok:false}
+      ],
+      wrong:"Pas tout à fait. Les mots comptent, mais le corps et la voix portent une grande partie du message.",
+      good:"Exactement. On est d’abord vu et entendu : le corps et la voix font passer beaucoup." },
+
+    { type:'sort',
+      teach:"La <strong>posture</strong> : on s’ancre, droit, stable. Pour chaque attitude, dites si elle aide ou non.",
+      q:"Bonne posture, ou à éviter ?",
+      a:"👍 Bonne", b:"👎 À éviter",
+      items:[
+        {l:"Droit, pieds écartés comme les épaules, mains visibles.",good:true,ex:"Bonne posture : ancrée et ouverte. Le corps forme un « T », bien stable."},
+        {l:"Bras croisés serrés, épaules rentrées, regard au sol.",good:false,ex:"À éviter : posture fermée, qui bloque la voix et montre le malaise."},
+        {l:"Mains dans les poches, appuyé sur une seule jambe.",good:false,ex:"À éviter : ça donne une impression de désintérêt et d’instabilité."},
+        {l:"Debout, immobile et stable, sans se balancer.",good:true,ex:"Bonne posture : pas de balancement ni de sautillement qui distraient."}
+      ] },
+
+    { type:'cases',
+      teach:"Le <strong>regard</strong>, c’est le pouvoir : il capte l’attention et montre que vous parlez pour votre public.",
+      q:"Où portez-vous votre regard ?",
+      items:[
+        { text:"Vous présentez un travail devant toute la classe.",
+          options:[
+            {l:"Je balaie l’auditoire, je regarde différentes personnes",good:true,fb:"Oui : regarder le public capte son attention et vous rend plus convaincant."},
+            {l:"Je fixe mes pieds ou mes notes tout du long",good:false,fb:"Le nez dans ses notes, on perd l’auditoire — et lui vous perd."},
+            {l:"Je regarde par la fenêtre pour me rassurer",good:false,fb:"Tout regard qui n’est pas porté vers le public est perdu."}
+          ] }
+      ] },
+
+    { type:'sort',
+      teach:"Les <strong>gestes</strong> : certains soutiennent le message, d’autres parasitent l’attention.",
+      q:"Ce geste aide, ou parasite ?",
+      a:"👍 Aide", b:"🌀 Parasite",
+      items:[
+        {l:"Des gestes ronds, ouverts, qui accompagnent vos mots.",good:true,ex:"Aide : des gestes ouverts rendent le propos vivant et clair."},
+        {l:"Se gratter, jouer avec un stylo, tripoter ses cheveux.",good:false,ex:"Parasite : ces tics détournent l’attention de ce que vous dites."},
+        {l:"Souligner une idée importante d’un geste net de la main.",good:true,ex:"Aide : un geste précis renforce un point clé."},
+        {l:"Garder les bras croisés serrés contre le buste.",good:false,ex:"Parasite : « l’effet camisole » ferme le corps et bloque la voix."}
+      ] },
+
+    { type:'cases',
+      teach:"La <strong>voix</strong> et les <strong>silences</strong> : on ne parle pas trop vite, on articule, et le silence fait partie du discours.",
+      q:"Que faites-vous ?",
+      items:[
+        { text:"Le stress monte et vous vous mettez à parler à toute vitesse.",
+          options:[
+            {l:"Je ralentis, j’articule et je m’autorise des pauses",good:true,fb:"Oui : ralentir et articuler rend clair, et les pauses captent l’attention."},
+            {l:"Je parle encore plus vite pour en finir",good:false,fb:"Trop vite, on devient incompréhensible et le stress augmente."},
+            {l:"Je baisse la voix jusqu’à murmurer",good:false,fb:"On ne vous entend plus : la voix doit porter."}
+          ] },
+        { text:"Juste avant de commencer à parler…",
+          options:[
+            {l:"Je respire, je balaie la salle du regard, PUIS je parle",good:true,fb:"Parfait : le silence d’avant vous pose et vous démarre les poumons pleins."},
+            {l:"Je me lance aussitôt, sans respirer",good:false,fb:"Démarrer les poumons vides augmente le stress dès la première phrase."},
+            {l:"Je m’excuse longuement d’être stressé",good:false,fb:"Inutile de vous dévaloriser d’entrée : respirez et lancez-vous."}
+          ] }
+      ] },
+
+    { type:'method', title:"🎬 À tester pour de vrai",
+      intro:"Ces exercices entraînent votre corps. À faire chez vous :",
+      steps:[
+        "<b>Face à l’écran</b> — regardez 2 min d’un discours, observez les gestes de l’orateur, puis rejouez-les sur un autre texte (une recette !).",
+        "<b>L’imitateur</b> — faites un court discours, puis demandez à quelqu’un de vous imiter : vous repérerez vos tics.",
+        "<b>Le miroir / la vidéo</b> — filmez-vous 1 min : c’est l’outil le plus efficace pour voir sa posture et ses gestes."
+      ],
+      cta:"J’ai noté →" },
+
+    { type:'perso',
+      text:"À vous. Avant votre <strong>prochaine prise de parole</strong>, que ferez-vous de votre corps : quelle <strong>posture</strong> ? où porterez-vous le <strong>regard</strong> ? prendrez-vous une <strong>respiration</strong> avant de commencer ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🧍 Je m’<strong>ancre</strong> : droit, pieds écartés, mains visibles.",
+        "👀 Je <strong>regarde</strong> l’auditoire — le regard, c’est le pouvoir.",
+        "✋ Des <strong>gestes ouverts</strong>, et je chasse les gestes parasites.",
+        "🎙️ Je ne parle pas trop vite, j’<strong>articule</strong>, et je <strong>respire</strong> avant de commencer."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🧍</span><h1>Le corps qui parle</h1><p>Apprendre à communiquer · le non-verbal</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='sort'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="so"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#so');
+      function drawItem(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.l+'</p><div class="two"><button class="opt center" data-v="1">'+s.a+'</button><button class="opt center" data-v="0">'+s.b+'</button></div><div class="fb"></div>';
+        var fb=area.querySelector('.fb'), answered=false;
+        area.querySelectorAll('.opt').forEach(function(b){
+          b.onclick=function(){
+            if(answered)return; answered=true;
+            var ok=((b.getAttribute('data-v')==='1')===it.good);
+            area.querySelectorAll('.opt').forEach(function(x){x.disabled=true;});
+            b.classList.add(ok?'ok':'no');
+            fb.innerHTML='<div class="msg '+(ok?'good':'bad')+'">'+(ok?'✓ ':'💡 ')+it.ex+'</div>';
+            var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →';
+            nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1); } else { j++; drawItem(); } };
+            fb.appendChild(nb);
+          };
+        });
+      }
+      drawItem();
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='method'){
+      var h='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><ul class="steps3">';
+      s.steps.forEach(function(x){ h+='<li>'+x+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      scene.querySelector('.say').onclick=function(){ speak(s.intro+' '+s.steps.join('. ')); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent=s.cta; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b);
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#ecfeff;border:2px solid #a5f3fc;color:#155e75">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🧍</span><h1>Bravo !</h1><p>Votre corps est devenu un allié.</p></div><div class="card"><div class="badge">🧍 Le corps qui parle</div><p class="txt" style="font-size:1rem;font-weight:800;color:#155e75">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
