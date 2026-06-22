@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS C2.3 — L'atelier des solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#1d4ed8;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f4f7fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#1e40af;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#dbeafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#eff6ff;border-left:6px solid #1d4ed8;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.steps3{list-style:none;margin:8px 0}
+.steps3 li{background:#eff6ff;border-radius:12px;padding:11px 13px;margin-bottom:8px;font-size:1.03rem;font-weight:600}
+.steps3 b{color:#1e40af}
+.q{font-size:1.12rem;font-weight:800;color:#1e40af;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #bfdbfe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt:hover:not(:disabled){border-color:#1d4ed8;background:#eff6ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.sol{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:13px 15px;border-radius:14px;border:2px solid #cbd5e1;background:#fff;cursor:pointer;font-family:inherit;font-size:1.03rem;font-weight:700;color:#1e293b;transition:.12s}
+.sol .bx{width:24px;height:24px;border-radius:7px;border:2px solid #94a3b8;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff}
+.sol.on{border-color:#1d4ed8;background:#eff6ff}
+.sol.on .bx{background:#1d4ed8;border-color:#1d4ed8}
+.hint{font-size:.92rem;color:#64748b;font-weight:700;text-align:center;margin-top:8px}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#dbeafe;border:2px solid #93c5fd;color:#1e40af}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#e0e7ff;color:#3730a3}
+.say{float:right;background:#eff6ff;color:#1d4ed8;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Un problème, ça se résout avec une <strong>méthode</strong>, pas dans la panique. Le secret : chercher <strong>plusieurs solutions</strong> avant d’en choisir une." },
+
+    { type:'method', title:"🧩 La méthode en 4 étapes",
+      intro:"Pour résoudre un problème, on avance dans l’ordre :",
+      steps:[
+        "<b>① Je comprends</b> — quel est vraiment le problème ?",
+        "<b>② Je cherche</b> — plusieurs solutions possibles, pas une seule.",
+        "<b>③ Je choisis</b> — la solution la plus réaliste, et je l’essaie.",
+        "<b>④ Je vérifie</b> — ça a marché ? Sinon, j’essaie une autre idée."
+      ],
+      cta:"C’est parti →" },
+
+    { type:'notion',
+      teach:"L’étape la plus utile, et qu’on oublie souvent : chercher <strong>plusieurs</strong> solutions. Avec plusieurs idées, on a le choix.",
+      q:"Face à un problème, il vaut mieux…",
+      options:[
+        {l:"chercher plusieurs solutions avant de choisir",ok:true},
+        {l:"foncer sur la première idée venue",ok:false},
+        {l:"ne rien faire en espérant que ça passe",ok:false}
+      ],
+      wrong:"Pas tout à fait. La première idée n’est pas toujours la meilleure, et attendre ne règle rien.",
+      good:"Exactement. Plusieurs idées, c’est plus de chances de trouver ce qui marche." },
+
+    { type:'cases',
+      teach:"On commence par <strong>bien définir</strong> le problème, avec des faits — sans se juger ni accuser.",
+      q:"Quel est le vrai problème ?",
+      items:[
+        { text:"Vous n’avez pas fini votre travail à temps.",
+          options:[
+            {l:"Je m’y suis pris trop tard, je n’ai pas géré mon temps",good:true,fb:"Oui : un problème clair et factuel, sur lequel on peut agir."},
+            {l:"Je suis nul, de toute façon",good:false,fb:"Ça, c’est un jugement, pas un problème. Et c’est faux."},
+            {l:"C’est la faute du prof qui en demande trop",good:false,fb:"Accuser n’aide pas à trouver une solution."}
+          ] }
+      ] },
+
+    { type:'brainstorm',
+      teach:"Place à l’atelier ! Pour ce problème, <strong>plus on a d’idées, mieux c’est</strong>.",
+      problem:"🧩 Problème : « J’ai du mal à me concentrer pour réviser chez moi. »",
+      q:"Choisissez plusieurs solutions possibles (au moins 3).",
+      min:3,
+      options:[
+        "Couper mon téléphone pendant que je révise",
+        "Installer un coin calme et rangé",
+        "Réviser par petites tranches de 20 minutes",
+        "Demander de l’aide quand je ne comprends pas",
+        "Faire des fiches pour retenir l’essentiel",
+        "Réviser avec un camarade sérieux"
+      ],
+      done:"Bravo : vous avez trouvé <strong>plusieurs pistes</strong>. C’est bien mieux qu’une seule !" },
+
+    { type:'cases',
+      teach:"Maintenant, on <strong>choisit</strong> une solution réaliste, on l’essaie, puis on <strong>vérifie</strong>.",
+      q:"À vous de décider.",
+      items:[
+        { text:"Par laquelle de vos idées commencer ?",
+          options:[
+            {l:"Couper le téléphone et réviser par petites tranches : simple et faisable tout de suite",good:true,fb:"Oui : on commence par une solution réaliste, facile à mettre en place."},
+            {l:"Tout réviser d’un coup, toute la nuit",good:false,fb:"Trop d’un coup : épuisant et peu efficace."},
+            {l:"Attendre d’en avoir vraiment envie",good:false,fb:"Attendre l’envie, c’est ne jamais commencer."}
+          ] },
+        { text:"Vous avez essayé… mais vous n’êtes toujours pas concentré. Que faites-vous ?",
+          options:[
+            {l:"Je vérifie ce qui n’a pas marché et j’essaie une autre idée de ma liste",good:true,fb:"Exactement : vous aviez plusieurs solutions, vous en testez une autre."},
+            {l:"J’abandonne, ça ne sert à rien",good:false,fb:"Une tentative qui rate ne veut pas dire échec : on ajuste."},
+            {l:"Je continue pareil sans rien changer",good:false,fb:"Si ça ne marche pas, refaire à l’identique ne changera rien."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Pensez à un <strong>petit problème</strong> que vous avez en ce moment. Trouvez au moins <strong>3 solutions</strong> possibles. Laquelle essaieriez-vous en premier ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🔎 Je commence par bien <strong>comprendre</strong> le problème, avec des faits.",
+        "💡 Je cherche <strong>plusieurs solutions</strong>, pas une seule.",
+        "✅ Je choisis une solution réaliste, je l’essaie, puis je <strong>vérifie</strong> — sinon j’en essaie une autre."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🧩</span><h1>L’atelier des solutions</h1><p>Compétence C2.3 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='method'){
+      var h='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><ul class="steps3">';
+      s.steps.forEach(function(x){ h+='<li>'+x+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      scene.querySelector('.say').onclick=function(){ speak(s.intro+' '+s.steps.join('. ')); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent=s.cta; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b);
+      return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='brainstorm'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q" style="font-size:1rem">'+s.problem+'</div><p class="txt" style="font-weight:700;font-size:1rem;color:#1e40af">'+s.q+'</p><div class="opts" id="sol"></div><div class="hint"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.problem+' '+s.q); };
+      var wrap=scene.querySelector('#sol'), hint=scene.querySelector('.hint'), fb=scene.querySelector('.fb'), n=0;
+      var cont=continueBtn('Valider mes idées →'); cont.disabled=true;
+      function refresh(){ hint.textContent=n+' idée(s) choisie(s) — il en faut au moins '+s.min+'.'; cont.disabled=(n<s.min); }
+      s.options.forEach(function(o){
+        var d=document.createElement('button'); d.className='sol'; d.innerHTML='<span class="bx"></span><span>'+o+'</span>';
+        d.onclick=function(){
+          if(d.classList.toggle('on')){ d.querySelector('.bx').textContent='✓'; n++; } else { d.querySelector('.bx').textContent=''; n--; }
+          refresh();
+        };
+        wrap.appendChild(d);
+      });
+      cont.onclick=function(){ go(idx+1); };
+      fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(cont);
+      refresh();
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🧩</span><h1>Problème résolu !</h1><p>Vous avez une vraie méthode.</p></div><div class="card"><div class="badge">🧩 Méthode en poche</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
