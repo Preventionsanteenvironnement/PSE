@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS C2.4 — Savoir demander de l'aide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#1d4ed8;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f4f7fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#1e40af;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#dbeafe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#eff6ff;border-left:6px solid #1d4ed8;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#1e40af;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #bfdbfe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt:hover:not(:disabled){border-color:#1d4ed8;background:#eff6ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.match{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
+.mcol{display:flex;flex-direction:column;gap:9px}
+.mhead{font-size:.78rem;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.4px;text-align:center}
+.mitem{width:100%;text-align:left;padding:11px 12px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;cursor:pointer;font-family:inherit;font-size:.96rem;font-weight:700;color:#1e293b;transition:.12s}
+.mitem:hover:not(:disabled){border-color:#1d4ed8}
+.mitem.sel{border-color:#1d4ed8;background:#eff6ff}
+.mitem.ok{border-color:#22c55e;background:#dcfce7;color:#166534;cursor:default}
+.mitem.shake{animation:shake .3s}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#dbeafe;border:2px solid #93c5fd;color:#1e40af}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#e0e7ff;color:#3730a3}
+.say{float:right;background:#eff6ff;color:#1d4ed8;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}.mitem{font-size:.9rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Personne ne s’en sort tout seul sur tout. Demander de l’aide, ce n’est <strong>pas une faiblesse</strong> : c’est malin. Encore faut-il savoir <strong>à qui</strong>, et <strong>comment</strong>." },
+
+    { type:'notion',
+      teach:"Quand on est bloqué, demander de l’aide est une <strong>bonne idée</strong> : c’est souvent en demandant qu’on apprend et qu’on avance.",
+      q:"Demander de l’aide, c’est…",
+      options:[
+        {l:"une chose intelligente quand on est bloqué",ok:true},
+        {l:"une faiblesse à cacher",ok:false},
+        {l:"déranger les autres pour rien",ok:false}
+      ],
+      wrong:"Pas tout à fait. Demander n’est ni une honte ni un dérangement : c’est une façon d’avancer.",
+      good:"Exactement. Bien demander, c’est se donner les moyens de réussir." },
+
+    { type:'match',
+      teach:"Selon le problème, on ne demande pas à la même personne. Reliez chaque situation à la <strong>bonne personne</strong>.",
+      q:"Cliquez une situation, puis la personne qui peut aider.",
+      left:[
+        {k:0,t:"Je suis harcelé ou menacé"},
+        {k:1,t:"Je me suis blessé, je me sens mal"},
+        {k:2,t:"Je ne comprends pas le cours"},
+        {k:3,t:"Je me dispute souvent avec un camarade"}
+      ],
+      right:[
+        {k:2,t:"Le professeur"},
+        {k:0,t:"Un adulte de confiance (CPE, parent)"},
+        {k:3,t:"Le CPE, pour en parler"},
+        {k:1,t:"L’infirmière scolaire"}
+      ],
+      bad:"Pas tout à fait : réfléchissez à qui s’occupe de ce genre de problème.",
+      done:"Bravo : à chaque problème, sa bonne personne." },
+
+    { type:'cases',
+      teach:"Une bonne demande est <strong>claire</strong> et <strong>polie</strong> : on dit ce dont on a besoin.",
+      q:"Quelle est la bonne façon de demander ?",
+      items:[
+        { text:"Vous n’avez pas compris la consigne du professeur.",
+          options:[
+            {l:"« Excusez-moi, je n’ai pas compris la consigne, pouvez-vous m’expliquer ? »",good:true,fb:"Oui : poli, clair, et vous dites précisément ce qu’il vous faut."},
+            {l:"« J’ai rien compris, c’est nul. »",good:false,fb:"Ce n’est ni poli ni clair : on ne sait pas ce qu’il vous faut."},
+            {l:"Je ne dis rien et je reste bloqué.",good:false,fb:"Rester bloqué sans demander, c’est se priver d’aide."}
+          ] },
+        { text:"Vous voulez l’aide d’un camarade sur un exercice.",
+          options:[
+            {l:"« Tu peux m’aider à comprendre cet exercice, s’il te plaît ? »",good:true,fb:"Oui : vous demandez de l’aide pour comprendre, poliment."},
+            {l:"« Fais-le à ma place. »",good:false,fb:"Là, vous ne demandez pas de l’aide : vous demandez qu’on travaille pour vous."},
+            {l:"« Donne-moi tes réponses. »",good:false,fb:"Copier n’est pas demander de l’aide, et vous n’apprenez rien."}
+          ] }
+      ] },
+
+    { type:'cases',
+      teach:"Parfois, une pensée nous retient : « on va me prendre pour un nul ». C’est un avis, pas une vérité.",
+      q:"Que faites-vous ?",
+      items:[
+        { text:"Vous galérez depuis vingt minutes. Une voix dit : « si je demande, on va me prendre pour un nul ».",
+          options:[
+            {l:"Je demande quand même : c’est en demandant qu’on apprend",good:true,fb:"Oui : demander est un signe d’intelligence, pas de faiblesse."},
+            {l:"Je reste bloqué pour ne pas avoir l’air bête",good:false,fb:"Vous perdez du temps et l’aide dont vous avez besoin."},
+            {l:"Je copie discrètement sur le voisin",good:false,fb:"Vous n’apprenez rien, et le problème reste entier."}
+          ] }
+      ] },
+
+    { type:'perso',
+      text:"À vous. Pensez à une difficulté où vous auriez besoin d’aide. <strong>À qui</strong> pourriez-vous demander ? Et <strong>comment</strong> lui diriez-vous, en une phrase polie ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "💪 Demander de l’aide, ce n’est pas une faiblesse : c’est <strong>malin</strong>.",
+        "🎯 Je choisis la <strong>bonne personne</strong> selon mon problème.",
+        "🙂 Je fais une demande <strong>claire et polie</strong> : je dis ce dont j’ai besoin."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🛟</span><h1>Savoir demander de l’aide</h1><p>Compétence C2.4 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='match'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q" style="font-size:1rem">'+s.q+'</div><div class="match"><div class="mcol" id="ml"><div class="mhead">Situation</div></div><div class="mcol" id="mr"><div class="mhead">Qui peut aider</div></div></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var ml=scene.querySelector('#ml'), mr=scene.querySelector('#mr'), fb=scene.querySelector('.fb');
+      var selLeft=null, pairsLeft=0;
+      s.left.forEach(function(it){
+        var b=document.createElement('button'); b.className='mitem'; b.textContent=it.t; b.setAttribute('data-k',it.k);
+        b.onclick=function(){
+          if(b.classList.contains('ok'))return;
+          ml.querySelectorAll('.mitem').forEach(function(x){x.classList.remove('sel');});
+          b.classList.add('sel'); selLeft=b;
+        };
+        ml.appendChild(b);
+      });
+      s.right.forEach(function(it){
+        var b=document.createElement('button'); b.className='mitem'; b.textContent=it.t; b.setAttribute('data-k',it.k);
+        b.onclick=function(){
+          if(b.classList.contains('ok'))return;
+          if(!selLeft){ fb.innerHTML='<div class="msg bad">👉 Choisissez d’abord une situation à gauche.</div>'; return; }
+          if(selLeft.getAttribute('data-k')===b.getAttribute('data-k')){
+            selLeft.classList.remove('sel'); selLeft.classList.add('ok'); selLeft.disabled=true;
+            b.classList.add('ok'); b.disabled=true; selLeft=null; pairsLeft++;
+            if(pairsLeft===s.left.length){ fb.innerHTML='<div class="msg win">'+s.done+'</div>'; fb.appendChild(continueBtn()); }
+            else { fb.innerHTML='<div class="msg good">✓ Bonne association !</div>'; }
+          } else {
+            b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },350);
+            fb.innerHTML='<div class="msg bad">💡 '+s.bad+'</div>';
+          }
+        };
+        mr.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🛟</span><h1>Bien joué !</h1><p>Vous savez demander de l’aide.</p></div><div class="card"><div class="badge">🛟 Je sais demander</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
