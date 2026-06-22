@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS S1.1 — Dire sans blesser</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f7f5fc;color:#1e293b;line-height:1.6;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+.back{display:inline-block;color:#7c3aed;text-decoration:none;font-weight:800;font-size:1rem;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.prog{position:sticky;top:0;z-index:5;background:#f7f5fc;padding:6px 0 10px}
+.prog .label{font-size:.78rem;font-weight:800;color:#6d28d9;margin-bottom:4px;text-align:center}
+.prog .track{height:10px;background:#ede9fe;border-radius:20px;overflow:hidden}
+.prog .track > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:20px;transition:width .4s ease}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-radius:20px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.hero .ic{font-size:3rem;display:block;margin-bottom:6px}
+.hero h1{font-size:1.5rem;font-weight:900}
+.hero p{opacity:.95;font-size:.96rem;margin-top:6px}
+.txt{font-size:1.12rem;font-weight:600;line-height:1.5;margin:6px 0 12px}
+.teach{background:#f5f3ff;border-left:6px solid #7c3aed;border-radius:0 12px 12px 0;padding:12px 14px;font-size:1.04rem;margin-bottom:12px}
+.q{font-size:1.12rem;font-weight:800;color:#6d28d9;margin:6px 0 12px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:block;width:100%;text-align:left;padding:15px 16px;border-radius:14px;border:2px solid #ddd6fe;background:#fff;cursor:pointer;font-family:inherit;font-size:1.05rem;font-weight:700;color:#1e293b;transition:.15s}
+.opt.center{text-align:center}
+.opt:hover:not(:disabled){border-color:#7c3aed;background:#f5f3ff}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+.opt.no{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
+.rel{text-align:center;font-weight:900;font-size:1.05rem;color:#6d28d9;background:#f5f3ff;border-radius:12px;padding:9px;margin-bottom:12px}
+.bubble{background:#ede9fe;border-radius:14px 14px 14px 4px;padding:11px 14px;font-size:1.03rem;font-weight:600;margin-bottom:12px;animation:fade .3s}
+.bubble .who{font-size:.78rem;font-weight:800;color:#6d28d9;display:block;margin-bottom:2px}
+.fb{margin-top:14px}
+.msg{border-radius:14px;padding:13px 15px;font-weight:700;font-size:1rem;animation:fade .3s}
+.msg.good{background:#dcfce7;border:2px solid #86efac;color:#166534}
+.msg.bad{background:#fff7ed;border:2px solid #fed7aa;color:#9a3412}
+.msg.win{background:#f5f3ff;border:2px solid #c4b5fd;color:#6d28d9}
+.btn{display:block;width:100%;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:14px;padding:15px;font-size:1.1rem;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px;text-align:center;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.soft{background:#ede9fe;color:#5b21b6}
+.say{float:right;background:#f5f3ff;color:#7c3aed;border:none;border-radius:10px;padding:6px 11px;font-size:.95rem;font-weight:800;cursor:pointer}
+.recap{list-style:none;margin:10px 0 0}
+.recap li{background:#faf9ff;border:1px solid #ede9fe;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
+.badge{text-align:center;font-size:1.1rem;font-weight:900;color:#6d28d9;margin:10px 0}
+@media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Accueil</a>
+  <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
+  <div id="scene"></div>
+</div>
+<script>
+(function(){
+  var scene=document.getElementById('scene');
+  var idx=0;
+  function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+  function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
+  function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
+  function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
+
+  var STEPS=[
+    { type:'intro', text:"Bien communiquer, c’est se faire comprendre <strong>sans casser la relation</strong>. Les mêmes choses peuvent se dire d’une façon qui <strong>blesse</strong>… ou d’une façon qui <strong>passe</strong>. Apprenons la différence." },
+
+    { type:'notion',
+      teach:"Trois pièges qui blessent : l’<strong>insulte</strong> (« t’es bête »), le <strong>jugement</strong> (« tu es nul »), la <strong>généralisation</strong> (« tu fais TOUJOURS ça »).",
+      q:"Pour être entendu sans blesser, mieux vaut…",
+      options:[
+        {l:"dire ce que je ressens et ce que je veux, calmement",ok:true},
+        {l:"insulter pour me faire respecter",ok:false},
+        {l:"dire « tu fais toujours tout de travers »",ok:false}
+      ],
+      wrong:"Pas tout à fait. Insulter ou généraliser braque l’autre. Mieux vaut parler de soi : ce que je ressens, ce que je veux.",
+      good:"Exactement. On dit son ressenti et sa demande, calmement, sans attaquer l’autre." },
+
+    { type:'sort',
+      teach:"Pour chaque phrase : est-ce que <strong>ça blesse</strong> ou est-ce que <strong>ça passe</strong> ?",
+      q:"Ça passe, ou ça blesse ?",
+      items:[
+        {l:"« Tu es vraiment nul, tu comprends jamais rien. »",pass:false,ex:"Ça blesse : insulte + généralisation. L’autre se braque."},
+        {l:"« Là, je n’ai pas compris, tu peux réexpliquer ? »",pass:true,ex:"Ça passe : c’est clair, calme, sans attaque."},
+        {l:"« Tu m’as coupé la parole, ça m’énerve. J’aimerais finir. »",pass:true,ex:"Ça passe : vous dites le fait, votre ressenti et votre demande."},
+        {l:"« C’est toujours toi qui décides, t’es égoïste ! »",pass:false,ex:"Ça blesse : généralisation + jugement."}
+      ] },
+
+    { type:'cases',
+      teach:"Le traducteur : on garde le <strong>message</strong>, mais on le dit <strong>sans blesser</strong>.",
+      q:"Choisissez la version qui passe.",
+      items:[
+        { text:"À traduire : « T’es jamais à l’heure, tu me fais perdre mon temps ! »",
+          options:[
+            {l:"« Quand tu arrives en retard, j’attends longtemps. On peut se caler une heure ? »",good:true,fb:"Oui : un fait, un ressenti, une demande claire — sans attaque."},
+            {l:"« De toute façon, t’es irrespectueux. »",good:false,fb:"C’est un jugement : ça blesse au lieu de régler le problème."},
+            {l:"Ne rien dire et ruminer dans son coin",good:false,fb:"Se taire laisse le problème entier et l’agacement monte."}
+          ] },
+        { text:"À traduire : « Ton idée est nulle. »",
+          options:[
+            {l:"« Je ne suis pas d’accord, je vois les choses autrement. Voici pourquoi… »",good:true,fb:"Oui : vous donnez votre avis sans rabaisser l’autre."},
+            {l:"« Franchement, n’importe quoi. »",good:false,fb:"C’est un jugement sec : la personne se ferme."},
+            {l:"« Comme d’hab, tes idées sont mauvaises. »",good:false,fb:"Généralisation blessante."}
+          ] }
+      ] },
+
+    { type:'dialog',
+      title:"💬 La conversation",
+      intro:"Hugo devait vous attendre à la sortie, mais il est parti sans vous. Vous le retrouvez. À chaque étape, choisissez quoi dire — et observez la <strong>relation</strong>.",
+      start:60,
+      turns:[
+        { prompt:"Vous abordez Hugo. Que dites-vous ?",
+          choices:[
+            {l:"« Tu m’as planté ! T’es vraiment un mauvais ami ! »",delta:-30,reply:"Hugo se braque : « Oh ça va, c’est bon, lâche-moi. »"},
+            {l:"« J’ai attendu pour rien, ça m’a embêté. Il s’est passé quoi ? »",delta:15,reply:"Hugo : « Désolé vraiment, j’avais zappé… j’aurais dû te prévenir. »"},
+            {l:"« …Non, rien, laisse tomber. »",delta:-5,reply:"Hugo : « Ah, ok. » Mais vous restez frustré, et lui ne comprend pas."}
+          ] },
+        { prompt:"La discussion continue. Que faites-vous ?",
+          choices:[
+            {l:"« La prochaine fois, préviens-moi par message, d’accord ? »",delta:15,reply:"Hugo : « Oui, promis, je ferai attention. »"},
+            {l:"« De toute façon, on peut jamais compter sur toi. »",delta:-25,reply:"Hugo s’énerve : « Si c’est comme ça, tant pis ! »"},
+            {l:"« Bon, laisse, c’est pas grave… »",delta:-5,reply:"Hugo : « Ok. » Le malaise reste un peu."}
+          ] }
+      ],
+      good:"🤝 Vous avez dit les choses sans casser la relation : le problème est posé, et l’amitié tient.",
+      bad:"💔 Les attaques ont fait monter la tension : le message est passé, mais la relation en a souffert. On peut faire mieux en parlant calmement." },
+
+    { type:'perso',
+      text:"À vous. Pensez à quelque chose qui vous <strong>agace</strong> chez quelqu’un. Comment le dire <strong>sans l’insulter ni le juger</strong> — juste ce que vous ressentez et ce que vous voulez ?",
+      note:"Répondez dans votre tête, à l’oral (🔊) ou en une phrase. Il n’y a pas de mauvaise réponse." },
+
+    { type:'bilan',
+      recap:[
+        "🚫 J’évite l’<strong>insulte</strong>, le <strong>jugement</strong> (« tu es nul ») et le « tu fais TOUJOURS ».",
+        "💬 Je dis ce que je <strong>ressens</strong> et ce que je <strong>veux</strong>, calmement.",
+        "🤝 Je me fais comprendre <strong>sans casser la relation</strong>."
+      ] }
+  ];
+
+  function render(){
+    var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
+
+    if(s.type==='intro'){
+      scene.innerHTML='<div class="hero"><span class="ic">🤝</span><h1>Dire sans blesser</h1><p>Compétence S1.1 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      var b=document.createElement('button'); b.className='btn'; b.textContent='▶️ Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='notion'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
+      var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
+      s.options.forEach(function(o){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+        b.onclick=function(){
+          if(done)return;
+          if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+s.wrong+' <strong>Réessayez.</strong></div>'; }
+        };
+        opts.appendChild(b);
+      });
+      return;
+    }
+
+    if(s.type==='sort'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="so"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#so');
+      function drawItem(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.l+'</p><div class="two"><button class="opt center" data-v="1">💬 Ça passe</button><button class="opt center" data-v="0">💥 Ça blesse</button></div><div class="fb"></div>';
+        var fb=area.querySelector('.fb'), answered=false;
+        area.querySelectorAll('.opt').forEach(function(b){
+          b.onclick=function(){
+            if(answered)return; answered=true;
+            var ok=((b.getAttribute('data-v')==='1')===it.pass);
+            area.querySelectorAll('.opt').forEach(function(x){x.disabled=true;});
+            b.classList.add(ok?'ok':'no');
+            fb.innerHTML='<div class="msg '+(ok?'good':'bad')+'">'+(ok?'✓ ':'💡 ')+it.ex+'</div>';
+            var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →';
+            nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1); } else { j++; drawItem(); } };
+            fb.appendChild(nb);
+          };
+        });
+      }
+      drawItem();
+      return;
+    }
+
+    if(s.type==='cases'){
+      var j=0;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.teach); };
+      var area=scene.querySelector('#cc');
+      function drawCase(){
+        var it=s.items[j];
+        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
+        it.options.forEach(function(o){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
+          b.onclick=function(){
+            if(done)return;
+            if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">💡 '+o.fb+' <strong>Réessayez.</strong></div>'; }
+          };
+          opts.appendChild(b);
+        });
+      }
+      drawCase();
+      return;
+    }
+
+    if(s.type==='dialog'){
+      var t=0, rel=s.start;
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><div class="q">'+s.title+'</div><p class="txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="rel"></div><div id="dz"></div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.intro); };
+      var relEl=scene.querySelector('.rel'), dz=scene.querySelector('#dz');
+      function paintRel(){ var e= rel>=66?'😊 Relation : bonne': (rel>=33?'😐 Relation : tendue':'😞 Relation : fragile'); relEl.textContent=e; }
+      function drawTurn(){
+        paintRel();
+        var tn=s.turns[t];
+        dz.innerHTML='<p class="txt" style="font-size:1rem">'+tn.prompt+'</p><div class="opts"></div><div class="fb"></div>';
+        var opts=dz.querySelector('.opts'), fb=dz.querySelector('.fb'), picked=false;
+        tn.choices.forEach(function(c){
+          var b=document.createElement('button'); b.className='opt'; b.textContent=c.l;
+          b.onclick=function(){
+            if(picked)return; picked=true;
+            opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;});
+            b.classList.add(c.delta>0?'ok':'no');
+            rel=Math.max(0,Math.min(100,rel+c.delta)); paintRel();
+            fb.innerHTML='<div class="bubble"><span class="who">Réponse</span>'+c.reply+'</div>';
+            var nb=document.createElement('button'); nb.className='btn';
+            if(t>=s.turns.length-1){ nb.textContent='Voir le résultat →'; nb.onclick=function(){ showEnd(); }; }
+            else { nb.textContent='Continuer la discussion →'; nb.onclick=function(){ t++; drawTurn(); }; }
+            fb.appendChild(nb);
+          };
+          opts.appendChild(b);
+        });
+      }
+      function showEnd(){
+        paintRel();
+        var okEnd = rel>=60;
+        dz.innerHTML='<div class="msg '+(okEnd?'win':'bad')+'">'+(okEnd?s.good:s.bad)+'</div>';
+        var retry=document.createElement('button'); retry.className='btn soft'; retry.textContent='↺ Refaire la conversation'; retry.onclick=function(){ t=0; rel=s.start; drawTurn(); };
+        dz.appendChild(retry);
+        dz.appendChild(continueBtn());
+      }
+      drawTurn();
+      return;
+    }
+
+    if(s.type==='perso'){
+      scene.innerHTML='<div class="card"><button class="say">🔊 Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#f5f3ff;border:2px solid #ddd6fe;color:#6d28d9">'+s.note+'</div></div>';
+      scene.querySelector('.say').onclick=function(){ speak(s.text); };
+      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    }
+
+    if(s.type==='bilan'){
+      var h='<div class="hero"><span class="ic">🤝</span><h1>Bien dit !</h1><p>Vous savez vous faire comprendre sans blesser.</p></div><div class="card"><div class="badge">💬 Le bon mot</div><p class="txt" style="font-size:1rem;font-weight:800;color:#6d28d9">Ce que vous avez appris :</p><ul class="recap">';
+      s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
+      h+='</ul></div>';
+      scene.innerHTML=h;
+      var c=scene.querySelector('.card');
+      var rb=document.createElement('button'); rb.className='btn'; rb.textContent='🔄 Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
+      var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
+      return;
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
