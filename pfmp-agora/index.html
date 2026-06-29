@@ -237,7 +237,7 @@ label.fl{display:block;font-size:.82rem;font-weight:600;color:var(--n700);margin
       <div class="card"><h3>1. Je me connecte</h3><p class="hint">Cliquez sur « Se connecter » et saisissez votre <b>code élève</b> (anonyme). Votre carnet est alors retrouvé automatiquement à chaque visite, sur le même ordinateur. Vous pouvez aussi <b>Exporter</b> votre carnet en fichier JSON pour le conserver ou le transmettre.</p></div>
       <div class="card"><h3>2. Je déclare une PFMP</h3><p class="hint">Dans le tableau de bord, créez une période : année, dates approximatives, type de structure. <b>Jamais de nom ni de lieu.</b></p></div>
       <div class="card"><h3>3. Je travaille librement</h3><p class="hint">Naviguez à votre rythme entre l'accueil, le journal des activités, le savoir-être, les compétences et le bilan. <b>Aucun ordre imposé, aucun blocage</b> : revenez en arrière, complétez plus tard, reliez vos activités aux pôles que vous voulez.</p></div>
-      <div class="card"><h3>4. Mon travail est enregistré</h3><p class="hint">La sauvegarde est <b>automatique</b> (format JSON). L'indicateur en haut à droite passe au vert. Si vous changez d'ordinateur, importez votre fichier exporté.</p></div>
+      <div class="card"><h3>4. Mon travail est enregistré</h3><p class="hint">La sauvegarde est <b>automatique</b> (format JSON). <b>Avec votre code élève</b>, votre carnet est aussi enregistré <b>en ligne</b> : vous le retrouvez sur n'importe quel ordinateur, simplement en vous connectant avec le même code. Sans code, le travail reste sauvegardé sur cet ordinateur uniquement — pensez alors à <b>Exporter</b> votre fichier.</p></div>
     </section>
 
   </main>
@@ -449,11 +449,54 @@ function save(){
   DATA.code=CODE; DATA.updatedAt=new Date().toISOString();
   localStorage.setItem(storeKey(), JSON.stringify(DATA));
   const c=document.getElementById("saveChip");
-  c.textContent="🟢 enregistré"; c.classList.add("on");
+  c.textContent= CODE?"🟢 enregistré":"🟢 enregistré (sur ce poste)"; c.classList.add("on");
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{ c.textContent="💾 sauvegarde auto"; },1600);
+  saveTimer=setTimeout(()=>{ c.textContent= CODE?"💾 sauvegarde auto":"💾 sauvegarde locale"; },1600);
+  cloudSave();
 }
 function uid(){ return "s"+Math.random().toString(36).slice(2,9); }
+
+/* ---- Persistance EN LIGNE (Firebase devoirs-pse, clé = code élève) ----
+   Document unique réécrit à chaque modification :
+   resultats/{code}/suivi/pfmp_carnet  (règles : read + create/update autorisés). */
+function fdb(){ try{ return (typeof window._ensureDb==="function"? window._ensureDb() : (window.db||null)); }catch(e){ return null; } }
+async function ensureCloud(timeout){ timeout=timeout||7000; const t0=Date.now(); while(Date.now()-t0<timeout){ const db=fdb(); if(db) return db; await new Promise(r=>setTimeout(r,300)); } return fdb(); }
+function carnetDoc(db,code){ return db.collection("resultats").doc(code).collection("suivi").doc("pfmp_carnet"); }
+let cloudTimer=null;
+function cloudSave(){
+  if(!CODE) return;
+  clearTimeout(cloudTimer);
+  cloudTimer=setTimeout(async()=>{
+    const db=await ensureCloud(); if(!db) return;
+    try{
+      await carnetDoc(db,CODE).set({ app:"pfmp-agora", code:CODE, classe:(localStorage.getItem("userClasse")||""), updatedAt:new Date().toISOString(), payloadJson:JSON.stringify(DATA) });
+      const c=document.getElementById("saveChip"); c.textContent="☁️ enregistré en ligne"; c.classList.add("on");
+    }catch(e){ console.warn("cloudSave:",e.message); }
+  },1500);
+}
+async function cloudLoad(code){
+  const db=await ensureCloud(); if(!db) return false;
+  try{
+    const snap=await carnetDoc(db,code).get();
+    if(snap.exists){ const cd=snap.data();
+      if(cd && cd.payloadJson){
+        const remote=JSON.parse(cd.payloadJson);
+        const localT=(DATA&&DATA.updatedAt)?Date.parse(DATA.updatedAt):0;
+        const remoteT=cd.updatedAt?Date.parse(cd.updatedAt):0;
+        if(remoteT>=localT){ DATA=remote; localStorage.setItem(VER+"_"+code, JSON.stringify(DATA)); return true; }
+      }
+    }
+  }catch(e){ console.warn("cloudLoad:",e.message); }
+  return false;
+}
+async function refreshFromCloud(){
+  if(!CODE) return;
+  const ok=await cloudLoad(CODE);
+  if(ok){ if(CURRENT && !DATA.stages.find(s=>s.id===CURRENT)) CURRENT=null;
+    renderDash(); renderNavStage();
+    const c=document.getElementById("saveChip"); c.textContent="☁️ carnet chargé en ligne"; c.classList.add("on");
+  }
+}
 
 /* ============================================================
    HELPERS UI
@@ -843,7 +886,7 @@ function refreshCodeUI(){
   if(CODE){ chip.classList.remove("hidden"); document.getElementById("codeVal").textContent=CODE; btn.textContent="Changer"; }
   else { chip.classList.add("hidden"); btn.textContent="Se connecter"; }
 }
-function doConnect(){
+async function doConnect(){
   let code=prompt("Saisissez votre code élève (anonyme) :","");
   if(code==null) return; code=code.trim().toUpperCase();
   if(!code) return;
@@ -853,7 +896,10 @@ function doConnect(){
   CODE=code; DATA=loadData(); CURRENT=null;
   refreshCodeUI(); renderDash(); renderNavStage(); showSection("dash");
   if(typeof window.enregistrerVisite==="function") try{window.enregistrerVisite("PFMP AGORA");}catch(e){}
-  toast("Connecté · carnet de "+code);
+  toast("Connecté · récupération du carnet…");
+  const loaded=await cloudLoad(code);
+  renderDash(); renderNavStage();
+  toast(loaded?("Carnet de "+code+" rechargé en ligne"):("Connecté · carnet de "+code));
 }
 document.getElementById("btnConnect").onclick=doConnect;
 
@@ -873,6 +919,7 @@ refreshCodeUI();
 renderDash();
 renderNavStage();
 document.getElementById("saveChip").textContent= DATA.updatedAt? "💾 sauvegarde auto" : "⚪ non enregistré";
+if(CODE){ document.getElementById("saveChip").textContent="☁️ synchronisation…"; refreshFromCloud(); }
 </script>
 </body>
 </html>
