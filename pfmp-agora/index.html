@@ -263,6 +263,21 @@ textarea.lg{min-height:190px}
 #printRoot .comp p{font-size:11pt;margin:0 0 4px;text-align:justify}
 #printRoot .comp-extra{font-family:Arial,sans-serif;font-size:10pt;color:#555;margin:4px 0 12px}
 #printRoot .comp-extra .code{background:#f0ede6;color:#7a4a18;border-radius:3px;padding:1px 6px;font-family:'Courier New',monospace;font-weight:700;font-size:9pt;margin-right:3px}
+/* cubes (baromètre + carte de maturité) */
+.cubes{display:flex;gap:3px;flex:0 0 auto}
+.cubes i{width:13px;height:13px;border-radius:3px;background:var(--line)}
+.bw{font-size:.82rem;font-weight:700;flex:0 0 96px}
+.matcubes{display:inline-flex;gap:2px;margin-left:auto;flex:none}
+.matcubes i{width:9px;height:9px;border-radius:2px;background:var(--line)}
+.matlist{font-size:.96rem;color:var(--ink2);line-height:1.75;margin:.4rem 0}
+.matlist b{color:var(--ink)}
+@media(max-width:680px){.bw{flex-basis:80px}}
+/* PDF : cubes + carte de maturité */
+#printRoot .cubes{display:flex;gap:3px}
+#printRoot .cubes i{width:11px;height:11px;border-radius:2px;background:#e7e9ed}
+#printRoot .brow .bw{flex:0 0 84px;font-size:9.5pt;font-weight:700}
+#printRoot .matlist{font-family:Arial,sans-serif;font-size:10pt;color:#333;margin:7px 0;line-height:1.55}
+#printRoot .matlist b{color:#0f2f5c}
 </style>
 </head>
 <body>
@@ -313,6 +328,7 @@ textarea.lg{min-height:190px}
     <section class="section" id="sec-accueil"></section>
     <section class="section" id="sec-journal"></section>
     <section class="section" id="sec-savoiretre"></section>
+    <section class="section" id="sec-maturite"></section>
     <section class="section" id="sec-competences"></section>
     <section class="section" id="sec-bilan"></section>
 
@@ -482,6 +498,24 @@ const DIAG=[
   {dim:"adapt",q:"J'ai fait face à une situation difficile ou inhabituelle."}
 ];
 const FREQ=[["na","Non concerné"],["0","Jamais"],["1","Parfois"],["2","Souvent"],["3","Régulièrement"]];
+/* Référentiel de savoir-être professionnel -> carte de maturité (14 domaines) */
+const MAT_SCALE=[["0","Pas encore"],["1","Parfois"],["2","Souvent"],["3","Point fort"],["na","Pas concerné"]];
+const MATURITE=[
+  {d:"Présentation et posture",items:["J'adopte une tenue propre et adaptée au lieu de stage.","Je me tiens droit et je montre que je suis disponible (regard, écoute).","J'évite les gestes parasites (téléphone en main, agitation)."]},
+  {d:"Ponctualité et assiduité",items:["J'arrive à l'heure et je respecte les horaires de pause.","Je préviens rapidement en cas de retard ou d'absence.","Je respecte les délais pour rendre un travail."]},
+  {d:"Respect du cadre et des règles",items:["Je lis et j'applique les consignes et les procédures.","Je demande avant d'agir en cas de doute.","Je respecte les règles de sécurité et l'usage du matériel."]},
+  {d:"Discrétion et confidentialité (RGPD)",items:["Je ne divulgue pas les informations vues ou entendues au travail.","Je protège les documents et je verrouille ma session.","Je respecte le RGPD et la confidentialité des données."]},
+  {d:"Communication orale et accueil",items:["Je salue, j'identifie la demande et j'oriente vers la bonne personne.","Je reformule pour vérifier que j'ai bien compris.","Je reste calme face à une personne pressée ou mécontente.","J'emploie un langage professionnel (j'évite « ouais », « je sais pas »)."]},
+  {d:"Communication écrite",items:["Je rédige avec soin (orthographe, structure, politesse).","Je mets un objet clair et je relis avant d'envoyer.","Je transmets une information exacte."]},
+  {d:"Écoute active et empathie",items:["Je laisse parler la personne sans la couper.","Je distingue le fait, l'émotion et la demande.","J'emploie des phrases qui montrent que j'ai compris la gêne."]},
+  {d:"Travail en équipe et coopération",items:["Je partage les informations utiles à l'équipe.","J'aide un collègue et je demande de l'aide au bon moment.","J'accepte les remarques et je participe aux tâches communes."]},
+  {d:"Autonomie et initiative",items:["Je commence une tâche sans attendre plusieurs rappels.","Je cherche une première solution avant de demander.","Je propose une amélioration en restant dans mon cadre."]},
+  {d:"Rigueur et organisation",items:["Je vérifie les noms, dates, montants et pièces jointes.","Je classe et je nomme correctement les documents.","Je hiérarchise mes tâches et j'anticipe les échéances."]},
+  {d:"Réactivité et adaptabilité",items:["Je ne laisse pas une demande sans réponse.","Je m'adapte à un imprévu ou à un changement de planning.","J'apprends à utiliser de nouveaux outils ou logiciels."]},
+  {d:"Sens du service et image de l'organisation",items:["Je cherche à apporter une réponse adaptée au besoin.","Je reste disponible et j'assure le suivi des demandes.","Je véhicule une image sérieuse de l'organisation."]},
+  {d:"Responsabilité, fiabilité et honnêteté",items:["Je termine ce que j'ai commencé et je vérifie mon travail.","Je signale une erreur plutôt que de la cacher.","Je rends compte de mon travail à mon tuteur."]},
+  {d:"Gestion des émotions et du stress",items:["Je garde mon calme et une voix posée en situation difficile.","Je ne réponds pas sous le coup de l'émotion.","Je priorise et je demande de l'aide quand la pression monte."]}
+];
 const STRUCTURES=["Collectivité territoriale / mairie","Entreprise privée","Association","Service ou administration publique","Établissement scolaire","Commerce / distribution","Cabinet ou étude (comptable, notarial…)","Structure médico-sociale","Autre"];
 const ANNEES=["Seconde","Première","Terminale"];
 
@@ -523,7 +557,7 @@ function poleSub(p){ return REFERENTIEL[p].titre.split("—")[1].trim(); }
 
 /* ===== NAVIGATION ===== */
 function showSection(sec){ ACTIVESEC=sec; $$(".section").forEach(s=>s.classList.remove("active")); const el=document.getElementById("sec-"+sec); if(el) el.classList.add("active"); $$("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.sec===sec)); window.scrollTo({top:0,behavior:"smooth"}); }
-document.getElementById("nav").addEventListener("click",e=>{ const b=e.target.closest("button[data-sec]"); if(!b) return; const sec=b.dataset.sec; if(["accueil","journal","savoiretre","competences","bilan"].includes(sec)){ if(!CURRENT){ toast("Sélectionnez d'abord une période de stage."); showSection("dash"); return; } renderStageSection(sec); } showSection(sec); });
+document.getElementById("nav").addEventListener("click",e=>{ const b=e.target.closest("button[data-sec]"); if(!b) return; const sec=b.dataset.sec; if(["accueil","journal","savoiretre","maturite","competences","bilan"].includes(sec)){ if(!CURRENT){ toast("Sélectionnez d'abord une période de stage."); showSection("dash"); return; } renderStageSection(sec); } showSection(sec); });
 
 /* ===== DASHBOARD ===== */
 function renderDash(){
@@ -573,7 +607,7 @@ function renderNavStage(){
   if(!CURRENT){ box.innerHTML='<div style="font-size:.92rem;color:var(--muted);padding:.5rem .8rem">Aucun stage ouvert.<br>Choisissez-en un dans le tableau de bord.</div>'; document.getElementById("navStageLbl").textContent="Stage sélectionné"; return; }
   const s=DATA.stages.find(x=>x.id===CURRENT);
   document.getElementById("navStageLbl").textContent=(s?`${s.annee} · PFMP ${s.num||"1"}`:"Stage");
-  [["accueil","ti-door-enter","Accueil & intégration"],["journal","ti-clipboard-list","Journal des activités"],["savoiretre","ti-messages","Communication & savoir-être"],["competences","ti-target-arrow","Compétences & quiz"],["bilan","ti-flag","Bilan de la période"]].forEach(([sec,ic,lbl])=>{
+  [["accueil","ti-door-enter","Accueil & intégration"],["journal","ti-clipboard-list","Journal des activités"],["savoiretre","ti-messages","Communication & savoir-être"],["maturite","ti-id-badge-2","Savoir-être professionnel"],["competences","ti-target-arrow","Compétences & quiz"],["bilan","ti-flag","Bilan de la période"]].forEach(([sec,ic,lbl])=>{
     const b=document.createElement("button"); b.dataset.sec=sec; b.className="sub"+(ACTIVESEC===sec?" active":""); b.innerHTML=`<span class="ic"><i class="ti ${ic}"></i></span> ${lbl}`; box.appendChild(b);
   });
 }
@@ -608,7 +642,7 @@ document.getElementById("stDelete").onclick=()=>{ if(editingStage) deleteStage(e
 document.getElementById("stSave").onclick=()=>{
   const payload={annee:tmpAnnee,structure:tmpStruct,periodeDebut:$("#stPeriodeDebut").value,periodeFin:$("#stPeriodeFin").value,dureeVal:parseInt($("#stDureeVal").value)||null,dureeUnit:$("#stDureeUnit").value,num:$("#stNum").value,secteur:$("#stSecteur").value.trim()};
   if(editingStage){ Object.assign(DATA.stages.find(x=>x.id===editingStage),payload); }
-  else { const s={id:uid(),...payload,accueil:{},accueilCheck:[],accueilConf:0,savoir:{},commModes:[],cpsCheck:[],scenarios:{},activites:[],transversales:{},transvJust:{},coche:[],bilan:{},quiz:{}}; DATA.stages.push(s); CURRENT=s.id; }
+  else { const s={id:uid(),...payload,accueil:{},accueilCheck:[],accueilConf:0,savoir:{},commModes:[],cpsCheck:[],scenarios:{},maturite:{},activites:[],transversales:{},transvJust:{},coche:[],bilan:{},quiz:{}}; DATA.stages.push(s); CURRENT=s.id; }
   save(); closeOv(); renderDash(); renderNavStage();
   if(!editingStage){ renderStageSection("accueil"); showSection("accueil"); }
   toast("Période enregistrée.");
@@ -621,6 +655,7 @@ function renderStageSection(sec){ const s=stage(); if(!s) return;
   if(sec==="savoiretre") renderSavoir(s);
   if(sec==="journal") renderJournal(s);
   if(sec==="competences") renderCompetences(s);
+  if(sec==="maturite") renderMaturite(s);
   if(sec==="bilan") renderBilan(s);
 }
 function shead(ic,kick,title,desc){ const s=stage(); return `<div class="shead"><span class="kicker"><i class="ti ${ic}"></i> ${s?esc(s.annee)+" · PFMP "+esc(s.num||"1"):""}</span><h2>${title}</h2><p>${desc}</p></div>`; }
@@ -831,8 +866,38 @@ function renderDiag(s,box){ if(!box) return; s.diag=s.diag||{}; box.innerHTML=""
 }
 function renderBarometer(s,box){ if(!box) return; const bar=computeBarometer(s);
   if(!bar.length){ box.innerHTML=`<div class="empty">Répondez au diagnostic ci-dessus pour faire apparaître votre profil.</div>`; return; }
-  let h=""; bar.forEach(b=>{ let segs=""; for(let i=0;i<10;i++) segs+=`<i style="background:${i<b.score?b.color:'var(--line)'}"></i>`; h+=`<div class="brow"><span class="bl">${esc(b.label)}</span><span class="seg">${segs}</span><span class="bv">${b.score}/10</span></div>`; });
+  let h=""; bar.forEach(b=>{ const bd=matBand(b.score); h+=`<div class="brow"><span class="bl">${esc(b.label)}</span><span class="cubes">${cubes(b.score)}</span><span class="bw" style="color:${bd.c}">${bd.w}</span></div>`; });
   box.innerHTML=h;
+}
+
+/* carte de maturité professionnelle (savoir-être) */
+function matBand(v){ if(v>=9) return {c:"#1c7a45",w:"Point fort"}; if(v>=7) return {c:"#2f9e5e",w:"Acquis"}; if(v>=4) return {c:"#d99a20",w:"En cours"}; return {c:"#cf5644",w:"À travailler"}; }
+function cubes(v,empty){ const b=matBand(v),e=empty||"var(--line)"; let h=""; for(let i=0;i<10;i++) h+=`<i style="background:${i<v?b.c:e}"></i>`; return h; }
+function matDomScore(s,di){ const dom=MATURITE[di]; let sum=0,n=0; dom.items.forEach((it,ii)=>{ const v=s.maturite&&s.maturite[di+"_"+ii]; if(v!=null&&v!=="na"){ sum+=+v; n++; } }); return n?{score:Math.round((sum/(3*n))*10),answered:n}:null; }
+function matHighlights(s){ const forts=[],axes=[]; MATURITE.forEach((dom,di)=>dom.items.forEach((it,ii)=>{ const v=s.maturite&&s.maturite[di+"_"+ii]; if(v==="3") forts.push(it); else if(v==="0"||v==="1") axes.push(it); })); return {forts,axes}; }
+function updateMatCubes(box,s){ box.querySelectorAll(".matcubes").forEach(span=>{ const di=+span.dataset.dom,r=matDomScore(s,di),v=r?r.score:0,b=matBand(v); let h=""; for(let i=0;i<10;i++) h+=`<i style="background:${r&&i<v?b.c:'var(--line)'}"></i>`; span.innerHTML=h; }); }
+function renderMatCard(s,box){ if(!box) return; let any=false,h=""; MATURITE.forEach((dom,di)=>{ const r=matDomScore(s,di); if(!r) return; any=true; const b=matBand(r.score); h+=`<div class="brow"><span class="bl">${esc(dom.d)}</span><span class="cubes">${cubes(r.score)}</span><span class="bw" style="color:${b.c}">${b.w}</span></div>`; }); box.innerHTML=any?h:`<div class="empty">Positionnez-vous ci-dessus pour faire apparaître votre carte.</div>`; }
+function renderMaturite(s){
+  const root=document.getElementById("sec-maturite"); root.innerHTML=shead("ti-id-badge-2","ti-id-badge-2","Savoir-être professionnel","Positionnez-vous sur les attitudes attendues d'un professionnel. Pour chaque comportement, indiquez où vous en êtes — votre carte de maturité se construit automatiquement et figure dans votre compte-rendu.");
+  s.maturite=s.maturite||{};
+  const c1=document.createElement("div"); c1.className="card";
+  c1.innerHTML=`<h3><i class="ti ti-list-details"></i> Mon positionnement, domaine par domaine</h3><p class="hint">Échelle : pas encore · parfois · souvent · point fort · pas concerné. C'est un travail de réflexion sur votre progression, sans jugement.</p><div id="matBox"></div>`;
+  root.appendChild(c1); const box=c1.querySelector("#matBox");
+  MATURITE.forEach((dom,di)=>{ const det=document.createElement("details"); det.className="polebox";
+    det.innerHTML=`<summary><span style="flex:1">${esc(dom.d)}</span><span class="matcubes" data-dom="${di}"></span><i class="ti ti-chevron-right chev"></i></summary>`;
+    const inner=document.createElement("div"); inner.style.marginTop=".6rem";
+    dom.items.forEach((it,ii)=>{ const key=di+"_"+ii,cur=s.maturite[key]; const row=document.createElement("div"); row.className="diagrow";
+      const btns=MAT_SCALE.map(([v,l])=>`<button class="freq${String(cur)===v?" on":""}${v==="na"?" na":""}" data-k="${key}" data-v="${v}">${l}</button>`).join("");
+      row.innerHTML=`<div class="diagq">${esc(it)}</div><div class="freqs">${btns}</div>`; inner.appendChild(row); });
+    det.appendChild(inner); box.appendChild(det); });
+  box.querySelectorAll(".freq").forEach(b=>b.onclick=()=>{ const k=b.dataset.k,v=b.dataset.v; s.maturite[k]=v; box.querySelectorAll(`.freq[data-k="${k}"]`).forEach(x=>x.classList.toggle("on",x.dataset.v===v)); save(); updateMatCubes(box,s); renderMatCard(s,document.getElementById("matCardBox")); renderDash(); });
+  updateMatCubes(box,s);
+  const c2=document.createElement("div"); c2.className="card";
+  c2.innerHTML=`<h3><i class="ti ti-map-2"></i> Ma carte de maturité professionnelle</h3><p class="hint">Cubes colorés selon votre niveau. Vert : point d'appui · ambre : à consolider · rouge : à travailler.</p><div class="prof-live" id="matCardBox"></div>`;
+  root.appendChild(c2); renderMatCard(s,c2.querySelector("#matCardBox"));
+  const c3=document.createElement("div"); c3.className="card";
+  c3.innerHTML=`<h3><i class="ti ti-file-export"></i> Imprimer ou exporter</h3><p class="hint">Le compte-rendu PDF regroupe vos activités, vos compétences, votre profil de posture et cette carte de savoir-être.</p><div style="display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn pri" id="matPrint"><i class="ti ti-printer"></i> Imprimer / Enregistrer en PDF</button><button class="btn ghost" id="matExport"><i class="ti ti-download"></i> Exporter (JSON)</button></div>`;
+  root.appendChild(c3); document.getElementById("matPrint").onclick=buildPDF; document.getElementById("matExport").onclick=exportData;
 }
 
 /* génération du compte-rendu PDF */
@@ -852,16 +917,25 @@ function buildPDF(){ const s=stage(); if(!s){ toast("Ouvrez d'abord une période
   const sav=Q_SAVOIR.map(q=>(s.savoir||{})[q[0]]).filter(t=>t&&t.trim()), bar=computeBarometer(s);
   if(sav.length||bar.length){ h+=`<h2><span class="nb">2.</span>Savoir-être, savoir relationnel et savoir-faire</h2>`; sav.forEach(t=>h+=`<p>${esc(t)}</p>`);
     if(bar.length){ h+=`<div class="prof"><div class="ti">Profil de posture professionnelle — autoévaluation</div>`;
-      bar.forEach(b=>{ let segs=""; for(let i=0;i<10;i++) segs+=`<i style="background:${i<b.score?b.color:'#e7e9ed'}"></i>`; h+=`<div class="brow"><span class="bl">${esc(b.label)}</span><span class="seg">${segs}</span><span class="bv">${b.score}/10</span></div>`; });
-      const srt=bar.slice().sort((a,b)=>b.score-a.score), forts=srt.filter(x=>x.score>=6).slice(0,3).map(x=>x.label.toLowerCase()), faibles=srt.slice().reverse().filter(x=>x.score<=5).slice(0,3).map(x=>x.label.toLowerCase());
+      bar.forEach(b=>{ const bd=matBand(b.score); h+=`<div class="brow"><span class="bl">${esc(b.label)}</span><span class="cubes">${cubes(b.score,'#e7e9ed')}</span><span class="bw" style="color:${bd.c}">${bd.w}</span></div>`; });
+      const srt=bar.slice().sort((a,b)=>b.score-a.score), forts=srt.filter(x=>x.score>=7).slice(0,3).map(x=>x.label.toLowerCase()), faibles=srt.slice().reverse().filter(x=>x.score<=4).slice(0,3).map(x=>x.label.toLowerCase());
       if(forts.length||faibles.length) h+=`<div class="syn">${forts.length?`<b>Points d'appui :</b> ${forts.join(", ")}.`:""} ${faibles.length?` <b>À renforcer :</b> ${faibles.join(", ")}.`:""}</div>`;
       h+=`</div>`; }
+  }
+  const matCard=MATURITE.map((dom,di)=>({dom,r:matDomScore(s,di)})).filter(x=>x.r), hl=matHighlights(s);
+  if(matCard.length||hl.forts.length||hl.axes.length){
+    h+=`<h2><span class="nb">3.</span>Profil de savoir-être professionnel</h2>`;
+    if(matCard.length){ h+=`<div class="prof"><div class="ti">Carte de maturité — autopositionnement</div>`;
+      matCard.forEach(x=>{ const b=matBand(x.r.score); h+=`<div class="brow"><span class="bl">${esc(x.dom.d)}</span><span class="cubes">${cubes(x.r.score,'#e7e9ed')}</span><span class="bw" style="color:${b.c}">${b.w}</span></div>`; });
+      h+=`</div>`; }
+    if(hl.forts.length) h+=`<div class="matlist"><b>Points forts :</b> ${hl.forts.map(esc).join(" · ")}</div>`;
+    if(hl.axes.length) h+=`<div class="matlist"><b>Axes de progrès :</b> ${hl.axes.map(esc).join(" · ")}</div>`;
   }
   const byPole={P1:[],P2:[],P3:[],AUTRES:[]};
   (s.activites||[]).forEach(a=>{ const p=(a.competences&&a.competences[0])?poleOf(a.competences[0]):"AUTRES"; (byPole[p]||byPole.AUTRES).push(a); });
   const cocheByPole={P1:[],P2:[],P3:[]}; (s.coche||[]).forEach(c=>{ const p=poleOf(c); if(cocheByPole[p]) cocheByPole[p].push(c); });
   if((s.activites||[]).length||(s.coche||[]).length){
-    h+=`<h2><span class="nb">3.</span>Activités professionnelles et compétences mises en œuvre</h2>`;
+    h+=`<h2><span class="nb">4.</span>Activités professionnelles et compétences mises en œuvre</h2>`;
     POLES.forEach(p=>{ const acts=byPole[p]; if(!acts.length && !cocheByPole[p].length) return;
       h+=`<div class="pole">${esc(REFERENTIEL[p].titre)}</div>`;
       const used=new Set();
@@ -878,7 +952,7 @@ function buildPDF(){ const s=stage(); if(!s){ toast("Ouvrez d'abord une période
     if(byPole.AUTRES.length){ h+=`<div class="pole">Autres activités réalisées</div>`; byPole.AUTRES.forEach(a=>{ h+=`<div class="comp"><div class="act">Activité : ${esc(a.titre||"")}</div>${a.desc?`<p>${esc(a.desc)}</p>`:""}${a.sf?`<p><b>Savoir-faire :</b> ${esc(a.sf)}</p>`:""}</div>`; }); }
   }
   const bil=Q_BILAN.map(q=>(s.bilan||{})[q[0]]).filter(t=>t&&t.trim());
-  if(bil.length){ h+=`<h2><span class="nb">4.</span>Bilan et perspectives</h2>`; bil.forEach(t=>h+=`<p>${esc(t)}</p>`); }
+  if(bil.length){ h+=`<h2><span class="nb">5.</span>Bilan et perspectives</h2>`; bil.forEach(t=>h+=`<p>${esc(t)}</p>`); }
   h+=`</div>`;
   document.getElementById("printRoot").innerHTML=h;
   setTimeout(()=>window.print(),120);
