@@ -290,6 +290,22 @@
     function formatEuro(n){ return round2(n).toFixed(2); }
     function closeEnough(a,b,eps=0.01){ return Math.abs(round2(a) - round2(b)) < eps; }
 
+    // Affiche la bonne valeur en vert sous un champ erroné
+    function montrerCorrection(inputId, ok, attendu){
+        const input = document.getElementById(inputId);
+        if(!input) return;
+        input.style.borderColor = ok ? "#16a34a" : "#dc2626";
+        const old = document.getElementById("corr-" + inputId);
+        if(old) old.remove();
+        if(!ok){
+            const div = document.createElement("div");
+            div.id = "corr-" + inputId;
+            div.style.cssText = "color:var(--success);font-weight:900;font-size:0.9rem;margin-top:6px;";
+            div.innerHTML = `✅ Bonne réponse : ${attendu} €`;
+            input.parentElement.appendChild(div);
+        }
+    }
+
     function computeExpected(){
         const sum = (pred) => round2(items.filter(pred).reduce((acc,it)=>acc+it.val,0));
         const recettes  = sum(it => it.cat.startsWith("recette"));
@@ -413,14 +429,23 @@
 
         const finalScore = Math.round(Math.min(20, Math.max(0, score)));
 
+        // Corrections en vert sous chaque champ erroné
+        montrerCorrection("in-recettes", closeEnough(inR, expected.recettes), formatEuro(expected.recettes));
+        montrerCorrection("in-fixes", closeEnough(inF, expected.fixes), formatEuro(expected.fixes));
+        montrerCorrection("in-courantes", closeEnough(inC, expected.courantes), formatEuro(expected.courantes));
+        montrerCorrection("in-occas", closeEnough(inO, expected.occas), formatEuro(expected.occas));
+        montrerCorrection("in-solde", closeEnough(inSolde, expected.solde), formatEuro(expected.solde));
+
+        const statusLabel = expected.status === "equilibre" ? "Équilibré" : (expected.status === "excedentaire" ? "Excédentaire" : "Déficitaire");
+
         document.getElementById("result-zone").style.display = "block";
         document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
 
-        document.querySelector("#syn-rec .val").innerHTML = `${formatEuro(inR)}€ ${closeEnough(inR, expected.recettes) ? '✅' : '❌'}`;
-        document.querySelector("#syn-dep .val").innerHTML = `${formatEuro(totalD)}€ ${closeEnough(totalD, expected.depenses) ? '✅' : '❌'}`;
-        document.querySelector("#syn-sol .val").innerHTML = `${formatEuro(inSolde)}€ ${closeEnough(inSolde, expected.solde) ? '✅' : '❌'}`;
+        document.querySelector("#syn-rec .val").innerHTML = `${formatEuro(inR)}€ ${closeEnough(inR, expected.recettes) ? '✅' : '❌'} <small style="color:#16a34a">(attendu : ${formatEuro(expected.recettes)}€)</small>`;
+        document.querySelector("#syn-dep .val").innerHTML = `${formatEuro(totalD)}€ ${closeEnough(totalD, expected.depenses) ? '✅' : '❌'} <small style="color:#16a34a">(attendu : ${formatEuro(expected.depenses)}€)</small>`;
+        document.querySelector("#syn-sol .val").innerHTML = `${formatEuro(inSolde)}€ ${closeEnough(inSolde, expected.solde) ? '✅' : '❌'} <small style="color:#16a34a">(attendu : ${formatEuro(expected.solde)}€)</small>`;
         document.querySelector("#syn-status .val").innerHTML =
-            `${inStatus === expected.status ? (expected.status === "equilibre" ? "Équilibré ✅" : expected.status === "excedentaire" ? "Excédentaire ✅" : "Déficitaire ✅") : "Erreur ❌"}`;
+            `${inStatus === expected.status ? statusLabel + " ✅" : `Erreur ❌ <small style="color:#16a34a">(bonne réponse : ${statusLabel})</small>`}`;
 
         // Graphique simple (classement / calculs / statut)
         try{

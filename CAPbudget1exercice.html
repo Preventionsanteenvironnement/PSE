@@ -1161,6 +1161,28 @@
 
     function getItemElById(id){ return document.getElementById("item-" + id); }
 
+    // ===== CORRECTION AFFICHÉE APRÈS 2 TENTATIVES RATÉES =====
+    const tentativesRatees = { recette: 0, fixe: 0, courante: 0, occas: 0 };
+
+    function correctionHtml(cat){
+      let list, total;
+      if(cat === "recette"){
+        list = itemsData.filter(i => i.globalCat === "recette");
+        total = totalsExpected.recettes;
+      }else{
+        list = itemsData.filter(i => i.globalCat === "depense" && i.cat === cat);
+        total = totalsExpected[cat];
+      }
+      return `<span style="display:block;margin-top:8px;color:var(--ok);">✅ <strong>Correction :</strong> ${list.map(i => `${i.name} (${i.val} €)`).join(" + ")} = <strong>${total} €</strong></span>`;
+    }
+
+    function echecTentative(cat, msgEl){
+      tentativesRatees[cat]++;
+      if(tentativesRatees[cat] >= 2){
+        msgEl.innerHTML += correctionHtml(cat);
+      }
+    }
+
     // ===== VÉRIFICATION DES RECETTES =====
     function verifierRecettes(){
       resetItemMarks();
@@ -1181,6 +1203,7 @@
       });
       if(majorError){
         setMsg(msg, "❌ <strong>ERREUR MAJEURE :</strong> Une dépense a été placée dans les Recettes. Corrige les étiquettes en rouge.", false);
+        echecTentative("recette", msg);
         return;
       }
 
@@ -1207,6 +1230,7 @@
 
       if(missing.length){
         setMsg(msg, `⚠️ <strong>CLASSEMENT INCOMPLET :</strong> Il manque ${missing.length} recette(s) dans la zone Recettes.`, false);
+        echecTentative("recette", msg);
         return;
       }
 
@@ -1227,6 +1251,7 @@
       
       if (analysis.type !== 'correct') {
         setMsg(msg, `❌ Le calcul est incorrect. Total attendu : <strong>${totalsExpected.recettes} €</strong>.`, false);
+        echecTentative("recette", msg);
         return;
       }
 
@@ -1264,6 +1289,7 @@
       });
       if(majorError){
         setMsg(msg, "❌ <strong>ERREUR MAJEURE :</strong> Une recette a été placée dans cette colonne. Corrige les étiquettes en rouge.", false);
+        echecTentative(cat, msg);
         return;
       }
 
@@ -1278,6 +1304,7 @@
       });
       if(wrongInZone){
         setMsg(msg, "⚠️ <strong>CLASSEMENT À CORRIGER :</strong> Un poste ne correspond pas à cette colonne (en rouge).", false);
+        echecTentative(cat, msg);
         return;
       }
 
@@ -1297,6 +1324,7 @@
 
       if(missing.length){
         setMsg(msg, `⚠️ <strong>CLASSEMENT INCOMPLET :</strong> Il manque ${missing.length} dépense(s) dans cette colonne.`, false);
+        echecTentative(cat, msg);
         return;
       }
 
@@ -1317,6 +1345,7 @@
       
       if (analysis.type !== 'correct') {
         setMsg(msg, `❌ Le calcul est incorrect. Total attendu : <strong>${expectedTotal} €</strong>.`, false);
+        echecTentative(cat, msg);
         return;
       }
 

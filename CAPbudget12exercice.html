@@ -182,11 +182,18 @@
 </div>
 
 <script>
-    const prixTel = 670.00; 
+    const prixTel = 670.00;
     const soldeInitial = 196.41;
     const nouveauSolde = 376.41;
     const moisSansArbitrage = 4;
     const moisAvecArbitrage = 2;
+
+    // Compteur de tentatives ratées par étape : la correction s'affiche à la 2e erreur
+    const essaisRates = { e1: 0, e2: 0, e3: 0 };
+
+    function blocCorrection(html) {
+        return `<div class="math-box" style="border:2px solid var(--success); color:#166534; background:#f0fdf4;">✅ <strong>Correction :</strong><br>${html}</div><p style="margin-top:8px;">Note bien la bonne réponse, puis continue à l'étape suivante.</p>`;
+    }
 
     // === FONCTION UTILITAIRE : Normaliser les entrées (virgule/point) ===
     function normaliserNombre(valeur) {
@@ -217,6 +224,11 @@
         } else {
             fb.innerHTML = `❌ <b>Calcul incorrect.</b><br>Soustrais les dépenses des recettes :<br><strong>1 777,00 − 1 580,59 = ?</strong>`;
             fb.className = 'feedback error';
+            essaisRates.e1++;
+            if (essaisRates.e1 >= 2) {
+                fb.innerHTML += blocCorrection(`1 777,00 € − 1 580,59 € = <strong>196,41 €</strong> d'épargne possible par mois.`);
+                document.getElementById('step2').classList.add('active');
+            }
         }
     }
 
@@ -247,6 +259,14 @@
         } else {
             fb.innerHTML = `❌ <b>Attention à l'arrondi !</b><br>Divise <strong>670 ÷ 196,41 = 3,41...</strong><br>Comme on ne peut pas attendre 3,41 mois, Julie doit attendre le <strong>mois entier suivant</strong>.`;
             fb.className = 'feedback error';
+        }
+
+        if (userMois !== moisSansArbitrage) {
+            essaisRates.e2++;
+            if (essaisRates.e2 >= 2) {
+                fb.innerHTML += blocCorrection(`670 € ÷ 196,41 € = 3,41 → on arrondit au mois entier supérieur : <strong>4 mois</strong>.`);
+                document.getElementById('step3').classList.add('active');
+            }
         }
     }
 
@@ -307,6 +327,14 @@
             • Nouveau solde : 196,41 + 180 = ?<br>
             • Puis divise 670 par ce nouveau solde et arrondis au mois supérieur.`;
             fb.className = 'feedback error';
+        }
+
+        if (!(soldeOK && moisOK)) {
+            essaisRates.e3++;
+            if (essaisRates.e3 >= 2) {
+                fb.innerHTML += blocCorrection(`Nouveau solde : 196,41 + 180 = <strong>376,41 €</strong><br>Durée : 670 ÷ 376,41 = 1,78 → <strong>2 mois</strong>.`);
+                document.getElementById('final-step').style.display = 'block';
+            }
         }
     }
 

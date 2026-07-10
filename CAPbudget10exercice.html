@@ -193,8 +193,8 @@
       <!-- TRACKER DE VISITE RETIRÉ conformément aux instructions -->
 
       <div class="context-box">
-          <strong>Situation :</strong> Lina est architecte. Elle perçoit un <b>salaire net de 4 673,73 €</b>. Elle n'a aucune prime ce mois-ci. <br><br>
-          Ses opérations : Crédit immobilier (1 230,56 €), Assurance (72,43 €), Abonnements téléphone/fibre (55,12 €), Courses alimentaires (485,34 €), Carburant (120,50 €), Produits d'hygiène (42,25 €), Nouvel aménagement bureau (850,45 €) et Sorties restaurant (210,00 €).
+          <strong>Situation :</strong> Lina est assistante administrative. Elle perçoit un <b>salaire net de 1 520,00 €</b>. Elle n'a aucune prime ce mois-ci. <br><br>
+          Ses opérations : Loyer (495,50 €), Assurance (72,43 €), Abonnements téléphone/fibre (55,12 €), Courses alimentaires (285,34 €), Carburant (90,50 €), Produits d'hygiène (42,25 €), Petit aménagement de bureau (119,90 €) et Sorties restaurant (65,00 €).
       </div>
 
       <p style="font-weight:bold;">1. Cliquez sur une étiquette, puis sur sa catégorie :</p>
@@ -259,16 +259,19 @@
     });
 
     const items = [
-        { id: 1, name: "Salaire", val: 4673.73, cat: "recette-travail" },
-        { id: 2, name: "Crédit immo", val: 1230.56, cat: "fixe" },
-        { id: 3, name: "Assurance", val: 72.43, cat: "fixe" },
-        { id: 4, name: "Abonnements", val: 55.12, cat: "fixe" },
-        { id: 5, name: "Alimentation", val: 485.34, cat: "courante" },
-        { id: 6, name: "Carburant", val: 120.50, cat: "courante" },
-        { id: 7, name: "Hygiène", val: 42.25, cat: "courante" },
-        { id: 8, name: "Bureau", val: 850.45, cat: "occas" },
-        { id: 9, name: "Restaurants", val: 210.00, cat: "occas" }
+        { id: 1, name: "Salaire", val: 1520.00, cat: "recette-travail", label: "Recettes (Travail)" },
+        { id: 2, name: "Loyer", val: 495.50, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 3, name: "Assurance", val: 72.43, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 4, name: "Abonnements", val: 55.12, cat: "fixe", label: "Dépenses Fixes" },
+        { id: 5, name: "Alimentation", val: 285.34, cat: "courante", label: "Dépenses Courantes" },
+        { id: 6, name: "Carburant", val: 90.50, cat: "courante", label: "Dépenses Courantes" },
+        { id: 7, name: "Hygiène", val: 42.25, cat: "courante", label: "Dépenses Courantes" },
+        { id: 8, name: "Bureau", val: 119.90, cat: "occas", label: "Dépenses Occasionnelles" },
+        { id: 9, name: "Restaurants", val: 65.00, cat: "occas", label: "Dépenses Occasionnelles" }
     ];
+
+    // Valeurs attendues (corrigé)
+    const EXPECT = { R: 1520.00, F: 623.05, C: 418.09, O: 184.90, D: 1226.04, S: 293.96 };
 
     let selectedItem = null;
     const bank = document.getElementById("item-bank");
@@ -276,7 +279,7 @@
     items.sort(() => Math.random() - 0.5).forEach(item => {
         let el = document.createElement("div");
         el.className = "draggable-item"; el.id = "i-" + item.id;
-        el.innerHTML = `${item.name} (${item.val.toFixed(2)}€)`;
+        el.innerHTML = `${item.name} (${item.val.toFixed(2)}€)<div id="info-${item.id}" style="display:none;font-size:0.85rem;color:#dc2626;margin-top:5px;font-weight:900;">Doit être dans : ${item.label}</div>`;
         el.onclick = (e) => {
             e.stopPropagation();
             if(selectedItem) selectedItem.classList.remove('selected');
@@ -303,6 +306,22 @@
         return Number.isFinite(n) ? n : 0;
     }
 
+    // Affiche la bonne valeur en vert sous un champ erroné
+    function montrerCorrection(inputId, ok, attendu){
+        const input = document.getElementById(inputId);
+        if(!input) return;
+        input.style.borderColor = ok ? "#16a34a" : "#dc2626";
+        const old = document.getElementById("corr-" + inputId);
+        if(old) old.remove();
+        if(!ok){
+            const div = document.createElement("div");
+            div.id = "corr-" + inputId;
+            div.style.cssText = "color:var(--success);font-weight:900;font-size:0.9rem;margin-top:6px;";
+            div.innerHTML = `✅ Bonne réponse : ${attendu.toFixed(2)} €`;
+            input.parentElement.appendChild(div);
+        }
+    }
+
     async function analyser() {
         const btn = document.querySelector('.btn-valider');
         if (btn && btn.disabled) return;
@@ -313,13 +332,16 @@
         // 1. Calcul placement des étiquettes (9 points)
         items.forEach(item => {
             let el = document.getElementById("i-" + item.id);
+            let info = document.getElementById("info-" + item.id);
             let parent = el.parentElement;
             let parentCat = parent ? parent.dataset.category : null;
-            if (parentCat === item.cat) { 
-                score += 1; 
-                el.style.borderColor = "#28a745"; 
-            } else { 
-                el.style.borderColor = "#dc3545"; 
+            if (parentCat === item.cat) {
+                score += 1;
+                el.style.borderColor = "#28a745";
+                if (info) info.style.display = "none";
+            } else {
+                el.style.borderColor = "#dc3545";
+                if (info) info.style.display = "block";
             }
         });
 
@@ -335,23 +357,36 @@
         const totalD = Number((inF + inC + inO).toFixed(2));
 
         // 2. Calcul des totaux et status (11 points)
-        if (Math.abs(inR - 4673.73) < 0.01) score += 2;
-        if (Math.abs(inF - 1358.11) < 0.01) score += 1.5;
-        if (Math.abs(inC - 648.09) < 0.01) score += 1.5;
-        if (Math.abs(inO - 1060.45) < 0.01) score += 1.5;
-        if (Math.abs(inSolde - 1607.08) < 0.01) score += 2;
+        const recOk = Math.abs(inR - EXPECT.R) < 0.01;
+        const fixOk = Math.abs(inF - EXPECT.F) < 0.01;
+        const courOk = Math.abs(inC - EXPECT.C) < 0.01;
+        const occOk = Math.abs(inO - EXPECT.O) < 0.01;
+        const soldeOk = Math.abs(inSolde - EXPECT.S) < 0.01;
+
+        if (recOk) score += 2;
+        if (fixOk) score += 1.5;
+        if (courOk) score += 1.5;
+        if (occOk) score += 1.5;
+        if (soldeOk) score += 2;
         if (inStatus === "excedentaire") score += 2.5;
 
         // Note arrondie sur 20
         const finalScore = Math.round(Math.min(20, score));
 
+        // Corrections en vert sous chaque champ erroné
+        montrerCorrection("in-recettes", recOk, EXPECT.R);
+        montrerCorrection("in-fixes", fixOk, EXPECT.F);
+        montrerCorrection("in-courantes", courOk, EXPECT.C);
+        montrerCorrection("in-occas", occOk, EXPECT.O);
+        montrerCorrection("in-solde", soldeOk, EXPECT.S);
+
         document.getElementById("result-zone").style.display = "block";
         document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
 
-        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${Math.abs(inR - 4673.73) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - 3066.65) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${Math.abs(inSolde - 1607.08) < 0.01 ? '✅' : '❌'}`;
-        document.querySelector("#syn-status .val").innerHTML = `${inStatus === "excedentaire" ? "Excédentaire ✅" : "Erreur ❌"}`;
+        document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${recOk ? '✅' : '❌'} <small style="color:#16a34a">(attendu : ${EXPECT.R.toFixed(2)}€)</small>`;
+        document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${Math.abs(totalD - EXPECT.D) < 0.01 ? '✅' : '❌'} <small style="color:#16a34a">(attendu : ${EXPECT.D.toFixed(2)}€)</small>`;
+        document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${soldeOk ? '✅' : '❌'} <small style="color:#16a34a">(attendu : ${EXPECT.S.toFixed(2)}€)</small>`;
+        document.querySelector("#syn-status .val").innerHTML = `${inStatus === "excedentaire" ? "Excédentaire ✅" : "Erreur ❌ <small style=\"color:#16a34a\">(bonne réponse : Excédentaire)</small>"}`;
 
         window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: 'smooth' });
 

@@ -600,6 +600,22 @@
       return Math.abs(a - b) < eps;
     }
 
+    // Affiche la bonne valeur en vert sous un champ erroné
+    function montrerCorrection(inputId, ok, attendu){
+      const input = document.getElementById(inputId);
+      if(!input) return;
+      input.style.borderColor = ok ? "#16a34a" : "#dc2626";
+      const old = document.getElementById("corr-" + inputId);
+      if(old) old.remove();
+      if(!ok){
+        const div = document.createElement("div");
+        div.id = "corr-" + inputId;
+        div.style.cssText = "color:var(--success);font-weight:900;font-size:0.9rem;margin-top:6px;";
+        div.innerHTML = `✅ Bonne réponse : ${attendu} €`;
+        input.parentElement.appendChild(div);
+      }
+    }
+
     function getIdentity(){
       const code = localStorage.getItem("userCode") || localStorage.getItem("codeEleve") || "ANONYME";
       const classe =
@@ -713,13 +729,20 @@
 
       const finalScore = Math.max(0, Math.min(20, Math.round(score)));
 
+      // Corrections en vert sous chaque champ erroné
+      montrerCorrection("in-recettes", almostEqual(inR, R_OK), R_OK.toFixed(2));
+      montrerCorrection("in-fixes", almostEqual(inF, F_OK), F_OK.toFixed(2));
+      montrerCorrection("in-courantes", almostEqual(inC, C_OK), C_OK.toFixed(2));
+      montrerCorrection("in-occas", almostEqual(inO, O_OK), O_OK.toFixed(2));
+      montrerCorrection("in-solde", almostEqual(inSolde, SOLDE_OK), SOLDE_OK.toFixed(2));
+
       document.getElementById("result-zone").style.display = "block";
       document.getElementById("final-score").innerText = `Score : ${finalScore} / 20`;
 
-      document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${almostEqual(inR, R_OK) ? "✅" : "❌"}`;
-      document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${almostEqual(totalD, D_OK) ? "✅" : "❌"}`;
-      document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${almostEqual(inSolde, SOLDE_OK) ? "✅" : "❌"}`;
-      document.querySelector("#syn-status .val").innerHTML = `${inStatus === STATUS_OK ? "Déficitaire ✅" : "Erreur ❌"}`;
+      document.querySelector("#syn-rec .val").innerHTML = `${inR.toFixed(2)}€ ${almostEqual(inR, R_OK) ? "✅" : "❌"} <small style="color:#16a34a">(attendu : ${R_OK.toFixed(2)}€)</small>`;
+      document.querySelector("#syn-dep .val").innerHTML = `${totalD.toFixed(2)}€ ${almostEqual(totalD, D_OK) ? "✅" : "❌"} <small style="color:#16a34a">(attendu : ${D_OK.toFixed(2)}€)</small>`;
+      document.querySelector("#syn-sol .val").innerHTML = `${inSolde.toFixed(2)}€ ${almostEqual(inSolde, SOLDE_OK) ? "✅" : "❌"} <small style="color:#16a34a">(attendu : ${SOLDE_OK.toFixed(2)}€)</small>`;
+      document.querySelector("#syn-status .val").innerHTML = `${inStatus === STATUS_OK ? "Déficitaire ✅" : "Erreur ❌ <small style=\"color:#16a34a\">(bonne réponse : Déficitaire)</small>"}`;
 
       window.scrollTo({ top: document.getElementById("result-zone").offsetTop, behavior: "smooth" });
 

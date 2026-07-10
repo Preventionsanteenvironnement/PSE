@@ -179,6 +179,13 @@
     const nouveauSolde = 100.50;
     const moisNecessaires = 5;
 
+    // Compteur de tentatives ratées par étape : la correction s'affiche à la 2e erreur
+    const essaisRates = { e1: 0, e2: 0, e3: 0 };
+
+    function blocCorrection(html) {
+        return `<div class="math-box" style="border:2px solid var(--success); color:#166534; background:#f0fdf4;">✅ <strong>Correction :</strong><br>${html}</div><p style="margin-top:8px;">Note bien la bonne réponse, puis continue à l'étape suivante.</p>`;
+    }
+
     // === FONCTION UTILITAIRE : Normaliser les entrées ===
     function normaliserNombre(valeur) {
         if (!valeur || valeur.trim() === '') return NaN;
@@ -215,6 +222,14 @@
             fb.innerHTML = `❌ <b>Vérifie ton calcul.</b><br>Fais l'opération : <strong>1 250,50 − 1 310,00 = ?</strong>`;
             fb.className = "feedback error";
         }
+
+        if (!(Math.abs(userSolde - soldeInitial) < 0.5)) {
+            essaisRates.e1++;
+            if (essaisRates.e1 >= 2) {
+                fb.innerHTML += blocCorrection(`1 250,50 € − 1 310,00 € = <strong>−59,50 €</strong>. Le budget est déficitaire.`);
+                document.getElementById('step2').classList.add('active');
+            }
+        }
     }
 
     // === ÉTAPE 2 ===
@@ -244,6 +259,14 @@
         } else {
             fb.innerHTML = `❌ <b>Vérifie ton calcul.</b><br>Yanis part de <strong>−59,50 €</strong>. S'il économise <strong>160,00 €</strong>, son nouveau solde est :<br><strong>−59,50 + 160,00 = ?</strong>`;
             fb.className = "feedback error";
+        }
+
+        if (!(Math.abs(userNouvSolde - nouveauSolde) < 0.5)) {
+            essaisRates.e2++;
+            if (essaisRates.e2 >= 2) {
+                fb.innerHTML += blocCorrection(`−59,50 € + 160,00 € = <strong>+100,50 €</strong> d'épargne possible par mois.`);
+                document.getElementById('step3').classList.add('active');
+            }
         }
     }
 
@@ -279,6 +302,14 @@
         } else {
             fb.innerHTML = `❌ <b>Attention à l'arrondi !</b><br>Divise <strong>450 ÷ 100,50 = 4,47...</strong><br>Comme on ne peut pas attendre 4,47 mois, Yanis doit attendre le mois <strong>entier suivant</strong>.`;
             fb.className = "feedback error";
+        }
+
+        if (userMois !== moisNecessaires) {
+            essaisRates.e3++;
+            if (essaisRates.e3 >= 2) {
+                fb.innerHTML += blocCorrection(`450 € ÷ 100,50 € = 4,47 → on arrondit au mois entier supérieur : <strong>5 mois</strong>.`);
+                document.getElementById('final-step').style.display = 'block';
+            }
         }
     }
 
