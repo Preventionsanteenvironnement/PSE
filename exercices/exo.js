@@ -47,11 +47,15 @@
     card.appendChild(el("div","q-num","Question "+(idx+1)));
     card.appendChild(el("div","q-text", q.q));
     var opts=el("div","opts");
-    q.options.forEach(function(txt, i){
+    // ordre mélangé pour éviter « toujours la même lettre » et rendre le QCM rejouable
+    var order=q.options.map(function(_,i){return i;});
+    for(var k=order.length-1;k>0;k--){ var j=Math.floor(Math.random()*(k+1)); var tmp=order[k]; order[k]=order[j]; order[j]=tmp; }
+    order.forEach(function(orig, pos){
       var b=el("button","opt");
-      b.appendChild(el("span","ic", String.fromCharCode(65+i)));
-      b.appendChild(el("span",null, txt));
-      b.onclick=function(){ choose(i, b, opts, card, q); };
+      b.setAttribute("data-orig", orig);
+      b.appendChild(el("span","ic", String.fromCharCode(65+pos)));
+      b.appendChild(el("span",null, q.options[orig]));
+      b.onclick=function(){ choose(orig, b, opts, card, q); };
       opts.appendChild(b);
     });
     card.appendChild(opts);
