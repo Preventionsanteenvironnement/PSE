@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le mois — simulateur de budget (SESG · CAPa)</title>
+<link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="exo.css">
+<style>
+.dash{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--bg);padding:10px 0;margin-top:8px}
+.dash .box{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:10px 12px;text-align:center;box-shadow:0 2px 8px rgba(15,40,60,.06)}
+.dash .box .lab{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);font-weight:700}
+.dash .box .val{font-family:var(--disp);font-weight:700;font-size:1.35rem;line-height:1.1;margin-top:2px}
+.dash .box.solde .val.pos{color:var(--ok)} .dash .box.solde .val.neg{color:var(--ko)}
+.row{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:11px 13px;margin-top:9px}
+.row .name{flex:1;font-weight:600}
+.row .name small{display:block;color:var(--ink-2);font-weight:500;font-size:.8rem}
+.row.lock{opacity:.9;background:var(--panel)}
+.row .amt{font-family:var(--mono);font-weight:700;min-width:78px;text-align:right}
+.row .ctrl{display:flex;gap:6px}
+.row .ctrl button{min-height:38px;min-width:38px;padding:0;font-size:1.2rem;border-radius:9px}
+.row .lockic{font-size:1rem;color:var(--ink-2)}
+.legend{font-size:.85rem;color:var(--ink-2);margin-top:10px}
+.verdict{border-radius:14px;padding:15px 17px;margin-top:16px;display:none}
+.verdict.show{display:block}
+.verdict.good{background:var(--ok-soft,#e7f6ec);border:1px solid var(--ok)}
+.verdict.warn{background:#fff6e5;border:1px solid #e0a100}
+.verdict.bad{background:var(--ko-soft,#fdecea);border:1px solid var(--ko)}
+.verdict .t{font-family:var(--disp);font-weight:700;font-size:1.15rem;display:block;margin-bottom:5px}
+.verdict ul{margin:8px 0 0;padding-left:20px} .verdict li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="crumb">🏠 <a href="../index.html">Accueil PSE</a><span class="sep">›</span>CAPa JP&amp;HORT<span class="sep">›</span>SESG<span class="sep">›</span>Simulateur de budget</div>
+
+<div class="wrap">
+  <div id="exo">
+    <header class="hero">
+      <div class="kicker">Jeu · CAP agricole — SESG</div>
+      <h1>Le mois — boucle ton budget</h1>
+      <div class="chips"><span class="chip">CG1.2</span><span class="chip">CCF2</span><span class="chip">Simulateur</span></div>
+    </header>
+
+    <div class="tools">
+      <div class="grp"><span class="lab">Texte</span>
+        <button class="mini ghost" onclick="stepFs(-1)">A−</button>
+        <button class="mini ghost" onclick="stepFs(1)">A+</button>
+        <button class="mini ghost" onclick="document.body.classList.toggle('dys')">Dys</button>
+      </div>
+    </div>
+
+    <div class="consigne" style="background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:12px 15px;margin-top:12px;color:var(--ink-2)">
+      Tu gagnes <b>1 575 €</b> ce mois-ci. Les <b>charges fixes</b> sont déjà déduites. À toi d'ajuster les autres dépenses avec <b>−</b> et <b>+</b>.
+      Objectif : garder un <b>solde positif</b> <em>et</em> mettre un peu de côté. Puis appuie sur <b>Valider mon mois</b>.
+    </div>
+
+    <div class="dash">
+      <div class="box"><div class="lab">Ressources</div><div class="val" id="dRes">1 575 €</div></div>
+      <div class="box"><div class="lab">Dépenses</div><div class="val" id="dDep">0 €</div></div>
+      <div class="box solde"><div class="lab">Solde</div><div class="val" id="dSol">0 €</div></div>
+    </div>
+
+    <div id="rows"></div>
+    <div class="legend">🔒 = charge fixe, non modifiable (loyer, assurances, abonnements).</div>
+
+    <div class="actions" style="display:flex;gap:10px;margin-top:16px">
+      <button class="grow" style="flex:1" onclick="validate()">✓ Valider mon mois</button>
+      <button class="ghost" onclick="reset()">🔄 Réinitialiser</button>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+  <footer>Jeu d'entraînement CAPa — SESG · CG1.2 · CCF2 · <b>mapse.fr</b></footer>
+</div>
+
+<script>
+var RES = 1575;
+var POSTES = [
+  { key:"fixes", nom:"Charges fixes", sous:"loyer 620 · assurances · abonnements", val:750, lock:true },
+  { key:"alim",  nom:"Alimentation", sous:"courses du mois", val:300, min:150, max:450, step:10 },
+  { key:"transp",nom:"Transport", sous:"carburant, trajets", val:95, min:0, max:200, step:5 },
+  { key:"energie",nom:"Électricité", sous:"facture d'énergie", val:60, min:40, max:120, step:5 },
+  { key:"hyg",   nom:"Hygiène", sous:"produits, soins", val:40, min:20, max:100, step:5 },
+  { key:"loisirs",nom:"Loisirs & sorties", sous:"ce qui fait plaisir", val:60, min:0, max:200, step:10 },
+  { key:"epargne",nom:"Épargne de précaution", sous:"mis de côté pour les imprévus", val:50, min:0, max:300, step:10 }
+];
+function fmt(n){ return n.toLocaleString('fr-FR').replace(/ /g,' ')+" €"; }
+function stepFs(d){ var c=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fs'))||17; document.documentElement.style.setProperty('--fs', Math.max(15,Math.min(26,c+d))+'px'); }
+
+function get(k){ return POSTES.filter(function(p){return p.key===k;})[0]; }
+function totalDep(){ return POSTES.reduce(function(s,p){return s+p.val;},0); }
+function epargne(){ return get('epargne').val; }
+
+function draw(){
+  var host=document.getElementById('rows'); host.innerHTML="";
+  POSTES.forEach(function(p){
+    var r=document.createElement('div'); r.className="row"+(p.lock?" lock":"");
+    var name=document.createElement('div'); name.className="name"; name.innerHTML=p.nom+"<small>"+p.sous+"</small>"; r.appendChild(name);
+    var amt=document.createElement('div'); amt.className="amt"; amt.id="amt_"+p.key; amt.textContent=fmt(p.val); r.appendChild(amt);
+    if(p.lock){ var l=document.createElement('div'); l.className="lockic"; l.textContent="🔒"; r.appendChild(l); }
+    else{
+      var ctrl=document.createElement('div'); ctrl.className="ctrl";
+      var minus=document.createElement('button'); minus.className="ghost"; minus.textContent="−";
+      minus.onclick=function(){ adjust(p.key,-p.step); };
+      var plus=document.createElement('button'); plus.textContent="+";
+      plus.onclick=function(){ adjust(p.key,+p.step); };
+      ctrl.appendChild(minus); ctrl.appendChild(plus); r.appendChild(ctrl);
+    }
+    host.appendChild(r);
+  });
+  update();
+}
+function adjust(key,delta){
+  var p=get(key); var v=p.val+delta;
+  if(v<p.min) v=p.min; if(v>p.max) v=p.max; p.val=v;
+  document.getElementById('amt_'+key).textContent=fmt(v);
+  document.getElementById('verdict').className="verdict";
+  update();
+}
+function update(){
+  var dep=totalDep(), sol=RES-dep;
+  document.getElementById('dDep').textContent=fmt(dep);
+  var sEl=document.getElementById('dSol');
+  sEl.textContent=(sol>=0?"+":"−")+fmt(Math.abs(sol)).replace('€','').trim()+" €";
+  sEl.className="val "+(sol>=0?"pos":"neg");
+}
+function validate(){
+  var dep=totalDep(), sol=RES-dep, ep=epargne(), alim=get('alim').val;
+  var v=document.getElementById('verdict'); var cls, t, tips=[];
+  if(sol<0){ cls="bad"; t="❌ Déficit de "+fmt(-sol);
+    tips.push("Tu dépenses plus que tes 1 575 € : il faut réduire un poste variable.");
+    tips.push("Commence par les loisirs, puis ajuste l'alimentation ou l'épargne.");
+  } else if(ep===0){ cls="warn"; t="⚠️ Équilibré, mais sans épargne";
+    tips.push("Ton solde est de "+fmt(sol)+", c'est bien — mais 0 € d'épargne.");
+    tips.push("Un imprévu (panne, santé) te mettrait dans le rouge. Mets au moins 20–30 € de côté.");
+  } else if(alim<250){ cls="warn"; t="⚠️ Attention à l'alimentation";
+    tips.push("Solde +"+fmt(sol)+" avec "+fmt(ep)+" d'épargne : bien joué.");
+    tips.push("Mais "+fmt(alim)+" pour manger tout un mois, c'est très juste : vise plutôt 250–300 €.");
+  } else { cls="good"; t="✅ Mois solide !";
+    tips.push("Budget équilibré : solde +"+fmt(sol)+".");
+    tips.push("Et "+fmt(ep)+" d'épargne de précaution : c'est exactement le bon réflexe.");
+    tips.push("Taux d'effort du logement : "+Math.round(620/RES*100)+" % de tes ressources.");
+  }
+  v.className="verdict show "+cls;
+  v.innerHTML='<span class="t">'+t+'</span><ul><li>'+tips.join('</li><li>')+'</li></ul>';
+  v.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function reset(){ POSTES.forEach(function(p){ if(p.key==='fixes')p.val=750; });
+  get('alim').val=300; get('transp').val=95; get('energie').val=60; get('hyg').val=40; get('loisirs').val=60; get('epargne').val=50;
+  document.getElementById('verdict').className="verdict"; draw();
+}
+draw();
+</script>
+</body>
+</html>
