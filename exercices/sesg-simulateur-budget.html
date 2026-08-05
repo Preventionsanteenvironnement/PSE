@@ -7,7 +7,14 @@
 <link rel="stylesheet" href="../fonts/fonts.css">
 <link rel="stylesheet" href="exo.css">
 <style>
-.dash{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--bg);padding:10px 0;margin-top:8px}
+.mission{background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:14px 16px;margin-top:12px}
+.mission .mt{font-family:var(--disp);font-weight:700;color:var(--accent-2);margin-bottom:6px}
+.mission ul{margin:0;padding-left:2px;list-style:none}
+.mission li{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:.96rem}
+.mission li .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--rule);flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink-2);background:var(--paper)}
+.mission li.ok .ck{border-color:var(--ok);background:var(--ok);color:#fff}
+.mission li.ok{color:var(--ink)} .mission li:not(.ok){color:var(--ink-2)}
+.dash{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--bg);padding:10px 0;margin-top:12px}
 .dash .box{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:10px 12px;text-align:center;box-shadow:0 2px 8px rgba(15,40,60,.06)}
 .dash .box .lab{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);font-weight:700}
 .dash .box .val{font-family:var(--disp);font-weight:700;font-size:1.35rem;line-height:1.1;margin-top:2px}
@@ -15,7 +22,7 @@
 .row{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:11px 13px;margin-top:9px}
 .row .name{flex:1;font-weight:600}
 .row .name small{display:block;color:var(--ink-2);font-weight:500;font-size:.8rem}
-.row.lock{opacity:.9;background:var(--panel)}
+.row.lock{background:var(--panel)}
 .row .amt{font-family:var(--mono);font-weight:700;min-width:78px;text-align:right}
 .row .ctrl{display:flex;gap:6px}
 .row .ctrl button{min-height:38px;min-width:38px;padding:0;font-size:1.2rem;border-radius:9px}
@@ -28,6 +35,8 @@
 .verdict.bad{background:var(--ko-soft,#fdecea);border:1px solid var(--ko)}
 .verdict .t{font-family:var(--disp);font-weight:700;font-size:1.15rem;display:block;margin-bottom:5px}
 .verdict ul{margin:8px 0 0;padding-left:20px} .verdict li{margin:3px 0}
+.impr{background:var(--panel);border-radius:10px;padding:11px 13px;margin-top:10px;font-size:.94rem}
+.impr b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -37,8 +46,8 @@
   <div id="exo">
     <header class="hero">
       <div class="kicker">Jeu · CAP agricole — SESG</div>
-      <h1>Le mois — boucle ton budget</h1>
-      <div class="chips"><span class="chip">CG1.2</span><span class="chip">CCF2</span><span class="chip">Simulateur</span></div>
+      <h1>Le mois — réussis ton budget</h1>
+      <div class="chips"><span class="chip">CG1.2</span><span class="chip">CCF2</span><span class="chip">Mission</span></div>
     </header>
 
     <div class="tools">
@@ -50,8 +59,17 @@
     </div>
 
     <div class="consigne" style="background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:12px 15px;margin-top:12px;color:var(--ink-2)">
-      Tu gagnes <b>1 575 €</b> ce mois-ci. Les <b>charges fixes</b> sont déjà déduites. À toi d'ajuster les autres dépenses avec <b>−</b> et <b>+</b>.
-      Objectif : garder un <b>solde positif</b> <em>et</em> mettre un peu de côté. Puis appuie sur <b>Valider mon mois</b>.
+      Tu gagnes <b>1 575 €</b> ce mois-ci ; les <b>charges fixes</b> sont déjà payées. Ajuste les autres dépenses avec <b>−</b> et <b>+</b> pour <b>réussir les 4 objectifs</b> ci-dessous, puis appuie sur <b>Valider mon mois</b>.
+    </div>
+
+    <div class="mission">
+      <div class="mt">🎯 Ta mission — coche les 4</div>
+      <ul id="mission">
+        <li data-k="alim"><span class="ck">1</span><span>🍽️ Manger correctement — <b>Alimentation ≥ 250 €</b></span></li>
+        <li data-k="transp"><span class="ck">2</span><span>🚗 Pouvoir te déplacer — <b>Transport ≥ 60 €</b></span></li>
+        <li data-k="solde"><span class="ck">3</span><span>⚖️ Ne pas être à découvert — <b>Solde ≥ 0 €</b></span></li>
+        <li data-k="epargne"><span class="ck">4</span><span>🐷 Te protéger d'un imprévu — <b>Épargne ≥ 30 €</b></span></li>
+      </ul>
     </div>
 
     <div class="dash">
@@ -73,7 +91,7 @@
 </div>
 
 <script>
-var RES = 1575;
+var RES = 1575, IMPREVU = 200;
 var POSTES = [
   { key:"fixes", nom:"Charges fixes", sous:"loyer 620 · assurances · abonnements", val:750, lock:true },
   { key:"alim",  nom:"Alimentation", sous:"courses du mois", val:300, min:150, max:450, step:10 },
@@ -83,12 +101,13 @@ var POSTES = [
   { key:"loisirs",nom:"Loisirs & sorties", sous:"ce qui fait plaisir", val:60, min:0, max:200, step:10 },
   { key:"epargne",nom:"Épargne de précaution", sous:"mis de côté pour les imprévus", val:50, min:0, max:300, step:10 }
 ];
-function fmt(n){ return n.toLocaleString('fr-FR').replace(/ /g,' ')+" €"; }
+var OBJ = { alim:250, transp:60, solde:0, epargne:30 };
+function fmt(n){ return n.toLocaleString('fr-FR')+" €"; }
 function stepFs(d){ var c=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fs'))||17; document.documentElement.style.setProperty('--fs', Math.max(15,Math.min(26,c+d))+'px'); }
-
 function get(k){ return POSTES.filter(function(p){return p.key===k;})[0]; }
 function totalDep(){ return POSTES.reduce(function(s,p){return s+p.val;},0); }
-function epargne(){ return get('epargne').val; }
+function statuses(){ var dep=totalDep(), sol=RES-dep;
+  return { solde:sol, alim:get('alim').val>=OBJ.alim, transp:get('transp').val>=OBJ.transp, soldeOk:sol>=OBJ.solde, epargne:get('epargne').val>=OBJ.epargne }; }
 
 function draw(){
   var host=document.getElementById('rows'); host.innerHTML="";
@@ -99,10 +118,8 @@ function draw(){
     if(p.lock){ var l=document.createElement('div'); l.className="lockic"; l.textContent="🔒"; r.appendChild(l); }
     else{
       var ctrl=document.createElement('div'); ctrl.className="ctrl";
-      var minus=document.createElement('button'); minus.className="ghost"; minus.textContent="−";
-      minus.onclick=function(){ adjust(p.key,-p.step); };
-      var plus=document.createElement('button'); plus.textContent="+";
-      plus.onclick=function(){ adjust(p.key,+p.step); };
+      var minus=document.createElement('button'); minus.className="ghost"; minus.textContent="−"; minus.onclick=function(){ adjust(p.key,-p.step); };
+      var plus=document.createElement('button'); plus.textContent="+"; plus.onclick=function(){ adjust(p.key,+p.step); };
       ctrl.appendChild(minus); ctrl.appendChild(plus); r.appendChild(ctrl);
     }
     host.appendChild(r);
@@ -110,44 +127,53 @@ function draw(){
   update();
 }
 function adjust(key,delta){
-  var p=get(key); var v=p.val+delta;
-  if(v<p.min) v=p.min; if(v>p.max) v=p.max; p.val=v;
+  var p=get(key); var v=p.val+delta; if(v<p.min)v=p.min; if(v>p.max)v=p.max; p.val=v;
   document.getElementById('amt_'+key).textContent=fmt(v);
   document.getElementById('verdict').className="verdict";
   update();
 }
 function update(){
-  var dep=totalDep(), sol=RES-dep;
+  var dep=totalDep(), sol=RES-dep, st=statuses();
   document.getElementById('dDep').textContent=fmt(dep);
   var sEl=document.getElementById('dSol');
-  sEl.textContent=(sol>=0?"+":"−")+fmt(Math.abs(sol)).replace('€','').trim()+" €";
+  sEl.textContent=(sol>=0?"+":"−")+Math.abs(sol).toLocaleString('fr-FR')+" €";
   sEl.className="val "+(sol>=0?"pos":"neg");
+  // checklist live
+  var map={alim:st.alim, transp:st.transp, solde:st.soldeOk, epargne:st.epargne};
+  document.querySelectorAll('#mission li').forEach(function(li){
+    var ok=map[li.dataset.k]; li.classList.toggle('ok',ok);
+    li.querySelector('.ck').textContent= ok? "✓" : li.querySelector('.ck').textContent.replace('✓', li.dataset.k==='alim'?'1':li.dataset.k==='transp'?'2':li.dataset.k==='solde'?'3':'4');
+  });
 }
 function validate(){
-  var dep=totalDep(), sol=RES-dep, ep=epargne(), alim=get('alim').val;
-  var v=document.getElementById('verdict'); var cls, t, tips=[];
-  if(sol<0){ cls="bad"; t="❌ Déficit de "+fmt(-sol);
-    tips.push("Tu dépenses plus que tes 1 575 € : il faut réduire un poste variable.");
-    tips.push("Commence par les loisirs, puis ajuste l'alimentation ou l'épargne.");
-  } else if(ep===0){ cls="warn"; t="⚠️ Équilibré, mais sans épargne";
-    tips.push("Ton solde est de "+fmt(sol)+", c'est bien — mais 0 € d'épargne.");
-    tips.push("Un imprévu (panne, santé) te mettrait dans le rouge. Mets au moins 20–30 € de côté.");
-  } else if(alim<250){ cls="warn"; t="⚠️ Attention à l'alimentation";
-    tips.push("Solde +"+fmt(sol)+" avec "+fmt(ep)+" d'épargne : bien joué.");
-    tips.push("Mais "+fmt(alim)+" pour manger tout un mois, c'est très juste : vise plutôt 250–300 €.");
-  } else { cls="good"; t="✅ Mois solide !";
-    tips.push("Budget équilibré : solde +"+fmt(sol)+".");
-    tips.push("Et "+fmt(ep)+" d'épargne de précaution : c'est exactement le bon réflexe.");
-    tips.push("Taux d'effort du logement : "+Math.round(620/RES*100)+" % de tes ressources.");
+  var dep=totalDep(), sol=RES-dep, ep=get('epargne').val, st=statuses();
+  var v=document.getElementById('verdict'); var fails=[];
+  if(!st.alim) fails.push("🍽️ <b>Alimentation trop basse</b> ("+fmt(get('alim').val)+") : vise au moins 250 € pour manger correctement tout le mois.");
+  if(!st.transp) fails.push("🚗 <b>Transport insuffisant</b> ("+fmt(get('transp').val)+") : sans carburant ni trajets, tu ne peux pas aller travailler. Mets au moins 60 €.");
+  if(!st.soldeOk) fails.push("⚖️ <b>Tu es à découvert</b> (solde "+(sol>=0?"+":"−")+Math.abs(sol)+" €) : tu dépenses plus que tes 1 575 €. Baisse un poste.");
+  if(!st.epargne) fails.push("🐷 <b>Pas assez d'épargne</b> ("+fmt(ep)+") : garde au moins 30 € de côté pour les imprévus.");
+
+  if(fails.length){
+    v.className="verdict show bad";
+    v.innerHTML='<span class="t">❌ Mission échouée — '+(4-fails.length)+' / 4 objectifs</span><ul><li>'+fails.join('</li><li>')+'</li></ul>';
+  } else {
+    // mission réussie -> on révèle l'imprévu pour la leçon sur l'épargne
+    var couvert = ep>=IMPREVU;
+    v.className="verdict show "+(couvert?"good":"warn");
+    var impr='<div class="impr">🔧 <b>Imprévu du mois</b> : ta chaudière lâche, <b>'+fmt(IMPREVU)+'</b> à payer d\'un coup. '
+      + (couvert
+          ? "Ton épargne de "+fmt(ep)+" <b>l'absorbe</b> sans découvert. C'est exactement à ça qu'elle sert. 💪"
+          : "Ton épargne ("+fmt(ep)+") ne suffit pas : il manquerait <b>"+fmt(IMPREVU-ep)+"</b>, tu passerais dans le rouge. Vise une épargne plus haute quand tu peux.")
+      + '</div>';
+    v.innerHTML='<span class="t">✅ Mission réussie — 4 / 4 objectifs</span>'
+      +'<ul><li>Solde du mois : <b>+'+fmt(sol)+'</b>, budget équilibré.</li>'
+      +'<li>Taux d\'effort du logement : <b>'+Math.round(620/RES*100)+' %</b> de tes ressources (620 ÷ 1 575).</li></ul>'
+      +impr;
   }
-  v.className="verdict show "+cls;
-  v.innerHTML='<span class="t">'+t+'</span><ul><li>'+tips.join('</li><li>')+'</li></ul>';
   v.scrollIntoView({behavior:"smooth",block:"center"});
 }
-function reset(){ POSTES.forEach(function(p){ if(p.key==='fixes')p.val=750; });
-  get('alim').val=300; get('transp').val=95; get('energie').val=60; get('hyg').val=40; get('loisirs').val=60; get('epargne').val=50;
-  document.getElementById('verdict').className="verdict"; draw();
-}
+function reset(){ get('alim').val=300; get('transp').val=95; get('energie').val=60; get('hyg').val=40; get('loisirs').val=60; get('epargne').val=50;
+  document.getElementById('verdict').className="verdict"; draw(); }
 draw();
 </script>
 </body>
