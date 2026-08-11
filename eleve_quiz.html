@@ -333,7 +333,22 @@
 
     // === TEXT NORMALIZATION ===
     function normalizeText(text) {
-        return text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return String(text == null ? '' : text)
+            .trim().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')     // retire les accents
+            .replace(/\s+/g, ' ')                                  // espaces multiples -> un seul
+            .replace(/^[\s.,;:!?'"\u00ab\u00bb()\[\]-]+|[\s.,;:!?'"\u00ab\u00bb()\[\]-]+$/g, ''); // ponctuation de bord
+    }
+
+    // R\u00e9ponses accept\u00e9es d'une question "mot" (r\u00e9tro-compat : reponse cha\u00eene unique
+    // ou tableau, + champ facultatif reponsesAcceptees tableau ou cha\u00eene s\u00e9par\u00e9e par / ; |)
+    function quizAcceptedList(q) {
+        let list = [];
+        if (Array.isArray(q.reponse)) list = list.concat(q.reponse);
+        else if (q.reponse !== undefined && q.reponse !== null && q.reponse !== '') list.push(q.reponse);
+        if (Array.isArray(q.reponsesAcceptees)) list = list.concat(q.reponsesAcceptees);
+        else if (typeof q.reponsesAcceptees === 'string' && q.reponsesAcceptees) list = list.concat(q.reponsesAcceptees.split(/[\/;|]/));
+        return list.map(s => normalizeText(s)).filter(Boolean);
     }
 
     // === STATE ===
@@ -812,7 +827,8 @@
         try {
             const q = cachedQuestions[currentQuestionIndex];
             const expectedAnswer = q?.reponse || '';
-            const isCorrect = normalizeText(userAnswer) === normalizeText(expectedAnswer);
+            const accepted = quizAcceptedList(q);
+            const isCorrect = accepted.includes(normalizeText(userAnswer));
             if (isCorrect) myScore++;
 
             const motReponseDoc = {

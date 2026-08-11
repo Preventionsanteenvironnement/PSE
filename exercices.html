@@ -14,6 +14,28 @@
         }
         .screen { min-height: 100vh; padding: 20px; max-width: 800px; margin: 0 auto; }
         .screen-hidden { display: none !important; }
+        body.preview-mode .back-home,
+        body.preview-mode #screen-select { display: none !important; }
+        body.preview-mode .play-header .back-btn,
+        body.preview-mode .play-header .home-btn { display: none !important; }
+        body.preview-embed { background: #f8fafc; }
+        body.preview-embed .screen { min-height: auto; max-width: none; padding: 12px; }
+        body.preview-embed .play-header {
+            margin-bottom: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+        }
+        body.preview-embed .play-header h2 { font-size: 0.95rem; }
+        body.preview-embed .game-zone {
+            min-height: 120px;
+            padding: 16px;
+            border-radius: 12px;
+        }
+        body.preview-embed .btn-validate {
+            padding: 12px;
+            font-size: 0.95rem;
+            border-radius: 12px;
+        }
 
         /* === HEADER === */
         .exo-header {
@@ -1705,6 +1727,10 @@ const ROUTE_NIVEAU = (ROUTE_PARAMS.get('niveau') || '').trim();
 const ROUTE_MODULE = (ROUTE_PARAMS.get('module') || ROUTE_PARAMS.get('moduleId') || '').trim();
 const ROUTE_TYPE = (ROUTE_PARAMS.get('type') || '').trim();
 const ROUTE_SOUS_THEME = (ROUTE_PARAMS.get('sous_theme') || ROUTE_PARAMS.get('sousTheme') || '').trim();
+const PREVIEW_EXO_ID = (ROUTE_PARAMS.get('preview') || '').trim();
+const PREVIEW_DRAFT_KEY = (ROUTE_PARAMS.get('previewDraft') || '').trim();
+const PREVIEW_EMBED = ROUTE_PARAMS.get('embed') === '1';
+const PREVIEW_MODE = !!PREVIEW_EXO_ID || !!PREVIEW_DRAFT_KEY;
 let parcoursAutoStarted = false;
 let routePresetApplied = false;
 
@@ -1894,6 +1920,60 @@ async function openParcoursExerciceIfNeeded() {
     }
 }
 
+function enterPreviewMode() {
+    document.body.classList.add('preview-mode');
+    if (PREVIEW_EMBED) document.body.classList.add('preview-embed');
+}
+
+function readPreviewDraft() {
+    if (!PREVIEW_DRAFT_KEY) return null;
+    try {
+        const raw = localStorage.getItem(PREVIEW_DRAFT_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && parsed.exercice ? parsed.exercice : parsed;
+    } catch (e) {
+        console.warn('Preview draft read error:', e);
+        return null;
+    }
+}
+
+function showPreviewError(message) {
+    enterPreviewMode();
+    showScreen('play');
+    document.getElementById('play-title').textContent = 'Aperçu indisponible';
+    document.getElementById('play-badge').innerHTML = '<span class="exo-badge badge-type">Aperçu</span>';
+    document.getElementById('play-consigne').style.display = 'none';
+    document.getElementById('game-zone').innerHTML = '<div class="empty-msg">' + escapeHtml(message) + '</div>';
+    document.getElementById('btn-validate').style.display = 'none';
+    document.getElementById('zone-results').style.display = 'none';
+}
+
+async function openPreviewExerciceIfNeeded() {
+    if (!PREVIEW_MODE) return false;
+    enterPreviewMode();
+
+    let exo = null;
+    if (PREVIEW_DRAFT_KEY) {
+        exo = readPreviewDraft();
+    } else if (PREVIEW_EXO_ID) {
+        try {
+            const snap = await getDoc(doc(db, "exercices_banque", PREVIEW_EXO_ID));
+            if (snap.exists()) exo = { id: snap.id, ...snap.data() };
+        } catch (e) {
+            console.warn('Preview doc load error:', e);
+        }
+    }
+
+    if (!exo) {
+        showPreviewError('Aucun exercice d’aperçu disponible.');
+        return true;
+    }
+
+    startExercice(exo, { preview: true });
+    return true;
+}
+
 async function loadExercices(options = {}) {
     const append = !!options.append;
     if (isLoadingExercices) return;
@@ -1987,24 +2067,28 @@ window.loadExercices = function() {
 };
 
 initBudgetCalculator();
-window.loadExercices();
+openPreviewExerciceIfNeeded().then(function(opened) {
+    if (!opened) window.loadExercices();
+});
 </script>
 
 <script>
 // === GESTION HISTORIQUE NAVIGATEUR (bouton retour) ===
 var BASE_ROUTE = location.pathname + location.search;
-history.replaceState({ screen: 'select' }, '', BASE_ROUTE);
-window.addEventListener('popstate', function(e) {
-    if (e.state && e.state.screen === 'play') {
-        showScreen('play');
-    } else {
-        if (!document.getElementById('screen-play').classList.contains('screen-hidden')) {
-            showScreen('select');
-            currentExo = null;
-            corrected = false;
+if (!PREVIEW_MODE) {
+    history.replaceState({ screen: 'select' }, '', BASE_ROUTE);
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.screen === 'play') {
+            showScreen('play');
+        } else {
+            if (!document.getElementById('screen-play').classList.contains('screen-hidden')) {
+                showScreen('select');
+                currentExo = null;
+                corrected = false;
+            }
         }
-    }
-});
+    });
+}
 
 // =====================================================================
 // SCREEN 1 : NAVIGATION
@@ -2645,7 +2729,8 @@ function backToList(fromPopstate) {
     if (!fromPopstate) history.pushState({ screen: 'select' }, '', BASE_ROUTE);
 }
 
-function startExercice(ex) {
+function startExercice(ex, options) {
+    const opts = options || {};
     if (window.PSE_DEBUG_MODE) {
         console.log('DEBUG startExercice:', ex.titre, ex.type);
     }
@@ -2710,10 +2795,16 @@ function startExercice(ex) {
     };
 
     const renderer = renderers[ex.type];
-    if (renderer) renderer(zone, ex.contenu);
-    else zone.innerHTML = '<div class="empty-msg">Type d\'exercice non supporte.</div>';
-    injectGlobalIllustration(zone, ex.contenu);
-    syncBudgetCalculatorVisibility(ex);
+    try {
+        if (renderer) renderer(zone, ex.contenu);
+        else zone.innerHTML = '<div class="empty-msg">Type d\'exercice non supporte.</div>';
+        injectGlobalIllustration(zone, ex.contenu);
+        syncBudgetCalculatorVisibility(ex);
+    } catch (e) {
+        console.error('Render error:', e);
+        zone.innerHTML = '<div class="empty-msg">' + escapeHtml('Aperçu impossible : ' + e.message) + '</div>';
+        document.getElementById('btn-validate').style.display = 'none';
+    }
 
     // Auto-validating types: hide Valider button
     if (ex.type === 'pendu' || ex.type === 'swipe_vf' || ex.type === 'quiz_chrono' || ex.type === 'memory' || ex.type === 'scenario' || ex.type === 'parcours_risques_inrs' || (ex.type === 'pictogramme' && (ex.contenu.mode === 'memory' || ex.contenu.mode === 'speed' || ex.contenu.mode === 'quiz_image' || ex.contenu.mode === 'nom_vers_image' || ex.contenu.mode === 'escape_game'))) {
@@ -2721,7 +2812,12 @@ function startExercice(ex) {
     }
 
     showScreen('play');
-    history.pushState({ screen: 'play' }, '', BASE_ROUTE + '#play');
+    if (opts.preview) {
+        enterPreviewMode();
+        document.getElementById('play-badge').innerHTML += '<span class="exo-badge" style="background:#ede9fe; color:#6d28d9; margin-left:6px;">Aperçu</span>';
+    } else {
+        history.pushState({ screen: 'play' }, '', BASE_ROUTE + '#play');
+    }
     window.scrollTo(0, 0);
 }
 
@@ -2729,7 +2825,22 @@ function startExercice(ex) {
 // NORMALIZE TEXT (accent + case insensitive)
 // =====================================================================
 function norm(t) {
-    return (t || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return String(t == null ? '' : t)
+        .trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')       // retire les accents
+        .replace(/\s+/g, ' ')                                    // espaces multiples -> un seul
+        .replace(/^[\s.,;:!?'"\u00ab\u00bb()\[\]-]+|[\s.,;:!?'"\u00ab\u00bb()\[\]-]+$/g, ''); // ponctuation de bord
+}
+
+// Accepte plusieurs bonnes r\u00e9ponses s\u00e9par\u00e9es par \u00ab | \u00bb (saisie libre uniquement).
+// R\u00e9tro-compatible : sans \u00ab | \u00bb, se comporte comme une comparaison simple.
+function matchesAny(given, expectedRaw) {
+    const g = norm(given);
+    return String(expectedRaw == null ? '' : expectedRaw)
+        .split('|')
+        .map(s => norm(s))
+        .filter(Boolean)
+        .includes(g);
 }
 
 function escapeHtml(value) {
@@ -5590,7 +5701,7 @@ function validateExercice() {
             const expected = inp.dataset.answer;
             const given = (inp.value || '').trim();
             total++;
-            const ok = norm(given) === norm(expected);
+            const ok = inp.tagName === 'SELECT' ? (norm(given) === norm(expected)) : matchesAny(given, expected);
             if (ok) { correct++; inp.classList.add('correct'); }
             else { inp.classList.add('wrong'); }
             if (inp.tagName === 'SELECT') inp.disabled = true;
@@ -5777,7 +5888,7 @@ function validateExercice() {
             const expected = inp.dataset.answer;
             const given = inp.value.trim();
             total++;
-            const ok = norm(given) === norm(expected);
+            const ok = matchesAny(given, expected);
             if (ok) { correct++; inp.closest('td').classList.add('correct'); }
             else inp.closest('td').classList.add('wrong');
             inp.readOnly = true;
@@ -6839,7 +6950,7 @@ function validateExercice() {
             if (step.mode === 'number') {
                 ok = budgetAlmostEqual(budgetParseNumber(given), expected);
             } else {
-                ok = norm(given) === norm(String(expected));
+                ok = matchesAny(given, String(expected));
             }
             if (ok) correct++;
             input.classList.add(ok ? 'correct' : 'wrong');
@@ -6890,7 +7001,7 @@ function validateExercice() {
             var input = qEl.querySelector('.comp-q-input') || qEl.querySelector('.comp-q-select');
             if (!input) return;
             var given = (input.value || '').trim();
-            var ok = norm(given) === norm(q.reponse);
+            var ok = input.tagName === 'SELECT' ? (norm(given) === norm(q.reponse)) : matchesAny(given, q.reponse);
             if (ok) correct++;
             input.classList.add(ok ? 'correct' : 'wrong');
             if (input.tagName === 'SELECT') input.disabled = true;

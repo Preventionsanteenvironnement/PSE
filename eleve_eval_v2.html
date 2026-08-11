@@ -603,6 +603,34 @@
 </div>
 
 <script src="data_eleves.js"></script>
+<script>
+    // Pré-vol connexion (script classique, s'exécute même si le module Firebase échoue à charger).
+    (function () {
+        function banner(msg) {
+            try {
+                var b = document.getElementById('pse-conn-banner');
+                if (!b) {
+                    b = document.createElement('div');
+                    b.id = 'pse-conn-banner';
+                    b.setAttribute('role', 'alert');
+                    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#b91c1c;color:#fff;padding:10px 14px;font:700 14px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+                    (document.body || document.documentElement).appendChild(b);
+                }
+                b.textContent = msg;
+                b.style.display = 'block';
+            } catch (e) {}
+        }
+        window.pseShowConnBanner = banner;
+        window.pseHideConnBanner = function () { var b = document.getElementById('pse-conn-banner'); if (b) b.style.display = 'none'; };
+        if (!navigator.onLine) banner('⚠️ Pas de connexion Internet. Vérifie le wifi avant de commencer, et préviens ton professeur si besoin.');
+        window.addEventListener('online', function () { window.pseHideConnBanner(); });
+        window.addEventListener('offline', function () { banner('⚠️ Connexion perdue. Tes réponses sont gardées ; ne ferme pas la page.'); });
+        // Chien de garde : si le module Firebase n'a pas fini de s'initialiser, prévenir.
+        setTimeout(function () {
+            if (!window.__PSE_EVAL_READY) banner('⚠️ Connexion au serveur impossible (réseau ou wifi du lycée). Préviens ton professeur — ne commence pas encore.');
+        }, 7000);
+    })();
+</script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -617,6 +645,9 @@
     };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    // Le module Firebase a bien chargé et s'est initialisé → désarme le pré-vol.
+    window.__PSE_EVAL_READY = true;
+    try { if (navigator.onLine && window.pseHideConnBanner) window.pseHideConnBanner(); } catch (e) {}
 
     // === GROUPES DE CLASSES (copie minimale de data_modules.js) ===
     const GROUPES_CLASSES = {
@@ -722,6 +753,12 @@
             }
         } catch(e) { console.warn('[FLUSH] Erreur flush eval:', e); }
     }
+
+    // Ré-envoi automatique des soumissions en attente quand la connexion revient
+    // (en plus du renvoi au chargement / à la connexion de l'élève).
+    window.addEventListener('online', function () {
+        try { if (currentUser) flushPendingEval(); } catch (e) {}
+    });
 
     async function withSubmitTimeout(promise, context) {
         let timeoutId = null;
@@ -831,7 +868,42 @@
 
     // === NORMALIZE TEXT (for mot answers) ===
     function normalizeText(text) {
-        return text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return String(text == null ? '' : text)
+            .trim()
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // retire les accents
+            .replace(/\s+/g, ' ')                               // espaces multiples -> un seul
+            .replace(/^[\s.,;:!?'"\u00ab\u00bb()\[\]-]+|[\s.,;:!?'"\u00ab\u00bb()\[\]-]+$/g, ''); // ponctuation de bord
+    }
+
+    // Lecture d'un nombre tol\u00e9rante \u00e0 la virgule d\u00e9cimale fran\u00e7aise ("3,5" -> 3.5)
+    function parseNum(x) {
+        if (x === undefined || x === null || x === '') return NaN;
+        return parseFloat(String(x).replace(',', '.').replace(/\s/g, ''));
+    }
+
+    // Liste NORMALIS\u00c9E des r\u00e9ponses accept\u00e9es pour une question "mot"
+    // (r\u00e9tro-compatible : q.correct peut \u00eatre une cha\u00eene unique ou un tableau ;
+    //  q.reponsesAcceptees peut \u00eatre un tableau ou une cha\u00eene s\u00e9par\u00e9e par / ; |)
+    function motAcceptedList(q) {
+        let list = [];
+        if (Array.isArray(q.correct)) list = list.concat(q.correct);
+        else if (q.correct !== undefined && q.correct !== null && q.correct !== '') list.push(q.correct);
+        if (q.reponse !== undefined && q.reponse !== null && q.reponse !== '') list.push(q.reponse);
+        if (Array.isArray(q.reponsesAcceptees)) list = list.concat(q.reponsesAcceptees);
+        else if (typeof q.reponsesAcceptees === 'string' && q.reponsesAcceptees) list = list.concat(q.reponsesAcceptees.split(/[\/;|]/));
+        return list.map(s => normalizeText(s)).filter(Boolean);
+    }
+
+    // Version LISIBLE (non normalis\u00e9e) des r\u00e9ponses accept\u00e9es, pour l'affichage du corrig\u00e9
+    function motAnswersDisplay(q) {
+        let list = [];
+        if (Array.isArray(q.correct)) list = list.concat(q.correct);
+        else if (q.correct) list.push(q.correct);
+        else if (q.reponse) list.push(q.reponse);
+        if (Array.isArray(q.reponsesAcceptees)) list = list.concat(q.reponsesAcceptees);
+        else if (typeof q.reponsesAcceptees === 'string' && q.reponsesAcceptees) list = list.concat(q.reponsesAcceptees.split(/[\/;|]/).map(s => s.trim()));
+        return list.filter(Boolean).join(' / ');
     }
 
     // === ESCAPE HTML (security) ===
@@ -1619,7 +1691,7 @@
             html += '<input type="text" class="text-answer" id="input-mot" placeholder="Ta reponse..." value="' + escHtml(currentAnswer || '') + '" oninput="setMotAnswer(\'' + q.id + '\', this.value)">';
             html += '<div class="info-text" style="margin-top:8px;">Ecris le mot correctement (accents et majuscules toleres).</div>';
         } else if (q.type === 'nombre') {
-            html += '<input type="number" class="text-answer number-answer" id="input-nombre" placeholder="Ta reponse..." value="' + (currentAnswer !== undefined ? currentAnswer : '') + '" step="any" oninput="setNombreAnswer(\'' + q.id + '\', this.value)">';
+            html += '<input type="text" inputmode="decimal" class="text-answer number-answer" id="input-nombre" placeholder="Ta reponse..." value="' + (currentAnswer !== undefined ? currentAnswer : '') + '" oninput="setNombreAnswer(\'' + q.id + '\', this.value)">';
         } else if (q.type === 'ordonner') {
             let currentOrder = currentAnswer;
             if (!currentOrder) {
@@ -1740,7 +1812,7 @@
     };
 
     window.setNombreAnswer = function(qId, value) {
-        const num = parseFloat(value);
+        const num = parseNum(value);
         if (value !== '' && !isNaN(num)) answers[qId] = num;
         else delete answers[qId];
         updateNav();
@@ -1945,21 +2017,32 @@
                 case 'qcm_single':
                     isCorrect = studentAnswer === q.correct;
                     break;
-                case 'qcm_multi':
+                case 'qcm_multi': {
+                    // Crédit partiel : (bonnes cochées - mauvaises cochées) / nb de bonnes, plancher 0.
                     const correctSet = new Set(q.correct || []);
                     const answerSet = new Set(studentAnswer || []);
-                    isCorrect = correctSet.size === answerSet.size && [...correctSet].every(c => answerSet.has(c));
+                    const good = [...answerSet].filter(a => correctSet.has(a)).length;
+                    const wrong = [...answerSet].filter(a => !correctSet.has(a)).length;
+                    const denom = correctSet.size || 1;
+                    const ratio = Math.max(0, (good - wrong) / denom);
+                    earnedPoints = Math.round((q.points || 0) * ratio * 100) / 100;
+                    isCorrect = (good === correctSet.size && wrong === 0);
                     break;
+                }
                 case 'vf':
                     isCorrect = studentAnswer === q.correct;
                     break;
-                case 'mot':
-                    isCorrect = normalizeText(String(studentAnswer)) === normalizeText(String(q.correct || q.reponse || ''));
+                case 'mot': {
+                    // Accepte plusieurs bonnes réponses (synonymes/variantes) + normalisation tolérante.
+                    const accepted = motAcceptedList(q);
+                    isCorrect = accepted.includes(normalizeText(studentAnswer));
                     break;
-                case 'nombre':
-                    const tolerance = q.tolerance || 0;
-                    isCorrect = Math.abs(parseFloat(studentAnswer) - parseFloat(q.correct)) <= tolerance;
+                }
+                case 'nombre': {
+                    const tolerance = parseNum(q.tolerance) || 0;
+                    isCorrect = Math.abs(parseNum(studentAnswer) - parseNum(q.correct)) <= tolerance;
                     break;
+                }
                 case 'ordonner':
                     if (Array.isArray(studentAnswer) && Array.isArray(q.correct) && studentAnswer.length === q.correct.length) {
                         let nbBienPlaces = 0;
@@ -1994,7 +2077,7 @@
             }
 
             // Don't overwrite partial earnedPoints for graded multi-step types
-            if (!['ordonner', 'pad', 'prevention'].includes(q.type)) {
+            if (!['ordonner', 'pad', 'prevention', 'qcm_multi'].includes(q.type)) {
                 earnedPoints = isCorrect ? (q.points || 0) : 0;
             }
             const level = isCorrect ? 'M' : 'I';
@@ -2030,7 +2113,7 @@
             if (q.type === 'qcm_single') reponseAttendue = (q.choices || [])[q.correct] || '';
             else if (q.type === 'qcm_multi') reponseAttendue = (q.correct || []).map(c => (q.choices || [])[c]).join(', ');
             else if (q.type === 'vf') reponseAttendue = q.correct ? 'Vrai' : 'Faux';
-            else if (q.type === 'mot') reponseAttendue = q.correct || q.reponse || '';
+            else if (q.type === 'mot') reponseAttendue = motAnswersDisplay(q);
             else if (q.type === 'nombre') reponseAttendue = String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : '');
             else if (q.type === 'ordonner') reponseAttendue = (q.correct || []).map(i => (q.items || [])[i]).join(' → ');
             else if (q.type === 'pad') {
@@ -2279,7 +2362,7 @@
         if (q.type === 'qcm_single') return escHtml((q.choices || [])[q.correct] || '?');
         if (q.type === 'qcm_multi') return escHtml((q.correct || []).map(i => (q.choices || [])[i]).join(', ') || '?');
         if (q.type === 'vf') return q.correct ? 'Vrai' : 'Faux';
-        if (q.type === 'mot') return escHtml(q.correct || q.reponse || '?');
+        if (q.type === 'mot') return escHtml(motAnswersDisplay(q) || '?');
         if (q.type === 'nombre') return escHtml(String(q.correct) + (q.tolerance ? ' (± ' + q.tolerance + ')' : ''));
         if (q.type === 'ordonner') return escHtml((q.correct || []).map(i => (q.items || [])[i]).join(' → '));
         if (q.type === 'pad') {

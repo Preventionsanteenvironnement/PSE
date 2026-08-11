@@ -17,20 +17,34 @@
 // ════════════════════════════════════════════════════════════════════════
 
 // ── Firebase compat (chargé dynamiquement car compat n'a pas d'export ES default) ──
-await new Promise((resolve, reject) => {
-  if (window.firebase) return resolve();
-  const s1 = document.createElement("script");
-  s1.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
-  s1.onload = () => {
-    const s2 = document.createElement("script");
-    s2.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
-    s2.onload = resolve;
-    s2.onerror = reject;
-    document.head.appendChild(s2);
-  };
-  s1.onerror = reject;
-  document.head.appendChild(s1);
-});
+try {
+  await new Promise((resolve, reject) => {
+    if (window.firebase) return resolve();
+    const s1 = document.createElement("script");
+    s1.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
+    s1.onload = () => {
+      const s2 = document.createElement("script");
+      s2.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
+      s2.onload = resolve;
+      s2.onerror = reject;
+      document.head.appendChild(s2);
+    };
+    s1.onerror = reject;
+    document.head.appendChild(s1);
+  });
+} catch (e) {
+  // Pré-vol : le SDK Firebase n'a pas pu se charger (wifi/CDN bloqué, pas de réseau).
+  // On prévient l'élève tout de suite plutôt que de le laisser composer pour rien.
+  try {
+    const _b = document.createElement("div");
+    _b.id = "pse-runner-banner";
+    _b.setAttribute("role", "alert");
+    _b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:100000;background:#b91c1c;color:#fff;padding:10px 14px;font:700 14px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3);";
+    _b.textContent = "⚠️ Connexion au serveur impossible (réseau ou wifi du lycée). Préviens ton professeur : l'envoi de la copie ne fonctionnera pas.";
+    (document.body || document.documentElement).appendChild(_b);
+  } catch (_) {}
+  throw e;
+}
 const firebase = window.firebase;
 
 const firebaseConfig = {
@@ -80,6 +94,123 @@ function runnerToast(message, kind = "info") {
       box.style.display = "none";
     }, kind === "error" ? 7000 : 3000);
   } catch (_) {}
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// FILET ANTI-BLOCAGE : bannière + secours (copier / télécharger / réessayer)
+// ────────────────────────────────────────────────────────────────────────
+function runnerBanner(message) {
+  try {
+    let b = document.getElementById("pse-runner-banner");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "pse-runner-banner";
+      b.setAttribute("role", "alert");
+      b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:100000;background:#b91c1c;color:#fff;padding:10px 14px;font:700 14px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3);";
+      (document.body || document.documentElement).appendChild(b);
+    }
+    b.textContent = message;
+    b.style.display = "block";
+  } catch (_) {}
+}
+
+function runnerCopyFallback(text) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+
+function runnerCopyText(text) {
+  return new Promise((resolve) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => resolve(true), () => resolve(runnerCopyFallback(text)));
+      } else {
+        resolve(runnerCopyFallback(text));
+      }
+    } catch (e) { resolve(runnerCopyFallback(text)); }
+  });
+}
+
+function runnerDownloadJson(payload, filename) {
+  try {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "copie_secours.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return true;
+  } catch (e) { return false; }
+}
+
+// Écran d'échec clair : montré quand l'envoi Firestore a échoué malgré le retry.
+function runnerShowRescue(payload) {
+  const eleveCode = payload.eleveCode, devoirId = payload.devoirId,
+        stableDocId = payload.stableDocId, data = payload.data, backupKey = payload.backupKey;
+  const secours = {
+    version: 1, type: "mapse_devoir_copie_secours", exportedAt: new Date().toISOString(),
+    eleveCode: eleveCode, devoirId: devoirId, stableDocId: stableDocId, data: data
+  };
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+  const filename = "copie_secours_" + String(eleveCode || "eleve") + "_" + String(devoirId || "devoir") + "_" + stamp + ".json";
+
+  const old = document.getElementById("pse-runner-rescue");
+  if (old) old.remove();
+  const ov = document.createElement("div");
+  ov.id = "pse-runner-rescue";
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  ov.setAttribute("aria-label", "Copie non envoyée");
+  ov.style.cssText = "position:fixed;inset:0;z-index:100001;background:rgba(15,23,42,.75);display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.innerHTML =
+    '<div style="background:#fff;color:#0f172a;max-width:440px;width:100%;border-radius:14px;padding:20px;font:400 15px/1.5 system-ui,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.4);">' +
+      '<div style="font-weight:800;font-size:17px;color:#b91c1c;margin-bottom:8px;">⚠️ Ta copie n\'est pas encore partie</div>' +
+      '<p style="margin:0 0 14px;">Elle est <b>sauvegardée sur cet appareil</b> et repartira toute seule au retour de la connexion. Par sécurité, tu peux aussi l\'envoyer à ton professeur&nbsp;:</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;">' +
+        '<button type="button" id="pse-rescue-retry" style="padding:12px;border:0;border-radius:10px;background:#166534;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">🔄 Réessayer maintenant</button>' +
+        '<button type="button" id="pse-rescue-copy" style="padding:12px;border:0;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">📋 Copier ma copie (à coller au prof)</button>' +
+        '<button type="button" id="pse-rescue-dl" style="padding:12px;border:0;border-radius:10px;background:#334155;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">⬇️ Télécharger ma copie (fichier)</button>' +
+        '<button type="button" id="pse-rescue-close" style="padding:10px;border:0;border-radius:10px;background:#e2e8f0;color:#0f172a;font-weight:700;font-size:14px;cursor:pointer;">Fermer</button>' +
+      '</div>' +
+      '<div id="pse-rescue-msg" aria-live="polite" style="margin-top:10px;font-size:13px;color:#166534;min-height:18px;"></div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  const msg = ov.querySelector("#pse-rescue-msg");
+  ov.querySelector("#pse-rescue-copy").addEventListener("click", () => {
+    runnerCopyText(JSON.stringify(secours)).then((ok) => {
+      msg.textContent = ok ? "✅ Copié ! Colle-le dans un message à ton professeur." : "❌ Copie impossible — utilise « Télécharger ».";
+    });
+  });
+  ov.querySelector("#pse-rescue-dl").addEventListener("click", () => {
+    const ok = runnerDownloadJson(secours, filename);
+    msg.textContent = ok ? "✅ Fichier téléchargé — envoie-le à ton professeur." : "❌ Téléchargement impossible — utilise « Copier ».";
+  });
+  ov.querySelector("#pse-rescue-close").addEventListener("click", () => ov.remove());
+  ov.querySelector("#pse-rescue-retry").addEventListener("click", () => {
+    msg.textContent = "Envoi en cours...";
+    db.collection("resultats").doc(eleveCode).collection("copies").doc(stableDocId).set(data)
+      .then(() => {
+        try { localStorage.removeItem(backupKey); } catch (e) {}
+        msg.textContent = "✅ Envoyé ! Ta copie est bien arrivée.";
+        runnerToast("Copie envoyee avec succes.", "success");
+        setTimeout(() => ov.remove(), 1500);
+      })
+      .catch((err) => {
+        msg.textContent = "❌ Toujours pas — réessaie, ou utilise Copier / Télécharger. (" + (err && err.message ? err.message : "") + ")";
+      });
+  });
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -464,7 +595,10 @@ window.envoyerCopie = async function (code, pasteStats, eleveData) {
       runnerToast("Copie envoyee avec succes.", "success");
     } else {
       console.warn("⚠️ Copie sauvegardee localement:", backupKey);
-      runnerToast("Copie sauvegardee localement. Elle sera envoyee des que la connexion revient.", "info");
+      runnerToast("Envoi impossible pour le moment — copie gardee sur l'appareil.", "error");
+      try {
+        runnerShowRescue({ eleveCode, devoirId, stableDocId, data, backupKey });
+      } catch (e) { console.warn("Rescue UI KO:", e); }
     }
 
     // Nettoyage localStorage
@@ -554,5 +688,21 @@ window.flushPendingDevoirs = function() {
 
 // Auto-flush au chargement
 try { window.flushPendingDevoirs(); } catch(e) {}
+
+// Ré-envoi automatique quand la connexion revient (pas seulement au rechargement)
+try {
+  window.addEventListener("online", function () {
+    runnerToast("Connexion revenue — envoi des copies en attente...", "info");
+    try { window.flushPendingDevoirs(); } catch (e) {}
+    const b = document.getElementById("pse-runner-banner");
+    if (b) b.style.display = "none";
+  });
+  window.addEventListener("offline", function () {
+    runnerBanner("⚠️ Connexion perdue. Tes réponses sont gardées ; ne ferme pas la page, l'envoi repartira au retour du réseau.");
+  });
+} catch (e) {}
+
+// Pré-vol : prévenir si l'appareil est déjà hors-ligne au chargement
+try { if (!navigator.onLine) runnerBanner("⚠️ Pas de connexion Internet. Préviens ton professeur avant de composer."); } catch (e) {}
 
 console.log("✅ window.envoyerCopie prêt (v7.4.0 RGPD compat - resultats/{eleveCode}/copies/)");
