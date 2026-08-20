@@ -110,7 +110,9 @@
   function majBoutons() {
     var l = document.getElementById("pseLire"), p = document.getElementById("psePause"), s = document.getElementById("pseStop");
     if (!l) return;
-    l.textContent = etat === "pause" ? "▶️ Reprendre" : "🔊 Écouter";
+    l.innerHTML = etat === "pause"
+      ? '▶️ <span class="pse-mot">Reprendre</span>'
+      : '🔊 <span class="pse-mot">Écouter</span>';
     l.disabled = (etat === "lecture");
     p.disabled = (etat !== "lecture");
     s.disabled = (etat === "arret");
@@ -127,8 +129,8 @@
     bar.setAttribute("aria-label", "Outils de lecture");
     bar.innerHTML =
       '<span class="pse-lab">LECTURE</span>' +
-      '<button id="pseLire" type="button">🔊 Écouter</button>' +
-      '<button id="psePause" type="button">⏸️ Pause</button>' +
+      '<button id="pseLire" type="button" aria-label="Écouter la question">🔊 <span class="pse-mot">Écouter</span></button>' +
+      '<button id="psePause" type="button" aria-label="Mettre la lecture en pause">⏸️ <span class="pse-mot">Pause</span></button>' +
       '<button id="pseStop" type="button" aria-label="Arrêter la lecture">⏹️</button>' +
       '<span class="pse-sep"></span>' +
       '<span class="pse-lab">TEXTE</span>' +
@@ -148,7 +150,19 @@
     taille(parseFloat(lire("fs", "1")) || 1);
     modeLisible(lire("dys", "0") === "1");
     majBoutons();
+    majHauteur();
   }
+
+  // La barre peut passer sur deux lignes selon la largeur : on mesure sa hauteur
+  // reelle et on decale le contenu d'autant, plutot que de figer une valeur.
+  function majHauteur() {
+    var b = document.querySelector(".pse-acces");
+    if (!b) return;
+    var h = Math.ceil(b.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty("--pse-bar", h + "px");
+  }
+  window.addEventListener("resize", majHauteur);
+  window.addEventListener("orientationchange", function () { setTimeout(majHauteur, 150); });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", poser);
   else poser();
