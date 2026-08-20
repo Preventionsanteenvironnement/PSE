@@ -637,6 +637,74 @@
     const initialShuffles = {}; // Store initial shuffle for ordonner reset
     const padOptionCache = {}; // Stable shuffled options per PAD question
     const preventionOptionCache = {}; // Stable shuffled options per Prevention question
+
+    const choiceOrderCache = {}; // Ordre d'affichage des choix, stable par eleve
+
+    // === MELANGE PERSONNALISE PAR ELEVE (anti-recopie) ===
+    // Meme evaluation, ordre different pour chaque code eleve, mais STABLE si
+    // l'eleve recharge la page. Les valeurs enregistrees restent les indices
+    // D'ORIGINE : la correction et les donnees stockees ne changent pas.
+    function seedFromString(str) {
+        var h = 2166136261;
+        var s = String(str);
+        for (var i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+    }
+    function makeRng(seedStr) {
+        var a = seedFromString(seedStr) || 1;
+        return function () {
+            a |= 0; a = (a + 0x6D2B79F5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    function seededShuffle(arr, rng) {
+        var out = arr.slice();
+        for (var i = out.length - 1; i > 0; i--) {
+            var j = Math.floor(rng() * (i + 1));
+            var tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+        }
+        return out;
+    }
+    function studentSeed() {
+        return ((currentUser && currentUser.userCode) || 'X') + '|' + (currentEvalId || '');
+    }
+    // Reordonne les questions SANS separer celles qui dependent d'un meme document :
+    // on melange les blocs entre eux, puis les questions a l'interieur de chaque bloc.
+    function shuffleQuestionsForStudent(questions, seedStr) {
+        if (!Array.isArray(questions) || questions.length < 2) return questions;
+        var rng = makeRng(seedStr + '|q');
+        var blocks = [];
+        var current = null;
+        questions.forEach(function (q) {
+            var ref = (q && q.documentRef) || null;
+            if (!current || current.ref !== ref) {
+                current = { ref: ref, items: [q] };
+                blocks.push(current);
+            } else {
+                current.items.push(q);
+            }
+        });
+        var out = [];
+        seededShuffle(blocks, rng).forEach(function (b) {
+            seededShuffle(b.items, rng).forEach(function (q) { out.push(q); });
+        });
+        return out;
+    }
+    // Ordre d'affichage des choix d'un QCM : renvoie les indices D'ORIGINE.
+    function getChoiceOrder(q, seedStr) {
+        if (!q || !Array.isArray(q.choices)) return [];
+        if (choiceOrderCache[q.id]) return choiceOrderCache[q.id];
+        var base = q.choices.map(function (_, i) { return i; });
+        var order = q.choices.length > 1 ? seededShuffle(base, makeRng(seedStr + '|c|' + q.id)) : base;
+        choiceOrderCache[q.id] = order;
+        return order;
+    }
+
     let evalSegments = [];
     let docColorMap = {};
     let currentDisplayedDocRef = '__none__';
@@ -675,6 +743,7 @@
         if (!currentUser || !currentEvalId) return;
         try {
             localStorage.removeItem('eval_autosave_' + currentUser.userCode + '_' + currentEvalId);
+            localStorage.removeItem('eval_deadline_' + currentUser.userCode + '_' + currentEvalId);
             if (!preserveSubmitBackup) {
                 localStorage.removeItem('eval_submit_backup_' + currentUser.userCode + '_' + currentEvalId);
             }
@@ -891,6 +960,7 @@
         Object.keys(initialShuffles).forEach(k => delete initialShuffles[k]);
         Object.keys(padOptionCache).forEach(k => delete padOptionCache[k]);
         Object.keys(preventionOptionCache).forEach(k => delete preventionOptionCache[k]);
+        Object.keys(choiceOrderCache).forEach(k => delete choiceOrderCache[k]);
         tabSwitchCount = 0;
         copyPasteCount = 0;
         rightClickCount = 0;
@@ -1098,12 +1168,22 @@
         if (!evalId || !evalData) return;
 
         currentEvalId = evalId;
-        currentEval = evalData;
+        // Anti-recopie : ordre de questions propre a chaque eleve, stable au rechargement.
+        // evalData n'est jamais modifie (copie via Object.assign).
+        try {
+            currentEval = Object.assign({}, evalData, {
+                questions: shuffleQuestionsForStudent(evalData.questions || [], ((currentUser && currentUser.userCode) || 'X') + '|' + evalId)
+            });
+        } catch (e) {
+            console.warn('[ORDRE] Melange impossible, ordre d\'origine conserve :', e);
+            currentEval = evalData;
+        }
         currentQuestionIndex = 0;
         answers = {};
         Object.keys(initialShuffles).forEach(k => delete initialShuffles[k]);
         Object.keys(padOptionCache).forEach(k => delete padOptionCache[k]);
         Object.keys(preventionOptionCache).forEach(k => delete preventionOptionCache[k]);
+        Object.keys(choiceOrderCache).forEach(k => delete choiceOrderCache[k]);
         tabSwitchCount = 0;
         copyPasteCount = 0;
         rightClickCount = 0;
@@ -1157,9 +1237,20 @@
             }
         }
 
-        // Start timer if configured
+        // Start timer if configured — echeance ABSOLUE, conservee si l'eleve recharge
         if (evalData.timer > 0) {
-            timerRemaining = evalData.timer * 60;
+            var deadlineKey = 'eval_deadline_' + currentUser.userCode + '_' + evalId;
+            var dureeMs = evalData.timer * 60 * 1000;
+            var deadline = 0;
+            try { deadline = parseInt(localStorage.getItem(deadlineKey) || '0', 10) || 0; } catch (e) { deadline = 0; }
+            var maxDeadline = Date.now() + dureeMs;
+            // Garde-fou : echeance absente, corrompue ou trop lointaine => reinitialisee
+            if (!deadline || deadline > maxDeadline) {
+                deadline = maxDeadline;
+                try { localStorage.setItem(deadlineKey, String(deadline)); } catch (e) {}
+            }
+            evalStartTime = deadline - dureeMs;
+            timerRemaining = Math.max(0, Math.round((deadline - Date.now()) / 1000));
             startTimer();
         } else {
             document.getElementById('et-timer').textContent = '';
@@ -1593,15 +1684,17 @@
         const currentAnswer = answers[q.id];
 
         if (q.type === 'qcm_single') {
-            (q.choices || []).forEach((choice, ci) => {
+            getChoiceOrder(q, studentSeed()).forEach((ci) => {
+                const choice = (q.choices || [])[ci];
                 const checked = currentAnswer === ci ? ' checked' : '';
                 const selected = currentAnswer === ci ? ' selected' : '';
                 html += '<div class="answer-option' + selected + '" onclick="selectRadio(\'' + q.id + '\', ' + ci + ')">' +
                     '<input type="radio" name="ans-' + q.id + '" value="' + ci + '"' + checked + '> ' + escHtml(choice) + '</div>';
             });
         } else if (q.type === 'qcm_multi') {
-            html += '<div class="q-multi-hint">Plusieurs reponses possibles — coche toutes les bonnes reponses.</div>';
-            (q.choices || []).forEach((choice, ci) => {
+            html += '<div class="q-multi-hint">Plusieurs reponses possibles — coche toutes les bonnes reponses. Attention : une case cochee a tort retire un point.</div>';
+            getChoiceOrder(q, studentSeed()).forEach((ci) => {
+                const choice = (q.choices || [])[ci];
                 const isChecked = Array.isArray(currentAnswer) && currentAnswer.includes(ci);
                 const checked = isChecked ? ' checked' : '';
                 const selected = isChecked ? ' selected' : '';
@@ -1945,11 +2038,21 @@
                 case 'qcm_single':
                     isCorrect = studentAnswer === q.correct;
                     break;
-                case 'qcm_multi':
+                case 'qcm_multi': {
+                    // Prorata AVEC penalite : +1 par bonne case, -1 par case cochee a tort,
+                    // plancher a 0. Tout cocher ne rapporte donc rien.
                     const correctSet = new Set(q.correct || []);
                     const answerSet = new Set(studentAnswer || []);
-                    isCorrect = correctSet.size === answerSet.size && [...correctSet].every(c => answerSet.has(c));
+                    let nbBonnes = 0, nbFausses = 0;
+                    answerSet.forEach(c => { if (correctSet.has(c)) nbBonnes++; else nbFausses++; });
+                    const attendues = correctSet.size;
+                    isCorrect = attendues > 0 && nbBonnes === attendues && nbFausses === 0;
+                    if (attendues > 0) {
+                        const net = Math.max(0, nbBonnes - nbFausses);
+                        earnedPoints = Math.round((q.points || 0) * (net / attendues) * 100) / 100;
+                    }
                     break;
+                }
                 case 'vf':
                     isCorrect = studentAnswer === q.correct;
                     break;
@@ -1994,7 +2097,7 @@
             }
 
             // Don't overwrite partial earnedPoints for graded multi-step types
-            if (!['ordonner', 'pad', 'prevention'].includes(q.type)) {
+            if (!['ordonner', 'pad', 'prevention', 'qcm_multi'].includes(q.type)) {
                 earnedPoints = isCorrect ? (q.points || 0) : 0;
             }
             const level = isCorrect ? 'M' : 'I';
