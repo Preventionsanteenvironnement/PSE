@@ -145,36 +145,89 @@
   // Une correction qui apparait en vert, un score qui s'affiche : a l'ecran
   // c'est evident, pour un lecteur d'ecran cela peut passer inapercu. On
   // declare ces zones « live » une fois pour toutes, quelle que soit la
-  // famille de page. Et l'etat « choisi » d'une proposition, aujourd'hui porte
-  // par une classe et une couleur, est recopie dans aria-pressed.
+  // famille de page.
   var ZONES_RETOUR = ".fb, .corrige, .correction, .correction-box, .feedback," +
-                     " .score-box, .bilan-score, .score-value";
-  var PROPOSITIONS = ".opt, .option, .answer-option, .vf-option";
+                     " .score-box, .bilan-score, .score-value," +
+                     " #feedback, #fb, .msg, .result, .resultat";
+  // Ce qui se comporte comme une proposition a cocher : l'etat « choisi » est
+  // aujourd'hui porte par une classe et une couleur, on le recopie dans
+  // aria-pressed. Certaines de ces propositions sont des div fabriquees en
+  // JavaScript, pas des boutons : elles sont d'abord equipees ci-dessous.
+  var PROPOSITIONS = ".opt, .option, .answer-option, .vf-option, .item-label," +
+                     " .option-card, .prev-option, .mitem, .dock-item, .quiz-btn," +
+                     " .final-opt-btn, .response-card, .choice";
   var MARQUES = ["choisi", "selected", "active", "selectionne", "chosen", "checked"];
+  // Ce que le navigateur rend deja utilisable au clavier : on n'y touche pas.
+  var DEJA_INTERACTIF = "button, a[href], input, select, textarea, summary, label," +
+                        " [role], [contenteditable]";
 
   function estChoisi(el) {
     for (var i = 0; i < MARQUES.length; i++) if (el.classList.contains(MARQUES[i])) return true;
     return false;
   }
 
-  function annoncerLesRetours() {
-    document.querySelectorAll(ZONES_RETOUR).forEach(function (z) {
+  // Une div cliquable n'existe pas pour le clavier ni pour un lecteur d'ecran :
+  // elle n'est ni annoncee comme un controle, ni atteignable par Tab. On la
+  // repere a son gestionnaire de clic — pas a son nom de classe, qui varie —
+  // et on lui donne ce qui lui manque, sans changer ce qu'elle fait.
+  function equiperCliquables(racine) {
+    var tous = (racine || document).querySelectorAll("div, li, span, td, p");
+    [].slice.call(tous).forEach(function (el) {
+      if (!el.onclick && !el.hasAttribute("onclick")) return;
+      if (el.matches(DEJA_INTERACTIF) || el.closest(".pse-acces")) return;
+      // Un conteneur cliquable qui renferme d'autres controles n'est pas un
+      // bouton : le declarer ainsi ajouterait un arret de tabulation inutile.
+      if (el.querySelector("button, a[href], input, select, textarea, [onclick]")) return;
+      el.setAttribute("role", "button");
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+      if (el.dataset.pseClavier) return;
+      el.dataset.pseClavier = "1";
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+          e.preventDefault();
+          el.click();
+        }
+      });
+    });
+  }
+
+  var suiviEtat = null;
+  function suivreLesChoix(racine) {
+    var choix = [].slice.call((racine || document).querySelectorAll(PROPOSITIONS))
+      .filter(function (b) { return b.tagName === "BUTTON" || b.getAttribute("role") === "button"; });
+    choix.forEach(function (b) {
+      if (!b.hasAttribute("aria-pressed")) b.setAttribute("aria-pressed", estChoisi(b) ? "true" : "false");
+      if (!suiviEtat) return;
+      suiviEtat.observe(b, { attributes: true, attributeFilter: ["class"] });
+    });
+  }
+
+  function annoncerLesRetours(racine) {
+    (racine || document).querySelectorAll(ZONES_RETOUR).forEach(function (z) {
       if (!z.hasAttribute("role")) z.setAttribute("role", "status");
       if (!z.hasAttribute("aria-live")) z.setAttribute("aria-live", "polite");
     });
-    var boutons = [].slice.call(document.querySelectorAll(PROPOSITIONS))
-                    .filter(function (b) { return b.tagName === "BUTTON"; });
-    boutons.forEach(function (b) {
-      if (!b.hasAttribute("aria-pressed")) b.setAttribute("aria-pressed", estChoisi(b) ? "true" : "false");
-    });
-    if (!boutons.length || !window.MutationObserver) return;
-    var obs = new MutationObserver(function (muts) {
-      muts.forEach(function (m) {
-        var b = m.target;
-        b.setAttribute("aria-pressed", estChoisi(b) ? "true" : "false");
+    equiperCliquables(racine);
+    if (window.MutationObserver && !suiviEtat) {
+      suiviEtat = new MutationObserver(function (muts) {
+        muts.forEach(function (m) {
+          m.target.setAttribute("aria-pressed", estChoisi(m.target) ? "true" : "false");
+        });
       });
-    });
-    boutons.forEach(function (b) { obs.observe(b, { attributes: true, attributeFilter: ["class"] }); });
+    }
+    suivreLesChoix(racine);
+  }
+
+  // Les exercices « pad » fabriquent leurs propositions au fil des etapes :
+  // ce qui apparait plus tard doit etre equipe comme le reste.
+  function surveillerLesAjouts() {
+    if (!window.MutationObserver) return;
+    var enAttente = false;
+    new MutationObserver(function () {
+      if (enAttente) return;
+      enAttente = true;
+      setTimeout(function () { enAttente = false; annoncerLesRetours(); }, 120);
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
   // ── Taille du texte et mode lisible ────────────────────────────────────
@@ -257,7 +310,7 @@
   window.addEventListener("resize", majHauteur);
   window.addEventListener("orientationchange", function () { setTimeout(majHauteur, 150); });
 
-  function demarrer() { poser(); annoncerLesRetours(); }
+  function demarrer() { poser(); annoncerLesRetours(); surveillerLesAjouts(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer);
   else demarrer();
 
