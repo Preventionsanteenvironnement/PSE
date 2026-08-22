@@ -23,24 +23,81 @@
   function garder(k, v) { try { localStorage.setItem("pse_acces_" + k, v); } catch (e) {} }
 
   // ── Texte a lire ───────────────────────────────────────────────────────
-  // Par defaut : le document affiche, la question, puis les propositions.
-  function texteParDefaut() {
-    var bouts = [];
-    function prendre(sel) {
+  // On ne lit ni la barre, ni la navigation, ni les boutons d'action : on lit
+  // l'exercice. Les pages du site n'ont pas toutes le meme balisage, donc on
+  // ne part pas d'une liste de classes mais du contenu affiche :
+  //   1. si la page avance par etapes, on prend l'etape visible ;
+  //   2. sinon, le conteneur principal ;
+  //   3. dans les deux cas on retire ce qui n'est pas de l'exercice.
+  var HORS_LECTURE = ".pse-acces, .pse-effacer, .pse-efface-dit, nav, .nav, .toolbar," +
+                     " .barre-act, .btn, .breadcrumb, .fil, a.retour, script, style," +
+                     " noscript, [aria-hidden=\"true\"]";
+  var MINIMUM_EXCLU = ".pse-acces, .pse-effacer, .pse-efface-dit, script, style, noscript";
+  var ETAPES = ".page, .screen, .etape, .slide";
+  var BLOCS  = "p,li,td,th,h1,h2,h3,h4,h5,h6,button,label,summary,figcaption,div,section";
+
+  function visible(el) {
+    if (el.hidden) return false;
+    if (!el.offsetParent && el.offsetHeight === 0) return false;   // ignore le cache
+    return true;
+  }
+
+  // Une page a etapes ne se lit pas en entier : seule l'etape affichee compte.
+  function scenePrincipale() {
+    var etapes = document.querySelectorAll(ETAPES);
+    if (etapes.length > 1) {
+      var vus = [], caches = 0;
+      for (var i = 0; i < etapes.length; i++) {
+        if (visible(etapes[i])) vus.push(etapes[i]); else caches++;
+      }
+      if (caches > 0 && vus.length === 1) return vus[0];
+    }
+    // Sinon : le plus petit conteneur qui porte l'essentiel du texte affiche.
+    // On ne se fie pas au nom de la classe — « zone » ou « wrap » designent une
+    // chose differente d'une page a l'autre — mais a ce qu'il contient vraiment.
+    var total = (document.body.innerText || "").trim().length;
+    var choisi = document.body, taille = total;
+    ["#fiche", "main", ".zone", ".wrap", ".container"].forEach(function (sel) {
       document.querySelectorAll(sel).forEach(function (el) {
-        if (!el.offsetParent && el.offsetHeight === 0) return;   // ignore le cache
-        var t = (el.innerText || el.textContent || "").trim();
-        if (t) bouts.push(t);
+        if (!visible(el)) return;
+        var t = (el.innerText || "").trim().length;
+        if (t >= total * 0.6 && t < taille) { choisi = el; taille = t; }
       });
+    });
+    return choisi;
+  }
+
+  function recolter(racine, exclus) {
+    var blocs = [], dernier = null;
+    var marche = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        if (!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        var p = n.parentElement;
+        if (!p || p.closest(exclus)) return NodeFilter.FILTER_REJECT;
+        if (!visible(p)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var n;
+    while ((n = marche.nextNode())) {
+      var b = n.parentElement.closest(BLOCS) || n.parentElement;
+      if (b !== dernier) { blocs.push(""); dernier = b; }
+      var t = n.nodeValue.trim();
+      blocs[blocs.length - 1] += (blocs[blocs.length - 1] ? " " : "") + t;
     }
-    prendre("#doc-container .doc-display");
-    prendre(".q-text");
-    prendre(".answer-option, .vf-option, .ord-text");
-    if (!bouts.length) {
-      var p = document.getElementById("fiche") || document.querySelector("main") || document.body;
-      bouts.push((p.innerText || "").trim());
-    }
-    return bouts.join(". ").replace(/\s+/g, " ").trim();
+    var texte = blocs.filter(function (x) { return x; }).join(". ");
+    return texte.replace(/\s+/g, " ").replace(/\.\s*\./g, ".").trim();
+  }
+
+  function texteParDefaut() {
+    var racine = scenePrincipale();
+    if (!racine) return "";
+    var t = recolter(racine, HORS_LECTURE);
+    // Une page dont tout le contenu affiche tient dans des boutons (ecran
+    // d'accueil, « C'est parti ! ») donnerait un texte vide : on relit alors
+    // sans ecarter les boutons, plutot que de rester muet.
+    if (!t) t = recolter(racine, MINIMUM_EXCLU);
+    return t;
   }
   function texteACaler() {
     try {
@@ -83,6 +140,42 @@
   function pause() { if (etat === "lecture") { synth.pause(); etat = "pause"; majBoutons(); } }
   function arreter() { if (synth) synth.cancel(); etat = "arret"; indice = 0; majBoutons(); }
   window.addEventListener("beforeunload", function () { if (synth) synth.cancel(); });
+
+  // ── Les retours doivent s'entendre, pas seulement se voir ───────────
+  // Une correction qui apparait en vert, un score qui s'affiche : a l'ecran
+  // c'est evident, pour un lecteur d'ecran cela peut passer inapercu. On
+  // declare ces zones « live » une fois pour toutes, quelle que soit la
+  // famille de page. Et l'etat « choisi » d'une proposition, aujourd'hui porte
+  // par une classe et une couleur, est recopie dans aria-pressed.
+  var ZONES_RETOUR = ".fb, .corrige, .correction, .correction-box, .feedback," +
+                     " .score-box, .bilan-score, .score-value";
+  var PROPOSITIONS = ".opt, .option, .answer-option, .vf-option";
+  var MARQUES = ["choisi", "selected", "active", "selectionne", "chosen", "checked"];
+
+  function estChoisi(el) {
+    for (var i = 0; i < MARQUES.length; i++) if (el.classList.contains(MARQUES[i])) return true;
+    return false;
+  }
+
+  function annoncerLesRetours() {
+    document.querySelectorAll(ZONES_RETOUR).forEach(function (z) {
+      if (!z.hasAttribute("role")) z.setAttribute("role", "status");
+      if (!z.hasAttribute("aria-live")) z.setAttribute("aria-live", "polite");
+    });
+    var boutons = [].slice.call(document.querySelectorAll(PROPOSITIONS))
+                    .filter(function (b) { return b.tagName === "BUTTON"; });
+    boutons.forEach(function (b) {
+      if (!b.hasAttribute("aria-pressed")) b.setAttribute("aria-pressed", estChoisi(b) ? "true" : "false");
+    });
+    if (!boutons.length || !window.MutationObserver) return;
+    var obs = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        var b = m.target;
+        b.setAttribute("aria-pressed", estChoisi(b) ? "true" : "false");
+      });
+    });
+    boutons.forEach(function (b) { obs.observe(b, { attributes: true, attributeFilter: ["class"] }); });
+  }
 
   // ── Taille du texte et mode lisible ────────────────────────────────────
   function taille(v) {
@@ -164,8 +257,9 @@
   window.addEventListener("resize", majHauteur);
   window.addEventListener("orientationchange", function () { setTimeout(majHauteur, 150); });
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", poser);
-  else poser();
+  function demarrer() { poser(); annoncerLesRetours(); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer);
+  else demarrer();
 
   window.pseAcces = { ecouter: ecouter, pause: pause, arreter: arreter, taille: taille, modeLisible: modeLisible };
 })();
