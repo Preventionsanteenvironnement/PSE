@@ -45,6 +45,15 @@
   .aide{margin-top:8px}
   .aide summary{cursor:pointer;color:var(--acc);font-weight:700;font-size:.92rem}
   .aide .dedans{background:var(--acc-pale);border-radius:8px;padding:10px 12px;margin-top:6px;font-size:.94rem}
+  .corrige{display:none;margin-top:10px;border:2px dashed var(--acc);border-radius:10px;padding:12px 14px;background:var(--acc-pale)}
+  .corrige h4{margin:0 0 4px;font-size:.94rem;color:var(--acc)}
+  .corrige h4+p,.corrige h4+ul{margin-top:0}
+  .corrige .modele{background:#fff;border-radius:8px;padding:9px 12px;margin:0 0 12px;font-size:.95rem}
+  .corrige .criteres{list-style:none;padding:0;margin:0 0 10px}
+  .corrige .criteres li{margin:5px 0}
+  .corrige .criteres label{display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:.94rem}
+  .corrige .criteres input{width:1.15rem;height:1.15rem;margin-top:.15rem;flex:none;accent-color:var(--ok)}
+  .corrige .auto{margin:0;font-size:.87rem;color:var(--doux)}
   .fb{margin-top:10px;padding:11px 14px;border-radius:10px;font-size:.95rem;display:none}
   .fb.ok{background:var(--ok-pale);border-left:5px solid var(--ok)}
   .fb.ko{background:var(--ko-pale);border-left:5px solid var(--ko)}
@@ -136,6 +145,19 @@ Risque encouru : …
 Proposition : …
 Signature : …"></textarea>
       <details class="aide"><summary>Besoin d'un coup de pouce ?</summary><div class="dedans">Barème de communication : les quatre parties présentes · un ton factuel, sans jugement · un vocabulaire technique exact · une proposition réaliste et précise.</div></details>
+      <div class="corrige" id="cor3">
+        <h4>Réponse attendue</h4>
+        <p class="modele">Fait observé : le [date], local de stockage, une prise électrique murale est arrachée et pend au bout de ses fils conducteurs, à hauteur d'homme. Risque encouru : risque d'électrisation par contact direct pour toute personne accédant au local, et risque d'incendie par court-circuit. Proposition : consignation immédiate du circuit, balisage du secteur, et intervention d'un électricien habilité pour la repose. Signature : [nom], élève en terminale Bac Pro, le [date].</p>
+        <h4>Tu as réussi si…</h4>
+        <ul class="criteres">
+            <li><label><input type="checkbox" data-crit="3"> Les quatre parties y sont : fait, risque, proposition, signature.</label></li>
+            <li><label><input type="checkbox" data-crit="3"> Le fait est daté et localisé.</label></li>
+            <li><label><input type="checkbox" data-crit="3"> Le risque dit ce qui peut arriver et à qui, pas seulement ce qui est.</label></li>
+            <li><label><input type="checkbox" data-crit="3"> La proposition est précise et réalisable, pas « il faudrait faire quelque chose ».</label></li>
+            <li><label><input type="checkbox" data-crit="3"> Le ton reste factuel : aucun jugement, aucun agacement.</label></li>
+        </ul>
+        <p class="auto">Compare ta réponse au modèle, puis coche ce que tu as vraiment écrit. Ce que tu ne peux pas cocher, c'est ce qu'il reste à ajouter.</p>
+      </div>
       <div class="fb" id="fb3"></div>
     </div>
 
@@ -214,13 +236,26 @@ Signature : …"></textarea>
       }
       zone.style.display = "block";
     });
+    /* Les réponses rédigées ne se notent pas : on dévoile le corrigé-type
+       et les critères, pour que l'élève se corrige lui-même. */
+    var redigees = document.querySelectorAll(".corrige").length;
+    document.querySelectorAll(".corrige").forEach(function(c){ c.style.display = "block"; });
+    document.querySelectorAll("textarea[data-libre]").forEach(function(z){
+      if(!z.value.trim()){ z.style.borderColor = "var(--ko)"; }
+    });
+
     var b = document.getElementById("bilan");
     var msg;
     if(justes === nbQcm) msg = "Tout est juste. Relis la partie « À retenir », puis passe à l'exercice suivant.";
     else if(justes >= Math.ceil(nbQcm*0.6)) msg = "La méthode est en place. Reprends les questions signalées, la correction explique où le raisonnement s'écarte.";
     else msg = "Reprends les documents avant de recommencer : chaque correction dit où trouver la réponse et pourquoi c'est celle-là.";
     b.className = "fb ok";
-    b.innerHTML = '<span class="score">' + justes + " / " + nbQcm + "</span><br>" + msg;
+    var complement = redigees
+      ? "<br><br><strong>" + redigees + (redigees > 1 ? " réponses rédigées" : " réponse rédigée")
+        + "</strong> : compare-la" + (redigees > 1 ? "s" : "")
+        + " au corrigé-type qui vient de s'afficher, puis coche les critères que tu remplis vraiment."
+      : "";
+    b.innerHTML = '<span class="score">' + justes + " / " + nbQcm + "</span><br>" + msg + complement;
     b.style.display = "block";
     b.scrollIntoView({behavior:"smooth", block:"nearest"});
   }
@@ -231,6 +266,9 @@ Signature : …"></textarea>
       o.disabled = false; o.classList.remove("choisi","juste","faux");
     });
     document.querySelectorAll(".fb").forEach(function(z){ z.style.display = "none"; });
+    document.querySelectorAll(".corrige").forEach(function(c){ c.style.display = "none"; });
+    document.querySelectorAll(".criteres input").forEach(function(c){ c.checked = false; });
+    document.querySelectorAll("textarea[data-libre]").forEach(function(z){ z.style.borderColor = ""; });
     window.scrollTo({top:0, behavior:"smooth"});
   }
 
