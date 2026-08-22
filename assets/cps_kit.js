@@ -12,6 +12,13 @@
 function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
 function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
 function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+/* [CPS] Les codes C2, E2 et S2 sont des reperes d'annexe du referentiel :
+   le Tome I ne les detaille pas. Le guide impose de le signaler plutot que
+   de les presenter comme du Tome I. */
+function mentionCode(code){
+  var annexe = /^[CES]2\./.test(code||'');
+  return 'Compétence ' + code + (annexe ? ' · repère d’annexe, ' : ' · ') + 'Santé publique France 2025';
+}
 function speak(txt){
   try{
     if(!('speechSynthesis' in window) || !txt) return;
@@ -23,8 +30,18 @@ function speak(txt){
 }
 function stopSpeech(){ try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){} }
 function listenBtn(getText){
+  // Écouter / Arrêter, plus une Pause qui n'apparaît que pendant la lecture.
+  // Un élève qui perd le fil reprend où il en était, au lieu de tout relancer.
+  var grp=el('span','cps-listen-grp');
+  var enPause=false;
   var b=el('button','cps-listen','🔊 Écouter');
-  function reset(){ b.innerHTML='🔊 Écouter'; b.classList.remove('on'); }
+  var p=el('button','cps-listen cps-pause','⏸️ Pause');
+  p.hidden=true;
+  p.setAttribute('aria-label','Mettre la lecture en pause');
+  function reset(){
+    b.innerHTML='🔊 Écouter'; b.classList.remove('on');
+    p.hidden=true; p.innerHTML='⏸️ Pause'; p.setAttribute('aria-label','Mettre la lecture en pause'); enPause=false;
+  }
   b.onclick=function(){
     try{
       // si une lecture est en cours sur ce bouton -> on l'ARRÊTE
@@ -35,10 +52,20 @@ function listenBtn(getText){
       u.lang='fr-FR'; u.rate=0.95;
       u.onend=reset; u.onerror=reset;
       b.innerHTML='⏹️ Arrêter'; b.classList.add('on');
+      p.hidden=false; enPause=false;
       window.speechSynthesis.speak(u);
     }catch(e){ reset(); }
   };
-  return b;
+  p.onclick=function(){
+    try{
+      if(enPause){ window.speechSynthesis.resume(); enPause=false;
+        p.innerHTML='⏸️ Pause'; p.setAttribute('aria-label','Mettre la lecture en pause'); }
+      else { window.speechSynthesis.pause(); enPause=true;
+        p.innerHTML='▶️ Reprendre'; p.setAttribute('aria-label','Reprendre la lecture'); }
+    }catch(e){}
+  };
+  grp.appendChild(b); grp.appendChild(p);
+  return grp;
 }
 
 /* ---------- préférences d'accessibilité (localStorage) ---------- */
@@ -125,7 +152,7 @@ Ctrl.prototype.build=function(){
   if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
   head.appendChild(el('h1',null,this.cfg.title||''));
   if(this.cfg.subtitle) head.appendChild(el('p',null,this.cfg.subtitle));
-  if(this.cfg.code) head.appendChild(el('span','cps-pill','Compétence '+this.cfg.code+' · Santé publique France 2025'));
+  if(this.cfg.code) head.appendChild(el('span','cps-pill', mentionCode(this.cfg.code)));
   wrap.appendChild(head);
 
   var steps=el('div','cps-steps');
@@ -140,7 +167,7 @@ Ctrl.prototype.build=function(){
   app.appendChild(wrap);
 
   var foot=el('div','cps-foot');
-  foot.innerHTML='CPS — Compétence <strong>'+(this.cfg.code||'')+(this.cfg.ref?' « '+this.cfg.ref+' »':'')+'</strong><br>Référentiel des compétences psychosociales — Santé publique France, 2025 · Niveau CAP';
+  foot.innerHTML='CPS — Compétence <strong>'+(this.cfg.code||'')+(this.cfg.ref?' « '+this.cfg.ref+' »':'')+'</strong>'+(/^[CES]2\./.test(this.cfg.code||'')?' <em>(repère d’annexe)</em>':'')+'<br>Référentiel des compétences psychosociales — Santé publique France, 2025 · Niveau CAP';
   app.appendChild(foot);
 };
 Ctrl.prototype.setStep=function(k){

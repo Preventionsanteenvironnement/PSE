@@ -643,5 +643,38 @@ document.querySelectorAll("[data-toggle]").forEach(function(btn){
   });
 });
 </script>
+
+<script>
+/* [ACCES] Pause / Reprendre pour la lecture audio — ajouté le 2026-08-22.
+   La page a déjà « Écouter » et « Arrêter » ; il manquait la pause, qui permet
+   à un élève de reprendre où il en était au lieu de tout relancer. */
+(function(){
+  if(!('speechSynthesis' in window)) return;
+  function poser(){
+    var ecoute = document.querySelector('[onclick*="speak"],#btn-ecouter,.btn-ecouter');
+    var hote = (ecoute && ecoute.parentNode) || document.querySelector('.topbar,.bar,header') || document.body;
+    var b = document.createElement('button');
+    b.type='button'; b.id='acces-pause'; b.hidden=true;
+    b.textContent='⏸️ Pause';
+    b.setAttribute('aria-label','Mettre la lecture en pause');
+    if(ecoute && ecoute.className) b.className = ecoute.className;
+    var enPause=false;
+    b.onclick=function(){
+      try{
+        if(enPause){ speechSynthesis.resume(); enPause=false; b.textContent='⏸️ Pause'; b.setAttribute('aria-label','Mettre la lecture en pause'); }
+        else { speechSynthesis.pause(); enPause=true; b.textContent='▶️ Reprendre'; b.setAttribute('aria-label','Reprendre la lecture'); }
+      }catch(e){}
+    };
+    if(ecoute && ecoute.nextSibling) hote.insertBefore(b, ecoute.nextSibling); else hote.appendChild(b);
+    // le bouton n'apparaît que pendant une lecture
+    setInterval(function(){
+      var actif = speechSynthesis.speaking || speechSynthesis.pending;
+      b.hidden = !actif;
+      if(!actif && b.textContent!=='⏸️ Pause'){ b.textContent='⏸️ Pause'; enPause=false; }
+    }, 400);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', poser); else poser();
+})();
+</script>
 </body>
 </html>
