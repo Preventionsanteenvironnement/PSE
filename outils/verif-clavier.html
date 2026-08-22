@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vérification clavier — exercices PSE</title>
+<style>
+  :root{--enc:#16202b;--doux:#5b6b7a;--fond:#f4f6f9;--carte:#fff;--trait:#dde3ea;
+        --acc:#1d4ed8;--ok:#15803d;--ok-pale:#dcfce7;--ko:#b91c1c;--ko-pale:#fee2e2}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fond);color:var(--enc);
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+  .zone{max-width:60rem;margin:0 auto;padding:24px 18px 60px}
+  h1{font-size:1.4rem;margin:0 0 6px}
+  .intro{color:var(--doux);margin:0 0 18px}
+  .intro code{background:#fff;border:1px solid var(--trait);border-radius:5px;padding:1px 5px}
+  button.act{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 18px;
+             font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+  #resume{margin:18px 0;padding:14px 16px;border-radius:12px;font-weight:700;display:none}
+  #resume.ok{background:var(--ok-pale);border-left:6px solid var(--ok);color:var(--ok)}
+  #resume.ko{background:var(--ko-pale);border-left:6px solid var(--ko);color:var(--ko)}
+  table{width:100%;border-collapse:collapse;background:var(--carte);
+        border:1px solid var(--trait);border-radius:12px;overflow:hidden;font-size:.93rem}
+  th,td{border-bottom:1px solid var(--trait);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#eef2f7;font-size:.83rem;text-transform:uppercase;letter-spacing:.03em;color:var(--doux)}
+  td.v{font-weight:700;color:var(--ok);white-space:nowrap}
+  td.x{font-weight:700;color:var(--ko);white-space:nowrap}
+  td.n{color:var(--doux)}
+  .det{font-size:.86rem;color:var(--doux)}
+  iframe{position:fixed;left:-10000px;top:0;width:1200px;height:2400px;border:0}
+</style>
+</head>
+<body>
+<div class="zone">
+  <h1>Vérification clavier — pages interactives PSE</h1>
+  <p class="intro">
+    Chaque page du site qui porte la barre de lecture est ouverte, puis toutes ses pièces manipulables — étiquettes, jetons,
+    puces, cartes, emplacements, zones — sont examinées : <strong>annoncées comme un
+    contrôle</strong> (<code>role="button"</code>), <strong>atteignables au clavier</strong>
+    (<code>tabindex</code>), et pour la première d'entre elles, <strong>activables par
+    Entrée</strong>. Un exercice qu'on ne peut pas faire sans souris est un exercice
+    inaccessible : ce banc échoue si c'est le cas.
+  </p>
+  <button class="act" id="lancer">Lancer la vérification</button>
+  <div id="resume" role="status" aria-live="polite"></div>
+  <table id="tab" hidden>
+    <thead><tr><th>Page</th><th>Pièces</th><th>Annoncées</th><th>Au clavier</th><th>Entrée agit</th><th>Détail</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+<script>
+(function(){
+  "use strict";
+
+  /* Les pieces manipulables du site, tous exercices confondus. Une classe qui
+     apparaitrait sans figurer ici passerait inapercue : c'est pourquoi la meme
+     liste vit dans assets/acces.js, et que les deux doivent evoluer ensemble. */
+  var PIECES = ".token, .slot, .chip, .zone, .cardItem, .item, .item-label," +
+               " .drop, .drop-slot, .drop-zone, .dropzone, .pad-slot," +
+               " .prev-drop-zone, .prev-zone, .prev-option, .res-col," +
+               " .option-card, .mitem, .dock-item, .quiz-btn, .final-opt-btn," +
+               " .response-card, .choice, .draggable-item, .scale-btn, .eval-card," +
+               " .opt, .option, .answer-option, .vf-option";
+
+  /* Ce que l'eleve peut prendre et deplacer. C'est sur une de ces pieces qu'on
+     essaie la touche Entree : sur un emplacement encore vide, ne rien faire est
+     la bonne reponse, pas une panne. */
+  var MOBILES = ".token, .chip, .item-label, .cardItem, .draggable-item, .mitem," +
+                " .dock-item, .opt, .option, .answer-option, .option-card," +
+                " .quiz-btn, .prev-option, .response-card";
+
+  /* Le nom de classe ne suffit pas : « chip » est une etiquette a deplacer ici,
+     une pastille de titre ailleurs. Est interactif ce que la page traite comme
+     tel — un clic branche, un draggable, un curseur de main, un role deja pose.
+     Et un cadre qui renferme d'autres controles est une mise en page, pas un
+     bouton. */
+  function interactif(el, w){
+    if (el.querySelector("button, a[href], input, select, textarea, [onclick], [role='button']")) return false;
+    if (el.onclick || el.hasAttribute("onclick") || el.draggable) return true;
+    if (el.getAttribute("role") === "button") return true;
+    try { return w.getComputedStyle(el).cursor === "pointer"; } catch(e){ return false; }
+  }
+
+  var PAGES = [
+   "C2exercice1.html","C2exercice2.html","CPS_C1_1_Connaissance_Critique.html",
+   "CPS_C1_2_Pensee_Critique.html","CPS_C1_3_Valeurs_Buts.html",
+   "CPS_C1_4_Decisions_Constructives.html","CPS_C1_5_Auto_Evaluation.html",
+   "CPS_C1_6_Pleine_Attention.html","CPS_C1_7_Fixer_Objectifs.html",
+   "CPS_C1_8_Escape_Objectif.html","CPS_E1_1_Comprendre_Emotions.html",
+   "CPS_E1_1_Mecanisme_Emotions.html","CPS_E1_2_Identifier_Emotions.html",
+   "CPS_S1_1_Communication_Efficace.html","CPS_S1_2_Empathie.html",
+   "CPS_S1_3_Liens_Prosociaux.html","cps_cap_c1-1_jeu.html","cps_cap_c1-2_jeu.html",
+   "cps_cap_c1-3_jeu.html","cps_cap_c1-4_jeu.html","cps_cap_c1-5_jeu.html",
+   "cps_cap_c1-6_jeu.html","cps_cap_c2-1_jeu.html","cps_cap_c2-2_jeu.html",
+   "cps_cap_c2-3_jeu.html","cps_cap_c2-4_jeu.html","cps_cap_e2-3_jeu.html",
+   "cps_cap_s1-1_jeu.html","cps_cap_s1-2_jeu.html","cps_cap_s1-3_jeu.html",
+   "cps_cap_s2-1_jeu.html","cps_cap_s2-2_jeu.html","eleve_eval_capa.html","eleve_eval_v2.html"
+  ];
+
+  var tbody = document.querySelector("#tab tbody");
+  var resume = document.getElementById("resume");
+
+  function attendre(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  function visible(el){
+    if (el.hidden) return false;
+    return !(!el.offsetParent && el.offsetHeight === 0);
+  }
+
+  async function verifier(page){
+    var f = document.createElement("iframe");
+    document.body.appendChild(f);
+    await new Promise(function(res){
+      var fini = false, fin = function(){ if(!fini){ fini = true; res(); } };
+      f.onload = function(){ setTimeout(fin, 800); };
+      setTimeout(fin, 4000);
+      f.src = "../" + page;
+    });
+    var d, w;
+    try { d = f.contentDocument; w = f.contentWindow; }
+    catch(e){ f.remove(); return { page: page, erreur: "page illisible" }; }
+
+    /* On attend la preuve que le script partage a tourne — la barre de lecture
+       existe — plutot qu'un delai fixe : sur une page lourde, mesurer trop tot
+       ferait passer un exercice qui n'a pas encore ete equipe. */
+    for (var att = 0; att < 30 && !d.querySelector(".pse-acces"); att++) await attendre(100);
+    await attendre(250);
+
+    /* On entre dans l'activite quand la page commence par un ecran d'accueil. */
+    for (var i = 0; i < 3; i++) {
+      var dep = [].slice.call(d.querySelectorAll("button")).filter(function(b){
+        var t = b.textContent.trim();
+        // « Recommencer » contient « commenc » et recharge la page : le banc
+        // mesurait alors une page en train de repartir de zero, donc vide.
+        if (/recommenc|réinitialis|reinitialis/i.test(t)) return false;
+        return visible(b) && !b.closest(".pse-acces") &&
+               /\bcommencer|c'est parti|\bdémarrer|\bdemarrer/i.test(t);
+      })[0];
+      if (!dep) break;
+      dep.click();
+      await attendre(400);
+    }
+    await attendre(300);
+
+    function releverPieces(){
+      return [].slice.call(d.querySelectorAll(PIECES)).filter(function(el){
+        return visible(el) && el.tagName !== "BUTTON" && el.tagName !== "A" &&
+               el.tagName !== "INPUT" && el.tagName !== "LABEL" && interactif(el, w);
+      });
+    }
+    var pieces = releverPieces();
+    /* Certaines activites n'arrivent qu'apres quelques ecrans : tant qu'on ne
+       voit rien a manipuler, on avance. On s'arrete des qu'il y a quelque chose
+       a verifier, pour ne pas traverser la page entiere. */
+    for (var pas = 0; pas < 6 && !pieces.length; pas++) {
+      var suiv = [].slice.call(d.querySelectorAll("button, .btn")).filter(function(b){
+        var t = b.textContent.trim();
+        if (/recommenc|réinitialis|reinitialis|retour|corrig|score/i.test(t)) return false;
+        return visible(b) && !b.closest(".pse-acces") && /suivant|continuer|valider|▶/i.test(t);
+      })[0];
+      if (!suiv) break;
+      suiv.click();
+      await attendre(450);
+      pieces = releverPieces();
+    }
+    var annoncees  = pieces.filter(function(el){ return el.getAttribute("role") === "button"; });
+    var clavier    = pieces.filter(function(el){ return el.getAttribute("tabindex") === "0"; });
+    var manquantes = pieces.filter(function(el){
+      return el.getAttribute("role") !== "button" || el.getAttribute("tabindex") !== "0";
+    });
+
+    /* Entree agit-elle vraiment ? On frappe sur la premiere piece et on regarde
+       si la page bouge : etat annonce, classe, ou contenu modifie. */
+    var agit = null, detail = "";
+    var mobiles = pieces.filter(function(el){
+      return el.matches(MOBILES) && (el.textContent || "").trim().length > 2;
+    });
+    if (mobiles.length) {
+      var p = mobiles[0];
+      var avantClasse = p.className, avantEtat = p.getAttribute("aria-pressed");
+      var avantTexte = (d.body.innerText || "").length;
+      try { p.focus(); } catch(e){}
+      p.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Enter", bubbles:true, cancelable:true}));
+      await attendre(350);
+      agit = (p.className !== avantClasse) || (p.getAttribute("aria-pressed") !== avantEtat)
+          || ((d.body.innerText || "").length !== avantTexte);
+      detail = "essai sur « " + p.textContent.trim().slice(0, 34) + " »";
+    }
+    if (manquantes.length) {
+      detail = manquantes.length + " hors clavier : " +
+        manquantes.slice(0,3).map(function(el){ return "." + (el.className || el.tagName); }).join(", ");
+    }
+    f.remove();
+    return { page: page, pieces: pieces.length, annoncees: annoncees.length,
+             clavier: clavier.length, agit: agit, detail: detail };
+  }
+
+  function ligne(r){
+    var tr = document.createElement("tr");
+    function td(txt, cls){ var e = document.createElement("td"); e.textContent = txt; if(cls) e.className = cls; return e; }
+    var okAnn = r.pieces === 0 || r.annoncees === r.pieces;
+    var okTab = r.pieces === 0 || r.clavier === r.pieces;
+    tr.appendChild(td(r.page));
+    if (r.erreur){ tr.appendChild(td("—","n")); tr.appendChild(td(r.erreur,"x"));
+                   tr.appendChild(td("—","n")); tr.appendChild(td("—","n")); tr.appendChild(td("","n"));
+                   tbody.appendChild(tr); return false; }
+    tr.appendChild(td(String(r.pieces), "n"));
+    tr.appendChild(td(r.pieces ? r.annoncees + "/" + r.pieces : "—", r.pieces ? (okAnn ? "v" : "x") : "n"));
+    tr.appendChild(td(r.pieces ? r.clavier + "/" + r.pieces : "—", r.pieces ? (okTab ? "v" : "x") : "n"));
+    tr.appendChild(td(r.agit === null ? "—" : (r.agit ? "oui" : "non"),
+                      r.agit === null ? "n" : (r.agit ? "v" : "x")));
+    var dd = td(r.detail, "det"); tr.appendChild(dd);
+    tbody.appendChild(tr);
+    return okAnn && okTab && (r.agit !== false);
+  }
+
+  document.getElementById("lancer").addEventListener("click", async function(){
+    this.disabled = true; this.textContent = "Vérification en cours…";
+    tbody.innerHTML = ""; document.getElementById("tab").hidden = false;
+    resume.style.display = "none";
+    var echecs = 0;
+    for (var i = 0; i < PAGES.length; i++){
+      var r = await verifier(PAGES[i]);
+      if (!ligne(r)) echecs++;
+      this.textContent = "Vérification… " + (i+1) + " / " + PAGES.length;
+    }
+    resume.className = echecs ? "ko" : "ok";
+    resume.style.display = "block";
+    var sansPiece = [].slice.call(tbody.rows).filter(function(tr){ return tr.cells[1].textContent === "0"; }).length;
+    resume.textContent = echecs
+      ? echecs + " page(s) en échec sur " + PAGES.length + " : une pièce manipulable n'est pas utilisable au clavier."
+      : "Les " + PAGES.length + " pages passent. " + (PAGES.length - sansPiece) + " ont des pièces à manipuler : "
+        + "toutes sont annoncées, atteignables au clavier et activables par Entrée. Les " + sansPiece
+        + " autres n'en présentent pas à ce stade (questions à boutons, ou activité située plus loin dans le parcours).";
+    this.disabled = false; this.textContent = "Relancer la vérification";
+  });
+})();
+</script>
+</body>
+</html>

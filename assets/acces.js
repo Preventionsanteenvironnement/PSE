@@ -155,39 +155,91 @@
   // JavaScript, pas des boutons : elles sont d'abord equipees ci-dessous.
   var PROPOSITIONS = ".opt, .option, .answer-option, .vf-option, .item-label," +
                      " .option-card, .prev-option, .mitem, .dock-item, .quiz-btn," +
-                     " .final-opt-btn, .response-card, .choice";
-  var MARQUES = ["choisi", "selected", "active", "selectionne", "chosen", "checked"];
+                     " .final-opt-btn, .response-card, .choice, .token, .chip," +
+                     " .cardItem, .draggable-item, .item, .scale-btn";
+  var MARQUES = ["choisi", "selected", "active", "selectionne", "chosen", "checked",
+                 "sel", "is-selected", "pris"];
   // Ce que le navigateur rend deja utilisable au clavier : on n'y touche pas.
   var DEJA_INTERACTIF = "button, a[href], input, select, textarea, summary, label," +
                         " [role], [contenteditable]";
 
+  // « Choisi » s'ecrit differemment d'une page a l'autre : une classe ici, un
+  // data-selected la. On regarde les deux plutot que d'imposer une convention.
   function estChoisi(el) {
     for (var i = 0; i < MARQUES.length; i++) if (el.classList.contains(MARQUES[i])) return true;
+    if (el.dataset && el.dataset.selected === "true") return true;
+    if (el.getAttribute("aria-selected") === "true") return true;
     return false;
   }
 
   // Une div cliquable n'existe pas pour le clavier ni pour un lecteur d'ecran :
-  // elle n'est ni annoncee comme un controle, ni atteignable par Tab. On la
-  // repere a son gestionnaire de clic — pas a son nom de classe, qui varie —
-  // et on lui donne ce qui lui manque, sans changer ce qu'elle fait.
+  // elle n'est ni annoncee comme un controle, ni atteignable par Tab. Deux
+  // indices la trahissent : un gestionnaire de clic pose en attribut ou en
+  // propriete, ou — et c'est le cas le plus courant, parce qu'un clic branche
+  // par addEventListener est invisible depuis l'exterieur — le fait que la
+  // page lui donne un curseur de main. On lui donne alors ce qui lui manque,
+  // sans changer ce qu'elle fait.
+  // Troisieme indice, pour les cas que les deux premiers ne voient pas : un
+  // clic branche par addEventListener sur un element sans curseur de main.
+  // Rien, depuis l'exterieur, ne permet de le deviner — d'ou cette liste des
+  // pieces manipulables du site. Le banc de test outils/verif-clavier.html
+  // signale toute piece interactive qui resterait hors clavier : c'est lui qui
+  // empeche cette liste de vieillir en silence.
+  // Deux tiroirs, parce que deux noms de classe n'ont pas la meme valeur de
+  // preuve. Ceux du premier ne servent qu'a manipuler : les voir suffit.
+  var PIECES = ".token, .slot, .item-label, .cardItem, .drop, .drop-slot," +
+               " .drop-zone, .dropzone, .pad-slot, .prev-drop-zone, .prev-zone," +
+               " .prev-option, .option-card, .mitem, .dock-item, .quiz-btn," +
+               " .final-opt-btn, .response-card, .draggable-item";
+  // Les autres noms — chip, zone, item, tag, choice — servent aussi a decorer :
+  // « chip » est une etiquette qu'on deplace ici, une pastille de titre
+  // ailleurs, et « zone » designe parfois le cadre de toute la page. Ceux-la
+  // ne sont equipes que si la page les traite vraiment comme des controles :
+  // un clic branche, un draggable, ou un curseur de main.
+
+  function semblleInteractif(el) {
+    if (el.onclick || el.hasAttribute("onclick")) return true;
+    if (el.draggable) return true;
+    if (el.matches(PIECES)) return true;
+    try { return getComputedStyle(el).cursor === "pointer"; } catch (e) { return false; }
+  }
+
   function equiperCliquables(racine) {
-    var tous = (racine || document).querySelectorAll("div, li, span, td, p");
+    var tous = (racine || document).querySelectorAll("div, li, span, td, p, section, article");
     [].slice.call(tous).forEach(function (el) {
-      if (!el.onclick && !el.hasAttribute("onclick")) return;
+      if (el.dataset.pseClavier) return;
       if (el.matches(DEJA_INTERACTIF) || el.closest(".pse-acces")) return;
       // Un conteneur cliquable qui renferme d'autres controles n'est pas un
       // bouton : le declarer ainsi ajouterait un arret de tabulation inutile.
-      if (el.querySelector("button, a[href], input, select, textarea, [onclick]")) return;
+      if (el.querySelector("button, a[href], input, select, textarea, [onclick], [role='button']")) return;
+      if (!semblleInteractif(el)) return;
       el.setAttribute("role", "button");
       if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
-      if (el.dataset.pseClavier) return;
       el.dataset.pseClavier = "1";
-      el.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-          e.preventDefault();
-          el.click();
-        }
-      });
+    });
+  }
+
+  // Un seul ecouteur, pose sur le document et non sur chaque piece. Deux
+  // raisons : la touche ne s'applique qu'a l'element reellement vise, donc une
+  // piece posee dans une zone n'active plus la zone en remontant ; et comme il
+  // s'execute apres les ecouteurs de la page, il se tait si la page a deja
+  // traite la touche — sans quoi les deux activations s'annuleraient.
+  function clavierPartage() {
+    var aClique = false;
+    // Phase de capture : on ouvre l'observation avant que la page ne reagisse.
+    document.addEventListener("keydown", function () { aClique = false; }, true);
+    document.addEventListener("click", function () { aClique = true; }, true);
+    // Phase de remontee : tous les ecouteurs de la page ont deja tourne. Si
+    // l'un d'eux a declenche le clic, on se tait — deux activations
+    // s'annuleraient. S'il n'a rien fait, on active. On se fie a ce qui s'est
+    // reellement passe, pas a un preventDefault qui ne prouve rien.
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+      var el = e.target;
+      if (!el || !el.dataset || el.dataset.pseClavier !== "1") return;
+      e.preventDefault();
+      if (aClique) return;
+      el.click();
     });
   }
 
@@ -198,7 +250,7 @@
     choix.forEach(function (b) {
       if (!b.hasAttribute("aria-pressed")) b.setAttribute("aria-pressed", estChoisi(b) ? "true" : "false");
       if (!suiviEtat) return;
-      suiviEtat.observe(b, { attributes: true, attributeFilter: ["class"] });
+      suiviEtat.observe(b, { attributes: true, attributeFilter: ["class", "data-selected", "aria-selected"] });
     });
   }
 
@@ -310,7 +362,7 @@
   window.addEventListener("resize", majHauteur);
   window.addEventListener("orientationchange", function () { setTimeout(majHauteur, 150); });
 
-  function demarrer() { poser(); annoncerLesRetours(); surveillerLesAjouts(); }
+  function demarrer() { poser(); clavierPartage(); annoncerLesRetours(); surveillerLesAjouts(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer);
   else demarrer();
 
