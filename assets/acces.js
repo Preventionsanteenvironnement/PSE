@@ -16,7 +16,7 @@
 
   var synth = window.speechSynthesis;
   var etat = "arret";           // arret | lecture | pause
-  var morceaux = [], indice = 0, vitesse = 0.95;
+  var morceaux = [], indice = 0, vitesse = 0.95, boutonPartieActif = null;
 
   // ── Preferences ────────────────────────────────────────────────────────
   function lire(k, def) { try { var v = localStorage.getItem("pse_acces_" + k); return v === null ? def : v; } catch (e) { return def; } }
@@ -29,10 +29,10 @@
   //   1. si la page avance par etapes, on prend l'etape visible ;
   //   2. sinon, le conteneur principal ;
   //   3. dans les deux cas on retire ce qui n'est pas de l'exercice.
-  var HORS_LECTURE = ".pse-acces, .pse-effacer, .pse-efface-dit, nav, .nav, .toolbar," +
+  var HORS_LECTURE = ".pse-acces, .pse-audio-partie, .pse-effacer, .pse-efface-dit, nav, .nav, .toolbar," +
                      " .barre-act, .btn, .breadcrumb, .fil, a.retour, script, style," +
                      " noscript, [aria-hidden=\"true\"]";
-  var MINIMUM_EXCLU = ".pse-acces, .pse-effacer, .pse-efface-dit, script, style, noscript";
+  var MINIMUM_EXCLU = ".pse-acces, .pse-audio-partie, .pse-effacer, .pse-efface-dit, script, style, noscript";
   var ETAPES = ".page, .screen, .etape, .slide";
   var BLOCS  = "p,li,td,th,h1,h2,h3,h4,h5,h6,button,label,summary,figcaption,div,section";
 
@@ -119,7 +119,7 @@
 
   // ── Lecture ────────────────────────────────────────────────────────────
   function direDepuis(i) {
-    if (i >= morceaux.length) { etat = "arret"; majBoutons(); return; }
+    if (i >= morceaux.length) { etat = "arret"; boutonPartieActif = null; majBoutons(); majBoutonsParties(); return; }
     indice = i;
     var u = morceaux[i];
     u.lang = "fr-FR";
@@ -127,18 +127,23 @@
     u.onend = function () { if (etat === "lecture") direDepuis(indice + 1); };
     synth.speak(u);
   }
-  function ecouter() {
+  function lireTexte(t, bouton) {
     if (!("speechSynthesis" in window)) { alert("La lecture a voix haute n'est pas disponible sur ce navigateur."); return; }
-    if (etat === "pause") { synth.resume(); etat = "lecture"; majBoutons(); return; }
-    if (etat === "lecture") return;
-    var t = texteACaler();
     if (!t) return;
     synth.cancel();
+    boutonPartieActif = bouton || null;
     morceaux = decouper(t).map(function (x) { return new SpeechSynthesisUtterance(x); });
-    etat = "lecture"; majBoutons(); direDepuis(0);
+    etat = "lecture"; majBoutons(); majBoutonsParties(); direDepuis(0);
   }
-  function pause() { if (etat === "lecture") { synth.pause(); etat = "pause"; majBoutons(); } }
-  function arreter() { if (synth) synth.cancel(); etat = "arret"; indice = 0; majBoutons(); }
+  function ecouter() {
+    if (!("speechSynthesis" in window)) { alert("La lecture a voix haute n'est pas disponible sur ce navigateur."); return; }
+    if (etat === "lecture") { pause(); return; }
+    if (etat === "pause") { synth.resume(); etat = "lecture"; majBoutons(); majBoutonsParties(); return; }
+    var t = texteACaler();
+    lireTexte(t, null);
+  }
+  function pause() { if (etat === "lecture") { synth.pause(); etat = "pause"; majBoutons(); majBoutonsParties(); } }
+  function arreter() { if (synth) synth.cancel(); etat = "arret"; indice = 0; boutonPartieActif = null; majBoutons(); majBoutonsParties(); }
   window.addEventListener("beforeunload", function () { if (synth) synth.cancel(); });
 
   // ── Les retours doivent s'entendre, pas seulement se voir ───────────
@@ -308,12 +313,106 @@
   function majBoutons() {
     var l = document.getElementById("pseLire"), p = document.getElementById("psePause"), s = document.getElementById("pseStop");
     if (!l) return;
-    l.innerHTML = etat === "pause"
-      ? '▶️ <span class="pse-mot">Reprendre</span>'
-      : '🔊 <span class="pse-mot">Écouter</span>';
-    l.disabled = (etat === "lecture");
+    l.innerHTML = etat === "lecture"
+      ? '⏸️ <span class="pse-mot">Pause</span>'
+      : etat === "pause"
+        ? '▶️ <span class="pse-mot">Reprendre</span>'
+        : '🔊 <span class="pse-mot">Écouter</span>';
+    l.disabled = false;
     p.disabled = (etat !== "lecture");
     s.disabled = (etat === "arret");
+  }
+
+  // ── Lecture par partie de cours ───────────────────────────────────────
+  // Les cours standard peuvent activer cette option avec :
+  //   window.PSE_ACCES_PARTIES = true;
+  // On ajoute alors un petit bouton audio sur les grands titres de partie.
+  function lecturePartiesDemandee() {
+    return window.PSE_ACCES_PARTIES === true || window.PSE_ACCES_PARTIES === "1" ||
+      document.documentElement.hasAttribute("data-pse-acces-parties");
+  }
+  function niveauTitre(el) {
+    var m = (el.tagName || "").match(/^H([1-6])$/i);
+    return m ? parseInt(m[1], 10) : 2;
+  }
+  function texteSimple(el) {
+    var clone = el.cloneNode(true);
+    clone.querySelectorAll(".pse-audio-partie, button, script, style").forEach(function (x) { x.remove(); });
+    return (clone.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function borneTitre(el, niveau) {
+    return /^H[1-6]$/i.test(el.tagName || "") && niveauTitre(el) <= niveau;
+  }
+  function textePartieDepuis(titre) {
+    var niveau = niveauTitre(titre);
+    var morceauxLocaux = [texteSimple(titre)];
+    var el = titre.nextElementSibling;
+    while (el && !borneTitre(el, niveau)) {
+      var t = recolter(el, HORS_LECTURE);
+      if (t) morceauxLocaux.push(t);
+      el = el.nextElementSibling;
+    }
+    var texte = morceauxLocaux.join(". ").replace(/\s+/g, " ").trim();
+    if (texte.length < 80) {
+      var bloc = titre.closest("section, article, .seance, .séance, .session, .card, .bloc, .module, .partie, .chapter");
+      if (bloc) texte = (texteSimple(titre) + ". " + recolter(bloc, HORS_LECTURE)).replace(/\s+/g, " ").trim();
+    }
+    return texte;
+  }
+  function reprendreDepuisPartie() {
+    if (!synth) return;
+    synth.resume();
+    etat = "lecture";
+    majBoutons();
+    majBoutonsParties();
+  }
+  function basculerPartie(btn, titre) {
+    if (btn === boutonPartieActif && etat === "lecture") { pause(); return; }
+    if (btn === boutonPartieActif && etat === "pause") { reprendreDepuisPartie(); return; }
+    lireTexte(textePartieDepuis(titre), btn);
+  }
+  function majBoutonsParties() {
+    document.querySelectorAll(".pse-audio-partie").forEach(function (btn) {
+      var actif = btn === boutonPartieActif;
+      btn.classList.toggle("pse-on", actif && etat === "lecture");
+      btn.classList.toggle("pse-pause", actif && etat === "pause");
+      btn.setAttribute("aria-pressed", actif && etat !== "arret" ? "true" : "false");
+      btn.textContent = actif && etat === "lecture" ? "⏸" : actif && etat === "pause" ? "▶" : "🔊";
+      btn.setAttribute("aria-label", actif && etat === "lecture" ? "Mettre cette partie en pause" : actif && etat === "pause" ? "Reprendre cette partie" : "Écouter cette partie");
+      btn.title = btn.getAttribute("aria-label");
+    });
+  }
+  function titresDePartie() {
+    var titres = [].slice.call(document.querySelectorAll("h2")).filter(function (el) {
+      return !el.closest(".pse-acces, nav, footer, header .pse-acces, [aria-hidden='true']") && texteSimple(el).length > 2;
+    });
+    if (titres.length === 0) {
+      titres = [].slice.call(document.querySelectorAll(".seance-title, .section-title, .part-title, .step .title, .cardTop .title")).filter(function (el) {
+        return !el.closest(".pse-acces, nav, footer, [aria-hidden='true']") && texteSimple(el).length > 2;
+      });
+    }
+    if (titres.length > 40) titres = titres.slice(0, 40);
+    return titres;
+  }
+  function poserBoutonsParties() {
+    if (!lecturePartiesDemandee() || document.body.dataset.psePartiesAudio === "1") return;
+    document.body.dataset.psePartiesAudio = "1";
+    titresDePartie().forEach(function (titre) {
+      if (titre.querySelector(".pse-audio-partie")) return;
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pse-audio-partie";
+      btn.textContent = "🔊";
+      btn.setAttribute("aria-label", "Écouter cette partie");
+      btn.title = "Écouter cette partie";
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        basculerPartie(btn, titre);
+      });
+      titre.appendChild(btn);
+    });
+    majBoutonsParties();
   }
 
   // ── Construction de la barre ───────────────────────────────────────────
@@ -362,7 +461,7 @@
   window.addEventListener("resize", majHauteur);
   window.addEventListener("orientationchange", function () { setTimeout(majHauteur, 150); });
 
-  function demarrer() { poser(); clavierPartage(); annoncerLesRetours(); surveillerLesAjouts(); }
+  function demarrer() { poser(); poserBoutonsParties(); clavierPartage(); annoncerLesRetours(); surveillerLesAjouts(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer);
   else demarrer();
 
