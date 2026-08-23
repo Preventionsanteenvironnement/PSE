@@ -17,7 +17,7 @@
     var btn = document.createElement('button');
     btn.className = 'audio-doc audio-small';
     btn.type = 'button';
-    btn.textContent = label || '🔊 Écouter';
+    btn.textContent = label || 'Écouter';
     btn.dataset.label = btn.textContent;
     btn.setAttribute('data-read', '#' + el.id);
     if(el.matches('details')){
@@ -30,12 +30,12 @@
   }
   document.querySelectorAll('.audio-doc').forEach(function(btn){ btn.dataset.label = btn.textContent; });
   document.querySelectorAll('.notice, .objectif, .comp-detail, .q, .aide, .remember, .method, .term').forEach(function(el){
-    var label = el.matches('.q') ? '🔊 Écouter la question' : '🔊 Écouter';
+    var label = el.matches('.q') ? 'Écouter la question' : 'Écouter';
     ensureAudioButton(el, label);
   });
   function stop(){
     if(synth) synth.cancel();
-    document.querySelectorAll('.audio-doc').forEach(function(btn){ btn.classList.remove('is-playing'); btn.textContent = btn.dataset.label || '🔊 Écouter'; });
+    document.querySelectorAll('.audio-doc').forEach(function(btn){ btn.classList.remove('is-playing'); btn.textContent = btn.dataset.label || 'Écouter'; });
     currentButton = null;
   }
   function speak(text, btn){
@@ -44,7 +44,7 @@
     stop();
     currentButton = btn;
     btn.classList.add('is-playing');
-    btn.textContent='■ Arrêter';
+    btn.textContent='Arrêter';
     var parts = [];
     var words = text.split(/\s+/);
     var chunk = '';
