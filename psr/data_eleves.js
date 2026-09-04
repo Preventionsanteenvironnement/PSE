@@ -4,8 +4,8 @@
    Il contient uniquement : userCode + classe + promo.
    Aucun nom, aucun prenom, aucune information personnelle.
 
-   Mise a jour : 31 aout 2026
-   Total : 138 eleves
+   Mise a jour : 4 septembre 2026
+   Total : 140 eleves
 */
 
 window.BDD_ELEVES = [
@@ -21,9 +21,11 @@ window.BDD_ELEVES = [
     { userCode: "QU43", classe: "B1AGO1", promo: "2026-2027" },
     { userCode: "NP76", classe: "B1AGO1", promo: "2026-2027" },
 
-    // B1AGO2 (7 eleves)
+    // B1AGO2 (9 eleves)
+    { userCode: "DG50", classe: "B1AGO2", promo: "2026-2027" },
     { userCode: "KA85", classe: "B1AGO2", promo: "2026-2027" },
     { userCode: "AR77", classe: "B1AGO2", promo: "2026-2027" },
+    { userCode: "QH31", classe: "B1AGO2", promo: "2026-2027" },
     { userCode: "HA27", classe: "B1AGO2", promo: "2026-2027" },
     { userCode: "JC66", classe: "B1AGO2", promo: "2026-2027" },
     { userCode: "KE56", classe: "B1AGO2", promo: "2026-2027" },

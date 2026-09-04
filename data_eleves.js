@@ -4,8 +4,8 @@
    Il contient uniquement : userCode + classe.
    Aucun nom, aucun prenom, aucune information personnelle.
 
-   Mise a jour : 31 aout 2026
-   Total : 138 eleves + 1 compte test enseignant
+   Mise a jour : 4 septembre 2026
+   Total : 140 eleves + 1 compte test enseignant
 */
 
 window.BDD_ELEVES = [
@@ -22,9 +22,11 @@ window.BDD_ELEVES = [
     { userCode: "QU43", classe: "B1AGO1" },
     { userCode: "NP76", classe: "B1AGO1" },
 
-    // B1AGO2 (7 eleves)
+    // B1AGO2 (9 eleves)
+    { userCode: "DG50", classe: "B1AGO2" },
     { userCode: "KA85", classe: "B1AGO2" },
     { userCode: "AR77", classe: "B1AGO2" },
+    { userCode: "QH31", classe: "B1AGO2" },
     { userCode: "HA27", classe: "B1AGO2" },
     { userCode: "JC66", classe: "B1AGO2" },
     { userCode: "KE56", classe: "B1AGO2" },
