@@ -4,8 +4,8 @@
    Il contient uniquement : userCode + classe + promo.
    Aucun nom, aucun prenom, aucune information personnelle.
 
-   Mise a jour : 4 septembre 2026
-   Total : 140 eleves
+   Mise a jour : 12 septembre 2026
+   Total : 143 eleves
 */
 
 window.BDD_ELEVES = [
@@ -72,7 +72,8 @@ window.BDD_ELEVES = [
     { userCode: "WE83", classe: "B2MELEC", promo: "2026-2027" },
     { userCode: "CQ38", classe: "B2MELEC", promo: "2026-2027" },
 
-    // BTAGO1 (7 eleves)
+    // BTAGO1 (8 eleves)
+    { userCode: "LT47", classe: "BTAGO1", promo: "2026-2027" },
     { userCode: "QA44", classe: "BTAGO1", promo: "2026-2027" },
     { userCode: "ZS84", classe: "BTAGO1", promo: "2026-2027" },
     { userCode: "WB67", classe: "BTAGO1", promo: "2026-2027" },
@@ -110,7 +111,8 @@ window.BDD_ELEVES = [
     { userCode: "YD66", classe: "C1CAN", promo: "2026-2027" },
     { userCode: "QR63", classe: "C1CAN", promo: "2026-2027" },
 
-    // C1HORT (8 eleves)
+    // C1HORT (9 eleves)
+    { userCode: "LY26", classe: "C1HORT", promo: "2026-2027" },
     { userCode: "DE88", classe: "C1HORT", promo: "2026-2027" },
     { userCode: "KJ97", classe: "C1HORT", promo: "2026-2027" },
     { userCode: "ZP49", classe: "C1HORT", promo: "2026-2027" },
@@ -171,7 +173,8 @@ window.BDD_ELEVES = [
     { userCode: "ZH25", classe: "C2JP", promo: "2026-2027" },
     { userCode: "FH29", classe: "C2JP", promo: "2026-2027" },
 
-    // C2PSR (7 eleves)
+    // C2PSR (8 eleves)
+    { userCode: "GE68", classe: "C2PSR", promo: "2026-2027" },
     { userCode: "GQ25", classe: "C2PSR", promo: "2026-2027" },
     { userCode: "KG84", classe: "C2PSR", promo: "2026-2027" },
     { userCode: "VE95", classe: "C2PSR", promo: "2026-2027" },

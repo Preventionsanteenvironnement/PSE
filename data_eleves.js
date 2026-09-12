@@ -4,8 +4,8 @@
    Il contient uniquement : userCode + classe.
    Aucun nom, aucun prenom, aucune information personnelle.
 
-   Mise a jour : 4 septembre 2026
-   Total : 140 eleves + 1 compte test enseignant
+   Mise a jour : 12 septembre 2026
+   Total : 143 eleves + 1 compte test enseignant
 */
 
 window.BDD_ELEVES = [
@@ -73,7 +73,8 @@ window.BDD_ELEVES = [
     { userCode: "WE83", classe: "B2MELEC" },
     { userCode: "CQ38", classe: "B2MELEC" },
 
-    // BTAGO1 (7 eleves)
+    // BTAGO1 (8 eleves)
+    { userCode: "LT47", classe: "BTAGO1" },
     { userCode: "QA44", classe: "BTAGO1" },
     { userCode: "ZS84", classe: "BTAGO1" },
     { userCode: "WB67", classe: "BTAGO1" },
@@ -111,7 +112,8 @@ window.BDD_ELEVES = [
     { userCode: "YD66", classe: "C1CAN" },
     { userCode: "QR63", classe: "C1CAN" },
 
-    // C1HORT (8 eleves)
+    // C1HORT (9 eleves)
+    { userCode: "LY26", classe: "C1HORT" },
     { userCode: "DE88", classe: "C1HORT" },
     { userCode: "KJ97", classe: "C1HORT" },
     { userCode: "ZP49", classe: "C1HORT" },
@@ -172,7 +174,8 @@ window.BDD_ELEVES = [
     { userCode: "ZH25", classe: "C2JP" },
     { userCode: "FH29", classe: "C2JP" },
 
-    // C2PSR (7 eleves)
+    // C2PSR (8 eleves)
+    { userCode: "GE68", classe: "C2PSR" },
     { userCode: "GQ25", classe: "C2PSR" },
     { userCode: "KG84", classe: "C2PSR" },
     { userCode: "VE95", classe: "C2PSR" },
