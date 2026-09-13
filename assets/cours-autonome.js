@@ -447,6 +447,35 @@
     };
   }
 
+  /* relier : gauche[i] va avec droite[i] ; les propositions sont présentées dans l'ordre alphabétique */
+  function compRelier(qid, d) {
+    var g = ch(d, 'gauche', []) || [], dr = ch(d, 'droite', []) || [];
+    var tri = dr.map(function (x, i) { return { t: x, i: i }; }).sort(function (a, b) { return a.t.localeCompare(b.t, 'fr'); });
+    var html = g.map(function (it, i) {
+      var k = qid + '-r' + i;
+      return '<div class="item" id="' + k + '-w"><label class="enonce" for="' + k + '">' + enLigne(it) + '</label>' +
+        '<select class="choix" id="' + k + '" data-k="' + k + '"><option value="">— Choisir —</option>' +
+        tri.map(function (o) { return '<option value="' + o.i + '">' + esc(o.t) + '</option>'; }).join('') + '</select></div>';
+    }).join('');
+    return {
+      html: html,
+      corrige: '<ul>' + g.map(function (it, i) { return '<li>' + enLigne(it) + ' → <strong>' + esc(dr[i]) + '</strong></li>'; }).join('') + '</ul>',
+      corrigeOral: g.map(function (it, i) { return it + ' : ' + dr[i]; }).join('. '),
+      comp: {
+        auto: true,
+        verifier: function (zone) {
+          return g.map(function (it, i) {
+            var s = zone.querySelector('#' + CSS.escape(qid + '-r' + i));
+            var ok = s.value !== '' && parseInt(s.value, 10) === i;
+            marquer(s.closest('.item'), s.value === '' ? null : ok);
+            return { ok: ok, vide: s.value === '' };
+          });
+        },
+        reveler: function () {}
+      }
+    };
+  }
+
   function compQcmItems(qid, d) {
     var items = ch(d, 'items') || [];
     var html = items.map(function (it, i) {
@@ -568,7 +597,7 @@
       }
     }
 
-    if (lignes === 0 && blocAbsorbable(suivant)) {
+    if (lignes === 0 && d.absorber !== false && blocAbsorbable(suivant)) {
       absorbe = suivant;
       var r = rendreInteraction(qid, suivant);
       saisie += r.html; comps.push(r.comp);
@@ -592,6 +621,7 @@
     if (b.type === 'vrai_faux') { r = compVraiFaux(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
     if (b.type === 'classer') { r = compClasser(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
     if (b.type === 'qcm') { r = compQcmItems(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
+    if (b.type === 'relier') { r = compRelier(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
     if (b.type === 'texte_trous') {
       var mots = [];
       var t = String(ch(d, 'texte', '')).replace(/\{\{(.+?)\}\}/g, function (m, w) { mots.push(w); return '§TROU§'; });
@@ -606,8 +636,8 @@
   function rendreActiviteCap(b) {
     var d = b.data, qid = 'q-' + b.id, r;
     var consigne = ch(d, 'consigne', '');
-    if (b.type === 'situation_qcm') {
-      var options = ch(d, 'options', []);
+    if (b.type === 'situation_qcm' || b.type === 'cocher_exactes') {
+      var options = ch(d, b.type === 'cocher_exactes' ? 'items' : 'options', []) || [];
       var corrects = [];
       options.forEach(function (o, j) { if (o.correct) corrects.push(j); });
       var co = compOptions(qid, [{ label: '', opts: options.map(function (o) { return o.texte; }) }], corrects, qid + '-o');
@@ -670,6 +700,7 @@
   }
   function lienRenvoi(meta) {
     if (!meta || !meta.renvoi) return '';
+    if (meta.renvoi_url) return '<a href="' + esc(meta.renvoi_url) + '">' + esc(meta.renvoi) + '</a>';
     return '<a href="#b-' + esc(meta.renvoi_bloc || '') + '" data-renvoi="' + esc(meta.renvoi_bloc || '') + '">' + esc(meta.renvoi) + '</a>';
   }
   function verifierItem(nom, silencieux) {
@@ -757,8 +788,8 @@
     var items = qs.map(function (q, i) { return itemEval(q, 'bilan-' + i, i, q); }).join('');
     AUD['bilan-s'] = function () { return [{ t: document.getElementById('bilan-score').innerText, el: 'bilan-score' }]; };
     return '<section class="seance" id="s-bilan" data-seance="bilan" aria-labelledby="bilan-h">' +
-      '<div class="seance-tete"><div class="num">Fin du module</div><h2 id="bilan-h">Bilan du module ' + esc(C.entete.module_code) + '</h2>' +
-      '<div class="obj">Auto-évaluation de l\'ensemble du module : ' + qs.length + ' questions, toutes séances confondues.</div></div>' +
+      '<div class="seance-tete"><div class="num">Auto-évaluation finale</div><h2 id="bilan-h">' + esc(C.bilanTitre || ('Bilan du module ' + C.entete.module_code)) + '</h2>' +
+      '<div class="obj">Auto-évaluation de l\'ensemble ' + (C.bilanTitre ? 'du cours' : 'du module') + ' : ' + qs.length + ' questions, toutes séances confondues.</div></div>' +
       '<div class="carte eval"><div class="corps">' + items +
       '<div class="actions"><button type="button" class="verif" data-bilan="1">📊 Calculer le score du module</button>' +
       '<button type="button" data-refaire="bilan">↺ Recommencer</button>' +
@@ -787,7 +818,7 @@
     var sc = document.getElementById('bilan-score');
     sc.hidden = false;
     sc.className = 'score ' + zone;
-    sc.innerHTML = '<div class="chiffre">Score du module : ' + justes + ' / ' + n + '</div>' +
+    sc.innerHTML = '<div class="chiffre">' + (C.bilanTitre ? 'Score' : 'Score du module') + ' : ' + justes + ' / ' + n + '</div>' +
       '<table class="bilan"><caption class="sr">Résultats par séance</caption><thead><tr><th scope="col">Séance</th><th scope="col">Réponses justes</th></tr></thead><tbody>' +
       Object.keys(parSeance).sort().map(function (s) {
         return '<tr><td><a href="#s-' + esc(s) + '" data-renvoi-seance="' + esc(s) + '">Séance ' + esc(s) + (titres[s] ? ' — ' + esc(titres[s]) : '') + '</a></td><td>' + parSeance[s].j + ' / ' + parSeance[s].n + '</td></tr>';
@@ -802,6 +833,84 @@
     sc.focus();
     annoncer('Score du module : ' + justes + ' sur ' + n);
     majProgression();
+  }
+
+  /* ───────────── flashcards ───────────── */
+  var FC = {};
+  function rendreFlashcards(b) {
+    var d = b.data, fid = 'fc-' + b.id, cartes = d.cartes || [];
+    FC[fid] = { cartes: cartes, ordre: cartes.map(function (c, i) { return i; }), pos: 0, face: 'recto' };
+    AUD[fid] = function () {
+      var s = FC[fid], c = s.cartes[s.ordre[s.pos]];
+      if (!c) return [];
+      return s.face === 'recto' ? [{ t: 'Question. ' + c.recto, el: fid + '-r' }]
+        : [{ t: 'Question. ' + c.recto, el: fid + '-r' }, { t: 'Réponse. ' + c.verso, el: fid + '-v' }];
+    };
+    return '<section class="carte flash" id="b-' + esc(b.id) + '" tabindex="-1" aria-labelledby="' + fid + '-h">' +
+      '<h3 class="etiq" id="' + fid + '-h">' + esc(d.titre || 'Flashcards') + ' — ' + cartes.length + ' cartes</h3>' +
+      '<div class="corps"><p class="fc-pos" id="' + fid + '-pos" aria-live="polite"></p>' +
+      '<div class="fc-carte" id="' + fid + '-carte" tabindex="0" role="button" aria-label="Carte : Entrée pour la retourner, flèches pour changer de carte">' +
+      '<div class="fc-recto" id="' + fid + '-r"></div><div class="fc-verso" id="' + fid + '-v" hidden></div></div>' +
+      '<div class="actions">' + btnAudio(fid, '🔊 Écouter la carte') +
+      '<button type="button" class="verif" data-fc="retourner" data-fid="' + fid + '">🔄 Retourner la carte</button>' +
+      '<button type="button" class="ok" data-fc="sue" data-fid="' + fid + '">✔ Carte sue</button>' +
+      '<button type="button" class="ko" data-fc="revoir" data-fid="' + fid + '">↺ Carte à revoir</button></div>' +
+      '<div class="actions"><button type="button" data-fc="prec" data-fid="' + fid + '">◀ Précédente</button>' +
+      '<button type="button" data-fc="suiv" data-fid="' + fid + '">Suivante ▶</button>' +
+      '<button type="button" data-fc="melanger" data-fid="' + fid + '">🔀 Mélanger</button>' +
+      '<button type="button" data-fc="arevoir" data-fid="' + fid + '">Cartes à revoir seulement</button>' +
+      '<button type="button" data-fc="tout" data-fid="' + fid + '">Toutes les cartes</button></div>' +
+      '<p class="fc-bilan" id="' + fid + '-bilan" aria-live="polite"></p>' +
+      '<details><summary>Liste des ' + cartes.length + ' cartes</summary><dl class="lexique">' +
+      cartes.map(function (c) { return '<dt>' + enLigne(c.recto) + '</dt><dd>' + enLigne(c.verso) + '</dd>'; }).join('') +
+      '</dl></details></div></section>';
+  }
+  function majCarte(fid) {
+    var s = FC[fid];
+    if (!s) return;
+    var c = s.cartes[s.ordre[s.pos]];
+    var r = document.getElementById(fid + '-r'), v = document.getElementById(fid + '-v');
+    if (!r) return;
+    if (!c) { r.textContent = 'Aucune carte.'; v.hidden = true; return; }
+    r.innerHTML = '<span class="fc-face">Question</span>' + md(c.recto);
+    v.innerHTML = '<span class="fc-face">Réponse</span>' + md(c.verso);
+    v.hidden = s.face === 'recto';
+    var etat = rep.e['fc:' + fid + ':' + s.ordre[s.pos]];
+    document.getElementById(fid + '-pos').textContent = 'Carte ' + (s.pos + 1) + ' sur ' + s.ordre.length +
+      (etat === 'sue' ? ' — sue' : (etat === 'revoir' ? ' — à revoir' : ''));
+    var sues = 0, arev = 0;
+    s.cartes.forEach(function (x, i) { var e = rep.e['fc:' + fid + ':' + i]; if (e === 'sue') sues++; if (e === 'revoir') arev++; });
+    document.getElementById(fid + '-bilan').textContent = 'Cartes sues : ' + sues + ' sur ' + s.cartes.length + (arev ? ' — cartes à revoir : ' + arev : '');
+  }
+  function actionCarte(fid, a) {
+    var s = FC[fid];
+    if (!s || !s.ordre.length) return;
+    arreter();
+    if (a === 'retourner') {
+      s.face = s.face === 'recto' ? 'verso' : 'recto';
+      majCarte(fid);
+      annoncer(s.face === 'verso' ? 'Réponse affichée' : 'Question affichée');
+      return;
+    }
+    if (a === 'sue' || a === 'revoir') {
+      rep.e['fc:' + fid + ':' + s.ordre[s.pos]] = a;
+      sauverRep(); majProgression();
+      a = 'suiv';
+    }
+    if (a === 'suiv') { s.pos = (s.pos + 1) % s.ordre.length; s.face = 'recto'; }
+    if (a === 'prec') { s.pos = (s.pos - 1 + s.ordre.length) % s.ordre.length; s.face = 'recto'; }
+    if (a === 'melanger') {
+      for (var i = s.ordre.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = s.ordre[i]; s.ordre[i] = s.ordre[j]; s.ordre[j] = t; }
+      s.pos = 0; s.face = 'recto';
+    }
+    if (a === 'arevoir') {
+      var l = s.cartes.map(function (x, k) { return k; }).filter(function (k) { return rep.e['fc:' + fid + ':' + k] === 'revoir'; });
+      if (!l.length) { annoncer('Aucune carte à revoir'); document.getElementById(fid + '-bilan').textContent = 'Aucune carte à revoir.'; return; }
+      s.ordre = l; s.pos = 0; s.face = 'recto';
+    }
+    if (a === 'tout') { s.ordre = s.cartes.map(function (x, k) { return k; }); s.pos = 0; s.face = 'recto'; }
+    majCarte(fid);
+    annoncer(document.getElementById(fid + '-pos').textContent);
   }
 
   /* ───────────── rendu du cours ───────────── */
@@ -833,7 +942,7 @@
 
   function rendre() {
     arreter();
-    AUD = {}; COMP = {}; ITEMS = {}; QCART = {};
+    AUD = {}; COMP = {}; ITEMS = {}; QCART = {}; FC = {};
     var e = C.entete, h = '';
     var seances = C.blocks.filter(function (b) { return b.type === 'seance'; });
     h += '<nav class="fil" aria-label="Fil d\'Ariane"><a href="' + esc(C.retour || 'index.html') + '">← Accueil mapse.fr</a> › ' + esc(C.classe) + ' › Module ' + esc(e.module_code) + '</nav>';
@@ -842,7 +951,7 @@
       (e.objectif_general ? '<div class="objectif"><strong>Objectif :</strong> ' + esc(e.objectif_general) + '</div>' : '') + '</header>';
     h += '<nav class="sommaire" aria-labelledby="som-h"><h2 id="som-h">Sommaire</h2><ol>' +
       seances.map(function (s) { return '<li><a href="#s-' + esc(s.data.numero) + '" data-renvoi-seance="' + esc(s.data.numero) + '">Séance ' + esc(s.data.numero) + ' — ' + esc(s.data.titre) + '</a></li>'; }).join('') +
-      ((C.bilan && (C.bilan[niveau] || C.bilan.standard)) ? '<li><a href="#s-bilan" data-renvoi-seance="bilan">Bilan du module</a></li>' : '') + '</ol>' +
+      ((C.bilan && (C.bilan[niveau] || C.bilan.standard)) ? '<li><a href="#s-bilan" data-renvoi-seance="bilan">' + esc(C.bilanTitre || 'Bilan du module') + '</a></li>' : '') + '</ol>' +
       '<div class="progression" id="progression" aria-live="polite"></div></nav>';
 
     var ouvert = false, seanceCourante = '';
@@ -919,17 +1028,34 @@
         h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + rq.html + '</div>';
         if (rq.absorbe) { i = C.blocks.indexOf(rq.absorbe); }
       }
-      else if (t === 'situation_qcm' || t === 'qcm' || t === 'classer' || t === 'texte_trous' || t === 'vrai_faux') {
+      else if (t === 'situation_qcm' || t === 'qcm' || t === 'classer' || t === 'texte_trous' || t === 'vrai_faux' || t === 'relier' || t === 'cocher_exactes') {
         h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + rendreActiviteCap(b) + '</div>';
       }
       else if (t === 'tableau') {
         var tb = compTableau('q-' + b.id, d);
         if (tb.nbCases) {
-          h += '<div id="b-' + esc(b.id) + '" tabindex="-1">' + carteQuestion({ qid: 'q-' + b.id, num: '', texteHtml: md(ch(d, 'titre', '') || 'Tableau à compléter'), oral: ch(d, 'titre', '') || 'Tableau à compléter',
-            saisie: tb.html, comps: [tb.comp], el: eleve(b), corrigeHtml: '', corrigeOral: '' }) + '</div>';
+          var cellsT = ch(d, 'cells') || [];
+          var tete = String(((cellsT[0] || [])[0] || {}).content || '').trim();
+          var titreT = ch(d, 'titre', '') || (/^DOC\.?\s*\d+/i.test(tete) ? tete.replace(/\s+-\s+/, ' — ') : '');
+          var enonceT = titreT ? titreT + ' : **compléter** les cases vides.' : '**Compléter** les cases vides du tableau.';
+          var solsT = [];
+          cellsT.forEach(function (row, ri) {
+            row.forEach(function (c, ci) {
+              if (c.type !== 'eleve' || ri === 0) return;
+              var lib = String((row[0] || {}).content || '').replace(/\*/g, '') + ((cellsT[0] || []).length > 2 ? ' — ' + String((cellsT[0][ci] || {}).content || '').replace(/\*/g, '') : '');
+              solsT.push({ l: lib, s: c.reponse === '✕' ? 'case cochée' : (c.reponse || '') });
+            });
+          });
+          h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + carteQuestion({ qid: 'q-' + b.id, num: '', texteHtml: md(enonceT), oral: enonceT,
+            saisie: tb.html, comps: [tb.comp], el: eleve(b),
+            corrigeHtml: '<ul>' + solsT.map(function (x) { return '<li>' + enLigne(x.l) + ' : <strong>' + esc(x.s) + '</strong></li>'; }).join('') + '</ul>',
+            corrigeOral: solsT.map(function (x) { return x.l + ' : ' + x.s; }).join('. ') }) + '</div>';
         } else {
           h += '<div class="carte" id="b-' + esc(b.id) + '">' + (d.titre ? '<h3 class="etiq">' + esc(d.titre) + '</h3>' : '') + '<div class="corps">' + tb.html + '</div></div>';
         }
+      }
+      else if (t === 'flashcards') {
+        h += rendreFlashcards(b);
       }
       else if (t === 'auto_eval') {
         h += rendreAutoEval(b, seanceCourante);
@@ -948,6 +1074,7 @@
       });
     });
     restaurer();
+    Object.keys(FC).forEach(majCarte);
     appliquerAffichage();
     majProgression();
     remplirAffichage();
@@ -981,6 +1108,16 @@
     var p = document.getElementById('progression');
     if (!p) return;
     var ids = Object.keys(QCART);
+    if (!ids.length && Object.keys(FC).length) {
+      var total = 0, sues = 0;
+      Object.keys(FC).forEach(function (fid) {
+        FC[fid].cartes.forEach(function (c, i) { total++; if (rep.e['fc:' + fid + ':' + i] === 'sue') sues++; });
+      });
+      var pc = total ? Math.round(100 * sues / total) : 0;
+      p.innerHTML = '<strong>Progression :</strong> ' + sues + ' carte' + (sues > 1 ? 's' : '') + ' sue' + (sues > 1 ? 's' : '') + ' sur ' + total +
+        '<div class="jauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pc + '" aria-label="Cartes sues"><span style="width:' + pc + '%"></span></div>';
+      return;
+    }
     var faites = ids.filter(function (k) { return rep.e[k]; }).length;
     var justes = ids.filter(function (k) { return rep.e[k] === 'juste'; }).length;
     var pct = ids.length ? Math.round(100 * faites / ids.length) : 0;
@@ -1046,8 +1183,8 @@
       '<a class="saut" href="#contenu">Aller au contenu du cours</a>' +
       '<div class="barre" role="region" aria-label="Réglages de lecture et d\'affichage">' +
       '<div class="rangee">' +
-      '<div class="groupe" role="group" aria-label="Niveau du cours"><span class="lbl">Niveau</span>' +
-      NIVEAUX.map(function (n) { return '<button type="button" data-niveau="' + n[0] + '" aria-pressed="' + (n[0] === niveau) + '">' + n[1] + '</button>'; }).join('') + '</div>' +
+      (C.sansNiveaux ? '' : '<div class="groupe" role="group" aria-label="Niveau du cours"><span class="lbl">Niveau</span>' +
+      NIVEAUX.map(function (n) { return '<button type="button" data-niveau="' + n[0] + '" aria-pressed="' + (n[0] === niveau) + '">' + n[1] + '</button>'; }).join('') + '</div>') +
       '<div class="groupe" role="group" aria-label="Taille du texte"><span class="lbl">Texte</span><button type="button" data-taille="-1" aria-label="Réduire la taille du texte">A−</button>' +
       '<button type="button" data-taille="1" aria-label="Agrandir la taille du texte">A+</button></div>' +
       '<span class="espace"></span>' +
@@ -1113,9 +1250,12 @@
 
   /* ───────────── événements ───────────── */
   document.addEventListener('click', function (ev) {
+    var carte = ev.target.closest && ev.target.closest('.fc-carte');
+    if (carte) { actionCarte(carte.id.replace(/-carte$/, ''), 'retourner'); return; }
     var t = ev.target.closest('button, a');
     if (!t) return;
     var a;
+    if ((a = t.getAttribute('data-fc')) !== null) { actionCarte(t.getAttribute('data-fid'), a); return; }
     if ((a = t.getAttribute('data-a')) !== null) { var f = AUD[a]; if (f) lire(f(), t); return; }
     if ((a = t.getAttribute('data-niveau')) !== null) {
       if (a === niveau) return;
@@ -1213,6 +1353,13 @@
     sauverRep();
   }
   document.addEventListener('keydown', function (ev) {
+    var carte = ev.target && ev.target.classList && ev.target.classList.contains('fc-carte') ? ev.target : null;
+    if (carte) {
+      var fid = carte.id.replace(/-carte$/, '');
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); actionCarte(fid, 'retourner'); return; }
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); actionCarte(fid, 'suiv'); return; }
+      if (ev.key === 'ArrowLeft') { ev.preventDefault(); actionCarte(fid, 'prec'); return; }
+    }
     if (ev.key === 'Escape' && L.etat !== 'arret' && !(document.getElementById('loupe') || {}).open) arreter();
   });
   window.addEventListener('beforeprint', preparerImpression);
