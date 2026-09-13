@@ -222,7 +222,9 @@
       '<img src="' + esc(d.img) + '" alt="' + esc(desc) + '"' + (d.img_w ? ' width="' + d.img_w + '" height="' + d.img_h + '"' : '') + ' loading="lazy"></button>' +
       '<figcaption>' + (desc ? '<details><summary>Description de l\'image</summary><p id="' + fid + '-d">' + esc(desc) + '</p></details>' : '') +
       '<div class="actions">' + (desc ? btnAudio(fid, '🔊 Écouter la description') : '') +
-      '<button type="button" data-loupe="' + esc(d.img) + '">🔍 Agrandir</button></div></figcaption></figure>';
+      '<button type="button" data-loupe="' + esc(d.img) + '">🔍 Agrandir</button>' +
+      (d.imprimer ? '<a class="lien-btn" href="' + esc(d.img) + '" target="_blank" rel="noopener">🖨️ Ouvrir l\'image pour l\'imprimer</a>' : '') +
+      '</div></figcaption></figure>';
   }
 
   /* ───────────── composants de réponse ───────────── */
@@ -250,7 +252,8 @@
       html += '<div class="item" role="group"' + (g.label ? ' aria-label="' + esc(g.label.replace(/\*/g, '')) + '"' : ' aria-label="Propositions"') + '>' +
         (g.label ? '<div class="enonce">' + enLigne(g.label) + '</div>' : '') +
         g.opts.map(function (o) {
-          var html1 = '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="' + nomGroupe + '-g' + gi + '" data-j="' + j + '" data-k="' + nomGroupe + '-' + j + '"> <span>' + enLigne(o) + '</span></label>';
+          var html1 = '<label class="opt' + (o && typeof o === 'object' && o.photo ? ' opt-photo' : '') + '"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="' + nomGroupe + '-g' + gi + '" data-j="' + j + '" data-k="' + nomGroupe + '-' + j + '"> ' +
+            (o && typeof o === 'object' ? (o.img ? '<img class="opt-img" src="' + esc(o.img) + '" alt="">' : '') + '<span>' + enLigne(o.texte) + '</span>' : '<span>' + enLigne(o) + '</span>') + '</label>';
           j++;
           return html1;
         }).join('') + '</div>';
@@ -388,14 +391,16 @@
     var cats = ch(d, 'categories') || [], items = ch(d, 'items') || [], cl = ch(d, 'classement') || [];
     var html = items.map(function (it, i) {
       var k = qid + '-c' + i;
-      return '<div class="item" id="' + k + '-w"><label class="enonce" for="' + k + '">' + enLigne(it) + '</label>' +
+      return '<div class="item" id="' + k + '-w">' +
+        (it && typeof it === 'object' && it.img ? '<img class="item-img" src="' + esc(it.img) + '" alt="' + esc(it.description || it.texte || '') + '" loading="lazy">' : '') +
+        '<label class="enonce" for="' + k + '">' + enLigne(libItem(it)) + '</label>' +
         '<select class="choix" id="' + k + '" data-k="' + k + '"><option value="">— Choisir une colonne —</option>' +
         cats.map(function (c, j) { return '<option value="' + j + '">' + esc(c) + '</option>'; }).join('') + '</select></div>';
     }).join('');
     return {
       html: html,
-      corrige: '<ul>' + items.map(function (it, i) { return '<li>' + enLigne(it) + ' → <strong>' + esc(cats[cl[i]]) + '</strong></li>'; }).join('') + '</ul>',
-      corrigeOral: items.map(function (it, i) { return it + ' : ' + cats[cl[i]]; }).join('. '),
+      corrige: '<ul>' + items.map(function (it, i) { return '<li>' + enLigne(libItem(it)) + ' → <strong>' + esc(cats[cl[i]]) + '</strong></li>'; }).join('') + '</ul>',
+      corrigeOral: items.map(function (it, i) { return libItem(it) + ' : ' + cats[cl[i]]; }).join('. '),
       comp: {
         auto: true,
         verifier: function (zone) {
@@ -480,7 +485,9 @@
     var items = ch(d, 'items') || [];
     var html = items.map(function (it, i) {
       var nom = qid + '-m' + i;
-      return '<div class="item" role="radiogroup" aria-labelledby="' + nom + '-e"><div class="enonce" id="' + nom + '-e">' + enLigne(it.question) + '</div>' +
+      return '<div class="item" role="radiogroup" aria-labelledby="' + nom + '-e">' +
+        (it.img ? '<button type="button" class="zoom item-zoom" data-loupe="' + esc(it.img) + '" aria-label="Agrandir la photo"><img class="item-img" src="' + esc(it.img) + '" alt="' + esc(it.description || '') + '" loading="lazy"></button>' : '') +
+        '<div class="enonce" id="' + nom + '-e">' + enLigne(it.question) + '</div>' +
         it.options.map(function (o, j) {
           return '<label class="opt"><input type="radio" name="' + nom + '" value="' + j + '" data-k="' + nom + '-' + j + '"> <span>' + enLigne(o) + '</span></label>';
         }).join('') + '</div>';
@@ -640,7 +647,7 @@
       var options = ch(d, b.type === 'cocher_exactes' ? 'items' : 'options', []) || [];
       var corrects = [];
       options.forEach(function (o, j) { if (o.correct) corrects.push(j); });
-      var co = compOptions(qid, [{ label: '', opts: options.map(function (o) { return o.texte; }) }], corrects, qid + '-o');
+      var co = compOptions(qid, [{ label: '', opts: options.map(function (o) { return o.img ? { texte: o.texte, img: o.img, photo: o.photo } : o.texte; }) }], corrects, qid + '-o');
       var num = (consigne.match(/^\s*(\d+)\.\s*/) || [])[1] || '';
       var txt = consigne.replace(/^\s*\d+\.\s*/, '');
       return carteQuestion({ qid: qid, num: num, comp: d.competence, texteHtml: md(txt), oral: txt + '. Propositions : ' + options.map(function (o) { return o.texte; }).join(' ; '),
@@ -651,7 +658,7 @@
     r = rendreInteraction(qid, b);
     var oralTxt = consigne;
     if (b.type === 'qcm') oralTxt += '. ' + (ch(d, 'items', []) || []).map(function (it) { return it.question + ' Propositions : ' + it.options.join(' ; '); }).join('. ');
-    if (b.type === 'classer') oralTxt += '. Colonnes : ' + (ch(d, 'categories', []) || []).join(' ; ') + '. Éléments : ' + (ch(d, 'items', []) || []).join(' ; ');
+    if (b.type === 'classer') oralTxt += '. Colonnes : ' + (ch(d, 'categories', []) || []).join(' ; ') + '. Éléments : ' + (ch(d, 'items', []) || []).map(libItem).join(' ; ');
     if (b.type === 'texte_trous') oralTxt += '. ' + ch(d, 'texte', '');
     if (b.type === 'vrai_faux') oralTxt = 'Vrai ou faux. ' + (ch(d, 'items', []) || []).map(function (it) { return it.texte; }).join(' ');
     return carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: md(consigne), oral: oralTxt,
@@ -830,9 +837,267 @@
       '<div class="actions">' + btnAudio('bilan-s', '🔊 Écouter le résultat') + '<button type="button" data-imprimer>🖨️ Enregistrer en PDF</button></div>';
     rep.e['bilan-score'] = justes;
     sauverRep();
+    if (!Object.keys(QCART).length) validerActivite(n, justes, n, 'Défi terminé : ');
     sc.focus();
     annoncer('Score du module : ' + justes + ' sur ' + n);
     majProgression();
+  }
+
+  /* ───────────── images dans les activités, chasse aux dangers, cartes à ordonner ───────────── */
+  function libItem(it) { return it && typeof it === 'object' ? (it.texte || it.description || '') : it; }
+
+  var CHASSE = {};
+  function compChasse(qid, d) {
+    var zones = d.zones || [];
+    var toutes = d.trouver === 'toutes';
+    CHASSE[qid] = { zones: zones, trouves: {}, toutes: toutes };
+    var pieces = d.pieces || [];
+    var html = '<div class="chasse">' +
+      '<div class="chasse-img" data-q="' + qid + '" role="img" aria-label="' + esc(d.alt || 'Vue de l\'entreprise') + '">' +
+      '<img src="' + esc(d.image) + '" alt="" draggable="false"' + (d.img_w ? ' width="' + d.img_w + '" height="' + d.img_h + '"' : '') + '>' +
+      '<div class="chasse-calque" id="' + qid + '-calque"></div></div>' +
+      '<p class="chasse-info" id="' + qid + '-info" aria-live="polite">' + (toutes ? 'Dangers trouvés : 0 sur ' + zones.length : '') + '</p>' +
+      (pieces.length ? '<div class="item"><label class="enonce" for="' + qid + '-piece">Pièce où se trouve ' + (toutes ? 'un danger' : 'le danger') +
+        ' (réponse possible sans l\'image)</label><select class="choix" id="' + qid + '-piece" data-k="' + qid + '-piece">' +
+        '<option value="">— Choisir une pièce —</option>' + pieces.map(function (p) { return '<option>' + esc(p) + '</option>'; }).join('') + '</select></div>' : '') +
+      '</div>';
+    var comp = {
+      auto: true,
+      verifier: function (zone) {
+        var s = CHASSE[qid];
+        var n = Object.keys(s.trouves).length;
+        var sel = zone.querySelector('#' + CSS.escape(qid + '-piece'));
+        var okSel = !!(sel && sel.value && zones.some(function (z) { return z.piece === sel.value; }));
+        if (sel && sel.value) marquer(sel, okSel);
+        var ok = toutes ? n === zones.length : (n > 0 || okSel);
+        return [{ ok: ok, vide: n === 0 && !(sel && sel.value) }];
+      },
+      reveler: function () { zones.forEach(function (z, i) { dessinerZone(qid, i, true); }); }
+    };
+    return { html: html, comp: comp };
+  }
+  function dessinerZone(qid, i, revele) {
+    var s = CHASSE[qid], c = document.getElementById(qid + '-calque');
+    if (!s || !c || c.querySelector('[data-z="' + i + '"]')) return;
+    var z = s.zones[i];
+    c.insertAdjacentHTML('beforeend', '<div class="zone-danger' + (revele && !s.trouves[i] ? ' revele' : '') + '" data-z="' + i +
+      '" style="left:' + z.x + '%;top:' + z.y + '%;width:' + z.w + '%;height:' + z.h + '%"><span>' + esc(z.danger) + '</span></div>');
+  }
+  function clicChasse(el, ev) {
+    var qid = el.getAttribute('data-q'), s = CHASSE[qid];
+    if (!s) return;
+    var r = el.getBoundingClientRect();
+    var px = (ev.clientX - r.left) / r.width * 100, py = (ev.clientY - r.top) / r.height * 100;
+    var idx = -1;
+    s.zones.forEach(function (z, i) { if (px >= z.x && px <= z.x + z.w && py >= z.y && py <= z.y + z.h) idx = i; });
+    var info = document.getElementById(qid + '-info');
+    var compte = function () { return s.toutes ? ' Dangers trouvés : ' + Object.keys(s.trouves).length + ' sur ' + s.zones.length + '.' : ''; };
+    if (idx < 0) {
+      var m = document.createElement('div');
+      m.className = 'rate'; m.style.left = px + '%'; m.style.top = py + '%'; m.textContent = '✕';
+      document.getElementById(qid + '-calque').appendChild(m);
+      setTimeout(function () { if (m.parentNode) m.parentNode.removeChild(m); }, 1400);
+      info.textContent = 'Aucun danger à cet endroit.' + compte();
+      annoncer(info.textContent);
+      return;
+    }
+    if (!s.trouves[idx]) { s.trouves[idx] = true; dessinerZone(qid, idx, false); }
+    var z = s.zones[idx];
+    info.textContent = '✔ Danger trouvé : ' + z.danger + ' (' + z.piece + ').' + compte();
+    annoncer(info.textContent);
+    rep.v[qid + '-z'] = Object.keys(s.trouves).join(',');
+    sauverRep();
+    if (!s.toutes || Object.keys(s.trouves).length === s.zones.length) verifierQuestion(qid);
+  }
+
+  var ETAPES = ['Danger', 'Situation dangereuse', 'Événement déclencheur', 'Dommage'];
+  function compOrdre(qid, d) {
+    var cartes = d.cartes || [], n = cartes.length;
+    var libelles = d.etiquettes || ETAPES;
+    var classement = cartes.some(function (c) { return c.etape != null; });
+    var bon = function (c, i) { return classement ? c.etape : i; };
+    var ordre = (d.melange && d.melange.length === n) ? d.melange
+      : (classement ? cartes.map(function (c, i) { return i; }) : cartes.map(function (c, i) { return (i * 3 + 2) % n; }));
+    var html = '<div class="cartes-ordre">' + ordre.map(function (ci) {
+      var c = cartes[ci], id = qid + '-o' + ci;
+      return '<div class="carte-ordre item" id="' + id + '-w">' +
+        (c.img ? '<button type="button" class="zoom" data-loupe="' + esc(c.img) + '" aria-label="Agrandir la photo"><img src="' + esc(c.img) +
+          '" alt="' + esc(c.description || c.texte || '') + '" loading="lazy"></button>' : '') +
+        (c.texte ? '<p class="carte-texte">' + enLigne(c.texte) + '</p>' : '') +
+        '<label class="calc" for="' + id + '">Étape</label><select class="choix" id="' + id + '" data-k="' + id + '"><option value="">— Choisir —</option>' +
+        libelles.map(function (l, j) { return '<option value="' + j + '">' + (classement ? '' : (j + 1) + '. ') + esc(l) + '</option>'; }).join('') + '</select></div>';
+    }).join('') + '</div>';
+    return {
+      html: html,
+      corrige: classement
+        ? '<ul>' + cartes.map(function (c, i) { return '<li>' + enLigne(c.texte || c.description || '') + ' → <strong>' + esc(libelles[bon(c, i)]) + '</strong></li>'; }).join('') + '</ul>'
+        : '<ol>' + cartes.map(function (c, i) { return '<li><strong>' + esc(libelles[i]) + ' :</strong> ' + enLigne(c.texte || '') + '</li>'; }).join('') + '</ol>',
+      corrigeOral: cartes.map(function (c, i) { return (c.texte || c.description || '') + ' : ' + libelles[bon(c, i)]; }).join('. '),
+      comp: {
+        auto: true,
+        verifier: function (zone) {
+          return cartes.map(function (c, i) {
+            var s = zone.querySelector('#' + CSS.escape(qid + '-o' + i));
+            var ok = s.value !== '' && parseInt(s.value, 10) === bon(c, i);
+            marquer(s.closest('.item'), s.value === '' ? null : ok);
+            return { ok: ok, vide: s.value === '' };
+          });
+        },
+        reveler: function () {}
+      }
+    };
+  }
+
+  /* ───────────── glisser-déposer et memory ───────────── */
+  function melanger(n, graine) {
+    var a = [], s = (graine % 233280) || 7;
+    for (var i = 0; i < n; i++) a.push(i);
+    for (var j = n - 1; j > 0; j--) {
+      s = (s * 9301 + 49297) % 233280;
+      var k = Math.floor(s / 233280 * (j + 1)), t = a[j]; a[j] = a[k]; a[k] = t;
+    }
+    if (n > 1 && a.every(function (v, i) { return v === i; })) a.push(a.shift());
+    return a;
+  }
+  function graineDe(txt) { var g = 0; for (var c = 0; c < txt.length; c++) g += txt.charCodeAt(c) * (c + 1); return g; }
+
+  var GL = {};
+  function compGlisser(qid, d) {
+    var cibles = d.cibles || [], pieces = d.pieces || [];
+    GL[qid] = { sel: null };
+    var ordre = melanger(pieces.length, graineDe(qid));
+    var libCible = {};
+    cibles.forEach(function (c) { libCible[c.id] = c.label || c.description || ''; });
+    var pieceHtml = function (p) {
+      return '<button type="button" class="gl-piece' + (p.img ? ' gl-photo' : '') + '" data-piece="' + esc(p.id) + '" data-q="' + qid +
+        '" aria-pressed="false" aria-label="' + esc(p.texte || p.description || 'Carte') + '">' +
+        (p.img ? '<img src="' + esc(p.img) + '" alt="" draggable="false">' : '') + (p.texte ? '<span>' + enLigne(p.texte) + '</span>' : '') + '</button>';
+    };
+    var html = '<div class="glisser" id="' + qid + '-gl">' +
+      '<div class="gl-titre">Cartes à placer</div>' +
+      '<div class="gl-reserve" data-depot="" data-q="' + qid + '" id="' + qid + '-res" tabindex="0" role="button" aria-label="Réserve des cartes">' +
+      ordre.map(function (i) { return pieceHtml(pieces[i]); }).join('') + '</div>' +
+      '<div class="gl-cibles">' + cibles.map(function (c) {
+        return '<div class="gl-cible">' +
+          (c.img ? '<img class="gl-cible-img" src="' + esc(c.img) + '" alt="' + esc(c.description || c.label || '') + '" loading="lazy">' : '') +
+          '<div class="gl-depot" data-depot="' + esc(c.id) + '" data-q="' + qid + '" tabindex="0" role="button" aria-label="Emplacement : ' + esc(libCible[c.id]) + '"></div>' +
+          (c.label ? '<div class="gl-label">' + enLigne(c.label) + '</div>' : '') + '</div>';
+      }).join('') + '</div></div>';
+    var aPlacer = pieces.filter(function (p) { return p.cible; });
+    return {
+      html: html,
+      corrige: '<ul>' + aPlacer.map(function (p) { return '<li>' + enLigne(p.texte || p.description || '') + ' → <strong>' + esc(libCible[p.cible]) + '</strong></li>'; }).join('') + '</ul>',
+      corrigeOral: aPlacer.map(function (p) { return (p.texte || p.description || '') + ' : ' + libCible[p.cible]; }).join('. '),
+      comp: {
+        auto: true,
+        verifier: function (zone) {
+          return pieces.map(function (p) {
+            var el = zone.querySelector('.gl-piece[data-piece="' + CSS.escape(p.id) + '"]');
+            var dep = (el && el.parentNode.getAttribute('data-depot')) || '';
+            var ok = dep === (p.cible || '');
+            marquer(el, dep || p.cible ? ok : null);
+            return { ok: ok, vide: !dep && !!p.cible };
+          });
+        },
+        reveler: function () {}
+      }
+    };
+  }
+  function selectionGl(qid, piece) {
+    if (!GL[qid]) return;
+    document.querySelectorAll('#' + CSS.escape(qid + '-gl') + ' .gl-piece[aria-pressed="true"]').forEach(function (p) { p.setAttribute('aria-pressed', 'false'); });
+    GL[qid].sel = piece;
+    if (piece) { piece.setAttribute('aria-pressed', 'true'); annoncer('Carte choisie : ' + piece.getAttribute('aria-label') + '. Choisir un emplacement.'); }
+  }
+  function enregistrerGl(qid) {
+    var pl = {};
+    document.querySelectorAll('#' + CSS.escape(qid + '-gl') + ' .gl-depot').forEach(function (dp) {
+      dp.querySelectorAll('.gl-piece').forEach(function (p) { pl[p.getAttribute('data-piece')] = dp.getAttribute('data-depot'); });
+    });
+    rep.v[qid + '-pl'] = JSON.stringify(pl);
+    sauverRep();
+  }
+  function placerPiece(qid, piece, depot) {
+    if (!piece || !depot) return;
+    var reserve = document.getElementById(qid + '-res');
+    if (depot.classList.contains('gl-depot')) {
+      var deja = depot.querySelector('.gl-piece');
+      if (deja && deja !== piece) { reserve.appendChild(deja); deja.classList.remove('juste', 'faux'); }
+    }
+    depot.appendChild(piece);
+    piece.classList.remove('juste', 'faux');
+    selectionGl(qid, null);
+    enregistrerGl(qid);
+    annoncer(piece.getAttribute('aria-label') + (depot.classList.contains('gl-depot') ? ' placée : ' + depot.getAttribute('aria-label').replace('Emplacement : ', '') : ' remise dans la réserve'));
+  }
+  function restaurerGl(qid) {
+    var pl;
+    try { pl = JSON.parse(rep.v[qid + '-pl'] || '{}'); } catch (e) { pl = {}; }
+    Object.keys(pl).forEach(function (pid) {
+      var p = document.querySelector('#' + CSS.escape(qid + '-gl') + ' .gl-piece[data-piece="' + CSS.escape(pid) + '"]');
+      var dp = document.querySelector('#' + CSS.escape(qid + '-gl') + ' .gl-depot[data-depot="' + CSS.escape(pl[pid]) + '"]');
+      if (p && dp) dp.appendChild(p);
+    });
+  }
+
+  var MEM = {};
+  function compMemory(qid, d) {
+    var paires = d.paires || [], cartes = [];
+    paires.forEach(function (p, i) { cartes.push({ pr: i, f: p.a }); cartes.push({ pr: i, f: p.b }); });
+    var ordre = melanger(cartes.length, graineDe(qid) + 11);
+    MEM[qid] = { cartes: cartes, ouvertes: [], trouvees: {}, coups: 0, bloque: false, total: paires.length };
+    var html = '<p class="chasse-info" id="' + qid + '-mi" aria-live="polite">Paires trouvées : 0 sur ' + paires.length + ' — coups : 0</p>' +
+      '<div class="memory">' + ordre.map(function (ci, k) {
+        return '<button type="button" class="mem-carte" data-mem="' + qid + '" data-ci="' + ci + '" aria-label="Carte ' + (k + 1) + ', face cachée">' +
+          '<span class="mem-dos" aria-hidden="true">?</span><span class="mem-face" hidden></span></button>';
+      }).join('') + '</div>';
+    var lib = function (f) { return f.texte || f.description || ''; };
+    return {
+      html: html,
+      corrige: '<ul>' + paires.map(function (p) { return '<li>' + enLigne(lib(p.a)) + ' ↔ <strong>' + enLigne(lib(p.b)) + '</strong></li>'; }).join('') + '</ul>',
+      corrigeOral: paires.map(function (p) { return lib(p.a) + ' avec ' + lib(p.b); }).join('. '),
+      comp: {
+        auto: true,
+        verifier: function () { var s = MEM[qid], n = Object.keys(s.trouvees).length; return [{ ok: n === s.total, vide: n === 0 }]; },
+        reveler: function (zone) { zone.querySelectorAll('.mem-carte').forEach(function (b) { montrerMem(qid, b, true); }); }
+      }
+    };
+  }
+  function montrerMem(qid, b, ouverte) {
+    var f = MEM[qid].cartes[parseInt(b.getAttribute('data-ci'), 10)].f;
+    var face = b.querySelector('.mem-face'), dos = b.querySelector('.mem-dos');
+    if (ouverte) {
+      face.innerHTML = (f.img ? '<img src="' + esc(f.img) + '" alt="">' : '') + (f.texte ? '<span>' + enLigne(f.texte) + '</span>' : '');
+      face.hidden = false; dos.hidden = true; b.classList.add('ouverte');
+      b.setAttribute('aria-label', f.texte || f.description || 'Image');
+    } else {
+      face.hidden = true; dos.hidden = false; b.classList.remove('ouverte');
+      b.setAttribute('aria-label', 'Carte face cachée');
+    }
+  }
+  function clicMemory(b) {
+    var qid = b.getAttribute('data-mem'), s = MEM[qid];
+    if (!s || s.bloque || b.classList.contains('trouvee') || b.classList.contains('ouverte')) return;
+    montrerMem(qid, b, true);
+    var f = s.cartes[parseInt(b.getAttribute('data-ci'), 10)].f;
+    s.ouvertes.push(b);
+    if (s.ouvertes.length < 2) { annoncer(f.texte || f.description || 'Image'); return; }
+    s.coups++;
+    var a = s.ouvertes[0], c = s.ouvertes[1];
+    var info = document.getElementById(qid + '-mi');
+    var etat = function () { return 'Paires trouvées : ' + Object.keys(s.trouvees).length + ' sur ' + s.total + ' — coups : ' + s.coups; };
+    if (s.cartes[parseInt(a.getAttribute('data-ci'), 10)].pr === s.cartes[parseInt(c.getAttribute('data-ci'), 10)].pr) {
+      s.trouvees[s.cartes[parseInt(a.getAttribute('data-ci'), 10)].pr] = true;
+      a.classList.add('trouvee'); c.classList.add('trouvee'); s.ouvertes = [];
+      info.textContent = '✔ Paire trouvée. ' + etat();
+      annoncer(info.textContent);
+      if (Object.keys(s.trouvees).length === s.total) verifierQuestion(qid);
+    } else {
+      s.bloque = true;
+      info.textContent = 'Pas de paire. ' + etat();
+      annoncer((f.texte || f.description || '') + '. ' + info.textContent);
+      setTimeout(function () { montrerMem(qid, a, false); montrerMem(qid, c, false); s.ouvertes = []; s.bloque = false; }, 1400);
+    }
   }
 
   /* ───────────── flashcards ───────────── */
@@ -942,7 +1207,7 @@
 
   function rendre() {
     arreter();
-    AUD = {}; COMP = {}; ITEMS = {}; QCART = {}; FC = {};
+    AUD = {}; COMP = {}; ITEMS = {}; QCART = {}; FC = {}; CHASSE = {}; GL = {}; MEM = {};
     var e = C.entete, h = '';
     var seances = C.blocks.filter(function (b) { return b.type === 'seance'; });
     h += '<nav class="fil" aria-label="Fil d\'Ariane"><a href="' + esc(C.retour || 'index.html') + '">← Accueil mapse.fr</a> › ' + esc(C.classe) + ' › Module ' + esc(e.module_code) + '</nav>';
@@ -1054,6 +1319,14 @@
           h += '<div class="carte" id="b-' + esc(b.id) + '">' + (d.titre ? '<h3 class="etiq">' + esc(d.titre) + '</h3>' : '') + '<div class="corps">' + tb.html + '</div></div>';
         }
       }
+      else if (t === 'chasse' || t === 'ordre' || t === 'glisser' || t === 'memory') {
+        var qx = 'q-' + b.id;
+        var rx = t === 'chasse' ? compChasse(qx, d) : (t === 'ordre' ? compOrdre(qx, d) : (t === 'glisser' ? compGlisser(qx, d) : compMemory(qx, d)));
+        var oralX = (d.consigne || '') + (t === 'ordre' ? '. Cartes : ' + (d.cartes || []).map(function (c) { return c.texte || c.description || ''; }).join(' ; ') : (d.alt ? '. ' + d.alt : ''));
+        h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="' + qx + '">' + carteQuestion({ qid: qx, num: d.numero || '', texteHtml: md(d.consigne || ''),
+          oral: oralX, saisie: rx.html, comps: [rx.comp], el: eleve(b),
+          corrigeHtml: rx.corrige || listeReponse(d.reponse || ''), corrigeOral: rx.corrigeOral || d.reponse || '' }) + '</div>';
+      }
       else if (t === 'flashcards') {
         h += rendreFlashcards(b);
       }
@@ -1063,6 +1336,11 @@
     }
     if (ouvert) h += '</section>';
     h += rendreBilan();
+    if (C.retourLibelle) {
+      h += '<div class="score vert" id="fin-activite" hidden tabindex="-1"><div class="chiffre"></div><div class="actions">' +
+        '<a class="lien-btn" href="' + esc(C.retour) + '">← ' + esc(C.retourLibelle) + '</a></div></div>' +
+        '<div class="actions retour-bas"><a class="lien-btn" href="' + esc(C.retour) + '">← ' + esc(C.retourLibelle) + '</a></div>';
+    }
     if (C.pied) h += '<footer class="pied">' + enLigne(C.pied) + '</footer>';
 
     var z = document.getElementById('contenu');
@@ -1075,6 +1353,14 @@
     });
     restaurer();
     Object.keys(FC).forEach(majCarte);
+    validerActivite.chargement = true;
+    setTimeout(function () { validerActivite.chargement = false; }, 0);
+    Object.keys(GL).forEach(restaurerGl);
+    Object.keys(CHASSE).forEach(function (qid) {
+      String(rep.v[qid + '-z'] || '').split(',').filter(Boolean).forEach(function (i) {
+        CHASSE[qid].trouves[i] = true; dessinerZone(qid, parseInt(i, 10), false);
+      });
+    });
     appliquerAffichage();
     majProgression();
     remplirAffichage();
@@ -1116,14 +1402,32 @@
       var pc = total ? Math.round(100 * sues / total) : 0;
       p.innerHTML = '<strong>Progression :</strong> ' + sues + ' carte' + (sues > 1 ? 's' : '') + ' sue' + (sues > 1 ? 's' : '') + ' sur ' + total +
         '<div class="jauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pc + '" aria-label="Cartes sues"><span style="width:' + pc + '%"></span></div>';
+      validerActivite(sues, sues, total, 'Cartes sues : ');
       return;
     }
     var faites = ids.filter(function (k) { return rep.e[k]; }).length;
     var justes = ids.filter(function (k) { return rep.e[k] === 'juste'; }).length;
     var pct = ids.length ? Math.round(100 * faites / ids.length) : 0;
+    validerActivite(faites, justes, ids.length);
     p.innerHTML = '<strong>Progression :</strong> ' + faites + ' question' + (faites > 1 ? 's' : '') + ' traitée' + (faites > 1 ? 's' : '') + ' sur ' + ids.length +
       ' — réponses justes : ' + justes +
       '<div class="jauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Progression dans le cours"><span style="width:' + pct + '%"></span></div>';
+  }
+
+  /* suivi d'une activité d'un espace (page d'accueil de l'espace : localStorage pse-valid-<cle>) */
+  function validerActivite(faites, justes, total, libelle) {
+    if (!C.validation || !total) return;
+    ecrireMem('pse-valid-' + C.validation, { faites: faites, justes: justes, total: total, t: Date.now() });
+    var fin = document.getElementById('fin-activite');
+    if (!fin) return;
+    var termine = faites >= total;
+    var etaitCache = fin.hidden;
+    fin.hidden = !termine;
+    if (termine) {
+      fin.querySelector('.chiffre').textContent = libelle ? libelle + justes + ' sur ' + total
+        : 'Activité terminée : ' + justes + ' réponse' + (justes > 1 ? 's' : '') + ' juste' + (justes > 1 ? 's' : '') + ' sur ' + total;
+      if (etaitCache && !validerActivite.chargement) annoncer(fin.querySelector('.chiffre').textContent);
+    }
   }
 
   function verifierQuestion(qid) {
@@ -1250,6 +1554,23 @@
 
   /* ───────────── événements ───────────── */
   document.addEventListener('click', function (ev) {
+    var mem = ev.target.closest && ev.target.closest('.mem-carte');
+    if (mem) { clicMemory(mem); return; }
+    var gp = ev.target.closest && ev.target.closest('.gl-piece, .gl-depot, .gl-reserve');
+    if (gp) {
+      if (glisseRecent) return;
+      var qg = gp.getAttribute('data-q'), sg = GL[qg];
+      if (!sg) return;
+      if (gp.classList.contains('gl-piece')) {
+        if (sg.sel && sg.sel !== gp && gp.parentNode.classList.contains('gl-depot')) { placerPiece(qg, sg.sel, gp.parentNode); return; }
+        selectionGl(qg, sg.sel === gp ? null : gp);
+        return;
+      }
+      if (sg.sel) placerPiece(qg, sg.sel, gp);
+      return;
+    }
+    var chasse = ev.target.closest && ev.target.closest('.chasse-img');
+    if (chasse) { clicChasse(chasse, ev); return; }
     var carte = ev.target.closest && ev.target.closest('.fc-carte');
     if (carte) { actionCarte(carte.id.replace(/-carte$/, ''), 'retourner'); return; }
     var t = ev.target.closest('button, a');
@@ -1352,8 +1673,46 @@
     else rep.v[el.getAttribute('data-k')] = el.value;
     sauverRep();
   }
+  /* glisser à la souris ou au doigt ; le toucher-placer et le clavier passent par les clics */
+  var drag = null, glisseRecent = false;
+  document.addEventListener('pointerdown', function (ev) {
+    var p = ev.target.closest && ev.target.closest('.gl-piece');
+    if (!p || (ev.button && ev.button > 0)) return;
+    drag = { p: p, x: ev.clientX, y: ev.clientY, actif: false, id: ev.pointerId };
+  });
+  document.addEventListener('pointermove', function (ev) {
+    if (!drag || ev.pointerId !== drag.id) return;
+    var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+    if (!drag.actif && Math.abs(dx) + Math.abs(dy) > 8) {
+      drag.actif = true; drag.p.classList.add('en-glisse');
+      try { drag.p.setPointerCapture(ev.pointerId); } catch (e) { /* navigateur ancien */ }
+    }
+    if (drag.actif) { ev.preventDefault(); drag.p.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; }
+  });
+  document.addEventListener('pointerup', function (ev) {
+    if (!drag || ev.pointerId !== drag.id) return;
+    var p = drag.p, actif = drag.actif;
+    drag = null;
+    if (!actif) return;
+    p.style.transform = ''; p.classList.remove('en-glisse');
+    p.style.visibility = 'hidden';
+    var sous = document.elementFromPoint(ev.clientX, ev.clientY);
+    p.style.visibility = '';
+    var dep = sous && sous.closest('.gl-depot, .gl-reserve');
+    if (!dep && sous) { var autre = sous.closest('.gl-piece'); if (autre && autre !== p) dep = autre.parentNode; }
+    var qid = p.getAttribute('data-q');
+    if (dep && dep.getAttribute('data-q') === qid) placerPiece(qid, p, dep);
+    glisseRecent = true;
+    setTimeout(function () { glisseRecent = false; }, 80);
+  });
+  document.addEventListener('pointercancel', function () {
+    if (drag) { drag.p.style.transform = ''; drag.p.classList.remove('en-glisse'); drag = null; }
+  });
+
   document.addEventListener('keydown', function (ev) {
-    var carte = ev.target && ev.target.classList && ev.target.classList.contains('fc-carte') ? ev.target : null;
+    if (ev.target && ev.target.classList && (ev.target.classList.contains('gl-depot') || ev.target.classList.contains('gl-reserve')) &&
+        (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); ev.target.click(); return; }
+    var carte =ev.target && ev.target.classList && ev.target.classList.contains('fc-carte') ? ev.target : null;
     if (carte) {
       var fid = carte.id.replace(/-carte$/, '');
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); actionCarte(fid, 'retourner'); return; }
