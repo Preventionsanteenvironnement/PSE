@@ -21,6 +21,8 @@
     vitesse: '1', voix: '', surligner: 'oui', suivre: 'oui' };
   var reg = Object.assign({}, DEFAUT, lireMem(PREF, {}));
   var niveau = lireMem(CLE + '-niveau', 'standard');
+  /* lien direct vers un niveau : …_cours.html?niveau=adapte */
+  try { var nvUrl = new URLSearchParams(location.search).get('niveau'); if (nvUrl) niveau = nvUrl; } catch (e) { /* adresse sans paramètres */ }
   if (!NIVEAUX.some(function (n) { return n[0] === niveau; })) niveau = 'standard';
   var affichage = 'tout';
   var rep = { v: {}, e: {} };
@@ -141,7 +143,7 @@
       decouper(oral(p.t)).forEach(function (s) { L.segs.push({ t: s, el: p.el }); });
     });
     if (!L.segs.length) return;
-    L.i = 0; L.btn = btn || null; L.etat = 'lecture';
+    L.i = 0; L.btn = btn || null; L.etat = 'lecture'; L.libre = false;
     majLecteur();
     setTimeout(parler, 80);
   }
@@ -179,7 +181,7 @@
     var el = document.getElementById(id);
     if (!el) return;
     el.classList.add('lu'); L.el = el;
-    if (reg.suivre === 'oui') {
+    if (reg.suivre === 'oui' && !L.libre) {
       var r = el.getBoundingClientRect();
       if (r.top < 80 || r.bottom > window.innerHeight - 90) el.scrollIntoView({ block: 'center' });
     }
@@ -199,6 +201,11 @@
       b.setAttribute('aria-pressed', actif ? 'true' : 'false');
     });
   }
+  /* l'élève fait défiler pendant la lecture : la voix continue, la page ne le suit plus */
+  function defilementEleve() { if (L.etat !== 'arret') L.libre = true; }
+  window.addEventListener('wheel', defilementEleve, { passive: true });
+  window.addEventListener('touchmove', defilementEleve, { passive: true });
+  window.addEventListener('keydown', function (e) { if (/^(PageUp|PageDown|ArrowUp|ArrowDown|Home|End| )$/.test(e.key) && !/INPUT|TEXTAREA|SELECT/.test((e.target || {}).tagName || '')) defilementEleve(); });
   function btnAudio(cle, libelle) {
     var l = libelle || '🔊 Écouter';
     return '<button type="button" class="audio" data-a="' + esc(cle) + '" data-l="' + esc(l) + '" aria-pressed="false">' + esc(l) + '</button>';
@@ -342,6 +349,12 @@
         var sol = c.reponse || '';
         var k = qid + '-t' + ri + '-' + ci;
         var nomCase = String((row[0] || {}).content || '').replace(/\*/g, '') + ' — ' + String((cells[0][ci] || {}).content || '').replace(/\*/g, '');
+        if (Array.isArray(c.options) && c.options.length) {
+          tds += '<td class="saisie"><select class="choix" id="' + k + '" data-k="' + k + '" aria-label="' + esc(nomCase) + '"><option value="">— Choisir —</option>' +
+            c.options.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') + '</select></td>';
+          cases.push({ k: k, type: 'choix', sol: sol });
+          return;
+        }
         if (boites || sol === '✕') {
           tds += '<td class="coche"><input type="checkbox" id="' + k + '" data-k="' + k + '" aria-label="' + esc(nomCase) + '"></td>';
           cases.push({ k: k, type: 'case', sol: sol === '✕' });
@@ -364,6 +377,11 @@
       verifier: function (zone) {
         return cases.filter(function (c) { return c.type !== 'long'; }).map(function (c) {
           var el = zone.querySelector('#' + CSS.escape(c.k));
+          if (c.type === 'choix') {
+            var okl = el.value !== '' && norm(el.value) === norm(c.sol);
+            marquer(el, el.value === '' ? null : okl);
+            return { ok: okl, vide: el.value === '' };
+          }
           if (c.type === 'case') {
             var okc = el.checked === c.sol;
             marquer(el.closest('td'), el.checked || !okc ? okc : null);
@@ -455,6 +473,9 @@
   /* relier : gauche[i] va avec droite[i] ; les propositions sont présentées dans l'ordre alphabétique */
   function compRelier(qid, d) {
     var g = ch(d, 'gauche', []) || [], dr = ch(d, 'droite', []) || [];
+    /* correspondances[i] = position, dans droite, de la réponse de gauche[i] ; sans ce champ, lecture par position */
+    var co = ch(d, 'correspondances', null);
+    function bon(i) { var v = Array.isArray(co) ? co[i] : i; return (typeof v === 'number' && v >= 0 && v < dr.length) ? v : i; }
     var tri = dr.map(function (x, i) { return { t: x, i: i }; }).sort(function (a, b) { return a.t.localeCompare(b.t, 'fr'); });
     var html = g.map(function (it, i) {
       var k = qid + '-r' + i;
@@ -464,14 +485,14 @@
     }).join('');
     return {
       html: html,
-      corrige: '<ul>' + g.map(function (it, i) { return '<li>' + enLigne(it) + ' → <strong>' + esc(dr[i]) + '</strong></li>'; }).join('') + '</ul>',
-      corrigeOral: g.map(function (it, i) { return it + ' : ' + dr[i]; }).join('. '),
+      corrige: '<ul>' + g.map(function (it, i) { return '<li>' + enLigne(it) + ' → <strong>' + esc(dr[bon(i)]) + '</strong></li>'; }).join('') + '</ul>',
+      corrigeOral: g.map(function (it, i) { return it + ' : ' + dr[bon(i)]; }).join('. '),
       comp: {
         auto: true,
         verifier: function (zone) {
           return g.map(function (it, i) {
             var s = zone.querySelector('#' + CSS.escape(qid + '-r' + i));
-            var ok = s.value !== '' && parseInt(s.value, 10) === i;
+            var ok = s.value !== '' && parseInt(s.value, 10) === bon(i);
             marquer(s.closest('.item'), s.value === '' ? null : ok);
             return { ok: ok, vide: s.value === '' };
           });
@@ -516,6 +537,49 @@
     };
   }
 
+  /* ───────────── indice : l'information surlignée dans le document ───────────── */
+  var CHERCHE = {};   // qid -> [{ bloc, texte }]
+  var QUESTION_ORIGINE = null;
+  function effacerCherche() {
+    document.querySelectorAll('mark.trouve').forEach(function (m) { var p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); });
+    document.querySelectorAll('.cherche-zone').forEach(function (z) { z.classList.remove('cherche-zone'); });
+  }
+  function marquerTexte(zone, txt) {
+    var n = 0, cible = String(txt || '');
+    if (!cible) return 0;
+    var w = document.createTreeWalker(zone, NodeFilter.SHOW_TEXT, { acceptNode: function (x) {
+      return x.parentNode.closest('button, .actions, figcaption, .src, mark') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var noeuds = []; while (w.nextNode()) noeuds.push(w.currentNode);
+    noeuds.forEach(function (x) {
+      var v = x.nodeValue, i = v.indexOf(cible);
+      if (i < 0) return;
+      var r = document.createRange(); r.setStart(x, i); r.setEnd(x, i + cible.length);
+      var m = document.createElement('mark'); m.className = 'trouve';
+      r.surroundContents(m); n++;
+    });
+    return n;
+  }
+  function montrerCherche(qid, aller) {
+    effacerCherche();
+    var premier = null;
+    (CHERCHE[qid] || []).forEach(function (c) {
+      var zone = document.getElementById('b-' + c.bloc);
+      if (!zone) return;
+      if (!marquerTexte(zone, c.texte)) zone.classList.add('cherche-zone');
+      if (!premier) premier = zone.querySelector('mark.trouve') || zone;
+    });
+    if (!aller || !premier) return;
+    QUESTION_ORIGINE = qid;
+    premier.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    var rb = document.getElementById('retour-q');
+    if (!rb) {
+      rb = document.createElement('button'); rb.type = 'button'; rb.id = 'retour-q'; rb.setAttribute('data-retour-q', '1');
+      rb.textContent = '↩ Revenir à la question'; document.body.appendChild(rb);
+    }
+    rb.hidden = false;
+    annoncer('Information surlignée dans le document. Bouton Revenir à la question en bas de l\'écran.');
+  }
+
   /* ───────────── carte question ───────────── */
   function carteQuestion(o) {
     var qid = o.qid;
@@ -524,6 +588,8 @@
     QCART[qid] = { auto: auto };
     var el = o.el || {};
     var indice = el.indice || o.indiceSecours || '';
+    var cherche = Array.isArray(el.cherche) ? el.cherche : [];
+    CHERCHE[qid] = cherche;
     var expl = el.explication || '';
     AUD[qid] = function () { return [{ t: (o.num ? 'Question ' + o.num + '. ' : '') + o.oral, el: qid + '-txt' }]; };
     AUD[qid + '-i'] = function () { return [{ t: 'Indice. ' + indice, el: qid + '-i' }]; };
@@ -540,7 +606,8 @@
       (indice ? '<button type="button" class="indice" data-montrer="' + qid + '-ib" aria-expanded="false" aria-controls="' + qid + '-ib">💡 Indice</button>' : '') +
       (auto ? '<button type="button" class="verif" data-verifier="' + qid + '">✓ Vérifier</button>' : '') +
       '<button type="button" class="corr" data-corrige="' + qid + '" aria-expanded="false" aria-controls="' + qid + '-cb">📘 Corrigé et explication</button></div>' +
-      (indice ? '<div class="boite aide" id="' + qid + '-ib" hidden><h4>Indice</h4><p id="' + qid + '-i">' + enLigne(indice) + '</p><div class="actions">' + btnAudio(qid + '-i', '🔊 Écouter l\'indice') + '</div></div>' : '') +
+      (indice ? '<div class="boite aide" id="' + qid + '-ib" hidden><h4>Indice</h4><p id="' + qid + '-i">' + enLigne(indice) + '</p><div class="actions">' + btnAudio(qid + '-i', '🔊 Écouter l\'indice') +
+        (cherche.length ? '<button type="button" class="cherche" data-cherche="' + qid + '">🔎 Voir dans le document</button>' : '') + '</div></div>' : '') +
       '<div class="verdict" id="' + qid + '-v" hidden role="status"></div>' +
       '<div id="' + qid + '-cb" hidden>' +
       '<div class="boite corrige"><h4>Corrigé</h4><div id="' + qid + '-cr">' + (o.corrigeHtml || '') + '</div></div>' +
@@ -648,7 +715,7 @@
       var corrects = [];
       options.forEach(function (o, j) { if (o.correct) corrects.push(j); });
       var co = compOptions(qid, [{ label: '', opts: options.map(function (o) { return o.img ? { texte: o.texte, img: o.img, photo: o.photo } : o.texte; }) }], corrects, qid + '-o');
-      var num = (consigne.match(/^\s*(\d+)\.\s*/) || [])[1] || '';
+      var num = (consigne.match(/^\s*(\d+)\.\s*/) || [])[1] || ch(d, 'numero', '');
       var txt = consigne.replace(/^\s*\d+\.\s*/, '');
       return carteQuestion({ qid: qid, num: num, comp: d.competence, texteHtml: md(txt), oral: txt + '. Propositions : ' + options.map(function (o) { return o.texte; }).join(' ; '),
         saisie: co.html, comps: [co.comp], el: eleve(b),
@@ -1602,6 +1669,15 @@
       var box = document.getElementById(a);
       box.hidden = !box.hidden; t.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
       if (!box.hidden) annoncer('Indice affiché');
+      var qInd = a.replace(/-ib$/, '');
+      if (!box.hidden && CHERCHE[qInd] && CHERCHE[qInd].length) montrerCherche(qInd, false);
+      return;
+    }
+    if ((a = t.getAttribute('data-cherche')) !== null) { montrerCherche(a, true); return; }
+    if (t.hasAttribute('data-retour-q')) {
+      t.hidden = true;
+      var qo = QUESTION_ORIGINE && document.getElementById(QUESTION_ORIGINE);
+      if (qo) { qo.scrollIntoView({ block: 'center' }); var bi = qo.querySelector('.cherche') || qo; bi.focus(); }
       return;
     }
     if ((a = t.getAttribute('data-verifier')) !== null) { verifierQuestion(a); return; }
