@@ -244,9 +244,25 @@
     if (ok === true) el.classList.add('juste');
     if (ok === false) el.classList.add('faux');
   }
+  /* champ laissé vide : même signalement qu'une réponse fausse, avec un libellé qui dit que la réponse manque */
+  function marquerManque(el, id) {
+    if (!el) return;
+    el.classList.remove('juste', 'faux');
+    el.classList.add('manque');
+    el.setAttribute('aria-invalid', 'true');
+    if (!id || document.getElementById(id)) return;
+    var cible = el.type === 'checkbox' || el.type === 'radio' ? el.closest('td') || el : el;
+    var enLigneTrou = el.classList.contains('trou') ? ' en-ligne' : '';
+    cible.insertAdjacentHTML('afterend', '<span class="manque-note' + enLigneTrou + '" id="' + id + '">Réponse manquante</span>');
+    el.setAttribute('aria-describedby', id);
+  }
   function effacerMarques(zone) {
-    zone.querySelectorAll('.juste,.faux').forEach(function (e) { e.classList.remove('juste', 'faux'); });
+    zone.querySelectorAll('.juste,.faux,.manque').forEach(function (e) { e.classList.remove('juste', 'faux', 'manque'); });
+    zone.querySelectorAll('.manque-note').forEach(function (e) { e.remove(); });
     zone.querySelectorAll('[aria-invalid]').forEach(function (e) { e.removeAttribute('aria-invalid'); });
+    zone.querySelectorAll('[aria-describedby]').forEach(function (e) {
+      if (/-m$/.test(e.getAttribute('aria-describedby'))) e.removeAttribute('aria-describedby');
+    });
   }
 
   /* groupes : [{ label, opts: [texte] }] ; les index des bonnes réponses courent sur l'ensemble des cases */
@@ -317,6 +333,7 @@
           var alts = String((reponses || [])[i] || '').split('|');
           var ok = alts.some(function (a) { return egal(inp.value, a); });
           if (inp.value.trim()) { marquer(inp, ok); inp.setAttribute('aria-invalid', ok ? 'false' : 'true'); }
+          else if (!ok) marquerManque(inp, prefixe + '-' + i + '-m');
           res.push({ ok: ok, vide: !inp.value.trim() });
         }
         return res;
@@ -379,7 +396,7 @@
           var el = zone.querySelector('#' + CSS.escape(c.k));
           if (c.type === 'choix') {
             var okl = el.value !== '' && norm(el.value) === norm(c.sol);
-            marquer(el, el.value === '' ? null : okl);
+            if (el.value === '') marquerManque(el, c.k + '-m'); else marquer(el, okl);
             return { ok: okl, vide: el.value === '' };
           }
           if (c.type === 'case') {
@@ -388,7 +405,7 @@
             return { ok: okc, vide: false };
           }
           var ok = egal(el.value, c.sol);
-          if (el.value.trim()) marquer(el, ok);
+          if (el.value.trim()) marquer(el, ok); else marquerManque(el, c.k + '-m');
           return { ok: ok, vide: !el.value.trim() };
         });
       },
@@ -1515,6 +1532,8 @@
       v.className = 'verdict ko';
       v.textContent = '✘ Réponse à revoir' + (n > 1 ? ' : ' + ok + ' élément' + (ok > 1 ? 's' : '') + ' juste' + (ok > 1 ? 's' : '') + ' sur ' + n + '.' : '.');
       etatQuestion(qid, 'revoir');
+      /* l'élève qui travaille seul voit tout de suite le corrigé et l'explication */
+      ouvrirCorrige(qid, true);
     }
     annoncer(v.textContent);
   }
@@ -1573,8 +1592,8 @@
       selectHtml('r-surligner', 'Surlignage du passage lu', 'surligner', [['oui', 'Oui'], ['non', 'Non']]) +
       selectHtml('r-suivre', 'Défilement avec la lecture', 'suivre', [['oui', 'Oui'], ['non', 'Non']]) +
       '<div><label for="r-affichage">Affichage</label><select id="r-affichage"></select></div>' +
-      '<div><label for="r-effacer">Réponses enregistrées</label><button type="button" id="r-effacer">Effacer les réponses</button></div>' +
-      '<div><label for="r-defaut">Réglages</label><button type="button" id="r-defaut">Rétablir les réglages par défaut</button></div>' +
+      '<div><span class="lbl-champ" id="r-effacer-l">Réponses enregistrées</span><button type="button" id="r-effacer" aria-describedby="r-effacer-l">Effacer les réponses</button></div>' +
+      '<div><span class="lbl-champ" id="r-defaut-l">Réglages</span><button type="button" id="r-defaut" aria-describedby="r-defaut-l">Rétablir les réglages par défaut</button></div>' +
       '</div></div></div>' +
       '<div id="lecteur" hidden role="region" aria-label="Lecture audio"><span id="lec-etat">Lecture en cours</span>' +
       '<button type="button" id="lec-pause" aria-label="Mettre la lecture en pause">⏸</button>' +
@@ -1583,6 +1602,20 @@
       '<dialog class="loupe" id="loupe" aria-label="Image agrandie"><button type="button" class="fermer" id="loupe-fermer">✕ Fermer</button><div class="cadre"><img id="loupe-img" alt=""></div></dialog>';
     var repere = document.body.firstChild;
     while (barre.firstChild) document.body.insertBefore(barre.firstChild, repere);
+    suivreHauteurBarre();
+  }
+  /* hauteur réelle des rangées de la barre collante (le panneau Réglages est exclu) */
+  function suivreHauteurBarre() {
+    var b = document.querySelector('.barre');
+    if (!b) return;
+    var mesurer = function () {
+      var h = 0;
+      b.querySelectorAll('.rangee').forEach(function (r) { h += r.offsetHeight; });
+      if (h > 0) document.documentElement.style.setProperty('--barre-h', h + 'px');
+    };
+    mesurer();
+    if (window.ResizeObserver) { var ro = new ResizeObserver(mesurer); ro.observe(b); }
+    else window.addEventListener('resize', mesurer);
   }
   function remplirAffichage() {
     var s = document.getElementById('r-affichage');
