@@ -1420,6 +1420,10 @@
     }
     if (ouvert) h += '</section>';
     h += rendreBilan();
+    /* Impression du cours entier : fiche vierge (travail sur papier) ou avec tous les corrigés. */
+    if (!C.retourLibelle) h += '<section class="impr-fin no-print" aria-labelledby="impr-h"><h2 id="impr-h">🖨️ Imprimer le cours</h2>' +
+      '<p>Pour travailler sur papier, imprimer le cours <strong>sans corrigé</strong> : les réponses se vérifient ensuite en ligne. Pour réviser ou corriger, l\'imprimer <strong>avec le corrigé</strong>. Dans la fenêtre d\'impression, choisir « Enregistrer en PDF » pour obtenir un fichier.</p>' +
+      '<div class="actions"><button type="button" data-impr="sans">🖨️ Imprimer sans corrigé</button><button type="button" data-impr="avec">🖨️ Imprimer avec le corrigé</button></div></section>';
     if (C.retourLibelle) {
       h += '<div class="score vert" id="fin-activite" hidden tabindex="-1"><div class="chiffre"></div><div class="actions">' +
         '<a class="lien-btn" href="' + esc(C.retour) + '">← ' + esc(C.retourLibelle) + '</a></div></div>' +
@@ -1644,11 +1648,31 @@
   }
 
   /* ───────────── impression ───────────── */
-  function preparerImpression() {
+  /* Impression du cours entier. Sans corrigé : corrigés, verdicts et réponses saisies masqués (fiche vierge).
+     Avec corrigé : toutes les boîtes « Corrigé et explication » ouvertes le temps de l'impression, puis remises comme avant. */
+  function imprimerCours(avec) {
+    var boites = Array.prototype.slice.call(document.querySelectorAll('#contenu [id$="-cb"]'));
+    var etats = boites.map(function (x) { return x.hidden; });
+    boites.forEach(function (x) { x.hidden = !avec; });
+    document.body.classList.add(avec ? 'impr-avec' : 'impr-sans');
+    preparerImpression(!avec);
+    var fini = false;
+    function restaurer() {
+      if (fini) return; fini = true;
+      boites.forEach(function (x, i) { x.hidden = etats[i]; });
+      document.body.classList.remove('impr-avec', 'impr-sans');
+      preparerImpression();
+      window.removeEventListener('afterprint', restaurer);
+    }
+    window.addEventListener('afterprint', restaurer);
+    window.print();
+    setTimeout(restaurer, 1500);
+  }
+  function preparerImpression(vierge) {
     document.querySelectorAll('#contenu textarea').forEach(function (t) {
       var c = t.nextElementSibling;
       if (!c || !c.classList.contains('copie-impr')) { c = document.createElement('div'); c.className = 'copie-impr'; t.parentNode.insertBefore(c, t.nextSibling); }
-      c.textContent = t.value;
+      c.textContent = vierge === true ? '' : t.value;
     });
   }
 
@@ -1698,6 +1722,7 @@
       return;
     }
     if (t.hasAttribute('data-imprimer')) { preparerImpression(); window.print(); return; }
+    if ((a = t.getAttribute('data-impr')) !== null) { imprimerCours(a === 'avec'); return; }
     if ((a = t.getAttribute('data-montrer')) !== null) {
       var box = document.getElementById(a);
       box.hidden = !box.hidden; t.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
