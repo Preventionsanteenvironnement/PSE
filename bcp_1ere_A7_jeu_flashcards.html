@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flashcards — Les pratiques alimentaires · A7 · Première Bac Pro · PSE</title>
+<meta name="description" content="Flashcards de révision — A7 — Les pratiques alimentaires · Première Bac Pro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --reponse:#FFD23F; --reponse-encre:#2A2200; --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;color:var(--clair);
+  font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.1rem;line-height:1.5;
+  background:
+    radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),
+    radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),
+    linear-gradient(160deg,var(--fond1),var(--fond2));
+  background-attachment:fixed;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--reponse);outline-offset:4px}
+
+.page{max-width:820px;margin:0 auto;padding:1.4rem 1.1rem 2.5rem;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.7rem,4.5vw,2.6rem);line-height:1.05;margin:0;letter-spacing:-.01em}
+header p{margin:.35rem 0 0;opacity:.8}
+
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .4rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem;transition:background .2s,border-color .2s}
+.puce:hover{border-color:rgba(255,255,255,.5)}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+
+.progression{display:flex;align-items:center;gap:.9rem;margin:.8rem 0 1.3rem}
+.piste{flex:1;height:6px;border-radius:9px;background:rgba(255,255,255,.15);overflow:hidden}
+.piste span{display:block;height:100%;width:0;background:var(--reponse);border-radius:9px;transition:width .35s ease}
+.num{font-weight:700;font-variant-numeric:tabular-nums;min-width:4.5rem;text-align:right}
+
+/* ===== Scène / tilt / flip ===== */
+.scene{flex:1;display:flex;align-items:center;justify-content:center;perspective:1600px;padding:.5rem 0 1rem}
+.pile{position:relative;width:min(100%,640px);aspect-ratio:3/2;min-height:300px}
+.pile::before,.pile::after{content:"";position:absolute;inset:0;border-radius:26px;background:rgba(244,248,245,.16);transform:translateY(14px) scale(.95);z-index:0}
+.pile::after{transform:translateY(26px) scale(.9);background:rgba(244,248,245,.08)}
+.tilt{position:absolute;inset:0;z-index:1;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.tilt.actif{transition:transform .08s linear}
+.carte{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,1.35,.45,1);cursor:pointer;border-radius:26px;outline:none}
+.carte.retournee{transform:rotateY(180deg)}
+.carte:focus-visible .face{outline:4px solid var(--reponse);outline-offset:4px}
+.face{
+  position:absolute;inset:0;border-radius:26px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  padding:clamp(1.2rem,4vw,2.4rem);display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.55),0 10px 20px -10px rgba(0,0,0,.35);
+}
+.devant{background:linear-gradient(155deg,#FFFFFF,#EEF4F0);color:var(--encre)}
+.dos{background:linear-gradient(155deg,#FFE27A,var(--reponse));color:var(--reponse-encre);transform:rotateY(180deg)}
+.haut{display:flex;justify-content:space-between;align-items:center;gap:1rem;transform:translateZ(30px)}
+.seance{font-weight:700;font-size:.9rem;padding:.25rem .7rem;border-radius:999px;background:rgba(19,48,42,.08)}
+.dos .seance{background:rgba(42,34,0,.1)}
+.voix{border:0;background:rgba(19,48,42,.08);width:44px;height:44px;border-radius:50%;font-size:1.25rem;display:grid;place-items:center;transition:transform .15s}
+.dos .voix{background:rgba(42,34,0,.1)}
+.voix:hover{transform:scale(1.08)}
+.corps{flex:1;display:flex;align-items:center;transform:translateZ(50px)}
+.texte{margin:0;font-weight:700;font-size:clamp(1.3rem,3.6vw,2rem);line-height:1.25}
+.devant .texte{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-.005em}
+.dos .texte{font-weight:400}
+.notion{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1rem,2.4vw,1.2rem);margin-bottom:.4rem;opacity:.75}
+.bas{font-size:.95rem;color:var(--doux);transform:translateZ(20px)}
+.dos .bas{color:rgba(42,34,0,.65)}
+.reflet{position:absolute;inset:0;border-radius:26px;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.55),rgba(255,255,255,0) 55%);mix-blend-mode:soft-light}
+.tilt.actif .reflet{opacity:1}
+
+/* ===== Commandes ===== */
+.commandes{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center;margin-top:.6rem}
+.rond{width:60px;height:60px;border-radius:50%;border:2px solid var(--ligne);background:rgba(255,255,255,.08);font-size:1.5rem;display:grid;place-items:center;transition:background .2s,transform .15s}
+.rond:hover{background:rgba(255,255,255,.18)}
+.rond:active{transform:scale(.94)}
+.rond:disabled{opacity:.35;cursor:default}
+.retourner{height:60px;border-radius:999px;border:0;background:var(--reponse);color:var(--reponse-encre);font-weight:700;font-size:1.15rem;box-shadow:0 10px 24px -10px rgba(255,210,63,.7);transition:transform .15s}
+.retourner:active{transform:scale(.97)}
+.outils{display:flex;justify-content:center;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+.lien{border:0;background:none;color:var(--clair);opacity:.8;text-decoration:underline;text-underline-offset:4px;padding:.4rem .6rem;font-size:1rem}
+.lien:hover{opacity:1}
+.aide{text-align:center;font-size:.9rem;opacity:.65;margin-top:.8rem}
+kbd{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:0 .35rem;font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:560px){
+  .pile{aspect-ratio:auto;height:min(62vh,440px)}
+  .rond{width:54px;height:54px}.retourner{height:54px}
+  .aide .clavier{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .carte,.tilt,.piste span{transition:none!important}
+}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Les pratiques alimentaires</h1>
+    <p>Flashcards de révision — A7 — Les pratiques alimentaires · Première Bac Pro</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="bcp_1ere_A7_jeux.html">← Toutes les révisions A7</a></nav>
+
+  <nav class="filtres" id="filtres" aria-label="Choisir la séance"></nav>
+
+  <div class="progression">
+    <div class="piste" aria-hidden="true"><span id="barre"></span></div>
+    <div class="num" id="num"></div>
+  </div>
+
+  <main class="scene">
+    <div class="pile" id="pile">
+      <div class="tilt" id="tilt">
+        <div class="carte" id="carte" tabindex="0" role="button" aria-label="Retourner la carte">
+          <div class="face devant">
+            <div class="haut"><span class="seance" id="sQ"></span><button class="voix" data-cote="q" aria-label="Écouter la question">🔊</button></div>
+            <div class="corps"><p class="texte" id="q"></p></div>
+            <div class="bas">Touche la carte pour voir la réponse</div>
+            <div class="reflet"></div>
+          </div>
+          <div class="face dos">
+            <div class="haut"><span class="seance" id="sR"></span><button class="voix" data-cote="r" aria-label="Écouter la réponse">🔊</button></div>
+            <div class="corps"><div><div class="notion" id="n"></div><p class="texte" id="r"></p></div></div>
+            <div class="bas">Touche la carte pour revenir à la question</div>
+            <div class="reflet"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="commandes">
+    <button class="rond" id="prec" aria-label="Carte précédente">←</button>
+    <button class="retourner" id="bRet">Retourner la carte</button>
+    <button class="rond" id="suiv" aria-label="Carte suivante">→</button>
+  </div>
+  <div class="outils">
+    <button class="lien" id="melange">Mélanger les cartes</button>
+    <button class="lien" id="debut">Revenir au début</button>
+  </div>
+  <p class="aide"><span class="clavier"><kbd>Espace</kbd> retourner · <kbd>←</kbd> <kbd>→</kbd> changer de carte</span><span class="tactile"></span></p>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/\bkcal\b/g,"kilocalories").replace(/\bkJ\b/g,"kilojoules").replace(/CO2/g,"C O 2").replace(/\bE (\d+)/g,"E $1").replace(/(\d+),(\d+) g\b/g,"$1 virgule $2 grammes").replace(/(\d+) g\b/g,"$1 grammes").replace(/÷/g," divisé par ").replace(/×/g," fois ");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+/* ===== CONTENU — remplacer ce tableau pour un autre chapitre =====
+   s = séance · n = notion · q = question · r = réponse · dit = texte lu "question|réponse" (optionnel) */
+const TITRES={1:"Séance 1 — La digestion",2:"Séance 2 — Pratiques et enjeux",3:"Séance 3 — L'étiquette",4:"Séance 4 — Choix raisonné"};
+const CARTES=[
+ {s:1,n:"Appareil digestif",q:"De quoi est composé l'appareil digestif ?",r:"Du tube digestif (bouche, œsophage, estomac, intestin grêle, gros intestin, anus) et des glandes digestives (glandes salivaires, foie, pancréas)."},
+ {s:1,n:"Glandes digestives",q:"Quel est le rôle des glandes digestives ?",r:"Elles fabriquent des sucs digestifs qu'elles déversent dans le tube digestif. Les aliments ne les traversent pas."},
+ {s:1,n:"Aliment",q:"Quels constituants un aliment apporte-t-il ?",r:"Glucides, protides, lipides, eau, sels minéraux, vitamines et fibres."},
+ {s:1,n:"Digestion",q:"Qu'est-ce que la digestion ?",r:"La transformation des aliments en nutriments : des substances simples que l'organisme peut absorber."},
+ {s:1,n:"Action mécanique",q:"Qu'est-ce que l'action mécanique de la digestion ?",r:"Elle coupe, broie, mélange les aliments et les fait avancer : mastication, brassage dans l'estomac, contractions."},
+ {s:1,n:"Action chimique",q:"Qu'est-ce que l'action chimique de la digestion ?",r:"Les enzymes des sucs digestifs découpent les grosses molécules des aliments en nutriments."},
+ {s:1,n:"Action chimique",q:"Où commence la digestion de l'amidon ? Et celle des protides ?",r:"L'amidon : dans la bouche, par la salive. Les protides : dans l'estomac, par le suc gastrique."},
+ {s:1,n:"Action chimique",q:"Où se termine la digestion ?",r:"Dans l'intestin grêle, grâce au suc pancréatique et au suc intestinal. La bile, fabriquée par le foie, facilite la digestion des lipides."},
+ {s:1,n:"Mastication",q:"Pourquoi mâcher peu gêne-t-il la digestion ?",r:"Cela réduit le broyage des aliments et leur mélange avec la salive."},
+ {s:1,n:"Salive",q:"Que montre l'expérience de l'eau iodée ?",r:"Avec salive, l'eau iodée reste jaune-brun : l'amidon a été digéré. Sans salive, bleu-noir : l'amidon est toujours là. La salive contient une enzyme."},
+ {s:1,n:"Nutriment",q:"Que deviennent les glucides, les protides et les lipides ?",r:"Glucides → glucose. Protides → acides aminés. Lipides → acides gras et glycérol."},
+ {s:1,n:"Fibres",q:"Que deviennent les fibres ?",r:"Elles ne sont pas digérées : elles facilitent le transit intestinal."},
+ {s:1,n:"Absorption intestinale",q:"Qu'est-ce que l'absorption intestinale ?",r:"Le passage des nutriments de l'intestin grêle vers le sang ou la lymphe, à travers les villosités intestinales."},
+ {s:2,n:"Pratique alimentaire",q:"Quelle différence entre végétarien et végétalien ?",r:"Le végétarien exclut la chair animale mais mange œufs et produits laitiers. Le végétalien exclut tous les aliments d'origine animale, y compris œufs, lait et miel."},
+ {s:2,n:"Pratique alimentaire",q:"Qu'est-ce qu'une pratique flexitarienne ?",r:"On n'exclut aucun aliment, mais on mange davantage de protéines végétales et moins de viande et de poisson."},
+ {s:2,n:"Choisie ou subie",q:"Quand une pratique alimentaire est-elle subie ?",r:"Quand elle est imposée : maladie, allergie, intolérance, manque d'argent, contraintes du travail."},
+ {s:2,n:"Choisie ou subie",q:"Pourquoi la manière de déjeuner de Victor est-elle en partie subie ?",r:"Son travail l'oblige à déjeuner vite, dans sa voiture, sans lieu pour manger."},
+ {s:2,n:"Besoin nutritionnel moyen",q:"Qu'est-ce que le besoin nutritionnel moyen ?",r:"La quantité moyenne d'un nutriment nécessaire à une personne en bonne santé ; il varie selon l'âge et le sexe."},
+ {s:2,n:"Carence",q:"Qu'est-ce qu'une carence ? Donner un exemple.",r:"Un manque durable d'un nutriment. Exemple : anémie (manque de fer ou de vitamine B12)."},
+ {s:2,n:"Excès alimentaire",q:"Quels sont les effets des excès de gras, de sucre et de sel ?",r:"Surpoids, obésité, diabète de type 2, maladies cardiovasculaires ; le sel est la principale cause d'hypertension."},
+ {s:2,n:"Sel",q:"Combien de sel un adulte ne devrait-il pas dépasser par jour ?",r:"5 g. Environ 80 % du sel est déjà dans les aliments : pain, charcuterie, plats préparés."},
+ {s:2,n:"Empreinte carbone",q:"Combien de fois plus un repas au bœuf émet-il qu'un repas végétarien ?",r:"4,97 ÷ 0,85 ≈ 6 fois plus de gaz à effet de serre."},
+ {s:3,n:"Étiquette",q:"Que doit obligatoirement indiquer l'étiquette d'un produit préemballé ?",r:"Dénomination, ingrédients, allergènes, quantité nette, date limite, déclaration nutritionnelle et, pour certains produits, la provenance."},
+ {s:3,n:"Ingrédient",q:"Dans quel ordre les ingrédients sont-ils rangés ?",r:"Du plus important au moins important en poids."},
+ {s:3,n:"Nutri-Score",q:"Qu'est-ce que le Nutri-Score ? Est-il obligatoire ?",r:"Cinq lettres de A à E pour comparer la qualité nutritionnelle de produits d'un même rayon ; A est la meilleure. Il n'est pas obligatoire."},
+ {s:3,n:"Additif",q:"Qu'est-ce qu'un additif ?",r:"Une substance ajoutée pour améliorer le goût, l'aspect ou la conservation ; souvent un code E suivi d'un nombre, comme E 621."},
+ {s:3,n:"Allergène",q:"Qu'est-ce qu'un allergène ? Combien doivent être signalés ?",r:"Une substance qui déclenche ou favorise une allergie ou une intolérance. Quatorze doivent être signalés, mis en relief dans les ingrédients."},
+ {s:3,n:"Valeur énergétique",q:"Quelle est la valeur énergétique d'une barquette de 300 g du plat A (141 kcal pour 100 g) ?",r:"141 × 3 = 423 kcal."},
+ {s:3,n:"Aliment ultra-transformé",q:"Comment reconnaître un aliment ultra-transformé ?",r:"Sa liste d'ingrédients contient des additifs ou des ingrédients réservés à l'industrie : amidon modifié, maltodextrine, huiles hydrogénées."},
+ {s:4,n:"Aliment ultra-transformé",q:"Pourquoi limiter les aliments ultra-transformés ?",r:"Ils sont en moyenne de moins bonne qualité nutritionnelle, et leurs additifs ont un effet à long terme encore mal connu."},
+ {s:4,n:"Nutri-Score",q:"Le Nutri-Score indique-t-il si un aliment est ultra-transformé ?",r:"Non : il renseigne sur la qualité nutritionnelle, pas sur la transformation."},
+ {s:4,n:"Score environnemental",q:"Qu'est-ce que le score environnemental ?",r:"Une note facultative, en points, qui mesure l'impact d'un produit sur l'environnement : plus il est élevé, plus l'impact est important."},
+ {s:4,n:"Critères de choix",q:"Quels critères croiser pour un choix alimentaire raisonné ?",r:"Besoins et santé, qualité nutritionnelle, transformation et additifs, impact environnemental, prix et temps."},
+ {s:4,n:"Choix raisonné",q:"Pourquoi le déjeuner 2 est-il un meilleur choix pour Victor ?",r:"Moins de graisses, de sucres et de sel ; fait maison avec des aliments peu transformés ; végétarien, il émet moins de gaz à effet de serre."}
+];
+
+const $=id=>document.getElementById(id);
+let seance=0,paquet=[],pos=0,retournee=false;
+const reduit=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pointeurFin=matchMedia("(hover:hover) and (pointer:fine)").matches;
+
+/* ===== Paquet ===== */
+function charger(melanger=false){
+  paquet=CARTES.filter(c=>!seance||c.s===seance);
+  if(melanger){paquet=paquet.slice();for(let i=paquet.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[paquet[i],paquet[j]]=[paquet[j],paquet[i]]}}
+  pos=0;afficher();
+}
+function afficher(){
+  const c=paquet[pos];
+  poser(false);
+  // on change le texte à mi-chemin si la carte était retournée
+  $("q").textContent=c.q;$("r").textContent=c.r;$("n").textContent=c.n;
+  $("sQ").textContent=$("sR").textContent=TITRES[c.s];
+  $("num").textContent=`${pos+1} / ${paquet.length}`;
+  $("barre").style.width=((pos+1)/paquet.length*100)+"%";
+  $("prec").disabled=pos===0;$("suiv").disabled=pos===paquet.length-1;
+  annoncer(`Carte ${pos+1} sur ${paquet.length}. ${c.q}`);
+}
+function poser(v){retournee=v;$("carte").classList.toggle("retournee",v);$("bRet").textContent=v?"Revoir la question":"Retourner la carte"}
+function retourner(){poser(!retournee);if(retournee)annoncer("Réponse : "+paquet[pos].r)}
+function aller(d){
+  const n=pos+d;if(n<0||n>=paquet.length)return;
+  arreterVoix();
+  if(retournee){poser(false);setTimeout(()=>{pos=n;afficher()},reduit?0:260)}
+  else{pos=n;afficher()}
+}
+function annoncer(t){$("annonce").textContent=t}
+
+/* ===== Filtres ===== */
+function filtres(){
+  const f=$("filtres");f.innerHTML="";
+  [[0,"Tout le module"],[1,"Séance 1"],[2,"Séance 2"],[3,"Séance 3"],[4,"Séance 4"]].forEach(([v,t])=>{
+    const b=document.createElement("button");b.className="puce";b.textContent=t;b.setAttribute("aria-pressed",v===seance);
+    b.onclick=()=>{seance=v;filtres();arreterVoix();charger()};f.appendChild(b);
+  });
+}
+
+/* ===== Tilt 3D + reflet ===== */
+const tilt=$("tilt"),pile=$("pile");
+if(pointeurFin&&!reduit){
+  pile.addEventListener("pointermove",e=>{
+    const b=pile.getBoundingClientRect();
+    const x=(e.clientX-b.left)/b.width, y=(e.clientY-b.top)/b.height;
+    tilt.classList.add("actif");
+    tilt.style.transform=`rotateX(${(0.5-y)*14}deg) rotateY(${(x-0.5)*16}deg) translateZ(10px)`;
+    // reflet : on inverse x sur la face arrière (retournée)
+    document.querySelectorAll(".reflet").forEach((r,i)=>{
+      r.style.setProperty("--gx",((i===1?1-x:x)*100)+"%");r.style.setProperty("--gy",(y*100)+"%");
+    });
+  });
+  pile.addEventListener("pointerleave",()=>{tilt.classList.remove("actif");tilt.style.transform=""});
+}
+
+/* ===== Balayage tactile ===== */
+let x0=null,y0=null,glisse=false;
+pile.addEventListener("touchstart",e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;glisse=false},{passive:true});
+pile.addEventListener("touchmove",e=>{
+  if(x0===null)return;const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+  if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)){glisse=true;if(!reduit)tilt.style.transform=`translateX(${dx*.35}px) rotateY(${dx*.04}deg)`}
+},{passive:true});
+pile.addEventListener("touchend",e=>{
+  if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;
+  tilt.style.transform="";
+  if(glisse&&Math.abs(dx)>60)aller(dx<0?1:-1);
+  x0=null;
+});
+
+/* ===== Voix (optionnelle) ===== */
+let voix=null;
+function choisirVoix(){const v=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang));voix=v.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||v.find(x=>/fr-FR/i.test(x.lang))||v[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}
+else document.querySelectorAll(".voix").forEach(b=>b.hidden=true);
+function lire(cote){
+  if(!("speechSynthesis" in window))return;
+  const c=paquet[pos],p=(c.dit||"").split("|");
+  const t=cote==="q"?(p[0]||c.q):(p[1]||c.r);
+  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u);
+}
+function arreterVoix(){if("speechSynthesis" in window)speechSynthesis.cancel()}
+document.querySelectorAll(".voix").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();lire(b.dataset.cote)}));
+
+/* ===== Événements ===== */
+$("carte").addEventListener("click",()=>{if(!glisse)retourner()});
+$("carte").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();retourner()}});
+$("bRet").onclick=retourner;
+$("prec").onclick=()=>aller(-1);
+$("suiv").onclick=()=>aller(1);
+$("melange").onclick=()=>{arreterVoix();charger(true);annoncer("Cartes mélangées.")};
+$("debut").onclick=()=>{arreterVoix();if(retournee)poser(false);pos=0;afficher()};
+document.addEventListener("keydown",e=>{
+  if(e.target.closest("button")&&(e.key===" "||e.key==="Enter"))return;
+  if(e.key===" "){e.preventDefault();retourner()}
+  else if(e.key==="ArrowRight")aller(1);
+  else if(e.key==="ArrowLeft")aller(-1);
+});
+if(!pointeurFin)document.querySelector(".tactile").textContent="Glisse la carte vers la gauche ou la droite pour changer.";
+
+filtres();charger();
+</script>
+</body>
+</html>
