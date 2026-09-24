@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jeu de paires — Le suivi de la santé au travail · C7 · Terminale Bac Pro · PSE</title>
+<meta name="description" content="Retourne deux cartes : retrouve chaque notion et sa définition — C7 · Le suivi de la santé au travail">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{--fond1:#0F3D36;--fond2:#1D5E50;--clair:#F4F8F5;--encre:#13302A;--doux:#5B7A71;--jaune:#FFD23F;--vrai:#2FBF71;--vrai-f:#16733F;--faux:#FF6B57;--ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;color:var(--clair);font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.05rem;line-height:1.4;
+  background:radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),linear-gradient(160deg,var(--fond1),var(--fond2));background-attachment:fixed}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--jaune);outline-offset:3px}
+.page{max-width:900px;margin:0 auto;padding:1.4rem 1.1rem 3rem}
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.9rem,5.5vw,2.8rem);line-height:1.02;margin:0}
+header p{margin:.45rem 0 0;opacity:.85}
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .4rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+.puce .et{color:var(--jaune);margin-left:.3rem}
+.puce[aria-pressed="true"] .et{color:#B8860B}
+.stats{display:flex;gap:.6rem;margin:.8rem 0 1rem;flex-wrap:wrap;align-items:center}
+.stat{background:rgba(255,255,255,.08);border:2px solid var(--ligne);border-radius:14px;padding:.3rem .8rem;display:flex;gap:.4rem;align-items:baseline}
+.stat b{font-size:1.3rem;font-variant-numeric:tabular-nums}
+.stat small{opacity:.75}
+.auto{margin-left:auto;border:2px solid var(--ligne);background:transparent;border-radius:999px;padding:.3rem .8rem;font-weight:700;font-size:.95rem}
+.auto[aria-pressed="true"]{background:var(--clair);color:var(--encre)}
+.grille{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem}
+.grille.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:600px){.grille,.grille.c3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:400px){.grille,.grille.c3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.carte{position:relative;aspect-ratio:4/5;min-height:130px;border:0;background:none;padding:0;perspective:900px}
+.inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,1.3,.5,1)}
+.carte.ouverte .inner,.carte.trouvee .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;justify-content:center;padding:.6rem;box-shadow:0 12px 24px -14px rgba(0,0,0,.6)}
+.dos{background:repeating-linear-gradient(45deg,#1D5E50 0 10px,#22695A 10px 20px);border:3px solid rgba(255,255,255,.35);align-items:center;font-size:2rem}
+.recto{transform:rotateY(180deg);background:#fff;color:var(--encre);text-align:left}
+.recto .type{font-size:.72rem;font-weight:700;text-transform:none;color:var(--doux);margin-bottom:.3rem}
+.recto.notion{background:#FFF4C2}
+.recto.notion .txt{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1rem,2.6vw,1.2rem);line-height:1.15}
+.recto.def .txt{font-size:clamp(.82rem,2.2vw,.95rem);font-weight:700;line-height:1.3}
+.carte.trouvee .recto{background:#D6F3E3;box-shadow:inset 0 0 0 3px var(--vrai-f)}
+.carte.rate .recto{box-shadow:inset 0 0 0 3px var(--faux)}
+.fin{margin-top:1rem;background:var(--clair);color:var(--encre);border-radius:24px;padding:1.3rem 1.5rem;box-shadow:0 30px 60px -25px rgba(0,0,0,.6)}
+.fin h2{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:1.8rem;margin:0}
+.etoiles{font-size:2.2rem;color:#E0A800;letter-spacing:.15rem}
+.fin ul{padding-left:1.2rem;margin:.5rem 0}
+.continuer{width:100%;height:56px;border-radius:999px;border:0;background:var(--encre);color:var(--clair);font-weight:700;font-size:1.08rem;margin-top:.8rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.inner{transition:none}}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Jeu de paires</h1>
+    <p>Retourne deux cartes : retrouve chaque notion et sa définition — C7 · Le suivi de la santé au travail</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="bcp_term_C7_jeux.html">← Toutes les révisions C7</a></nav>
+  <nav class="filtres" id="filtres" aria-label="Choisir la séance"></nav>
+  <div class="stats">
+    <div class="stat"><b id="sPaires">0</b><small>paires</small></div>
+    <div class="stat"><b id="sCoups">0</b><small>coups</small></div>
+    <div class="stat"><b id="sTemps">0:00</b><small>temps</small></div>
+    <button class="auto" id="bAuto" aria-pressed="false">🔊 Lecture auto</button>
+  </div>
+  <main class="grille" id="grille"></main>
+  <div id="fin"></div>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/\bVIP\b/g,"V I P").replace(/\bEHPAD\b/g,"é pade").replace(/\bSPST\b/g,"S P S T");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+const PAIRES=[
+ {s:1,n:"VIP",d:"Dans les 3 mois après la prise du poste."},
+ {s:1,n:"Examen d'aptitude",d:"Avant l'affectation à un poste à risques."},
+ {s:1,n:"Suivi renforcé",d:"Amiante, plomb, rayonnements…"},
+ {s:1,n:"5 ans",d:"Délai maximum de renouvellement de la VIP."},
+ {s:2,n:"Barrière cutanéo-muqueuse",d:"La peau et les muqueuses."},
+ {s:2,n:"Inflammation",d:"Rouge, chaud, gonflé, douloureux."},
+ {s:2,n:"Phagocytose",d:"Les phagocytes englobent les microbes."},
+ {s:2,n:"Immunité spécifique",d:"Vise un microbe précis."},
+ {s:2,n:"Antigène",d:"Molécule propre à un microbe."},
+ {s:2,n:"Anticorps",d:"Produit par les lymphocytes."},
+ {s:3,n:"Vaccin",d:"Un antigène rendu inoffensif."},
+ {s:3,n:"Mémoire immunitaire",d:"Réponse plus rapide au vrai microbe."},
+ {s:3,n:"Protection collective",d:"Les résidents sont protégés aussi."},
+ {s:3,n:"Employeur",d:"Paie les vaccinations liées au travail."}
+];
+const $=id=>document.getElementById(id);
+function annoncer(t){$("annonce").textContent=t}
+const CLE="memory-C7";let pref={etoiles:{},auto:false};
+try{pref=Object.assign(pref,JSON.parse(localStorage.getItem(CLE)||"{}"))}catch(e){}
+function sauver(){try{localStorage.setItem(CLE,JSON.stringify(pref))}catch(e){}}
+function melanger(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+let seance=0,cartes,ouvertes,trouvees,coups,t0,tick,verrou,nbPaires;
+
+function filtres(){
+  $("filtres").innerHTML=[[0,"Tout le module"],[1,"Séance 1"],[2,"Séance 2"],[3,"Séance 3"]].map(([v,t])=>`<button class="puce" data-s="${v}" aria-pressed="${v===seance}">${t}${pref.etoiles[v]?`<span class="et">${"★".repeat(pref.etoiles[v])}</span>`:""}</button>`).join("");
+  $("filtres").querySelectorAll(".puce").forEach(b=>b.onclick=()=>{seance=+b.dataset.s;demarrer()});
+}
+$("bAuto").onclick=()=>{pref.auto=!pref.auto;sauver();$("bAuto").setAttribute("aria-pressed",pref.auto)};
+$("bAuto").setAttribute("aria-pressed",pref.auto);
+
+function demarrer(){
+  filtres();$("fin").innerHTML="";
+  const choix=melanger(PAIRES.filter(p=>!seance||p.s===seance)).slice(0,6);
+  nbPaires=choix.length;
+  cartes=melanger(choix.flatMap((p,i)=>[{p:i,type:"notion",txt:p.n},{p:i,type:"def",txt:p.d}]));
+  ouvertes=[];trouvees=new Set();coups=0;verrou=false;clearInterval(tick);t0=null;
+  $("sTemps").textContent="0:00";
+  $("grille").className="grille"+(cartes.length%4!==0?" c3":"");
+  $("grille").innerHTML=cartes.map((c,i)=>`<button class="carte" data-i="${i}" aria-label="Carte ${i+1}, face cachée">
+    <span class="inner"><span class="face dos" aria-hidden="true">✚</span>
+    <span class="face recto ${c.type}"><span class="type">${c.type==="notion"?"Notion":"Définition"}</span><span class="txt">${c.txt}</span></span></span></button>`).join("");
+  $("grille").querySelectorAll(".carte").forEach(b=>b.onclick=()=>retourner(+b.dataset.i));
+  stats();
+}
+function stats(){$("sPaires").textContent=`${trouvees.size/2|0} / ${nbPaires}`;$("sCoups").textContent=coups}
+function el(i){return $("grille").querySelector(`.carte[data-i="${i}"]`)}
+function retourner(i){
+  if(verrou||trouvees.has(i)||ouvertes.includes(i))return;
+  if(!t0){t0=Date.now();tick=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$("sTemps").textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`},1000)}
+  const c=cartes[i];ouvertes.push(i);
+  const b=el(i);b.classList.add("ouverte");b.setAttribute("aria-label",`${c.type==="notion"?"Notion":"Définition"} : ${c.txt}`);
+  annoncer(`${c.type==="notion"?"Notion":"Définition"} : ${c.txt}`);
+  if(pref.auto)lire(c.txt);
+  if(ouvertes.length===2){
+    coups++;stats();
+    const [a,z]=ouvertes;
+    if(cartes[a].p===cartes[z].p){
+      trouvees.add(a);trouvees.add(z);ouvertes=[];
+      [a,z].forEach(x=>{const e=el(x);e.classList.add("trouvee");e.setAttribute("aria-disabled","true")});
+      stats();annoncer("Paire trouvée !");
+      if(trouvees.size===cartes.length)setTimeout(fin,500);
+    }else{
+      verrou=true;[a,z].forEach(x=>el(x).classList.add("rate"));
+      setTimeout(()=>{[a,z].forEach(x=>{const e=el(x);e.classList.remove("ouverte","rate");e.setAttribute("aria-label",`Carte ${x+1}, face cachée`)});ouvertes=[];verrou=false},1300);
+    }
+  }
+}
+function fin(){
+  clearInterval(tick);
+  const et=coups<=nbPaires+2?3:coups<=nbPaires*2?2:1;
+  pref.etoiles[seance]=Math.max(pref.etoiles[seance]||0,et);sauver();filtres();
+  const vues=[...new Set(cartes.map(c=>c.p))].map(p=>cartes.find(c=>c.p===p&&c.type==="notion").txt);
+  $("fin").innerHTML=`<div class="fin"><h2>Toutes les paires trouvées !</h2>
+    <div class="etoiles" aria-label="${et} étoiles sur 3">${"★".repeat(et)}<span style="opacity:.25">${"★".repeat(3-et)}</span></div>
+    <p>${coups} coups en ${$("sTemps").textContent}. ${et===3?"Excellente mémoire !":"Essaie de faire moins de coups."}</p>
+    <p><b>Notions révisées :</b></p><ul>${vues.map(v=>`<li>${v}</li>`).join("")}</ul>
+    <button class="continuer" id="bRej">Nouvelle partie</button></div>`;
+  $("bRej").onclick=demarrer;$("bRej").focus({preventScroll:true});
+  annoncer(`Toutes les paires trouvées en ${coups} coups.`);
+}
+let voix=null;
+function choisirVoix(){const l=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang));voix=l.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||l.find(x=>/fr-FR/i.test(x.lang))||l[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}else $("bAuto").hidden=true;
+function lire(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace("OMS","O M S"));u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u)}
+demarrer();
+</script>
+</body>
+</html>

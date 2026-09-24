@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flashcards — Le suivi de la santé au travail · C7 · Terminale Bac Pro · PSE</title>
+<meta name="description" content="Flashcards de révision — C7 — Le suivi de la santé au travail · Terminale Bac Pro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --reponse:#FFD23F; --reponse-encre:#2A2200; --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;color:var(--clair);
+  font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.1rem;line-height:1.5;
+  background:
+    radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),
+    radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),
+    linear-gradient(160deg,var(--fond1),var(--fond2));
+  background-attachment:fixed;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--reponse);outline-offset:4px}
+
+.page{max-width:820px;margin:0 auto;padding:1.4rem 1.1rem 2.5rem;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.7rem,4.5vw,2.6rem);line-height:1.05;margin:0;letter-spacing:-.01em}
+header p{margin:.35rem 0 0;opacity:.8}
+
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .4rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem;transition:background .2s,border-color .2s}
+.puce:hover{border-color:rgba(255,255,255,.5)}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+
+.progression{display:flex;align-items:center;gap:.9rem;margin:.8rem 0 1.3rem}
+.piste{flex:1;height:6px;border-radius:9px;background:rgba(255,255,255,.15);overflow:hidden}
+.piste span{display:block;height:100%;width:0;background:var(--reponse);border-radius:9px;transition:width .35s ease}
+.num{font-weight:700;font-variant-numeric:tabular-nums;min-width:4.5rem;text-align:right}
+
+/* ===== Scène / tilt / flip ===== */
+.scene{flex:1;display:flex;align-items:center;justify-content:center;perspective:1600px;padding:.5rem 0 1rem}
+.pile{position:relative;width:min(100%,640px);aspect-ratio:3/2;min-height:300px}
+.pile::before,.pile::after{content:"";position:absolute;inset:0;border-radius:26px;background:rgba(244,248,245,.16);transform:translateY(14px) scale(.95);z-index:0}
+.pile::after{transform:translateY(26px) scale(.9);background:rgba(244,248,245,.08)}
+.tilt{position:absolute;inset:0;z-index:1;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.tilt.actif{transition:transform .08s linear}
+.carte{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,1.35,.45,1);cursor:pointer;border-radius:26px;outline:none}
+.carte.retournee{transform:rotateY(180deg)}
+.carte:focus-visible .face{outline:4px solid var(--reponse);outline-offset:4px}
+.face{
+  position:absolute;inset:0;border-radius:26px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  padding:clamp(1.2rem,4vw,2.4rem);display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.55),0 10px 20px -10px rgba(0,0,0,.35);
+}
+.devant{background:linear-gradient(155deg,#FFFFFF,#EEF4F0);color:var(--encre)}
+.dos{background:linear-gradient(155deg,#FFE27A,var(--reponse));color:var(--reponse-encre);transform:rotateY(180deg)}
+.haut{display:flex;justify-content:space-between;align-items:center;gap:1rem;transform:translateZ(30px)}
+.seance{font-weight:700;font-size:.9rem;padding:.25rem .7rem;border-radius:999px;background:rgba(19,48,42,.08)}
+.dos .seance{background:rgba(42,34,0,.1)}
+.voix{border:0;background:rgba(19,48,42,.08);width:44px;height:44px;border-radius:50%;font-size:1.25rem;display:grid;place-items:center;transition:transform .15s}
+.dos .voix{background:rgba(42,34,0,.1)}
+.voix:hover{transform:scale(1.08)}
+.corps{flex:1;display:flex;align-items:center;transform:translateZ(50px)}
+.texte{margin:0;font-weight:700;font-size:clamp(1.3rem,3.6vw,2rem);line-height:1.25}
+.devant .texte{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-.005em}
+.dos .texte{font-weight:400}
+.notion{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1rem,2.4vw,1.2rem);margin-bottom:.4rem;opacity:.75}
+.bas{font-size:.95rem;color:var(--doux);transform:translateZ(20px)}
+.dos .bas{color:rgba(42,34,0,.65)}
+.reflet{position:absolute;inset:0;border-radius:26px;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.55),rgba(255,255,255,0) 55%);mix-blend-mode:soft-light}
+.tilt.actif .reflet{opacity:1}
+
+/* ===== Commandes ===== */
+.commandes{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center;margin-top:.6rem}
+.rond{width:60px;height:60px;border-radius:50%;border:2px solid var(--ligne);background:rgba(255,255,255,.08);font-size:1.5rem;display:grid;place-items:center;transition:background .2s,transform .15s}
+.rond:hover{background:rgba(255,255,255,.18)}
+.rond:active{transform:scale(.94)}
+.rond:disabled{opacity:.35;cursor:default}
+.retourner{height:60px;border-radius:999px;border:0;background:var(--reponse);color:var(--reponse-encre);font-weight:700;font-size:1.15rem;box-shadow:0 10px 24px -10px rgba(255,210,63,.7);transition:transform .15s}
+.retourner:active{transform:scale(.97)}
+.outils{display:flex;justify-content:center;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+.lien{border:0;background:none;color:var(--clair);opacity:.8;text-decoration:underline;text-underline-offset:4px;padding:.4rem .6rem;font-size:1rem}
+.lien:hover{opacity:1}
+.aide{text-align:center;font-size:.9rem;opacity:.65;margin-top:.8rem}
+kbd{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:0 .35rem;font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:560px){
+  .pile{aspect-ratio:auto;height:min(62vh,440px)}
+  .rond{width:54px;height:54px}.retourner{height:54px}
+  .aide .clavier{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .carte,.tilt,.piste span{transition:none!important}
+}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Le suivi de la santé au travail</h1>
+    <p>Flashcards de révision — C7 — Le suivi de la santé au travail · Terminale Bac Pro</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="bcp_term_C7_jeux.html">← Toutes les révisions C7</a></nav>
+
+  <nav class="filtres" id="filtres" aria-label="Choisir la séance"></nav>
+
+  <div class="progression">
+    <div class="piste" aria-hidden="true"><span id="barre"></span></div>
+    <div class="num" id="num"></div>
+  </div>
+
+  <main class="scene">
+    <div class="pile" id="pile">
+      <div class="tilt" id="tilt">
+        <div class="carte" id="carte" tabindex="0" role="button" aria-label="Retourner la carte">
+          <div class="face devant">
+            <div class="haut"><span class="seance" id="sQ"></span><button class="voix" data-cote="q" aria-label="Écouter la question">🔊</button></div>
+            <div class="corps"><p class="texte" id="q"></p></div>
+            <div class="bas">Touche la carte pour voir la réponse</div>
+            <div class="reflet"></div>
+          </div>
+          <div class="face dos">
+            <div class="haut"><span class="seance" id="sR"></span><button class="voix" data-cote="r" aria-label="Écouter la réponse">🔊</button></div>
+            <div class="corps"><div><div class="notion" id="n"></div><p class="texte" id="r"></p></div></div>
+            <div class="bas">Touche la carte pour revenir à la question</div>
+            <div class="reflet"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="commandes">
+    <button class="rond" id="prec" aria-label="Carte précédente">←</button>
+    <button class="retourner" id="bRet">Retourner la carte</button>
+    <button class="rond" id="suiv" aria-label="Carte suivante">→</button>
+  </div>
+  <div class="outils">
+    <button class="lien" id="melange">Mélanger les cartes</button>
+    <button class="lien" id="debut">Revenir au début</button>
+  </div>
+  <p class="aide"><span class="clavier"><kbd>Espace</kbd> retourner · <kbd>←</kbd> <kbd>→</kbd> changer de carte</span><span class="tactile"></span></p>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/\bVIP\b/g,"V I P").replace(/\bEHPAD\b/g,"é pade").replace(/\bSPST\b/g,"S P S T");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+/* ===== CONTENU — remplacer ce tableau pour un autre chapitre =====
+   s = séance · n = notion · q = question · r = réponse · dit = texte lu "question|réponse" (optionnel) */
+const TITRES={1:"Séance 1 — Le suivi médical",2:"Séance 2 — Les défenses de l'organisme",3:"Séance 3 — La vaccination"};
+const CARTES=[
+ {s:1,n:"Suivi médical",q:"Quel salarié bénéficie d'un suivi médical ?",r:"Tout salarié. Il est assuré par le service de prévention et de santé au travail."},
+ {s:1,n:"VIP",q:"Qu'est-ce que la visite d'information et de prévention (VIP) ?",r:"La visite pour un poste sans risque particulier, dans les 3 mois après la prise du poste."},
+ {s:1,n:"VIP",q:"Qui réalise la VIP ?",r:"Le médecin du travail ou, sous son autorité, le collaborateur médecin, l'interne en médecine du travail ou l'infirmier."},
+ {s:1,n:"VIP",q:"À quoi sert la VIP ?",r:"Interroger le salarié sur sa santé, l'informer des risques, le sensibiliser à la prévention et l'orienter vers le médecin du travail si besoin."},
+ {s:1,n:"VIP",q:"Tous les combien la VIP est-elle renouvelée ?",r:"Selon une périodicité fixée par le médecin du travail, sans dépasser 5 ans."},
+ {s:1,n:"Suivi individuel renforcé",q:"Qui bénéficie d'un suivi individuel renforcé ?",r:"Le salarié affecté à un poste à risques particuliers : amiante, plomb, agents cancérogènes, rayonnements ionisants…"},
+ {s:1,n:"Examen médical d'aptitude",q:"Qu'est-ce que l'examen médical d'aptitude ?",r:"Un examen par le médecin du travail, avant l'affectation à un poste à risques particuliers. Il donne un avis d'aptitude ou d'inaptitude."},
+ {s:1,n:"Examen médical d'aptitude",q:"Pourquoi l'examen d'aptitude a-t-il lieu avant l'affectation ?",r:"Pour vérifier que la santé du salarié est compatible avec le poste avant qu'il soit exposé : après, il serait trop tard."},
+ {s:1,n:"Situation d'Emma",q:"La visite d'Emma respecte-t-elle le délai ?",r:"Oui : environ 7 semaines après la prise du poste, avant la limite de 3 mois."},
+ {s:2,n:"Barrière cutanéo-muqueuse",q:"Qu'est-ce que la barrière cutanéo-muqueuse ?",r:"La peau et les muqueuses (bouche, nez, yeux), qui empêchent la plupart des microbes d'entrer."},
+ {s:2,n:"Barrière cutanéo-muqueuse",q:"Comment les microbes sont-ils entrés dans l'organisme d'Emma ?",r:"L'éclat de verre a coupé la peau : la plaie a ouvert une porte d'entrée."},
+ {s:2,n:"Immunité non spécifique",q:"Qu'est-ce que l'immunité non spécifique ?",r:"Une défense rapide et locale, la même contre tous les microbes. On dit aussi immunité innée."},
+ {s:2,n:"Inflammation",q:"Quels sont les signes de l'inflammation ?",r:"La zone devient rouge, chaude, gonflée et douloureuse, car le sang et les cellules de défense y affluent."},
+ {s:2,n:"Phagocytose",q:"Qu'est-ce que la phagocytose ?",r:"Des cellules de défense, les phagocytes, englobent les microbes et les détruisent."},
+ {s:2,n:"Immunité spécifique",q:"Qu'est-ce que l'immunité spécifique ?",r:"Une défense plus lente mais plus efficace, dirigée contre un microbe précis, grâce aux lymphocytes et aux anticorps. On dit aussi immunité adaptative."},
+ {s:2,n:"Immunité",q:"Donner deux différences entre immunité non spécifique et spécifique.",r:"La non spécifique agit vite et contre tous les microbes ; la spécifique est plus lente, plus efficace et vise un microbe précis."},
+ {s:2,n:"Antigène",q:"Qu'est-ce qu'un antigène ?",r:"Une molécule propre à un microbe, que le système immunitaire reconnaît."},
+ {s:2,n:"Anticorps",q:"Qu'est-ce qu'un anticorps ?",r:"Une protéine produite par les lymphocytes, capable de reconnaître un antigène précis."},
+ {s:3,n:"Vaccin",q:"Que contient un vaccin ?",r:"Un antigène d'un microbe rendu inoffensif."},
+ {s:3,n:"Vaccin",q:"Quelles sont les étapes de l'action d'un vaccin ?",r:"L'antigène est capté et présenté aux lymphocytes, qui produisent des anticorps ; des lymphocytes mémoires persistent plusieurs années."},
+ {s:3,n:"Mémoire immunitaire",q:"Qu'est-ce que la mémoire immunitaire ?",r:"Des lymphocytes mémoires et des anticorps qui persistent : au contact du vrai microbe, la réponse est plus rapide et plus forte."},
+ {s:3,n:"Rappel",q:"À quoi servent les rappels de vaccin ?",r:"À entretenir la mémoire immunitaire."},
+ {s:3,n:"Protection individuelle et collective",q:"Qui la vaccination protège-t-elle ?",r:"La personne vaccinée (protection individuelle) et, en limitant la circulation du microbe, les personnes non vaccinées (protection collective)."},
+ {s:3,n:"Risque microbiologique",q:"Qu'est-ce que le risque microbiologique ?",r:"La possibilité d'être exposé au travail à des bactéries, virus, champignons ou parasites qui peuvent nuire à la santé."},
+ {s:3,n:"Risque microbiologique",q:"Par quelles voies peut-on être contaminé au travail ?",r:"Par inhalation, par ingestion, par contact avec la peau ou les muqueuses, par piqûre ou coupure."},
+ {s:3,n:"Vaccination au travail",q:"Qui propose la vaccination au travail ? Qui paie ?",r:"Le médecin du travail la propose, l'employeur la recommande et en paie les frais."},
+ {s:3,n:"Vaccination au travail",q:"La vaccination remplace-t-elle les gants et l'hygiène ?",r:"Non : elle complète l'hygiène, la protection collective et les équipements de protection individuelle."}
+];
+
+const $=id=>document.getElementById(id);
+let seance=0,paquet=[],pos=0,retournee=false;
+const reduit=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pointeurFin=matchMedia("(hover:hover) and (pointer:fine)").matches;
+
+/* ===== Paquet ===== */
+function charger(melanger=false){
+  paquet=CARTES.filter(c=>!seance||c.s===seance);
+  if(melanger){paquet=paquet.slice();for(let i=paquet.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[paquet[i],paquet[j]]=[paquet[j],paquet[i]]}}
+  pos=0;afficher();
+}
+function afficher(){
+  const c=paquet[pos];
+  poser(false);
+  // on change le texte à mi-chemin si la carte était retournée
+  $("q").textContent=c.q;$("r").textContent=c.r;$("n").textContent=c.n;
+  $("sQ").textContent=$("sR").textContent=TITRES[c.s];
+  $("num").textContent=`${pos+1} / ${paquet.length}`;
+  $("barre").style.width=((pos+1)/paquet.length*100)+"%";
+  $("prec").disabled=pos===0;$("suiv").disabled=pos===paquet.length-1;
+  annoncer(`Carte ${pos+1} sur ${paquet.length}. ${c.q}`);
+}
+function poser(v){retournee=v;$("carte").classList.toggle("retournee",v);$("bRet").textContent=v?"Revoir la question":"Retourner la carte"}
+function retourner(){poser(!retournee);if(retournee)annoncer("Réponse : "+paquet[pos].r)}
+function aller(d){
+  const n=pos+d;if(n<0||n>=paquet.length)return;
+  arreterVoix();
+  if(retournee){poser(false);setTimeout(()=>{pos=n;afficher()},reduit?0:260)}
+  else{pos=n;afficher()}
+}
+function annoncer(t){$("annonce").textContent=t}
+
+/* ===== Filtres ===== */
+function filtres(){
+  const f=$("filtres");f.innerHTML="";
+  [[0,"Tout le module"],[1,"Séance 1"],[2,"Séance 2"],[3,"Séance 3"]].forEach(([v,t])=>{
+    const b=document.createElement("button");b.className="puce";b.textContent=t;b.setAttribute("aria-pressed",v===seance);
+    b.onclick=()=>{seance=v;filtres();arreterVoix();charger()};f.appendChild(b);
+  });
+}
+
+/* ===== Tilt 3D + reflet ===== */
+const tilt=$("tilt"),pile=$("pile");
+if(pointeurFin&&!reduit){
+  pile.addEventListener("pointermove",e=>{
+    const b=pile.getBoundingClientRect();
+    const x=(e.clientX-b.left)/b.width, y=(e.clientY-b.top)/b.height;
+    tilt.classList.add("actif");
+    tilt.style.transform=`rotateX(${(0.5-y)*14}deg) rotateY(${(x-0.5)*16}deg) translateZ(10px)`;
+    // reflet : on inverse x sur la face arrière (retournée)
+    document.querySelectorAll(".reflet").forEach((r,i)=>{
+      r.style.setProperty("--gx",((i===1?1-x:x)*100)+"%");r.style.setProperty("--gy",(y*100)+"%");
+    });
+  });
+  pile.addEventListener("pointerleave",()=>{tilt.classList.remove("actif");tilt.style.transform=""});
+}
+
+/* ===== Balayage tactile ===== */
+let x0=null,y0=null,glisse=false;
+pile.addEventListener("touchstart",e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;glisse=false},{passive:true});
+pile.addEventListener("touchmove",e=>{
+  if(x0===null)return;const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+  if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)){glisse=true;if(!reduit)tilt.style.transform=`translateX(${dx*.35}px) rotateY(${dx*.04}deg)`}
+},{passive:true});
+pile.addEventListener("touchend",e=>{
+  if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;
+  tilt.style.transform="";
+  if(glisse&&Math.abs(dx)>60)aller(dx<0?1:-1);
+  x0=null;
+});
+
+/* ===== Voix (optionnelle) ===== */
+let voix=null;
+function choisirVoix(){const v=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang));voix=v.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||v.find(x=>/fr-FR/i.test(x.lang))||v[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}
+else document.querySelectorAll(".voix").forEach(b=>b.hidden=true);
+function lire(cote){
+  if(!("speechSynthesis" in window))return;
+  const c=paquet[pos],p=(c.dit||"").split("|");
+  const t=cote==="q"?(p[0]||c.q):(p[1]||c.r);
+  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u);
+}
+function arreterVoix(){if("speechSynthesis" in window)speechSynthesis.cancel()}
+document.querySelectorAll(".voix").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();lire(b.dataset.cote)}));
+
+/* ===== Événements ===== */
+$("carte").addEventListener("click",()=>{if(!glisse)retourner()});
+$("carte").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();retourner()}});
+$("bRet").onclick=retourner;
+$("prec").onclick=()=>aller(-1);
+$("suiv").onclick=()=>aller(1);
+$("melange").onclick=()=>{arreterVoix();charger(true);annoncer("Cartes mélangées.")};
+$("debut").onclick=()=>{arreterVoix();if(retournee)poser(false);pos=0;afficher()};
+document.addEventListener("keydown",e=>{
+  if(e.target.closest("button")&&(e.key===" "||e.key==="Enter"))return;
+  if(e.key===" "){e.preventDefault();retourner()}
+  else if(e.key==="ArrowRight")aller(1);
+  else if(e.key==="ArrowLeft")aller(-1);
+});
+if(!pointeurFin)document.querySelector(".tactile").textContent="Glisse la carte vers la gauche ou la droite pour changer.";
+
+filtres();charger();
+</script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vrai ou faux ? — Le système de santé · A1 · CAP · PSE</title>
+<meta name="description" content="A1 — Le système de santé · CAP">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --jaune:#FFD23F; --vrai:#2FBF71; --vrai-f:#16733F; --faux:#FF6B57; --faux-f:#B3261E;
+  --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;color:var(--clair);overflow-x:hidden;
+  font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.1rem;line-height:1.5;
+  background:
+    radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),
+    radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),
+    linear-gradient(160deg,var(--fond1),var(--fond2));
+  background-attachment:fixed;
+}
+button,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:4px solid var(--jaune);outline-offset:4px}
+.page{max-width:820px;margin:0 auto;padding:1.4rem 1.1rem 2.5rem;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.8rem,5vw,2.7rem);line-height:1.05;margin:0;letter-spacing:-.01em}
+header p{margin:.35rem 0 0;opacity:.8}
+
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .4rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem}
+.puce:hover{border-color:rgba(255,255,255,.5)}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+
+.stats{display:flex;gap:.6rem;margin:.9rem 0 .7rem;flex-wrap:wrap}
+.stat{display:flex;align-items:baseline;gap:.4rem;background:rgba(255,255,255,.08);border:2px solid var(--ligne);border-radius:14px;padding:.35rem .8rem}
+.stat b{font-size:1.35rem;font-variant-numeric:tabular-nums}
+.stat small{opacity:.75;font-size:.9rem}
+.stat.feu b{color:var(--jaune)}
+.stat .pos{margin-left:auto}
+.stats .compte{margin-left:auto;align-self:center;font-weight:700;opacity:.85;font-variant-numeric:tabular-nums}
+
+.chrono{height:8px;border-radius:9px;background:rgba(255,255,255,.14);overflow:hidden;margin-bottom:1rem}
+.chrono span{display:block;height:100%;width:100%;background:var(--jaune);border-radius:9px}
+.chrono.urgent span{background:var(--faux)}
+.chrono[hidden]{display:block;visibility:hidden}
+
+/* ===== Scène ===== */
+.scene{position:relative;width:min(100%,580px);height:clamp(320px,52vh,430px);margin:0 auto}
+.dessous,.carte{position:absolute;inset:0;border-radius:26px}
+.dessous{background:rgba(244,248,245,.85);transform:translateY(16px) scale(.94);box-shadow:0 20px 40px -20px rgba(0,0,0,.5)}
+.dessous.d2{background:rgba(244,248,245,.35);transform:translateY(30px) scale(.88)}
+.carte{
+  background:linear-gradient(155deg,#FFFFFF,#EEF4F0);color:var(--encre);
+  padding:clamp(1.2rem,4vw,2.2rem);display:flex;flex-direction:column;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.55),0 10px 20px -10px rgba(0,0,0,.35);
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;will-change:transform;
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.2);
+}
+.carte.tenue{cursor:grabbing;transition:none}
+.carte.part{transition:transform .38s ease-in,opacity .38s ease-in}
+.carte.entre{animation:entre .35s cubic-bezier(.2,.9,.3,1.1)}
+@keyframes entre{from{transform:translateY(16px) scale(.94)}to{transform:none}}
+.haut{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.seance{font-weight:700;font-size:.9rem;padding:.25rem .7rem;border-radius:999px;background:rgba(19,48,42,.08)}
+.voix{border:0;background:rgba(19,48,42,.08);width:44px;height:44px;border-radius:50%;font-size:1.25rem;display:grid;place-items:center}
+.corps{flex:1;display:flex;align-items:center}
+.texte{margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.35rem,3.8vw,2rem);line-height:1.25}
+.bas{display:flex;justify-content:space-between;font-weight:700;font-size:.95rem}
+.bas .g{color:var(--faux-f)}.bas .d{color:var(--vrai-f)}
+.tampon{position:absolute;top:1.6rem;padding:.2rem .8rem;border:5px solid;border-radius:12px;
+  font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.8rem,6vw,2.6rem);opacity:0;pointer-events:none;background:rgba(255,255,255,.85)}
+.tampon.v{left:1.4rem;color:var(--vrai-f);transform:rotate(-12deg)}
+.tampon.f{right:1.4rem;color:var(--faux-f);transform:rotate(12deg)}
+
+/* ===== Boutons de choix ===== */
+.choix{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;width:min(100%,580px);margin:2.2rem auto 0}
+.choix button{height:64px;border-radius:999px;border:0;font-weight:700;font-size:1.25rem;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:transform .12s}
+.choix button:active{transform:scale(.96)}
+.bFaux{background:var(--faux);color:#2B0703;box-shadow:0 10px 24px -10px rgba(255,107,87,.7)}
+.bVrai{background:var(--vrai);color:#04230F;box-shadow:0 10px 24px -10px rgba(47,191,113,.7)}
+.choix[hidden]{display:none}
+
+/* ===== Correction ===== */
+.retour{position:absolute;inset:0;border-radius:26px;padding:clamp(1.2rem,4vw,2rem);display:flex;flex-direction:column;gap:.5rem;
+  background:var(--clair);color:var(--encre);box-shadow:0 30px 60px -20px rgba(0,0,0,.55);overflow:auto;animation:entre .3s ease-out}
+.retour.ok{border-top:12px solid var(--vrai)}
+.retour.ko{border-top:12px solid var(--faux)}
+.verdict{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.6rem,5vw,2.2rem);line-height:1.1}
+.ok .verdict{color:var(--vrai-f)}.ko .verdict{color:var(--faux-f)}
+.rep{margin:0;font-weight:700;font-size:1.15rem}
+.affirm{margin:0;color:var(--doux);font-style:italic}
+.expl{margin:.2rem 0 0;font-size:1.2rem}
+.retour .bas2{margin-top:auto;display:flex;gap:.6rem;align-items:center;padding-top:.6rem}
+.continuer{flex:1;height:58px;border-radius:999px;border:0;background:var(--encre);color:var(--clair);font-weight:700;font-size:1.15rem}
+
+/* ===== Fin ===== */
+.fin{background:var(--clair);color:var(--encre);border-radius:26px;padding:clamp(1.3rem,4vw,2.2rem);width:min(100%,640px);margin:0 auto;box-shadow:0 30px 60px -20px rgba(0,0,0,.55);animation:entre .35s ease-out}
+.fin h2{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.8rem,5vw,2.4rem);margin:0 0 .3rem;line-height:1.1}
+.gros{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(3rem,12vw,4.5rem);line-height:1;margin:.6rem 0}
+.gros small{font-size:.4em;color:var(--doux)}
+.fin ul{padding:0;list-style:none;margin:1rem 0}
+.fin li{border-left:5px solid var(--faux);padding:.3rem 0 .3rem .8rem;margin-bottom:.7rem}
+.fin li b{display:block}
+.fin .act{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1rem}
+.fin .act button{flex:1 1 200px;height:56px;border-radius:999px;font-weight:700;border:2px solid var(--encre);background:transparent}
+.fin .act .plein{background:var(--encre);color:var(--clair)}
+
+.reglages{display:flex;justify-content:center;gap:1rem;margin-top:1.4rem;flex-wrap:wrap;opacity:.9}
+.reglages label{display:flex;gap:.45rem;align-items:center}
+select{border:2px solid var(--ligne);background:rgba(255,255,255,.08);border-radius:10px;padding:.25rem .5rem}
+select option{color:#13302A}
+.aide{text-align:center;font-size:.9rem;opacity:.65;margin-top:.8rem}
+kbd{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:0 .35rem;font-family:inherit}
+
+.toast{position:fixed;left:50%;top:calc(1rem + env(safe-area-inset-top,0px));transform:translate(-50%,-150%);background:var(--jaune);color:#2A2200;font-weight:700;padding:.6rem 1.2rem;border-radius:999px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.9,.3,1.3);z-index:10}
+.toast.on{transform:translate(-50%,0)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:560px){.aide .clavier{display:none}.choix button{height:58px}}
+@media (hover:hover) and (pointer:fine){.aide .tactile{display:none}}
+@media (prefers-reduced-motion:reduce){.carte,.carte.part,.toast{transition:none!important}.carte.entre,.retour,.fin{animation:none}}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Vrai ou faux ?</h1>
+    <p>A1 — Le système de santé · CAP</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="cap_A1_jeux.html">← Toutes les révisions A1</a></nav>
+
+  <nav class="filtres" id="filtres" aria-label="Choisir la séance"></nav>
+
+  <div class="stats">
+    <div class="stat" aria-label="Bonnes réponses"><b id="sScore">0</b><small>justes</small></div>
+    <div class="stat feu" aria-label="Série en cours"><b id="sSerie">0</b><small>🔥 série</small></div>
+    <div class="stat" aria-label="Meilleure série"><b id="sRecord">0</b><small>🏆 record</small></div>
+    <span class="compte" id="sPos"></span>
+  </div>
+  <div class="chrono" id="chrono"><span id="barre"></span></div>
+
+  <main id="zone">
+    <div class="scene" id="scene"></div>
+    <div class="choix" id="choix">
+      <button class="bFaux" id="bFaux">✗ Faux</button>
+      <button class="bVrai" id="bVrai">✓ Vrai</button>
+    </div>
+  </main>
+
+  <div class="reglages">
+    <label>Chrono
+      <select id="duree"><option value="12">12 s</option><option value="20" selected>20 s</option><option value="0">sans chrono</option></select>
+    </label>
+  </div>
+  <p class="aide"><span class="clavier"><kbd>←</kbd> faux · <kbd>→</kbd> vrai · <kbd>Entrée</kbd> continuer</span><span class="tactile">Glisse la carte : à droite si c'est vrai, à gauche si c'est faux.</span></p>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/\bOMS\b/g,"O M S").replace(/\bDMP\b/g,"D M P").replace(/\bCAP\b/g,"cap").replace(/(\d+),(\d+) €/g,"$1 euros $2").replace(/(\d+) €/g,"$1 euros");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+/* ===== CONTENU — remplacer ce tableau pour un autre chapitre =====
+   s = séance · a = affirmation · v = true (vrai) / false (faux) · e = explication · dit = texte lu (optionnel) */
+const TITRES={1:"Séance 1 — Santé et facteurs",2:"Séance 2 — Le système solidaire"};
+const QUESTIONS=[
+ {s:1,v:false,a:"Selon l'OMS, la santé, c'est seulement ne pas être malade.",e:"C'est un complet bien-être physique, mental et social.",dit:"Selon l'O M S, la santé, c'est seulement ne pas être malade."},
+ {s:1,v:true, a:"Avoir des amis concerne le bien-être social.",e:"Ce sont les relations avec les autres."},
+ {s:1,v:false,a:"Avoir confiance en soi concerne le bien-être physique.",e:"C'est le bien-être mental."},
+ {s:1,v:true, a:"Faire du sport concerne le bien-être physique.",e:"Le corps va bien."},
+ {s:1,v:true, a:"On a un capital santé dès la naissance.",e:"On peut le protéger ou l'abîmer toute sa vie."},
+ {s:1,v:true, a:"La pollution de l'air est un facteur externe.",e:"Elle vient de ce qui entoure la personne."},
+ {s:1,v:false,a:"L'âge de Nolan est un facteur externe.",e:"L'âge vient de la personne : c'est un facteur interne."},
+ {s:1,v:true, a:"Arrêter le sport est un facteur interne.",e:"C'est un comportement."},
+ {s:1,v:true, a:"Le bruit peut provoquer des troubles du sommeil.",e:"C'est l'un des effets connus du document 2."},
+ {s:1,v:true, a:"Un plan santé est un programme de l'État.",e:"Il dure plusieurs années."},
+ {s:1,v:false,a:"Un plan santé sert à fabriquer les cartes Vitale.",e:"Il sert à protéger la santé de la population."},
+ {s:1,v:true, a:"La prévention, c'est agir avant la maladie.",e:"Pour éviter qu'elle arrive."},
+ {s:2,v:true, a:"Les travailleurs et les employeurs versent des cotisations à la Sécurité sociale.",e:"L'État verse aussi de l'argent."},
+ {s:2,v:true, a:"Solidarité : chacun donne selon ses moyens, chacun reçoit selon ses besoins.",e:"C'est le principe de la Sécurité sociale."},
+ {s:2,v:true, a:"On déclare un médecin traitant à partir de 16 ans.",e:"On le déclare à l'Assurance maladie."},
+ {s:2,v:false,a:"Sans médecin traitant, une consultation à 30 € est remboursée 19 €.",e:"Elle n'est remboursée que 8,40 €.",dit:"Sans médecin traitant, une consultation à 30 euros est remboursée 19 euros."},
+ {s:2,v:true, a:"Avec un médecin traitant, il reste 11 € à payer pour une consultation à 30 €.",e:"30 − 19 = 11 €.",dit:"Avec un médecin traitant, il reste 11 euros à payer pour une consultation à 30 euros."},
+ {s:2,v:true, a:"On peut consulter directement un ophtalmologue.",e:"Il est en accès direct."},
+ {s:2,v:false,a:"À 30 ans, on peut consulter directement un psychiatre sans sortir du parcours de soins.",e:"L'accès direct au psychiatre, c'est seulement entre 16 et 25 ans."},
+ {s:2,v:true, a:"La carte Vitale est gratuite.",e:"Et personnelle."},
+ {s:2,v:false,a:"La carte Vitale sert à payer le médecin.",e:"Elle prouve qu'on est assuré et accélère le remboursement."},
+ {s:2,v:true, a:"Mon espace santé contient les résultats d'examens.",e:"Et les traitements et les vaccins."},
+ {s:2,v:false,a:"Tout le monde peut regarder Mon espace santé d'une personne.",e:"Seuls le patient et les professionnels autorisés."}
+];
+
+/* ===== Outils ===== */
+const $=id=>document.getElementById(id);
+const reduit=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const CLE="vf-CAPA1-sante";
+let pref={record:0,duree:"20"};
+try{pref=Object.assign(pref,JSON.parse(localStorage.getItem(CLE)||"{}"))}catch(e){}
+function sauver(){try{localStorage.setItem(CLE,JSON.stringify(pref))}catch(e){}}
+$("duree").value=pref.duree;
+
+let seance=0,paquet=[],pos=0,score=0,serie=0,erreurs=[],verrou=false,phase="q";
+let chronoId=null,t0=0;
+
+function melanger(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function annoncer(t){$("annonce").textContent=t}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("on"),1800)}
+function stats(){
+  $("sScore").textContent=score;$("sSerie").textContent=serie;$("sRecord").textContent=pref.record;
+  $("sPos").textContent=paquet.length?`${Math.min(pos+1,paquet.length)} / ${paquet.length}`:"";
+}
+
+/* ===== Partie ===== */
+function demarrer(liste){
+  paquet=melanger(liste||QUESTIONS.filter(q=>!seance||q.s===seance));
+  pos=0;score=0;serie=0;erreurs=[];
+  $("zone").innerHTML='<div class="scene" id="scene"></div><div class="choix" id="choix"><button class="bFaux" id="bFaux">✗ Faux</button><button class="bVrai" id="bVrai">✓ Vrai</button></div>';
+  $("bFaux").onclick=()=>repondre(false);$("bVrai").onclick=()=>repondre(true);
+  question();
+}
+function question(){
+  if(pos>=paquet.length){fin();return}
+  phase="q";verrou=false;
+  const q=paquet[pos],reste=paquet.length-pos;
+  $("scene").innerHTML=
+    (reste>2?'<div class="dessous d2"></div>':'')+(reste>1?'<div class="dessous"></div>':'')+
+    `<div class="carte${reduit?'':' entre'}" id="carte" tabindex="0" aria-label="Affirmation : ${q.a.replace(/"/g,'&quot;')}">
+      <div class="haut"><span class="seance">${TITRES[q.s]}</span><button class="voix" id="bVoix" aria-label="Écouter l'affirmation">🔊</button></div>
+      <div class="corps"><p class="texte">${q.a}</p></div>
+      <div class="bas"><span class="g">← Faux</span><span class="d">Vrai →</span></div>
+      <div class="tampon v">VRAI</div><div class="tampon f">FAUX</div>
+    </div>`;
+  $("choix").hidden=false;
+  $("bVoix").onclick=e=>{e.stopPropagation();lire(q.dit||q.a)};
+  glisser($("carte"));
+  stats();lancerChrono();
+  annoncer(`Affirmation ${pos+1} sur ${paquet.length} : ${q.a}. Vrai ou faux ?`);
+}
+
+/* ===== Glisser la carte ===== */
+function glisser(carte){
+  const tv=carte.querySelector(".tampon.v"),tf=carte.querySelector(".tampon.f");
+  let sx=0,sy=0,dx=0,tenue=false;
+  carte.addEventListener("pointerdown",e=>{
+    if(verrou||e.target.closest("button"))return;
+    tenue=true;sx=e.clientX;sy=e.clientY;dx=0;carte.setPointerCapture(e.pointerId);carte.classList.remove("entre");carte.classList.add("tenue");
+  });
+  carte.addEventListener("pointermove",e=>{
+    if(!tenue)return;
+    dx=e.clientX-sx;const dy=e.clientY-sy;
+    carte.style.transform=`translate(${dx}px,${dy*.25}px) rotate(${dx/18}deg)`;
+    tv.style.opacity=Math.max(0,Math.min(1,dx/110));tf.style.opacity=Math.max(0,Math.min(1,-dx/110));
+  });
+  const lacher=()=>{
+    if(!tenue)return;tenue=false;carte.classList.remove("tenue");
+    const seuil=Math.min(110,carte.offsetWidth*.25);
+    if(Math.abs(dx)>seuil)repondre(dx>0);
+    else{carte.style.transform="";tv.style.opacity=0;tf.style.opacity=0}
+  };
+  carte.addEventListener("pointerup",lacher);carte.addEventListener("pointercancel",lacher);
+}
+
+/* ===== Chrono ===== */
+function lancerChrono(){
+  arreterChrono();
+  const d=+$("duree").value,c=$("chrono"),b=$("barre");
+  if(!d){c.hidden=true;return}
+  c.hidden=false;c.classList.remove("urgent");t0=performance.now();
+  const tick=now=>{
+    const r=Math.max(0,1-(now-t0)/(d*1000));
+    b.style.width=(r*100)+"%";c.classList.toggle("urgent",r<.3);
+    if(r<=0){repondre(null);return}
+    chronoId=requestAnimationFrame(tick);
+  };
+  chronoId=requestAnimationFrame(tick);
+}
+function arreterChrono(){if(chronoId)cancelAnimationFrame(chronoId);chronoId=null}
+
+/* ===== Réponse ===== */
+function repondre(choix){
+  if(verrou||phase!=="q")return;
+  verrou=true;arreterChrono();arreterVoix();
+  const q=paquet[pos],ok=choix===q.v,carte=$("carte");
+  if(ok){score++;serie++;if(serie>pref.record){pref.record=serie;sauver()}}
+  else{serie=0;erreurs.push(q);if(navigator.vibrate)navigator.vibrate(60)}
+  if(ok&&[3,5,10,15,20].includes(serie))toast(`🔥 Série de ${serie} !`);
+  stats();
+  if(carte&&choix!==null&&!reduit){
+    carte.querySelector(choix?".tampon.v":".tampon.f").style.opacity=1;
+    carte.classList.remove("tenue","entre");carte.classList.add("part");
+    carte.style.transform=`translate(${choix?120:-120}vw,40px) rotate(${choix?30:-30}deg)`;
+  }else if(carte&&!reduit){carte.classList.add("part");carte.style.opacity=0}
+  setTimeout(()=>correction(q,choix,ok),reduit?0:340);
+}
+function correction(q,choix,ok){
+  phase="f";$("choix").hidden=true;
+  const verdict=choix===null?"⏱ Temps écoulé":ok?["✓ Bien vu !","✓ Exact !","✓ Bravo !"][pos%3]:"✗ Pas tout à fait";
+  $("scene").innerHTML=
+    `<div class="retour ${ok?'ok':'ko'}">
+      <div class="verdict">${verdict}</div>
+      <p class="rep">C'était ${q.v?"VRAI":"FAUX"}.</p>
+      <p class="affirm">« ${q.a} »</p>
+      <p class="expl">${q.e}</p>
+      <div class="bas2">
+        <button class="voix" id="bVoixE" aria-label="Écouter l'explication">🔊</button>
+        <button class="continuer" id="bCont">${pos+1<paquet.length?"Carte suivante":"Voir mon résultat"}</button>
+      </div>
+    </div>`;
+  $("bCont").onclick=()=>{arreterVoix();pos++;question()};
+  $("bVoixE").onclick=()=>lire(`C'était ${q.v?"vrai":"faux"}. ${q.e}`.replace(/SMIC/g,"smic").replace(/MSA/g,"M S A"));
+  $("bCont").focus({preventScroll:true});
+  annoncer(`${verdict.replace(/^[^A-Za-zÀ-ÿ]+/,"")}. C'était ${q.v?"vrai":"faux"}. ${q.e}`);
+}
+
+/* ===== Fin ===== */
+function fin(){
+  phase="fin";arreterChrono();$("chrono").hidden=true;
+  const total=paquet.length,taux=score/total;
+  const titre=taux===1?"Sans faute !":taux>=.8?"Très bien joué !":taux>=.5?"Bonne révision !":"On s'accroche !";
+  $("zone").innerHTML=
+   `<div class="fin" tabindex="-1" id="fin">
+     <h2>${titre}</h2>
+     <div class="gros">${score}<small> / ${total}</small></div>
+     <p>🏆 Ton record de série : <b>${pref.record}</b></p>
+     ${erreurs.length?`<p><b>À revoir :</b></p><ul>${erreurs.map(q=>`<li><b>${q.v?"VRAI":"FAUX"} — ${q.a}</b>${q.e}</li>`).join("")}</ul>`:"<p>Tu n'as fait aucune erreur. Change de séance ou baisse le chrono !</p>"}
+     <div class="act">
+       ${erreurs.length?`<button class="plein" id="bErr">Rejouer mes ${erreurs.length} erreur${erreurs.length>1?"s":""}</button>`:""}
+       <button id="bRej" class="${erreurs.length?"":"plein"}">Rejouer</button>
+     </div>
+   </div>`;
+  if($("bErr")){const e=erreurs.slice();$("bErr").onclick=()=>demarrer(e)}
+  $("bRej").onclick=()=>demarrer();
+  $("fin").focus({preventScroll:true});
+  stats();$("sPos").textContent="";
+  annoncer(`Partie terminée : ${score} sur ${total}.`);
+}
+
+/* ===== Voix ===== */
+let voix=null;
+function choisirVoix(){const v=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang));voix=v.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||v.find(x=>/fr-FR/i.test(x.lang))||v[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}
+function lire(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u)}
+function arreterVoix(){if("speechSynthesis" in window)speechSynthesis.cancel()}
+
+/* ===== Filtres, réglages, clavier ===== */
+function filtres(){
+  const f=$("filtres");f.innerHTML="";
+  [[0,"Tout le module"],[1,"Séance 1"],[2,"Séance 2"]].forEach(([v,t])=>{
+    const b=document.createElement("button");b.className="puce";b.textContent=t;b.setAttribute("aria-pressed",v===seance);
+    b.onclick=()=>{seance=v;filtres();arreterVoix();arreterChrono();demarrer()};f.appendChild(b);
+  });
+}
+$("duree").onchange=()=>{pref.duree=$("duree").value;sauver();if(phase==="q"&&!verrou)lancerChrono()};
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="SELECT")return;
+  if(phase==="q"){
+    if(e.key==="ArrowRight"){e.preventDefault();repondre(true)}
+    else if(e.key==="ArrowLeft"){e.preventDefault();repondre(false)}
+  }else if(phase==="f"&&(e.key==="Enter"||e.key===" ")&&!e.target.closest("button")){
+    e.preventDefault();$("bCont").click();
+  }
+});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&phase==="q"&&!verrou)arreterChrono();else if(!document.hidden&&phase==="q"&&!verrou)lancerChrono()});
+
+filtres();demarrer();
+</script>
+</body>
+</html>

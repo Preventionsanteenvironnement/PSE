@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trier dans les bonnes boîtes — Les rythmes biologiques, le sommeil · A2 · Seconde Bac Pro · PSE</title>
+<meta name="description" content="A2 — Les rythmes biologiques, le sommeil · Seconde Bac Pro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --jaune:#FFD23F; --vrai:#2FBF71; --vrai-f:#16733F; --faux:#FF6B57; --faux-f:#B3261E;
+  --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;color:var(--clair);
+  font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.08rem;line-height:1.45;
+  background:
+    radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),
+    radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),
+    linear-gradient(160deg,var(--fond1),var(--fond2));
+  background-attachment:fixed;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--jaune);outline-offset:3px}
+.page{max-width:1100px;margin:0 auto;padding:1.4rem 1.1rem 3rem}
+
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.8rem,5vw,2.7rem);line-height:1.05;margin:0;letter-spacing:-.01em}
+header p{margin:.35rem 0 0;opacity:.8}
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .6rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem;text-align:left;line-height:1.2}
+.puce small{display:block;font-weight:400;opacity:.75;font-size:.8rem}
+.puce:hover{border-color:rgba(255,255,255,.5)}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+.puce .et{color:var(--jaune);margin-left:.3rem}
+.puce[aria-pressed="true"] .et{color:#B8860B}
+
+.tete{display:flex;gap:.8rem;align-items:flex-start;justify-content:space-between;margin:.8rem 0 1rem}
+.consigne{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.3rem,3.4vw,1.65rem);line-height:1.25;margin:0}
+.consigne b{font-weight:800;color:var(--jaune)}
+.rond{flex:none;width:48px;height:48px;border-radius:50%;border:2px solid var(--ligne);background:rgba(255,255,255,.08);font-size:1.25rem}
+
+/* ===== Bac d'étiquettes ===== */
+.bac{border:2px dashed var(--ligne);border-radius:22px;padding:.9rem;min-height:92px;background:rgba(255,255,255,.04);transition:background .15s,border-color .15s}
+.bac-titre{font-weight:700;opacity:.85;margin:0 0 .6rem;font-size:.98rem}
+.etiquettes{display:flex;flex-wrap:wrap;gap:.55rem}
+.vide{opacity:.7;font-style:italic;margin:.2rem 0}
+.chip{
+  border:0;background:#FFFFFF;color:var(--encre);border-radius:14px;padding:.6rem .85rem;font-weight:700;font-size:1.02rem;text-align:left;line-height:1.25;
+  box-shadow:0 8px 18px -10px rgba(0,0,0,.6),0 2px 0 rgba(0,0,0,.08);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+  transition:transform .12s,box-shadow .12s;max-width:100%;
+}
+.chip:hover{transform:translateY(-2px)}
+.chip[aria-pressed="true"]{outline:4px solid var(--jaune);outline-offset:2px;transform:translateY(-3px) rotate(-1deg)}
+.chip.fantome{opacity:.25}
+.chip.faux{box-shadow:inset 0 0 0 3px var(--faux),0 8px 18px -10px rgba(0,0,0,.6)}
+.chip.faux::before{content:"✗ ";color:var(--faux-f)}
+.chip.bon{cursor:default;background:#E3F6EC;box-shadow:inset 5px 0 0 var(--vrai-f)}
+.chip.bon::before{content:"✓ ";color:var(--vrai-f)}
+.chip.bon:hover{transform:none}
+.ghost{position:fixed;z-index:50;pointer-events:none;transform:rotate(-3deg) scale(1.04);box-shadow:0 20px 40px -12px rgba(0,0,0,.6)!important;margin:0}
+
+.aideSel{min-height:1.6rem;margin:.9rem .2rem .5rem;font-weight:700;color:var(--jaune)}
+
+/* ===== Boîtes ===== */
+.boites{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:.8rem}
+.boite{border:3px solid var(--c);border-radius:22px;background:rgba(255,255,255,.05);display:flex;flex-direction:column;overflow:hidden;min-height:200px;transition:background .15s,transform .15s}
+.boite.survol,.bac.survol{background:rgba(255,255,255,.16)}
+.boite.survol{transform:scale(1.015)}
+.boites.choix .boite{background:rgba(255,255,255,.1)}
+.boite-tete{border:0;background:var(--c);color:#10231C;font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1rem,2.6vw,1.3rem);padding:.7rem .6rem;line-height:1.15;text-align:center}
+.boite-tete small{display:block;font-family:"Atkinson Hyperlegible",sans-serif;font-weight:700;font-size:.8rem;opacity:.75}
+.boite-corps{flex:1;padding:.6rem;display:flex;flex-direction:column;gap:.45rem}
+.boite-corps .chip{width:100%;font-size:.95rem;padding:.5rem .65rem}
+
+.actions{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.2rem}
+.verifier{flex:1 1 240px;height:58px;border-radius:999px;border:0;background:var(--jaune);color:#2A2200;font-weight:700;font-size:1.15rem;box-shadow:0 10px 24px -10px rgba(255,210,63,.7)}
+.verifier:disabled{opacity:.45;cursor:default;box-shadow:none}
+.sec{flex:0 1 auto;height:58px;border-radius:999px;border:2px solid var(--ligne);background:transparent;font-weight:700;padding:0 1.3rem}
+
+.panneau{margin-top:1.2rem;border-radius:22px;padding:1.1rem 1.2rem;background:var(--clair);color:var(--encre);box-shadow:0 30px 60px -25px rgba(0,0,0,.6)}
+.panneau h2{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:1.5rem;margin:0 0 .4rem;line-height:1.15}
+.panneau ul{margin:.4rem 0 0;padding:0;list-style:none}
+.panneau li{border-left:5px solid var(--faux);padding:.25rem 0 .25rem .75rem;margin-bottom:.6rem}
+.panneau.ok{border-top:10px solid var(--vrai)}
+.panneau.ko{border-top:10px solid var(--faux)}
+.etoiles{font-size:2.4rem;letter-spacing:.2rem;color:#E0A800}
+.panneau .actions .sec{border-color:var(--encre);color:var(--encre)}
+.panneau .verifier{background:var(--encre);color:var(--clair);box-shadow:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:600px){
+  .boites{gap:.45rem}
+  .boite{border-radius:16px;min-height:170px}
+  .boite-corps{padding:.4rem}
+  .boite-corps .chip{font-size:.85rem;padding:.45rem .5rem}
+}
+@media (prefers-reduced-motion:reduce){.chip,.boite{transition:none}}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Trier dans les bonnes boîtes</h1>
+    <p>A2 — Les rythmes biologiques, le sommeil · Seconde Bac Pro</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="bcp_2nde_A2_jeux.html">← Toutes les révisions A2</a></nav>
+  <nav class="filtres" id="filtres" aria-label="Choisir le tri"></nav>
+
+  <div class="tete">
+    <p class="consigne" id="consigne"></p>
+    <button class="rond" id="bLire" aria-label="Écouter la consigne">🔊</button>
+  </div>
+
+  <section class="bac" id="bac" aria-label="Étiquettes à classer">
+    <p class="bac-titre" id="bacTitre"></p>
+    <div class="etiquettes" id="etiquettes"></div>
+  </section>
+
+  <p class="aideSel" id="aideSel" aria-live="polite"></p>
+  <div class="boites" id="boites"></div>
+
+  <div class="actions">
+    <button class="verifier" id="bVerif">Vérifier mon tri</button>
+    <button class="sec" id="bRecom">Recommencer</button>
+  </div>
+  <div id="resultat"></div>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/(\d+) h (\d+)/g,"$1 heures $2").replace(/(\d+) h\b/g,"$1 heures").replace(/÷/g," divisé par ").replace(/°C/g," degrés");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+/* ===== CONTENU — ajouter ou modifier des tris ici =====
+   items : [étiquette, clé de la bonne boîte, explication] */
+const TRIS=[
+ {id:"cycfreq",seance:"Séance 1",titre:"Cycle ou fréquence ?",verbe:"Classer",consigne:"chaque donnée : durée d'un cycle ou fréquence (nombre de cycles dans un temps donné) ?",
+  boites:[{k:"cy",nom:"Durée d'un cycle",c:"#7CC4F0"},{k:"fr",nom:"Fréquence",sous:"cycles par unité de temps",c:"#FFD23F"}],
+  items:[["Une respiration dure 4 secondes","cy","C'est la durée d'un cycle."],["Un cycle de sommeil dure 90 minutes","cy","C'est la durée d'un cycle."],["L'alternance veille-sommeil dure 24 heures","cy","C'est la durée d'un cycle."],
+   ["15 respirations par minute","fr","Nombre de cycles par minute."],["3 cycles de sommeil complets par nuit","fr","Nombre de cycles par nuit."],["Une veille-sommeil par jour","fr","Nombre de cycles par jour."]]},
+ {id:"phases",seance:"Séance 2",titre:"Les phases du sommeil",verbe:"Classer",consigne:"chaque élément dans la bonne phase du sommeil.",
+  boites:[{k:"le",nom:"Sommeil lent léger",c:"#9BD8B5"},{k:"pr",nom:"Sommeil lent profond",c:"#7CC4F0"},{k:"pa",nom:"Sommeil paradoxal",c:"#C9A2F0"}],
+  items:[["La détente du corps","le","C'est le sommeil lent léger."],["Le passage vers le sommeil profond","le","C'est le sommeil lent léger."],
+   ["La récupération physique","pr","C'est le sommeil lent profond."],["Le corps se répare et renforce ses défenses","pr","C'est le sommeil lent profond."],["Domine au début de la nuit","pr","C'est le sommeil lent profond."],
+   ["La récupération mentale","pa","C'est le sommeil paradoxal."],["La mémorisation de ce qui a été appris","pa","C'est le sommeil paradoxal."],["La phase des rêves","pa","C'est le sommeil paradoxal."],["Domine à la fin de la nuit","pa","C'est le sommeil paradoxal."]]},
+ {id:"melatonine",seance:"Séance 2",titre:"Mélatonine : favorisée ou freinée ?",verbe:"Classer",consigne:"chaque situation : favorise-t-elle ou freine-t-elle la production de mélatonine ?",
+  boites:[{k:"fav",nom:"Favorise la mélatonine",sous:"l'obscurité",c:"#2FBF71"},{k:"fre",nom:"Freine la mélatonine",sous:"la lumière",c:"#FF8A75"}],
+  items:[["Dormir volets fermés","fav","L'obscurité favorise la mélatonine."],["Des rideaux occultants","fav","Ils gardent l'obscurité."],["Arrêter les écrans une heure avant de dormir","fav","Plus de lumière d'écran."],
+   ["Consulter son téléphone dans son lit","fre","La lumière de l'écran la freine."],["La lumière du jour qui passe entre les rideaux","fre","La lumière la freine."],["Regarder une série jusqu'à l'endormissement","fre","La lumière de l'écran la freine."]]},
+ {id:"rythmes",seance:"Séance 3",titre:"Biologique ou social ?",verbe:"Classer",consigne:"chaque rythme : biologique (l'organisme) ou social (la société) ?",
+  boites:[{k:"bio",nom:"Rythme biologique",c:"#7CC4F0"},{k:"soc",nom:"Rythme social",c:"#FFB066"}],
+  items:[["L'alternance veille-sommeil","bio","C'est une fonction de l'organisme."],["La respiration","bio","C'est une fonction de l'organisme."],["La production de mélatonine","bio","C'est une fonction de l'organisme."],
+   ["Les horaires de travail","soc","Imposés par la société."],["Les heures des repas","soc","Imposées par la vie sociale."],["Les horaires des transports","soc","Imposés par la société."],["Les loisirs et la vie de famille","soc","C'est un rythme social."]]},
+ {id:"consequences",seance:"Séance 3",titre:"Les conséquences du travail de nuit",verbe:"Classer",consigne:"chaque conséquence dans la bonne colonne.",
+  boites:[{k:"san",nom:"Sur la santé",c:"#FF8A75"},{k:"soc",nom:"Sur la vie sociale et familiale",c:"#C9A2F0"},{k:"tra",nom:"Sur le travail",c:"#FFD23F"}],
+  items:[["Un sommeil plus court et morcelé","san","C'est la santé."],["Des troubles digestifs","san","C'est la santé."],["Une fatigue permanente","san","C'est la santé."],
+   ["Moins de temps avec les amis","soc","C'est la vie sociale."],["Moins de temps avec la famille","soc","C'est la vie familiale."],["Arrêter le football du samedi","soc","C'est la vie sociale."],
+   ["Une somnolence en conduisant le transpalette","tra","C'est le travail."],["Une baisse de la vigilance","tra","C'est le travail."],["Des accidents plus nombreux","tra","C'est le travail."]]},
+ {id:"hygiene",seance:"Séance 3",titre:"Bonne ou mauvaise habitude ?",verbe:"Classer",consigne:"chaque habitude : favorise-t-elle un sommeil récupérateur ?",
+  boites:[{k:"ok",nom:"Favorise le sommeil",c:"#2FBF71"},{k:"non",nom:"Nuit au sommeil",c:"#FF8A75"}],
+  items:[["Se coucher et se lever à heures régulières","ok","L'horloge biologique se règle."],["Dormir dans une chambre calme et aérée","ok","Les cycles vont jusqu'au bout."],["Prendre un repas léger avant de dormir","ok","C'est une mesure du document 8."],["Aller se coucher dès les bâillements","ok","Ne pas résister aux signes du sommeil."],
+   ["Boire un café avant de se coucher","non","La caféine retarde le sommeil."],["Faire une séance de sport juste avant de dormir","non","Pas d'activité physique dans les heures qui précèdent le coucher."],["Chauffer la chambre à 25 °C","non","Pas plus de 18 à 20 °C."],["Dormir tard les jours de repos, puis tôt les jours de travail","non","Les heures doivent rester régulières."]]}
+];
+
+/* ===== Outils ===== */
+const $=id=>document.getElementById(id);
+const CLE="tri-boites-A2";
+let pref={etoiles:{}};
+try{pref=Object.assign(pref,JSON.parse(localStorage.getItem(CLE)||"{}"))}catch(e){}
+function sauver(){try{localStorage.setItem(CLE,JSON.stringify(pref))}catch(e){}}
+function annoncer(t){$("annonce").textContent=t}
+function melanger(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+let tri,ordre,place,valide,sel,essais,premiersBons,termine;
+
+/* ===== Démarrage ===== */
+function filtres(){
+  const f=$("filtres");f.innerHTML="";
+  TRIS.forEach(t=>{
+    const b=document.createElement("button");b.className="puce";b.setAttribute("aria-pressed",t===tri);
+    const e=pref.etoiles[t.id];
+    b.innerHTML=`${t.titre}${e?`<span class="et">${"★".repeat(e)}</span>`:""}<small>${t.seance}</small>`;
+    b.onclick=()=>demarrer(t);f.appendChild(b);
+  });
+}
+function demarrer(t){
+  tri=t;ordre=melanger(t.items.map((_,i)=>i));place={};valide=new Set();sel=null;essais=0;premiersBons=null;termine=false;
+  fauxSet.clear();$("resultat").innerHTML="";filtres();
+  $("consigne").innerHTML=`<b>${t.verbe}</b> ${t.consigne}`;
+  $("boites").style.setProperty("--n",t.boites.length);
+  rendre();
+}
+
+/* ===== Rendu ===== */
+function chipHTML(i){
+  const it=tri.items[i],bon=valide.has(i),faux=!bon&&place[i]===undefined&&fauxSet.has(i);
+  return `<button class="chip${bon?" bon":""}${faux?" faux":""}" data-i="${i}" aria-pressed="${sel===i}" ${bon?'aria-disabled="true"':""}>${it[0]}</button>`;
+}
+let fauxSet=new Set();
+function rendre(focusI){
+  const restant=ordre.filter(i=>place[i]===undefined);
+  $("etiquettes").innerHTML=restant.length?restant.map(chipHTML).join(""):`<p class="vide">Toutes les étiquettes sont placées.</p>`;
+  $("bacTitre").textContent=restant.length?`Étiquettes à classer (${restant.length})`:"Étiquettes à classer";
+  $("boites").innerHTML=tri.boites.map(b=>`
+    <section class="boite" data-k="${b.k}" style="--c:${b.c}" aria-label="${b.nom}">
+      <button class="boite-tete" data-k="${b.k}">${b.nom}${b.sous?`<small>${b.sous}</small>`:""}</button>
+      <div class="boite-corps">${ordre.filter(i=>place[i]===b.k).map(chipHTML).join("")}</div>
+    </section>`).join("");
+  $("boites").classList.toggle("choix",sel!==null);
+  const nb=restant.length;
+  $("bVerif").disabled=nb>0||termine;
+  $("bVerif").textContent=termine?"Tri réussi ✓":nb?`Encore ${nb} étiquette${nb>1?"s":""} à classer`:"Vérifier mon tri";
+  $("aideSel").textContent=sel!==null?`« ${tri.items[sel][0]} » : ${matchMedia("(hover:none)").matches?"touche":"clique sur"} une boîte pour la ranger.`:"";
+  if(focusI!==undefined){const c=document.querySelector(`.chip[data-i="${focusI}"]`);if(c)c.focus({preventScroll:true})}
+}
+
+/* ===== Placer ===== */
+function placer(i,k){
+  if(valide.has(i)||termine)return;
+  if(k===null)delete place[i];else place[i]=k;
+  fauxSet.delete(i);sel=null;
+  rendre(i);
+  annoncer(k?`« ${tri.items[i][0]} » rangée dans ${tri.boites.find(b=>b.k===k).nom}.`:`« ${tri.items[i][0]} » remise dans les étiquettes.`);
+}
+function choisir(i){
+  if(valide.has(i)||termine)return;
+  sel=sel===i?null:i;rendre(i);
+  if(sel!==null)annoncer(`Étiquette choisie : ${tri.items[i][0]}. Choisis une boîte.`);
+}
+
+/* ===== Clics / clavier ===== */
+document.addEventListener("click",e=>{
+  if(glisseFini){glisseFini=false;return}
+  const chip=e.target.closest(".chip");
+  if(chip){
+    const i=+chip.dataset.i,b=chip.closest(".boite");
+    if(sel!==null&&sel!==i&&b){placer(sel,b.dataset.k);return}
+    choisir(i);return}
+  const boite=e.target.closest(".boite");
+  if(boite&&sel!==null){placer(sel,boite.dataset.k);return}
+  if(e.target.closest("#bac")&&sel!==null&&place[sel]!==undefined){placer(sel,null)}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sel!==null){sel=null;rendre()}});
+
+/* ===== Glisser-déposer (souris + tactile) ===== */
+let d=null,glisseFini=false,defil=null;
+document.addEventListener("pointerdown",e=>{
+  const chip=e.target.closest(".chip");
+  if(!chip||valide.has(+chip.dataset.i)||termine||e.button>0)return;
+  const r=chip.getBoundingClientRect();
+  d={i:+chip.dataset.i,el:chip,x0:e.clientX,y0:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,w:r.width,actif:false,x:e.clientX,y:e.clientY};
+});
+document.addEventListener("pointermove",e=>{
+  if(!d)return;d.x=e.clientX;d.y=e.clientY;
+  if(!d.actif){
+    if(Math.hypot(e.clientX-d.x0,e.clientY-d.y0)<7)return;
+    d.actif=true;sel=null;
+    d.g=d.el.cloneNode(true);d.g.classList.add("ghost");d.g.style.width=d.w+"px";d.g.removeAttribute("aria-pressed");
+    document.body.appendChild(d.g);d.el.classList.add("fantome");
+    defil=requestAnimationFrame(autoDefil);
+  }
+  e.preventDefault();bouger();
+},{passive:false});
+function bouger(){
+  d.g.style.left=(d.x-d.dx)+"px";d.g.style.top=(d.y-d.dy)+"px";
+  document.querySelectorAll(".survol").forEach(x=>x.classList.remove("survol"));
+  const c=cible();if(c)c.classList.add("survol");
+}
+function cible(){const el=document.elementFromPoint(d.x,d.y);return el?el.closest(".boite,#bac"):null}
+function autoDefil(){
+  if(!d||!d.actif)return;
+  const m=80;
+  if(d.y<m)scrollBy(0,-Math.ceil((m-d.y)/5));
+  else if(d.y>innerHeight-m)scrollBy(0,Math.ceil((d.y-innerHeight+m)/5));
+  bouger();defil=requestAnimationFrame(autoDefil);
+}
+function lacher(){
+  if(!d)return;
+  if(d.actif){
+    cancelAnimationFrame(defil);
+    const c=cible();d.g.remove();d.el.classList.remove("fantome");
+    document.querySelectorAll(".survol").forEach(x=>x.classList.remove("survol"));
+    glisseFini=true;setTimeout(()=>glisseFini=false,50);
+    if(c&&c.classList.contains("boite"))placer(d.i,c.dataset.k);
+    else if(c&&c.id==="bac")placer(d.i,null);
+  }
+  d=null;
+}
+document.addEventListener("pointerup",lacher);
+document.addEventListener("pointercancel",lacher);
+
+/* ===== Vérifier ===== */
+$("bVerif").onclick=()=>{
+  if($("bVerif").disabled)return;
+  essais++;
+  const erreurs=[];
+  ordre.forEach(i=>{
+    const it=tri.items[i];
+    if(place[i]===it[1])valide.add(i);
+    else if(place[i]!==undefined){erreurs.push({i,mis:place[i]});delete place[i];fauxSet.add(i)}
+  });
+  if(premiersBons===null)premiersBons=tri.items.length-erreurs.length;
+  sel=null;
+  if(!erreurs.length){fin();return}
+  rendre();
+  const nom=k=>tri.boites.find(b=>b.k===k).nom;
+  $("resultat").innerHTML=`<div class="panneau ko" tabindex="-1" id="pan">
+    <h2>${valide.size} bonne${valide.size>1?"s":""} réponse${valide.size>1?"s":""} sur ${tri.items.length}</h2>
+    <p style="margin:0">Les étiquettes marquées ✗ sont revenues dans le bac. Lis l'aide, puis range-les à nouveau.</p>
+    <ul>${erreurs.map(x=>`<li><b>${tri.items[x.i][0]}</b> n'allait pas dans « ${nom(x.mis)} ». ${tri.items[x.i][2]}</li>`).join("")}</ul>
+  </div>`;
+  $("bac").scrollIntoView({behavior:"smooth",block:"start"});
+  annoncer(`${erreurs.length} erreur${erreurs.length>1?"s":""}. Les étiquettes mal rangées sont revenues dans le bac.`);
+};
+function fin(){
+  termine=true;fauxSet.clear();
+  const total=tri.items.length,taux=premiersBons/total,et=taux===1?3:taux>=.7?2:1;
+  pref.etoiles[tri.id]=Math.max(pref.etoiles[tri.id]||0,et);sauver();filtres();
+  rendre();
+  const idx=TRIS.indexOf(tri),suiv=TRIS[idx+1];
+  $("resultat").innerHTML=`<div class="panneau ok" tabindex="-1" id="pan">
+    <h2>${taux===1?"Sans faute, du premier coup !":"Tout est bien rangé !"}</h2>
+    <div class="etoiles" aria-label="${et} étoile${et>1?"s":""} sur 3">${"★".repeat(et)}<span style="opacity:.25">${"★".repeat(3-et)}</span></div>
+    <p style="margin:0">${premiersBons} étiquette${premiersBons>1?"s":""} sur ${total} bien classée${premiersBons>1?"s":""} au premier essai.</p>
+    <div class="actions">
+      ${suiv?`<button class="verifier" id="bSuiv">Tri suivant : ${suiv.titre} →</button>`:""}
+      <button class="sec" id="bRejouer">Rejouer ce tri</button>
+    </div></div>`;
+  if(suiv)$("bSuiv").onclick=()=>{demarrer(suiv);scrollTo({top:0,behavior:"smooth"})};
+  $("bRejouer").onclick=()=>demarrer(tri);
+  $("pan").scrollIntoView({behavior:"smooth",block:"center"});$("pan").focus({preventScroll:true});
+  annoncer(`Tri réussi. ${et} étoiles sur 3.`);
+}
+$("bRecom").onclick=()=>{fauxSet.clear();demarrer(tri)};
+
+/* ===== Voix ===== */
+let voix=null;
+function choisirVoix(){const l=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang));voix=l.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||l.find(x=>/fr-FR/i.test(x.lang))||l[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}else $("bLire").hidden=true;
+$("bLire").onclick=()=>{
+  if(!("speechSynthesis" in window))return;
+  let t=`${tri.verbe} ${tri.consigne} Les boîtes sont : ${tri.boites.map(b=>b.nom).join(", ")}.`;
+  if(sel!==null)t=`Étiquette choisie : ${tri.items[sel][0]}.`;
+  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/DREETS/g,"D R E E T S"));u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u);
+};
+
+demarrer(TRIS[0]);
+</script>
+</body>
+</html>

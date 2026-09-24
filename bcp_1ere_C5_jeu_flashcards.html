@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flashcards — L'analyse des risques professionnels · C5 · Première Bac Pro · PSE</title>
+<meta name="description" content="Flashcards de révision — C5 — L'analyse des risques professionnels · Première Bac Pro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --reponse:#FFD23F; --reponse-encre:#2A2200; --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;color:var(--clair);
+  font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.1rem;line-height:1.5;
+  background:
+    radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),
+    radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),
+    linear-gradient(160deg,var(--fond1),var(--fond2));
+  background-attachment:fixed;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--reponse);outline-offset:4px}
+
+.page{max-width:820px;margin:0 auto;padding:1.4rem 1.1rem 2.5rem;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.7rem,4.5vw,2.6rem);line-height:1.05;margin:0;letter-spacing:-.01em}
+header p{margin:.35rem 0 0;opacity:.8}
+
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .4rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem;transition:background .2s,border-color .2s}
+.puce:hover{border-color:rgba(255,255,255,.5)}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+
+.progression{display:flex;align-items:center;gap:.9rem;margin:.8rem 0 1.3rem}
+.piste{flex:1;height:6px;border-radius:9px;background:rgba(255,255,255,.15);overflow:hidden}
+.piste span{display:block;height:100%;width:0;background:var(--reponse);border-radius:9px;transition:width .35s ease}
+.num{font-weight:700;font-variant-numeric:tabular-nums;min-width:4.5rem;text-align:right}
+
+/* ===== Scène / tilt / flip ===== */
+.scene{flex:1;display:flex;align-items:center;justify-content:center;perspective:1600px;padding:.5rem 0 1rem}
+.pile{position:relative;width:min(100%,640px);aspect-ratio:3/2;min-height:300px}
+.pile::before,.pile::after{content:"";position:absolute;inset:0;border-radius:26px;background:rgba(244,248,245,.16);transform:translateY(14px) scale(.95);z-index:0}
+.pile::after{transform:translateY(26px) scale(.9);background:rgba(244,248,245,.08)}
+.tilt{position:absolute;inset:0;z-index:1;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.tilt.actif{transition:transform .08s linear}
+.carte{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,1.35,.45,1);cursor:pointer;border-radius:26px;outline:none}
+.carte.retournee{transform:rotateY(180deg)}
+.carte:focus-visible .face{outline:4px solid var(--reponse);outline-offset:4px}
+.face{
+  position:absolute;inset:0;border-radius:26px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  padding:clamp(1.2rem,4vw,2.4rem);display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.55),0 10px 20px -10px rgba(0,0,0,.35);
+}
+.devant{background:linear-gradient(155deg,#FFFFFF,#EEF4F0);color:var(--encre)}
+.dos{background:linear-gradient(155deg,#FFE27A,var(--reponse));color:var(--reponse-encre);transform:rotateY(180deg)}
+.haut{display:flex;justify-content:space-between;align-items:center;gap:1rem;transform:translateZ(30px)}
+.seance{font-weight:700;font-size:.9rem;padding:.25rem .7rem;border-radius:999px;background:rgba(19,48,42,.08)}
+.dos .seance{background:rgba(42,34,0,.1)}
+.voix{border:0;background:rgba(19,48,42,.08);width:44px;height:44px;border-radius:50%;font-size:1.25rem;display:grid;place-items:center;transition:transform .15s}
+.dos .voix{background:rgba(42,34,0,.1)}
+.voix:hover{transform:scale(1.08)}
+.corps{flex:1;display:flex;align-items:center;transform:translateZ(50px)}
+.texte{margin:0;font-weight:700;font-size:clamp(1.3rem,3.6vw,2rem);line-height:1.25}
+.devant .texte{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-.005em}
+.dos .texte{font-weight:400}
+.notion{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1rem,2.4vw,1.2rem);margin-bottom:.4rem;opacity:.75}
+.bas{font-size:.95rem;color:var(--doux);transform:translateZ(20px)}
+.dos .bas{color:rgba(42,34,0,.65)}
+.reflet{position:absolute;inset:0;border-radius:26px;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.55),rgba(255,255,255,0) 55%);mix-blend-mode:soft-light}
+.tilt.actif .reflet{opacity:1}
+
+/* ===== Commandes ===== */
+.commandes{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center;margin-top:.6rem}
+.rond{width:60px;height:60px;border-radius:50%;border:2px solid var(--ligne);background:rgba(255,255,255,.08);font-size:1.5rem;display:grid;place-items:center;transition:background .2s,transform .15s}
+.rond:hover{background:rgba(255,255,255,.18)}
+.rond:active{transform:scale(.94)}
+.rond:disabled{opacity:.35;cursor:default}
+.retourner{height:60px;border-radius:999px;border:0;background:var(--reponse);color:var(--reponse-encre);font-weight:700;font-size:1.15rem;box-shadow:0 10px 24px -10px rgba(255,210,63,.7);transition:transform .15s}
+.retourner:active{transform:scale(.97)}
+.outils{display:flex;justify-content:center;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+.lien{border:0;background:none;color:var(--clair);opacity:.8;text-decoration:underline;text-underline-offset:4px;padding:.4rem .6rem;font-size:1rem}
+.lien:hover{opacity:1}
+.aide{text-align:center;font-size:.9rem;opacity:.65;margin-top:.8rem}
+kbd{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:0 .35rem;font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:560px){
+  .pile{aspect-ratio:auto;height:min(62vh,440px)}
+  .rond{width:54px;height:54px}.retourner{height:54px}
+  .aide .clavier{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .carte,.tilt,.piste span{transition:none!important}
+}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>L'analyse des risques professionnels</h1>
+    <p>Flashcards de révision — C5 — L'analyse des risques professionnels · Première Bac Pro</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="bcp_1ere_C5_jeux.html">← Toutes les révisions C5</a></nav>
+
+  <nav class="filtres" id="filtres" aria-label="Choisir la séance"></nav>
+
+  <div class="progression">
+    <div class="piste" aria-hidden="true"><span id="barre"></span></div>
+    <div class="num" id="num"></div>
+  </div>
+
+  <main class="scene">
+    <div class="pile" id="pile">
+      <div class="tilt" id="tilt">
+        <div class="carte" id="carte" tabindex="0" role="button" aria-label="Retourner la carte">
+          <div class="face devant">
+            <div class="haut"><span class="seance" id="sQ"></span><button class="voix" data-cote="q" aria-label="Écouter la question">🔊</button></div>
+            <div class="corps"><p class="texte" id="q"></p></div>
+            <div class="bas">Touche la carte pour voir la réponse</div>
+            <div class="reflet"></div>
+          </div>
+          <div class="face dos">
+            <div class="haut"><span class="seance" id="sR"></span><button class="voix" data-cote="r" aria-label="Écouter la réponse">🔊</button></div>
+            <div class="corps"><div><div class="notion" id="n"></div><p class="texte" id="r"></p></div></div>
+            <div class="bas">Touche la carte pour revenir à la question</div>
+            <div class="reflet"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="commandes">
+    <button class="rond" id="prec" aria-label="Carte précédente">←</button>
+    <button class="retourner" id="bRet">Retourner la carte</button>
+    <button class="rond" id="suiv" aria-label="Carte suivante">→</button>
+  </div>
+  <div class="outils">
+    <button class="lien" id="melange">Mélanger les cartes</button>
+    <button class="lien" id="debut">Revenir au début</button>
+  </div>
+  <p class="aide"><span class="clavier"><kbd>Espace</kbd> retourner · <kbd>←</kbd> <kbd>→</kbd> changer de carte</span><span class="tactile"></span></p>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/\bDUERP\b/g,"D U E R P").replace(/\bPAD\b/g,"P A D").replace(/\bEPI\b/g,"E P I").replace(/\bINRS\b/g,"I N R S").replace(/ITaMaMi/g,"i ta ma mi").replace(/(\d+) kg/g,"$1 kilos");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+/* ===== CONTENU — remplacer ce tableau pour un autre chapitre =====
+   s = séance · n = notion · q = question · r = réponse · dit = texte lu "question|réponse" (optionnel) */
+const TITRES={1:"Séance 1 — L'ITaMaMi",2:"Séance 2 — Le PAD",3:"Séance 3 — L'évaluation",4:"Séance 4 — Prévention et DUERP"};
+const CARTES=[
+ {s:1,n:"ITaMaMi",q:"Qu'est-ce que l'ITaMaMi ?",r:"Un outil qui décrit une activité de travail en cinq composantes : Individu, Tâche, Activité, Matériel, Milieu."},
+ {s:1,n:"Individu",q:"Que décrit l'Individu ?",r:"La personne qui travaille : âge, expérience, formation, état de santé."},
+ {s:1,n:"Tâche",q:"Qu'est-ce que la tâche ?",r:"Le travail demandé, prescrit par l'entreprise."},
+ {s:1,n:"Activité",q:"Qu'est-ce que l'activité ?",r:"Ce que la personne fait réellement pour réaliser la tâche."},
+ {s:1,n:"Matériel",q:"Que regroupe le Matériel ?",r:"Les outils, les machines, les produits, les charges."},
+ {s:1,n:"Milieu",q:"Que regroupe le Milieu ?",r:"Le lieu, les horaires, l'ambiance, l'organisation, les autres personnes."},
+ {s:1,n:"Écart tâche-activité",q:"Pourquoi s'intéresser à l'écart entre tâche et activité ?",r:"C'est dans cet écart que naissent beaucoup de situations dangereuses."},
+ {s:1,n:"Écart tâche-activité",q:"Comment le milieu a-t-il poussé Kenza à s'écarter de la tâche ?",r:"Le magasin ouvre à 9 h et la plateforme à garde-corps est souvent occupée : pour aller vite, elle monte sur l'escabeau les bras chargés, sans se tenir."},
+ {s:2,n:"PAD",q:"Quels sont les cinq éléments du PAD ?",r:"Le danger, l'opérateur, la situation dangereuse, l'événement déclencheur, le dommage."},
+ {s:2,n:"Événement déclencheur",q:"Qu'est-ce que l'événement déclencheur ?",r:"Ce qui provoque le dommage ; on dit aussi événement dangereux."},
+ {s:2,n:"PAD de la chute",q:"Quel est le PAD de la chute de Kenza ?",r:"Danger : la hauteur de l'étagère. Opérateur : Kenza. Situation : elle monte sur l'escabeau les bras chargés, sans se tenir. Événement : l'escabeau bascule. Dommage : poignet tordu, fracture possible."},
+ {s:2,n:"PAD du mal de dos",q:"Quel est le PAD du mal de dos de Kenza ?",r:"Danger : les packs de 9 kg. Situation : elle les porte et les lève chaque matin. Événement : les ports répétés. Dommage : douleurs au dos."},
+ {s:2,n:"Dommage",q:"Quelle différence entre le dommage de la chute et celui du mal de dos ?",r:"La chute : dommage immédiat (une blessure, un accident). Le mal de dos : dommage qui apparaît après une exposition répétée."},
+ {s:3,n:"Appréciation des risques",q:"À quoi sert l'appréciation des risques ?",r:"À ordonner les risques, pour planifier les actions de prévention et établir leurs priorités."},
+ {s:3,n:"Critères",q:"Quels critères peut-on utiliser pour apprécier un risque ?",r:"La gravité, la durée d'exposition, le nombre de personnes exposées, le nombre d'accidents déjà survenus."},
+ {s:3,n:"Gravité",q:"Qu'est-ce que la gravité ?",r:"L'importance du dommage possible, du simple soin aux séquelles définitives."},
+ {s:3,n:"Probabilité d'occurrence",q:"Qu'est-ce que la probabilité d'occurrence ?",r:"La possibilité que le dommage arrive ; elle augmente avec la fréquence d'exposition et la probabilité de l'événement déclencheur."},
+ {s:3,n:"Fréquence d'exposition",q:"Qu'est-ce que la fréquence d'exposition ?",r:"Le nombre de fois où l'opérateur est exposé au danger."},
+ {s:3,n:"Niveau de priorité",q:"Comment obtient-on le niveau de priorité ?",r:"En croisant la gravité et la probabilité dans la grille."},
+ {s:3,n:"Niveau de priorité",q:"Évaluer les deux risques de Kenza avec la grille du magasin.",r:"Chute : gravité 3 (arrêt long), probabilité 4 (chaque jour) → priorité 1. Mal de dos : gravité 1, probabilité 4 → priorité 2."},
+ {s:3,n:"Niveau de priorité",q:"Pourquoi traiter la chute avant le mal de dos, alors que les deux expositions sont quotidiennes ?",r:"À probabilité égale, la chute est plus grave : elle peut causer une fracture et un arrêt long."},
+ {s:4,n:"Principes généraux",q:"Combien y a-t-il de principes généraux de prévention ? D'où viennent-ils ?",r:"Neuf, fixés par l'article L. 4121-2 du Code du travail."},
+ {s:4,n:"Principes généraux",q:"Citer les trois premiers principes généraux de prévention.",r:"Éviter les risques ; évaluer les risques qui ne peuvent pas être évités ; combattre les risques à la source."},
+ {s:4,n:"Protection collective",q:"Quelle protection a la priorité : collective ou individuelle ?",r:"La protection collective. Les EPI viennent en complément, si elle est insuffisante."},
+ {s:4,n:"Protection collective",q:"Pourquoi la plateforme à garde-corps protège-t-elle mieux Kenza que des chaussures antidérapantes ?",r:"Le garde-corps empêche la chute, sans dépendre de son geste ; les chaussures n'empêchent pas l'escabeau de basculer."},
+ {s:4,n:"DUERP",q:"Qu'est-ce que le DUERP ?",r:"Le document unique d'évaluation des risques professionnels : il recense les risques identifiés et appréciés, par unité de travail."},
+ {s:4,n:"DUERP",q:"Quand le DUERP est-il mis à jour ?",r:"Régulièrement, à chaque changement important des conditions de travail, ou quand une information nouvelle sur un risque est connue."},
+ {s:4,n:"DUERP",q:"À quoi sert le DUERP ?",r:"À définir le programme des actions de prévention."},
+ {s:4,n:"Mesures hiérarchisées",q:"Donner des mesures hiérarchisées contre la chute de Kenza.",r:"Supprimer : ranger les produits lourds en bas. Réduire : placer en hauteur des produits légers. Collective : plateforme à garde-corps. EPI : chaussures antidérapantes. Formation au travail en hauteur."}
+];
+
+const $=id=>document.getElementById(id);
+let seance=0,paquet=[],pos=0,retournee=false;
+const reduit=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pointeurFin=matchMedia("(hover:hover) and (pointer:fine)").matches;
+
+/* ===== Paquet ===== */
+function charger(melanger=false){
+  paquet=CARTES.filter(c=>!seance||c.s===seance);
+  if(melanger){paquet=paquet.slice();for(let i=paquet.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[paquet[i],paquet[j]]=[paquet[j],paquet[i]]}}
+  pos=0;afficher();
+}
+function afficher(){
+  const c=paquet[pos];
+  poser(false);
+  // on change le texte à mi-chemin si la carte était retournée
+  $("q").textContent=c.q;$("r").textContent=c.r;$("n").textContent=c.n;
+  $("sQ").textContent=$("sR").textContent=TITRES[c.s];
+  $("num").textContent=`${pos+1} / ${paquet.length}`;
+  $("barre").style.width=((pos+1)/paquet.length*100)+"%";
+  $("prec").disabled=pos===0;$("suiv").disabled=pos===paquet.length-1;
+  annoncer(`Carte ${pos+1} sur ${paquet.length}. ${c.q}`);
+}
+function poser(v){retournee=v;$("carte").classList.toggle("retournee",v);$("bRet").textContent=v?"Revoir la question":"Retourner la carte"}
+function retourner(){poser(!retournee);if(retournee)annoncer("Réponse : "+paquet[pos].r)}
+function aller(d){
+  const n=pos+d;if(n<0||n>=paquet.length)return;
+  arreterVoix();
+  if(retournee){poser(false);setTimeout(()=>{pos=n;afficher()},reduit?0:260)}
+  else{pos=n;afficher()}
+}
+function annoncer(t){$("annonce").textContent=t}
+
+/* ===== Filtres ===== */
+function filtres(){
+  const f=$("filtres");f.innerHTML="";
+  [[0,"Tout le module"],[1,"Séance 1"],[2,"Séance 2"],[3,"Séance 3"],[4,"Séance 4"]].forEach(([v,t])=>{
+    const b=document.createElement("button");b.className="puce";b.textContent=t;b.setAttribute("aria-pressed",v===seance);
+    b.onclick=()=>{seance=v;filtres();arreterVoix();charger()};f.appendChild(b);
+  });
+}
+
+/* ===== Tilt 3D + reflet ===== */
+const tilt=$("tilt"),pile=$("pile");
+if(pointeurFin&&!reduit){
+  pile.addEventListener("pointermove",e=>{
+    const b=pile.getBoundingClientRect();
+    const x=(e.clientX-b.left)/b.width, y=(e.clientY-b.top)/b.height;
+    tilt.classList.add("actif");
+    tilt.style.transform=`rotateX(${(0.5-y)*14}deg) rotateY(${(x-0.5)*16}deg) translateZ(10px)`;
+    // reflet : on inverse x sur la face arrière (retournée)
+    document.querySelectorAll(".reflet").forEach((r,i)=>{
+      r.style.setProperty("--gx",((i===1?1-x:x)*100)+"%");r.style.setProperty("--gy",(y*100)+"%");
+    });
+  });
+  pile.addEventListener("pointerleave",()=>{tilt.classList.remove("actif");tilt.style.transform=""});
+}
+
+/* ===== Balayage tactile ===== */
+let x0=null,y0=null,glisse=false;
+pile.addEventListener("touchstart",e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;glisse=false},{passive:true});
+pile.addEventListener("touchmove",e=>{
+  if(x0===null)return;const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+  if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)){glisse=true;if(!reduit)tilt.style.transform=`translateX(${dx*.35}px) rotateY(${dx*.04}deg)`}
+},{passive:true});
+pile.addEventListener("touchend",e=>{
+  if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;
+  tilt.style.transform="";
+  if(glisse&&Math.abs(dx)>60)aller(dx<0?1:-1);
+  x0=null;
+});
+
+/* ===== Voix (optionnelle) ===== */
+let voix=null;
+function choisirVoix(){const v=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang));voix=v.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||v.find(x=>/fr-FR/i.test(x.lang))||v[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}
+else document.querySelectorAll(".voix").forEach(b=>b.hidden=true);
+function lire(cote){
+  if(!("speechSynthesis" in window))return;
+  const c=paquet[pos],p=(c.dit||"").split("|");
+  const t=cote==="q"?(p[0]||c.q):(p[1]||c.r);
+  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u);
+}
+function arreterVoix(){if("speechSynthesis" in window)speechSynthesis.cancel()}
+document.querySelectorAll(".voix").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();lire(b.dataset.cote)}));
+
+/* ===== Événements ===== */
+$("carte").addEventListener("click",()=>{if(!glisse)retourner()});
+$("carte").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();retourner()}});
+$("bRet").onclick=retourner;
+$("prec").onclick=()=>aller(-1);
+$("suiv").onclick=()=>aller(1);
+$("melange").onclick=()=>{arreterVoix();charger(true);annoncer("Cartes mélangées.")};
+$("debut").onclick=()=>{arreterVoix();if(retournee)poser(false);pos=0;afficher()};
+document.addEventListener("keydown",e=>{
+  if(e.target.closest("button")&&(e.key===" "||e.key==="Enter"))return;
+  if(e.key===" "){e.preventDefault();retourner()}
+  else if(e.key==="ArrowRight")aller(1);
+  else if(e.key==="ArrowLeft")aller(-1);
+});
+if(!pointeurFin)document.querySelector(".tactile").textContent="Glisse la carte vers la gauche ou la droite pour changer.";
+
+filtres();charger();
+</script>
+</body>
+</html>
