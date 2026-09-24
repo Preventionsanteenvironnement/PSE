@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SESG — Le ménage et ses revenus — le porte-monnaie du ménage · CAPa Jardinier paysagiste · Horticulture · PSE</title>
+<meta name="description" content="Ce qui entre, ce qui sort, le total des ressources et la part en pourcentage : trois ménages, dont un loyer perçu (CAPa).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --jaune:#FFD23F; --vrai:#2FBF71; --vrai-f:#16733F; --faux:#FF6B57; --faux-f:#B3261E;
+  --act:#2FBF71; --cap:#5AB0E6; --tra:#FFD23F; --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;color:var(--clair);font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.08rem;line-height:1.5;
+  background:radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),linear-gradient(160deg,var(--fond1),var(--fond2));background-attachment:fixed}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:4px solid var(--jaune);outline-offset:3px}
+.page{max-width:920px;margin:0 auto;padding:1.4rem 1.1rem 3rem}
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.9rem,5.5vw,2.8rem);line-height:1.02;margin:0;letter-spacing:-.01em}
+header p{margin:.45rem 0 0;opacity:.85;max-width:62ch}
+.filtres{display:flex;gap:.5rem;overflow-x:auto;padding:1.1rem .1rem .6rem;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.puce{flex:none;border:2px solid var(--ligne);background:rgba(255,255,255,.06);border-radius:999px;padding:.4rem 1rem;font-weight:700;font-size:1rem}
+.puce[aria-pressed="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+.puce .et{color:var(--jaune);margin-left:.3rem}
+.puce[aria-pressed="true"] .et{color:#B8860B}
+
+.menage{display:flex;gap:1rem;align-items:center;margin:.9rem 0 1rem}
+.menage .emo{font-size:2.6rem;line-height:1}
+.menage h2{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.3rem,3.6vw,1.7rem);margin:0;line-height:1.15}
+.menage p{margin:.15rem 0 0;opacity:.85}
+.etapes{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.etapes span{border-radius:999px;padding:.2rem .75rem;font-size:.88rem;font-weight:700;background:rgba(255,255,255,.08);border:2px solid transparent;opacity:.7}
+.etapes span.ici{opacity:1;border-color:var(--jaune);color:var(--jaune)}
+.etapes span.fait{opacity:1;background:rgba(47,191,113,.2)}
+
+/* ===== Étape tri ===== */
+.pioche{position:relative;display:flex;flex-direction:column;align-items:center}
+.carte{width:min(100%,520px);background:linear-gradient(155deg,#FFFFFF,#EEF4F0);color:var(--encre);border-radius:24px;padding:1.3rem 1.4rem;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.55);text-align:center;transition:transform .45s cubic-bezier(.4,0,.2,1),opacity .45s}
+.carte .qui{font-weight:700;color:var(--doux);font-size:.95rem}
+.carte .lib{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.25rem,3.6vw,1.6rem);line-height:1.25;margin:.3rem 0}
+.carte .mt{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:2rem;font-variant-numeric:tabular-nums}
+.carte.entre{transform:translate(-30%,120px) scale(.4);opacity:0}
+.carte.sort{transform:translate(30%,120px) scale(.4);opacity:0}
+.reste{font-size:.9rem;opacity:.8;margin:.5rem 0 0}
+.boutonsTri{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;width:min(100%,520px);margin-top:1rem}
+.boutonsTri button{height:62px;border-radius:999px;border:0;font-weight:700;font-size:1.12rem;line-height:1.1}
+.boutonsTri small{display:block;font-size:.8rem;font-weight:400}
+.bEntre{background:var(--vrai);color:#04230F}
+.bSort{background:var(--faux);color:#2B0703}
+.colonnes{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:1.3rem}
+.col{border-radius:20px;padding:.8rem;min-height:130px;border:3px solid}
+.col.in{border-color:var(--vrai);background:rgba(47,191,113,.1)}
+.col.out{border-color:var(--faux);background:rgba(255,107,87,.1)}
+.col h3{margin:0 0 .5rem;font-size:1.02rem}
+.col ul{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.col li{background:rgba(255,255,255,.1);border-radius:10px;padding:.35rem .55rem;display:flex;justify-content:space-between;gap:.5rem;font-size:.95rem;animation:arrive .35s ease-out}
+.col li b{white-space:nowrap;font-variant-numeric:tabular-nums}
+@keyframes arrive{from{transform:scale(.8);opacity:0}}
+
+/* ===== Panneau étapes 2-4 ===== */
+.panneau{background:var(--clair);color:var(--encre);border-radius:24px;padding:clamp(1.1rem,3.5vw,1.8rem);box-shadow:0 30px 60px -25px rgba(0,0,0,.6)}
+.consigne{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.2rem,3.2vw,1.45rem);line-height:1.25;margin:0 0 .9rem}
+.consigne b{font-weight:800;color:#8A6A00}
+.tabWrap{overflow-x:auto;margin:.2rem 0 1rem}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:420px}
+th{background:#E0E8E3;text-align:left;padding:.45rem .6rem;border:1px solid #A9B5AE;font-size:.9rem}
+td{padding:.5rem .6rem;border:1px solid #C5CEC9;vertical-align:middle}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.total td{font-weight:700;background:#EBF0ED}
+tr.ko td{background:#FFE3DE}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;min-width:260px}
+.seg button{border:2px solid #B9C5BE;background:#fff;border-radius:10px;padding:.35rem .2rem;font-weight:700;font-size:.88rem}
+.seg button[aria-pressed="true"][data-c="act"]{background:var(--act);border-color:var(--act)}
+.seg button[aria-pressed="true"][data-c="cap"]{background:var(--cap);border-color:var(--cap)}
+.seg button[aria-pressed="true"][data-c="tra"]{background:var(--tra);border-color:var(--tra)}
+.tag{display:inline-block;border-radius:999px;padding:.05rem .55rem;font-weight:700;font-size:.85rem}
+.tag.act{background:#CDEFDC;color:#0F5530}.tag.cap{background:#D3E9F8;color:#0F3E5E}.tag.tra{background:#FFF0B3;color:#5A4500}
+.trou{color:#8A958F}
+.saisie{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.saisie input{flex:1 1 140px;min-width:0;height:56px;border-radius:14px;border:3px solid var(--encre);background:#fff;color:var(--encre);font-size:1.4rem;font-weight:700;padding:0 .8rem;font-variant-numeric:tabular-nums}
+.saisie span{font-weight:700}
+.valider,.continuer{height:56px;border-radius:999px;border:0;background:var(--encre);color:var(--clair);font-weight:700;font-size:1.1rem;padding:0 1.4rem}
+.valider:disabled{opacity:.45;cursor:default}
+.continuer{width:100%;margin-top:.9rem}
+.fb{margin-top:.8rem;border-radius:14px}
+.fb:not(:empty){padding:.7rem .9rem}
+.fb.ok{background:#DDF4E7;border-left:6px solid var(--vrai-f)}
+.fb.ko{background:#FFE3DE;border-left:6px solid var(--faux-f)}
+.fb.ind{background:#FFF4C2;border-left:6px solid #E0A800}
+.fb.neutre{background:#EAF0EC;border-left:6px solid var(--doux)}
+.fbTri{width:min(100%,520px);margin-top:.9rem;border-radius:14px}
+.fbTri:not(:empty){padding:.7rem .9rem}
+.fbTri.ok{background:rgba(47,191,113,.2);border-left:6px solid var(--vrai)}
+.fbTri.ko{background:rgba(255,107,87,.2);border-left:6px solid var(--faux)}
+.outils{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.8rem}
+.outil{border:2px solid #B9C5BE;background:transparent;border-radius:999px;padding:.3rem .8rem;font-size:.95rem;font-weight:700}
+.sombre .outil{border-color:var(--ligne)}
+.calc{margin-top:.8rem;background:#E7EEEA;border-radius:16px;padding:.7rem;max-width:360px}
+.calc[hidden]{display:none}
+.ecran{background:#fff;border-radius:10px;padding:.4rem .7rem;text-align:right;font-size:1.35rem;font-weight:700;min-height:2.2rem;overflow-x:auto;white-space:nowrap}
+.touches{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.5rem}
+.touches button{height:46px;border-radius:10px;border:0;background:#fff;font-weight:700;font-size:1.15rem}
+.touches .op{background:#FFF0B3}.touches .eg{background:var(--jaune)}.touches .large{grid-column:span 2}
+
+.barre{display:flex;height:42px;border-radius:12px;overflow:hidden;border:2px solid var(--encre);margin-top:.8rem}
+.barre span{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.barre .act{background:var(--act)}.barre .cap{background:var(--cap)}.barre .tra{background:var(--tra)}
+.legende{display:flex;flex-wrap:wrap;gap:.3rem 1rem;margin-top:.5rem;font-size:.92rem}
+.legende i{display:inline-block;width:13px;height:13px;border-radius:4px;vertical-align:-2px;margin-right:.35rem}
+.lexique{margin-top:1rem;border:3px solid var(--encre);border-radius:16px;overflow:hidden}
+.lexique div{display:grid;grid-template-columns:minmax(120px,.8fr) 2fr;border-top:1px solid #C5CEC9}
+.lexique div:first-child{border-top:0}
+.lexique b,.lexique span{padding:.55rem .7rem}
+.lexique b{background:#E9EFEB}
+.etoiles{font-size:2.4rem;letter-spacing:.2rem;color:#E0A800;line-height:1.2}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:560px){.colonnes{grid-template-columns:1fr}.col{min-height:0}}
+@media (prefers-reduced-motion:reduce){.carte,.barre span{transition:none}.col li{animation:none}}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Le porte-monnaie du ménage</h1>
+    <p>Ce qui entre, ce qui sort, le total des ressources et la part en pourcentage.</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="../index.html">← Accueil mapse.fr</a></nav>
+  <nav class="filtres" id="filtres" aria-label="Choisir le ménage"></nav>
+  <section class="menage" id="menage"></section>
+  <div class="etapes" id="etapes" aria-hidden="true"></div>
+  <main id="zone"></main>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+/* ===== DONNÉES (ménages fictifs) =====
+   s : "in" = entre dans le ménage (ressource) / "out" = sort (dépense) · cat : act / cap / tra · e : explication */
+const MENAGES=[
+ {id:"lucas",emoji:"🧑‍🌾",nom:"Lucas",compo:"Lucas, jardinier salarié, vit seul dans un appartement qu'il loue.",cible:"tra",
+  cartes:[
+   {lib:"Salaire net payé de Lucas",m:1450,s:"in",cat:"act",e:"Son employeur le lui verse : l'argent entre."},
+   {lib:"Loyer de son appartement, payé au propriétaire",m:520,s:"out",e:"Lucas paie ce loyer : pour lui, c'est une dépense. Le loyer PERÇU, c'est le propriétaire qui le reçoit."},
+   {lib:"Aide au logement",m:110,s:"in",cat:"tra",e:"Elle est versée à Lucas par la protection sociale : l'argent entre."},
+   {lib:"Intérêts de son livret d'épargne",m:4,s:"in",cat:"cap",e:"La banque les verse sur son livret : l'argent entre."},
+   {lib:"Facture d'électricité",m:60,s:"out",e:"Lucas la paie : l'argent sort."},
+   {lib:"Courses du mois",m:250,s:"out",e:"C'est une dépense : l'argent sort."}]},
+ {id:"sofia",emoji:"🏠",nom:"Sofia",compo:"Sofia, aide-soignante, vit avec sa fille. Elle loue un studio qu'elle possède à un étudiant, Léo.",cible:"cap",
+  cartes:[
+   {lib:"Salaire net payé de Sofia",m:1600,s:"in",cat:"act",e:"Son employeur le lui verse : l'argent entre."},
+   {lib:"Loyer du studio, versé par Léo à Sofia",m:450,s:"in",cat:"cap",e:"Léo le verse à Sofia, propriétaire : pour elle, c'est un loyer perçu."},
+   {lib:"Remboursement du crédit de sa maison",m:620,s:"out",e:"Sofia rembourse la banque : l'argent sort."},
+   {lib:"Prestation familiale",m:120,s:"in",cat:"tra",e:"Elle est versée par la protection sociale : l'argent entre."},
+   {lib:"Taxe foncière du studio, paiement du mois",m:70,s:"out",e:"C'est un impôt que Sofia paie : l'argent sort."},
+   {lib:"Assurance habitation",m:35,s:"out",e:"Sofia la paie : l'argent sort."}]},
+ {id:"coloc",emoji:"🔑",nom:"Paul et Léa",compo:"Paul et Léa sont colocataires, sans lien de parenté : ils forment un seul ménage.",cible:"act",
+  cartes:[
+   {lib:"Salaire d'apprenti de Paul",m:980,s:"in",cat:"act",e:"Son employeur le lui verse : l'argent entre."},
+   {lib:"Loyer de la colocation, payé au propriétaire",m:760,s:"out",e:"Paul et Léa sont locataires : ils paient ce loyer. Pour eux, c'est une dépense."},
+   {lib:"Salaire de Léa, serveuse à temps partiel",m:850,s:"in",cat:"act",e:"Son employeur le lui verse : l'argent entre."},
+   {lib:"Aide au logement",m:290,s:"in",cat:"tra",e:"Elle est versée par la protection sociale : l'argent entre."},
+   {lib:"Abonnement internet",m:30,s:"out",e:"C'est une dépense : l'argent sort."},
+   {lib:"Intérêts du livret de Léa",m:6,s:"in",cat:"cap",e:"La banque les verse : l'argent entre."}]}
+];
+const CAT={act:{nom:"Activité",long:"Revenu d'activité",du:"du travail",q:"les revenus du travail"},cap:{nom:"Capital",long:"Revenu du capital",du:"du capital",q:"les revenus du capital"},tra:{nom:"Transfert",long:"Revenu de transfert",du:"de transfert",q:"les revenus de transfert"}};
+
+/* ===== Outils ===== */
+const $=id=>document.getElementById(id);
+const r2=x=>Math.round((x+Number.EPSILON)*100)/100;
+const fmt=n=>n.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const fmtN=n=>n.toLocaleString("fr-FR",{maximumFractionDigits:2});
+const lireNombre=s=>parseFloat(String(s).replace(/[\s\u202f€%]/g,"").replace(",","."));
+const tactile=matchMedia("(hover:none)").matches;
+const reduit=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function annoncer(t){$("annonce").textContent=t}
+function melanger(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const CLE="porte-monnaie-menage";
+let pref={etoiles:{}};
+try{pref=Object.assign(pref,JSON.parse(localStorage.getItem(CLE)||"{}"))}catch(e){}
+function sauver(){try{localStorage.setItem(CLE,JSON.stringify(pref))}catch(e){}}
+
+let M,pile,pos,entres,sortis,err,ind,niv,resolu,cats,valCat,etape,ST;
+const NOMS_ETAPES=["1. Ça entre ou ça sort ?","2. Catégories","3. Total des ressources","4. Part en %"];
+
+function filtres(){
+  const f=$("filtres");f.innerHTML="";
+  MENAGES.forEach(m=>{
+    const b=document.createElement("button");b.className="puce";b.setAttribute("aria-pressed",M===m);
+    const e=pref.etoiles[m.id];b.innerHTML=m.nom+(e?`<span class="et">${"★".repeat(e)}</span>`:"");
+    b.onclick=()=>demarrer(m);f.appendChild(b);
+  });
+}
+function bandeau(){$("etapes").innerHTML=NOMS_ETAPES.map((n,i)=>`<span class="${i<etape?"fait":i===etape?"ici":""}">${n}</span>`).join("")}
+function demarrer(m){
+  M=m;pile=melanger(M.cartes);pos=0;entres=[];sortis=[];err=0;ind=0;cats={};valCat=new Set();etape=0;
+  const R=M.cartes.filter(c=>c.s==="in"),s=k=>R.filter(c=>c.cat===k).reduce((a,c)=>a+c.m,0);
+  ST={R,tot:r2(R.reduce((a,c)=>a+c.m,0)),dep:r2(M.cartes.filter(c=>c.s==="out").reduce((a,c)=>a+c.m,0)),act:s("act"),cap:s("cap"),tra:s("tra")};
+  ST.partie=ST[M.cible];ST.exact=ST.partie/ST.tot*100;ST.part=Math.round(ST.exact);
+  filtres();
+  $("menage").innerHTML=`<span class="emo" aria-hidden="true">${M.emoji}</span><div><h2>Le ménage de ${M.nom}</h2><p>${M.compo}</p></div>`;
+  tri();
+}
+
+/* ===== Étape 1 : entre ou sort ===== */
+function tri(){
+  etape=0;bandeau();
+  $("zone").innerHTML=`<div class="pioche">
+      <div class="carte" id="carte"></div>
+      <p class="reste" id="reste"></p>
+      <div class="boutonsTri">
+        <button class="bEntre" id="bIn">⬇️ Ça entre<small>ressource du ménage</small></button>
+        <button class="bSort" id="bOut">⬆️ Ça sort<small>dépense du ménage</small></button>
+      </div>
+      <div class="fbTri" id="fbTri" role="status" aria-live="polite"></div>
+    </div>
+    <div class="colonnes">
+      <section class="col in"><h3>⬇️ Ce qui entre : les ressources</h3><ul id="lIn"></ul></section>
+      <section class="col out"><h3>⬆️ Ce qui sort : les dépenses</h3><ul id="lOut"></ul></section>
+    </div>
+    <div class="outils sombre"><button class="outil" id="bLire">🔊 Écouter la carte</button></div>`;
+  $("bIn").onclick=()=>classer("in");$("bOut").onclick=()=>classer("out");
+  $("bLire").onclick=()=>{const c=pile[pos];if(c)lire(`${c.lib}, ${fmtN(c.m)} euros. Pour le ménage de ${M.nom}, est-ce que ça entre ou est-ce que ça sort ?`)};
+  montrerCarte();
+}
+let verrouTri=false;
+function montrerCarte(){
+  const c=pile[pos];verrouTri=false;
+  $("carte").className="carte";
+  $("carte").innerHTML=`<div class="qui">Pour le ménage de ${M.nom}…</div><div class="lib">${c.lib}</div><div class="mt">${fmt(c.m)}</div>`;
+  $("reste").textContent=`Carte ${pos+1} sur ${pile.length}`;
+  annoncer(`${c.lib}, ${fmt(c.m)}. Ça entre ou ça sort ?`);
+}
+function classer(s){
+  if(verrouTri||pos>=pile.length)return;verrouTri=true;
+  const c=pile[pos],ok=s===c.s,f=$("fbTri");
+  if(!ok){err++;if(navigator.vibrate)navigator.vibrate(50)}
+  f.className="fbTri "+(ok?"ok":"ko");
+  f.innerHTML=`<b>${ok?"✓ Oui.":"✗ Non."}</b> ${c.e}`;
+  $("carte").classList.add(c.s==="in"?"entre":"sort");
+  setTimeout(()=>{
+    (c.s==="in"?entres:sortis).push(c);
+    $(c.s==="in"?"lIn":"lOut").insertAdjacentHTML("beforeend",`<li><span>${c.lib}</span><b>${fmt(c.m)}</b></li>`);
+    pos++;
+    if(pos<pile.length)montrerCarte();
+    else{
+      $("carte").style.display="none";$("reste").textContent="";
+      document.querySelector(".boutonsTri").innerHTML=`<button class="bEntre" id="bSuite" style="grid-column:span 2">Continuer avec les ressources →</button>`;
+      $("bSuite").onclick=categories;$("bSuite").focus({preventScroll:true});
+    }
+  },reduit?0:450);
+}
+
+/* ===== Étape 2 : catégories ===== */
+function tableauRes(mode){
+  return `<div class="tabWrap"><table><thead><tr><th>Ressource du ménage</th><th class="n">Montant</th><th>Catégorie</th></tr></thead><tbody>
+    ${entres.map((c,i)=>`<tr id="tr-${i}"><td>${c.lib}</td><td class="n">${fmt(c.m)}</td><td>${
+      mode==="choix"&&!valCat.has(i)?`<div class="seg" role="group" aria-label="Catégorie de ${c.lib}">${["act","cap","tra"].map(k=>`<button data-i="${i}" data-c="${k}" aria-pressed="${cats[i]===k}">${CAT[k].nom}</button>`).join("")}</div>`
+      :`<span class="tag ${c.cat}">${CAT[c.cat].long}</span>`}</td></tr>`).join("")}
+    <tr class="total"><td>TOTAL DES RESSOURCES DU MÉNAGE</td><td class="n" id="tdTot">${mode==="tot"?fmt(ST.tot):'<span class="trou">?</span>'}</td><td></td></tr>
+    </tbody></table></div>`;
+}
+function panneau(consigne,corps,avecCalc){
+  $("zone").innerHTML=`<div class="panneau">
+    <p class="consigne">${consigne}</p>${corps}
+    <div class="fb" id="fb" role="status" aria-live="polite"></div>
+    <div class="outils"><button class="outil" id="bInd">💡 Indice</button><button class="outil" id="bLire">🔊 Écouter</button>${avecCalc?'<button class="outil" id="bCalc">🧮 Calculatrice</button>':""}</div>
+    <div class="calc" id="calc" hidden></div></div>`;
+  $("bLire").onclick=()=>lire($("zone").querySelector(".consigne").textContent);
+  if(avecCalc){$("bCalc").onclick=()=>{const c=$("calc");c.hidden=!c.hidden};construireCalc()}
+  resolu=false;niv=0;
+}
+function fb(c,h){const f=$("fb");f.className="fb "+c;f.innerHTML=h}
+function categories(){
+  etape=1;bandeau();
+  panneau(`<b>Écrire</b> la catégorie de chaque ressource du ménage de ${M.nom}.`,
+    `<div id="tab">${tableauRes("choix")}</div><button class="valider" id="bVal" disabled style="width:100%">Vérifier les catégories</button><div id="suite"></div>`);
+  brancherSeg();$("bVal").onclick=verifierCats;
+  $("bInd").onclick=()=>donnerIndice(["D'où vient l'argent ? Du travail → activité. De ce que l'on possède → capital. De la protection sociale → transfert.","Un loyer perçu ou des intérêts viennent de ce que l'on possède : revenu du capital."]);
+}
+function brancherSeg(){
+  document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{
+    cats[b.dataset.i]=b.dataset.c;
+    b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    $("tr-"+b.dataset.i).classList.remove("ko");
+    $("bVal").disabled=entres.some((_,i)=>!valCat.has(i)&&!cats[i]);
+  });
+}
+function verifierCats(){
+  if(resolu)return;
+  const fautes=[];
+  entres.forEach((c,i)=>{if(valCat.has(i))return;if(cats[i]===c.cat)valCat.add(i);else{fautes.push(i);delete cats[i]}});
+  $("tab").innerHTML=tableauRes("choix");brancherSeg();
+  fautes.forEach(i=>$("tr-"+i).classList.add("ko"));
+  if(!fautes.length){reussir("<b>✓ Bravo !</b> Toutes les ressources sont dans la bonne catégorie.",total);$("bVal").remove();return}
+  err+=fautes.length;$("bVal").disabled=true;
+  fb("ko",`<b>${fautes.length} catégorie${fautes.length>1?"s":""} à revoir</b> (en rouge). Demande-toi d'où vient cet argent.`);
+}
+function reussir(msg,suite){
+  resolu=true;fb("ok",msg);
+  const z=$("suite")||$("zone").querySelector(".panneau");
+  const b=document.createElement("button");b.className="continuer";b.textContent="Étape suivante";b.onclick=()=>{arreterVoix();suite()};
+  ($("suite")||z).appendChild(b);b.focus({preventScroll:true});
+  const c=$("calc");if(c)c.hidden=true;
+  $("zone").querySelectorAll(".saisie input,.saisie button").forEach(x=>x.disabled=true);
+}
+function donnerIndice(liste){
+  if(resolu)return;
+  const t=liste[Math.min(niv,liste.length-1)];if(niv<liste.length){ind++;niv++}
+  fb("ind",`<b>💡 Indice :</b> ${t}`);
+}
+
+/* ===== Étape 3 : total ===== */
+function saisieHTML(u){return `<div class="saisie"><input id="inp" inputmode="decimal" autocomplete="off" aria-label="Ta réponse en ${u}"><span>${u}</span><button class="valider" id="bVal">Valider</button></div><div id="suite"></div>`}
+function brancherSaisie(fn){$("bVal").onclick=fn;$("inp").addEventListener("keydown",e=>{if(e.key==="Enter")fn()});if(!tactile)$("inp").focus({preventScroll:true})}
+function total(){
+  etape=2;bandeau();
+  panneau(`<b>Calculer</b> le total des ressources du ménage de ${M.nom}.`,`<div id="tab">${tableauRes("vu")}</div>${saisieHTML("€")}`,true);
+  brancherSaisie(()=>{
+    if(resolu)return;const x=lireNombre($("inp").value);
+    if(isNaN(x)){fb("neutre","Écris un nombre.");return}
+    if(Math.abs(x-ST.tot)<.005){$("tdTot").innerHTML=fmt(ST.tot);reussir(`<b>✓ Bravo !</b> ${ST.R.map(c=>fmtN(c.m)).join(" + ")} = ${fmt(ST.tot)}. Les ressources, c'est seulement ce qui entre.`,part);return}
+    err++;let p=null;
+    if(Math.abs(x-(ST.tot+ST.dep))<.01)p="Tu as aussi ajouté les dépenses. Les ressources, c'est seulement ce qui ENTRE dans le ménage.";
+    else if(Math.abs(x-(ST.tot-ST.dep))<.01)p="Tu as retiré les dépenses. Ici on veut seulement le total de ce qui entre, pas ce qu'il reste.";
+    else{const o=ST.R.find(c=>Math.abs(x-(ST.tot-c.m))<.01);if(o)p=`Tu as oublié une ressource : « ${o.lib} ».`}
+    fb("ko",`<b>Pas encore.</b> ${p||"Additionne toutes les ressources du tableau."}`);
+  });
+  $("bInd").onclick=()=>donnerIndice(["Ressources du ménage = total de ce qui ENTRE : revenus d'activité, du capital et de transfert.",`Calcule ${ST.R.map(c=>fmtN(c.m)).join(" + ")}.`]);
+}
+
+/* ===== Étape 4 : part en % ===== */
+function part(){
+  etape=3;bandeau();
+  const C=CAT[M.cible],lignes=ST.R.filter(c=>c.cat===M.cible);
+  panneau(`<b>Calculer</b> la part des ressources qui vient ${M.cible==="act"?"du travail":C.du==="du capital"?"du capital":"de la protection sociale"} (${C.long.toLowerCase()}), en pourcentage arrondi à l'unité.`,
+    `<div id="tab">${tableauRes("tot")}</div>${saisieHTML("%")}`,true);
+  brancherSaisie(()=>{
+    if(resolu)return;const x=lireNombre($("inp").value);
+    if(isNaN(x)){fb("neutre","Écris un nombre.");return}
+    if(Math.abs(x-ST.part)<.005){reussir(`<b>✓ Bravo !</b> ${fmtN(ST.partie)} ÷ ${fmtN(ST.tot)} × 100 = ${ST.exact.toFixed(2).replace(".",",")}, arrondi à ${ST.part} %.`,fin);return}
+    if(Math.abs(x-ST.exact)<1){fb("ind","<b>Presque !</b> Arrondis à l'unité.");return}
+    err++;let p=null;
+    if(x>100)p="Une part ne dépasse pas 100 % : c'est la partie divisée par le total, pas l'inverse.";
+    else if(Math.abs(x-ST.partie/ST.tot)<.01)p="Tu as oublié de multiplier par 100.";
+    else if(Math.abs(x-ST.partie/(ST.tot+ST.dep)*100)<1)p="Tu as divisé par un total qui contient les dépenses. Le total, c'est seulement les ressources.";
+    else if(lignes.length>1&&lignes.some(c=>Math.abs(x-c.m/ST.tot*100)<1))p=`Tu n'as pris qu'une ligne. La partie, c'est tous ${C.q} : ${lignes.map(c=>fmtN(c.m)).join(" + ")}.`;
+    else if(["act","cap","tra"].some(k=>k!==M.cible&&ST[k]&&Math.abs(x-ST[k]/ST.tot*100)<1))p=`Tu as pris la mauvaise catégorie. La partie, ce sont ${C.q}.`;
+    fb("ko",`<b>Pas encore.</b> ${p||"Vérifie ton calcul ou demande un indice."}`);
+  });
+  $("bInd").onclick=()=>donnerIndice(["Part en % = la partie ÷ le total × 100.",`La partie = ${C.q} (${fmtN(ST.partie)} €). Le total = ${fmtN(ST.tot)} €. Calcule ${fmtN(ST.partie)} ÷ ${fmtN(ST.tot)} × 100.`]);
+}
+
+/* ===== Fin ===== */
+function fin(){
+  etape=4;bandeau();
+  const pts=err+ind,et=pts<=1?3:pts<=4?2:1;
+  pref.etoiles[M.id]=Math.max(pref.etoiles[M.id]||0,et);sauver();filtres();
+  const p={act:ST.act/ST.tot*100,cap:ST.cap/ST.tot*100,tra:ST.tra/ST.tot*100};
+  const idx=MENAGES.indexOf(M),suiv=MENAGES[idx+1];
+  const loyer=M.cartes.find(c=>/loyer/i.test(c.lib));
+  $("zone").innerHTML=`<div class="panneau">
+    <p class="consigne" style="margin-bottom:.2rem"><b>Mission réussie !</b></p>
+    <div class="etoiles" aria-label="${et} étoile${et>1?"s":""} sur 3">${"★".repeat(et)}<span style="opacity:.25">${"★".repeat(3-et)}</span></div>
+    <p style="margin:0">${err} erreur${err>1?"s":""} · ${ind} indice${ind>1?"s":""}</p>
+    <div class="barre" role="img" aria-label="Activité ${Math.round(p.act)} %, capital ${Math.round(p.cap)} %, transfert ${Math.round(p.tra)} %">
+      ${["act","cap","tra"].map(k=>`<span class="${k}" style="width:${reduit?p[k]:0}%" data-w="${p[k]}">${p[k]>=9?Math.round(p[k])+" %":""}</span>`).join("")}</div>
+    <div class="legende">${["act","cap","tra"].map(k=>`<span><i style="background:var(--${k})"></i>${CAT[k].long} : ${fmt(ST[k])}</span>`).join("")}</div>
+    <div class="lexique" aria-label="Notions utilisées">
+      <div><b>Ressources du ménage</b><span>Tu as gardé seulement ce qui entre : ${fmt(ST.tot)}. Les ${fmt(ST.dep)} de dépenses n'en font pas partie.</span></div>
+      <div><b>Loyer perçu</b><span>${loyer.s==="in"?`Sofia reçoit le loyer de Léo : c'est un loyer perçu, donc une ressource (revenu du capital).`:`Ici, le ménage PAIE son loyer : c'est une dépense. Le loyer perçu est pour le propriétaire.`}</span></div>
+      <div><b>Part en pourcentage</b><span>${fmtN(ST.partie)} ÷ ${fmtN(ST.tot)} × 100 = ${ST.part} % viennent ${CAT[M.cible].du==="du travail"?"du travail":CAT[M.cible].du==="du capital"?"du capital":"de la protection sociale"}.</span></div>
+    </div>
+    ${suiv?`<button class="continuer" id="bSuiv">Ménage suivant : ${suiv.nom} →</button>`:""}
+    <button class="continuer" id="bRec" style="background:transparent;color:var(--encre);border:2px solid var(--encre);margin-top:.5rem">Recommencer ce ménage</button>
+  </div>`;
+  if(!reduit)requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll(".barre span").forEach(s=>s.style.width=s.dataset.w+"%")));
+  if(suiv)$("bSuiv").onclick=()=>{demarrer(suiv);scrollTo({top:0,behavior:"smooth"})};
+  $("bRec").onclick=()=>{demarrer(M);scrollTo({top:0,behavior:"smooth"})};
+  annoncer(`Mission réussie, ${et} étoiles sur 3.`);
+}
+
+/* ===== Calculatrice ===== */
+let expr="";
+function construireCalc(){
+  expr="";const T=["7","8","9","÷","4","5","6","×","1","2","3","−","0",",","=","+","C","⌫"];
+  $("calc").innerHTML=`<div class="ecran" id="ecran">0</div><div class="touches">${T.map(t=>`<button data-t="${t}" class="${"÷×−+".includes(t)?"op":t==="="?"eg":""}${t==="C"||t==="⌫"?" large":""}" aria-label="${{"÷":"diviser","×":"multiplier","−":"moins","+":"plus","⌫":"effacer","C":"tout effacer"}[t]||t}">${t}</button>`).join("")}</div>
+    <button class="outil" id="bCopie" style="margin-top:.5rem;width:100%">↳ Mettre le résultat dans ma réponse</button>`;
+  $("calc").querySelectorAll("[data-t]").forEach(x=>x.onclick=()=>touche(x.dataset.t));
+  $("bCopie").onclick=()=>{const i=$("inp");if(i&&expr){calc();i.value=expr;i.focus()}};
+}
+function touche(t){if(t==="C")expr="";else if(t==="⌫")expr=expr.slice(0,-1);else if(t==="=")calc();else expr+=t;$("ecran").textContent=expr||"0"}
+function calc(){const e=expr.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/,/g,".");if(!/^[0-9.+\-*/]+$/.test(e))return;
+  try{let r=Function(`"use strict";return (${e})`)();if(!isFinite(r)){expr="";$("ecran").textContent="Erreur";return}r=Math.round(r*10000)/10000;expr=String(r).replace(".",",")}catch(x){expr="";$("ecran").textContent="Erreur";return}$("ecran").textContent=expr}
+
+/* ===== Voix + clavier ===== */
+let voix=null;
+function choisirVoix(){const l=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang));voix=l.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||l.find(x=>/fr-FR/i.test(x.lang))||l[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}
+function lire(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u)}
+function arreterVoix(){if("speechSynthesis" in window)speechSynthesis.cancel()}
+document.addEventListener("keydown",e=>{
+  if(etape!==0||e.target.tagName==="INPUT")return;
+  if(e.key==="ArrowDown"){e.preventDefault();classer("in")}
+  else if(e.key==="ArrowUp"){e.preventDefault();classer("out")}
+});
+
+demarrer(MENAGES[0]);
+</script>
+</body>
+</html>
