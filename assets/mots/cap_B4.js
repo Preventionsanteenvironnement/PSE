@@ -15,7 +15,7 @@ window.MOTS = {
     { v: "102", l: "Maximum en concert" },
     { v: "120", l: "Seuil de douleur" }
   ],
-  uniteJauge: "dB(A)",
+  uniteJauge: "dB(A)", jaugeZero: "Seuil d'audibilité · aucune erreur",
   /* Familles de notions (jeu de l'intrus) : chaque mot appartient au plus à une famille. */
   familles: [
     { l: "Décrire un son", m: ["INTENSITÉ", "FRÉQUENCE", "GRAVE", "AIGU", "DÉCIBEL", "HERTZ"] },

@@ -1,0 +1,78 @@
+/* Mots du module A1 Bac Pro (Seconde) — Le système de santé.
+   Mots écrits avec leurs accents ; le jeu les ignore pour la saisie.
+   Source unique : cours Le système de santé v4.1 (bibliothèque de l'Atelier). Aucun mot hors cours.
+   m = mot à trouver · s = séance · d = définition (indice) · e = explication simple · x = repère dans la situation de Kevin */
+window.MOTS = {
+  module: "A1", classe: "2nde Bac Pro", titre: "Le système de santé", retour: "bcp_2nde_A1_jeux.html", cle: "BP2A1",
+  seances: { 1: "Le capital santé et ses facteurs", 2: "Les plans santé et la prévention", 3: "Le système solidaire et le parcours de soins" },
+  /* Familles de notions (jeu de l'intrus) : chaque mot appartient au plus à une famille. */
+  familles: [
+    { l: "Les trois dimensions de la santé selon l'OMS", m: ["BIEN-ÊTRE PHYSIQUE", "BIEN-ÊTRE MENTAL", "BIEN-ÊTRE SOCIAL"] },
+    { l: "Les facteurs internes", m: ["HÉRÉDITÉ", "SOMMEIL", "TABAC"] },
+    { l: "Les facteurs externes", m: ["BRUIT", "POUSSIÈRES", "HORAIRES"] },
+    { l: "Les formes de prévention", m: ["PRÉVENTION COLLECTIVE", "PRÉVENTION INDIVIDUELLE", "PRÉVENTION PRIMAIRE"] },
+    { l: "Les risques de la vie couverts par la Sécurité sociale", m: ["MATERNITÉ", "VIEILLESSE", "PERTE D'AUTONOMIE"] },
+    { l: "Ce que la Sécurité sociale redistribue", m: ["REMBOURSEMENT", "INDEMNITÉS", "PENSIONS"] },
+    { l: "Les spécialistes en accès direct", m: ["GYNÉCOLOGUE", "OPHTALMOLOGUE", "PSYCHIATRE"] },
+    { l: "La carte Vitale et Mon espace santé", m: ["CARTE VITALE", "TIERS PAYANT", "MON ESPACE SANTÉ", "DOSSIER MÉDICAL PARTAGÉ"] }
+  ],
+  liste: [
+    { m: "SANTÉ", s: 1, d: "Selon l'OMS, état de complet bien-être physique, mental et social.", e: "Ne pas être malade ne suffit pas : une personne isolée ou sous tension permanente n'est pas en bonne santé au sens de l'OMS." },
+    { m: "CAPITAL SANTÉ", s: 1, d: "État de bien-être dont une personne dispose à un moment donné et qui évolue au cours de la vie.", e: "Il n'est pas fixé une fois pour toutes : certaines habitudes le dégradent (tabac, manque de sommeil), d'autres le préservent (sport, suivi médical).", x: "Depuis son embauche, Kevin se sent fatigué et a mal au dos." },
+    { m: "BIEN-ÊTRE PHYSIQUE", s: 1, d: "Dimension qui concerne le corps : sommeil, alimentation, activité, absence de douleur.", e: "C'est l'une des trois dimensions de la santé selon l'OMS, avec le bien-être mental et le bien-être social.", x: "Kevin est fatigué et a mal au dos." },
+    { m: "BIEN-ÊTRE MENTAL", s: 1, d: "Dimension qui concerne les émotions, la confiance en soi et l'équilibre psychique.", e: "Une inquiétude qui dure ou une tension permanente l'atteignent, même sans maladie du corps.", x: "Kevin s'inquiète de ne pas tenir le rythme." },
+    { m: "BIEN-ÊTRE SOCIAL", s: 1, d: "Dimension qui concerne les relations avec la famille, les amis, les collègues.", e: "La place tenue dans un groupe compte pour la santé : une personne isolée n'est pas en complète bonne santé.", x: "Kevin a arrêté le football et voit moins ses amis." },
+    { m: "FACTEUR INTERNE", s: 1, d: "Élément qui dépend de la personne elle-même : âge, hérédité, sommeil, alimentation.", e: "Certains ne se modifient pas (l'âge, le sexe, l'hérédité) ; d'autres dépendent des habitudes de vie et peuvent changer." },
+    { m: "FACTEUR EXTERNE", s: 1, d: "Élément qui vient de l'environnement de vie ou de travail : air, poussières, horaires.", e: "Il relève le plus souvent d'une action collective, menée par l'employeur, la commune ou l'État, et non de la personne seule." },
+    { m: "HÉRÉDITÉ", s: 1, d: "Ce qui est transmis par la famille ; facteur interne qui ne se modifie pas.", e: "Comme l'âge et le sexe, elle dépend de la personne mais ne se change pas, contrairement au sommeil ou à l'alimentation." },
+    { m: "SOMMEIL", s: 1, d: "Repos de la nuit : trop court, il diminue la vigilance dans la journée.", e: "C'est un facteur interne modifiable. Un manque répété augmente le risque d'accident sur la route et au travail.", x: "Kevin dort environ six heures par nuit." },
+    { m: "TABAC", s: 1, d: "Produit fumé responsable de cancers, de maladies respiratoires chroniques et de maladies cardiovasculaires.", e: "En 2023, en France, il a causé plus de 68 000 décès prématurés : cancers, maladies respiratoires chroniques et cardiovasculaires.", x: "Kevin fume depuis quelques mois pendant les pauses." },
+    { m: "BRUIT", s: 1, d: "Facteur externe de l'atelier qui provoque d'abord une fatigue auditive.", e: "Une exposition répétée peut ensuite entraîner une perte d'audition définitive.", x: "L'atelier de Kevin est bruyant." },
+    { m: "POUSSIÈRES", s: 1, d: "Fines particules dont l'inhalation répétée au travail peut provoquer des maladies respiratoires.", e: "C'est un facteur externe : il vient du lieu de travail, et le salarié ne peut pas le supprimer seul.", x: "L'atelier de Kevin est poussiéreux." },
+    { m: "HORAIRES", s: 1, d: "Heures de travail : facteur externe lié à l'environnement de travail.", e: "Ils ne dépendent pas de la personne mais de son emploi ; ils agissent sur le sommeil et la fatigue.", x: "Kevin se lève à 5 h 30 et rentre vers 19 h." },
+    { m: "VIGILANCE", s: 1, d: "Attention éveillée dans la journée, qui baisse après des nuits trop courtes.", e: "Une baisse de vigilance augmente le risque d'accident sur la route et au travail." },
+    { m: "CANCER", s: 1, d: "Maladie qui est la première cause des décès dus au tabac.", e: "Viennent ensuite, parmi les décès dus au tabac, les maladies respiratoires chroniques et les maladies cardiovasculaires." },
+    { m: "SÉDENTARITÉ", s: 1, d: "Mode de vie sans activité physique régulière.", e: "Elle augmente le risque de surpoids, de diabète de type 2 et de maladies cardiovasculaires.", x: "Kevin a arrêté le football qu'il pratiquait deux fois par semaine." },
+
+    { m: "PLAN SANTÉ", s: 2, d: "Programme d'actions décidé par l'État pour répondre à un problème important pour la population.", e: "Il fixe des objectifs, des actions et des moyens pour une durée déterminée, le plus souvent quatre ou cinq ans." },
+    { m: "ÉTAT", s: 2, d: "Autorité publique qui décide des programmes nationaux d'actions de santé.", e: "Ce n'est ni une entreprise ni une caisse d'assurance maladie qui décide d'un plan santé, mais l'État." },
+    { m: "PRIORITÉ DE SANTÉ PUBLIQUE", s: 2, d: "Problème jugé important : il touche beaucoup de personnes, il est grave ou il pourrait être évité.", e: "Un plan santé répond toujours à une priorité de ce type, par exemple les cancers ou la nutrition." },
+    { m: "PRÉVENTION COLLECTIVE", s: 2, d: "Actions qui s'adressent à toute une population ou à un public précis.", e: "Un plan santé en relève : il ne vise pas une personne en particulier, contrairement à la prévention individuelle." },
+    { m: "PRÉVENTION INDIVIDUELLE", s: 2, d: "Actions qui dépendent des choix de chacun : dormir suffisamment, ne pas fumer.", e: "Elle se distingue de la prévention collective, qui est décidée pour toute une population.", x: "Dormir davantage et arrêter de fumer dépendent de Kevin lui-même." },
+    { m: "PRÉVENTION PRIMAIRE", s: 2, d: "Agir avant l'accident ou la maladie plutôt que de réparer ensuite.", e: "C'est l'objectif du Plan santé au travail 2026-2030 : renforcer la prévention dans les entreprises." },
+    { m: "PLAN SANTÉ AU TRAVAIL", s: 2, d: "Programme national qui fixe, tous les cinq ans, les orientations contre les risques professionnels.", e: "Celui de 2026-2030 a été présenté le 5 juin 2026 et préparé avec les représentants des employeurs et des salariés." },
+    { m: "JEUNES", s: 2, d: "Public le plus exposé aux accidents graves et mortels, avec les intérimaires.", e: "La première orientation du plan 2026-2030 vise particulièrement ce public.", x: "Kevin, 22 ans, vient d'arriver dans son entreprise." },
+    { m: "INTÉRIMAIRES", s: 2, d: "Salariés en mission temporaire, public particulièrement visé par le plan 2026-2030.", e: "Avec les jeunes, ce sont les publics les plus exposés aux accidents du travail graves et mortels." },
+    { m: "ABSENTÉISME", s: 2, d: "Absences répétées au travail, dont la prévention est la quatrième orientation du plan 2026-2030.", e: "Le plan retient cinq orientations : accidents graves, santé des femmes, enjeux émergents, absences, santé mentale." },
+    { m: "SANTÉ MENTALE", s: 2, d: "Sa promotion est la cinquième orientation du plan 2026-2030, avec la prévention des risques psychosociaux.", e: "Elle rejoint la dimension du bien-être mental définie par l'OMS : émotions, confiance en soi, équilibre psychique." },
+    { m: "DREETS", s: 2, d: "Directions régionales qui déclinent le plan national dans chaque région.", e: "Elles appliquent le Plan santé au travail sous la forme d'un plan régional santé travail." },
+    { m: "RÉGION", s: 2, d: "Échelon où le plan national est décliné par les DREETS.", e: "Le plan national devient un plan régional santé travail, adapté au territoire." },
+    { m: "OBJECTIFS", s: 2, d: "Ce qu'un plan santé fixe, avec des actions et des moyens, pour une durée déterminée.", e: "Pour le Plan santé au travail 2026-2030, le principal est de renforcer la prévention dans les entreprises." },
+    { m: "POPULATION", s: 2, d: "Ensemble des personnes à qui s'adresse la prévention collective.", e: "La prévention collective vise toute une population ; la prévention individuelle dépend des choix de chacun." },
+
+    { m: "SÉCURITÉ SOCIALE", s: 3, d: "Système créé en 1945 qui protège contre les risques de la vie : maladie, accidents du travail, vieillesse.", e: "Elle est financée par les salariés, les employeurs et l'État, puis redistribue ces sommes à ceux qui en ont besoin." },
+    { m: "COTISATION", s: 3, d: "Somme prélevée sur le salaire, calculée en pourcentage du salaire brut.", e: "Plus le salaire est élevé, plus elle est forte ; pourtant, chacun est remboursé de la même manière.", x: "Thomas, qui gagne 2 400 € brut, verse plus que Léa, qui gagne 1 900 €." },
+    { m: "IMPÔTS", s: 3, d: "Une partie d'entre eux finance la protection sociale, avec les cotisations et les contributions des employeurs.", e: "La Sécurité sociale a trois sources : les salariés, les employeurs et l'État." },
+    { m: "SOLIDARITÉ NATIONALE", s: 3, d: "Principe : chacun contribue selon ses moyens et reçoit selon ses besoins.", e: "Les sommes versées par tous sont redistribuées à ceux qui en ont besoin.", x: "Le séjour de Karl coûte des milliers d'euros ; il n'a payé que 101 € : les autres assurés ont payé le reste." },
+    { m: "REMBOURSEMENT", s: 3, d: "Somme rendue à l'assuré pour une partie de ses dépenses de soins.", e: "Dans le parcours de soins, une consultation à 30 € donne lieu à 19 € rendus ; sans médecin traitant déclaré, 8,40 € seulement." },
+    { m: "INDEMNITÉS", s: 3, d: "Sommes versées par la Sécurité sociale, à côté des remboursements de soins et des pensions.", e: "Avec les remboursements de soins et les pensions, ce sont les trois formes de redistribution présentées dans le cours." },
+    { m: "PENSIONS", s: 3, d: "Sommes que la Sécurité sociale redistribue, comme les remboursements de soins et les indemnités.", e: "Elles font partie de ce que la Sécurité sociale redistribue, avec les remboursements et les indemnités." },
+    { m: "MATERNITÉ", s: 3, d: "Risque de la vie couvert par la Sécurité sociale, lié à la grossesse et à la naissance.", e: "Il figure parmi les risques couverts avec la maladie, les accidents du travail, la perte d'autonomie et la vieillesse." },
+    { m: "VIEILLESSE", s: 3, d: "Risque de la vie couvert par la Sécurité sociale en fin de vie active.", e: "Elle figure parmi les risques couverts avec la maladie, la maternité, les accidents du travail et la perte d'autonomie." },
+    { m: "PERTE D'AUTONOMIE", s: 3, d: "Risque de la vie couvert par la Sécurité sociale, cité avec la maladie, la maternité et la vieillesse.", e: "La Sécurité sociale protège contre ce risque comme contre les autres risques de la vie, grâce aux sommes versées par tous." },
+    { m: "ASSURANCE MALADIE", s: 3, d: "Branche de la Sécurité sociale qui prend en charge une partie des dépenses de santé.", e: "Elle mène aussi des actions de prévention. Son interlocuteur local est la CPAM." },
+    { m: "MÉDECIN TRAITANT", s: 3, d: "Praticien choisi dès 16 ans et déclaré à l'Assurance maladie, consulté en priorité.", e: "Il assure le suivi de la santé et oriente si besoin vers un spécialiste. Le déclarer donne droit à un meilleur remboursement.", x: "Kevin n'en a pas déclaré : il n'est remboursé que 8,40 € au lieu de 19 €." },
+    { m: "PARCOURS DE SOINS", s: 3, d: "Organisation coordonnée autour du médecin choisi et déclaré, consulté en priorité.", e: "Son respect donne droit au meilleur remboursement : 19 € pour une consultation à 30 €." },
+    { m: "ACCÈS DIRECT", s: 3, d: "Possibilité de consulter certains spécialistes sans passer d'abord par le médecin traitant.", e: "Le parcours reste alors respecté : gynécologue, ophtalmologue, stomatologue, psychiatre entre 16 et 25 ans.", x: "Rosa consulte directement une gynécologue pour le suivi de sa grossesse." },
+    { m: "URGENCE", s: 3, d: "Situation où le parcours reste respecté même sans passer par le médecin traitant.", e: "Le parcours reste aussi respecté loin du domicile ou quand le médecin traitant est remplacé.", x: "En vacances, Lucie se tord la cheville et consulte un médecin sur place." },
+    { m: "GYNÉCOLOGUE", s: 3, d: "Spécialiste en accès direct, consulté par exemple pour le suivi d'une grossesse.", e: "Le consulter directement ne fait pas sortir du parcours de soins coordonnés." },
+    { m: "OPHTALMOLOGUE", s: 3, d: "Spécialiste des yeux, consultable en accès direct.", e: "Comme le gynécologue, il peut être consulté sans passer d'abord par le médecin traitant." },
+    { m: "PSYCHIATRE", s: 3, d: "Spécialiste en accès direct entre 16 et 25 ans.", e: "Entre 16 et 25 ans, le consulter directement ne fait pas sortir du parcours de soins coordonnés." },
+    { m: "RESTE À CHARGE", s: 3, d: "Partie du coût des soins non remboursée par l'Assurance maladie et payée par le patient.", e: "Une complémentaire santé peut en prendre une partie. En moyenne, 292 € par habitant et par an.", x: "Pour son séjour, Karl paie 3 × 23 € + 32 €, soit 101 €." },
+    { m: "FORFAIT JOURNALIER", s: 3, d: "Somme de 23 € par jour d'hôpital pour l'hébergement et les repas.", e: "Il n'est pas remboursé par l'Assurance maladie ; une complémentaire santé peut le prendre en charge.", x: "Karl est resté trois journées à l'hôpital après son appendicite." },
+    { m: "CARTE VITALE", s: 3, d: "Document personnel et gratuit de l'assuré social, valable partout en France.", e: "Elle porte les renseignements administratifs pour le remboursement. Elle ne contient pas le dossier médical et n'est pas un moyen de paiement." },
+    { m: "TIERS PAYANT", s: 3, d: "Dispense d'avancer une partie des frais chez le médecin ou le pharmacien.", e: "La carte Vitale permet d'en bénéficier, et aussi d'être remboursé plus rapidement." },
+    { m: "MON ESPACE SANTÉ", s: 3, d: "Service numérique sécurisé de l'assuré : documents médicaux, messagerie, agenda.", e: "L'assuré décide quels professionnels peuvent consulter ses données, contrairement à la carte Vitale, simple document administratif.", x: "Kevin ne l'a jamais ouvert." },
+    { m: "DOSSIER MÉDICAL PARTAGÉ", s: 3, d: "Comptes rendus d'hospitalisation, analyses, vaccinations et traitements réunis en ligne.", e: "Il évite de refaire des examens, limite les interactions entre médicaments et informe un soignant qui ne connaît pas le patient." }
+  ]
+};

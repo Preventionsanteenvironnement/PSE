@@ -1,0 +1,72 @@
+/* Mots du module A8 1re Bac Pro — Le stress au quotidien.
+   Mots écrits avec leurs accents ; le jeu les ignore pour la saisie.
+   Source unique : cours Le stress au quotidien v3.4 (bibliothèque de l'Atelier). Aucun mot hors cours.
+   m = mot à trouver · s = séance · d = définition (indice) · e = explication simple · x = repère dans la situation de Nolan */
+window.MOTS = {
+  module: "A8", classe: "1re Bac Pro", titre: "Le stress au quotidien", retour: "bcp_1ere_A8_jeux.html", cle: "BP1A8",
+  seances: { 1: "Le stress et ses facteurs", 2: "Stress aigu, stress chronique et gestion" },
+  /* Familles de notions (jeu de l'intrus) : chaque mot appartient au plus à une famille. */
+  familles: [
+    { l: "Les types de manifestations du stress", m: ["PHYSIQUES", "ÉMOTIONNELLES", "INTELLECTUELLES", "COMPORTEMENTALES"] },
+    { l: "Les ressources de la personne", m: ["EXPÉRIENCE", "CONNAISSANCES", "ENTOURAGE"] },
+    { l: "Les facteurs de stress", m: ["ÉVALUATION", "DÉLAI", "CONFLIT", "DÉMÉNAGEMENT", "TRAJETS", "BRUIT"] },
+    { l: "Les trois phases du mécanisme du stress", m: ["ALARME", "RÉSISTANCE", "ÉPUISEMENT"] },
+    { l: "Les conséquences pathologiques", m: ["TROUBLES DIGESTIFS", "TROUBLES ANXIEUX", "DOULEURS", "BURNOUT"] },
+    { l: "Les mesures individuelles", m: ["DORMIR", "ACTIVITÉ PHYSIQUE", "PAUSES", "RESPIRER", "EXCITANTS"] },
+    { l: "Les personnes à qui en parler", m: ["MÉDECIN TRAITANT", "MÉDECIN DU TRAVAIL", "PSYCHOLOGUE"] }
+  ],
+  liste: [
+    { m: "STRESS", s: 1, d: "Réaction de l'organisme à un déséquilibre entre les contraintes d'une situation et les ressources de la personne.", e: "C'est une réaction normale, pas une maladie. Elle pose problème lorsqu'elle est intense et qu'elle dure.", x: "Nolan vit cette réaction depuis six semaines de formation." },
+    { m: "DÉSÉQUILIBRE", s: 1, d: "Ce que ressent une personne lorsque les contraintes l'emportent sur ses ressources.", e: "Le schéma de la balance le montre : le plateau des contraintes penche plus bas que celui des ressources." },
+    { m: "CONTRAINTES", s: 1, d: "Ce que la situation exige : un délai, une évaluation, une tâche nouvelle, un regard extérieur.", e: "Elles forment l'un des deux plateaux de la balance ; les ressources forment l'autre." },
+    { m: "RESSOURCES", s: 1, d: "Ce sur quoi une personne peut s'appuyer pour faire face : connaissances, expérience, temps, sommeil, entourage.", e: "Tant qu'elles suffisent face aux contraintes, la personne s'adapte." },
+    { m: "ADAPTATION", s: 1, d: "Capacité de l'organisme à se mobiliser face à une situation exigeante, puis à revenir à son état normal.", e: "Elle fonctionne tant que les ressources suffisent : l'organisme se mobilise, puis se repose une fois la situation passée." },
+    { m: "VULNÉRABILITÉ", s: 1, d: "Sensibilité variable d'une personne face à une situation ; elle n'est pas définitive.", e: "Elle dépend de la fatigue, de l'expérience, de la confiance en soi et du soutien reçu. Elle n'explique pas à elle seule le stress.", x: "Anissa, qui découvre l'atelier et dort mal, est plus en difficulté que Théo." },
+    { m: "CONFIANCE", s: 1, d: "Sentiment de croire en soi ; elle fait partie de ce dont dépend la sensibilité d'une personne au stress.", e: "Une personne qui se sent sûre d'elle vit plus facilement une situation exigeante.", x: "Théo, qui connaît les gestes et dort bien, se sent sûr de lui." },
+    { m: "EXPÉRIENCE", s: 1, d: "Ressource acquise par la pratique : avoir déjà vécu et réussi des situations semblables.", e: "Elle augmente les ressources face à une tâche.", x: "Théo a déjà travaillé trois ans dans un autre garage." },
+    { m: "CONNAISSANCES", s: 1, d: "Ressource faite de ce que la personne a appris et sait.", e: "Elles font partie des ressources, avec l'expérience, le temps, le sommeil et l'aide de l'entourage." },
+    { m: "ENTOURAGE", s: 1, d: "Personnes proches dont l'aide constitue une ressource face au stress.", e: "Le soutien reçu diminue la vulnérabilité ; il fait partie des ressources de la personne." },
+    { m: "FACTEUR DE STRESS", s: 1, d: "Élément d'une situation qui déclenche la réaction : une évaluation, un délai court, un conflit, le manque de sommeil.", e: "Les facteurs viennent des études, du travail, de la vie personnelle ou des conditions de vie." },
+    { m: "ÉVALUATION", s: 1, d: "Épreuve qui contrôle des acquis ; facteur lié aux études.", e: "C'est une contrainte typique des études, comme les résultats ou l'orientation.", x: "Nolan enchaîne ces épreuves pendant sa formation." },
+    { m: "DÉLAI", s: 1, d: "Temps limité imposé pour finir une tâche ; court, il devient un facteur lié au travail.", e: "Il fait partie des contraintes de la situation, comme une tâche nouvelle ou le regard des autres." },
+    { m: "CONFLIT", s: 1, d: "Désaccord avec quelqu'un ; facteur lié à la vie personnelle.", e: "La vie personnelle compte aussi parmi les facteurs : un désaccord, un déménagement, une difficulté familiale, l'argent." },
+    { m: "DÉMÉNAGEMENT", s: 1, d: "Changement de logement ; facteur lié à la vie personnelle.", e: "Même attendu, ce changement de vie peut peser parmi les contraintes de la vie personnelle." },
+    { m: "TRAJETS", s: 1, d: "Déplacements qui, lorsqu'ils sont longs, font partie des facteurs liés aux conditions de vie.", e: "Les conditions de vie regroupent le manque de sommeil, les déplacements longs, le bruit et le manque de temps libre." },
+    { m: "BRUIT", s: 1, d: "Son gênant ; facteur lié aux conditions de vie.", e: "Il appartient aux conditions de vie, avec le manque de sommeil et les longs déplacements." },
+    { m: "ORIENTATION", s: 1, d: "Choix de la suite des études ; facteur lié aux études.", e: "Les études apportent leurs propres contraintes : évaluations, résultats, charge de travail et ce choix d'avenir." },
+    { m: "PHYSIQUES", s: 1, d: "Se dit des manifestations du stress ressenties par le corps : cœur qui bat vite, mains moites, gorge serrée, maux de ventre.", e: "Ce sont les signes du corps ; d'autres touchent les émotions, la réflexion et les comportements.", x: "Le matin de son oral, Nolan a le cœur qui bat vite et les mains moites." },
+    { m: "ÉMOTIONNELLES", s: 1, d: "Se dit des manifestations du stress qui touchent les ressentis et l'humeur : s'énerver pour des détails, craindre l'erreur.", e: "Elles traduisent le stress dans ce que la personne ressent.", x: "Nolan s'énerve pour des détails et craint une erreur devant son chef." },
+    { m: "INTELLECTUELLES", s: 1, d: "Se dit des manifestations du stress qui touchent l'attention, la mémoire, la réflexion.", e: "Le stress peut gêner la façon de réfléchir, par exemple en empêchant de se concentrer.", x: "Nolan n'arrive plus à se concentrer pendant la formation." },
+    { m: "COMPORTEMENTALES", s: 1, d: "Se dit des manifestations du stress visibles dans ce que la personne fait ou cesse de faire.", e: "Abandonner une activité appréciée en est un exemple.", x: "Nolan a arrêté le football du mercredi soir." },
+
+    { m: "PHASE", s: 2, d: "Étape du mécanisme : il y en a trois, l'alarme, la résistance et l'épuisement.", e: "Face à une situation perçue comme menaçante, l'organisme réagit en trois temps successifs." },
+    { m: "ALARME", s: 2, d: "Première phase : le cerveau donne l'alerte et l'organisme se prépare à agir.", e: "Le cœur bat plus vite, la respiration s'accélère, les muscles se tendent, la vigilance augmente.", x: "C'est ce que vit Nolan le matin de son oral." },
+    { m: "RÉSISTANCE", s: 2, d: "Deuxième phase : la situation se prolonge et l'organisme maintient son apport d'énergie.", e: "Cette phase, marquée par la libération de cortisol, peut durer des semaines." },
+    { m: "ÉPUISEMENT", s: 2, d: "Troisième phase : la régulation des hormones devient inefficace et les capacités de l'organisme sont débordées.", e: "La fatigue s'installe, le sommeil se dégrade, les défenses immunitaires diminuent." },
+    { m: "HORMONE", s: 2, d: "Substance libérée par une glande et transportée par le sang, qui agit sur le fonctionnement de l'organisme.", e: "L'adrénaline et le cortisol en sont deux exemples, libérés pendant le stress." },
+    { m: "SURRÉNALES", s: 2, d: "Glandes situées au-dessus des reins, qui libèrent l'adrénaline et le cortisol.", e: "Le cerveau donne l'alerte ; ces glandes répondent en libérant des hormones." },
+    { m: "ADRÉNALINE", s: 2, d: "Hormone de la phase d'alarme : elle accélère le cœur et la respiration et augmente la vigilance.", e: "Elle prépare l'organisme à agir. À ne pas confondre avec le cortisol, libéré lors de la phase de résistance.", x: "Elle explique le cœur rapide et la gorge serrée de Nolan avant son oral." },
+    { m: "CORTISOL", s: 2, d: "Hormone de la phase de résistance, qui permet à l'organisme de puiser dans ses réserves pour tenir.", e: "Elle maintient l'apport d'énergie quand la situation se prolonge. L'adrénaline, elle, agit dès l'alarme." },
+    { m: "VIGILANCE", s: 2, d: "État d'attention en éveil, qui augmente lors de la phase d'alarme.", e: "Avec le cœur rapide et les muscles tendus, elle prépare l'organisme à réagir." },
+    { m: "STRESS AIGU", s: 2, d: "Réaction ponctuelle, limitée à une situation précise ; l'organisme revient ensuite à son état normal.", e: "Le plus souvent utile : il permet de réagir, même s'il est désagréable sur le moment.", x: "L'oral de Nolan, qui s'est bien passé, en est un exemple." },
+    { m: "STRESS CHRONIQUE", s: 2, d: "Réaction qui s'installe dans la durée : l'organisme reste mobilisé des semaines ou des mois.", e: "L'organisme ne revient jamais à son état de repos et ses réserves s'épuisent.", x: "Nolan dort mal et a mal au ventre depuis plusieurs semaines." },
+    { m: "RÉSERVES", s: 2, d: "Ce dans quoi l'organisme puise pour tenir ; elles s'épuisent quand la mobilisation dure.", e: "Un organisme mobilisé sans repos finit par les vider : c'est ce qui rend le stress qui dure dangereux." },
+    { m: "IRRITABILITÉ", s: 2, d: "Tendance à s'énerver facilement, qui augmente quand le stress dure.", e: "Elle fait partie des effets d'un stress chronique, avec la fatigue permanente et la baisse de concentration." },
+    { m: "CONSÉQUENCE PATHOLOGIQUE", s: 2, d: "Trouble de santé provoqué par un stress qui dure : troubles digestifs, douleurs, maladies cardiovasculaires.", e: "Le stress n'est pas une maladie, mais lorsqu'il dure, il peut en favoriser." },
+    { m: "TROUBLES DIGESTIFS", s: 2, d: "Atteintes de l'estomac et de l'intestin favorisées par un stress qui dure.", e: "Ils font partie des effets à long terme d'un stress chronique.", x: "Nolan a souvent mal au ventre." },
+    { m: "TROUBLES ANXIEUX", s: 2, d: "Atteintes de la santé mentale, marquées par une inquiétude forte, favorisées par un stress qui dure.", e: "Ils comptent parmi les conséquences du stress chronique, avec les douleurs et les maladies cardiovasculaires." },
+    { m: "DOULEURS", s: 2, d: "Sensations pénibles du corps qu'un stress prolongé peut favoriser.", e: "Elles font partie des troubles de santé provoqués par un stress qui dure." },
+    { m: "BURNOUT", s: 2, d: "Épuisement professionnel auquel peut conduire un stress chronique au travail.", e: "Il est la forme extrême d'un stress professionnel qui dure, quand les ressources du salarié sont épuisées." },
+    { m: "MESURE INDIVIDUELLE", s: 2, d: "Action que chacun peut mettre en œuvre pour gérer son stress : dormir, bouger, faire des pauses.", e: "Elle agit sur les ressources de la personne : sommeil, activité physique, organisation, aide demandée." },
+    { m: "DORMIR", s: 2, d: "Mesure de gestion : le faire suffisamment, à heures régulières.", e: "Le sommeil est une ressource : son manque aggrave la fatigue et l'irritabilité.", x: "Se coucher plus tôt est l'action la plus utile pour Nolan." },
+    { m: "ACTIVITÉ PHYSIQUE", s: 2, d: "Mesure de gestion : bouger, pratiquer un sport de façon régulière.", e: "Elle aide l'organisme à gérer le stress.", x: "Nolan peut reprendre le football du mercredi soir." },
+    { m: "PAUSES", s: 2, d: "Moments d'arrêt pendant le travail, recommandés pour gérer le stress.", e: "Elles s'accompagnent d'une respiration lente pour aider l'organisme à se calmer." },
+    { m: "RESPIRER", s: 2, d: "Mesure de gestion : le faire lentement, pendant une pause.", e: "Une respiration lente aide à calmer l'organisme." },
+    { m: "ORGANISER", s: 2, d: "Mesure de gestion : planifier son travail et découper les tâches.", e: "Découper une tâche en étapes la rend moins lourde." },
+    { m: "EXCITANTS", s: 2, d: "Boissons ou produits stimulants à réduire, surtout le soir.", e: "Les limiter favorise un sommeil de qualité, ressource essentielle face au stress." },
+    { m: "PERSONNE DE CONFIANCE", s: 2, d: "Quelqu'un de proche à qui parler pour demander de l'aide.", e: "En parler est une mesure de gestion du stress ; certains signes doivent conduire à le faire." },
+    { m: "MÉDECIN TRAITANT", s: 2, d: "Professionnel de santé habituel, à consulter si la fatigue dure ou si le sommeil se dégrade.", e: "Certains signes ne se diagnostiquent pas seul : fatigue qui dure, tristesse persistante, isolement, anxiété forte." },
+    { m: "MÉDECIN DU TRAVAIL", s: 2, d: "Professionnel de santé de l'entreprise, à qui parler d'un stress lié à l'activité professionnelle.", e: "Il fait partie des personnes à consulter lorsque des signes inquiétants s'installent." },
+    { m: "PSYCHOLOGUE", s: 2, d: "Professionnel qui écoute et accompagne une personne en souffrance psychique.", e: "Il fait partie des personnes à consulter en cas d'anxiété forte ou de tristesse persistante." }
+  ]
+};

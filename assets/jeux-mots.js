@@ -73,7 +73,7 @@
 
   /* ═════════════════════════ PENDU ═════════════════════════ */
   function pendu() {
-    var J = M.jauge || [1, 2, 3, 4, 5, 6, 7].map(function (n) { return { v: '', l: 'Erreur ' + n }; });
+    var J = M.jauge || [1, 2, 3, 4, 5, 6, 7].map(function (n) { return { v: String(n), l: 'Erreur ' + n }; });
     var MAX = J.length, CLE = 'mapse-pendu-' + M.cle;
     var pref = lireMem(CLE, { record: 0 });
     var seance = 0, paquet, pos, trouves, serie, ratés, N, vues, erreurs, fini, aides;
@@ -97,7 +97,7 @@
       var couleurs = ['#2FBF71', '#9BCB3C', '#E3C43A', '#F2A33A', '#EE7B3A', '#E2513B', '#B3261E'];
       var s = '<svg viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Échelle des niveaux sonores : ' + erreurs + ' erreur' + (erreurs > 1 ? 's' : '') + ' sur ' + MAX + '">';
       s += '<line x1="6" y1="' + base + '" x2="' + (w - 6) + '" y2="' + base + '" stroke="#13302A" stroke-width="3" stroke-linecap="round"/>';
-      s += '<text x="6" y="' + (base + 17) + '" font-size="11" fill="#5B7A71" font-family="Atkinson Hyperlegible,Arial">0 ' + esc(M.uniteJauge || '') + '</text>';
+      if (M.jauge) s += '<text x="6" y="' + (base + 17) + '" font-size="11" fill="#5B7A71" font-family="Atkinson Hyperlegible,Arial">0 ' + esc(M.uniteJauge || '') + '</text>';
       for (var i = 0; i < MAX; i++) {
         var bh = 22 + (hmax - 22) * (i / (MAX - 1)), x = x0 + i * (bw + gap), y = base - bh;
         if (i < erreurs) {
@@ -110,7 +110,8 @@
       return s + '</svg>';
     }
     function legende() {
-      if (!erreurs) return '<b>0 ' + esc(M.uniteJauge || '') + '</b>Seuil d\'audibilité · aucune erreur';
+      if (!M.jauge) return '<b>' + (erreurs ? erreurs + ' erreur' + (erreurs > 1 ? 's' : '') + ' sur ' + MAX : 'Aucune erreur') + '</b>' + (erreurs >= MAX ? 'Perdu.' : 'Encore ' + (MAX - erreurs) + ' chance' + (MAX - erreurs > 1 ? 's' : '') + '.');
+      if (!erreurs) return '<b>0 ' + esc(M.uniteJauge || '') + '</b>' + esc(M.jaugeZero || 'Aucune erreur');
       var j = J[erreurs - 1];
       return '<b>' + esc(j.v) + ' ' + esc(M.uniteJauge || '') + '</b>' + esc(j.l) + (erreurs >= MAX ? ' — perdu.' : '');
     }
@@ -724,12 +725,14 @@
     function familleDe(N) { return F.find(function (f) { return f.m.indexOf(N) >= 0; }); }
     function fabriquer() {
       var fs = F.filter(function (f) { return f.m.filter(function (x) { return !seance || x.s === seance; }).length >= 3; });
+      var sc = seance;
+      if (!fs.length) { sc = 0; fs = F.filter(function (f) { return f.m.length >= 3; }); } /* séance sans famille complète : tout le module */
       var out = [];
       var tour = []; while (fs.length && tour.length < 10) tour = tour.concat(melanger(fs));
       tour.forEach(function (f) {
         if (out.length >= 10) return;
-        var trois = melanger(f.m.filter(function (x) { return !seance || x.s === seance; })).slice(0, 3);
-        var autres = M.liste.filter(function (x) { var g = familleDe(x); return g && g !== f && (!seance || x.s === seance); });
+        var trois = melanger(f.m.filter(function (x) { return !sc || x.s === sc; })).slice(0, 3);
+        var autres = M.liste.filter(function (x) { var g = familleDe(x); return g && g !== f && (!sc || x.s === sc); });
         if (!autres.length) autres = M.liste.filter(function (x) { var g = familleDe(x); return g && g !== f; });
         var I = melanger(autres)[0];
         out.push({ f: f, trois: trois, I: I, tout: melanger(trois.concat([I])) });
