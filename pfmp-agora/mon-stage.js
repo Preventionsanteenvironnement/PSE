@@ -100,7 +100,8 @@
   const lbl = document.createElement('div'); lbl.className = 'navlbl'; lbl.textContent = 'Mon stage';
   const sep = document.createElement('div'); sep.className = 'divider';
   nav.insertBefore(sep, nav.firstChild); nav.insertBefore(btn, nav.firstChild); nav.insertBefore(lbl, nav.firstChild);
-  nav.addEventListener('click', e => { if (e.target.closest('button[data-sec="monstage"]')) rendre(); });
+  /* 07/10/2026 : « Mon stage PFMP » est devenu une page à part entière (stage/). Le bouton du carnet y mène. */
+  nav.addEventListener('click', e => { if (e.target.closest('button[data-sec="monstage"]')) { e.stopImmediatePropagation(); location.href = 'stage/index.html'; } }, true);
 
   /* ── Connexion ─────────────────────────────────────────────────────── */
   async function base() {
