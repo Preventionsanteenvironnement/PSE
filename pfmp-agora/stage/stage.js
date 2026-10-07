@@ -204,6 +204,8 @@
     const sem = L.prepa.semaine;
     if (sem && sem.prochain && sem.prochain <= t && (sem.items || []).length) return { ic: 'checklist', t: 'Point sur ma semaine', lien: '#recherches' };
     const { courante } = phaseEnCours(), p = L.prepa;
+    if (p.trouve === 'Oui' && suivi() && !en('search').e) return { ic: 'flag', t: 'Prévenir mon référent : j’ai trouvé mon stage', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
+    if (en('search').e === 'corriger') return { ic: 'alert-circle', t: 'Mon référent demande une correction', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
     if (courante === 'preparation') {
       if (p.cv !== 'À jour') return { ic: 'file-cv', t: 'Finir mon CV', lien: '#p/preparation' };
       if (p.lettre !== 'Prête') return { ic: 'mail', t: 'Finir ma lettre de motivation', lien: '#p/preparation' };
@@ -456,13 +458,9 @@
         question('lettre', 'mail', '#fbeaf0', '#993556', 'Ma lettre de motivation', ['Prête', 'En cours', 'Pas du tout', 'Autre']) +
         question('trouve', 'building', '#e3f6ea', '#1f9d4c', 'J’ai trouvé un stage', ['Oui', 'Non', 'Autre']);
       if (p.trouve === 'Oui') {
-        h += `<div class="qc ok"><div class="sous">
-          <div><div class="t">C’est sûr à 100 % ?</div>${seg('prepa', 'sur', ['Oui', 'Pas encore'], p.sur)}</div>
-          <div><div class="t">J’ai rencontré le tuteur</div>${seg('prepa', 'tuteurVu', ['Oui', 'Non'], p.tuteurVu)}</div>
-          <div><div class="t">J’ai un écrit de l’entreprise</div>${seg('prepa', 'ecrit', ['Oui', 'Non'], p.ecrit)}</div>
-          <div><div class="t">Type de structure</div>${seg('prepa', 'structure', STRUCTURES, p.structure)}${p.structure === 'Autre' ? champAutre('prepa', 'structureAutre', p.structureAutre) : ''}</div>
-        </div>${suivi() ? (envoye('search') ? `<div style="margin-top:12px">${etape('search', 'Mon référent vérifie l’entreprise')}</div>` : `<button class="btn vert plein" data-act="trouve"><i class="ti ti-flag"></i> Prévenir mon référent</button>`) : ''}</div>`;
-        h += suite('#p/fiche', 'Ma fiche de négociation');
+        const rt = p.trouveR && (L.recherches || []).find(x => x.id === p.trouveR);
+        h += `<div class="qc ok">${rt ? `<a class="ici-lien" href="#recherches"><i class="ti ti-map-pin"></i> ${esc(rt.nom || 'Entreprise')}</a>` : ''}${questionsTrouve()}${etatReferent()}</div>`;
+        if (!suivi() || !fait('search')) h += suite('#p/fiche', 'Ma fiche de négociation');
       } else if (p.trouve === 'Non') h += suite('#recherches', 'Mes recherches');
       return h;
     }
@@ -563,12 +561,33 @@
       ${r.adresse || r.tel ? `<div class="coord">${r.adresse ? `<a href="https://maps.apple.com/?q=${encodeURIComponent(r.adresse)}" target="_blank" rel="noopener"><i class="ti ti-map-pin"></i> ${esc(r.adresse)}</a>` : ''}${r.tel ? `<a href="tel:${esc(r.tel.replace(/\s/g, ''))}"><i class="ti ti-phone"></i> ${esc(r.tel)}</a>` : ''}</div>` : ''}
       ${r.statut === 'prevu' ? `<div class="actions"><button class="btn vert mini" data-rfait="${r.id}"><i class="ti ti-check"></i> ${esc(FAIT[r.moyen] || 'Fait')}</button></div>`
         : `<div class="res">${Object.entries(REPONSES).map(([k, [l]]) => `<button class="${r.statut === k ? 'on' : ''}" data-rrep="${r.id}" data-v="${k}">${r.statut === k ? '<i class="ti ti-check"></i>' : ''}${l}</button>`).join('')}</div>`}
+      ${r.statut === 'accord' ? blocTrouve(r) : ''}
       ${r.statut === 'rappeler' ? champDate('rappelLe', 'rappelH', 'Rappeler le') : ''}
       ${r.statut === 'entretien' ? champDate('entretienLe', 'entretienH', 'Entretien le') : ''}
       ${r.statut === 'autre' ? `<input type="text" class="autre" id="rAutre-${r.id}" data-rautre="${r.id}" maxlength="80" placeholder="Précisez" value="${esc(r.autre || '')}">` : ''}
       ${r.statut !== 'prevu' ? `<textarea class="note" id="rNote-${r.id}" data-rnote="${r.id}" maxlength="300" rows="2" placeholder="Ce qui a été dit">${esc(r.note || '')}</textarea>` : ''}
       <div class="actions bas">${confirmeRetrait === r.id ? `<span style="font-size:14px">Retirer cette démarche ?</span><button class="btn mini sec" data-act="garderR">Garder</button><button class="btn mini" style="background:var(--err);color:#fff" data-rretirer="${r.id}">Retirer</button>` : `<button class="lien" data-rmodif="${r.id}"><i class="ti ti-pencil"></i> Modifier</button><button class="lien" style="color:var(--muted)" data-rconf="${r.id}"><i class="ti ti-trash"></i> Retirer</button>`}</div>
     </div>`;
+  }
+
+  /* Une démarche acceptée → « C'est mon stage » → les mêmes questions que dans Préparation → le référent valide. */
+  function questionsTrouve() {
+    const p = L.prepa;
+    return `<div class="sous">
+      <div><div class="t">C’est sûr à 100 % ?</div>${seg('prepa', 'sur', ['Oui', 'Pas encore'], p.sur)}</div>
+      <div><div class="t">J’ai rencontré le tuteur</div>${seg('prepa', 'tuteurVu', ['Oui', 'Non'], p.tuteurVu)}</div>
+      <div><div class="t">J’ai un écrit de l’entreprise</div>${seg('prepa', 'ecrit', ['Oui', 'Non'], p.ecrit)}</div>
+      <div><div class="t">Type de structure</div>${seg('prepa', 'structure', STRUCTURES, p.structure)}${p.structure === 'Autre' ? champAutre('prepa', 'structureAutre', p.structureAutre) : ''}</div></div>`;
+  }
+  function etatReferent() {
+    if (!suivi()) return '';
+    if (en('search').e) return `<div style="margin-top:12px">${etape('search', 'Mon référent valide mon stage')}</div>${fait('search') ? suite('#p/fiche', 'Ma fiche de négociation') : ''}`;
+    return `<button class="btn vert plein" data-act="trouve"><i class="ti ti-flag"></i> Prévenir mon référent</button>`;
+  }
+  function blocTrouve(r) {
+    const p = L.prepa;
+    if (p.trouveR !== r.id) return p.trouve === 'Oui' && p.trouveR ? '' : `<button class="btn vert plein mon-stage" data-rtrouve="${r.id}"><i class="ti ti-flag-check"></i> C’est mon stage</button>`;
+    return `<div class="trouve-ici"><div class="tt"><i class="ti ti-flag-check"></i> Mon stage${en('search').e ? '' : `<button class="lien" data-rpasici="${r.id}">Ce n’est plus mon stage</button>`}</div>${questionsTrouve()}${etatReferent()}</div>`;
   }
 
   /* ── Ma fiche imprimée (A4 paysage, aucun nom) ───────────────────────── */
@@ -657,6 +676,8 @@
     if (d.rmodif) { formR = d.rmodif; rendre(); return; }
     if (d.rconf) { confirmeRetrait = d.rconf; rendre(); return; }
     if (d.act === 'garderR') { confirmeRetrait = ''; rendre(); return; }
+    if (d.rtrouve) { Object.assign(L.prepa, { trouve: 'Oui', trouveR: d.rtrouve }); sauver(); rendre(); return; }
+    if (d.rpasici) { if (L.prepa.trouveR === d.rpasici) { L.prepa.trouveR = ''; L.prepa.trouve = ''; } sauver(); rendre(); return; }
     if (d.rretirer) { L.recherches = L.recherches.filter(r => r.id !== d.rretirer); confirmeRetrait = ''; sauver(true); rendre(); return; }
     if (d.rfait) { majR(d.rfait, { statut: 'attente', faitLe: new Date().toISOString() }); return; }
     if (d.rrep) {
