@@ -165,7 +165,7 @@
     $('app').innerHTML = `
       <div class="top"><span class="av" style="background:${av ? av[1] : '#cfc7b8'}"><i class="ti ti-${av ? av[0] : 'user'}"></i></span><span class="bonjour">Bonjour !</span>
         <button class="rond-btn" data-act="plus" aria-label="Plus"><i class="ti ti-dots"></i></button></div>
-      ${plus ? `<div class="plus"><a href="../mission/index.html"><i class="ti ti-flag-3"></i> Mission stage</a><a href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
+      ${plus ? `<div class="plus"><a href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
       <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon stage</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
       ${corps}
       <p class="discret"><i class="ti ti-shield-lock"></i> ${esc(code)}</p>`;
@@ -323,7 +323,6 @@
       const E = L.fiche.etapes || {}, n = FICHE.filter(([c]) => E[c]).length;
       let h = entete(k, n, FICHE.length) + question('recue', 'file-certificate', '#eeedfe', '#534AB7', 'J’ai ma fiche de négociation', ['Oui', 'Non'], 'fiche');
       if (L.fiche.recue === 'Non') h += `<div class="info"><i class="ti ti-hand-finger"></i>À demander au professeur principal ou à l’enseignant professionnel.</div>`;
-      h += `<a class="lien" href="../mission/index.html#ch/fiche"><i class="ti ti-player-play"></i> Comprendre ma fiche</a>`;
       h += `<div class="qc ${n === FICHE.length ? 'ok' : ''}"><div class="etapes">${FICHE.map(([c, t]) => `<button class="et ${E[c] ? 'on' : ''}" data-fiche="${c}"><span class="b"><i class="ti ti-check"></i></span>${esc(t)}</button>`).join('')}</div></div>`;
       return h + suite('#p/preconvention', 'Ma pré-convention');
     }
@@ -345,7 +344,7 @@
       let h = entete(k) + `<div class="qc">${etape('here', 'Je suis arrivé dans mon entreprise')}</div>`;
       h += `<div class="qc"><div class="t"><span class="ic" style="background:#e6effa;color:#1d5fae"><i class="ti ti-mood-smile"></i></span>Comment se passe mon stage ?</div>${s ? (mp.e ? `<span class="chip ${mp.v === 'difficulte' ? 'att' : 'ok'}">${mp.v === 'difficulte' ? 'Difficulté signalée' : 'Tout va bien'}</span>` : `<div class="seg"><button data-agir="midpoint" data-action="declarer" data-v="ok"><i class="ti ti-mood-smile"></i> Ça va</button><button data-agir="midpoint" data-action="declarer" data-v="difficulte"><i class="ti ti-alert-circle"></i> J’ai une difficulté</button></div>`) : ''}</div>`;
       if (s && s.visite && s.visite.le) h += `<div class="info vert"><i class="ti ti-calendar-check"></i>Visite de votre référent : ${esc(s.visite.le)}</div>`;
-      h += `<a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord</a><br><a class="lien" href="../mission/index.html#ch/situations"><i class="ti ti-help-circle"></i> Que faire si… ?</a>`;
+      h += `<a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord</a>`;
       return h + suite('#p/retour', 'Attestation et bilan');
     }
     if (k === 'retour') {
