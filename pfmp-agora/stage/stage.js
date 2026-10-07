@@ -203,7 +203,8 @@
       ev.preventDefault();
       const c = $('code').value.trim().toUpperCase();
       if (!/^[A-Z0-9]{4,6}$/.test(c)) { $('errCode').textContent = 'Code à 4 caractères.'; return; }
-      if (window.ANNUAIRE && !window.ANNUAIRE[c]) { $('errCode').textContent = 'Code inconnu.'; return; }
+      /* ZZ99 : élève de démonstration, pour que les professeurs voient la page (relié au référent de démonstration 999999). */
+      if (window.ANNUAIRE && !window.ANNUAIRE[c] && c !== 'ZZ99') { $('errCode').textContent = 'Code inconnu.'; return; }
       try { localStorage.setItem('codeEleve', c); localStorage.setItem('userCode', c); } catch (e) {}
       demarrer(c);
     };
