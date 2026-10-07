@@ -32,6 +32,18 @@
   const FICHE = [['remise', 'Je l’ai remise à mon tuteur'], ['coche', 'Le tuteur a coché 2 ou 3 activités'], ['tampon', 'L’entreprise l’a signée et tamponnée'], ['referent', 'Le professeur référent l’a signée'], ['famille', 'Je l’ai signée, ou mon responsable légal'], ['valide', 'Mon enseignant professionnel l’a validée']];
   const DEPART = [['adresse', 'Je connais l’adresse du lieu de stage'], ['horaires', 'Je connais mes horaires'], ['tuteur', 'Je connais le nom de mon tuteur'], ['tel', 'J’ai le numéro de l’entreprise'], ['trajet', 'J’ai repéré mon trajet'], ['absence', 'Absent ou en retard : je préviens l’entreprise et la vie scolaire']];
 
+  /* Rappels « C'est quoi ? » : une phrase, puis les étapes en quelques mots (procédure, check-list, convention). */
+  const RAPPELS = {
+    fiche: ['Le document où l’entreprise indique les activités qu’elle vous confiera.', ['À demander au professeur principal ou à l’enseignant professionnel', 'À remettre à votre tuteur', 'Le tuteur coche 2 ou 3 activités (colonne a)', 'Signature et cachet de l’entreprise', 'Signatures du professeur référent, et de vous ou de votre responsable légal', 'Validation par votre enseignant professionnel'], 'Ensuite : la pré-convention'],
+    preconvention: ['Le document par lequel l’entreprise s’engage à vous accueillir.', ['Remise par votre professeur référent', 'Remplie par l’entreprise : dates, adresse, responsable, assurance, tuteur, horaires', 'Signature et cachet de l’entreprise', 'À rendre à votre professeur référent'], 'Ensuite : la convention'],
+    convention: ['Le contrat entre le lycée, l’entreprise et vous.', ['Préparée par votre professeur référent', 'Signée par l’entreprise et le tuteur, avec le cachet', 'Signée par vous, ou par votre responsable légal si vous êtes mineur', 'Rendue au professeur référent, puis signée par la cheffe d’établissement', 'Un exemplaire pour votre famille, un pour l’entreprise'], 'À faire avant le départ'],
+    retour: ['L’attestation de stage prouve vos jours de stage.', ['Remise par l’entreprise à la fin du stage', 'À rendre à votre professeur référent', 'Elle permet le versement de l’allocation de l’État'], '']
+  };
+  function rappel(k) {
+    const r = RAPPELS[k]; if (!r) return '';
+    return `<details class="rappel"><summary><i class="ti ti-info-circle"></i> C’est quoi ?<i class="ti ti-chevron-down fl"></i></summary>
+      <p class="def">${esc(r[0])}</p><ol>${r[1].map(x => `<li>${esc(x)}</li>`).join('')}</ol>${r[2] ? `<p class="apres"><i class="ti ti-arrow-right"></i> ${esc(r[2])}</p>` : ''}</details>`;
+  }
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const auj = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const fr = s => s ? new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
@@ -151,6 +163,7 @@
   function rendre() {
     if (!code) return ecranCode();
     const h = location.hash || '#';
+    const rappelOuvert = !!document.querySelector('#app details.rappel[open]');
     const garde = {}; document.querySelectorAll('#app input[id],#app textarea[id],#app select[id]').forEach(x => { garde[x.id] = x.value; });
     const actif = document.activeElement && document.activeElement.id;
     const y = window.scrollY;
@@ -170,6 +183,7 @@
       ${corps}
       <p class="discret"><i class="ti ti-shield-lock"></i> ${esc(code)}</p>`;
     Object.entries(garde).forEach(([k, v]) => { const x = $(k); if (x && x.tagName !== 'SELECT' && !x.value && v) x.value = v; });
+    if (rappelOuvert && h === dernierEcran) { const d = document.querySelector('#app details.rappel'); if (d) d.open = true; }
     if (actif && $(actif)) $(actif).focus({ preventScroll: true });
     if (h !== dernierEcran) { dernierEcran = h; window.scrollTo(0, 0); } else window.scrollTo(0, y);
     if (h === '#messages') { rendreFil(); try { localStorage.setItem(cleLocale() + ':vu', new Date().toISOString()); } catch (e) {} }
@@ -321,18 +335,18 @@
     }
     if (k === 'fiche') {
       const E = L.fiche.etapes || {}, n = FICHE.filter(([c]) => E[c]).length;
-      let h = entete(k, n, FICHE.length) + question('recue', 'file-certificate', '#eeedfe', '#534AB7', 'J’ai ma fiche de négociation', ['Oui', 'Non'], 'fiche');
+      let h = entete(k, n, FICHE.length) + rappel('fiche') + question('recue', 'file-certificate', '#eeedfe', '#534AB7', 'J’ai ma fiche de négociation', ['Oui', 'Non'], 'fiche');
       if (L.fiche.recue === 'Non') h += `<div class="info"><i class="ti ti-hand-finger"></i>À demander au professeur principal ou à l’enseignant professionnel.</div>`;
       h += `<div class="qc ${n === FICHE.length ? 'ok' : ''}"><div class="etapes">${FICHE.map(([c, t]) => `<button class="et ${E[c] ? 'on' : ''}" data-fiche="${c}"><span class="b"><i class="ti ti-check"></i></span>${esc(t)}</button>`).join('')}</div></div>`;
       return h + suite('#p/preconvention', 'Ma pré-convention');
     }
     if (k === 'preconvention') {
       const ids = ['pre_given', 'pre_filled', 'pre_return'], n = ids.filter(envoyeOuLocal).length;
-      return entete(k, n, 3) + `<div class="qc">${etape('pre_given', 'J’ai reçu ma pré-convention')}${etape('pre_filled', 'L’entreprise l’a remplie, signée et tamponnée')}${etape('pre_return', 'Je l’ai rendue à mon référent')}</div>` + suite('#p/convention', 'Ma convention');
+      return entete(k, n, 3) + rappel('preconvention') + `<div class="qc">${etape('pre_given', 'J’ai reçu ma pré-convention')}${etape('pre_filled', 'L’entreprise l’a remplie, signée et tamponnée')}${etape('pre_return', 'Je l’ai rendue à mon référent')}</div>` + suite('#p/convention', 'Ma convention');
     }
     if (k === 'convention') {
       const ids = ['conv_given', 'family', 'company', 'conv_return', 'copies'], n = ids.filter(envoyeOuLocal).length;
-      return entete(k, n, 5) + `<div class="qc">${etape('conv_given', 'J’ai reçu ma convention à faire signer')}${etape('company', 'Signée par l’entreprise et le tuteur, avec le cachet')}${etape('family', 'Signée par moi, ou mon responsable légal si je suis mineur')}${etape('conv_return', 'Je l’ai rendue à mon référent')}${etape('copies', 'J’ai remis l’exemplaire signé à mes parents')}</div>` + infoVoit('pronote') + infoVoit('bde') + suite('#p/depart', 'Prêt à partir');
+      return entete(k, n, 5) + rappel('convention') + `<div class="qc">${etape('conv_given', 'J’ai reçu ma convention à faire signer')}${etape('company', 'Signée par l’entreprise et le tuteur, avec le cachet')}${etape('family', 'Signée par moi, ou mon responsable légal si je suis mineur')}${etape('conv_return', 'Je l’ai rendue à mon référent')}${etape('copies', 'J’ai remis l’exemplaire signé à mes parents')}</div>` + infoVoit('pronote') + infoVoit('bde') + suite('#p/depart', 'Prêt à partir');
     }
     if (k === 'depart') {
       const D = L.depart, n = DEPART.filter(([c]) => D[c]).length, s = suivi();
@@ -349,7 +363,7 @@
     }
     if (k === 'retour') {
       const ids = ['attest_in', 'attestation', 'student_eval'], n = ids.filter(envoyeOuLocal).length;
-      return entete(k, n, 3) + `<div class="qc">${etape('attest_in', 'L’entreprise m’a remis mon attestation')}${etape('attestation', 'Je l’ai rendue à mon référent')}${etape('student_eval', 'J’ai fait le bilan de mon stage')}</div><a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon bilan dans le carnet</a>`;
+      return entete(k, n, 3) + rappel('retour') + `<div class="qc">${etape('attest_in', 'L’entreprise m’a remis mon attestation')}${etape('attestation', 'Je l’ai rendue à mon référent')}${etape('student_eval', 'J’ai fait le bilan de mon stage')}</div><a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon bilan dans le carnet</a>`;
     }
     return '';
   }
