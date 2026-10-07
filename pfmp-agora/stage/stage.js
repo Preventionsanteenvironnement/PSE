@@ -33,14 +33,17 @@
     retour: { t: 'Attestation et bilan', ic: 'trophy', sous: 'Au retour' }
   };
   const ORDRE = ['preparation', 'recherches', 'fiche', 'preconvention', 'convention', 'depart', 'stage', 'retour'];
-  const FICHE = [['remise', 'Je l’ai remise à mon tuteur'], ['coche', 'Le tuteur a coché 2 ou 3 activités'], ['tampon', 'L’entreprise l’a signée et tamponnée'], ['referent', 'Le professeur référent l’a signée'], ['famille', 'Je l’ai signée, ou mon responsable légal'], ['valide', 'Mon enseignant professionnel l’a validée']];
-  const FICHE_A = { remise: 'Remettre la fiche de négociation au tuteur', coche: 'Faire cocher 2 ou 3 activités par le tuteur', tampon: 'Faire signer et tamponner la fiche par l’entreprise', referent: 'Faire signer la fiche par le professeur référent', famille: 'Signer la fiche, ou la faire signer par mon responsable légal', valide: 'Faire valider la fiche par l’enseignant professionnel' };
+  /* Fiche de négociation (07/10/2026) : les étapes du socle commun, partagées avec le référent et le professeur principal. */
+  const NEG = [['neg_visit', 'Je suis allé à l’entreprise avec ma fiche de négociation'], ['neg_company', 'L’entreprise l’a signée et tamponnée'], ['neg_family', 'Je l’ai signée, ou mon responsable légal'],
+    ['neg_pro', 'Validée par mon enseignant professionnel'], ['neg_return', 'Je l’ai remise à mon enseignant référent'], ['neg_signed', 'Signée et gardée par mon référent']];
+  const NEG_A = { neg_visit: 'Aller à l’entreprise avec ma fiche de négociation', neg_company: 'Faire signer et tamponner la fiche par l’entreprise', neg_family: 'Signer la fiche de négociation (ou mon responsable légal)',
+    neg_pro: 'Faire valider la fiche par l’enseignant professionnel', neg_return: 'Remettre la fiche à mon enseignant référent' };
   const DEPART_A = { adresse: 'Noter l’adresse du lieu de stage', horaires: 'Connaître mes horaires', tuteur: 'Noter le nom de mon tuteur', tel: 'Noter le numéro de l’entreprise', trajet: 'Repérer mon trajet' };
   const DEPART = [['adresse', 'Je connais l’adresse du lieu de stage'], ['horaires', 'Je connais mes horaires'], ['tuteur', 'Je connais le nom de mon tuteur'], ['tel', 'J’ai le numéro de l’entreprise'], ['trajet', 'J’ai repéré mon trajet'], ['absence', 'Absent ou en retard : je préviens l’entreprise et la vie scolaire']];
 
   /* Rappels « C'est quoi ? » : une phrase, puis les étapes en quelques mots (procédure, check-list, convention). */
   const RAPPELS = {
-    fiche: ['Le document où l’entreprise indique les activités qu’elle vous confiera.', ['À demander au professeur principal ou à l’enseignant professionnel', 'À remettre à votre tuteur', 'Le tuteur coche 2 ou 3 activités (colonne a)', 'Signature et cachet de l’entreprise', 'Signatures du professeur référent, et de vous ou de votre responsable légal', 'Validation par votre enseignant professionnel'], 'Ensuite : la pré-convention'],
+    fiche: ['Le document où l’entreprise indique les activités qu’elle vous confiera.', ['À présenter à l’entreprise : le tuteur coche les activités prévues (colonne a)', 'Signature et cachet de l’entreprise', 'Votre signature, ou celle de votre responsable légal', 'Validation par votre enseignant professionnel', 'À remettre à votre enseignant référent, qui la signe et la garde'], 'Ensuite : la pré-convention'],
     preconvention: ['Le document par lequel l’entreprise s’engage à vous accueillir.', ['Remise par votre professeur référent', 'Remplie par l’entreprise : dates, adresse, responsable, assurance, tuteur, horaires', 'Signature et cachet de l’entreprise', 'À rendre à votre professeur référent'], 'Ensuite : la convention'],
     convention: ['Le contrat entre le lycée, l’entreprise et vous.', ['Préparée par votre professeur référent', 'Signée par l’entreprise et le tuteur, avec le cachet', 'Signée par vous, ou par votre responsable légal si vous êtes mineur', 'Rendue au professeur référent, puis signée par la cheffe d’établissement', 'Un exemplaire pour votre famille, un pour l’entreprise'], 'À faire avant le départ'],
     retour: ['L’attestation de stage prouve vos jours de stage.', ['Remise par l’entreprise à la fin du stage', 'À rendre à votre professeur référent', 'Elle permet le versement de l’allocation de l’État'], '']
@@ -175,7 +178,8 @@
   const en = id => P.entree(suivi(), id);
   const fait = id => ['valide', 'fait'].includes(en(id).e);
   const envoye = id => ['valide', 'fait', 'remis', 'declare'].includes(en(id).e);
-  const ficheOk = () => !!(L.fiche.etapes && L.fiche.etapes.valide);
+  const negFait = id => suivi() ? (envoye(id) || fait(id)) : !!(L.locales || {})[id];
+  const ficheOk = () => suivi() ? (fait('neg_signed') || envoye('neg_return')) : !!((L.locales || {}).neg_return || (L.fiche.etapes && L.fiche.etapes.valide));
   const prepaOk = () => !!(L.prepa.cv && L.prepa.lettre && L.prepa.trouve);
   function noeuds() {
     const per = periode(), s = suivi() || {};
@@ -184,7 +188,7 @@
     return [
       { n: 'Préparation', d: '', ok: prepaOk(), lien: '#p/preparation' },
       { n: 'Recherche', d: '', ok: L.prepa.trouve === 'Oui' || envoye('search'), lien: '#recherches' },
-      { n: 'Fiche de négociation', d: ec('search'), ok: ficheOk(), lien: '#p/fiche' },
+      { n: 'Fiche de négociation', d: ec('neg_return'), ok: ficheOk(), lien: '#p/fiche' },
       { n: 'Pré-convention', d: ec('pre_return'), ok: envoye('pre_return'), lien: '#p/preconvention' },
       { n: 'Convention signée', d: ec('conv_return'), ok: envoye('conv_return'), lien: '#p/convention' },
       { n: 'Début du stage', d: fr(per.debut), ok: !!per.debut && t >= per.debut, lien: '#p/stage', stage: 1 },
@@ -232,8 +236,8 @@
     }
     if (courante === 'fiche') {
       if (L.fiche.recue !== 'Oui') return { ic: 'hand-finger', t: 'Récupérer la fiche de négociation auprès du professeur' + avant('search'), lien: '#p/fiche' };
-      const k = FICHE.find(([c]) => !(L.fiche.etapes || {})[c]);
-      return k ? { ic: 'list-check', t: FICHE_A[k[0]] + avant('search'), lien: '#p/fiche' } : null;
+      const k = NEG.find(([id]) => !negFait(id));
+      return k && NEG_A[k[0]] ? { ic: 'list-check', t: NEG_A[k[0]] + avant('neg_return'), lien: '#p/fiche' } : null;
     }
     if (courante === 'preconvention') {
       if (!envoyeOuLocal('pre_given')) return { ic: 'file-text', t: 'Demander la pré-convention au référent', lien: '#p/preconvention' };
@@ -260,7 +264,7 @@
     });
     const sem = L.prepa.semaine;
     if (sem && sem.prochain) l.push({ d: sem.prochain, ic: 'checklist', t: 'Point sur ma semaine', lien: '#recherches' });
-    [['search', 'Fiche de négociation', '#p/fiche', ficheOk()], ['pre_return', 'Rendre la pré-convention', '#p/preconvention', envoye('pre_return')], ['conv_return', 'Rendre la convention', '#p/convention', envoye('conv_return')],
+    [['neg_return', 'Fiche de négociation', '#p/fiche', ficheOk()], ['pre_return', 'Rendre la pré-convention', '#p/preconvention', envoye('pre_return')], ['conv_return', 'Rendre la convention', '#p/convention', envoye('conv_return')],
       ['attestation', 'Rendre l’attestation', '#p/retour', envoye('attestation')], ['student_eval', 'Bilan du stage', '#p/retour', envoye('student_eval')]].forEach(([id, n, lien, ok]) => {
       const e = P.echeance(P.PAR_ID[id], per); if (e && e.date && !ok) l.push({ d: e.date, ic: 'flag', t: n, lien, act: 1 });
     });
@@ -271,7 +275,7 @@
     return l.filter(x => x.d >= t || x.act).sort((a, b) => (a.d + (a.h || '')).localeCompare(b.d + (b.h || '')));
   }
   const nbAgenda = () => { const t = auj(); return agenda().filter(x => x.d <= t).length; };
-  let volet = '';
+  let volet = '', attente = null;
   function rendreVolet() {
     const v = $('tiroir'); if (!v) return;
     if (!volet) { v.innerHTML = ''; document.body.classList.remove('fige'); return; }
@@ -285,13 +289,16 @@
       c += l.length ? l.map(x => { const ti = titre(x.d), tete = ti !== g ? `<div class="jour ${x.d < t ? 'retard' : x.d === t ? 'auj' : ''}">${esc(ti)}</div>` : ''; g = ti;
         return tete + `<a class="ag ${x.fort ? 'fort' : ''}" href="${x.lien}" data-act="fermer"><span class="h">${x.h ? esc(hh(x.h)) : ''}</span><span class="ic"><i class="ti ti-${x.ic}"></i></span><span class="x">${esc(x.t)}${x.s ? `<small>${esc(x.s)}</small>` : ''}</span></a>`; }).join('')
         : `<div class="vide"><i class="ti ti-calendar" style="font-size:34px"></i></div>`;
+    } else if (volet === 'confirme' && attente) {
+      c = `<div class="conf"><span class="ic"><i class="ti ti-${attente.action === 'annuler' ? 'arrow-back-up' : 'circle-check'}"></i></span><h2>Vous confirmez ?</h2><p>${esc(attente.t)}</p>
+        <div class="deux-btn"><button class="btn sec" data-act="fermer">Non</button><button class="btn ${attente.action === 'annuler' ? 'pri' : 'vert'}" data-act="oui">Oui</button></div></div>`;
     } else if (volet === 'qr') {
       const url = location.origin + location.pathname + '?c=' + encodeURIComponent(code);
       c = `<div class="vt"><i class="ti ti-device-mobile"></i><h2>Sur mon téléphone</h2><button class="rond-btn" data-act="fermer" aria-label="Fermer"><i class="ti ti-x"></i></button></div>
         <div class="qr-img" id="qr"></div><div class="qr-code">${esc(code)}</div>`;
       setTimeout(() => dessinerQR(url), 0);
     }
-    v.innerHTML = `<div class="tiroir-fond" data-act="fermer"></div><aside class="tiroir ${volet}" role="dialog" aria-modal="true">${c}</aside>`;
+    v.innerHTML = `<div class="tiroir-fond" data-act="fermer"></div><aside class="tiroir ${volet === 'confirme' ? 'qr' : volet}" role="dialog" aria-modal="true">${c}</aside>`;
   }
   function dessinerQR(url) {
     const go = () => { const el = $('qr'); if (!el) return; el.innerHTML = ''; new window.QRCode(el, { text: url, width: 232, height: 232, colorDark: '#1f2733', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M }); };
@@ -455,10 +462,13 @@
       const loc = (L.locales || {})[id];
       return `<button class="et ${loc ? 'on' : ''}" data-locale="${id}"><span class="b"><i class="ti ti-check"></i></span>${esc(libelle)}</button>`;
     }
-    if (e.e === 'valide' || e.e === 'fait') chip = '<span class="chip ok"><i class="ti ti-check"></i> Validé</span>';
+    if (e.e === 'valide' || e.e === 'fait') chip = `<span class="chip ok"><i class="ti ti-check"></i> ${e.e === 'fait' && e.par === 'eleve' ? 'Fait' : 'Validé'}</span>`;
     else if (e.e === 'declare' || (e.e === 'remis' && et.from === 'eleve')) chip = '<span class="chip att">En attente du référent</span>';
     else if (e.e === 'corriger') chip = '<span class="chip non">À corriger</span>';
-    btns = P.actions(et, e, 'eleve').filter(a => a !== 'annuler').map(a => `<button class="btn vert mini" data-agir="${id}" data-action="${a}"><i class="ti ti-check"></i> ${a === 'remettre' ? 'Remis' : a === 'recevoir' ? 'Reçu' : 'Fait'}</button>`).join('');
+    else if ((et.ty === 'tache' || et.ty === 'info') && !chip) chip = '<span class="chip gris">En attente</span>';
+    const acts = P.actions(et, e, 'eleve');
+    btns = acts.filter(a => a !== 'annuler').map(a => `<button class="btn vert mini" data-agir="${id}" data-action="${a}"><i class="ti ti-check"></i> ${a === 'remettre' ? 'Remis' : a === 'recevoir' ? 'Reçu' : 'Valider'}</button>`).join('')
+      + (acts.includes('annuler') ? `<button class="lien annuler" data-agir="${id}" data-action="annuler">Annuler</button>` : '');
     const remisRef = et.ty === 'remise' && et.to === 'eleve' && e.e === 'remis' ? '<small>Votre référent indique vous l’avoir remis.</small>' : '';
     return `<div class="ligne"><span class="x">${esc(libelle)}${e.e === 'corriger' && e.motif ? `<small class="err">${esc(e.motif)}</small>` : ''}${remisRef}</span>${chip}${btns}</div>`;
   }
@@ -481,10 +491,10 @@
       return h;
     }
     if (k === 'fiche') {
-      const E = L.fiche.etapes || {}, n = FICHE.filter(([c]) => E[c]).length;
-      let h = entete(k, n, FICHE.length) + rappel('fiche') + question('recue', 'file-certificate', '#eeedfe', '#534AB7', 'J’ai ma fiche de négociation', ['Oui', 'Non'], 'fiche');
+      const n = NEG.filter(([id]) => negFait(id)).length;
+      let h = entete(k, n, NEG.length) + rappel('fiche') + question('recue', 'file-certificate', '#eeedfe', '#534AB7', 'J’ai ma fiche de négociation', ['Oui', 'Non'], 'fiche');
       if (L.fiche.recue === 'Non') h += `<div class="info"><i class="ti ti-hand-finger"></i>À demander au professeur principal ou à l’enseignant professionnel.</div>`;
-      h += `<div class="qc ${n === FICHE.length ? 'ok' : ''}"><div class="etapes">${FICHE.map(([c, t]) => `<button class="et ${E[c] ? 'on' : ''}" data-fiche="${c}"><span class="b"><i class="ti ti-check"></i></span>${esc(t)}</button>`).join('')}</div></div>`;
+      h += `<div class="qc ${n === NEG.length ? 'ok' : ''}">${NEG.map(([id, t]) => etape(id, t)).join('')}</div>`;
       return h + suite('#p/preconvention', 'Ma pré-convention');
     }
     if (k === 'preconvention') {
@@ -656,7 +666,13 @@
 
   /* ── Gestes ──────────────────────────────────────────────────────────── */
   document.addEventListener('click', ev => {
-    if (ev.target.closest('#tiroir [data-act="fermer"]')) { volet = ''; rendreVolet(); return; }
+    if (ev.target.closest('#tiroir [data-act="fermer"]')) { volet = ''; attente = null; rendreVolet(); return; }
+    if (ev.target.closest('#tiroir [data-act="oui"]') && attente) {
+      const a = attente; attente = null; volet = ''; rendreVolet();
+      const faux = document.createElement('button'); faux.dataset.ok = '1';
+      if (a.trouve) faux.dataset.act = 'trouve'; else { faux.dataset.agir = a.id; faux.dataset.action = a.action; if (a.v) faux.dataset.v = a.v; }
+      $('app').appendChild(faux); faux.click(); faux.remove(); return;
+    }
     const b = ev.target.closest('button,[data-act]'); if (!b || !$('app').contains(b)) { if (plus && !ev.target.closest('.plus')) { plus = false; rendre(); } return; }
     const d = b.dataset;
     if (d.act === 'plus') { plus = !plus; rendre(); return; }
@@ -679,15 +695,16 @@
     if (d.avatar != null) { L.avatar = +d.avatar; sauver(); rendre(); return; }
     if (d.seg) { L[d.seg] = L[d.seg] || {}; L[d.seg][d.cle] = L[d.seg][d.cle] === d.v ? '' : d.v; if (d.seg === 'declaration' && d.cle === 'pfmp') prerempliDates(); sauver(); rendre(); return; }
     if (d.act === 'enregistrer') { lireDates(); if (!L.declaration.pfmp) L.declaration.pfmp = 'PFMP 1'; sauver(); if (connu[numero()] && !suivi()) creerSuivi(numero()); location.hash = '#'; return; }
+    if (d.act === 'trouve' && !d.ok) { attente = { trouve: 1, t: 'J’ai trouvé mon stage' }; volet = 'confirme'; rendreVolet(); return; }
     if (d.act === 'trouve') {
       const st = L.prepa.structure === 'Autre' ? (L.prepa.structureAutre || 'Autre') : (L.prepa.structure || 'Entreprise');
       const dom = L.declaration.domaine === 'Autre' ? L.declaration.domaineAutre : L.declaration.domaine;
       b.disabled = true; svc.declarerTrouve(sid(), { structure: st, secteur: dom || '' }).then(() => toast('Envoyé à votre référent.')).catch(e => { toast(e.message); b.disabled = false; });
       return;
     }
+    if (d.agir && !d.ok) { if (!svc || !suivi()) return; const et = P.PAR_ID[d.agir]; attente = { id: d.agir, action: d.action, v: d.v, t: d.action === 'annuler' ? 'Annuler : ' + (et.te || et.t) : (et.te || et.t) }; volet = 'confirme'; rendreVolet(); return; }
     if (d.agir) { if (!svc || !suivi()) return; b.disabled = true; svc.agir(sid(), d.agir, d.action, 'eleve', d.v ? { v: d.v } : undefined).then(() => toast(d.agir === 'midpoint' && d.v === 'difficulte' ? 'Votre référent est prévenu.' : 'Envoyé à votre référent.')).catch(e => { toast(e.message); b.disabled = false; }); return; }
     if (d.locale) { L.locales = L.locales || {}; L.locales[d.locale] = !L.locales[d.locale]; sauver(); rendre(); return; }
-    if (d.fiche) { L.fiche.etapes = L.fiche.etapes || {}; L.fiche.etapes[d.fiche] = !L.fiche.etapes[d.fiche]; sauver(); rendre(); return; }
     if (d.depart) { L.depart[d.depart] = !L.depart[d.depart]; sauver(); rendre(); return; }
     if (d.act === 'ajouterR') { formR = 'new'; rendre(); setTimeout(() => $('rNom') && $('rNom').focus(), 0); return; }
     if (d.act === 'annulerR') { formR = null; rendre(); return; }
