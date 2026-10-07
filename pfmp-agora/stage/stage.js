@@ -69,9 +69,11 @@
   const cleLocale = () => 'pfmp-stage-v1:' + code;
   function charger() { try { L = Object.assign(vierge(), JSON.parse(localStorage.getItem(cleLocale()) || '{}')); } catch (e) { L = vierge(); } }
   let minuteurEnvoi = null, minuteurPistes = null;
+  let aEnvoyer = false;
   function sauver(pistes) {
     L.majLe = new Date().toISOString();
     try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {}
+    aEnvoyer = true; if (fs && suivi()) majSync('envoi');
     clearTimeout(minuteurEnvoi); minuteurEnvoi = setTimeout(envoyerParcours, 1200);
     if (pistes) { clearTimeout(minuteurPistes); minuteurPistes = setTimeout(envoyerPistes, 1500); }
   }
@@ -87,16 +89,29 @@
     return { debut, fin, dernierJour };
   }
   const CHAMPS = ['avatar', 'declaration', 'prepa', 'fiche', 'depart', 'recherches', 'majLe'];
-  let etatSync = 'envoi';
+  let etatSync = 'envoi', enCours = false;
   const ICONES_SYNC = { ok: ['cloud-check', 'Enregistré'], envoi: ['cloud-up', 'Enregistrement…'], local: ['cloud-off', 'Sur cet appareil'], erreur: ['cloud-x', 'Non enregistré'] };
-  const iconeSync = () => `<i class="ti ti-${ICONES_SYNC[etatSync][0]}"></i>`;
-  function majSync(e) { etatSync = e; const x = $('sync'); if (x) { x.className = 'sync ' + e; x.title = ICONES_SYNC[e][1]; x.innerHTML = iconeSync(); } }
+  let okJusqua = 0;
+  const iconeSync = () => `<i class="ti ti-${ICONES_SYNC[etatSync][0]}"></i>${etatSync === 'ok' && Date.now() < okJusqua ? '<span class="sync-txt">Enregistré</span>' : ''}`;
+  let enregLe = '';
+  const toutGarde = () => etatSync === 'ok' && !aEnvoyer && !enCours;
+  function texteEnreg() {
+    if (etatSync === 'erreur' || etatSync === 'local') return '<i class="ti ti-device-floppy"></i> Enregistrer';
+    if (toutGarde() && enregLe) return `<i class="ti ti-circle-check"></i> Enregistré à ${enregLe}`;
+    if (!toutGarde()) return '<i class="ti ti-loader-2 tourne"></i> Enregistrement…';
+    return '<i class="ti ti-device-floppy"></i> Enregistrer';
+  }
+  function majBtnEnreg() { const b = $('btnEnreg'); if (b) { b.innerHTML = texteEnreg(); b.classList.toggle('fait', toutGarde() && !!enregLe); } }
+  function majSync(e) {
+    if (e === 'ok' && etatSync === 'envoi' && aEnvoyer === false && enCours) { okJusqua = Date.now() + 2000; setTimeout(() => { const x = $('sync'); if (x && etatSync === 'ok') x.innerHTML = iconeSync(); }, 2050); }
+    etatSync = e; if (e === 'ok' && !aEnvoyer) enregLe = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h '); setTimeout(majBtnEnreg, 0); const x = $('sync'); if (x) { x.className = 'sync ' + e; x.title = ICONES_SYNC[e][1]; x.innerHTML = iconeSync(); } }
   function envoyerParcours() {
     if (!fs || !suivi()) { majSync('local'); return; }
     const d = {}; CHAMPS.forEach(k => { d[k] = L[k]; });
     d.recherches = (L.recherches || []).slice(0, 80);
-    majSync('envoi');
-    fs.doc('coordination_pfmp_suivi/' + sid() + '/eleve/parcours').set(JSON.parse(JSON.stringify(d))).then(() => majSync('ok')).catch(() => majSync('erreur'));
+    majSync('envoi'); clearTimeout(minuteurEnvoi); aEnvoyer = false; enCours = true;
+    fs.doc('coordination_pfmp_suivi/' + sid() + '/eleve/parcours').set(JSON.parse(JSON.stringify(d)))
+      .then(() => { majSync(aEnvoyer ? 'envoi' : 'ok'); enCours = false; }).catch(() => { enCours = false; majSync('erreur'); });
   }
   /* La fiche en ligne se crée dès la déclaration : rien ne reste sur le seul ordinateur du lycée.
      L'Atelier la complète ensuite (référent, dates du lycée) sans effacer ce que l'élève a saisi. */
@@ -142,7 +157,7 @@
       const d = s.exists ? s.data() : null;
       if (d && String(d.majLe || '') > String(L.majLe || '')) { CHAMPS.forEach(k => { if (d[k] !== undefined) L[k] = d[k]; }); try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {} majSync('ok'); rendre(); }
       else if (!d || String(d.majLe || '') < String(L.majLe || '')) envoyerParcours();
-      else majSync('ok');
+      else if (!aEnvoyer && !enCours) majSync('ok');
     }, () => {});
     arretParcours.chemin = chemin;
   }
@@ -315,6 +330,7 @@
       <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon stage</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
       ${al ? `<a class="alerte ${al.fort ? 'fort' : ''}" href="${al.lien}"><i class="ti ti-${al.ic}"></i><span>${esc(al.t)}</span><i class="ti ti-chevron-right"></i></a>` : ''}
       ${corps}
+      ${declare() && h !== '#messages' ? `<button class="btn enreg ${toutGarde() && enregLe ? 'fait' : ''}" id="btnEnreg" data-act="toutEnregistrer">${texteEnreg()}</button>` : ''}
       <p class="discret"><i class="ti ti-shield-lock"></i> ${esc(code)}</p>`;
     Object.entries(garde).forEach(([k, v]) => { const x = $(k); if (x && x.tagName !== 'SELECT' && !x.value && v) x.value = v; });
     if (rappelOuvert && h === dernierEcran) { const d = document.querySelector('#app details.rappel'); if (d) d.open = true; }
@@ -645,6 +661,14 @@
     const d = b.dataset;
     if (d.act === 'plus') { plus = !plus; rendre(); return; }
     if (plus && !b.closest('.plus')) { plus = false; }
+    if (d.act === 'toutEnregistrer') {
+      if (formulaireRempli()) $('formR').requestSubmit();
+      try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {}
+      if (fs && suivi()) { aEnvoyer = true; envoyerParcours(); if (svc) envoyerPistes(); }
+      else if (fs && connu[numero()] && !suivi()) creerSuivi(numero());
+      else { majSync('local'); toast('Enregistré sur cet appareil.'); }
+      return;
+    }
     if (d.act === 'agenda' || d.act === 'qr') { plus = false; volet = d.act; rendre(); rendreVolet(); return; }
     if (d.act === 'imprimer') { plus = false; rendre(); imprimer(); return; }
     if (d.sem) { const x = (semaine().items || []).find(y => y.id === d.sem); if (x) { x.ok = !x.ok; sauver(); rendre(); } return; }
@@ -699,6 +723,14 @@
     if (d.date) { lireDates(); sauver(); rendre(); }
     else if (d.rd) { const r = L.recherches.find(y => y.id === d.rd); if (r) { r[d.k] = x.value; sauver(true); rendre(); } }
     else if (d.semdate) { semaine().prochain = x.value; sauver(); rendre(); }
+  });
+  /* Avant de fermer : ce qui attend part tout de suite ; le navigateur prévient si une démarche n'est pas enregistrée. */
+  const formulaireRempli = () => !!(formR && ['rNom', 'rAdr', 'rTel'].some(k => $(k) && $(k).value.trim()));
+  function envoyerMaintenant() { if (aEnvoyer && fs && suivi()) envoyerParcours(); }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') envoyerMaintenant(); });
+  window.addEventListener('beforeunload', ev => {
+    envoyerMaintenant();
+    if (formulaireRempli() || (fs && suivi() && (aEnvoyer || enCours))) { ev.preventDefault(); ev.returnValue = ''; }
   });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && volet) { volet = ''; rendreVolet(); } });
   function ajouterObjectif(texte) {
