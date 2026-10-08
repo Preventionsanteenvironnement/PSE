@@ -224,35 +224,14 @@
     if (nonLus()) return { ic: 'message', t: 'Nouveau message', lien: '#messages', fort: 1 };
     const sem = L.prepa.semaine;
     if (sem && sem.prochain && sem.prochain <= t && (sem.items || []).length) return { ic: 'checklist', t: 'Point sur ma semaine', lien: '#recherches' };
-    const { courante } = phaseEnCours(), p = L.prepa;
-    if (p.trouve === 'Oui' && suivi() && !en('search').e) return { ic: 'flag', t: 'Prévenir mon référent : j’ai trouvé mon stage', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
+    const p = L.prepa;
+    if (p.trouve === 'Oui' && suivi() && !en('search').e) return { ic: 'flag', t: 'Prévenir mon référent : j’ai une proposition de stage', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
     if (en('search').e === 'corriger') return { ic: 'alert-circle', t: 'Mon référent demande une correction', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
-    if (courante === 'preparation') {
-      if (p.cv !== 'À jour') return { ic: 'file-cv', t: 'Finir mon CV', lien: '#p/preparation' };
-      if (p.lettre !== 'Prête') return { ic: 'mail', t: 'Finir ma lettre de motivation', lien: '#p/preparation' };
-      return { ic: 'list-search', t: R.length ? 'Prévoir ma prochaine démarche' : 'Prévoir mes premières démarches', lien: '#recherches' };
-    }
-    if (courante === 'recherches') {
-      if (!R.some(r => r.statut === 'prevu' && (!r.date || r.date >= t))) return { ic: 'list-search', t: R.length ? 'Prévoir ma prochaine démarche' : 'Prévoir mes premières démarches', lien: '#recherches' };
-      return null;
-    }
-    if (courante === 'fiche') {
-      if (L.fiche.recue !== 'Oui') return { ic: 'hand-finger', t: 'Récupérer la fiche de négociation auprès du professeur' + avant('search'), lien: '#p/fiche' };
-      const k = NEG.find(([id]) => !negFait(id));
-      return k && NEG_A[k[0]] ? { ic: 'list-check', t: NEG_A[k[0]] + avant('neg_return'), lien: '#p/fiche' } : null;
-    }
-    if (courante === 'preconvention') {
-      if (!envoyeOuLocal('pre_given')) return { ic: 'file-text', t: 'Demander la pré-convention au référent', lien: '#p/preconvention' };
-      if (!envoyeOuLocal('pre_filled')) return { ic: 'file-text', t: 'Faire remplir la pré-convention par l’entreprise' + avant('pre_return'), lien: '#p/preconvention' };
-      return { ic: 'file-text', t: 'Rendre la pré-convention au référent' + avant('pre_return'), lien: '#p/preconvention' };
-    }
-    if (courante === 'convention') {
-      if (!envoyeOuLocal('company') || !envoyeOuLocal('family')) return { ic: 'signature', t: 'Faire signer la convention' + avant('conv_return'), lien: '#p/convention' };
-      return { ic: 'signature', t: 'Rendre la convention au référent' + avant('conv_return'), lien: '#p/convention' };
-    }
-    if (courante === 'depart') { const k = DEPART.find(([c]) => !L.depart[c] && DEPART_A[c]); return k ? { ic: 'backpack', t: DEPART_A[k[0]], lien: '#p/depart' } : null; }
-    if (courante === 'retour') return { ic: 'trophy', t: envoyeOuLocal('attestation') ? 'Faire le bilan de mon stage' : 'Rendre mon attestation au référent' + avant('attestation'), lien: '#p/retour' };
-    return null;
+    /* Sur l'accueil, la carte « Maintenant » dit déjà le reste. */
+    if (!location.hash || location.hash === '#') return null;
+    const m = maintenant(parcours());
+    if (!m || m.attente) return null;
+    return { ic: 'arrow-right', t: 'Maintenant : ' + m.titre, lien: m.lien || '#' };
   }
 
   /* ── Agenda : la reprise de ce qui est déjà noté (démarches, rappels, entretiens, échéances) ── */
@@ -393,21 +372,117 @@
     $('voile').innerHTML = '';
   }
 
+  /* ── Mon parcours (09/10/2026) : la chronologie validée, vue par l'élève ──
+     Ses gestes en cartes ; ce que font les autres en petit ; « Maintenant » = la seule chose à faire.
+     Les étapes des autres ne bloquent l'élève que si elles conditionnent la suite (un intervenant, un drapeau). */
+  const STATUTS_EL = ['Mon référent', 'Proposition de stage', 'Stage validé', 'Convention signée', 'En stage', 'Terminé'];
+  const LIB_ACT = { declarer: 'Valider', remettre: 'Je l’ai remis', recevoir: 'Je l’ai', faire: 'C’est fait' };
+  const minus = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : '';
+  function refTexte() {
+    const s = suivi();
+    return s && s.refSigle ? 'Mon enseignant référent : professeur ' + (/^[aeiouéèêh]/i.test(s.refSigle) ? 'd’' : 'de ') + s.refSigle : 'Mon enseignant référent : à venir';
+  }
+  function entreeEl(id) { const s = suivi(); return s ? P.entree(s, id) : { e: (L.locales || {})[id] ? 'fait' : '' }; }
+  function faitEl(et, e) {
+    if (et.ty === 'declare') return ['declare', 'fait', 'valide'].includes(e.e);
+    if (et.ty === 'remise') return et.from === 'eleve' ? ['remis', 'valide'].includes(e.e) : e.e === 'valide';
+    return ['fait', 'valide'].includes(e.e);
+  }
+  function lienEl(id) {
+    if (id === 'search') return L.prepa.trouveR ? '#recherches' : '#p/preparation';
+    if (id === 'midpoint') return '#p/stage';
+    return '';
+  }
+  function parcours() {
+    const s = suivi(), pr = L.prepa, R = L.recherches || [], items = [];
+    P.PHASES.forEach((nom, ph) => {
+      items.push({ phase: nom, ph });
+      if (ph === 1) {
+        items.push({ moi: 1, id: '_cv', titre: 'Mon CV et ma lettre de motivation sont prêts', sous: 'CV : ' + (pr.cv || '—') + ' · lettre : ' + (pr.lettre || '—'), fait: (pr.cv === 'À jour' && pr.lettre === 'Prête') || !!entreeEl('search').e, lien: '#p/preparation' });
+        items.push({ moi: 1, id: '_dem', titre: 'Mes démarches', sous: R.length ? R.length + ' démarche' + (R.length > 1 ? 's' : '') + ' notée' + (R.length > 1 ? 's' : '') : 'Appels, visites, mails', fait: R.length > 0 || !!entreeEl('search').e, lien: '#recherches' });
+      }
+      P.ETAPES.filter(et => et.ph === ph && !et.local && !et.opt && et.ty !== 'journal').forEach(et => {
+        const e = entreeEl(et.id);
+        if (et.id === 'referent') { items.push({ autre: 1, id: et.id, titre: refTexte(), fait: !!(s && (s.refSigle || P.estFaite(s, 'referent'))), ic: 'school', voit: 1 }); return; }
+        const eleve = (et.ty === 'declare' && (!et.act || et.coche === 'eleve')) || (et.ty === 'remise' && (et.from === 'eleve' || et.to === 'eleve'));
+        const ech = P.echeance(et, periode());
+        if (eleve) items.push({ moi: 1, id: et.id, et, e, titre: et.te || et.t, fait: faitEl(et, e), lien: lienEl(et.id), ech: ech && ech.date,
+          sous: et.id === 'search' && pr.trouveR ? ((R.find(r => r.id === pr.trouveR) || {}).nom || '') : (e.e === 'corriger' && e.motif ? 'À corriger : ' + e.motif : '') });
+        else if (et.id === 'visit') items.push({ autre: 1, id: et.id, et, titre: 'Visite de mon référent' + (s && s.visite && s.visite.le ? ' · ' + frLong(s.visite.le) : ''), fait: !!s && P.estFaite(s, 'visit'), voit: 1, ic: 'calendar-event' });
+        else items.push({ autre: 1, id: et.id, et, titre: et.voit || (et.act ? P.ACTEURS[et.act] + ' · ' + minus(et.t).replace(/ par l’[^·]*$/, '') : 'Votre référent · ' + minus(et.t)),
+          fait: !!s && P.estFaite(s, et.id), bloque: !!(et.act || et.flag), voit: !!(et.voit || et.act || et.flag), ic: et.act === 'pro' ? 'tools' : et.act === 'ent' ? 'building-store' : et.act ? 'building' : 'school' });
+      });
+    });
+    return items;
+  }
+  function maintenant(items) {
+    const etapes = items.filter(x => !x.phase);
+    const per = periode(), t = auj();
+    for (const x of etapes) {
+      if (x.fait) continue;
+      /* Rien de « pendant le stage » avant le premier jour : on prépare le départ. */
+      if (x.et && x.et.ph >= 6 && per.debut && t < per.debut) return DEPART.every(([k]) => L.depart[k]) ? { attente: 1, id: '_depart', titre: 'Prêt pour le départ · ' + frLong(per.debut) } : { moi: 1, id: '_depart', titre: 'Préparer mon départ', lien: '#p/depart' };
+      if (x.et && ['attest_in', 'attestation', 'student_eval'].includes(x.id) && per.fin && t < per.fin) return { attente: 1, id: '_fin', titre: 'Je suis en stage · fin le ' + frLong(per.fin) };
+      if (x.moi) return x;
+      if (x.bloque && x.id !== 'referent') return Object.assign({}, x, { attente: 1, titre: (x.et.act ? P.ACTEURS[x.et.act] : 'Votre référent') + ' · ' + minus(x.et.t).replace(/ par l’[^·]*$/, '') });
+    }
+    return null;
+  }
+  function statutEl() {
+    const s = suivi() || {}, t = auj(), per = periode(); let st = 0;
+    if (s.refSigle || P.estFaite(s, 'referent')) st = 1;
+    if (entreeEl('search').e) st = 2;
+    if (P.estFaite(s, 'neg_signed')) st = 3;
+    if (P.estFaite(s, 'ddf_copies') || ['remis', 'valide'].includes(entreeEl('copies').e)) st = 4;
+    if (['declare', 'fait'].includes(entreeEl('here').e) || (per.debut && t >= per.debut)) st = 5;
+    if (P.estFaite(s, 'student_eval')) st = 6;
+    return st;
+  }
+  function carteMaintenant(m) {
+    if (!m) return `<section class="mp-maint fini"><small>Bravo</small><h2>Votre parcours est complet</h2></section>`;
+    if (m.attente) return `<section class="mp-maint attente"><small>En attente</small><h2>${esc(m.titre)}</h2><p>Rien à faire pour l’instant : vous serez prévenu ici.</p></section>`;
+    const quand = m.ech ? `<p>Avant le ${esc(frLong(m.ech))}</p>` : (m.sous ? `<p>${esc(m.sous)}</p>` : '');
+    let bouton = '';
+    if (m.lien) bouton = `<a class="mp-gros" href="${m.lien}"><i class="ti ti-arrow-right"></i> ${m.id === '_dem' ? 'Mes recherches' : 'J’y vais'}</a>`;
+    else if (m.et && suivi()) { const a = P.actions(m.et, m.e, 'eleve').find(x => x !== 'annuler'); if (a) bouton = `<button class="mp-gros" data-agir="${m.id}" data-action="${a}"><i class="ti ti-check"></i> ${LIB_ACT[a] || 'Valider'}</button>`; }
+    else if (m.et) bouton = `<button class="mp-gros" data-locale="${m.id}"><i class="ti ti-check"></i> Valider</button>`;
+    return `<section class="mp-maint"><small>Maintenant</small><h2>${esc(m.titre)}</h2>${quand}${bouton}</section>`;
+  }
+  const PAGES_PH = { 1: '#p/preparation', 2: '#p/fiche', 3: '#p/preconvention', 4: '#p/convention', 5: '#p/depart', 6: '#p/stage', 7: '#p/retour' };
+  function filParcours(items, m) {
+    let h = '', n = 0;
+    /* « Annuler » sur le dernier geste de l'élève seulement : un oubli se rattrape, l'historique reste net. */
+    const dernier = (items.filter(y => y.moi && y.fait && y.et).pop() || {}).id;
+    items.forEach((x, i) => {
+      if (x.phase) {
+        const suite = []; for (let k = i + 1; k < items.length && !items[k].phase; k++) suite.push(items[k]);
+        const vis = suite.filter(y => y.moi || y.voit); if (!vis.length) return;
+        n++;
+        const cle = suite.filter(y => y.moi || y.bloque), ok = (cle.length ? cle : vis).every(y => y.fait), ici = m && suite.includes(items.find(y => y.id === m.id));
+        const pg = PAGES_PH[x.ph];
+        h += `<${pg ? `a href="${pg}"` : 'div'} class="mp-ph ${ok ? 'ok' : ici ? 'ici' : ''}"><i class="n">${ok ? '✓' : n}</i>${esc(x.phase)}${pg ? '<i class="ti ti-chevron-right"></i>' : ''}</${pg ? 'a' : 'div'}>`;
+        return;
+      }
+      if (x.moi) {
+        const ici = m && m.id === x.id && !m.attente;
+        const ann = x.id === dernier && suivi() && P.actions(x.et, x.e, 'eleve').includes('annuler') ? `<button class="lien annuler" data-agir="${x.id}" data-action="annuler">Annuler</button>` : '';
+        const deux = x.et && x.et.ty === 'remise' ? `<span class="mp-relais ${x.fait ? '' : 'att'}">${x.fait ? '✓✓' : '✓'}</span>` : '';
+        const tag = x.lien && !x.fait ? `<a class="mp-moi ${ici ? 'ici' : ''}" href="${x.lien}">` : `<div class="mp-moi ${x.fait ? 'fait' : ici ? 'ici' : ''}">`;
+        h += `${tag}<span class="b">✓</span><span class="x">${esc(x.titre)}${x.sous ? `<small>${esc(x.sous)}</small>` : ''}</span>${deux}${ann}${x.lien && !x.fait ? '</a>' : '</div>'}`;
+      } else if (x.voit) h += `<div class="mp-autre ${x.fait ? 'fait' : ''}"><i class="ti ti-${x.fait ? 'circle-check' : x.ic}"></i>${esc(x.titre)}</div>`;
+    });
+    return h;
+  }
+
   /* ── Accueil ─────────────────────────────────────────────────────────── */
   function pageAccueil() {
     if (!declare()) return `<button class="declarer" onclick="location.hash='#declarer'"><i class="ti ti-plus"></i>Déclarer un stage</button>`;
-    const per = periode(), nds = noeuds(), ici = nds.findIndex(x => !x.ok);
-    const { etat, courante } = phaseEnCours();
-    const drap = P.drapeaux(suivi() || {}).map(d => `<span class="${d.ok ? 'ok' : ''}" title="${esc(d.label)}"><i class="ti ti-${d.label === 'Arrivée' ? 'trophy' : 'flag'}"></i></span>`).join('');
-    const pc = courante === 'recherches' ? { t: 'Mes recherches', ic: 'list-search', sous: 'Appels, visites, réponses' } : PHASES[courante];
-    const lienPc = courante === 'recherches' ? '#recherches' : '#p/' + courante;
+    const items = parcours(), m = maintenant(items), cur = statutEl();
     return `
-      <div class="compte"><b id="jours">—</b><span class="l" id="joursL">jours avant le départ</span><div class="chrono" id="chrono"></div>
-        <div class="l" style="margin-top:6px">${esc(L.declaration.pfmp)} · ${fr(per.debut)} → ${fr(per.fin)}${suivi() && suivi().refSigle ? ' · référent ' + esc(suivi().refSigle) : ''}</div>
-        <div class="drapeaux">${drap}</div></div>
-      <div class="frise" id="frise">${nds.map((x, i) => `<button class="pt ${x.ok ? 'ok' : ''} ${i === ici ? 'ici' : ''} ${x.stage ? 'stage' : ''}" onclick="location.hash='${x.lien}'"><i class="d"></i><div class="n">${esc(x.n)}</div><div class="dt">${esc(x.d) || '&nbsp;'}</div></button>`).join('')}</div>
-      <a class="phase" href="${lienPc}"><span class="ic"><i class="ti ti-${pc.ic}"></i></span><span style="flex:1"><b>${esc(pc.t)}</b>${pc.sous ? `<small>${esc(pc.sous)}</small>` : ''}</span><i class="ti ti-chevron-right" style="font-size:22px"></i></a>
-      <div class="phases-mini">${ORDRE.filter(k => k !== courante).map(k => { const ph = k === 'recherches' ? { t: 'Mes recherches', ic: 'list-search' } : PHASES[k]; return `<a href="${k === 'recherches' ? '#recherches' : '#p/' + k}"><i class="ti ti-${ph.ic}"></i>${esc(ph.t)}<span class="etat">${etat[k] ? '<span class="chip ok"><i class="ti ti-check"></i></span>' : ''}</span></a>`; }).join('')}</div>
+      <div class="mp-statut">${STATUTS_EL.map((x, k) => `<span class="${k < cur ? 'ok' : k === cur ? 'ici' : ''}">${k < cur ? '✓ ' : ''}${x}</span>`).join('')}</div>
+      ${carteMaintenant(m)}
+      <div class="mp-compte"><b id="jours">—</b> <span id="joursL">jours avant le départ</span><span class="chrono" id="chrono"></span></div>
+      <section class="mp-fil">${filParcours(items, m)}</section>
       <a class="lien" href="#declarer"><i class="ti ti-pencil"></i> Modifier mon stage</a>`;
   }
   let chrono = null;
@@ -426,6 +501,8 @@
       C.textContent = String(Math.floor(ms / 36e5) % 24).padStart(2, '0') + ' h ' + String(Math.floor(ms / 6e4) % 60).padStart(2, '0') + ' min ' + String(Math.floor(ms / 1e3) % 60).padStart(2, '0') + ' s';
     };
     go(); chrono = setInterval(go, 1000);
+    const st = document.querySelector('.mp-statut'), ici = st && st.querySelector('.ici');
+    if (ici) st.scrollLeft = Math.max(0, ici.offsetLeft - st.offsetLeft - 40);
   }
 
   /* ── Déclarer / modifier mon stage ───────────────────────────────────── */
@@ -484,7 +561,7 @@
       let h = entete(k, n, 3) +
         question('cv', 'file-cv', '#e6effa', '#1d5fae', 'Mon CV', ['À jour', 'En cours', 'Pas du tout', 'Autre']) +
         question('lettre', 'mail', '#fbeaf0', '#993556', 'Ma lettre de motivation', ['Prête', 'En cours', 'Pas du tout', 'Autre']) +
-        question('trouve', 'building', '#e3f6ea', '#1f9d4c', 'J’ai trouvé un stage', ['Oui', 'Non', 'Autre']);
+        question('trouve', 'building', '#e3f6ea', '#1f9d4c', 'J’ai une proposition de stage', ['Oui', 'Non', 'Autre']);
       if (p.trouve === 'Oui') {
         const rt = p.trouveR && (L.recherches || []).find(x => x.id === p.trouveR);
         h += `<div class="qc ok">${rt ? `<a class="ici-lien" href="#recherches"><i class="ti ti-map-pin"></i> ${esc(rt.nom || 'Entreprise')}</a>` : ''}${questionsTrouve()}${etatReferent()}</div>`;
