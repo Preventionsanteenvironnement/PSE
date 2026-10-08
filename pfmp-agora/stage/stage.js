@@ -83,12 +83,14 @@
   const numero = () => L.declaration.pfmp === 'PFMP 2' ? 2 : 1;
   const sid = () => { try { return P.suiviId(ANNEE, code, numero()); } catch (e) { return ''; } };
   const suivi = () => suivis[numero()] || null;
-  const declare = () => !!(L.declaration.pfmp && L.declaration.debut);
+  const declare = () => !!(L.declaration.pfmp && (L.declaration.debut || officiel()));
+  /* Les dates du lycée (fiche synchronisée depuis l'Atelier, qui y écrit la classe) passent avant celles que l'élève a saisies. */
+  const officiel = () => { const s = suivi(); return !!(s && s.classe && s.debut); };
   function periode() {
     const s = suivi() || {};
-    const debut = L.declaration.debut || s.debut || '', fin = L.declaration.fin || s.fin || '';
+    const debut = officiel() ? s.debut : (L.declaration.debut || s.debut || ''), fin = officiel() ? s.fin : (L.declaration.fin || s.fin || '');
     let dernierJour = s.debut === debut ? s.dernierJour || '' : '';
-    if (!dernierJour && debut) dernierJour = P.dernierJourDeCours(debut, [], []);
+    if (!dernierJour && debut) dernierJour = P.dernierJourDeCours(debut);
     return { debut, fin, dernierJour };
   }
   const CHAMPS = ['avatar', 'declaration', 'prepa', 'fiche', 'depart', 'recherches', 'majLe'];
@@ -437,7 +439,7 @@
     return `<a class="retour" href="#"><i class="ti ti-chevron-left"></i> Mon stage</a>
       ${blk(1, L.avatar != null, 'Sélectionnez votre avatar', `<div class="avatars">${AVATARS.map((a, i) => `<button data-avatar="${i}" class="${L.avatar === i ? 'on' : ''}" aria-label="Avatar ${i + 1}"><span class="av" style="background:${a[1]}"><i class="ti ti-${a[0]}"></i></span></button>`).join('')}</div>`)}
       ${blk(2, !!D.pfmp, 'Sélectionnez votre stage', seg('declaration', 'pfmp', ['PFMP 1', 'PFMP 2'], D.pfmp, true))}
-      ${blk(3, !!(D.debut && D.fin), 'Sélectionnez les dates', `<div class="dates"><label>Début<input type="date" id="debut" data-date="debut" value="${esc(D.debut || (s && s.debut) || '')}"></label><label>Fin<input type="date" id="fin" data-date="fin" value="${esc(D.fin || (s && s.fin) || '')}"></label></div>`)}
+      ${blk(3, officiel() || !!(D.debut && D.fin), 'Sélectionnez les dates', `<div class="dates"><label>Début<input type="date" id="debut" data-date="debut" value="${esc(officiel() ? s.debut : (D.debut || (s && s.debut) || ''))}" ${officiel() ? 'disabled' : ''}></label><label>Fin<input type="date" id="fin" data-date="fin" value="${esc(officiel() ? s.fin : (D.fin || (s && s.fin) || ''))}" ${officiel() ? 'disabled' : ''}></label></div>${officiel() ? '<div class="verrou"><i class="ti ti-lock"></i> Dates du lycée</div>' : ''}`)}
       ${blk(4, !!D.domaine, 'Sélectionnez le domaine', seg('declaration', 'domaine', DOMAINES, D.domaine) + (D.domaine === 'Autre' ? champAutre('declaration', 'domaineAutre', D.domaineAutre, 'Domaine') : ''))}
       <button class="btn pri plein" data-act="enregistrer"><i class="ti ti-device-floppy"></i> Enregistrer mon stage</button>`;
   }
