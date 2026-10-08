@@ -1571,6 +1571,44 @@
     return '<div><label for="' + id + '">' + label + '</label><select id="' + id + '" data-reg="' + cle + '">' +
       options.map(function (o) { return '<option value="' + o[0] + '"' + (String(reg[cle]) === String(o[0]) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
   }
+  /* ───────────── travail en fichier JSON (changer d'appareil, reprendre plus tard) ───────────── */
+  function sauverFichier() {
+    clearTimeout(minuterie); ecrireMem(CLE + '-' + niveau, rep);
+    var niv = {};
+    NIVEAUX.forEach(function (n) {
+      var r = n[0] === niveau ? rep : lireMem(CLE + '-' + n[0], null);
+      if (r && ((r.v && Object.keys(r.v).length) || (r.e && Object.keys(r.e).length))) niv[n[0]] = r;
+    });
+    var d = { type: 'pse-cours', slug: C.slug, titre: (C.entete && C.entete.titre) || '', niveau: niveau,
+      date: new Date().toISOString(), reponses: niv };
+    var b = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = 'mon-travail-' + C.slug + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 400);
+    annoncer('Travail enregistré dans un fichier');
+  }
+  function reprendreFichier(champ) {
+    var f = champ.files && champ.files[0];
+    if (!f) return;
+    var lec = new FileReader();
+    lec.onload = function () {
+      champ.value = '';
+      var d;
+      try { d = JSON.parse(lec.result); } catch (e) { alert('Ce fichier ne peut pas être lu.'); return; }
+      if (!d || d.type !== 'pse-cours' || !d.reponses) { alert('Ce fichier ne contient pas de travail de cours.'); return; }
+      if (d.slug !== C.slug) { alert('Ce fichier correspond à un autre cours' + (d.titre ? ' : « ' + d.titre + ' »' : '') + '.'); return; }
+      NIVEAUX.forEach(function (n) { if (d.reponses[n[0]]) ecrireMem(CLE + '-' + n[0], d.reponses[n[0]]); });
+      if (!C.sansNiveaux && NIVEAUX.some(function (n) { return n[0] === d.niveau; })) {
+        niveau = d.niveau; ecrireMem(CLE + '-niveau', niveau);
+        document.querySelectorAll('[data-niveau]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-niveau') === niveau ? 'true' : 'false'); });
+      }
+      chargerRep(); rendre(); annoncer('Travail repris');
+    };
+    lec.onerror = function () { champ.value = ''; alert('Ce fichier ne peut pas être lu.'); };
+    lec.readAsText(f);
+  }
+
   function construireBarre() {
     var barre = document.createElement('div');
     barre.innerHTML =
@@ -1582,6 +1620,9 @@
       '<div class="groupe" role="group" aria-label="Taille du texte"><span class="lbl">Texte</span><button type="button" data-taille="-1" aria-label="Réduire la taille du texte">A−</button>' +
       '<button type="button" data-taille="1" aria-label="Agrandir la taille du texte">A+</button></div>' +
       '<span class="espace"></span>' +
+      (C.retourLibelle ? '' : '<button type="button" id="btn-sauver" aria-label="Enregistrer le travail dans un fichier">💾 Enregistrer</button>' +
+      '<button type="button" id="btn-reprendre" aria-label="Reprendre un travail enregistré">📂 Reprendre</button>' +
+      '<input type="file" id="f-reprendre" accept=".json,application/json" hidden>') +
       '<button type="button" id="btn-reglages" aria-expanded="false" aria-controls="panneau">⚙️ Réglages</button>' +
       '<button type="button" data-imprimer aria-label="Imprimer ou enregistrer en PDF">🖨️ PDF</button>' +
       '</div>' +
@@ -1766,6 +1807,8 @@
     if (t.id === 'loupe-fermer') { document.getElementById('loupe').close(); return; }
     if (t.id === 'lec-pause') { if (L.etat === 'lecture') pause(); else reprendre(); return; }
     if (t.id === 'lec-stop') { arreter(); return; }
+    if (t.id === 'btn-sauver') { sauverFichier(); return; }
+    if (t.id === 'btn-reprendre') { document.getElementById('f-reprendre').click(); return; }
     if (t.id === 'r-effacer') {
       if (!confirm('Effacer toutes les réponses enregistrées pour ce cours (niveau affiché) sur cet appareil ?')) return;
       rep = { v: {}, e: {} }; ecrireMem(CLE + '-' + niveau, rep); rendre(); annoncer('Réponses effacées');
@@ -1791,6 +1834,7 @@
   });
   document.addEventListener('change', function (ev) {
     var el = ev.target, k = el.getAttribute && el.getAttribute('data-reg');
+    if (el.id === 'f-reprendre') { reprendreFichier(el); return; }
     if (k) {
       reg[k] = el.value; appliquerReglages();
       return;
