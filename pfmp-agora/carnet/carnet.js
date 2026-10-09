@@ -76,7 +76,7 @@ const Q = new URLSearchParams(location.search), LECTURE = /^20\d{2}-20\d{2}_[A-Z
 let CODE = (LECTURE ? LECTURE.split('_')[1] : (Q.get('c') || (function () { try { return localStorage.getItem('codeEleve') || ''; } catch (e) { return ''; } })())).toUpperCase().trim();
 const CLE = 'pfmp-carnet-v1:' + CODE;
 const VIDE = () => ({ jours: {}, act: [], org: {}, comp: {}, accueil: {}, bilan: {}, meme: '', accueilEnvoye: '', majLe: '' });
-let D; try { D = JSON.parse(localStorage.getItem(CLE)); } catch (e) {}
+let D; try { if (!LECTURE) D = JSON.parse(localStorage.getItem(CLE)); } catch (e) {}
 if (!D || !D.p1) D = { periode: 'p1', p1: VIDE(), p2: VIDE() };
 if (LECTURE) D.periode = 'p' + LECTURE.slice(-1);
 const SUIVIS = {}, ENLIGNE = { p1: '', p2: '' };
@@ -90,7 +90,7 @@ async function envoyer(per) {
   try { const d = nettoyer(D[per]); d.majLe = new Date().toISOString(); await fs.doc('coordination_pfmp_suivi/' + sidDe(per) + '/eleve/carnet').set(d); D[per].majLe = d.majLe; D[per]._local = false; localGarder(); ENLIGNE[per] = 'ok'; return true; }
   catch (e) { D[per]._local = true; localGarder(); ENLIGNE[per] = 'local'; return false; }
 }
-function localGarder() { try { localStorage.setItem(CLE, JSON.stringify(D)); } catch (e) {} }
+function localGarder() { if (LECTURE) return; /* un adulte qui lit ne garde rien dans son navigateur */ try { localStorage.setItem(CLE, JSON.stringify(D)); } catch (e) {} }
 async function brancher() {
   for (let i = 0; i < 40 && !window.__PFMP_SHIM__ && !(window.firebase && window.firebase.firestore); i++) await new Promise(r => setTimeout(r, 250));
   try { if (window.__PFMP_SHIM__) fs = window.__PFMP_SHIM__; else { const fb = window.firebase; fs = ((fb.apps || []).find(a => a.name === 'pfmp-suivi') || fb.initializeApp(CFG, 'pfmp-suivi')).firestore(); } } catch (e) { fs = null; }
