@@ -314,7 +314,7 @@
         ${declare() ? `<button class="rond-btn" data-act="agenda" aria-label="Agenda"><i class="ti ti-calendar-event"></i>${nAg ? `<span class="pastille">${nAg}</span>` : ''}</button>` : ''}
         <button class="rond-btn pc" data-act="qr" aria-label="Sur mon téléphone"><i class="ti ti-device-mobile"></i></button>
         <button class="rond-btn" data-act="plus" aria-label="Plus"><i class="ti ti-dots"></i></button></div>
-      ${plus ? `<div class="plus">${declare() ? `<button data-act="imprimer"><i class="ti ti-printer"></i> Imprimer ma fiche</button>` : ''}<button data-act="qr"><i class="ti ti-device-mobile"></i> Sur mon téléphone</button><a href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
+      ${plus ? `<div class="plus">${declare() ? `<button data-act="imprimer"><i class="ti ti-printer"></i> Imprimer ma fiche</button>` : ''}<button data-act="qr"><i class="ti ti-device-mobile"></i> Sur mon téléphone</button><a href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
       <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon stage</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
       ${al ? `<a class="alerte ${al.fort ? 'fort' : ''}" href="${al.lien}"><i class="ti ti-${al.ic}"></i><span>${esc(al.t)}</span><i class="ti ti-chevron-right"></i></a>` : ''}
       ${corps}
@@ -333,7 +333,7 @@
   function ecranCode() {
     $('app').innerHTML = `<form id="formCode" style="max-width:380px;margin:12vh auto 0;text-align:center;display:grid;gap:14px">
       <span class="av grand" style="background:var(--p600);margin:0 auto"><i class="ti ti-briefcase"></i></span>
-      <h1 style="font-size:24px">Mon stage PFMP</h1>
+      <h1 style="font-size:24px">Mon suivi de PFMP</h1>
       <label class="sr" for="code">Votre code</label><input type="text" id="code" maxlength="6" autocomplete="off" placeholder="Votre code" style="text-align:center;font-size:24px;letter-spacing:.2em;text-transform:uppercase">
       <div id="errCode" style="color:var(--err);font-size:14px;min-height:18px"></div>
       <button class="btn pri" type="submit">Entrer</button></form>`;
@@ -417,6 +417,7 @@
   }
   function maintenant(items) {
     const etapes = items.filter(x => !x.phase);
+    const perdu = etapes.find(x => x.e && x.e.e === 'perdu'); if (perdu) return perdu;
     const per = periode(), t = auj();
     for (const x of etapes) {
       if (x.fait) continue;
@@ -440,6 +441,7 @@
   }
   function carteMaintenant(m) {
     if (!m) return `<section class="mp-maint fini"><small>Bravo</small><h2>Votre parcours est complet</h2></section>`;
+    if (m.e && m.e.e === 'perdu') return `<section class="mp-maint attente perdu"><small>Document perdu</small><h2>${esc(m.et.garde)}</h2><p>Mon référent et mon professeur principal sont prévenus.</p><button class="mp-gros" data-agir="${m.id}" data-action="retrouver"><i class="ti ti-check"></i> Je l’ai retrouvé</button></section>`;
     if (m.attente) return `<section class="mp-maint attente"><small>En attente</small><h2>${esc(m.titre)}</h2><p>Rien à faire pour l’instant : vous serez prévenu ici.</p></section>`;
     const quand = m.ech ? `<p>Avant le ${esc(frLong(m.ech))}</p>` : (m.sous ? `<p>${esc(m.sous)}</p>` : '');
     let bouton = '';
@@ -467,8 +469,14 @@
         const ici = m && m.id === x.id && !m.attente;
         const ann = x.id === dernier && suivi() && P.actions(x.et, x.e, 'eleve').includes('annuler') ? `<button class="lien annuler" data-agir="${x.id}" data-action="annuler">Annuler</button>` : '';
         const deux = x.et && x.et.ty === 'remise' ? `<span class="mp-relais ${x.fait ? '' : 'att'}">${x.fait ? '✓✓' : '✓'}</span>` : '';
+        /* Les documents gardés : « Je l'ai déjà » à tout moment, « Je l'ai perdu » une fois en main. */
+        const acts = x.et && x.et.garde && suivi() ? P.actions(x.et, x.e, 'eleve') : [];
+        const perdu = x.e && x.e.e === 'perdu';
+        const doc = perdu ? `<span class="mp-perdu">Perdu</span>`
+          : !x.fait && !ici && acts.some(a => a === 'declarer' || a === 'recevoir') ? `<button class="lien mp-deja" data-agir="${x.id}" data-action="${acts.find(a => a === 'declarer' || a === 'recevoir')}" data-deja-g="1">${x.e && x.e.e === 'remis' ? 'Je l’ai reçu' : 'Je l’ai déjà'}</button>`
+          : acts.includes('perdre') ? `<button class="lien mp-perte" data-agir="${x.id}" data-action="perdre">Je l’ai perdu</button>` : '';
         const tag = x.lien && !x.fait ? `<a class="mp-moi ${ici ? 'ici' : ''}" href="${x.lien}">` : `<div class="mp-moi ${x.fait ? 'fait' : ici ? 'ici' : ''}">`;
-        h += `${tag}<span class="b">✓</span><span class="x">${esc(x.titre)}${x.sous ? `<small>${esc(x.sous)}</small>` : ''}</span>${deux}${ann}${x.lien && !x.fait ? '</a>' : '</div>'}`;
+        h += `${tag}<span class="b">✓</span><span class="x">${esc(x.titre)}${x.sous ? `<small>${esc(x.sous)}</small>` : ''}${doc ? `<span class="mp-doc">${doc}</span>` : ''}</span>${deux}${ann}${x.lien && !x.fait ? '</a>' : '</div>'}`;
       } else if (x.voit) h += `<div class="mp-autre ${x.fait ? 'fait' : ''}"><i class="ti ti-${x.fait ? 'circle-check' : x.ic}"></i>${esc(x.titre)}</div>`;
     });
     return h;
@@ -594,7 +602,7 @@
       let h = entete(k) + `<div class="qc">${etape('here', 'Je suis arrivé dans mon entreprise')}</div>`;
       h += `<div class="qc"><div class="t"><span class="ic" style="background:#e6effa;color:#1d5fae"><i class="ti ti-mood-smile"></i></span>Comment se passe mon stage ?</div>${s ? (mp.e ? `<span class="chip ${mp.v === 'difficulte' ? 'att' : 'ok'}">${mp.v === 'difficulte' ? 'Difficulté signalée' : 'Tout va bien'}</span>` : `<div class="seg"><button data-agir="midpoint" data-action="declarer" data-v="ok"><i class="ti ti-mood-smile"></i> Ça va</button><button data-agir="midpoint" data-action="declarer" data-v="difficulte"><i class="ti ti-alert-circle"></i> J’ai une difficulté</button></div>`) : ''}</div>`;
       if (s && s.visite && s.visite.le) h += `<div class="info vert"><i class="ti ti-calendar-check"></i>Visite de votre référent : ${esc(s.visite.le)}</div>`;
-      h += `<a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord</a>`;
+      h += `<a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a>`;
       return h + suite('#p/retour', 'Attestation et bilan');
     }
     if (k === 'retour') {
@@ -728,7 +736,7 @@
       <div class="f-bas"><div class="f-bloc"><h2>Ma semaine</h2><div class="liste">${I.map(x => c(x.ok, esc(x.t))).join('')}${c(0, '', '')}${c(0, '', '')}</div></div>
         <div class="f-bloc"><h2>Prochain point</h2><div class="f-date">${esc(frLong(S.prochain || prochainMercredi()))}</div>
           <div class="bilan"><span><b>${R.length}</b>démarches</span><span><b>${nb('rappeler')}</b>à rappeler</span><span><b>${nb('entretien')}</b>entretiens</span><span><b>${nb('accord')}</b>accords</span></div></div></div>
-      <div class="f-pied">mapse.fr › Mon espace › PFMP AGOrA › Mon stage PFMP</div></div>`;
+      <div class="f-pied">mapse.fr › Mon espace › PFMP AGOrA › Mon suivi de PFMP</div></div>`;
   }
   function imprimer() { $('impression').innerHTML = fiche(); setTimeout(() => window.print(), 50); }
 
@@ -781,8 +789,8 @@
       b.disabled = true; svc.declarerTrouve(sid(), { structure: st, secteur: dom || '' }).then(() => toast('Envoyé à votre référent.')).catch(e => { toast(e.message); b.disabled = false; });
       return;
     }
-    if (d.agir && !d.ok) { if (!svc || !suivi()) return; const et = P.PAR_ID[d.agir]; attente = { id: d.agir, action: d.action, v: d.v, t: d.action === 'annuler' ? 'Annuler : ' + (et.te || et.t) : (et.te || et.t) }; volet = 'confirme'; rendreVolet(); return; }
-    if (d.agir) { if (!svc || !suivi()) return; b.disabled = true; svc.agir(sid(), d.agir, d.action, 'eleve', d.v ? { v: d.v } : undefined).then(() => toast(d.agir === 'midpoint' && d.v === 'difficulte' ? 'Votre référent est prévenu.' : 'Envoyé à votre référent.')).catch(e => { toast(e.message); b.disabled = false; }); return; }
+    if (d.agir && !d.ok) { if (!svc || !suivi()) return; const et = P.PAR_ID[d.agir]; attente = { id: d.agir, action: d.action, v: d.v, t: d.action === 'annuler' ? 'Annuler : ' + (et.te || et.t) : d.action === 'perdre' ? 'J’ai perdu : ' + minus(et.garde) : d.action === 'retrouver' ? 'J’ai retrouvé : ' + minus(et.garde) : et.garde && d.dejaG ? 'J’ai déjà : ' + minus(et.garde) : (et.te || et.t) }; volet = 'confirme'; rendreVolet(); return; }
+    if (d.agir) { if (!svc || !suivi()) return; b.disabled = true; svc.agir(sid(), d.agir, d.action, 'eleve', d.v ? { v: d.v } : undefined).then(() => toast(d.action === 'perdre' ? 'Votre référent et votre professeur principal sont prévenus.' : d.agir === 'midpoint' && d.v === 'difficulte' ? 'Votre référent est prévenu.' : 'Envoyé à votre référent.')).catch(e => { toast(e.message); b.disabled = false; }); return; }
     if (d.locale) { L.locales = L.locales || {}; L.locales[d.locale] = !L.locales[d.locale]; sauver(); rendre(); return; }
     if (d.depart) { L.depart[d.depart] = !L.depart[d.depart]; sauver(); rendre(); return; }
     if (d.act === 'ajouterR') { formR = 'new'; rendre(); setTimeout(() => $('rNom') && $('rNom').focus(), 0); return; }

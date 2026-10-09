@@ -96,7 +96,7 @@
   $('main').insertBefore(sec, $('sec-dash'));
   const btn = document.createElement('button');
   btn.dataset.sec = 'monstage';
-  btn.innerHTML = '<span class="ic"><i class="ti ti-route"></i></span> Mon stage PFMP <span class="ms-badge" id="msBadge" hidden></span>';
+  btn.innerHTML = '<span class="ic"><i class="ti ti-route"></i></span> Mon suivi de PFMP <span class="ms-badge" id="msBadge" hidden></span>';
   const lbl = document.createElement('div'); lbl.className = 'navlbl'; lbl.textContent = 'Mon stage';
   const sep = document.createElement('div'); sep.className = 'divider';
   nav.insertBefore(sep, nav.firstChild); nav.insertBefore(btn, nav.firstChild); nav.insertBefore(lbl, nav.firstChild);
