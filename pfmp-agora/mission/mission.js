@@ -156,19 +156,30 @@
     tour();
   }
 
-  /* Remettre dans l'ordre : on touche les cartes l'une après l'autre. */
+  /* Remettre dans l'ordre (09/10/2026) : on numérote toutes les cartes à son idée (toucher une carte numérotée la retire),
+     puis « Valider » montre ce qui est juste, ce qui est faux, et le bon ordre. Aucun indice avant de valider. */
   function ordre(zone, j, fini) {
-    let suivant = 0, erreurs = 0;
     const cartes = melange(j.etapes.map((e, i) => Object.assign({ i }, e)));
-    zone.innerHTML = `<div class="ordre-zone">${cartes.map(c => `<button class="carte-o" data-i="${c.i}"><span class="n">?</span>${c.p ? `<img src="${M.personnes[c.p].img}" alt="">` : ''}<span>${esc(c.t)}</span></button>`).join('')}</div>`;
-    zone.querySelectorAll('.carte-o').forEach(b => b.onclick = () => {
-      if (b.classList.contains('place')) return;
-      if (+b.dataset.i === suivant) {
-        b.classList.add('place'); b.querySelector('.n').textContent = ++suivant;
-        const z = zone.querySelector('.ordre-zone'); const avant = [...z.querySelectorAll('.place')].filter(x => x !== b); z.insertBefore(b, avant.length ? avant[avant.length - 1].nextSibling : z.firstChild);
-        if (suivant === j.etapes.length) fini(Math.max(0, j.etapes.length - erreurs), j.etapes.length, j.fin);
-      } else { erreurs++; b.classList.add('secoue'); setTimeout(() => b.classList.remove('secoue'), 400); }
-    });
+    let choix = [];
+    function dessiner(corrige) {
+      zone.innerHTML = `<div class="compteur">${corrige ? '' : choix.length + ' / ' + cartes.length + ' numérotées'}</div><div class="ordre-zone">${cartes.map(c => {
+        const n = choix.indexOf(c.i) + 1, juste = corrige && n === c.i + 1;
+        return `<button class="carte-o ${n ? 'place' : ''} ${corrige ? (juste ? 'juste' : 'faux') : ''}" data-i="${c.i}" ${corrige ? 'disabled' : ''}><span class="n">${n || '·'}</span><span>${esc(c.t)}${corrige && !juste ? `<small class="bon-rang">À la place n° ${c.i + 1}</small>` : ''}</span></button>`;
+      }).join('')}</div>${corrige ? '' : `<button class="btn pri" id="valider" ${choix.length < cartes.length ? 'disabled' : ''} style="margin-top:10px"><i class="ti ti-check"></i> Valider</button>`}`;
+      if (corrige) return;
+      zone.querySelectorAll('.carte-o').forEach(b => b.onclick = () => {
+        const i = +b.dataset.i, k = choix.indexOf(i);
+        if (k >= 0) choix.splice(k, 1); else choix.push(i);
+        dessiner(false);
+      });
+      zone.querySelector('#valider').onclick = () => {
+        const bons = cartes.filter(c => choix.indexOf(c.i) === c.i).length;
+        cartes.sort((a, b) => a.i - b.i);
+        dessiner(true);
+        fini(bons, cartes.length, j.fin);
+      };
+    }
+    dessiner(false);
   }
 
   /* Choisir toutes les bonnes réponses, puis valider. */

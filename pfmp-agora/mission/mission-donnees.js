@@ -58,16 +58,16 @@ window.MISSION = {
 
     /* 3 ─ La fiche de négociation : l'ordre */
     { id: 'fiche', quand: 'Fin novembre', date: '2026-11-20', titre: 'Ma fiche de négociation', img: 'img/03-fiche-recue.webp', jeu: {
-      type: 'ordre', consigne: 'Remettez les étapes dans l’ordre.',
+      type: 'ordre', consigne: 'Touchez les étapes dans l’ordre, puis Valider.',
       etapes: [
-        { t: 'Je récupère ma fiche de négociation', p: 'pp' },
-        { t: 'Je la remets à mon tuteur, dans l’entreprise', p: 'eleve' },
-        { t: 'Le tuteur coche 2 ou 3 activités (colonne a)', p: 'tuteur' },
-        { t: 'Le tuteur signe et met le cachet de l’entreprise', p: 'tuteur' },
-        { t: 'Le professeur référent signe, puis moi ou mon responsable légal', p: 'referent' },
-        { t: 'L’enseignant professionnel valide la fiche', p: 'pro' }
+        { t: 'Je demande ma fiche de négociation à mon enseignant professionnel' },
+        { t: 'Je l’apporte à l’entreprise' },
+        { t: 'Le tuteur coche les activités possibles, signe et met le cachet' },
+        { t: 'Je la signe (ou mon responsable légal si je suis mineur)' },
+        { t: 'Je la remets à mon enseignant professionnel' },
+        { t: 'Il contrôle les activités, la valide, la signe et la transmet à mon référent' }
       ],
-      fin: 'Ensuite : la pré-convention.'
+      fin: 'Le référent vérifie, signe et garde la fiche : mon lieu de stage est validé. Ensuite : la pré-convention.'
     } },
 
     /* 4 ─ Le tuteur choisit les activités */
@@ -125,7 +125,7 @@ window.MISSION = {
           pq: 'Le 4 janvier, il faudra arriver à l’heure, au bon endroit, et demander la bonne personne.' },
         { q: 'L’entreprise vous paie-t-elle pour ces deux semaines ?', rep: [
           ['Non : l’État verse une allocation pour les jours de stage', 1], ['Oui, un salaire', 0], ['Oui, si je travaille bien', 0]],
-          pq: 'Convention, article 5 : une allocation de l’État, grâce à l’attestation de stage.' },
+          pq: 'Convention, article 6 : une allocation de l’État, grâce à l’attestation de stage.' },
         { q: 'Combien d’exemplaires signés de la convention sont remis ?', rep: [
           ['Deux : un pour ma famille, un pour l’entreprise', 1], ['Un seul, pour moi', 0], ['Aucun', 0]],
           pq: 'Le professeur référent remet un exemplaire à la famille et un à l’entreprise.' }
@@ -141,16 +141,16 @@ window.MISSION = {
           pq: 'Convention, annexe pédagogique : l’entreprise ET le lycée, puis un justificatif écrit.' },
         { q: 'Vous avez 16 ans. Après 8 h de travail, on vous demande de rester jusqu’à 20 h.', rep: [
           ['Je refuse poliment et j’en parle à mon professeur référent', 1], ['Je reste, c’est normal', 0], ['Je pars sans rien dire', 0]],
-          pq: 'Mineur : 8 h par jour et 35 h par semaine au maximum (convention, article 9).' },
+          pq: 'Mineur : 8 h par jour et 35 h par semaine au maximum (convention, article 10).' },
         { q: 'Vous travaillez 5 h d’affilée sans pause.', rep: [
           ['Ce n’est pas normal : au-delà de 4 h 30, une pause de 30 minutes est due', 1], ['C’est normal en entreprise', 0], ['Je mange en travaillant', 0]],
-          pq: 'Convention, article 9 : pause d’au moins 30 minutes après 4 h 30 de travail.' },
+          pq: 'Convention, article 10 : pause d’au moins 30 minutes après 4 h 30 de travail.' },
         { q: 'Vous voyez les dossiers des habitants de la commune.', rep: [
           ['Je n’en parle à personne, ni sur les réseaux', 1], ['Je les raconte à mes amis', 0], ['Je les prends en photo', 0]],
-          pq: 'Convention, article 4 : vous êtes tenu au secret professionnel.' },
+          pq: 'Convention, article 5 : vous êtes tenu au secret professionnel.' },
         { q: 'Vous tombez à vélo en allant au stage.', rep: [
           ['Je préviens l’entreprise et le lycée : c’est un accident du travail', 1], ['Je ne dis rien', 0], ['Je préviens seulement mes amis', 0]],
-          pq: 'Convention, article 13 : l’entreprise le déclare dans les 48 heures.' }
+          pq: 'Convention, article 15 : l’entreprise le déclare dans les 48 heures.' }
       ]
     } },
 
@@ -170,13 +170,20 @@ window.MISSION = {
       ]
     } },
 
-    /* 10 ─ L'attestation : l'ordre des documents */
-    { id: 'documents', quand: '17 janvier', date: '2027-01-17', titre: 'L’attestation', img: 'img/10-attestation.webp', jeu: {
-      type: 'ordre', consigne: 'Remettez les documents dans l’ordre de l’année.',
-      etapes: [
-        { t: 'Mon CV' }, { t: 'La fiche de négociation' }, { t: 'La pré-convention' }, { t: 'La convention signée' }, { t: 'L’attestation de stage' }
-      ],
-      fin: 'L’attestation va au bureau des entreprises : elle prouve vos jours de stage.'
+    /* 10 ─ Qui remplit quoi ? (09/10/2026 : remplace l'ordre des documents, qui recopiait le chemin) */
+    { id: 'qui-remplit', quand: '17 janvier', date: '2027-01-17', titre: 'Qui remplit quoi ?', img: 'img/10-attestation.webp', jeu: {
+      type: 'associer', consigne: 'Pour chaque document, touchez la personne qui le remplit ou le signe.',
+      personnes: ['eleve', 'tuteur', 'pro', 'referent', 'famille'],
+      items: [
+        ['Les activités possibles, sur la fiche de négociation', 'tuteur'],
+        ['La validation de la fiche de négociation', 'pro'],
+        ['Les horaires et l’assurance, sur la pré-convention', 'tuteur'],
+        ['La signature de la convention, pour un élève mineur', 'famille'],
+        ['La vérification de la convention signée', 'referent'],
+        ['Le nombre de jours réellement effectués, sur l’attestation', 'tuteur'],
+        ['L’avis sur l’accueil, à la fin du stage', 'eleve'],
+        ['Le carnet de bord, chaque jour', 'eleve']
+      ]
     } }
   ],
 
