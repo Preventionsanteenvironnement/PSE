@@ -314,7 +314,7 @@
         ${declare() ? `<button class="rond-btn" data-act="agenda" aria-label="Agenda"><i class="ti ti-calendar-event"></i>${nAg ? `<span class="pastille">${nAg}</span>` : ''}</button>` : ''}
         <button class="rond-btn pc" data-act="qr" aria-label="Sur mon téléphone"><i class="ti ti-device-mobile"></i></button>
         <button class="rond-btn" data-act="plus" aria-label="Plus"><i class="ti ti-dots"></i></button></div>
-      ${plus ? `<div class="plus">${declare() ? `<button data-act="imprimer"><i class="ti ti-printer"></i> Imprimer ma fiche</button>` : ''}<button data-act="qr"><i class="ti ti-device-mobile"></i> Sur mon téléphone</button><a href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
+      ${plus ? `<div class="plus">${declare() ? `<button data-act="imprimer"><i class="ti ti-printer"></i> Imprimer ma fiche</button>` : ''}<button data-act="qr"><i class="ti ti-device-mobile"></i> Sur mon téléphone</button><a href="../carnet/index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
       <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon stage</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
       ${al ? `<a class="alerte ${al.fort ? 'fort' : ''}" href="${al.lien}"><i class="ti ti-${al.ic}"></i><span>${esc(al.t)}</span><i class="ti ti-chevron-right"></i></a>` : ''}
       ${corps}
@@ -418,6 +418,7 @@
   function maintenant(items) {
     const etapes = items.filter(x => !x.phase);
     const perdu = etapes.find(x => x.e && x.e.e === 'perdu'); if (perdu) return perdu;
+    { const per = periode(), t = auj(); if (per.debut && per.fin && t >= per.debut && t <= per.fin) return { moi: 1, id: '_carnet', titre: 'Remplir mon carnet de bord du jour', lien: '../carnet/index.html' }; }
     const per = periode(), t = auj();
     for (const x of etapes) {
       if (x.fait) continue;
@@ -445,7 +446,7 @@
     if (m.attente) return `<section class="mp-maint attente"><small>En attente</small><h2>${esc(m.titre)}</h2><p>Rien à faire pour l’instant : vous serez prévenu ici.</p></section>`;
     const quand = m.ech ? `<p>Avant le ${esc(frLong(m.ech))}</p>` : (m.sous ? `<p>${esc(m.sous)}</p>` : '');
     let bouton = '';
-    if (m.lien) bouton = `<a class="mp-gros" href="${m.lien}"><i class="ti ti-arrow-right"></i> ${m.id === '_dem' ? 'Mes recherches' : 'J’y vais'}</a>`;
+    if (m.lien) bouton = `<a class="mp-gros" href="${m.lien}"><i class="ti ti-arrow-right"></i> ${m.id === '_dem' ? 'Mes recherches' : m.id === '_carnet' ? 'Mon carnet de bord' : 'J’y vais'}</a>`;
     else if (m.et && suivi()) { const a = P.actions(m.et, m.e, 'eleve').find(x => x !== 'annuler'); if (a) bouton = `<button class="mp-gros" data-agir="${m.id}" data-action="${a}"><i class="ti ti-check"></i> ${LIB_ACT[a] || 'Valider'}</button>`; }
     else if (m.et) bouton = `<button class="mp-gros" data-locale="${m.id}"><i class="ti ti-check"></i> Valider</button>`;
     return `<section class="mp-maint"><small>Maintenant</small><h2>${esc(m.titre)}</h2>${quand}${bouton}</section>`;
@@ -602,7 +603,7 @@
       let h = entete(k) + `<div class="qc">${etape('here', 'Je suis arrivé dans mon entreprise')}</div>`;
       h += `<div class="qc"><div class="t"><span class="ic" style="background:#e6effa;color:#1d5fae"><i class="ti ti-mood-smile"></i></span>Comment se passe mon stage ?</div>${s ? (mp.e ? `<span class="chip ${mp.v === 'difficulte' ? 'att' : 'ok'}">${mp.v === 'difficulte' ? 'Difficulté signalée' : 'Tout va bien'}</span>` : `<div class="seg"><button data-agir="midpoint" data-action="declarer" data-v="ok"><i class="ti ti-mood-smile"></i> Ça va</button><button data-agir="midpoint" data-action="declarer" data-v="difficulte"><i class="ti ti-alert-circle"></i> J’ai une difficulté</button></div>`) : ''}</div>`;
       if (s && s.visite && s.visite.le) h += `<div class="info vert"><i class="ti ti-calendar-check"></i>Visite de votre référent : ${esc(s.visite.le)}</div>`;
-      h += `<a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a>`;
+      h += `<a class="lien" href="../carnet/index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a>`;
       return h + suite('#p/retour', 'Attestation et bilan');
     }
     if (k === 'retour') {
