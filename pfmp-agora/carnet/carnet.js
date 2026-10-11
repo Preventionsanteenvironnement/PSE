@@ -89,7 +89,25 @@ const ANNEE_FICHE = LECTURE ? LECTURE.split('_')[0] : ANNEE;
 const sidDe = per => PC.suiviId(ANNEE_FICHE, CODE, +per.slice(1));
 function majPeriodes() { ['p1', 'p2'].forEach(k => { const s = SUIVIS[k]; PERIODES[k] = s && s.debut ? { lib: s.libelle || ('PFMP ' + k.slice(1)), quand: frCourt(s.debut) + ' → ' + frCourt(s.fin || s.debut), debut: s.debut, fin: s.fin || s.debut } : null; }); }
 const frCourt = s => new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-function nettoyer(p) { const c = JSON.parse(JSON.stringify(p || VIDE())); delete c._local; return c; }
+function nettoyer(p) { const c = JSON.parse(JSON.stringify(p || VIDE())); delete c._local; delete c._base; return c; }
+/* 12/10/2026 — Deux appareils : on ne remplace que ce que CET appareil a modifié depuis la dernière copie connue en ligne (« base »).
+   Tout le reste vient de la copie en ligne : une correction faite ailleurs n'est plus écrasée par une vieille copie d'ici. */
+const egalC = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+function champs3(b, l, m) { b = b || {}; l = l || {}; m = Object.assign({}, m || {});
+  new Set(Object.keys(b).concat(Object.keys(l))).forEach(c => { if (!egalC(l[c], b[c])) { if (l[c] === undefined) delete m[c]; else m[c] = l[c]; } }); return m; }
+function fusionCarnet(base, loin, ici) {
+  base = base || {}; const o = Object.assign({}, ici, loin), J = Object.assign({}, loin.jours || {}), bj = base.jours || {}, ij = ici.jours || {};
+  new Set(Object.keys(bj).concat(Object.keys(ij))).forEach(j => {
+    if (egalC(ij[j], bj[j])) return;
+    if (ij[j] === undefined) { delete J[j]; return; }
+    const obj = x => x && typeof x === 'object' && !Array.isArray(x);
+    J[j] = obj(J[j]) && obj(ij[j]) ? champs3(bj[j], ij[j], J[j]) : ij[j];
+  });
+  o.jours = J;
+  ['org', 'comp', 'accueil', 'bilan'].forEach(k => { o[k] = champs3(base[k], ici[k], loin[k]); });
+  ['act', 'meme', 'accueilEnvoye'].forEach(k => { if (!egalC(ici[k], base[k]) || loin[k] === undefined) o[k] = ici[k]; });
+  return o;
+}
 async function envoyer(per) {
   if (!fs || !SUIVIS[per]) return false;
   /* 11/10/2026 — Deux appareils : on relit la copie en ligne avant d'écrire. Les journées se réunissent une par une
@@ -97,17 +115,12 @@ async function envoyer(per) {
   try {
     const ref = fs.doc('coordination_pfmp_suivi/' + sidDe(per) + '/eleve/carnet');
     const d = await fs.runTransaction(t => t.get(ref).then(sn => {
-      const loin = sn.exists ? sn.data() : null, ici = nettoyer(D[per]);
-      if (loin && String(loin.majLe || '') !== String(D[per].majLe || '')) {
-        ici.jours = Object.assign({}, loin.jours || {}, ici.jours || {});
-        ['org', 'comp', 'accueil', 'bilan'].forEach(k => { if (!ici[k] || !Object.keys(ici[k]).length) ici[k] = loin[k] || ici[k]; });
-        if (!(ici.act || []).length) ici.act = loin.act || [];
-        if (!ici.meme) ici.meme = loin.meme || '';
-        if (!ici.accueilEnvoye) ici.accueilEnvoye = loin.accueilEnvoye || '';
-      }
+      const loin = sn.exists ? sn.data() : null, base = D[per]._base || null;
+      let ici = nettoyer(D[per]);
+      if (loin && String(loin.majLe || '') !== String((base || {}).majLe || '')) ici = nettoyer(fusionCarnet(base, loin, ici));
       ici.majLe = new Date().toISOString(); t.set(ref, ici); return ici;
     }));
-    D[per] = Object.assign(VIDE(), d); D[per]._local = false; localGarder(); ENLIGNE[per] = 'ok'; return true; }
+    D[per] = Object.assign(VIDE(), d); D[per]._base = JSON.parse(JSON.stringify(d)); D[per]._local = false; localGarder(); ENLIGNE[per] = 'ok'; return true; }
   catch (e) { D[per]._local = true; localGarder(); ENLIGNE[per] = 'local'; return false; }
 }
 function localGarder() { if (LECTURE) return; /* un adulte qui lit ne garde rien dans son navigateur */ try { D.annee = ANNEE; localStorage.setItem(CLE, JSON.stringify(D)); } catch (e) {} }
@@ -121,7 +134,7 @@ async function brancher() {
     /* Le carnet en ligne : le plus récent gagne ; un enregistrement resté sur l'appareil repart dès que possible. */
     fs.doc('coordination_pfmp_suivi/' + sidDe(per) + '/eleve/carnet').onSnapshot(s => {
       const r = s.exists ? s.data() : null, l = D[per];
-      if (r && (!l.majLe || String(r.majLe) > String(l.majLe)) && !l._local) { D[per] = Object.assign(VIDE(), r); localGarder(); rendreSiLibre(); }
+      if (r && (!l.majLe || String(r.majLe) > String(l.majLe)) && !l._local) { D[per] = Object.assign(VIDE(), r); D[per]._base = JSON.parse(JSON.stringify(r)); localGarder(); rendreSiLibre(); }
       else if (l._local) envoyer(per);
       ENLIGNE[per] = l._local ? 'local' : 'ok';
     }, () => { ENLIGNE[per] = 'local'; });

@@ -96,6 +96,8 @@
   /* Changer de PFMP dans « Ma période de stage » : on range la copie en cours et on ouvre celle de l'autre période. */
   function changerPeriode(lib) {
     const n = lib === 'PFMP 2' ? 2 : 1; if (n === periodeLocale) return false;
+    /* Ce qui attendait d'être envoyé part tout de suite, pour la période que l'on quitte. */
+    if (aEnvoyer && fs && suivi()) envoyerParcours();
     try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {}
     const avatar = L.avatar; periodeLocale = n;
     try { localStorage.setItem(cleBase() + ':periode', String(n)); } catch (e) {}
@@ -159,27 +161,44 @@
     });
     o.avatar = pareil(ici.avatar, base.avatar) && loin.avatar !== undefined ? loin.avatar : ici.avatar;
     const B = new Map((base.recherches || []).map(r => [r.id, r])), I = new Map((ici.recherches || []).map(r => [r.id, r])), out = new Map((loin.recherches || []).map(r => [r.id, r]));
-    I.forEach((r, id) => { if (!pareil(r, B.get(id))) out.set(id, r); });
+    /* Une démarche modifiée ici ET ailleurs : champ par champ (le statut d'ici, la date de l'autre appareil). */
+    I.forEach((r, id) => { const b = B.get(id); if (pareil(r, b)) return;
+      if (!b || !out.has(id)) { out.set(id, r); return; }
+      const m = Object.assign({}, out.get(id)); new Set(Object.keys(b).concat(Object.keys(r))).forEach(c => { if (!pareil(r[c], b[c])) { if (r[c] === undefined) delete m[c]; else m[c] = r[c]; } }); out.set(id, m); });
     B.forEach((r, id) => { if (!I.has(id)) out.delete(id); });
-    o.recherches = [...out.values()].slice(0, 80);
+    /* Au-delà de 80 démarches, on retire d'abord celles que cet appareil n'a pas touchées : la dernière saisie n'est jamais perdue. */
+    const tout = [...out.values()];
+    let trop = tout.length - 80;
+    for (let k = tout.length - 1; k >= 0 && trop > 0; k--) { const x = tout[k]; if (pareil(I.get(x.id), B.get(x.id))) { tout.splice(k, 1); trop--; } }
+    o.recherches = tout.slice(0, 80);
     return o;
   }
   /* Toujours une copie séparée : sinon modifier le parcours modifierait aussi la « base » et la fusion ne verrait plus rien. */
   function garderBase(d) { base6 = JSON.parse(JSON.stringify(d)); try { localStorage.setItem(cleLocale() + ':base', JSON.stringify(base6)); } catch (e) {} }
   function envoyerParcours() {
     if (!fs || !suivi()) { majSync('local'); return; }
+    /* 12/10/2026 — Tout est photographié AVANT l'attente du réseau : le chemin, le parcours et la base de fusion.
+       Si l'élève change de PFMP pendant l'envoi, ce qui part reste celui de la période de départ, rangé à sa place. */
     const ref = fs.doc('coordination_pfmp_suivi/' + sid() + '/eleve/parcours'), cle = cleLocale();
+    const ici = JSON.parse(JSON.stringify(L)), base = base6 ? JSON.parse(JSON.stringify(base6)) : null;
     let fusionne = false;
     majSync('envoi'); clearTimeout(minuteurEnvoi); aEnvoyer = false; enCours = true;
     fs.runTransaction(t => t.get(ref).then(sn => {
-      const loin = sn.exists ? sn.data() : null;
-      if (loin && (!base6 || loin.majLe !== base6.majLe)) { Object.assign(L, fusion3(base6, loin, L)); fusionne = true; }
-      const d = {}; CHAMPS.forEach(k => { d[k] = L[k]; });
-      d.recherches = (L.recherches || []).slice(0, 80);
+      const loin = sn.exists ? sn.data() : null; let src = ici; fusionne = false;
+      if (loin && (!base || loin.majLe !== base.majLe)) { src = Object.assign({}, ici, fusion3(base, loin, ici)); fusionne = true; }
+      const d = {}; CHAMPS.forEach(k => { d[k] = src[k]; });
+      d.recherches = (src.recherches || []).slice(0, 80);
       const propre = JSON.parse(JSON.stringify(d)); t.set(ref, propre); return propre;
     })).then(d => {
-      if (cle === cleLocale()) { garderBase(d); if (!aEnvoyer) L.sale = false; try { localStorage.setItem(cle, JSON.stringify(L)); } catch (e) {} }
-      majSync(aEnvoyer ? 'envoi' : 'ok'); enCours = false; if (fusionne) rendre();
+      if (cle === cleLocale()) {
+        /* Ce qui a été saisi pendant l'envoi est gardé ; le reste vient de ce qui vient d'être enregistré. */
+        if (fusionne) Object.assign(L, fusion3(ici, d, L));
+        garderBase(d); if (!aEnvoyer) L.sale = false; try { localStorage.setItem(cle, JSON.stringify(L)); } catch (e) {}
+      } else {
+        /* L'élève a changé de PFMP entre-temps : on range le résultat dans la copie de la période envoyée, sans toucher à l'écran. */
+        try { const c = Object.assign(JSON.parse(localStorage.getItem(cle) || '{}'), d, { sale: false }); localStorage.setItem(cle, JSON.stringify(c)); localStorage.setItem(cle + ':base', JSON.stringify(d)); } catch (e) {}
+      }
+      majSync(aEnvoyer ? 'envoi' : 'ok'); enCours = false; if (fusionne && cle === cleLocale()) rendre();
     }).catch(() => { enCours = false; majSync('erreur'); });
   }
   /* La fiche en ligne se crée dès la déclaration : rien ne reste sur le seul ordinateur du lycée.
