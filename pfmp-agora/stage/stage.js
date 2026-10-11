@@ -136,7 +136,7 @@
   function envoyerPistes() {
     if (!svc || !suivi()) return;
     const conv = { prevu: 'attente', attente: 'attente', pasrep: 'attente', rappeler: 'attente', entretien: 'entretien', refus: 'refus', accord: 'accord', autre: 'attente' };
-    const pistes = (L.recherches || []).slice(0, 40).map(r => ({ id: r.id, structure: r.nom || 'Entreprise', secteur: '', moyen: MOYENS[r.moyen] ? r.moyen : 'autre', date: r.date || '', reponse: conv[r.statut] || 'attente' }));
+    const pistes = (L.recherches || []).slice(0, 40).map(r => ({ id: r.id, structure: 'Entreprise', secteur: '', moyen: MOYENS[r.moyen] ? r.moyen : 'autre', date: r.date || '', reponse: conv[r.statut] || 'attente' }));
     svc.majPistes(sid(), () => pistes, 'eleve').catch(() => {});
   }
 
@@ -296,7 +296,8 @@
     const y = window.scrollY;
     let corps;
     if (h === '#declarer') corps = pageDeclarer();
-    else if (h.startsWith('#p/')) corps = pagePhase(h.slice(3));
+    else if (h === '#p/depart') corps = pagePhase('depart');
+    else if (h.startsWith('#p/')) { location.hash = '#'; return; }   /* anciens écrans retirés : tout est dans Mon suivi */
     else if (h === '#recherches') corps = pageRecherches();
     else if (h.startsWith('#aide')) corps = pageAide(h);
     else corps = pageAccueil();
@@ -564,7 +565,9 @@
       else if (k.startsWith('A:')) {
         const id = k.slice(2), en_ = s ? P.entree(s, id) : { e: '' };
         l = { k: id, type: 'adulte', fait: !!s && P.estFaite(s, id), attente: ADULTES[id][0], txt: ADULTES[id][1], le: en_.le, attendu: prec };
-        if (id === 'visit' && !l.fait && s && s.visite && /^\d{4}-\d{2}-\d{2}/.test(s.visite.le || '')) { l.attente = 'suivi prévu' + quand6(s.visite.le.slice(0, 10) + 'T12:00:00'); l.attendu = true; }
+        /* Un rendez-vous fixé n'est pas une visite faite : le vert vient du bilan réalisé avec le tuteur. */
+        if (id === 'visit') { const b = s ? P.entree(s, 'assessment') : { e: '' }; l.fait = !!s && P.estFaite(s, 'assessment'); l.le = b.le;
+          if (!l.fait && s && s.visite && /^\d{4}-\d{2}-\d{2}/.test(s.visite.le || '')) { l.attente = 'rendez-vous de suivi fixé' + quand6(s.visite.le.slice(0, 10) + 'T12:00:00'); l.attendu = true; } }
       } else {
         const et = P.PAR_ID[k], en_ = entreeEl(k), e = en_.e, T = TXT[k], acts = s ? P.actions(et, en_, 'eleve') : [];
         l = { k, type: k === 'midpoint' ? 'passe' : 'etape', et, th: T[0], v: T[1], o: T[2], mot: T[3], motif: en_.motif, garde: et.garde,
@@ -580,6 +583,13 @@
         prec = en_.e === 'valide';
       }
     });
+    /* Une étape n'est terminée que lorsque les gestes administratifs du lycée, non détaillés ici, sont faits eux aussi. */
+    if (s) {
+      const vus = new Set(COMPO[ph].map(k => k.replace(/^[AL]:/, '')).concat(['visit', 'assessment']));
+      const caches = P.ETAPES.filter(et => et.ph === ph && !et.local && !et.opt && et.ty !== 'journal' && !vus.has(et.id));
+      if (caches.length) { const ok = caches.every(et => P.estFaite(s, et.id)), dates = caches.map(et => P.entree(s, et.id).le || '').sort();
+        out.push({ k: '_admin' + ph, type: 'adulte', fait: ok, attente: 'traitement administratif par le lycée', txt: 'Traitement administratif terminé', le: ok ? dates[dates.length - 1] : '', attendu: prec }); }
+    }
     /* Après la validation d'un adulte, ce qui précède dans l'étape ne s'annule plus (traçabilité). */
     out.forEach((l, i) => { if (l.type !== 'adulte' && out.slice(i + 1).some(a => a.type === 'adulte' && a.fait)) l.verrou = true; });
     return out;
@@ -893,7 +903,7 @@
     if (k === 'depart') {
       const D = L.depart, n = DEPART.filter(([c]) => D[c]).length, s = suivi();
       return entete(k, n, DEPART.length) + `<div class="qc ${n === DEPART.length ? 'ok' : ''}"><div class="etapes">${DEPART.map(([c, t]) => `<button class="et ${D[c] ? 'on' : ''}" data-depart="${c}"><span class="b"><i class="ti ti-check"></i></span>${esc(t)}</button>`).join('')}</div></div>` +
-        infoVoit('arrival') + (s && s.visite && s.visite.le ? `<div class="info vert"><i class="ti ti-calendar-check"></i>Visite de votre référent : ${esc(s.visite.le)}</div>` : '') + suite('#p/stage', 'Pendant le stage');
+        infoVoit('arrival') + (s && s.visite && s.visite.le ? `<div class="info vert"><i class="ti ti-calendar-check"></i>Visite de votre référent : ${esc(s.visite.le)}</div>` : '') + suite('#', 'Mon suivi');
     }
     if (k === 'stage') {
       const s = suivi(), mp = en('midpoint');

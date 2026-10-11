@@ -75,6 +75,7 @@ const PC = window.PFMP_COMMUN, ANNEE = PC.anneeScolaire();
 const Q = new URLSearchParams(location.search), LECTURE = /^20\d{2}-20\d{2}_[A-Z0-9]{4,6}_p[12]$/.test(Q.get('f') || '') ? Q.get('f') : '';
 let CODE = (LECTURE ? LECTURE.split('_')[1] : (Q.get('c') || (function () { try { return localStorage.getItem('codeEleve') || ''; } catch (e) { return ''; } })())).toUpperCase().trim();
 const CLE = 'pfmp-carnet-v1:' + CODE;
+const OBS_ACCUEIL = ['Rien à ajouter', 'Je recommande ce lieu de stage', 'Je ne recommande pas ce lieu de stage', 'Je souhaite en parler avec mon enseignant référent'];
 const VIDE = () => ({ jours: {}, act: [], org: {}, comp: {}, accueil: {}, bilan: {}, meme: '', accueilEnvoye: '', majLe: '' });
 let D; try { if (!LECTURE) D = JSON.parse(localStorage.getItem(CLE)); } catch (e) {}
 if (!D || !D.p1) D = { periode: 'p1', p1: VIDE(), p2: VIDE() };
@@ -286,12 +287,13 @@ function ecranAccueil() {
   $('titre').textContent = 'Mon avis sur l’accueil';
   $('app').innerHTML = `<section class="bloc" style="font-size:14px;color:var(--muted)">Annexe 4 de la convention de stage. Cet avis ne compte ni dans la note ni pour le diplôme.</section>` +
     ACCUEIL.map((q, i) => `<section class="bloc"><h3 style="font-size:15px;margin-bottom:4px">${esc(q)}</h3><div class="niveaux" data-q="${i}">${SATIS.map(s => `<button type="button" class="${a[i] === s ? 'on' : ''}">${s}</button>`).join('')}</div></section>`).join('') +
-    `<section class="bloc"><h3>Observations</h3><textarea id="obs" maxlength="600">${esc(a.obs || '')}</textarea></section>`;
+    `<section class="bloc"><h3>Observations</h3><div class="niveaux" id="obsChoix" style="flex-direction:column;align-items:stretch">${OBS_ACCUEIL.map(o => `<button type="button" class="${a.obs === o ? 'on' : ''}">${esc(o)}</button>`).join('')}</div></section>`;
   $('app').querySelectorAll('[data-q]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; a[g.dataset.q] = b.textContent; g.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); marquer(); });
-  $('obs').oninput = () => marquer();
+  /* 11/10/2026 — Aucun texte libre vers un adulte : une observation se choisit dans une liste. */
+  $('obsChoix').onclick = e => { const b = e.target.closest('button'); if (!b) return; a.obs = a.obs === b.textContent ? '' : b.textContent; $('obsChoix').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.textContent === a.obs)); marquer(); };
   $('app').insertAdjacentHTML('beforeend', `<button class="rapport-btn" id="envoyerAvis" style="background:var(--b)"><i class="ti ti-send"></i> ${p.accueilEnvoye ? 'Envoyé le ' + esc(p.accueilEnvoye) : 'Envoyer à mon référent et à mon professeur principal'}</button>`);
-  $('envoyerAvis').onclick = () => { if (Object.keys(a).filter(k => k !== 'obs').length < ACCUEIL.length) { toast('Répondez aux 10 questions avant d’envoyer.'); return; } a.obs = $('obs').value; p.accueil = a; p.accueilEnvoye = new Date().toLocaleDateString('fr-FR'); p.majLe = new Date().toISOString(); p._local = true; modifie = false; garder().then(ok => { toast(ok ? 'Envoyé à votre référent et à votre professeur principal' : 'Gardé sur cet appareil : envoi dès que possible'); rendre(); }); };
-  enregistrer(() => { a.obs = $('obs').value; p.accueil = a; });
+  $('envoyerAvis').onclick = () => { if (Object.keys(a).filter(k => k !== 'obs').length < ACCUEIL.length) { toast('Répondez aux 10 questions avant d’envoyer.'); return; } p.accueil = a; p.accueilEnvoye = new Date().toLocaleDateString('fr-FR'); p.majLe = new Date().toISOString(); p._local = true; modifie = false; garder().then(ok => { toast(ok ? 'Envoyé à votre référent et à votre professeur principal' : 'Gardé sur cet appareil : envoi dès que possible'); rendre(); }); };
+  enregistrer(() => { p.accueil = a; });
 }
 
 /* ── Le bilan. ── */
