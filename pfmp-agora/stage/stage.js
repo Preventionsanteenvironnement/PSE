@@ -5,7 +5,8 @@
      #declarer      avatar, PFMP 1 ou 2, dates, domaine (toujours modifiable)
      #p/<phase>     preparation · fiche · preconvention · convention · depart · stage · retour
      #recherches    l'agenda des recherches (entreprise, téléphone, quand, comment, réponse)
-     #messages      le fil avec l'enseignant référent
+     #aide          Besoin d'aide ? : une question (réponse immédiate) ou un problème (un clic prévient le référent)
+     Aucune messagerie libre : l'élève n'écrit jamais à un adulte (règle de sécurité du 11/10/2026).
    Rien ne bloque : toutes les pages restent ouvertes. Chaque choix « Autre » ouvre un champ libre.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
@@ -14,7 +15,7 @@
   const CFG = { apiKey: 'AIzaSyBj_GXG8ln3GAxNXxiJkT2HPSWIHJpc1lA', authDomain: 'coordination-pedagogie.firebaseapp.com', projectId: 'coordination-pedagogie', storageBucket: 'coordination-pedagogie.firebasestorage.app', messagingSenderId: '526058585010', appId: '1:526058585010:web:ba4dd6d9c8281ba5bf02ab' };
   const ANNEE = P.anneeScolaire();
   const AVATARS = [['cat', '#D85A30'], ['dog', '#BA7517'], ['butterfly', '#D4537E'], ['fish', '#378ADD'], ['plant-2', '#639922'], ['rocket', '#534AB7'], ['feather', '#1D9E75'], ['planet', '#7F77DD'], ['bike', '#185FA5'], ['music', '#993556'], ['star', '#EF9F27'], ['paw', '#854F0B'], ['ball-football', '#3B6D11'], ['palette', '#A32D2D'], ['camera', '#5F5E5A'], ['bolt', '#C2410C'], ['leaf', '#0F6E56'], ['moon', '#3C3489']];
-  const HUMEURS = [['mood-happy', 'Super'], ['mood-smile', 'Bien'], ['mood-neutral', 'Bof'], ['mood-sad', 'Pas bien'], ['mood-nervous', 'Stressé'], ['dots', 'Autre']];
+  const HUMEURS = [['mood-happy', 'Super'], ['mood-smile', 'Bien'], ['mood-neutral', 'Bof'], ['mood-sad', 'Pas bien'], ['mood-nervous', 'Stressé']];
   const DOMAINES = ['Accueil', 'Secrétariat', 'Comptabilité', 'Commerce', 'Logistique', 'Ressources humaines', 'Autre'];
   const STRUCTURES = ['Entreprise privée', 'Association', 'Collectivité', 'Administration', 'Santé', 'Autre'];
   const MOYENS = { appel: ['phone', 'Appel'], visite: ['walk', 'Sur place'], mail: ['mail', 'Mail'], courrier: ['mailbox', 'Courrier'], autre: ['dots', 'Autre'] };
@@ -170,11 +171,9 @@
     if (!svc || !suivi()) return;
     if (arretMsgs && arretMsgs.pour === sid()) return;
     if (arretMsgs) arretMsgs();
-    arretMsgs = svc.ecouterMessages(sid(), l => { msgs = l; if (location.hash === '#messages') rendreFil(); majBadge(); }, () => {});
+    arretMsgs = svc.ecouterMessages(sid(), l => { msgs = l; const h = location.hash || '#'; if (h === '#' || h.startsWith('#aide')) rendre(); }, () => {});
     arretMsgs.pour = sid();
   }
-  const nonLus = () => { let vu = ''; try { vu = localStorage.getItem(cleLocale() + ':vu') || ''; } catch (e) {} return msgs.filter(m => m.de !== 'eleve' && String(m.le) > vu).length; };
-  function majBadge() { const b = $('badgeMsg'); if (b) { const n = nonLus(); b.hidden = !n; b.textContent = n; } }
 
   /* ── États des étapes ────────────────────────────────────────────────── */
   const en = id => P.entree(suivi(), id);
@@ -221,17 +220,12 @@
     if (rap) return { ic: 'phone-call', t: `Rappeler ${nomR(rap)}${rap.rappelLe < t ? ' · en retard' : rap.rappelH ? ' à ' + hh(rap.rappelH) : ' aujourd’hui'}`, lien: '#recherches', fort: 1 };
     const pre = tri(R.filter(r => r.statut === 'prevu' && r.date && r.date <= t), 'date', 'heure');
     if (pre) return { ic: (MOYENS[pre.moyen] || MOYENS.autre)[0], t: `${VERBES[pre.moyen] || 'Contacter'} ${nomR(pre)}${pre.date < t ? ' · en retard' : pre.heure ? ' à ' + hh(pre.heure) : ' aujourd’hui'}`, lien: '#recherches', fort: 1 };
-    if (nonLus()) return { ic: 'message', t: 'Nouveau message', lien: '#messages', fort: 1 };
     const sem = L.prepa.semaine;
     if (sem && sem.prochain && sem.prochain <= t && (sem.items || []).length) return { ic: 'checklist', t: 'Point sur ma semaine', lien: '#recherches' };
     const p = L.prepa;
-    if (p.trouve === 'Oui' && suivi() && !en('search').e) return { ic: 'flag', t: 'Prévenir mon référent : j’ai une proposition de stage', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
-    if (en('search').e === 'corriger') return { ic: 'alert-circle', t: 'Mon référent demande une correction', lien: p.trouveR ? '#recherches' : '#p/preparation', fort: 1 };
-    /* Sur l'accueil, la carte « Maintenant » dit déjà le reste. */
-    if (!location.hash || location.hash === '#') return null;
-    const m = maintenant(parcours());
-    if (!m || m.attente) return null;
-    return { ic: 'arrow-right', t: 'Maintenant : ' + m.titre, lien: m.lien || '#' };
+    if (p.trouve === 'Oui' && suivi() && !en('search').e) return { ic: 'flag', t: 'Prévenir mon référent : j’ai une proposition de stage', lien: '#', fort: 1 };
+    if (en('search').e === 'corriger') return { ic: 'alert-circle', t: 'Mon référent demande une correction', lien: '#', fort: 1 };
+    return null;
   }
 
   /* ── Agenda : la reprise de ce qui est déjà noté (démarches, rappels, entretiens, échéances) ── */
@@ -245,14 +239,14 @@
     });
     const sem = L.prepa.semaine;
     if (sem && sem.prochain) l.push({ d: sem.prochain, ic: 'checklist', t: 'Point sur ma semaine', lien: '#recherches' });
-    [['neg_return', 'Fiche de négociation', '#p/fiche', ficheOk()], ['pre_return', 'Rendre la pré-convention', '#p/preconvention', envoye('pre_return')], ['conv_return', 'Rendre la convention', '#p/convention', envoye('conv_return')],
-      ['attestation', 'Rendre l’attestation', '#p/retour', envoye('attestation')], ['student_eval', 'Bilan du stage', '#p/retour', envoye('student_eval')]].forEach(([id, n, lien, ok]) => {
+    [['neg_return', 'Fiche de négociation', '#', ficheOk()], ['pre_return', 'Rendre la pré-convention', '#', envoye('pre_return')], ['conv_return', 'Rendre la convention', '#', envoye('conv_return')],
+      ['attestation', 'Rendre l’attestation', '#', envoye('attestation')], ['student_eval', 'Bilan du stage', '#', envoye('student_eval')]].forEach(([id, n, lien, ok]) => {
       const e = P.echeance(P.PAR_ID[id], per); if (e && e.date && !ok) l.push({ d: e.date, ic: 'flag', t: n, lien, act: 1 });
     });
     if (per.dernierJour) l.push({ d: per.dernierJour, ic: 'school', t: 'Dernier jour de cours', lien: '#' });
-    if (per.debut) l.push({ d: per.debut, ic: 'building', t: 'Début du stage', lien: '#p/stage', fort: 1 });
-    if (per.fin) l.push({ d: per.fin, ic: 'trophy', t: 'Fin du stage', lien: '#p/retour' });
-    if (s.visite && /^\d{4}-\d{2}-\d{2}/.test(s.visite.le || '')) l.push({ d: s.visite.le.slice(0, 10), h: (s.visite.le.match(/T(\d\d:\d\d)/) || [])[1], ic: 'calendar-check', t: 'Visite du référent', lien: '#p/stage' });
+    if (per.debut) l.push({ d: per.debut, ic: 'building', t: 'Début du stage', lien: '#', fort: 1 });
+    if (per.fin) l.push({ d: per.fin, ic: 'trophy', t: 'Fin du stage', lien: '#' });
+    if (s.visite && /^\d{4}-\d{2}-\d{2}/.test(s.visite.le || '')) l.push({ d: s.visite.le.slice(0, 10), h: (s.visite.le.match(/T(\d\d:\d\d)/) || [])[1], ic: 'calendar-check', t: 'Suivi de mon référent', lien: '#' });
     return l.filter(x => x.d >= t || x.act).sort((a, b) => (a.d + (a.h || '')).localeCompare(b.d + (b.h || '')));
   }
   const nbAgenda = () => { const t = auj(); return agenda().filter(x => x.d <= t).length; };
@@ -273,13 +267,15 @@
     } else if (volet === 'confirme' && attente) {
       c = `<div class="conf"><span class="ic"><i class="ti ti-${attente.action === 'annuler' ? 'arrow-back-up' : 'circle-check'}"></i></span><h2>Vous confirmez ?</h2><p>${esc(attente.t)}</p>
         <div class="deux-btn"><button class="btn sec" data-act="fermer">Non</button><button class="btn ${attente.action === 'annuler' ? 'pri' : 'vert'}" data-act="oui">Oui</button></div></div>`;
+    } else if (volet === 'v6' && fen6) {
+      c = `<div class="s6-fen">${fenetre6()}</div>`;
     } else if (volet === 'qr') {
       const url = location.origin + location.pathname + '?c=' + encodeURIComponent(code);
       c = `<div class="vt"><i class="ti ti-device-mobile"></i><h2>Sur mon téléphone</h2><button class="rond-btn" data-act="fermer" aria-label="Fermer"><i class="ti ti-x"></i></button></div>
         <div class="qr-img" id="qr"></div><div class="qr-code">${esc(code)}</div>`;
       setTimeout(() => dessinerQR(url), 0);
     }
-    v.innerHTML = `<div class="tiroir-fond" data-act="fermer"></div><aside class="tiroir ${volet === 'confirme' ? 'qr' : volet}" role="dialog" aria-modal="true">${c}</aside>`;
+    v.innerHTML = `<div class="tiroir-fond" data-act="fermer"></div><aside class="tiroir ${volet === 'confirme' || volet === 'v6' ? 'qr' : volet}" role="dialog" aria-modal="true">${c}</aside>`;
   }
   function dessinerQR(url) {
     const go = () => { const el = $('qr'); if (!el) return; el.innerHTML = ''; new window.QRCode(el, { text: url, width: 232, height: 232, colorDark: '#1f2733', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M }); };
@@ -302,9 +298,9 @@
     if (h === '#declarer') corps = pageDeclarer();
     else if (h.startsWith('#p/')) corps = pagePhase(h.slice(3));
     else if (h === '#recherches') corps = pageRecherches();
-    else if (h === '#messages') corps = pageMessages();
+    else if (h.startsWith('#aide')) corps = pageAide(h);
     else corps = pageAccueil();
-    const onglet = h === '#messages' ? 'messages' : h === '#recherches' ? 'recherches' : 'stage';
+    const onglet = h.startsWith('#aide') ? 'aide' : h === '#recherches' ? 'recherches' : 'stage';
     const av = L.avatar != null ? AVATARS[L.avatar] : null, per = periode(), s = suivi();
     const tete = declare() ? `<a class="qui" href="#declarer"><b>${esc(L.declaration.pfmp)}${per.debut ? `<span class="dts"> · ${fr(per.debut)} → ${fr(per.fin)}</span>` : ''}</b><small><i class="ti ti-user-check"></i> Référent ${s && s.refSigle ? esc(s.refSigle) : '· à venir'}</small></a>` : `<span class="bonjour">Bonjour !</span>`;
     const nAg = declare() ? nbAgenda() : 0, al = h !== '#declarer' && declare() ? alerte() : null;
@@ -312,21 +308,20 @@
       <a class="retour vers-espace" href="../../index.html#pfmp-agora"><i class="ti ti-chevron-left"></i> Mon espace</a>
       <div class="top"><span class="av" style="background:${av ? av[1] : '#cfc7b8'}"><i class="ti ti-${av ? av[0] : 'user'}"></i></span>${tete}
         <span class="sync ${etatSync}" id="sync" title="${ICONES_SYNC[etatSync][1]}">${iconeSync()}</span>
-        ${declare() ? `<button class="rond-btn" data-act="agenda" aria-label="Agenda"><i class="ti ti-calendar-event"></i>${nAg ? `<span class="pastille">${nAg}</span>` : ''}</button>` : ''}
-        <button class="rond-btn pc" data-act="qr" aria-label="Sur mon téléphone"><i class="ti ti-device-mobile"></i></button>
+                <button class="rond-btn pc" data-act="qr" aria-label="Sur mon téléphone"><i class="ti ti-device-mobile"></i></button>
         <button class="rond-btn" data-act="plus" aria-label="Plus"><i class="ti ti-dots"></i></button></div>
       ${plus ? `<div class="plus">${declare() ? `<button data-act="imprimer"><i class="ti ti-printer"></i> Imprimer ma fiche</button>` : ''}<button data-act="qr"><i class="ti ti-device-mobile"></i> Sur mon téléphone</button><a href="../carnet/index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
-      <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon suivi</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
+      <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon suivi</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Démarches</a><button class="mi" data-act="agenda"><i class="ti ti-calendar-event"></i> Agenda${nAg ? ` <span class="bd">${nAg}</span>` : ''}</button>` : ''}</nav>
       ${al ? `<a class="alerte ${al.fort ? 'fort' : ''}" href="${al.lien}"><i class="ti ti-${al.ic}"></i><span>${esc(al.t)}</span><i class="ti ti-chevron-right"></i></a>` : ''}
       ${corps}
-      ${declare() && h !== '#messages' ? `<button class="btn enreg ${toutGarde() && enregLe ? 'fait' : ''}" id="btnEnreg" data-act="toutEnregistrer">${texteEnreg()}</button>` : ''}
-      <p class="discret"><i class="ti ti-shield-lock"></i> ${esc(code)}</p>`;
+      ${declare() && !h.startsWith('#aide') ? `<button class="btn enreg ${toutGarde() && enregLe ? 'fait' : ''}" id="btnEnreg" data-act="toutEnregistrer">${texteEnreg()}</button>` : ''}
+      <p class="discret"><i class="ti ti-shield-lock"></i> ${esc(code)}</p>
+      ${declare() && !h.startsWith('#aide') ? `<a class="s6-fixe" href="#aide" aria-label="Besoin d’aide ?"><i class="ti ti-lifebuoy"></i> Aide</a>` : ''}`;
     Object.entries(garde).forEach(([k, v]) => { const x = $(k); if (x && x.tagName !== 'SELECT' && !x.value && v) x.value = v; });
     if (rappelOuvert && h === dernierEcran) { const d = document.querySelector('#app details.rappel'); if (d) d.open = true; }
     if (actif && $(actif)) $(actif).focus({ preventScroll: true });
     if (h !== dernierEcran) { dernierEcran = h; window.scrollTo(0, 0); } else window.scrollTo(0, y);
-    if (h === '#messages') { rendreFil(); try { localStorage.setItem(cleLocale() + ':vu', new Date().toISOString()); } catch (e) {} }
-    majBadge(); demarrerChrono(); humeur(); if (volet === 'agenda') rendreVolet();
+    demarrerChrono(); humeur(); if (volet === 'agenda') rendreVolet();
     const fr_ = $('frise'), ici = fr_ && fr_.querySelector('.pt.ici');
     if (ici) fr_.scrollLeft = ici.offsetLeft - fr_.clientWidth / 2 + ici.clientWidth / 2;
   }
@@ -484,16 +479,316 @@
     return h;
   }
 
+  /* ══ Mon suivi (11/10/2026) ═══════════════════════════════════════════════
+     Étapes repliées · une ligne = un thème + une consigne (un verbe d'action) · bleu = à cliquer, vert = fait,
+     horloge = un adulte agit, rouge = à corriger. Rien ne bloque : toute étape s'ouvre d'un clic.
+     Aucune communication écrite libre avec un adulte : l'élève choisit, confirme, signale.
+     Le moteur partagé (pfmp-commun.js) ne change pas : seuls l'affichage et les mots changent ici. */
+  const TXT = {
+    neg_ask: ['Ma fiche de négociation', 'Demander', 'la fiche de négociation', 'Demandée'],
+    neg_given: ['Réception de ma fiche', 'Confirmer', 'la réception de la fiche de négociation', 'Reçue'],
+    neg_visit: ['Fiche à l’entreprise', 'Remettre', 'la fiche de négociation à l’entreprise', 'Remise'],
+    neg_company: ['Fiche complétée', 'Récupérer', 'la fiche complétée par l’entreprise', 'Récupérée'],
+    neg_family: ['Signature de ma fiche', 'Signer', 'la fiche de négociation', 'Signée'],
+    neg_to_pro: ['Remise de ma fiche', 'Remettre', 'la fiche à l’enseignant professionnel', 'Remise'],
+    pre_given: ['Ma pré-convention', 'Confirmer', 'la réception de la pré-convention', 'Reçue'],
+    pre_ent: ['Pré-convention à l’entreprise', 'Remettre', 'la pré-convention à l’entreprise', 'Remise'],
+    pre_filled: ['Pré-convention complétée', 'Récupérer', 'la pré-convention complétée par l’entreprise', 'Récupérée'],
+    pre_return: ['Remise de ma pré-convention', 'Remettre', 'la pré-convention à l’enseignant référent', 'Remise'],
+    conv_given: ['Réception de ma convention', 'Confirmer', 'la réception de la convention', 'Reçue'],
+    company: ['Signature de l’entreprise', 'Faire signer', 'la convention par l’entreprise, avec le tampon', 'Signée et tamponnée'],
+    family: ['Signature du responsable légal', 'Faire signer', 'la convention par le responsable légal (élève majeur : la signer)', 'Signée'],
+    conv_return: ['Remise de ma convention', 'Remettre', 'la convention signée à l’enseignant référent', 'Remise'],
+    copies: ['Exemplaire pour ma famille', 'Confirmer', 'la réception de l’exemplaire signé', 'Reçu'],
+    here: ['Mon arrivée', 'Confirmer', 'l’arrivée dans l’entreprise', 'Confirmée'],
+    midpoint: ['Mon stage au quotidien', 'Indiquer', 'comment se passe le stage', ''],
+    attest_in: ['Mon attestation', 'Confirmer', 'la réception de l’attestation signée par l’entreprise', 'Reçue'],
+    attestation: ['Remise de mon attestation', 'Remettre', 'l’attestation à l’enseignant référent', 'Remise'],
+    student_eval: ['Mon bilan de PFMP', 'Réaliser', 'le bilan avec l’enseignant référent', 'Réalisé']
+  };
+  /* Ce que font les adultes : [ce qu'on attend, ce qui s'affiche une fois fait]. */
+  const ADULTES = {
+    neg_pro: ['validation de la fiche par l’enseignant professionnel', 'Fiche validée par l’enseignant professionnel'],
+    neg_signed: ['validation du lieu de stage par mon enseignant référent', 'Lieu de stage validé par mon enseignant référent'],
+    pronote: ['convention en préparation par mon enseignant référent', 'Convention préparée par mon enseignant référent'],
+    head: ['signature par le chef d’établissement', 'Convention signée par le chef d’établissement'],
+    arrival: ['accueil confirmé avec le tuteur par mon enseignant référent', 'Accueil confirmé avec le tuteur'],
+    visit: ['suivi par mon enseignant référent (visite ou appel)', 'Suivi réalisé par mon enseignant référent'],
+    attestation_bde: ['attestation transmise au bureau des entreprises, pour l’allocation de stage', 'Attestation transmise au bureau des entreprises, pour l’allocation de stage,'],
+    dossier: ['clôture du dossier par mon enseignant référent', 'Dossier de PFMP clôturé']
+  };
+  /* Les contrôles du référent après une remise : il valide, ou renvoie « à corriger » avec un motif. */
+  const CONTROLES = {
+    pre_return: ['contrôle de la pré-convention par mon enseignant référent', 'Pré-convention validée par mon enseignant référent'],
+    conv_return: ['contrôle et signature par mon enseignant référent', 'Convention contrôlée et signée par mon enseignant référent'],
+    student_eval: ['validation du bilan par mon enseignant référent', 'Bilan validé par mon enseignant référent']
+  };
+  /* L'ordre des lignes dans chaque étape. A: = un adulte · L: = geste noté par l'élève seul · _ = ligne particulière. */
+  const COMPO = [[], ['_cv', '_lettre', '_dem', 'search'],
+    ['neg_ask', 'neg_given', 'neg_visit', 'neg_company', 'neg_family', 'neg_to_pro', 'A:neg_pro', 'A:neg_signed'],
+    ['pre_given', 'L:pre_ent', 'pre_filled', 'pre_return'],
+    ['A:pronote', 'conv_given', 'company', 'family', 'conv_return', 'A:head', 'copies'],
+    ['_depart', 'A:arrival'], ['here', '_carnet', 'midpoint', 'A:visit', 'attest_in'],
+    ['attestation', 'A:attestation_bde', 'student_eval'], ['A:dossier']];
+  const TITRES6 = ['Mon enseignant référent', 'Recherche de stage', 'Fiche de négociation', 'Pré-convention', 'Convention', 'Départ', 'En stage', 'Bilan', 'Clôture du dossier'];
+  const QUOI6 = {
+    2: ['La fiche de négociation', [['Qui me la donne ?', 'L’enseignant professionnel.'], ['Qui la complète ?', 'L’entreprise : elle coche les activités, signe et tamponne.'], ['À qui je la rends ?', 'À l’enseignant professionnel, après l’avoir signée.']]],
+    3: ['La pré-convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la complète ?', 'L’entreprise : dates, adresse, tuteur, horaires, signature et tampon.'], ['À qui je la rends ?', 'À mon enseignant référent.']]],
+    4: ['La convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la signe ?', 'L’entreprise (avec le tampon), le tuteur, le responsable légal ou l’élève majeur, l’enseignant référent et le chef d’établissement.'], ['À qui je la rends ?', 'À mon enseignant référent, signée par l’entreprise et par le responsable légal.']]],
+    7: ['L’attestation de stage', [['Qui me la donne ?', 'L’entreprise, le dernier jour du stage.'], ['À quoi sert-elle ?', 'Elle prouve les jours réalisés. Sans elle, l’allocation n’est pas versée.'], ['À qui je la rends ?', 'À mon enseignant référent.']]]
+  };
+  const quand6 = le => { const d = le ? new Date(le) : null; return d && !isNaN(d) ? ' le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : ''; };
+  const OKI = '<i class="ti ti-circle-check"></i> ';
+
+  function ligneStage6() {
+    const p = L.prepa, en_ = entreeEl('search'), e = en_.e, r = p.trouveR && (L.recherches || []).find(x => x.id === p.trouveR);
+    return { k: 'search', type: 'stage', th: 'Mon stage', lieu: r ? (r.nom || 'Entreprise') + (r.adresse ? ' · ' + r.adresse : '') : '', motif: en_.motif, le: en_.le,
+      etat: ['valide', 'fait'].includes(e) ? 'fait' : e === 'declare' ? 'attente' : e === 'corriger' ? 'corriger' : (p.trouve === 'Oui' && r) ? 'pret' : 'afaire' };
+  }
+  function lignes6(ph) {
+    const s = suivi(), p = L.prepa, out = [], R = L.recherches || [];
+    let prec = ph < 3 || statut6(ph - 1) === 2;   /* un adulte n'est « attendu » que si l'étape d'avant est terminée */
+    COMPO[ph].forEach(k => {
+      let l;
+      if (k === '_cv' || k === '_lettre') {
+        const cle = k.slice(1), v = p[cle] || '', ok = v === (cle === 'cv' ? 'À jour' : 'Prête');
+        l = { k: cle, type: 'choix', th: cle === 'cv' ? 'Mon CV' : 'Ma lettre de motivation', v: 'Indiquer', o: 'où en est ' + (cle === 'cv' ? 'le CV' : 'la lettre de motivation'), etat: ok ? 'fait' : (v && v !== 'Pas du tout') ? 'cours' : 'afaire', mot: ok ? 'Terminé' : 'En cours' };
+      } else if (k === '_dem') {
+        const n = x => R.filter(r => r.statut === x).length;
+        l = { type: 'page', neutre: 1, th: 'Mes démarches', lien: '#recherches', sous: R.length ? `${R.length} entreprise${R.length > 1 ? 's' : ''}${n('rappeler') ? ' · ' + n('rappeler') + ' à rappeler' : ''}${n('entretien') ? ' · ' + n('entretien') + ' entretien' + (n('entretien') > 1 ? 's' : '') : ''}${n('accord') ? ' · ' + n('accord') + ' accord' + (n('accord') > 1 ? 's' : '') : ''}` : 'Appels, visites, mails' };
+      } else if (k === '_depart') l = { type: 'page', neutre: 1, th: 'Prêt à partir', lien: '#p/depart', sous: DEPART.filter(([c]) => L.depart[c]).length + ' / ' + DEPART.length };
+      else if (k === '_carnet') l = { type: 'page', neutre: 1, th: 'Mon carnet de bord', lien: '../carnet/index.html', sous: 'Chaque jour de stage' };
+      else if (k === 'search') l = ligneStage6();
+      else if (k.startsWith('L:')) { const id = k.slice(2), T = TXT[id]; l = { k: id, type: 'local', th: T[0], v: T[1], o: T[2], mot: T[3], etat: L.fiche[id] ? 'fait' : 'afaire' }; }
+      else if (k.startsWith('A:')) {
+        const id = k.slice(2), en_ = s ? P.entree(s, id) : { e: '' };
+        l = { k: id, type: 'adulte', fait: !!s && P.estFaite(s, id), attente: ADULTES[id][0], txt: ADULTES[id][1], le: en_.le, attendu: prec };
+        if (id === 'visit' && !l.fait && s && s.visite && /^\d{4}-\d{2}-\d{2}/.test(s.visite.le || '')) { l.attente = 'suivi prévu' + quand6(s.visite.le.slice(0, 10) + 'T12:00:00'); l.attendu = true; }
+      } else {
+        const et = P.PAR_ID[k], en_ = entreeEl(k), e = en_.e, T = TXT[k], acts = s ? P.actions(et, en_, 'eleve') : [];
+        l = { k, type: k === 'midpoint' ? 'passe' : 'etape', et, th: T[0], v: T[1], o: T[2], mot: T[3], motif: en_.motif, garde: et.garde,
+          etat: e === 'perdu' ? 'perdu' : e === 'corriger' ? 'corriger' : faitEl(et, en_) ? 'fait' : 'afaire',
+          action: acts.find(a => ['declarer', 'remettre', 'recevoir', 'faire'].includes(a)) || '', annulable: acts.includes('annuler'), perdable: acts.includes('perdre') };
+        if (k === 'midpoint' && l.etat === 'fait') l.mot = en_.v === 'difficulte' ? 'Difficile' : en_.v === 'moyen' ? 'Moyen' : 'Bien';
+      }
+      out.push(l);
+      if (!l.neutre) prec = l.type === 'adulte' ? l.fait : l.etat === 'fait';
+      if (CONTROLES[k]) {
+        const en_ = entreeEl(k), c = CONTROLES[k];
+        out.push({ k: k + '_c', type: 'adulte', fait: en_.e === 'valide', attente: c[0], txt: c[1], le: en_.le, attendu: ['remis', 'declare'].includes(en_.e), cache: en_.e === 'corriger' });
+        prec = en_.e === 'valide';
+      }
+    });
+    /* Après la validation d'un adulte, ce qui précède dans l'étape ne s'annule plus (traçabilité). */
+    out.forEach((l, i) => { if (l.type !== 'adulte' && out.slice(i + 1).some(a => a.type === 'adulte' && a.fait)) l.verrou = true; });
+    return out;
+  }
+  /* 2 = terminée (l'élève ET les adultes ont fini) · 1 = en cours · 0 = pas commencée. */
+  function statut6(ph) {
+    const s = suivi();
+    if (ph === 0) return s && (s.refSigle || P.estFaite(s, 'referent')) ? 2 : 0;
+    const ls = lignes6(ph).filter(l => !l.neutre && !l.cache);
+    const finie = l => l.type === 'adulte' ? l.fait : l.etat === 'fait';
+    if (ls.length && ls.every(finie)) return 2;
+    return ls.some(l => l.type === 'adulte' ? l.fait : l.etat !== 'afaire') ? 1 : 0;
+  }
+  function ligne6(l) {
+    const cons = `<span class="g"><b class="th">${esc(l.th)}</b><span class="co"><b>${esc(l.v || '')}</b> ${esc(l.o || '')}</span></span>`;
+    const verte = (mot, clic) => `<${clic ? `button data-v6="defaire" data-id="${l.k}"` : 'div'} class="s6-l fait"><span class="g"><b class="th">${esc(l.th)}</b></span><span class="pill ok">${OKI}${esc(mot)}</span></${clic ? 'button' : 'div'}>`;
+    if (l.type === 'adulte') {
+      if (l.cache) return '';
+      if (l.fait) return `<div class="s6-ad ok">${OKI}${esc(l.txt)}${quand6(l.le)}.</div>`;
+      return `<div class="s6-ad ${l.attendu ? 'att' : ''}"><i class="ti ti-clock"></i> ${l.attendu ? 'En attente · ' : 'Puis : '}${esc(l.attente)}</div>`;
+    }
+    if (l.type === 'page') return `<div class="s6-l"><span class="g"><b class="th">${esc(l.th)}</b><span class="co">${esc(l.sous)}</span></span><a class="s6-go" href="${l.lien}">Ouvrir</a></div>`;
+    if (l.type === 'choix') return l.etat === 'fait' ? verte(l.mot, true) : `<div class="s6-l">${cons}${l.etat === 'cours' ? '<span class="pill att">En cours</span>' : ''}<button class="s6-go" data-v6="choix" data-id="${l.k}">Répondre</button></div>`;
+    if (l.type === 'local') return l.etat === 'fait' ? verte(l.mot, !l.verrou) : `<div class="s6-l">${cons}<button class="s6-go" data-v6="local" data-id="${l.k}">C’est fait</button></div>`;
+    if (l.type === 'stage') {
+      const lieu = `<span class="g"><b class="th">Mon stage</b><span class="co">${esc(l.lieu)}</span></span>`;
+      if (l.etat === 'afaire') return `<div class="s6-l"><span class="g"><b class="th">Mon stage</b></span><button class="s6-go" data-v6="stage">J’ai un stage</button></div>`;
+      if (l.etat === 'fait') return `<div class="s6-l fait">${lieu}<span class="pill ok">${OKI}Validé par mon référent</span></div>`;
+      if (l.etat === 'attente') return `<div class="s6-l col"><div class="r">${lieu}<span class="pill att"><i class="ti ti-clock"></i> En attente du référent</span></div><span class="co">Envoyé${quand6(l.le)}</span><div class="r2"><button class="s6-sec" data-agir="search" data-action="annuler" data-ok="1">Annuler l’envoi</button></div></div>`;
+      if (l.etat === 'corriger') return `<div class="s6-l col cor"><div class="r">${lieu}<span class="pill err">À corriger</span></div>${l.motif ? `<span class="co rouge">Motif : ${esc(l.motif)}</span>` : ''}<div class="r2"><button class="s6-sec" data-v6="stage">Modifier</button><button class="s6-go" data-act="trouve" data-ok="1">C’est corrigé</button></div></div>`;
+      return `<div class="s6-l col"><div class="r">${lieu}<span class="pill gris">Pas encore envoyé</span></div>${suivi() ? `<button class="s6-vert" data-act="trouve" data-ok="1"><i class="ti ti-send"></i> Envoyer à mon référent</button>` : ''}<div class="r2"><button class="s6-sec" data-v6="stage">Modifier</button><button class="s6-sec" data-rpasici="${esc(L.prepa.trouveR)}">Ce n’est plus mon stage</button></div></div>`;
+    }
+    /* Une étape du parcours partagé, ou « comment se passe le stage ». */
+    if (l.etat === 'perdu') return `<div class="s6-l col cor"><div class="r"><span class="g"><b class="th">${esc(l.th)}</b></span><span class="pill err">Perdu</span></div><span class="co">Mon référent et mon professeur principal sont prévenus.</span><div class="r2"><button class="s6-go" data-agir="${l.k}" data-action="retrouver" data-ok="1">Je l’ai retrouvé</button></div></div>`;
+    if (l.etat === 'corriger') return `<div class="s6-l col cor"><div class="r"><span class="g"><b class="th">${esc(l.th)}</b></span><span class="pill err">À corriger</span></div>${l.motif ? `<span class="co rouge">Motif : ${esc(l.motif)}</span>` : ''}<div class="r2"><button class="s6-go" data-agir="${l.k}" data-action="${l.action}" data-ok="1">C’est corrigé</button></div></div>`;
+    if (l.etat === 'fait') return verte(l.mot, !l.verrou && (l.annulable || l.perdable || !suivi()));
+    if (l.type === 'passe') return suivi() ? `<div class="s6-l">${cons}<button class="s6-go" data-v6="choix" data-id="midpoint">Répondre</button></div>` : `<div class="s6-l">${cons}</div>`;
+    const bouton = !suivi() ? `<button class="s6-go" data-locale="${l.k}">C’est fait</button>` : l.action ? `<button class="s6-go" data-agir="${l.k}" data-action="${l.action}" data-ok="1">C’est fait</button>` : '';
+    return `<div class="s6-l">${cons}${bouton}</div>`;
+  }
+  let ouvert6 = null, avant6 = null;
+  function fil6() {
+    const s = suivi(), st = TITRES6.map((_, ph) => statut6(ph));
+    const suivante = () => { const c = st.findIndex((x, i) => i > 0 && x !== 2); return c < 0 ? 8 : c; };
+    if (!ouvert6) { ouvert6 = { 0: true }; ouvert6[suivante()] = true; }
+    else if (avant6) st.forEach((x, ph) => { if (ph > 0 && x === 2 && avant6[ph] !== 2) { ouvert6[ph] = false; ouvert6[suivante()] = true; } });
+    avant6 = st;
+    let h = '';
+    TITRES6.forEach((titre, ph) => {
+      const ls = ph ? lignes6(ph) : [], cor = ls.some(l => l.etat === 'corriger' || l.etat === 'perdu');
+      const p = cor ? '<span class="pill err">À corriger</span>' : st[ph] === 2 ? `<span class="pill ok">${OKI}Terminée</span>` : st[ph] === 1 ? '<span class="pill att">En cours</span>' : '';
+      if (!ouvert6[ph]) { h += `<button class="s6-plie ${st[ph] === 2 ? 'fin' : ''}" data-v6="etape" data-id="${ph}"><span class="num">Étape ${ph + 1}</span><span class="g">${esc(titre)}</span>${p}<i class="ti ti-chevron-down"></i></button>`; return; }
+      h += `<div class="s6-tete"><button data-v6="etape" data-id="${ph}"><span><span class="num">Étape ${ph + 1}</span> ${p}</span><h2>${esc(titre)} <i class="ti ti-chevron-up"></i></h2></button>${QUOI6[ph] ? `<button class="s6-quoi" data-v6="quoi" data-id="${ph}">C’est quoi ?</button>` : ''}</div>`;
+      if (ph === 0) {
+        const le = s ? (P.entree(s, 'referent').le || P.entree(s, 'sent').le) : '';
+        h += s && s.refSigle ? `<div class="s6-annonce"><i class="ti ti-bell"></i> Un enseignant référent a été désigné${quand6(le)}<b>professeur ${/^[aeiouéèêh]/i.test(s.refSigle) ? 'd’' : 'de '}${esc(s.refSigle)}</b></div>` : `<div class="s6-ad"><i class="ti ti-clock"></i> Mon enseignant référent : à venir</div>`;
+      }
+      h += ls.map(ligne6).join('');
+    });
+    return h;
+  }
+
+  /* Les petites fenêtres : un clic choisit, la fenêtre se ferme, la ligne se met à jour. */
+  let fen6 = null;
+  function fenetre6() {
+    const f = fen6, x = `<button class="rond-btn" data-act="fermer" aria-label="Fermer"><i class="ti ti-x"></i></button>`;
+    const tete = t => `<div class="vt"><h2>${esc(t)}</h2>${x}</div>`;
+    if (f.t === 'choix') {
+      if (f.id === 'midpoint') return tete('Mon stage au quotidien') + [['ok', 'Bien'], ['moyen', 'Moyen'], ['difficulte', 'Difficile']].map(([v, l]) => `<button class="s6-opt" data-v6c="${v}">${l}</button>`).join('');
+      const fin = f.id === 'cv' ? 'À jour' : 'Prête';
+      return tete(f.id === 'cv' ? 'Mon CV' : 'Ma lettre de motivation') + `<button class="s6-opt" data-v6c="Pas du tout">À faire</button><button class="s6-opt" data-v6c="En cours">En cours</button><button class="s6-opt vert" data-v6c="${fin}">${OKI}Terminé</button>`;
+    }
+    if (f.t === 'defaire') {
+      const l = f.l;
+      return tete(l.th) + (l.type === 'choix' ? `<button class="s6-opt" data-v6a="rechoisir">Modifier ma réponse</button>` : '')
+        + (l.type === 'local' || l.annulable || (!suivi() && l.type !== 'choix') ? `<button class="s6-opt" data-v6a="annuler">Annuler</button>` : '')
+        + (l.perdable ? `<button class="s6-opt" data-v6a="perdre">Je l’ai perdu</button>` : '');
+    }
+    if (f.t === 'stage') {
+      const R = (L.recherches || []).filter(r => r.statut !== 'refus'), r = L.prepa.trouveR && (L.recherches || []).find(y => y.id === L.prepa.trouveR);
+      return tete('J’ai un stage') + (R.length ? R.map(y => `<button class="s6-opt gauche ${r && r.id === y.id ? 'on' : ''}" data-v6r="${esc(y.id)}">${esc(y.nom || 'Entreprise')}${y.adresse ? `<small>${esc(y.adresse)}</small>` : ''}</button>`).join('') + `<p class="s6-ou">ou une autre entreprise</p>` : '')
+        + `<label class="champ">Nom de l’entreprise<input type="text" id="s6Nom" maxlength="80"></label><div id="s6Err" class="s6-err"></div><label class="champ">Ville (facultatif)<input type="text" id="s6Ville" maxlength="80"></label><button class="s6-opt vert" data-v6a="okStage">${OKI}Enregistrer</button>`;
+    }
+    if (f.t === 'quoi') { const q = QUOI6[f.id]; return tete(q[0]) + q[1].map(([a, b]) => `<p class="s6-q">${esc(a)}</p><p class="s6-r">${esc(b)}</p>`).join('') + `<button class="s6-opt" data-act="fermer">Fermer</button>`; }
+    return '';
+  }
+  function ouvrir6(f) { fen6 = f; volet = 'v6'; rendreVolet(); const n = $('s6Nom'); if (n && !(L.recherches || []).some(r => r.statut !== 'refus')) n.focus(); }
+  function fermer6() { fen6 = null; volet = ''; rendreVolet(); }
+  function trouver6(id) { for (let ph = 1; ph < 9; ph++) { const l = lignes6(ph).find(y => y.k === id); if (l) return l; } return null; }
+  function clic6(d) {
+    if (d.v6 === 'etape') { ouvert6[d.id] = !ouvert6[d.id]; rendre(); return; }
+    if (d.v6 === 'quoi') return ouvrir6({ t: 'quoi', id: +d.id });
+    if (d.v6 === 'choix') return ouvrir6({ t: 'choix', id: d.id });
+    if (d.v6 === 'stage') return ouvrir6({ t: 'stage' });
+    if (d.v6 === 'local') { L.fiche[d.id] = true; sauver(); rendre(); return; }
+    if (d.v6 === 'defaire') { const l = trouver6(d.id); if (l) ouvrir6({ t: 'defaire', l }); return; }
+    if (d.v6 === 'signal') return signaler6(d.id);
+  }
+  function agir6(id, action, extra) {
+    if (!svc || !suivi()) { toast('Hors ligne : à refaire quand la page est enregistrée.'); return; }
+    svc.agir(sid(), id, action, 'eleve', extra).then(() => toast(action === 'perdre' ? 'Votre référent et votre professeur principal sont prévenus.' : action === 'annuler' ? 'Annulé.' : 'Enregistré.')).catch(e => toast(e.message));
+  }
+  function voletClic6(d) {
+    const f = fen6; if (!f) return;
+    if (d.v6c != null) {
+      fermer6();
+      if (f.id === 'midpoint') return agir6('midpoint', 'declarer', { v: d.v6c });
+      L.prepa[f.id] = d.v6c; sauver(); rendre(); return;
+    }
+    if (d.v6r) { Object.assign(L.prepa, { trouve: 'Oui', trouveR: d.v6r }); fermer6(); sauver(true); rendre(); return; }
+    if (d.v6a === 'okStage') {
+      const nom = $('s6Nom').value.trim(); if (!nom) { $('s6Err').textContent = 'Écrire le nom de l’entreprise.'; $('s6Nom').focus(); return; }
+      const id = 'r' + Date.now().toString(36);
+      L.recherches = (L.recherches || []).concat([{ id, nom: nom.slice(0, 80), adresse: $('s6Ville').value.trim().slice(0, 80), tel: '', moyen: 'autre', avec: 'Seul', date: auj(), statut: 'accord' }]);
+      Object.assign(L.prepa, { trouve: 'Oui', trouveR: id }); fermer6(); sauver(true); rendre(); return;
+    }
+    if (d.v6a === 'rechoisir') return ouvrir6({ t: 'choix', id: f.l.k });
+    if (d.v6a === 'annuler') {
+      const l = f.l; fermer6();
+      if (l.type === 'local') { L.fiche[l.k] = false; sauver(); rendre(); return; }
+      if (!suivi()) { L.locales = L.locales || {}; L.locales[l.k] = false; sauver(); rendre(); return; }
+      return agir6(l.k, 'annuler');
+    }
+    if (d.v6a === 'perdre') { const l = f.l; fermer6(); return agir6(l.k, 'perdre'); }
+  }
+
+  /* ── Besoin d'aide ? Une question = une réponse immédiate. Un problème = un clic prévient le référent. ──
+     Réponses appuyées sur les textes officiels et sur le calendrier du lycée (listing du 11/10/2026).
+     Un signalement est une ligne à texte fixe dans le fil du suivi (« §signal:clé ») : l'élève n'écrit rien. */
+  const AIDE = {
+    'Mon stage': [
+      ['Combien de semaines de stage cette année ?', '6 semaines en seconde.'],
+      ['Et sur les trois ans ?', '20 semaines : 6 en seconde, 8 en première, 6 en terminale.'],
+      ['Qu’est-ce qu’un jour de stage ?', 'Une journée d’au moins 7 heures de présence.'],
+      ['Je ne trouve pas de stage : que faire ?', 'Le dire à l’enseignant référent. Le lycée doit trouver un lieu d’accueil pour chaque élève.'],
+      ['Suis-je noté ?', 'En seconde, non : un bilan est fait avec le tuteur et l’enseignant référent.'],
+      ['Les stages comptent-ils pour le bac ?', 'Oui. Les attestations de stage font partie du dossier d’examen.']],
+    'Mes documents': [
+      ['À qui demander ma fiche de négociation ?', 'À l’enseignant professionnel. S’il est absent : au professeur principal.'],
+      ['Qui me donne la pré-convention ?', 'L’enseignant référent, en main propre.'],
+      ['Qui signe ma convention ?', 'L’entreprise (avec le tampon), le tuteur, le responsable légal ou l’élève majeur, l’enseignant référent et le chef d’établissement.'],
+      ['À quoi sert l’attestation de stage ?', 'Elle prouve les jours réalisés. Sans elle, l’allocation n’est pas versée.'],
+      ['Quand l’entreprise remplit-elle l’attestation ?', 'Le dernier jour du stage.']],
+    'Absence et horaires': [
+      ['Si je suis absent, suis-je payé ?', 'Non. Un jour d’absence n’est pas payé, quel que soit le motif.'],
+      ['Une demi-journée compte-t-elle ?', 'Non. Seuls les jours entiers comptent.'],
+      ['Puis-je rattraper les jours manqués ?', 'Oui : en prolongeant le stage, ou avec une nouvelle convention.'],
+      ['Combien d’heures par jour, au maximum ?', 'Élève mineur : 8 heures par jour et 35 heures par semaine.'],
+      ['Combien de jours de repos ?', 'Élève mineur : 2 jours de suite chaque semaine, dimanche compris.'],
+      ['Puis-je travailler un jour férié ?', 'Élève mineur : non.']],
+    'Argent du stage': [
+      ['Combien vais-je recevoir ?', '10 € par jour de stage réalisé. 300 € au plus sur l’année de seconde.'],
+      ['Qui me paie ?', 'L’État, pas l’entreprise.'],
+      ['Quand vais-je recevoir l’argent ?', 'Après le stage, une fois l’attestation rendue au lycée.'],
+      ['Puis-je avoir une avance ?', 'Non.'],
+      ['Sur quel compte ?', 'Sur le compte de l’élève si le responsable légal l’autorise par écrit, sinon sur le compte du responsable légal.'],
+      ['Mes trajets et mes repas sont-ils remboursés ?', 'L’allocation ne les rembourse pas.']],
+    'Sécurité': [
+      ['Que se passe-t-il en cas d’accident ?', 'L’accident est couvert comme un accident du travail. L’entreprise le déclare dans les 48 heures.'],
+      ['Si je casse quelque chose ?', 'Le lycée a une assurance qui couvre le stagiaire.'],
+      ['Peut-on me donner une tâche dangereuse ?', 'Non. L’entreprise fournit les protections et explique les risques du poste.'],
+      ['On me traite mal : que faire ?', 'Le signaler à l’enseignant référent. Le stagiaire est protégé comme un salarié.']]
+  };
+  const SIGNAUX = { stage: 'Je ne trouve pas de stage', annule: 'Mon entreprise a annulé mon stage', absent: 'Je suis absent ou en retard', mal: 'Mon stage se passe mal', contact: 'Je souhaite être contacté par mon référent',
+    'perdu-neg_given': 'J’ai perdu ma fiche de négociation', 'perdu-pre_given': 'J’ai perdu ma pré-convention', 'perdu-conv_given': 'J’ai perdu ma convention', 'perdu-attest_in': 'J’ai perdu mon attestation' };
+  const PROBLEMES6 = ['stage', 'annule', 'absent', '_doc', 'mal', 'contact'];
+  const DOCS6 = [['neg_given', 'Fiche de négociation'], ['pre_given', 'Pré-convention'], ['conv_given', 'Convention'], ['attest_in', 'Attestation']];
+  let rech6 = '', qouv6 = '';
+  const sansAccent = x => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const signaux6 = () => msgs.filter(m => m.de === 'eleve' && /^§signal:/.test(m.texte || '')).map(m => ({ k: m.texte.slice(8), le: m.le, vu: msgs.some(y => y.de !== 'eleve' && y.texte === '§vu:' + m.le) })).filter(x => SIGNAUX[x.k]).reverse();
+  const cartesSignaux6 = actifs => signaux6().filter(x => !actifs || !x.vu).map(x => `<div class="s6-l col ${x.vu ? 'fait' : ''}"><b class="th">${esc(SIGNAUX[x.k])}</b><span class="co">Signalement envoyé${quand6(x.le)}</span>
+    <span class="co vert">${OKI}Mon référent est prévenu${['mal', 'contact'].includes(x.k) ? '. Il prendra contact avec moi.' : ''}</span>${x.vu ? `<span class="co vert">${OKI}Mon référent a pris connaissance de mon signalement</span>` : ''}</div>`).join('');
+  const listeQ6 = l => l.map(([q, a]) => `<button class="s6-q6" data-v6q="${esc(q)}"><span class="g">${esc(q)}</span><i class="ti ti-chevron-${qouv6 === q ? 'up' : 'down'}"></i></button>${qouv6 === q ? `<div class="s6-rep">${esc(a)}</div>` : ''}`).join('');
+  function resAide6() {
+    const r = sansAccent(rech6.trim());
+    if (r.length < 2) return Object.keys(AIDE).map(k => `<a class="s6-q6" href="#aide/q/${encodeURIComponent(k)}"><span class="g">${esc(k)}</span><i class="ti ti-chevron-right"></i></a>`).join('');
+    const l = []; Object.keys(AIDE).forEach(k => AIDE[k].forEach(y => { if (sansAccent(y[0] + ' ' + y[1] + ' ' + k).includes(r)) l.push(y); }));
+    return l.length ? listeQ6(l) : `<p class="s6-rien">Aucune réponse.</p><a class="s6-go large" href="#aide/probleme">Prévenir mon référent</a>`;
+  }
+  function pageAide(h) {
+    const dos = (lien, t) => `<a class="retour" href="${lien}"><i class="ti ti-chevron-left"></i> ${t}</a>`;
+    if (h === '#aide') { const c = cartesSignaux6(false); return dos('#', 'Mon suivi') + `<h1 class="s6-h1">Besoin d’aide ?</h1>
+      <a class="s6-q6 gros" href="#aide/question"><i class="ti ti-help-circle"></i><span class="g">J’ai une question</span><i class="ti ti-chevron-right"></i></a>
+      <a class="s6-q6 gros fort" href="#aide/probleme"><i class="ti ti-alert-triangle"></i><span class="g">J’ai un problème</span><i class="ti ti-chevron-right"></i></a>${c ? `<p class="s6-grp">Mes signalements</p>` + c : ''}`; }
+    if (h === '#aide/question') return dos('#aide', 'Besoin d’aide ?') + `<h1 class="s6-h1">J’ai une question</h1><label class="sr" for="aideR">Ma question</label><input type="search" id="aideR" placeholder="Écrire ma question" value="${esc(rech6)}"><div id="aideRes">${resAide6()}</div>`;
+    if (h.startsWith('#aide/q/')) { const k = decodeURIComponent(h.slice(8)); return dos('#aide/question', 'J’ai une question') + `<h1 class="s6-h1">${esc(k)}</h1>` + listeQ6(AIDE[k] || []); }
+    if (h === '#aide/probleme') return dos('#aide', 'Besoin d’aide ?') + `<h1 class="s6-h1">J’ai un problème</h1>` + PROBLEMES6.map(k => `<a class="s6-q6" href="${k === '_doc' ? '#aide/document' : '#aide/signaler/' + k}"><span class="g">${k === '_doc' ? 'J’ai perdu un document' : esc(SIGNAUX[k])}</span><i class="ti ti-chevron-right"></i></a>`).join('');
+    if (h === '#aide/document') return dos('#aide/probleme', 'J’ai un problème') + `<h1 class="s6-h1">J’ai perdu un document</h1>` + DOCS6.map(([id, n]) => `<a class="s6-q6" href="#aide/signaler/perdu-${id}"><span class="g">${esc(n)}</span><i class="ti ti-chevron-right"></i></a>`).join('');
+    if (h.startsWith('#aide/signaler/')) { const k = h.slice(15); if (!SIGNAUX[k]) { location.hash = '#aide'; return ''; }
+      return dos(k.startsWith('perdu-') ? '#aide/document' : '#aide/probleme', 'J’ai un problème') + `<h1 class="s6-h1">${esc(SIGNAUX[k])}</h1>${suivi() ? `<button class="s6-vert" data-v6="signal" data-id="${esc(k)}"><i class="ti ti-send"></i> Prévenir mon référent</button>` : `<p class="s6-rien">Disponible quand le stage est ouvert par le lycée.</p>`}`; }
+    location.hash = '#aide'; return '';
+  }
+  function signaler6(k) {
+    if (!svc || !suivi() || !SIGNAUX[k]) return;
+    /* Un document déjà en main : le moteur a son propre état « perdu », vu par le référent et le professeur principal. */
+    if (k.startsWith('perdu-')) { const id = k.slice(6), et = P.PAR_ID[id]; if (P.actions(et, en(id), 'eleve').includes('perdre')) { agir6(id, 'perdre'); location.hash = '#'; return; } }
+    if (signaux6().some(x => x.k === k && !x.vu)) { toast('Déjà signalé : votre référent est prévenu.'); location.hash = '#aide'; return; }
+    svc.envoyerMessage(sid(), 'eleve', '', '§signal:' + k).then(() => { toast('Votre référent est prévenu.'); location.hash = '#aide'; }).catch(e => toast(e.message));
+  }
+
   /* ── Accueil ─────────────────────────────────────────────────────────── */
   function pageAccueil() {
     if (!declare()) return `<button class="declarer" onclick="location.hash='#declarer'"><i class="ti ti-plus"></i>Déclarer un stage</button>`;
-    const items = parcours(), m = maintenant(items), cur = statutEl();
-    return `
-      <div class="mp-statut">${STATUTS_EL.map((x, k) => `<span class="${k < cur ? 'ok' : k === cur ? 'ici' : ''}">${k < cur ? '✓ ' : ''}${x}</span>`).join('')}</div>
-      ${carteMaintenant(m)}
-      <div class="mp-compte"><b id="jours">—</b> <span id="joursL">jours avant le départ</span><span class="chrono" id="chrono"></span></div>
-      <section class="mp-fil">${filParcours(items, m)}</section>
-      <a class="lien" href="#declarer"><i class="ti ti-pencil"></i> Modifier mon stage</a>`;
+    /* Pendant le stage : le carnet de bord du jour passe en premier. */
+    const per = periode(), t = auj(), enStage = per.debut && per.fin && t >= per.debut && t <= per.fin, c = cartesSignaux6(true);
+    return `${enStage ? `<a class="alerte fort" href="../carnet/index.html"><i class="ti ti-notebook"></i><span>Remplir mon carnet de bord du jour</span><i class="ti ti-chevron-right"></i></a>` : ''}
+      <section class="s6">${fil6()}</section>
+      <a class="s6-aide" href="#aide"><i class="ti ti-lifebuoy"></i> Besoin d’aide ?</a>
+      ${c ? `<p class="s6-grp">Mes signalements en cours</p>` + c : ''}
+      <a class="lien" href="#declarer"><i class="ti ti-pencil"></i> Modifier ma période de stage</a>`;
   }
   let chrono = null;
   function demarrerChrono() {
@@ -635,7 +930,7 @@
   function pageRecherches() {
     const R = L.recherches || [], t = auj();
     const n = s => R.filter(r => r.statut === s).length;
-    let h = `<div class="ptitle"><span class="ic"><i class="ti ti-list-search"></i></span><span><h1>Mes recherches</h1></span><button class="prog imp" data-act="imprimer" aria-label="Imprimer ma fiche"><i class="ti ti-printer"></i></button></div>`;
+    let h = `<div class="ptitle"><span class="ic"><i class="ti ti-list-search"></i></span><span><h1>Mes démarches</h1></span><button class="prog imp" data-act="imprimer" aria-label="Imprimer ma fiche"><i class="ti ti-printer"></i></button></div>`;
     h += blocSemaine();
     h += `<div class="stats"><span class="chip gris">${R.length} démarche${R.length > 1 ? 's' : ''}</span><span class="chip att">${n('rappeler')} à rappeler</span><span class="chip bleu">${n('entretien')} entretien${n('entretien') > 1 ? 's' : ''}</span><span class="chip ok">${n('accord')} accord${n('accord') > 1 ? 's' : ''}</span></div>`;
     h += formR ? formulaireRecherche() : `<button class="btn pri plein" data-act="ajouterR" style="margin-top:4px"><i class="ti ti-plus"></i> Ajouter une démarche</button>`;
@@ -743,19 +1038,10 @@
   function imprimer() { $('impression').innerHTML = fiche(); setTimeout(() => window.print(), 50); }
 
   /* ── Messages ────────────────────────────────────────────────────────── */
-  function pageMessages() {
-    if (!suivi()) return `<div class="vide"><i class="ti ti-messages" style="font-size:34px"></i><p>Messagerie disponible quand votre stage est ouvert par le lycée.</p></div>`;
-    return `<div class="fil" id="fil"></div><form class="ecrire" id="formMsg"><label class="sr" for="texte">Message</label><textarea id="texte" maxlength="1000" placeholder="Votre message"></textarea><button class="btn pri" aria-label="Envoyer"><i class="ti ti-send"></i></button></form>`;
-  }
-  function rendreFil() {
-    const f = $('fil'); if (!f) return;
-    f.innerHTML = msgs.length ? msgs.map(m => `<div class="msg ${esc(m.de)}"><small>${m.de === 'eleve' ? 'Moi' : m.de === 'pp' ? 'Professeur principal' : 'Référent'}${m.sigle && m.de !== 'eleve' ? ' ' + esc(m.sigle) : ''} · ${m.le ? new Date(m.le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}</small>${esc(m.texte)}</div>`).join('') : '<div class="vide">Aucun message.</div>';
-    f.scrollTop = f.scrollHeight;
-  }
-
   /* ── Gestes ──────────────────────────────────────────────────────────── */
   document.addEventListener('click', ev => {
-    if (ev.target.closest('#tiroir [data-act="fermer"]')) { volet = ''; attente = null; rendreVolet(); return; }
+    if (ev.target.closest('#tiroir [data-act="fermer"]')) { volet = ''; attente = null; fen6 = null; rendreVolet(); return; }
+    { const t6 = ev.target.closest('#tiroir [data-v6c],#tiroir [data-v6r],#tiroir [data-v6a]'); if (t6) { voletClic6(t6.dataset); return; } }
     if (ev.target.closest('#tiroir [data-act="oui"]') && attente) {
       const a = attente; attente = null; volet = ''; rendreVolet();
       const faux = document.createElement('button'); faux.dataset.ok = '1';
@@ -765,6 +1051,8 @@
     const b = ev.target.closest('button,[data-act]'); if (!b || !$('app').contains(b)) { if (plus && !ev.target.closest('.plus')) { plus = false; rendre(); } return; }
     const d = b.dataset;
     if (d.act === 'plus') { plus = !plus; rendre(); return; }
+    if (d.v6) { clic6(d); return; }
+    if (d.v6q) { qouv6 = qouv6 === d.v6q ? '' : d.v6q; if ($('aideRes')) $('aideRes').innerHTML = resAide6(); else rendre(); return; }
     if (plus && !b.closest('.plus')) { plus = false; }
     if (d.act === 'toutEnregistrer') {
       if (formulaireRempli()) $('formR').requestSubmit();
@@ -786,6 +1074,7 @@
     if (d.act === 'enregistrer') { lireDates(); if (!L.declaration.pfmp) L.declaration.pfmp = 'PFMP 1'; sauver(); if (connu[numero()] && !suivi()) creerSuivi(numero()); location.hash = '#'; return; }
     if (d.act === 'trouve' && !d.ok) { attente = { trouve: 1, t: 'J’ai trouvé mon stage' }; volet = 'confirme'; rendreVolet(); return; }
     if (d.act === 'trouve') {
+      if (!svc || !suivi()) { toast('Enregistré sur cet appareil.'); return; }
       const st = L.prepa.structure === 'Autre' ? (L.prepa.structureAutre || 'Autre') : (L.prepa.structure || 'Entreprise');
       const dom = L.declaration.domaine === 'Autre' ? L.declaration.domaineAutre : L.declaration.domaine;
       b.disabled = true; svc.declarerTrouve(sid(), { structure: st, secteur: dom || '' }).then(() => toast('Envoyé à votre référent.')).catch(e => { toast(e.message); b.disabled = false; });
@@ -820,7 +1109,8 @@
   });
   document.addEventListener('input', ev => {
     const x = ev.target, d = x.dataset;
-    if (d.autre) { L[d.autre][d.cle] = x.value; sauver(); }
+    if (x.id === 'aideR') { rech6 = x.value; qouv6 = ''; $('aideRes').innerHTML = resAide6(); }
+    else if (d.autre) { L[d.autre][d.cle] = x.value; sauver(); }
     else if (d.rnote) { const r = L.recherches.find(y => y.id === d.rnote); if (r) { r.note = x.value; sauver(); } }
     else if (d.rautre) { const r = L.recherches.find(y => y.id === d.rautre); if (r) { r.autre = x.value; sauver(); } }
   });
@@ -858,16 +1148,12 @@
       formR = null; sauver(true); rendre();
     } else if (f.id === 'formSem') {
       ev.preventDefault(); const x = $('semTexte'), v = x.value; x.value = ''; ajouterObjectif(v); setTimeout(() => $('semTexte') && $('semTexte').focus(), 0);
-    } else if (f.id === 'formMsg') {
-      ev.preventDefault();
-      const t = $('texte'), texte = t.value; if (!texte.trim()) return; t.value = '';
-      svc.envoyerMessage(sid(), 'eleve', '', texte).catch(e => { toast(e.message); t.value = texte; });
     }
   });
   function majR(id, patch) { const r = L.recherches.find(y => y.id === id); if (!r) return; Object.assign(r, patch); sauver(true); rendre(); }
   function lireDates() { const a = $('debut'), b = $('fin'); if (a) L.declaration.debut = a.value; if (b) L.declaration.fin = b.value; }
   function prerempliDates() { const s = suivi(); if (s && !L.declaration.debut) { L.declaration.debut = s.debut || ''; L.declaration.fin = s.fin || ''; } }
-  window.addEventListener('hashchange', () => { plus = false; formR = null; confirmeRetrait = ''; volet = ''; rendreVolet(); rendre(); });
+  window.addEventListener('hashchange', () => { plus = false; formR = null; confirmeRetrait = ''; volet = ''; fen6 = null; rech6 = ''; qouv6 = ''; rendreVolet(); rendre(); });
 
   function demarrer(c) {
     code = c; charger(); rendre(); brancher();
