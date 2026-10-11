@@ -143,7 +143,7 @@ function rendre() {
   const [, ecran, arg] = h.split('/');
   $('pied').hidden = !ecran || ecran === 'rapport';
   /* Toujours une flèche : vers le carnet, ou depuis le carnet vers Mon espace. */
-  $('retour').href = ecran ? '#/' : '../../index.html'; $('retour').innerHTML = '<i class="ti ti-arrow-left"></i> ' + (ecran ? 'Mon carnet' : 'Mon espace');
+  $('retour').href = ecran ? '#/' : '../../index.html#pfmp-agora'; $('retour').innerHTML = '<i class="ti ti-arrow-left"></i> ' + (ecran ? 'Mon carnet' : 'Mon espace');
   if (LECTURE) { $('pied').hidden = true; $('retour').style.visibility = 'hidden'; return ecranRapport(); }
   if (!CODE) return ecranCode();
   if (!PERIODES.p1 && !PERIODES.p2) return ecranPasOuvert();

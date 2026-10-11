@@ -309,13 +309,14 @@
     const tete = declare() ? `<a class="qui" href="#declarer"><b>${esc(L.declaration.pfmp)}${per.debut ? `<span class="dts"> · ${fr(per.debut)} → ${fr(per.fin)}</span>` : ''}</b><small><i class="ti ti-user-check"></i> Référent ${s && s.refSigle ? esc(s.refSigle) : '· à venir'}</small></a>` : `<span class="bonjour">Bonjour !</span>`;
     const nAg = declare() ? nbAgenda() : 0, al = h !== '#declarer' && declare() ? alerte() : null;
     $('app').innerHTML = `
+      <a class="retour vers-espace" href="../../index.html#pfmp-agora"><i class="ti ti-chevron-left"></i> Mon espace</a>
       <div class="top"><span class="av" style="background:${av ? av[1] : '#cfc7b8'}"><i class="ti ti-${av ? av[0] : 'user'}"></i></span>${tete}
         <span class="sync ${etatSync}" id="sync" title="${ICONES_SYNC[etatSync][1]}">${iconeSync()}</span>
         ${declare() ? `<button class="rond-btn" data-act="agenda" aria-label="Agenda"><i class="ti ti-calendar-event"></i>${nAg ? `<span class="pastille">${nAg}</span>` : ''}</button>` : ''}
         <button class="rond-btn pc" data-act="qr" aria-label="Sur mon téléphone"><i class="ti ti-device-mobile"></i></button>
         <button class="rond-btn" data-act="plus" aria-label="Plus"><i class="ti ti-dots"></i></button></div>
       ${plus ? `<div class="plus">${declare() ? `<button data-act="imprimer"><i class="ti ti-printer"></i> Imprimer ma fiche</button>` : ''}<button data-act="qr"><i class="ti ti-device-mobile"></i> Sur mon téléphone</button><a href="../carnet/index.html"><i class="ti ti-notebook"></i> Mon carnet de bord PFMP</a><button data-act="changer"><i class="ti ti-switch-horizontal"></i> Changer de code</button></div>` : ''}
-      <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon stage</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
+      <nav class="menu"><a href="#" class="${onglet === 'stage' ? 'on' : ''}"><i class="ti ti-route"></i> Mon suivi</a>${declare() ? `<a href="#recherches" class="${onglet === 'recherches' ? 'on' : ''}"><i class="ti ti-list-search"></i> Recherches</a>` : ''}<a href="#messages" class="${onglet === 'messages' ? 'on' : ''}"><i class="ti ti-messages"></i> Messages <span class="bd" id="badgeMsg" hidden></span></a></nav>
       ${al ? `<a class="alerte ${al.fort ? 'fort' : ''}" href="${al.lien}"><i class="ti ti-${al.ic}"></i><span>${esc(al.t)}</span><i class="ti ti-chevron-right"></i></a>` : ''}
       ${corps}
       ${declare() && h !== '#messages' ? `<button class="btn enreg ${toutGarde() && enregLe ? 'fait' : ''}" id="btnEnreg" data-act="toutEnregistrer">${texteEnreg()}</button>` : ''}
@@ -522,7 +523,7 @@
   function pageDeclarer() {
     const D = L.declaration, s = suivi();
     const blk = (n, ok, t, c) => `<div class="blk ${ok ? 'ok' : ''}"><div class="bh"><span class="num">${ok ? '<i class="ti ti-check"></i>' : n}</span>${t}</div>${c}</div>`;
-    return `<a class="retour" href="#"><i class="ti ti-chevron-left"></i> Mon stage</a>
+    return `<a class="retour" href="#"><i class="ti ti-chevron-left"></i> Mon suivi</a>
       ${blk(1, L.avatar != null, 'Sélectionnez votre avatar', `<div class="avatars">${AVATARS.map((a, i) => `<button data-avatar="${i}" class="${L.avatar === i ? 'on' : ''}" aria-label="Avatar ${i + 1}"><span class="av" style="background:${a[1]}"><i class="ti ti-${a[0]}"></i></span></button>`).join('')}</div>`)}
       ${blk(2, !!D.pfmp, 'Sélectionnez votre stage', seg('declaration', 'pfmp', ['PFMP 1', 'PFMP 2'], D.pfmp, true))}
       ${blk(3, officiel() || !!(D.debut && D.fin), 'Sélectionnez les dates', `<div class="dates"><label>Début<input type="date" id="debut" data-date="debut" value="${esc(officiel() ? s.debut : (D.debut || (s && s.debut) || ''))}" ${officiel() ? 'disabled' : ''}></label><label>Fin<input type="date" id="fin" data-date="fin" value="${esc(officiel() ? s.fin : (D.fin || (s && s.fin) || ''))}" ${officiel() ? 'disabled' : ''}></label></div>${officiel() ? '<div class="verrou"><i class="ti ti-lock"></i> Dates du lycée</div>' : ''}`)}
@@ -533,7 +534,7 @@
   /* ── Les pages de phase ──────────────────────────────────────────────── */
   function entete(k, n, total) {
     const ph = PHASES[k];
-    return `<a class="retour" href="#"><i class="ti ti-chevron-left"></i> Mon stage</a>
+    return `<a class="retour" href="#"><i class="ti ti-chevron-left"></i> Mon suivi</a>
       <div class="ptitle"><span class="ic"><i class="ti ti-${ph.ic}"></i></span><span><h1>${esc(ph.t)}</h1>${ph.sous ? `<small>${esc(ph.sous)}</small>` : ''}</span>${total ? `<span class="prog">${n} / ${total}</span>` : ''}</div>`;
   }
   const suite = (lien, t) => `<a class="suite" href="${lien}"><i class="ti ti-arrow-right-circle"></i>${esc(t)}</a>`;
@@ -608,7 +609,7 @@
     }
     if (k === 'retour') {
       const ids = ['attest_in', 'attestation', 'student_eval'], n = ids.filter(envoyeOuLocal).length;
-      return entete(k, n, 3) + rappel('retour') + `<div class="qc">${etape('attest_in', 'L’entreprise m’a remis mon attestation')}${etape('attestation', 'Je l’ai rendue à mon référent')}${etape('student_eval', 'J’ai fait le bilan de mon stage')}</div><a class="lien" href="../index.html"><i class="ti ti-notebook"></i> Mon bilan dans le carnet</a>`;
+      return entete(k, n, 3) + rappel('retour') + `<div class="qc">${etape('attest_in', 'L’entreprise m’a remis mon attestation')}${etape('attestation', 'Je l’ai rendue à mon référent')}${etape('student_eval', 'J’ai fait le bilan de mon stage')}</div><a class="lien" href="../carnet/index.html#/bilan"><i class="ti ti-notebook"></i> Mon bilan dans mon carnet de bord</a>`;
     }
     return '';
   }

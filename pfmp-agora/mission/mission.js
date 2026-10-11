@@ -58,7 +58,7 @@
     let ici = liste.findIndex(c => !reussi(res[c.id]));
     const parDate = liste.reduce((k, c, i) => c.date <= auj ? i : k, 0);
     $app().innerHTML = `
-      <div class="haut"><a class="retour" href="../index.html"><i class="ti ti-chevron-left"></i> Mon carnet</a><span class="esp"></span><span class="prog">${faits} / ${tous().length}</span></div>
+      <div class="haut"><a class="retour" href="../../index.html#pfmp-agora"><i class="ti ti-chevron-left"></i> Mon espace</a><span class="esp"></span><span class="prog">${faits} / ${tous().length}</span></div>
       <div class="titre"><span class="logo"><i class="ti ti-flag-3"></i></span><h1>Mission stage</h1></div>
       <div class="barre"><i style="width:${Math.round(faits / tous().length * 100)}%"></i></div>
       <div class="aujourdhui"><i class="ti ti-calendar-event"></i> Aujourd’hui : ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
