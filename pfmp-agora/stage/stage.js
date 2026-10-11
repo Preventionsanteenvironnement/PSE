@@ -12,6 +12,8 @@
 (function () {
   'use strict';
   const P = window.PFMP_COMMUN;
+  /* 12/10/2026 — Plus d'échéances sur la page de l'élève : ce sont des estimations, pas de pression. */
+  const sansEcheance = () => null;
   const CFG = { apiKey: 'AIzaSyBj_GXG8ln3GAxNXxiJkT2HPSWIHJpc1lA', authDomain: 'coordination-pedagogie.firebaseapp.com', projectId: 'coordination-pedagogie', storageBucket: 'coordination-pedagogie.firebasestorage.app', messagingSenderId: '526058585010', appId: '1:526058585010:web:ba4dd6d9c8281ba5bf02ab' };
   const ANNEE = P.anneeScolaire();
   const AVATARS = [['cat', '#D85A30'], ['dog', '#BA7517'], ['butterfly', '#D4537E'], ['fish', '#378ADD'], ['plant-2', '#639922'], ['rocket', '#534AB7'], ['feather', '#1D9E75'], ['planet', '#7F77DD'], ['bike', '#185FA5'], ['music', '#993556'], ['star', '#EF9F27'], ['paw', '#854F0B'], ['ball-football', '#3B6D11'], ['palette', '#A32D2D'], ['camera', '#5F5E5A'], ['bolt', '#C2410C'], ['leaf', '#0F6E56'], ['moon', '#3C3489']];
@@ -249,7 +251,7 @@
   const prepaOk = () => !!(L.prepa.cv && L.prepa.lettre && L.prepa.trouve);
   function noeuds() {
     const per = periode(), s = suivi() || {};
-    const ec = id => { const e = P.echeance(P.PAR_ID[id], per); return e ? fr(e.date) : ''; };
+    const ec = id => { const e = sansEcheance(P.PAR_ID[id], per); return e ? fr(e.date) : ''; };
     const t = auj();
     return [
       { n: 'Préparation', d: '', ok: prepaOk(), lien: '#p/preparation' },
@@ -275,7 +277,7 @@
 
   /* ── L'action du moment : une ligne en haut ──────────────────────────── */
   const nomR = r => r.nom || 'l’entreprise';
-  const avant = id => { const e = P.echeance(P.PAR_ID[id], periode()); return e && e.date ? ' · avant le ' + fr(e.date) : ''; };
+  const avant = id => { const e = sansEcheance(P.PAR_ID[id], periode()); return e && e.date ? ' · avant le ' + fr(e.date) : ''; };
   function alerte() {
     const t = auj(), dem = plusJ(t, 1), R = L.recherches || [];
     const tri = (l, k, h) => l.sort((a, b) => ((a[k] || '') + (a[h] || '')).localeCompare((b[k] || '') + (b[h] || '')))[0];
@@ -306,7 +308,7 @@
     if (sem && sem.prochain) l.push({ d: sem.prochain, ic: 'checklist', t: 'Point sur ma semaine', lien: '#recherches' });
     [['neg_return', 'Fiche de négociation', '#', ficheOk()], ['pre_return', 'Rendre la pré-convention', '#', envoye('pre_return')], ['conv_return', 'Rendre la convention', '#', envoye('conv_return')],
       ['attestation', 'Rendre l’attestation', '#', envoye('attestation')], ['student_eval', 'Bilan du stage', '#', envoye('student_eval')]].forEach(([id, n, lien, ok]) => {
-      const e = P.echeance(P.PAR_ID[id], per); if (e && e.date && !ok) l.push({ d: e.date, ic: 'flag', t: n, lien, act: 1 });
+      const e = sansEcheance(P.PAR_ID[id], per); if (e && e.date && !ok) l.push({ d: e.date, ic: 'flag', t: n, lien, act: 1 });
     });
     if (per.dernierJour) l.push({ d: per.dernierJour, ic: 'school', t: 'Dernier jour de cours', lien: '#' });
     if (per.debut) l.push({ d: per.debut, ic: 'building', t: 'Début du stage', lien: '#', fort: 1 });
@@ -467,7 +469,7 @@
         const e = entreeEl(et.id);
         if (et.id === 'referent') { items.push({ autre: 1, id: et.id, titre: refTexte(), fait: !!(s && (s.refSigle || P.estFaite(s, 'referent'))), ic: 'school', voit: 1 }); return; }
         const eleve = (et.ty === 'declare' && (!et.act || et.coche === 'eleve')) || (et.ty === 'remise' && (et.from === 'eleve' || et.to === 'eleve'));
-        const ech = P.echeance(et, periode());
+        const ech = sansEcheance(et, periode());
         if (eleve) items.push({ moi: 1, id: et.id, et, e, titre: et.te || et.t, fait: faitEl(et, e), lien: lienEl(et.id), ech: ech && ech.date,
           sous: et.id === 'search' && pr.trouveR ? ((R.find(r => r.id === pr.trouveR) || {}).nom || '') : (e.e === 'corriger' && e.motif ? 'À corriger : ' + e.motif : '') });
         else if (et.id === 'visit') items.push({ autre: 1, id: et.id, et, titre: 'Visite de mon référent' + (s && s.visite && s.visite.le ? ' · ' + frLong(s.visite.le) : ''), fait: !!s && P.estFaite(s, 'visit'), voit: 1, ic: 'calendar-event' });
@@ -597,7 +599,7 @@
     ['A:pronote', 'conv_given', 'company', 'family', 'conv_return', 'A:head', 'copies'],
     ['_depart', 'A:arrival'], ['here', '_carnet', 'midpoint', 'A:visit', 'attest_in'],
     ['attestation', 'A:attestation_bde', 'student_eval'], ['A:dossier']];
-  const TITRES6 = ['Mon enseignant référent', 'Recherche de stage', 'Fiche de négociation', 'Pré-convention', 'Convention', 'Départ', 'En stage', 'Bilan', 'Clôture du dossier'];
+  const TITRES6 = ['Mon enseignant référent', 'Recherche de stage', 'Fiche de négociation', 'Pré-convention', 'Convention', 'Démarrage du stage', 'En stage', 'Bilan', 'Clôture du dossier'];
   const QUOI6 = {
     2: ['La fiche de négociation', [['Qui me la donne ?', 'L’enseignant professionnel.'], ['Qui la complète ?', 'L’entreprise : elle coche les activités, signe et appose son cachet.'], ['À qui je la rends ?', 'À l’enseignant professionnel, après l’avoir signée.']]],
     3: ['La pré-convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la complète ?', 'L’entreprise : dates, adresse, tuteur, horaires, signature et cachet.'], ['À qui je la rends ?', 'À mon enseignant référent.']]],
