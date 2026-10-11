@@ -14,6 +14,8 @@
   const P = window.PFMP_COMMUN;
   /* 12/10/2026 — Plus d'échéances sur la page de l'élève : ce sont des estimations, pas de pression. */
   const sansEcheance = () => null;
+  /* 12/10/2026 — La matière de l'enseignant référent : celle qu'il indique en activant le suivi (étape « sent »), sinon celle du professeur principal. Jamais de nom. */
+  const matRef = s => s ? String(P.entree(s, 'sent').v || s.refSigle || '') : '';
   const CFG = { apiKey: 'AIzaSyBj_GXG8ln3GAxNXxiJkT2HPSWIHJpc1lA', authDomain: 'coordination-pedagogie.firebaseapp.com', projectId: 'coordination-pedagogie', storageBucket: 'coordination-pedagogie.firebasestorage.app', messagingSenderId: '526058585010', appId: '1:526058585010:web:ba4dd6d9c8281ba5bf02ab' };
   const ANNEE = P.anneeScolaire();
   const AVATARS = [['cat', '#D85A30'], ['dog', '#BA7517'], ['butterfly', '#D4537E'], ['fish', '#378ADD'], ['plant-2', '#639922'], ['rocket', '#534AB7'], ['feather', '#1D9E75'], ['planet', '#7F77DD'], ['bike', '#185FA5'], ['music', '#993556'], ['star', '#EF9F27'], ['paw', '#854F0B'], ['ball-football', '#3B6D11'], ['palette', '#A32D2D'], ['camera', '#5F5E5A'], ['bolt', '#C2410C'], ['leaf', '#0F6E56'], ['moon', '#3C3489']];
@@ -370,7 +372,7 @@
     else corps = pageAccueil();
     const onglet = h.startsWith('#aide') ? 'aide' : h === '#recherches' ? 'recherches' : 'stage';
     const av = L.avatar != null ? AVATARS[L.avatar] : null, per = periode(), s = suivi();
-    const tete = declare() ? `<a class="qui" href="#declarer"><b>${esc(L.declaration.pfmp)}${per.debut ? `<span class="dts"> · ${fr(per.debut)} → ${fr(per.fin)}</span>` : ''}</b><small><i class="ti ti-user-check"></i> Référent ${s && s.refSigle ? esc(s.refSigle) : '· à venir'}</small></a>` : `<span class="bonjour">Bonjour !</span>`;
+    const tete = declare() ? `<a class="qui" href="#declarer"><b>${esc(L.declaration.pfmp)}${per.debut ? `<span class="dts"> · ${fr(per.debut)} → ${fr(per.fin)}</span>` : ''}</b><small><i class="ti ti-user-check"></i> Référent ${matRef(s) ? esc(matRef(s)) : '· à venir'}</small></a>` : `<span class="bonjour">Bonjour !</span>`;
     const nAg = declare() ? nbAgenda() : 0, al = h !== '#declarer' && declare() ? alerte() : null;
     $('app').innerHTML = `
       <a class="retour vers-espace" href="../../index.html#pfmp-agora"><i class="ti ti-chevron-left"></i> Mon espace</a>
@@ -444,7 +446,9 @@
   const minus = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : '';
   function refTexte() {
     const s = suivi();
-    return s && s.refSigle ? 'Mon enseignant référent : professeur ' + (/^[aeiouéèêh]/i.test(s.refSigle) ? 'd’' : 'de ') + s.refSigle : 'Mon enseignant référent : à venir';
+    /* 12/10/2026 — La matière vient de l'enseignant référent quand il active le suivi (étape « sent »), sinon du professeur principal. Jamais de nom. */
+    const m = matRef(s);
+    return m ? 'Mon enseignant référent : professeur ' + (/^[aeiouéèêh]/i.test(m) ? 'd’' : 'de ') + m : 'Mon enseignant référent : à venir';
   }
   function entreeEl(id) { const s = suivi(); return s ? P.entree(s, id) : { e: (L.locales || {})[id] ? 'fait' : '' }; }
   function faitEl(et, e) {
@@ -467,7 +471,7 @@
       }
       P.ETAPES.filter(et => et.ph === ph && !et.local && !et.opt && et.ty !== 'journal').forEach(et => {
         const e = entreeEl(et.id);
-        if (et.id === 'referent') { items.push({ autre: 1, id: et.id, titre: refTexte(), fait: !!(s && (s.refSigle || P.estFaite(s, 'referent'))), ic: 'school', voit: 1 }); return; }
+        if (et.id === 'referent') { items.push({ autre: 1, id: et.id, titre: refTexte(), fait: !!(s && (matRef(s) || P.estFaite(s, 'referent'))), ic: 'school', voit: 1 }); return; }
         const eleve = (et.ty === 'declare' && (!et.act || et.coche === 'eleve')) || (et.ty === 'remise' && (et.from === 'eleve' || et.to === 'eleve'));
         const ech = sansEcheance(et, periode());
         if (eleve) items.push({ moi: 1, id: et.id, et, e, titre: et.te || et.t, fait: faitEl(et, e), lien: lienEl(et.id), ech: ech && ech.date,
@@ -496,7 +500,7 @@
   }
   function statutEl() {
     const s = suivi() || {}, t = auj(), per = periode(); let st = 0;
-    if (s.refSigle || P.estFaite(s, 'referent')) st = 1;
+    if (matRef(s) || P.estFaite(s, 'referent')) st = 1;
     if (entreeEl('search').e) st = 2;
     if (P.estFaite(s, 'neg_signed')) st = 3;
     if (P.estFaite(s, 'ddf_copies') || ['remis', 'valide'].includes(entreeEl('copies').e)) st = 4;
@@ -664,7 +668,7 @@
   /* 2 = terminée (l'élève ET les adultes ont fini) · 1 = en cours · 0 = pas commencée. */
   function statut6(ph) {
     const s = suivi();
-    if (ph === 0) return s && (s.refSigle || P.estFaite(s, 'referent')) ? 2 : 0;
+    if (ph === 0) return s && (matRef(s) || P.estFaite(s, 'referent')) ? 2 : 0;
     const ls = lignes6(ph).filter(l => !l.neutre && !l.cache);
     const finie = l => l.type === 'adulte' ? l.fait : l.etat === 'fait';
     if (ls.length && ls.every(finie)) return 2;
@@ -712,7 +716,7 @@
       h += `<div class="s6-tete"><button data-v6="etape" data-id="${ph}"><span><span class="num">Étape ${ph + 1}</span> ${p}</span><h2>${esc(titre)} <i class="ti ti-chevron-up"></i></h2></button>${QUOI6[ph] ? `<button class="s6-quoi" data-v6="quoi" data-id="${ph}">C’est quoi ?</button>` : ''}</div>`;
       if (ph === 0) {
         const le = s ? (P.entree(s, 'referent').le || P.entree(s, 'sent').le) : '';
-        h += s && s.refSigle ? `<div class="s6-annonce"><i class="ti ti-bell"></i> Un enseignant référent a été désigné${quand6(le)}<b>professeur ${/^[aeiouéèêh]/i.test(s.refSigle) ? 'd’' : 'de '}${esc(s.refSigle)}</b></div>` : `<div class="s6-ad"><i class="ti ti-clock"></i> Mon enseignant référent : à venir</div>`;
+        h += matRef(s) ? `<div class="s6-annonce"><i class="ti ti-bell"></i> Un enseignant référent a été désigné${quand6(le)}<b>professeur ${/^[aeiouéèêh]/i.test(matRef(s)) ? 'd’' : 'de '}${esc(matRef(s))}</b></div>` : `<div class="s6-ad"><i class="ti ti-clock"></i> Mon enseignant référent : à venir</div>`;
       }
       h += ls.map(ligne6).join('');
     });
