@@ -521,12 +521,13 @@
   const CONTROLES = {
     pre_return: ['contrôle de la pré-convention par mon enseignant référent', 'Pré-convention validée par mon enseignant référent'],
     conv_return: ['contrôle et signature par mon enseignant référent', 'Convention contrôlée et signée par mon enseignant référent'],
+    attestation: ['contrôle de l’attestation par mon enseignant référent', 'Attestation contrôlée par mon enseignant référent'],
     student_eval: ['validation du bilan par mon enseignant référent', 'Bilan validé par mon enseignant référent']
   };
   /* L'ordre des lignes dans chaque étape. A: = un adulte · L: = geste noté par l'élève seul · _ = ligne particulière. */
   const COMPO = [[], ['_cv', '_lettre', '_dem', 'search'],
     ['neg_ask', 'neg_given', 'neg_visit', 'neg_company', 'neg_family', 'neg_to_pro', 'A:neg_pro', 'A:neg_signed'],
-    ['pre_given', 'L:pre_ent', 'pre_filled', 'pre_return'],
+    ['pre_given', 'pre_ent', 'pre_filled', 'pre_return'],
     ['A:pronote', 'conv_given', 'company', 'family', 'conv_return', 'A:head', 'copies'],
     ['_depart', 'A:arrival'], ['here', '_carnet', 'midpoint', 'A:visit', 'attest_in'],
     ['attestation', 'A:attestation_bde', 'student_eval'], ['A:dossier']];
