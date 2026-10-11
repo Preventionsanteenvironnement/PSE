@@ -786,8 +786,7 @@
      Un signalement est une ligne à texte fixe dans le fil du suivi (« §signal:clé ») : l'élève n'écrit rien. */
   const AIDE = {
     'Mon stage': [
-      ['Combien de semaines de stage cette année ?', '6 semaines en seconde.'],
-      ['Et sur les trois ans ?', '20 semaines : 6 en seconde, 8 en première, 6 en terminale.'],
+      ['Combien de semaines de stage cette année ?', '6 semaines en seconde : 2 semaines en janvier, puis 4 semaines en mai et juin.'],
       ['Qu’est-ce qu’un jour de stage ?', 'Une journée d’au moins 7 heures de présence.'],
       ['Je ne trouve pas de stage : que faire ?', 'Le signaler à l’enseignant référent bien avant le début du stage. Le lycée doit trouver un lieu d’accueil pour chaque élève.'],
       ['Suis-je noté ?', 'En seconde, non : un bilan est fait avec le tuteur et l’enseignant référent.'],
