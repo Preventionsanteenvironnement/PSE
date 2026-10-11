@@ -35,9 +35,9 @@
   };
   const ORDRE = ['preparation', 'recherches', 'fiche', 'preconvention', 'convention', 'depart', 'stage', 'retour'];
   /* Fiche de négociation (07/10/2026) : les étapes du socle commun, partagées avec le référent et le professeur principal. */
-  const NEG = [['neg_visit', 'Je suis allé à l’entreprise avec ma fiche de négociation'], ['neg_company', 'L’entreprise l’a signée et tamponnée'], ['neg_family', 'Je l’ai signée, ou mon responsable légal'],
+  const NEG = [['neg_visit', 'Je suis allé à l’entreprise avec ma fiche de négociation'], ['neg_company', 'L’entreprise l’a signée, avec le cachet'], ['neg_family', 'Je l’ai signée, ou mon responsable légal'],
     ['neg_pro', 'Validée par mon enseignant professionnel'], ['neg_return', 'Je l’ai remise à mon enseignant référent'], ['neg_signed', 'Signée et gardée par mon référent']];
-  const NEG_A = { neg_visit: 'Aller à l’entreprise avec ma fiche de négociation', neg_company: 'Faire signer et tamponner la fiche par l’entreprise', neg_family: 'Signer la fiche de négociation (ou mon responsable légal)',
+  const NEG_A = { neg_visit: 'Aller à l’entreprise avec ma fiche de négociation', neg_company: 'Faire signer la fiche, avec le cachet, par l’entreprise', neg_family: 'Signer la fiche de négociation (ou mon responsable légal)',
     neg_pro: 'Faire valider la fiche par l’enseignant professionnel', neg_return: 'Remettre la fiche à mon enseignant référent' };
   const DEPART_A = { adresse: 'Noter l’adresse du lieu de stage', horaires: 'Connaître mes horaires', tuteur: 'Noter le nom de mon tuteur', tel: 'Noter le numéro de l’entreprise', trajet: 'Repérer mon trajet' };
   const DEPART = [['adresse', 'Je connais l’adresse du lieu de stage'], ['horaires', 'Je connais mes horaires'], ['tuteur', 'Je connais le nom de mon tuteur'], ['tel', 'J’ai le numéro de l’entreprise'], ['trajet', 'J’ai repéré mon trajet'], ['absence', 'Absent ou en retard : je préviens l’entreprise et la vie scolaire']];
@@ -496,7 +496,7 @@
     pre_filled: ['Pré-convention complétée', 'Récupérer', 'la pré-convention complétée par l’entreprise', 'Récupérée'],
     pre_return: ['Remise de ma pré-convention', 'Remettre', 'la pré-convention à l’enseignant référent', 'Remise'],
     conv_given: ['Réception de ma convention', 'Confirmer', 'la réception de la convention', 'Reçue'],
-    company: ['Signature de l’entreprise', 'Faire signer', 'la convention par l’entreprise, avec le tampon', 'Signée et tamponnée'],
+    company: ['Signature de l’entreprise', 'Faire signer', 'la convention par l’entreprise, avec le cachet', 'Signée, avec le cachet'],
     family: ['Signature du responsable légal', 'Faire signer', 'la convention par le responsable légal (élève majeur : la signer)', 'Signée'],
     conv_return: ['Remise de ma convention', 'Remettre', 'la convention signée à l’enseignant référent', 'Remise'],
     copies: ['Exemplaire pour ma famille', 'Confirmer', 'la réception de l’exemplaire signé', 'Reçu'],
@@ -533,9 +533,9 @@
     ['attestation', 'A:attestation_bde', 'student_eval'], ['A:dossier']];
   const TITRES6 = ['Mon enseignant référent', 'Recherche de stage', 'Fiche de négociation', 'Pré-convention', 'Convention', 'Départ', 'En stage', 'Bilan', 'Clôture du dossier'];
   const QUOI6 = {
-    2: ['La fiche de négociation', [['Qui me la donne ?', 'L’enseignant professionnel.'], ['Qui la complète ?', 'L’entreprise : elle coche les activités, signe et tamponne.'], ['À qui je la rends ?', 'À l’enseignant professionnel, après l’avoir signée.']]],
-    3: ['La pré-convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la complète ?', 'L’entreprise : dates, adresse, tuteur, horaires, signature et tampon.'], ['À qui je la rends ?', 'À mon enseignant référent.']]],
-    4: ['La convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la signe ?', 'L’entreprise (avec le tampon), le tuteur, le responsable légal ou l’élève majeur, l’enseignant référent et le chef d’établissement.'], ['À qui je la rends ?', 'À mon enseignant référent, signée par l’entreprise et par le responsable légal.']]],
+    2: ['La fiche de négociation', [['Qui me la donne ?', 'L’enseignant professionnel.'], ['Qui la complète ?', 'L’entreprise : elle coche les activités, signe et appose son cachet.'], ['À qui je la rends ?', 'À l’enseignant professionnel, après l’avoir signée.']]],
+    3: ['La pré-convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la complète ?', 'L’entreprise : dates, adresse, tuteur, horaires, signature et cachet.'], ['À qui je la rends ?', 'À mon enseignant référent.']]],
+    4: ['La convention', [['Qui me la donne ?', 'Mon enseignant référent.'], ['Qui la signe ?', 'L’entreprise (avec le cachet), le tuteur, le responsable légal ou l’élève majeur, l’enseignant référent et le chef d’établissement.'], ['À qui je la rends ?', 'À mon enseignant référent, signée par l’entreprise et par le responsable légal.']]],
     7: ['L’attestation de stage', [['Qui me la donne ?', 'L’entreprise, le dernier jour du stage.'], ['À quoi sert-elle ?', 'Elle prouve les jours réalisés. Sans elle, l’allocation n’est pas versée.'], ['À qui je la rends ?', 'À mon enseignant référent.']]]
   };
   const quand6 = le => { const d = le ? new Date(le) : null; return d && !isNaN(d) ? ' le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : ''; };
@@ -720,7 +720,7 @@
     'Mes documents': [
       ['À qui demander ma fiche de négociation ?', 'À l’enseignant professionnel. S’il est absent : au professeur principal.'],
       ['Qui me donne la pré-convention ?', 'L’enseignant référent, en main propre.'],
-      ['Qui signe ma convention ?', 'L’entreprise (avec le tampon), le tuteur, le responsable légal ou l’élève majeur, l’enseignant référent et le chef d’établissement.'],
+      ['Qui signe ma convention ?', 'L’entreprise (avec le cachet), le tuteur, le responsable légal ou l’élève majeur, l’enseignant référent et le chef d’établissement.'],
       ['À quoi sert l’attestation de stage ?', 'Elle prouve les jours réalisés. Sans elle, l’allocation n’est pas versée.'],
       ['Quand l’entreprise remplit-elle l’attestation ?', 'Le dernier jour du stage.']],
     'Absence et horaires': [
@@ -884,7 +884,7 @@
     }
     if (k === 'preconvention') {
       const ids = ['pre_given', 'pre_filled', 'pre_return'], n = ids.filter(envoyeOuLocal).length;
-      return entete(k, n, 3) + rappel('preconvention') + `<div class="qc">${etape('pre_given', 'J’ai reçu ma pré-convention')}${etape('pre_filled', 'L’entreprise l’a remplie, signée et tamponnée')}${etape('pre_return', 'Je l’ai rendue à mon référent')}</div>` + suite('#p/convention', 'Ma convention');
+      return entete(k, n, 3) + rappel('preconvention') + `<div class="qc">${etape('pre_given', 'J’ai reçu ma pré-convention')}${etape('pre_filled', 'L’entreprise l’a remplie, signée, avec le cachet')}${etape('pre_return', 'Je l’ai rendue à mon référent')}</div>` + suite('#p/convention', 'Ma convention');
     }
     if (k === 'convention') {
       const ids = ['conv_given', 'family', 'company', 'conv_return', 'copies'], n = ids.filter(envoyeOuLocal).length;
