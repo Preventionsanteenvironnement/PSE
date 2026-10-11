@@ -92,7 +92,22 @@ const frCourt = s => new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { day
 function nettoyer(p) { const c = JSON.parse(JSON.stringify(p || VIDE())); delete c._local; return c; }
 async function envoyer(per) {
   if (!fs || !SUIVIS[per]) return false;
-  try { const d = nettoyer(D[per]); d.majLe = new Date().toISOString(); await fs.doc('coordination_pfmp_suivi/' + sidDe(per) + '/eleve/carnet').set(d); D[per].majLe = d.majLe; D[per]._local = false; localGarder(); ENLIGNE[per] = 'ok'; return true; }
+  /* 11/10/2026 — Deux appareils : on relit la copie en ligne avant d'écrire. Les journées se réunissent une par une
+     (celle de cet appareil l'emporte pour un même jour) ; une rubrique vide ici garde ce qui a été écrit ailleurs. */
+  try {
+    const ref = fs.doc('coordination_pfmp_suivi/' + sidDe(per) + '/eleve/carnet');
+    const d = await fs.runTransaction(t => t.get(ref).then(sn => {
+      const loin = sn.exists ? sn.data() : null, ici = nettoyer(D[per]);
+      if (loin && String(loin.majLe || '') !== String(D[per].majLe || '')) {
+        ici.jours = Object.assign({}, loin.jours || {}, ici.jours || {});
+        ['org', 'comp', 'accueil', 'bilan'].forEach(k => { if (!ici[k] || !Object.keys(ici[k]).length) ici[k] = loin[k] || ici[k]; });
+        if (!(ici.act || []).length) ici.act = loin.act || [];
+        if (!ici.meme) ici.meme = loin.meme || '';
+        if (!ici.accueilEnvoye) ici.accueilEnvoye = loin.accueilEnvoye || '';
+      }
+      ici.majLe = new Date().toISOString(); t.set(ref, ici); return ici;
+    }));
+    D[per] = Object.assign(VIDE(), d); D[per]._local = false; localGarder(); ENLIGNE[per] = 'ok'; return true; }
   catch (e) { D[per]._local = true; localGarder(); ENLIGNE[per] = 'local'; return false; }
 }
 function localGarder() { if (LECTURE) return; /* un adulte qui lit ne garde rien dans son navigateur */ try { D.annee = ANNEE; localStorage.setItem(CLE, JSON.stringify(D)); } catch (e) {} }

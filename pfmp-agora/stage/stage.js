@@ -87,6 +87,7 @@
     if (c && c.annee && c.annee !== ANNEE) { try { localStorage.setItem(cleLocale(n) + ':' + c.annee, JSON.stringify(c)); } catch (e) {} c = { avatar: c.avatar }; }
     L = Object.assign(vierge(), c || {});
     if (n === 2 && !L.declaration.pfmp) L.declaration.pfmp = 'PFMP 2';
+    try { base6 = JSON.parse(localStorage.getItem(cleLocale(n) + ':base') || 'null'); } catch (e) { base6 = null; }
   }
   /* Changer de PFMP dans « Ma période de stage » : on range la copie en cours et on ouvre celle de l'autre période. */
   function changerPeriode(lib) {
@@ -95,6 +96,7 @@
     const avatar = L.avatar; periodeLocale = n;
     try { localStorage.setItem(cleBase() + ':periode', String(n)); } catch (e) {}
     L = Object.assign(vierge(), lireCopie(n) || { avatar });
+    try { base6 = JSON.parse(localStorage.getItem(cleLocale(n) + ':base') || 'null'); } catch (e) { base6 = null; }
     L.declaration = Object.assign({ pfmp: '', debut: '', fin: '', domaine: '', domaineAutre: '' }, L.declaration, { pfmp: lib });
     if (arretParcours) { arretParcours(); arretParcours = null; }
     return true;
@@ -102,7 +104,7 @@
   let minuteurEnvoi = null, minuteurPistes = null;
   let aEnvoyer = false;
   function sauver(pistes) {
-    L.majLe = new Date().toISOString(); L.annee = ANNEE;
+    L.majLe = new Date().toISOString(); L.annee = ANNEE; L.sale = true;
     try { localStorage.setItem(cleLocale(), JSON.stringify(L)); localStorage.setItem(cleBase() + ':periode', String(periodeLocale)); } catch (e) {}
     aEnvoyer = true; if (fs && suivi()) majSync('envoi');
     clearTimeout(minuteurEnvoi); minuteurEnvoi = setTimeout(envoyerParcours, 1200);
@@ -138,13 +140,43 @@
   function majSync(e) {
     if (e === 'ok' && etatSync === 'envoi' && aEnvoyer === false && enCours) { okJusqua = Date.now() + 2000; setTimeout(() => { const x = $('sync'); if (x && etatSync === 'ok') x.innerHTML = iconeSync(); }, 2050); }
     etatSync = e; if (e === 'ok' && !aEnvoyer) enregLe = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h '); setTimeout(majBtnEnreg, 0); const x = $('sync'); if (x) { x.className = 'sync ' + e; x.title = ICONES_SYNC[e][1]; x.innerHTML = iconeSync(); } }
+  /* 11/10/2026 — Deux appareils sur le même parcours : rien ne s'écrase.
+     « base6 » est la dernière copie connue en ligne. Avant d'écrire, on relit la copie en ligne ; si elle a changé
+     entre-temps, on fusionne : ce que CET appareil a modifié depuis « base6 » est gardé, le reste vient de l'autre appareil.
+     Les démarches se fusionnent une par une (ajoutée ici, modifiée ici ou retirée ici) ; rien n'est perdu. */
+  let base6 = null;
+  const pareil = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  function fusion3(base, loin, ici) {
+    base = base || {}; loin = loin || {}; const o = {};
+    ['declaration', 'prepa', 'fiche', 'depart'].forEach(k => {
+      const b = base[k] || {}, l = ici[k] || {}, m = Object.assign({}, loin[k] || {});
+      new Set(Object.keys(b).concat(Object.keys(l))).forEach(c => { if (!pareil(l[c], b[c])) { if (l[c] === undefined) delete m[c]; else m[c] = l[c]; } });
+      o[k] = m;
+    });
+    o.avatar = pareil(ici.avatar, base.avatar) && loin.avatar !== undefined ? loin.avatar : ici.avatar;
+    const B = new Map((base.recherches || []).map(r => [r.id, r])), I = new Map((ici.recherches || []).map(r => [r.id, r])), out = new Map((loin.recherches || []).map(r => [r.id, r]));
+    I.forEach((r, id) => { if (!pareil(r, B.get(id))) out.set(id, r); });
+    B.forEach((r, id) => { if (!I.has(id)) out.delete(id); });
+    o.recherches = [...out.values()].slice(0, 80);
+    return o;
+  }
+  /* Toujours une copie séparée : sinon modifier le parcours modifierait aussi la « base » et la fusion ne verrait plus rien. */
+  function garderBase(d) { base6 = JSON.parse(JSON.stringify(d)); try { localStorage.setItem(cleLocale() + ':base', JSON.stringify(base6)); } catch (e) {} }
   function envoyerParcours() {
     if (!fs || !suivi()) { majSync('local'); return; }
-    const d = {}; CHAMPS.forEach(k => { d[k] = L[k]; });
-    d.recherches = (L.recherches || []).slice(0, 80);
+    const ref = fs.doc('coordination_pfmp_suivi/' + sid() + '/eleve/parcours'), cle = cleLocale();
+    let fusionne = false;
     majSync('envoi'); clearTimeout(minuteurEnvoi); aEnvoyer = false; enCours = true;
-    fs.doc('coordination_pfmp_suivi/' + sid() + '/eleve/parcours').set(JSON.parse(JSON.stringify(d)))
-      .then(() => { majSync(aEnvoyer ? 'envoi' : 'ok'); enCours = false; }).catch(() => { enCours = false; majSync('erreur'); });
+    fs.runTransaction(t => t.get(ref).then(sn => {
+      const loin = sn.exists ? sn.data() : null;
+      if (loin && (!base6 || loin.majLe !== base6.majLe)) { Object.assign(L, fusion3(base6, loin, L)); fusionne = true; }
+      const d = {}; CHAMPS.forEach(k => { d[k] = L[k]; });
+      d.recherches = (L.recherches || []).slice(0, 80);
+      const propre = JSON.parse(JSON.stringify(d)); t.set(ref, propre); return propre;
+    })).then(d => {
+      if (cle === cleLocale()) { garderBase(d); if (!aEnvoyer) L.sale = false; try { localStorage.setItem(cle, JSON.stringify(L)); } catch (e) {} }
+      majSync(aEnvoyer ? 'envoi' : 'ok'); enCours = false; if (fusionne) rendre();
+    }).catch(() => { enCours = false; majSync('erreur'); });
   }
   /* La fiche en ligne se crée dès la déclaration : rien ne reste sur le seul ordinateur du lycée.
      L'Atelier la complète ensuite (référent, dates du lycée) sans effacer ce que l'élève a saisi. */
@@ -188,9 +220,15 @@
     if (arretParcours) arretParcours();
     arretParcours = fs.doc(chemin).onSnapshot(s => {
       const d = s.exists ? s.data() : null;
-      if (d && String(d.majLe || '') > String(L.majLe || '')) { CHAMPS.forEach(k => { if (d[k] !== undefined) L[k] = d[k]; }); try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {} majSync('ok'); rendre(); }
-      else if (!d || String(d.majLe || '') < String(L.majLe || '')) envoyerParcours();
-      else if (!aEnvoyer && !enCours) majSync('ok');
+      if (!d) { envoyerParcours(); return; }
+      if (enCours) return;
+      /* Rien de neuf en ligne depuis la dernière copie connue. */
+      if (base6 && d.majLe === base6.majLe) { if (!L.sale && !aEnvoyer) majSync('ok'); return; }
+      /* Cet appareil a des changements non envoyés : la fusion se fait à l'envoi, sans rien écraser. */
+      if (L.sale || aEnvoyer || (!base6 && String(L.majLe || '') > String(d.majLe || ''))) { envoyerParcours(); return; }
+      /* Sinon, la copie en ligne (venue d'un autre appareil) est reprise telle quelle. */
+      garderBase(d); CHAMPS.forEach(k => { if (d[k] !== undefined) L[k] = d[k]; });
+      try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {} majSync('ok'); rendre();
     }, () => {});
     arretParcours.chemin = chemin;
   }
