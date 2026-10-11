@@ -78,11 +78,15 @@ const CLE = 'pfmp-carnet-v1:' + CODE;
 const OBS_ACCUEIL = ['Rien à ajouter', 'Je recommande ce lieu de stage', 'Je ne recommande pas ce lieu de stage', 'Je souhaite en parler avec mon enseignant référent'];
 const VIDE = () => ({ jours: {}, act: [], org: {}, comp: {}, accueil: {}, bilan: {}, meme: '', accueilEnvoye: '', majLe: '' });
 let D; try { if (!LECTURE) D = JSON.parse(localStorage.getItem(CLE)); } catch (e) {}
+/* 11/10/2026 — Une copie d'une autre année scolaire est mise de côté, jamais effacée. */
+if (D && D.annee && D.annee !== ANNEE && !LECTURE) { try { localStorage.setItem(CLE + ':' + D.annee, JSON.stringify(D)); } catch (e) {} D = null; }
 if (!D || !D.p1) D = { periode: 'p1', p1: VIDE(), p2: VIDE() };
 if (LECTURE) D.periode = 'p' + LECTURE.slice(-1);
 const SUIVIS = {}, ENLIGNE = { p1: '', p2: '' };
 let fs = null;
-const sidDe = per => PC.suiviId(ANNEE, CODE, +per.slice(1));
+/* En lecture (lien d'un adulte), l'année est celle du lien, pas l'année en cours. */
+const ANNEE_FICHE = LECTURE ? LECTURE.split('_')[0] : ANNEE;
+const sidDe = per => PC.suiviId(ANNEE_FICHE, CODE, +per.slice(1));
 function majPeriodes() { ['p1', 'p2'].forEach(k => { const s = SUIVIS[k]; PERIODES[k] = s && s.debut ? { lib: s.libelle || ('PFMP ' + k.slice(1)), quand: frCourt(s.debut) + ' → ' + frCourt(s.fin || s.debut), debut: s.debut, fin: s.fin || s.debut } : null; }); }
 const frCourt = s => new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 function nettoyer(p) { const c = JSON.parse(JSON.stringify(p || VIDE())); delete c._local; return c; }
@@ -91,7 +95,7 @@ async function envoyer(per) {
   try { const d = nettoyer(D[per]); d.majLe = new Date().toISOString(); await fs.doc('coordination_pfmp_suivi/' + sidDe(per) + '/eleve/carnet').set(d); D[per].majLe = d.majLe; D[per]._local = false; localGarder(); ENLIGNE[per] = 'ok'; return true; }
   catch (e) { D[per]._local = true; localGarder(); ENLIGNE[per] = 'local'; return false; }
 }
-function localGarder() { if (LECTURE) return; /* un adulte qui lit ne garde rien dans son navigateur */ try { localStorage.setItem(CLE, JSON.stringify(D)); } catch (e) {} }
+function localGarder() { if (LECTURE) return; /* un adulte qui lit ne garde rien dans son navigateur */ try { D.annee = ANNEE; localStorage.setItem(CLE, JSON.stringify(D)); } catch (e) {} }
 async function brancher() {
   for (let i = 0; i < 40 && !window.__PFMP_SHIM__ && !(window.firebase && window.firebase.firestore); i++) await new Promise(r => setTimeout(r, 250));
   try { if (window.__PFMP_SHIM__) fs = window.__PFMP_SHIM__; else { const fb = window.firebase; fs = ((fb.apps || []).find(a => a.name === 'pfmp-suivi') || fb.initializeApp(CFG, 'pfmp-suivi')).firestore(); } } catch (e) { fs = null; }

@@ -70,13 +70,40 @@
   const suivis = {}, arrets = [];
   let arretParcours = null, msgs = [], arretMsgs = null, plus = false, formR = null, confirmeRetrait = '';
   const vierge = () => ({ avatar: null, declaration: { pfmp: '', debut: '', fin: '', domaine: '', domaineAutre: '' }, prepa: {}, fiche: {}, depart: {}, recherches: [], majLe: '' });
-  const cleLocale = () => 'pfmp-stage-v1:' + code;
-  function charger() { try { L = Object.assign(vierge(), JSON.parse(localStorage.getItem(cleLocale()) || '{}')); } catch (e) { L = vierge(); } }
+  /* 11/10/2026 — Une copie par PFMP et par année : la PFMP 2 ne reprend jamais les démarches de la PFMP 1.
+     PFMP 1 garde la clé d'origine (aucune copie existante n'est perdue) ; PFMP 2 a la sienne ; un pointeur dit laquelle est ouverte. */
+  let periodeLocale = 1;
+  const cleBase = () => 'pfmp-stage-v1:' + code;
+  const cleLocale = n => cleBase() + ((n || periodeLocale) === 2 ? ':p2' : '');
+  const lireCopie = n => { try { return JSON.parse(localStorage.getItem(cleLocale(n)) || 'null'); } catch (e) { return null; } };
+  function charger() {
+    let n = 0; try { n = +localStorage.getItem(cleBase() + ':periode') || 0; } catch (e) {}
+    const origine = lireCopie(1);
+    /* Une copie d'avant ce changement qui déclarait déjà la PFMP 2 est rangée sous la clé de la PFMP 2 (l'originale reste). */
+    if (!n) { n = origine && origine.declaration && origine.declaration.pfmp === 'PFMP 2' ? 2 : 1; if (n === 2 && !lireCopie(2)) { try { localStorage.setItem(cleLocale(2), JSON.stringify(origine)); } catch (e) {} } }
+    periodeLocale = n;
+    let c = lireCopie(n);
+    /* Une copie d'une autre année scolaire est mise de côté, jamais effacée, et l'année repart d'une page vierge. */
+    if (c && c.annee && c.annee !== ANNEE) { try { localStorage.setItem(cleLocale(n) + ':' + c.annee, JSON.stringify(c)); } catch (e) {} c = { avatar: c.avatar }; }
+    L = Object.assign(vierge(), c || {});
+    if (n === 2 && !L.declaration.pfmp) L.declaration.pfmp = 'PFMP 2';
+  }
+  /* Changer de PFMP dans « Ma période de stage » : on range la copie en cours et on ouvre celle de l'autre période. */
+  function changerPeriode(lib) {
+    const n = lib === 'PFMP 2' ? 2 : 1; if (n === periodeLocale) return false;
+    try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {}
+    const avatar = L.avatar; periodeLocale = n;
+    try { localStorage.setItem(cleBase() + ':periode', String(n)); } catch (e) {}
+    L = Object.assign(vierge(), lireCopie(n) || { avatar });
+    L.declaration = Object.assign({ pfmp: '', debut: '', fin: '', domaine: '', domaineAutre: '' }, L.declaration, { pfmp: lib });
+    if (arretParcours) { arretParcours(); arretParcours = null; }
+    return true;
+  }
   let minuteurEnvoi = null, minuteurPistes = null;
   let aEnvoyer = false;
   function sauver(pistes) {
-    L.majLe = new Date().toISOString();
-    try { localStorage.setItem(cleLocale(), JSON.stringify(L)); } catch (e) {}
+    L.majLe = new Date().toISOString(); L.annee = ANNEE;
+    try { localStorage.setItem(cleLocale(), JSON.stringify(L)); localStorage.setItem(cleBase() + ':periode', String(periodeLocale)); } catch (e) {}
     aEnvoyer = true; if (fs && suivi()) majSync('envoi');
     clearTimeout(minuteurEnvoi); minuteurEnvoi = setTimeout(envoyerParcours, 1200);
     if (pistes) { clearTimeout(minuteurPistes); minuteurPistes = setTimeout(envoyerPistes, 1500); }
@@ -1081,7 +1108,8 @@
     if (d.act === 'nouvelleSemaine') { const S = semaine(); S.items = S.items.filter(y => !y.ok); S.prochain = prochainMercredi(); sauver(); rendre(); return; }
     if (d.act === 'changer') { try { localStorage.removeItem('codeEleve'); } catch (e) {} location.hash = ''; location.reload(); return; }
     if (d.avatar != null) { L.avatar = +d.avatar; sauver(); rendre(); return; }
-    if (d.seg) { L[d.seg] = L[d.seg] || {}; L[d.seg][d.cle] = L[d.seg][d.cle] === d.v ? '' : d.v; if (d.seg === 'declaration' && d.cle === 'pfmp') prerempliDates(); sauver(); rendre(); return; }
+    if (d.seg === 'declaration' && d.cle === 'pfmp') { if (changerPeriode(d.v)) { prerempliDates(); ecouterParcours(); rendre(); } return; }
+    if (d.seg) { L[d.seg] = L[d.seg] || {}; L[d.seg][d.cle] = L[d.seg][d.cle] === d.v ? '' : d.v; sauver(); rendre(); return; }
     if (d.act === 'enregistrer') { lireDates(); if (!L.declaration.pfmp) L.declaration.pfmp = 'PFMP 1'; sauver(); if (connu[numero()] && !suivi()) creerSuivi(numero()); location.hash = '#'; return; }
     if (d.act === 'trouve' && !d.ok) { attente = { trouve: 1, t: 'J’ai trouvé mon stage' }; volet = 'confirme'; rendreVolet(); return; }
     if (d.act === 'trouve') {
