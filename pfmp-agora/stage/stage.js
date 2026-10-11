@@ -789,7 +789,7 @@
       ['Combien de semaines de stage cette année ?', '6 semaines en seconde.'],
       ['Et sur les trois ans ?', '20 semaines : 6 en seconde, 8 en première, 6 en terminale.'],
       ['Qu’est-ce qu’un jour de stage ?', 'Une journée d’au moins 7 heures de présence.'],
-      ['Je ne trouve pas de stage : que faire ?', 'Le dire à l’enseignant référent. Le lycée doit trouver un lieu d’accueil pour chaque élève.'],
+      ['Je ne trouve pas de stage : que faire ?', 'Le signaler à l’enseignant référent bien avant le début du stage. Le lycée doit trouver un lieu d’accueil pour chaque élève.'],
       ['Suis-je noté ?', 'En seconde, non : un bilan est fait avec le tuteur et l’enseignant référent.'],
       ['Les stages comptent-ils pour le bac ?', 'Oui. Les attestations de stage font partie du dossier d’examen.']],
     'Mes documents': [
@@ -799,6 +799,9 @@
       ['À quoi sert l’attestation de stage ?', 'Elle prouve les jours réalisés. Sans elle, l’allocation n’est pas versée.'],
       ['Quand l’entreprise remplit-elle l’attestation ?', 'Le dernier jour du stage.']],
     'Absence et horaires': [
+      /* Réponses propres au lycée, données par le professeur principal le 11/10/2026. */
+      ['Qui prévenir si je suis absent ou en retard ?', 'D’abord le tuteur, sur le lieu de stage. Puis l’enseignant référent, en appelant la vie scolaire du lycée.'],
+      ['Si je suis absent, faut-il un justificatif ?', 'Oui. Il se remet à l’enseignant référent. Les parents peuvent aussi le lui envoyer par mail.'],
       ['Si je suis absent, suis-je payé ?', 'Non. Un jour d’absence n’est pas payé, quel que soit le motif.'],
       ['Une demi-journée compte-t-elle ?', 'Non. Seuls les jours entiers comptent.'],
       ['Puis-je rattraper les jours manqués ?', 'Oui : en prolongeant le stage, ou avec une nouvelle convention.'],
@@ -813,6 +816,7 @@
       ['Sur quel compte ?', 'Sur le compte de l’élève si le responsable légal l’autorise par écrit, sinon sur le compte du responsable légal.'],
       ['Mes trajets et mes repas sont-ils remboursés ?', 'L’allocation ne les rembourse pas.']],
     'Sécurité': [
+      ['En cas d’accident, qui prévenir ?', 'Le tuteur, sur le lieu de stage.'],
       ['Que se passe-t-il en cas d’accident ?', 'L’accident est couvert comme un accident du travail. L’entreprise le déclare dans les 48 heures.'],
       ['Si je casse quelque chose ?', 'Le lycée a une assurance qui couvre le stagiaire.'],
       ['Peut-on me donner une tâche dangereuse ?', 'Non. L’entreprise fournit les protections et explique les risques du poste.'],
