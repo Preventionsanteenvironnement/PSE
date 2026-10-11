@@ -1902,6 +1902,54 @@
   window.addEventListener('beforeprint', preparerImpression);
   window.addEventListener('pagehide', arreter);
 
+  /* ───────────── écran d'entrée (11/10/2026) : humeur du jour, puis choix du niveau ─────────────
+     Affiché une fois par visite, à l'ouverture du cours ; l'humeur n'est ni enregistrée ni envoyée. Le niveau reste modifiable dans la barre. */
+  var HUMEURS = [['😀', 'Bien', '#e6f4ea'], ['🤩', 'Motivé', '#fff4cc'], ['😌', 'Calme', '#e3f2fd'], ['😴', 'Fatigué', '#ede7f6'],
+    ['😰', 'Stressé', '#fff0e0'], ['😢', 'Triste', '#e1f0fa'], ['😠', 'En colère', '#fde4e4'], ['🤔', 'Perdu', '#f3e8fd']];
+  var AIDES = { standard: [1, ['J’écris mes réponses seul.', 'Documents complets.']],
+    adapte: [2, ['Je complète des phrases déjà commencées.', 'Une partie des tableaux est remplie.']],
+    essentiel: [3, ['Je choisis parmi des mots proposés.', 'Des cases à cocher.', 'Définitions plus courtes.']] };
+  function ouvrirAccueil() {
+    if (C.retourLibelle || document.getElementById('accueil')) return;
+    var vu = false; try { vu = sessionStorage.getItem(CLE + '-accueil') === '1'; } catch (e) { /* stockage refusé */ }
+    if (vu) return;
+    var choix = niveau, d = document.createElement('div');
+    d.id = 'accueil'; d.className = 'accueil no-print'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'acc-t');
+    function fermer() { try { sessionStorage.setItem(CLE + '-accueil', '1'); } catch (e) { /* stockage refusé */ } d.remove(); document.body.classList.remove('accueil-ouvert'); var c = document.getElementById('contenu'); if (c) c.focus(); }
+    function etapeNiveau() {
+      if (C.sansNiveaux) { fermer(); return; }
+      d.innerHTML = '<div class="acc-carte"><h2 id="acc-t">Choisis ton niveau</h2><p class="acc-sous">Le même cours, avec plus ou moins d’aide. Le niveau se change à tout moment, en haut de la page.</p>' +
+        NIVEAUX.map(function (n) { var a = AIDES[n[0]] || [1, []]; return '<button type="button" class="acc-niv" data-acc-niv="' + n[0] + '" aria-pressed="' + (n[0] === choix) + '">' +
+          '<span class="acc-nom">' + n[1] + '</span><span class="acc-barres" aria-label="Aide : ' + a[0] + ' sur 3">' + [1, 2, 3].map(function (k) { return '<i class="' + (k <= a[0] ? 'plein' : '') + '"></i>'; }).join('') + '</span>' +
+          '<span class="acc-lignes">' + a[1].map(esc).join('<br>') + '</span></button>'; }).join('') +
+        '<p class="acc-legende"><span class="acc-barres"><i class="plein"></i></span> = aide apportée</p>' +
+        '<div class="acc-actions"><button type="button" data-acc="retour">← Retour</button><button type="button" class="acc-ok" data-acc="commencer">Commencer le cours</button></div></div>';
+      d.querySelector('[data-acc-niv][aria-pressed="true"]').focus();
+    }
+    function etapeHumeur() {
+      d.innerHTML = '<div class="acc-carte"><p class="acc-sur">' + esc((C.entete && C.entete.titre) || '') + '</p><h2 id="acc-t">Comment te sens-tu aujourd’hui ?</h2>' +
+        '<div class="acc-humeurs">' + HUMEURS.map(function (h, i) { return '<button type="button" class="acc-hum" data-acc-hum="' + i + '" aria-pressed="false" style="background:' + h[2] + '"><span class="acc-emo" aria-hidden="true">' + h[0] + '</span>' + h[1] + '</button>'; }).join('') + '</div>' +
+        '<div class="acc-actions"><button type="button" data-acc="passer">Passer</button><button type="button" class="acc-ok" data-acc="continuer">Continuer</button></div></div>';
+      d.querySelector('.acc-hum').focus();
+    }
+    d.addEventListener('click', function (ev) {
+      var t = ev.target.closest('button'); if (!t) return;
+      if (t.hasAttribute('data-acc-hum')) { d.querySelectorAll('.acc-hum').forEach(function (b) { b.setAttribute('aria-pressed', b === t ? 'true' : 'false'); }); return; }
+      if (t.hasAttribute('data-acc-niv')) { choix = t.getAttribute('data-acc-niv'); d.querySelectorAll('.acc-niv').forEach(function (b) { b.setAttribute('aria-pressed', b === t ? 'true' : 'false'); }); return; }
+      var a = t.getAttribute('data-acc');
+      if (a === 'passer' || a === 'continuer') etapeNiveau();
+      else if (a === 'retour') etapeHumeur();
+      else if (a === 'commencer') {
+        if (choix !== niveau) { arreter(); clearTimeout(minuterie); ecrireMem(CLE + '-' + niveau, rep); niveau = choix; ecrireMem(CLE + '-niveau', niveau);
+          document.querySelectorAll('[data-niveau]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-niveau') === niveau ? 'true' : 'false'); });
+          chargerRep(); rendre(); }
+        fermer();
+      }
+    });
+    d.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { ev.stopPropagation(); fermer(); } });
+    document.body.appendChild(d); document.body.classList.add('accueil-ouvert'); etapeHumeur();
+  }
+
   /* ───────────── démarrage ───────────── */
   if (!window.CSS || !CSS.escape) { window.CSS = window.CSS || {}; CSS.escape = function (s) { return String(s).replace(/[^a-zA-Z0-9_\-]/g, '\\$&'); }; }
   construireBarre();
@@ -1909,4 +1957,5 @@
   if (synth) { chargerVoix(); if ('onvoiceschanged' in synth) synth.onvoiceschanged = chargerVoix; }
   chargerRep();
   rendre();
+  ouvrirAccueil();
 })();
