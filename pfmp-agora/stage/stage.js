@@ -720,6 +720,35 @@
     const bouton = !suivi() ? `<button class="s6-go" data-locale="${l.k}">C’est fait</button>` : l.action ? `<button class="s6-go" data-agir="${l.k}" data-action="${l.action}" data-ok="1">C’est fait</button>` : '';
     return `<div class="s6-l">${cons}${bouton}</div>`;
   }
+  /* 12/10/2026 — « Nouveau » : ce que le référent ou le professeur principal a fait depuis la dernière fois que l'élève a cliqué « J'ai vu ».
+     Aucun service, aucune notification du téléphone : la page compare, à l'ouverture, les dates des gestes avec une date gardée sur l'appareil. */
+  const cleVu = () => cleLocale() + ':vu';
+  const vuLe = () => { try { return localStorage.getItem(cleVu()) || ''; } catch (e) { return ''; } };
+  function nouveautes() {
+    const s = suivi(); if (!s) return [];
+    const vu = vuLe(), out = [];
+    Object.keys(s.etapes || {}).forEach(id => {
+      const en = s.etapes[id], et = P.PAR_ID[id];
+      if (!et || !en || !en.le || !['referent', 'pp'].includes(en.par) || !en.e || String(en.le) <= vu) return;
+      const quoi = et.te || et.t;
+      const t = id === 'sent' || id === 'referent' ? refTexte()
+        : en.e === 'corriger' ? 'À corriger : ' + quoi + (en.motif ? ' — ' + en.motif : '')
+        : et.voit ? et.voit
+        : en.e === 'remis' ? 'Document à récupérer : ' + quoi
+        : quoi + ' — validé';
+      out.push({ id, ph: et.ph, le: en.le, t, rouge: en.e === 'corriger' });
+    });
+    const v = s.visite || {};
+    if (v.le && s.majLe && String(s.majLe) > vu && s.majPar && s.majPar !== 'eleve' && !out.some(x => x.id === 'visit')) out.push({ id: 'visit', ph: 6, le: s.majLe, t: 'Visite de mon référent · ' + frLong(v.le) });
+    const vus = {}; return out.filter(x => !vus[x.t] && (vus[x.t] = 1)).sort((a, b) => String(b.le).localeCompare(String(a.le)));
+  }
+  function bandeauNouveau() {
+    const n = nouveautes(); if (!n.length) return '';
+    return `<div class="s6-neuf" role="status"><div class="t"><span class="n">${n.length}</span> ${n.length > 1 ? 'nouveautés' : 'nouveauté'}</div>`
+      + n.slice(0, 4).map(x => `<div class="l${x.rouge ? ' rouge' : ''}"><i class="ti ti-${x.rouge ? 'alert-triangle' : 'circle-check'}"></i><span>${esc(x.t)}</span></div>`).join('')
+      + (n.length > 4 ? `<div class="l"><span>… et ${n.length - 4} de plus, dans les étapes ci-dessous.</span></div>` : '')
+      + `<button class="s6-go" data-v6="vu">J’ai vu</button></div>`;
+  }
   let ouvert6 = null, avant6 = null;
   function fil6() {
     const s = suivi(), st = TITRES6.map((_, ph) => statut6(ph));
@@ -727,10 +756,12 @@
     if (!ouvert6) { ouvert6 = { 0: true }; ouvert6[suivante()] = true; }
     else if (avant6) st.forEach((x, ph) => { if (ph > 0 && x === 2 && avant6[ph] !== 2) { ouvert6[ph] = false; ouvert6[suivante()] = true; } });
     avant6 = st;
-    let h = '';
+    const neufs = nouveautes(), phNeuf = {}; neufs.forEach(x => { phNeuf[x.ph] = 1; });
+    let h = bandeauNouveau();
     TITRES6.forEach((titre, ph) => {
       const ls = ph ? lignes6(ph) : [], cor = ls.some(l => l.etat === 'corriger' || l.etat === 'perdu');
-      const p = cor ? '<span class="pill err">À corriger</span>' : st[ph] === 2 ? `<span class="pill ok">${OKI}Terminée</span>` : st[ph] === 1 ? '<span class="pill att">En cours</span>' : '';
+      const pn = phNeuf[ph] ? '<span class="s6-pt" title="Nouveau"></span>' : '';
+      const p = pn + (cor ? '<span class="pill err">À corriger</span>' : st[ph] === 2 ? `<span class="pill ok">${OKI}Terminée</span>` : st[ph] === 1 ? '<span class="pill att">En cours</span>' : '');
       if (!ouvert6[ph]) { h += `<button class="s6-plie ${st[ph] === 2 ? 'fin' : ''}" data-v6="etape" data-id="${ph}"><span class="num">Étape ${ph + 1}</span><span class="g">${esc(titre)}</span>${p}<i class="ti ti-chevron-down"></i></button>`; return; }
       h += `<div class="s6-tete"><button data-v6="etape" data-id="${ph}"><span><span class="num">Étape ${ph + 1}</span> ${p}</span><h2>${esc(titre)} <i class="ti ti-chevron-up"></i></h2></button>${QUOI6[ph] ? `<button class="s6-quoi" data-v6="quoi" data-id="${ph}">C’est quoi ?</button>` : ''}</div>`;
       if (ph === 0) {
@@ -770,6 +801,7 @@
   function fermer6() { fen6 = null; volet = ''; rendreVolet(); }
   function trouver6(id) { for (let ph = 1; ph < 9; ph++) { const l = lignes6(ph).find(y => y.k === id); if (l) return l; } return null; }
   function clic6(d) {
+    if (d.v6 === 'vu') { try { localStorage.setItem(cleVu(), new Date().toISOString()); } catch (e) {} rendre(); return; }
     if (d.v6 === 'etape') { ouvert6[d.id] = !ouvert6[d.id]; rendre(); return; }
     if (d.v6 === 'quoi') return ouvrir6({ t: 'quoi', id: +d.id });
     if (d.v6 === 'choix') return ouvrir6({ t: 'choix', id: d.id });
