@@ -58,7 +58,7 @@
     return h;
   }
   function oral(t) {
-    return String(t || '').replace(/\{\{.+?\}\}/g, ' blanc à compléter, ').replace(/…+/g, ' blanc à compléter, ')
+    return String(t || '').replace(/\bDOC\.\s*(\d)/g, 'Document $1').replace(/dB\(A\)/g, 'décibels A').replace(/\{\{.+?\}\}/g, ' blanc à compléter, ').replace(/…+/g, ' blanc à compléter, ')
       .replace(/\*\*/g, '').replace(/\*/g, '').replace(/☐/g, 'Proposition : ').replace(/•/g, '')
       .replace(/→/g, ' : ').replace(/\s+/g, ' ').trim();
   }
@@ -197,7 +197,8 @@
     document.querySelectorAll('button.audio').forEach(function (b) {
       var actif = b === L.btn && L.etat !== 'arret';
       b.dataset.etat = actif ? L.etat : '';
-      b.textContent = !actif ? b.dataset.l : (L.etat === 'lecture' ? '⏸ Pause' : '▶ Reprendre');
+      var mini = b.classList.contains('mini');
+      b.textContent = !actif ? b.dataset.l : (L.etat === 'lecture' ? (mini ? '⏸' : '⏸ Pause') : (mini ? '▶' : '▶ Reprendre'));
       b.setAttribute('aria-pressed', actif ? 'true' : 'false');
     });
   }
@@ -209,6 +210,10 @@
   function btnAudio(cle, libelle) {
     var l = libelle || '🔊 Écouter';
     return '<button type="button" class="audio" data-a="' + esc(cle) + '" data-l="' + esc(l) + '" aria-pressed="false">' + esc(l) + '</button>';
+  }
+  /* petit 🔊 d'une seule ligne (tableau, relier, classer) */
+  function btnLigne(cle, nom) {
+    return '<button type="button" class="audio mini no-print" data-a="' + esc(cle) + '" data-l="🔊" aria-pressed="false" aria-label="' + esc(nom) + '" title="' + esc(nom) + '" style="margin:0 .3em;min-width:2.3rem;min-height:2.3rem;padding:0 .3em;border:2px solid var(--violet);color:var(--violet);background:var(--fond);border-radius:.4rem;vertical-align:middle;line-height:1">🔊</button>';
   }
 
   /* ───────────── annonces ───────────── */
@@ -350,19 +355,56 @@
     return { html: html, comp: c };
   }
 
+  /* texte lu d'une case : son contenu, ou ce que l'élève doit y faire */
+  function oralCase(c, boites) {
+    if (!c) return '';
+    if (c.type !== 'eleve') return String(c.content || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+    if (Array.isArray(c.options) && c.options.length) return 'à choisir parmi : ' + c.options.join(', ');
+    if (boites || c.reponse === '✕') return 'case à cocher';
+    return 'case à compléter';
+  }
+  /* un texte par ligne du tableau : « Colonnes : … », puis « Ligne … : colonne : contenu ; … » */
+  function lignesOrales(cells, boites) {
+    var tete = cells[0] || [];
+    var teteDonnee = tete.length > 0 && tete.every(function (c) { return c.type !== 'eleve'; });
+    return cells.map(function (row, ri) {
+      if (ri === 0 && teteDonnee) return 'Colonnes : ' + row.map(function (c) { return oralCase(c); }).filter(Boolean).join(' ; ') + '.';
+      var c0 = row[0], lib = c0 && c0.type !== 'eleve' ? oralCase(c0) : '';
+      var parts = row.map(function (c, ci) {
+        if (ci === 0 && lib) return '';
+        var v = oralCase(c, boites), h = teteDonnee ? oralCase(tete[ci]) : '';
+        return v && h ? h + ' : ' + v : v;
+      }).filter(Boolean);
+      return 'Ligne ' + (lib || (teteDonnee ? ri : ri + 1)) + (parts.length ? ' : ' + parts.join(' ; ') : '') + '.';
+    });
+  }
+
+  /* le petit 🔊 se place au bout du texte de la case, sur la même ligne */
+  function avecBouton(h, b) {
+    if (!b) return h;
+    var j = h.lastIndexOf('</p>');
+    return j >= 0 && j === h.length - 4 ? h.slice(0, j) + ' ' + b + '</p>' : h + b;
+  }
   function compTableau(qid, d) {
     var cells = ch(d, 'cells') || [];
     var boites = d.table_student_style === 'boxes';
     var auto = true, lignes = '';
     var cases = [];
+    var orales = lignesOrales(cells, boites);
     cells.forEach(function (row, ri) {
       var tds = '';
+      var cleL = qid + '-L' + ri, trId = qid + '-tr' + ri;
+      AUD[cleL] = (function (t) { return function () { return [{ t: t, el: trId }]; }; })(orales[ri]);
+      var bl = btnLigne(cleL, ri === 0 ? 'Écouter les titres des colonnes' : 'Écouter cette ligne');
       row.forEach(function (c, ci) {
         var entete = (ri === 0 ? (cells[0][ci] || {}).content : '');
+        var b0 = ci === 0 ? bl : '';
         if (c.type !== 'eleve') {
-          tds += ri === 0 ? '<th scope="col">' + md(c.content) + '</th>' : (ci === 0 ? '<th scope="row">' + md(c.content) + '</th>' : '<td class="donne">' + md(c.content) + '</td>');
+          tds += ri === 0 ? '<th scope="col">' + avecBouton(md(c.content), b0) + '</th>' : (ci === 0 ? '<th scope="row">' + avecBouton(md(c.content), b0) + '</th>' : '<td class="donne">' + md(c.content) + '</td>');
           return;
         }
+        var avant = tds.length;
+        function poser() { if (b0) { var j = tds.indexOf('>', avant) + 1; tds = tds.slice(0, j) + b0 + tds.slice(j); } }
         var sol = c.reponse || '';
         var k = qid + '-t' + ri + '-' + ci;
         var nomCase = String((row[0] || {}).content || '').replace(/\*/g, '') + ' — ' + String((cells[0][ci] || {}).content || '').replace(/\*/g, '');
@@ -370,6 +412,7 @@
           tds += '<td class="saisie"><select class="choix" id="' + k + '" data-k="' + k + '" aria-label="' + esc(nomCase) + '"><option value="">— Choisir —</option>' +
             c.options.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') + '</select></td>';
           cases.push({ k: k, type: 'choix', sol: sol });
+          poser();
           return;
         }
         if (boites || sol === '✕') {
@@ -383,11 +426,12 @@
             : '<textarea id="' + k + '" data-k="' + k + '" rows="2" aria-label="' + esc(nomCase) + '"></textarea>') + '</td>';
           cases.push({ k: k, type: estCourt ? 'court' : 'long', sol: sol });
         }
+        poser();
         void entete;
       });
-      lignes += '<tr>' + tds + '</tr>';
+      lignes += '<tr id="' + trId + '">' + tds + '</tr>';
     });
-    var html = '<div class="tabw" tabindex="0" role="region" aria-label="Tableau à compléter"><table class="t">' + lignes + '</table></div>';
+    var html = '<div class="tabw" tabindex="0" role="region" aria-label="' + (cases.length ? 'Tableau à compléter' : 'Tableau') + '"><table class="t">' + lignes + '</table></div>';
     var comp = {
       auto: auto && cases.length > 0,
       interactif: cases.length > 0,
@@ -419,21 +463,23 @@
         });
       }
     };
-    return { html: html, comp: comp, nbCases: cases.length };
+    return { html: html, comp: comp, nbCases: cases.length, oral: 'Tableau. ' + orales.join(' ') };
   }
 
   function compClasser(qid, d) {
     var cats = ch(d, 'categories') || [], items = ch(d, 'items') || [], cl = ch(d, 'classement') || [];
     var html = items.map(function (it, i) {
       var k = qid + '-c' + i;
+      AUD[k + '-L'] = (function (t, w) { return function () { return [{ t: t, el: w }]; }; })(libItem(it) + '. Colonnes : ' + cats.join(' ; ') + '.', k + '-w');
       return '<div class="item" id="' + k + '-w">' +
         (it && typeof it === 'object' && it.img ? '<img class="item-img" src="' + esc(it.img) + '" alt="' + esc(it.description || it.texte || '') + '" loading="lazy">' : '') +
-        '<label class="enonce" for="' + k + '">' + enLigne(libItem(it)) + '</label>' +
+        '<label class="enonce" for="' + k + '">' + enLigne(libItem(it)) + '</label>' + btnLigne(k + '-L', 'Écouter cet élément') +
         '<select class="choix" id="' + k + '" data-k="' + k + '"><option value="">— Choisir une colonne —</option>' +
         cats.map(function (c, j) { return '<option value="' + j + '">' + esc(c) + '</option>'; }).join('') + '</select></div>';
     }).join('');
     return {
       html: html,
+      oral: 'Colonnes : ' + cats.join(' ; ') + '. Éléments à classer : ' + items.map(libItem).join(' ; ') + '.',
       corrige: '<ul>' + items.map(function (it, i) { return '<li>' + enLigne(libItem(it)) + ' → <strong>' + esc(cats[cl[i]]) + '</strong></li>'; }).join('') + '</ul>',
       corrigeOral: items.map(function (it, i) { return libItem(it) + ' : ' + cats[cl[i]]; }).join('. '),
       comp: {
@@ -496,12 +542,14 @@
     var tri = dr.map(function (x, i) { return { t: x, i: i }; }).sort(function (a, b) { return a.t.localeCompare(b.t, 'fr'); });
     var html = g.map(function (it, i) {
       var k = qid + '-r' + i;
-      return '<div class="item" id="' + k + '-w"><label class="enonce" for="' + k + '">' + enLigne(it) + '</label>' +
+      AUD[k + '-L'] = (function (t, w) { return function () { return [{ t: t, el: w }]; }; })(it + '. Propositions : ' + tri.map(function (o) { return o.t; }).join(' ; ') + '.', k + '-w');
+      return '<div class="item" id="' + k + '-w"><label class="enonce" for="' + k + '">' + enLigne(it) + '</label>' + btnLigne(k + '-L', 'Écouter cet élément') +
         '<select class="choix" id="' + k + '" data-k="' + k + '"><option value="">— Choisir —</option>' +
         tri.map(function (o) { return '<option value="' + o.i + '">' + esc(o.t) + '</option>'; }).join('') + '</select></div>';
     }).join('');
     return {
       html: html,
+      oral: 'Éléments à relier : ' + g.join(' ; ') + '. Propositions : ' + tri.map(function (o) { return o.t; }).join(' ; ') + '.',
       corrige: '<ul>' + g.map(function (it, i) { return '<li>' + enLigne(it) + ' → <strong>' + esc(dr[bon(i)]) + '</strong></li>'; }).join('') + '</ul>',
       corrigeOral: g.map(function (it, i) { return it + ' : ' + dr[bon(i)]; }).join('. '),
       comp: {
@@ -647,7 +695,7 @@
     var el = eleve(b);
     var texte = ch(d, 'texte', '') || '';
     var lignes = parseInt(ch(d, 'lignes', 0), 10) || 0;
-    var comps = [], saisie = '', texteHtml, absorbe = null;
+    var comps = [], saisie = '', texteHtml, absorbe = null, oralAbs = '';
     var corrigeHtml = listeReponse(ch(d, 'reponse_attendue', ''));
     var corrigeOral = ch(d, 'reponse_attendue', '');
 
@@ -692,6 +740,7 @@
       absorbe = suivant;
       var r = rendreInteraction(qid, suivant);
       saisie += r.html; comps.push(r.comp);
+      oralAbs = oralInteraction(suivant, r);
       if (r.corrige && !ch(d, 'reponse_attendue', '')) { corrigeHtml = r.corrige; corrigeOral = r.corrigeOral; }
       if (!el.indice && !el.explication) el = eleve(suivant);
     }
@@ -700,19 +749,29 @@
       comps.push({ auto: false, verifier: function () { return []; }, reveler: function () {} });
     }
     return {
-      html: carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: texteHtml, oral: texte + (opts.length ? '' : ''),
+      html: carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: texteHtml, oral: texte + (oralAbs ? '. ' + oralAbs : ''),
         saisie: saisie, comps: comps, el: el, indiceSecours: ch(d, 'indice', ''), corrigeHtml: corrigeHtml, corrigeOral: corrigeOral }),
       absorbe: absorbe
     };
   }
 
+  /* ce que le 🔊 de la question lit en plus de la consigne : le contenu de l'activité */
+  function oralInteraction(b, r) {
+    var d = b.data;
+    if (r && r.oral) return r.oral;
+    if (b.type === 'qcm') return (ch(d, 'items', []) || []).map(function (it) { return it.question + ' Propositions : ' + it.options.join(' ; '); }).join('. ');
+    if (b.type === 'texte_trous') return ch(d, 'texte', '');
+    if (b.type === 'vrai_faux') return 'Vrai ou faux. ' + (ch(d, 'items', []) || []).map(function (it) { return it.texte; }).join(' ');
+    return '';
+  }
+
   function rendreInteraction(qid, b) {
     var d = b.data, r;
-    if (b.type === 'tableau') { r = compTableau(qid, d); return { html: r.html, comp: r.comp }; }
+    if (b.type === 'tableau') { r = compTableau(qid, d); return { html: r.html, comp: r.comp, oral: r.oral }; }
     if (b.type === 'vrai_faux') { r = compVraiFaux(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
-    if (b.type === 'classer') { r = compClasser(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
+    if (b.type === 'classer') { r = compClasser(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral, oral: r.oral }; }
     if (b.type === 'qcm') { r = compQcmItems(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
-    if (b.type === 'relier') { r = compRelier(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral }; }
+    if (b.type === 'relier') { r = compRelier(qid, d); return { html: r.html, comp: r.comp, corrige: r.corrige, corrigeOral: r.corrigeOral, oral: r.oral }; }
     if (b.type === 'texte_trous') {
       var mots = [];
       var t = String(ch(d, 'texte', '')).replace(/\{\{(.+?)\}\}/g, function (m, w) { mots.push(w); return '§TROU§'; });
@@ -744,6 +803,7 @@
     if (b.type === 'qcm') oralTxt += '. ' + (ch(d, 'items', []) || []).map(function (it) { return it.question + ' Propositions : ' + it.options.join(' ; '); }).join('. ');
     if (b.type === 'classer') oralTxt += '. Colonnes : ' + (ch(d, 'categories', []) || []).join(' ; ') + '. Éléments : ' + (ch(d, 'items', []) || []).map(libItem).join(' ; ');
     if (b.type === 'texte_trous') oralTxt += '. ' + ch(d, 'texte', '');
+    if (b.type === 'relier' || b.type === 'tableau') oralTxt += '. ' + (r.oral || '');
     if (b.type === 'vrai_faux') oralTxt = 'Vrai ou faux. ' + (ch(d, 'items', []) || []).map(function (it) { return it.texte; }).join(' ');
     return carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: md(consigne), oral: oralTxt,
       saisie: r.html, comps: [r.comp], el: eleve(b), corrigeHtml: r.corrige, corrigeOral: r.corrigeOral });
@@ -1395,12 +1455,14 @@
               solsT.push({ l: lib, s: c.reponse === '✕' ? 'case cochée' : (c.reponse || '') });
             });
           });
-          h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + carteQuestion({ qid: 'q-' + b.id, num: '', texteHtml: md(enonceT), oral: enonceT,
+          h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + carteQuestion({ qid: 'q-' + b.id, num: '', texteHtml: md(enonceT), oral: enonceT + ' ' + tb.oral,
             saisie: tb.html, comps: [tb.comp], el: eleve(b),
             corrigeHtml: '<ul>' + solsT.map(function (x) { return '<li>' + enLigne(x.l) + ' : <strong>' + esc(x.s) + '</strong></li>'; }).join('') + '</ul>',
             corrigeOral: solsT.map(function (x) { return x.l + ' : ' + x.s; }).join('. ') }) + '</div>';
         } else {
-          h += '<div class="carte" id="b-' + esc(b.id) + '">' + (d.titre ? '<h3 class="etiq">' + esc(d.titre) + '</h3>' : '') + '<div class="corps">' + tb.html + '</div></div>';
+          AUD['b:' + b.id] = (function (tid, tt, ot) { return function () { return [{ t: (tt ? tt + '. ' : '') + ot, el: tid }]; }; })('b-' + b.id, d.titre || '', tb.oral);
+          h += '<div class="carte" id="b-' + esc(b.id) + '" data-lecture="b:' + esc(b.id) + '">' + (d.titre ? '<h3 class="etiq">' + esc(d.titre) + '</h3>' : '') + '<div class="corps">' + tb.html +
+            '<div class="actions">' + btnAudio('b:' + b.id, '🔊 Écouter le tableau') + '</div></div></div>';
         }
       }
       else if (t === 'chasse' || t === 'ordre' || t === 'glisser' || t === 'memory') {
