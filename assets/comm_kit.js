@@ -62,8 +62,8 @@
       scene.innerHTML=''; scene.appendChild(card);
 
       if(s.type==='notion'){
-        card.appendChild(sayBtn(s.teach+' '+s.q));
-        card.innerHTML+='<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="comm-opts"></div><div class="comm-fb"></div>';
+        card.appendChild(sayBtn(s.teach+' '+s.q+' Propositions : '+s.options.map(function(o){return o.l;}).join(' ; ')));
+        card.insertAdjacentHTML('beforeend','<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="comm-opts"></div><div class="comm-fb"></div>');
         var opts=card.querySelector('.comm-opts'), fb=card.querySelector('.comm-fb'), done=false;
         s.options.forEach(function(o){
           var b=document.createElement('button'); b.className='comm-opt'; b.type='button'; b.textContent=o.l;
@@ -79,12 +79,13 @@
 
       if(s.type==='sort'){
         var j=0;
-        card.appendChild(sayBtn(s.teach));
-        card.innerHTML+='<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="sortarea"></div>';
+        card.appendChild(sayBtn(s.teach+' '+s.q));
+        card.insertAdjacentHTML('beforeend','<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="sortarea"></div>');
         var area=card.querySelector('.sortarea');
         (function drawItem(){
           var it=s.items[j];
           area.innerHTML='<p class="comm-txt">'+it.l+'</p><div class="comm-two"><button type="button" class="comm-opt center" data-v="1">'+s.a+'</button><button type="button" class="comm-opt center" data-v="0">'+s.b+'</button></div><div class="comm-fb"></div>';
+          area.insertBefore(sayBtn(it.l+' Propositions : '+s.a+' ; '+s.b), area.firstChild);
           var fb=area.querySelector('.comm-fb'), answered=false;
           area.querySelectorAll('.comm-opt').forEach(function(b){
             b.onclick=function(){
@@ -104,12 +105,13 @@
 
       if(s.type==='cases'){
         var jc=0;
-        card.appendChild(sayBtn(s.teach));
-        card.innerHTML+='<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="casearea"></div>';
+        card.appendChild(sayBtn(s.teach+' '+s.q));
+        card.insertAdjacentHTML('beforeend','<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="casearea"></div>');
         var carea=card.querySelector('.casearea');
         (function drawCase(){
           var it=s.items[jc];
           carea.innerHTML='<p class="comm-txt">'+it.text+'</p><div class="comm-opts"></div><div class="comm-fb"></div>';
+          carea.insertBefore(sayBtn(it.text+' Propositions : '+it.options.map(function(o){return o.l;}).join(' ; ')), carea.firstChild);
           var opts=carea.querySelector('.comm-opts'), fb=carea.querySelector('.comm-fb'), done=false;
           it.options.forEach(function(o){
             var b=document.createElement('button'); b.className='comm-opt'; b.type='button'; b.textContent=o.l;
@@ -125,8 +127,8 @@
       }
 
       if(s.type==='order'){
-        card.appendChild(sayBtn(s.goal+'. '+s.intro));
-        card.innerHTML+='<div class="comm-goal">'+s.goal+'</div><p class="comm-txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="comm-opts" id="ord"></div><div class="comm-fb"></div>';
+        card.appendChild(sayBtn(s.goal+'. '+s.intro+' Étapes : '+s.steps.map(function(st){return st.l;}).join(' ; ')));
+        card.insertAdjacentHTML('beforeend','<div class="comm-goal">'+s.goal+'</div><p class="comm-txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="comm-opts" id="ord"></div><div class="comm-fb"></div>');
         var ord=card.querySelector('#ord'), ofb=card.querySelector('.comm-fb'), expected=1;
         s.steps.forEach(function(st){
           var b=document.createElement('button'); b.className='comm-opt'; b.type='button'; b.textContent=st.l;
@@ -142,8 +144,8 @@
       }
 
       if(s.type==='pick'){
-        card.appendChild(sayBtn(s.teach+' '+s.q));
-        card.innerHTML+='<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="comm-chips"></div><div class="comm-hint"></div><div class="comm-fb"></div>';
+        card.appendChild(sayBtn(s.teach+' '+s.q+' Propositions : '+s.options.join(' ; ')));
+        card.insertAdjacentHTML('beforeend','<div class="comm-teach">'+s.teach+'</div><div class="comm-q">'+s.q+'</div><div class="comm-chips"></div><div class="comm-hint"></div><div class="comm-fb"></div>');
         var chips=card.querySelector('.comm-chips'), hint=card.querySelector('.comm-hint'), pfb=card.querySelector('.comm-fb'), sel=0;
         var cont=continueBtn('Valider →'); cont.disabled=true;
         function refresh(){ hint.textContent=sel+' choisi(s) — il en faut au moins '+s.min+'.'; cont.disabled=(sel<s.min); }
@@ -163,14 +165,14 @@
         var h='<div class="comm-q">'+s.title+'</div><p class="comm-txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><ul class="comm-steps3">';
         s.steps.forEach(function(x){ h+='<li>'+x+'</li>'; });
         h+='</ul>';
-        card.innerHTML+=h;
+        card.insertAdjacentHTML('beforeend',h);
         var mb=document.createElement('button'); mb.className='comm-btn'; mb.type='button'; mb.textContent=s.cta||'Continuer →'; mb.onclick=function(){ go(idx+1); }; card.appendChild(mb);
         return;
       }
 
       if(s.type==='breath'){
         card.appendChild(sayBtn(s.audio));
-        card.innerHTML+='<div class="comm-q">'+s.title+'</div><p class="comm-txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="comm-breathwrap"><div class="comm-breathlabel">Prêt…</div><div class="comm-breath"></div></div><div class="comm-fb"></div>';
+        card.insertAdjacentHTML('beforeend','<div class="comm-q">'+s.title+'</div><p class="comm-txt" style="font-weight:600;font-size:1rem">'+s.intro+'</p><div class="comm-breathwrap"><div class="comm-breathlabel">Prêt…</div><div class="comm-breath"></div></div><div class="comm-fb"></div>');
         var circle=card.querySelector('.comm-breath'), blabel=card.querySelector('.comm-breathlabel'), bfb=card.querySelector('.comm-fb');
         var phase=0;
         (function stepB(){
@@ -185,7 +187,7 @@
 
       if(s.type==='perso'){
         card.appendChild(sayBtn(s.text));
-        card.innerHTML+='<p class="comm-txt">'+s.text+'</p><div class="comm-msg note">'+s.note+'</div>';
+        card.insertAdjacentHTML('beforeend','<p class="comm-txt">'+s.text+'</p><div class="comm-msg note">'+s.note+'</div>');
         var pb=document.createElement('button'); pb.className='comm-btn'; pb.type='button'; pb.textContent='J’y ai réfléchi →'; pb.onclick=function(){ go(idx+1); }; card.appendChild(pb);
         return;
       }

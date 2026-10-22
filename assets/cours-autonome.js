@@ -58,7 +58,7 @@
     return h;
   }
   function oral(t) {
-    return String(t || '').replace(/\bDOC\.\s*(\d)/g, 'Document $1').replace(/dB\(A\)/g, 'décibels A').replace(/\{\{.+?\}\}/g, ' blanc à compléter, ').replace(/…+/g, ' blanc à compléter, ')
+    return String(t || '').replace(/\bQuestion (\d+)\.(\d+)/g, 'Question $1 point $2').replace(/\bDOC\.\s*(\d)/g, 'Document $1').replace(/dB\(A\)/g, 'décibels A').replace(/\{\{.+?\}\}/g, ' blanc à compléter, ').replace(/…+/g, ' blanc à compléter, ')
       .replace(/\*\*/g, '').replace(/\*/g, '').replace(/☐/g, 'Proposition : ').replace(/•/g, '')
       .replace(/→/g, ' : ').replace(/\s+/g, ' ').trim();
   }
@@ -277,10 +277,10 @@
       var debut = j;
       var bons = g.opts.filter(function (o, k) { return corrects.indexOf(debut + k) >= 0; }).length;
       var multi = groupes.length === 1 ? corrects.length !== 1 : bons !== 1;
-      html += '<div class="item" role="group"' + (g.label ? ' aria-label="' + esc(g.label.replace(/\*/g, '')) + '"' : ' aria-label="Propositions"') + '>' +
+      html += '<div class="item" id="' + nomGroupe + '-g' + gi + '-w"' + (g.label ? ' data-oral="' + esc(g.label) + '"' : '') + ' role="group"' + (g.label ? ' aria-label="' + esc(g.label.replace(/\*/g, '')) + '"' : ' aria-label="Propositions"') + '>' +
         (g.label ? '<div class="enonce">' + enLigne(g.label) + '</div>' : '') +
         g.opts.map(function (o) {
-          var html1 = '<label class="opt' + (o && typeof o === 'object' && o.photo ? ' opt-photo' : '') + '"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="' + nomGroupe + '-g' + gi + '" data-j="' + j + '" data-k="' + nomGroupe + '-' + j + '"> ' +
+          var html1 = '<label class="opt' + (o && typeof o === 'object' && o.photo ? ' opt-photo' : '') + '" id="' + nomGroupe + '-L' + j + '" data-oral="' + esc(o && typeof o === 'object' ? o.texte : o) + '"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="' + nomGroupe + '-g' + gi + '" data-j="' + j + '" data-k="' + nomGroupe + '-' + j + '"> ' +
             (o && typeof o === 'object' ? (o.img ? '<img class="opt-img" src="' + esc(o.img) + '" alt="">' : '') + '<span>' + enLigne(o.texte) + '</span>' : '<span>' + enLigne(o) + '</span>') + '</label>';
           j++;
           return html1;
@@ -429,9 +429,9 @@
         poser();
         void entete;
       });
-      lignes += '<tr id="' + trId + '">' + tds + '</tr>';
+      lignes += '<tr id="' + trId + '" data-oral="' + esc(orales[ri]) + '">' + tds + '</tr>';
     });
-    var html = '<div class="tabw" tabindex="0" role="region" aria-label="' + (cases.length ? 'Tableau à compléter' : 'Tableau') + '"><table class="t">' + lignes + '</table></div>';
+    var html = '<div class="tabw" id="' + qid + '-tab" data-oral="Tableau." tabindex="0" role="region" aria-label="' + (cases.length ? 'Tableau à compléter' : 'Tableau') + '"><table class="t">' + lignes + '</table></div>';
     var comp = {
       auto: auto && cases.length > 0,
       interactif: cases.length > 0,
@@ -471,12 +471,13 @@
     var html = items.map(function (it, i) {
       var k = qid + '-c' + i;
       AUD[k + '-L'] = (function (t, w) { return function () { return [{ t: t, el: w }]; }; })(libItem(it) + '. Colonnes : ' + cats.join(' ; ') + '.', k + '-w');
-      return '<div class="item" id="' + k + '-w">' +
+      return '<div class="item" id="' + k + '-w" data-oral="' + esc(libItem(it)) + '">' +
         (it && typeof it === 'object' && it.img ? '<img class="item-img" src="' + esc(it.img) + '" alt="' + esc(it.description || it.texte || '') + '" loading="lazy">' : '') +
         '<label class="enonce" for="' + k + '">' + enLigne(libItem(it)) + '</label>' + btnLigne(k + '-L', 'Écouter cet élément') +
         '<select class="choix" id="' + k + '" data-k="' + k + '"><option value="">— Choisir une colonne —</option>' +
         cats.map(function (c, j) { return '<option value="' + j + '">' + esc(c) + '</option>'; }).join('') + '</select></div>';
     }).join('');
+    html = '<div id="' + qid + '-cl" data-oral="' + esc('Colonnes : ' + cats.join(' ; ') + '. Éléments à classer :') + '">' + html + '</div>';
     return {
       html: html,
       oral: 'Colonnes : ' + cats.join(' ; ') + '. Éléments à classer : ' + items.map(libItem).join(' ; ') + '.',
@@ -504,7 +505,7 @@
     var l1 = d.label1 || 'Vrai', l2 = d.label2 || 'Faux';
     var html = items.map(function (it, i) {
       var nom = qid + '-vf' + i;
-      return '<div class="item" id="' + nom + '-w" role="radiogroup" aria-labelledby="' + nom + '-e"><div class="enonce" id="' + nom + '-e">' + enLigne(it.texte) + '</div><div class="vf">' +
+      return '<div class="item" id="' + nom + '-w" data-oral="' + esc(it.texte) + '" role="radiogroup" aria-labelledby="' + nom + '-e"><div class="enonce" id="' + nom + '-e">' + enLigne(it.texte) + '</div><div class="vf">' +
         '<label class="opt"><input type="radio" name="' + nom + '" value="vrai" data-k="' + nom + '-0"> <span>' + esc(l1) + '</span></label>' +
         '<label class="opt"><input type="radio" name="' + nom + '" value="faux" data-k="' + nom + '-1"> <span>' + esc(l2) + '</span></label></div></div>';
     }).join('');
@@ -543,10 +544,11 @@
     var html = g.map(function (it, i) {
       var k = qid + '-r' + i;
       AUD[k + '-L'] = (function (t, w) { return function () { return [{ t: t, el: w }]; }; })(it + '. Propositions : ' + tri.map(function (o) { return o.t; }).join(' ; ') + '.', k + '-w');
-      return '<div class="item" id="' + k + '-w"><label class="enonce" for="' + k + '">' + enLigne(it) + '</label>' + btnLigne(k + '-L', 'Écouter cet élément') +
+      return '<div class="item" id="' + k + '-w" data-oral="' + esc(it) + '"><label class="enonce" for="' + k + '">' + enLigne(it) + '</label>' + btnLigne(k + '-L', 'Écouter cet élément') +
         '<select class="choix" id="' + k + '" data-k="' + k + '"><option value="">— Choisir —</option>' +
         tri.map(function (o) { return '<option value="' + o.i + '">' + esc(o.t) + '</option>'; }).join('') + '</select></div>';
     }).join('');
+    html = '<div id="' + qid + '-rel" data-oral="' + esc('Propositions : ' + tri.map(function (o) { return o.t; }).join(' ; ') + '. Éléments à relier :') + '">' + html + '</div>';
     return {
       html: html,
       oral: 'Éléments à relier : ' + g.join(' ; ') + '. Propositions : ' + tri.map(function (o) { return o.t; }).join(' ; ') + '.',
@@ -571,11 +573,11 @@
     var items = ch(d, 'items') || [];
     var html = items.map(function (it, i) {
       var nom = qid + '-m' + i;
-      return '<div class="item" role="radiogroup" aria-labelledby="' + nom + '-e">' +
+      return '<div class="item" id="' + nom + '-w" data-oral="' + esc(it.question + ' Propositions :') + '" role="radiogroup" aria-labelledby="' + nom + '-e">' +
         (it.img ? '<button type="button" class="zoom item-zoom" data-loupe="' + esc(it.img) + '" aria-label="Agrandir la photo"><img class="item-img" src="' + esc(it.img) + '" alt="' + esc(it.description || '') + '" loading="lazy"></button>' : '') +
         '<div class="enonce" id="' + nom + '-e">' + enLigne(it.question) + '</div>' +
         it.options.map(function (o, j) {
-          return '<label class="opt"><input type="radio" name="' + nom + '" value="' + j + '" data-k="' + nom + '-' + j + '"> <span>' + enLigne(o) + '</span></label>';
+          return '<label class="opt" id="' + nom + '-L' + j + '" data-oral="' + esc(o) + '"><input type="radio" name="' + nom + '" value="' + j + '" data-k="' + nom + '-' + j + '"> <span>' + enLigne(o) + '</span></label>';
         }).join('') + '</div>';
     }).join('');
     return {
@@ -656,7 +658,16 @@
     var cherche = Array.isArray(el.cherche) ? el.cherche : [];
     CHERCHE[qid] = cherche;
     var expl = el.explication || '';
-    AUD[qid] = function () { return [{ t: (o.num ? 'Question ' + o.num + '. ' : '') + o.oral, el: qid + '-txt' }]; };
+    AUD[qid] = function () {
+      var sous = o.num ? String(o.oral || '').match(/^\s*(\d+)\.\s+/) : null;
+      var tete = o.num ? 'Question ' + o.num + (sous ? ' point ' + sous[1] : '') + '. ' : '';
+      var parts = [{ t: tete + (sous ? String(o.oral).slice(sous[0].length) : o.oral), el: qid + '-txt' }];
+      var z = document.getElementById(qid);
+      if (z) z.querySelectorAll('.saisie [data-oral]').forEach(function (n) {
+        if (!n.closest('[hidden]') && n.id) parts.push({ t: n.getAttribute('data-oral'), el: n.id });
+      });
+      return parts;
+    };
     AUD[qid + '-i'] = function () { return [{ t: 'Indice. ' + indice, el: qid + '-i' }]; };
     AUD[qid + '-c'] = function () {
       return [{ t: 'Corrigé. ' + (o.corrigeOral || ''), el: qid + '-cr' }].concat(expl ? [{ t: 'Explication. ' + expl, el: qid + '-ex' }] : []);
@@ -695,7 +706,7 @@
     var el = eleve(b);
     var texte = ch(d, 'texte', '') || '';
     var lignes = parseInt(ch(d, 'lignes', 0), 10) || 0;
-    var comps = [], saisie = '', texteHtml, absorbe = null, oralAbs = '';
+    var comps = [], saisie = '', texteHtml, absorbe = null;
     var corrigeHtml = listeReponse(ch(d, 'reponse_attendue', ''));
     var corrigeOral = ch(d, 'reponse_attendue', '');
 
@@ -740,7 +751,6 @@
       absorbe = suivant;
       var r = rendreInteraction(qid, suivant);
       saisie += r.html; comps.push(r.comp);
-      oralAbs = oralInteraction(suivant, r);
       if (r.corrige && !ch(d, 'reponse_attendue', '')) { corrigeHtml = r.corrige; corrigeOral = r.corrigeOral; }
       if (!el.indice && !el.explication) el = eleve(suivant);
     }
@@ -749,20 +759,10 @@
       comps.push({ auto: false, verifier: function () { return []; }, reveler: function () {} });
     }
     return {
-      html: carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: texteHtml, oral: texte + (oralAbs ? '. ' + oralAbs : ''),
+      html: carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: texteHtml, oral: opts.length ? enonce : texte,
         saisie: saisie, comps: comps, el: el, indiceSecours: ch(d, 'indice', ''), corrigeHtml: corrigeHtml, corrigeOral: corrigeOral }),
       absorbe: absorbe
     };
-  }
-
-  /* ce que le 🔊 de la question lit en plus de la consigne : le contenu de l'activité */
-  function oralInteraction(b, r) {
-    var d = b.data;
-    if (r && r.oral) return r.oral;
-    if (b.type === 'qcm') return (ch(d, 'items', []) || []).map(function (it) { return it.question + ' Propositions : ' + it.options.join(' ; '); }).join('. ');
-    if (b.type === 'texte_trous') return ch(d, 'texte', '');
-    if (b.type === 'vrai_faux') return 'Vrai ou faux. ' + (ch(d, 'items', []) || []).map(function (it) { return it.texte; }).join(' ');
-    return '';
   }
 
   function rendreInteraction(qid, b) {
@@ -776,7 +776,7 @@
       var mots = [];
       var t = String(ch(d, 'texte', '')).replace(/\{\{(.+?)\}\}/g, function (m, w) { mots.push(w); return '§TROU§'; });
       var ct = compTrous(md(t), mots, qid + '-tt');
-      return { html: '<div class="item">' + ct.html + '</div>', comp: ct.comp,
+      return { html: '<div class="item" id="' + qid + '-tt-w" data-oral="' + esc(oral(String(ch(d, 'texte', '')))) + '">' + ct.html + '</div>', comp: ct.comp,
         corrige: md(String(ch(d, 'texte', '')).replace(/\{\{(.+?)\}\}/g, '**$1**')),
         corrigeOral: String(ch(d, 'texte', '')).replace(/\{\{(.+?)\}\}/g, '$1') };
     }
@@ -793,18 +793,14 @@
       var co = compOptions(qid, [{ label: '', opts: options.map(function (o) { return o.img ? { texte: o.texte, img: o.img, photo: o.photo } : o.texte; }) }], corrects, qid + '-o');
       var num = (consigne.match(/^\s*(\d+)\.\s*/) || [])[1] || ch(d, 'numero', '');
       var txt = consigne.replace(/^\s*\d+\.\s*/, '');
-      return carteQuestion({ qid: qid, num: num, comp: d.competence, texteHtml: md(txt), oral: txt + '. Propositions : ' + options.map(function (o) { return o.texte; }).join(' ; '),
+      return carteQuestion({ qid: qid, num: num, comp: d.competence, texteHtml: md(txt), oral: txt,
         saisie: co.html, comps: [co.comp], el: eleve(b),
         corrigeHtml: '<ul>' + corrects.map(function (j) { return '<li>' + enLigne(options[j].texte) + '</li>'; }).join('') + '</ul>',
         corrigeOral: corrects.map(function (j) { return options[j].texte; }).join('. ') });
     }
     r = rendreInteraction(qid, b);
     var oralTxt = consigne;
-    if (b.type === 'qcm') oralTxt += '. ' + (ch(d, 'items', []) || []).map(function (it) { return it.question + ' Propositions : ' + it.options.join(' ; '); }).join('. ');
-    if (b.type === 'classer') oralTxt += '. Colonnes : ' + (ch(d, 'categories', []) || []).join(' ; ') + '. Éléments : ' + (ch(d, 'items', []) || []).map(libItem).join(' ; ');
-    if (b.type === 'texte_trous') oralTxt += '. ' + ch(d, 'texte', '');
-    if (b.type === 'relier' || b.type === 'tableau') oralTxt += '. ' + (r.oral || '');
-    if (b.type === 'vrai_faux') oralTxt = 'Vrai ou faux. ' + (ch(d, 'items', []) || []).map(function (it) { return it.texte; }).join(' ');
+    if (b.type === 'vrai_faux') oralTxt = 'Vrai ou faux. ' + oralTxt;
     return carteQuestion({ qid: qid, num: ch(d, 'numero', ''), comp: d.competence, texteHtml: md(consigne), oral: oralTxt,
       saisie: r.html, comps: [r.comp], el: eleve(b), corrigeHtml: r.corrige, corrigeOral: r.corrigeOral });
   }
@@ -1455,7 +1451,7 @@
               solsT.push({ l: lib, s: c.reponse === '✕' ? 'case cochée' : (c.reponse || '') });
             });
           });
-          h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + carteQuestion({ qid: 'q-' + b.id, num: '', texteHtml: md(enonceT), oral: enonceT + ' ' + tb.oral,
+          h += '<div id="b-' + esc(b.id) + '" tabindex="-1" data-lecture="q-' + esc(b.id) + '">' + carteQuestion({ qid: 'q-' + b.id, num: '', texteHtml: md(enonceT), oral: enonceT,
             saisie: tb.html, comps: [tb.comp], el: eleve(b),
             corrigeHtml: '<ul>' + solsT.map(function (x) { return '<li>' + enLigne(x.l) + ' : <strong>' + esc(x.s) + '</strong></li>'; }).join('') + '</ul>',
             corrigeOral: solsT.map(function (x) { return x.l + ' : ' + x.s; }).join('. ') }) + '</div>';
