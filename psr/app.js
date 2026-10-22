@@ -17190,7 +17190,7 @@ function openBullesGame() {
    ===================================================================== */
 const ROUE_DEFIS = [
   { emoji: "🃏", label: "Flashcards",     action: () => openFlashcards(null) },
-  { emoji: "🎯", label: "Pendu",           action: () => openPendu() },
+  { emoji: "🎯", label: "Mot mystère",           action: () => openPendu() },
   { emoji: "💡", label: "Trouve le mot",   action: () => openTrouveLeMot() },
   { emoji: "📱", label: "Conversation",    action: () => openConversations() },
   { emoji: "📖", label: "Glossaire",       action: () => openGlossaire() },
@@ -18641,7 +18641,7 @@ function openTutorielPremiereVisite() {
     },
     {
       emoji: "🆘", titre: "Si tu galères ou si tu veux réviser",
-      texte: "<b>💪 Entraîne-toi</b> (en bas à gauche) regroupe :<br>📖 Glossaire (40 mots-clés expliqués)<br>🃏 Flashcards · 📱 Conversations · 🎯 Pendu · 💡 Trouve le mot<br>📋 Référentiel PSR (toutes tes compétences)<br><br><b>💬 Donner mon avis</b> : dis-nous ce qui marche ou pas.<br><br><b>👤 Mon avatar</b> : personnalise ton profil 😊",
+      texte: "<b>💪 Entraîne-toi</b> (en bas à gauche) regroupe :<br>📖 Glossaire (40 mots-clés expliqués)<br>🃏 Flashcards · 📱 Conversations · 🎯 Le mot mystère · 💡 Trouve le mot<br>📋 Référentiel PSR (toutes tes compétences)<br><br><b>💬 Donner mon avis</b> : dis-nous ce qui marche ou pas.<br><br><b>👤 Mon avatar</b> : personnalise ton profil 😊",
       cta: "Suivant →",
     },
     {
@@ -18961,7 +18961,7 @@ const SONDAGE_QUESTIONS = [
       "🎮 Les exercices drag & drop avec photos",
       "🃏 Les flashcards recto/verso",
       "📱 Les conversations façon SMS",
-      "🎯 Le pendu nutritionnel",
+      "🎯 Le mot mystère nutritionnel",
       "💡 Trouve le mot",
       "🌡️ Le curseur chaîne du froid",
       "🍽️ Le composeur visuel de menu",
@@ -18990,7 +18990,7 @@ const SONDAGE_QUESTIONS = [
       "📖 Glossaire",
       "🃏 Flashcards",
       "📱 Conversations",
-      "🎯 Pendu",
+      "🎯 Le mot mystère",
       "💡 Trouve le mot",
       "📝 Mes notes",
       "🌦️ Météo des émotions",
@@ -19997,7 +19997,7 @@ function renderPendu() {
   const perdu = erreurs >= PENDU_MAX_ERREURS;
   const fini = gagne || perdu;
   c.innerHTML = `
-    <h2 style="color:var(--c-primary-dark); margin-top:0;">🎯 Pendu nutritionnel</h2>
+    <h2 style="color:var(--c-primary-dark); margin-top:0;">🎯 Le mot mystère nutritionnel</h2>
     <div class="pendu-indice">Indice : <i>${escapeHtml(indice)}</i></div>
     <div class="pendu-mot">${affichage}</div>
     <div class="pendu-stats">
@@ -21166,7 +21166,7 @@ function renderModuleReviewLinks(sec, mod) {
   }
   buttons += `<button type="button" class="review-link" data-rev="pendu">
     <span class="rl-icon">🎯</span>
-    <span class="rl-text"><b>Pendu</b><br /><small>Devine les mots</small></span>
+    <span class="rl-text"><b>Le mot mystère</b><br /><small>Devine les mots</small></span>
   </button>`;
   // V4.66 : bouton Memory si données dispo pour ce module
   if (map.memory && MEMORY_DATA[sec.id]) {
@@ -21257,7 +21257,7 @@ function renderRevisionView() {
 
       <button type="button" class="revision-card" data-tool="pendu">
         <div class="rev-icon">🎯</div>
-        <div class="rev-titre">Pendu nutritionnel</div>
+        <div class="rev-titre">Le mot mystère nutritionnel</div>
         <div class="rev-desc">Devine les mots du vocabulaire avant la fin des essais.</div>
         <div class="rev-stat">15 mots à découvrir</div>
       </button>
@@ -22330,7 +22330,7 @@ const COMMENTAIRES_BANQUE = {
     { txt: "Le composeur de menu est top",              emoji: "🍽️" },
     { txt: "Les exercices drag & drop sont sympa",      emoji: "🎮" },
     { txt: "Les couleurs sont jolies",                  emoji: "🌈" },
-    { txt: "Le pendu c'est cool",                       emoji: "🎯" },
+    { txt: "Le mot mystère c'est cool",                       emoji: "🎯" },
     { txt: "Le curseur chaîne du froid est génial",     emoji: "🌡️" },
     { txt: "J'apprends beaucoup avec ce site",          emoji: "📚" },
     { txt: "C'est mieux qu'un manuel papier",           emoji: "📕" },

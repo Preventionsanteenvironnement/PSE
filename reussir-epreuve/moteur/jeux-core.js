@@ -144,8 +144,8 @@
   };
 
   T['pendu'] = {
-    nom: 'Mot à deviner (pendu sans dessin)', famille: 'Mots et lettres', inventaire: ['JEU-004'], ecran: true,
-    resume: 'Deviner un mot lettre par lettre, avec un nombre d’essais limité (barres qui montent, jamais de dessin de pendu). Sur papier : mots à compléter avec l’indice.',
+    nom: 'Le mot mystère', famille: 'Mots et lettres', inventaire: ['JEU-004'], ecran: true,
+    resume: 'Deviner un mot lettre par lettre, avec un nombre d’essais limité (barres qui montent). Sur papier : mots à compléter avec l’indice.',
     champs: { mots: '[{ mot, indice }]', essais: 'nombre d’erreurs permises (défaut 7)' },
     exemple: { mots: [{ mot: 'PREVENTION', indice: 'Agir avant la maladie.' }, { mot: 'SOLIDARITE', indice: 'Chacun donne selon ses moyens, chacun reçoit selon ses besoins.' }] },
     valider: function (d, err) { exige(liste(d.mots).length >= 1, 'mots : au moins 1 mot', err); },
