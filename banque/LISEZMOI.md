@@ -79,3 +79,15 @@ avant chaque réponse. Préserver ce champ et tous les retours pédagogiques.
 Cas fictifs, distinction des faits et possibilités, un mécanisme par danger ;
 les atteintes progressives ne doivent pas être transformées en accidents fictifs.
 Référence : fichier C5 du professeur, non publié. Aucun document privé ajouté.
+
+
+## AT, trajet et MP : entraînement mobile
+Les fichiers `exo_atmp_mobile_n1.json` à `exo_atmp_mobile_n3.json` regroupent
+18 questions approuvées, Terminale Bac Pro C8. Classement : AT, trajet et maladies pro.
+> Parcours AT · trajet · MP · Bac Pro. `contenu.reperes_atmp=true` affiche
+les cartes et la frise des rôles accessibles avant réponse ; préserver ce champ.
+Repères et textes donnent le sens, sans dépendre des couleurs. Les corrigés
+conservent leurs retours ciblés, exemples et mémos. Cas fictifs de salariés
+majeurs du régime général ; référence principale : document C8 du professeur.
+Vérification officielle Ameli/Service Public le 23 octobre 2026. Aucun document
+privé ajouté. Ce lot ne couvre pas tous les calculs d’IJ et seuils rente/capital.
