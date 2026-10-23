@@ -55,3 +55,17 @@ Conserver les retours par choix, les exemples, les mémos et les liens entre niv
 Référence principale : module C5 du professeur ; règles recoupées avec INRS
 et ministère du Travail le 23 octobre 2026. Les grilles locales ne sont pas
 un barème national. Aucun document privé ni donnée d’élève inclus.
+
+
+## Matrice visuelle C5
+
+Cinq questions des parcours DUERP et risques utilisent `outil=matrice_foucher_c5`.
+Le champ `parcours` distingue leurs corrigés guidés. Conserver ces champs lors des éditions.
+Support redessiné à partir du document C du module C5 Foucher, page 96 :
+G4 toutes probabilités prioritaires ; G3 à partir de P2 ; G2 à partir de P3 ;
+G1 non prioritaire. Ne pas mélanger avec le découpage Delagrave à trois priorités.
+La matrice est accessible avant réponse, et les cases utiles sont entourées
+dans les corrigés des questions de croisement. Les noms complets de probabilité
+restent au-dessus du tableau pour éviter leur chevauchement sur petit écran.
+Aucun scan de manuel ou document privé ajouté. Cette grille est un exemple
+pédagogique, pas une norme réglementaire universelle.
