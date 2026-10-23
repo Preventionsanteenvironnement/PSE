@@ -1840,8 +1840,8 @@ window.MODULES_PSE = {
 </script>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, getDocs, getDoc, doc, collection, query, where, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// Banque d'exercices : lue dans les fichiers banque/ du site (liste légère, contenu chargé à l'ouverture).
+// Firebase n'est chargé qu'en secours, si ces fichiers sont inaccessibles.
 
 const firebaseConfig = {
     apiKey: "AIzaSyAWdCMvOiAJln3eT9LIAQD3RWJUD0lQcLI",
@@ -1851,10 +1851,20 @@ const firebaseConfig = {
     messagingSenderId: "614730413904",
     appId: "1:614730413904:web:a5dd478af5de30f6bede55"
 };
-window.__psePerfStart('init_firebase');
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-window.__psePerfEnd('init_firebase');
+let db = null;
+let fs = null;
+async function chargerFirestore() {
+    if (fs) return fs;
+    window.__psePerfStart('init_firebase');
+    const [appMod, fsMod] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+    ]);
+    db = fsMod.getFirestore(appMod.initializeApp(firebaseConfig));
+    fs = fsMod;
+    window.__psePerfEnd('init_firebase');
+    return fs;
+}
 
 const PAGE_SIZE = 40;
 let lastVisibleDoc = null;
@@ -1898,6 +1908,7 @@ function markInitialDisplay() {
 }
 
 function buildQueryPage() {
+    const { query, collection, where, orderBy, startAfter, limit } = fs;
     if (!paginationAvailable) return query(collection(db, "exercices_banque"), where("publie", "==", true));
     if (lastVisibleDoc) {
         return query(
@@ -1923,6 +1934,16 @@ async function openParcoursExerciceIfNeeded() {
     var exo = allExercices.find(e => e.id === PARCOURS_EXO_ID);
     if (!exo) {
         try {
+            const rep = await fetch('banque/exercices/' + encodeURIComponent(PARCOURS_EXO_ID) + '.json', { cache: 'no-cache' });
+            if (rep.ok) {
+                const data = await rep.json();
+                if (data && data.publie === true) exo = data;
+            }
+        } catch (e) {}
+    }
+    if (!exo) {
+        try {
+            const { getDoc, doc } = await chargerFirestore();
             const singleDoc = await getDoc(doc(db, "exercices_banque", PARCOURS_EXO_ID));
             if (singleDoc.exists()) {
                 const data = singleDoc.data();
@@ -1945,8 +1966,48 @@ async function openParcoursExerciceIfNeeded() {
     }
 }
 
+let sourceBanque = 'fichiers';
+
+// Liste des exercices publiés depuis banque/index.json ; renvoie false si le fichier est inaccessible
+async function chargerBanqueFichiers() {
+    isLoadingExercices = true;
+    setLoadingHint("Chargement des exercices...");
+    let liste;
+    try {
+        window.__psePerfStart('requete_banque');
+        const rep = await fetch('banque/index.json', { cache: 'no-cache' });
+        if (!rep.ok) throw new Error('HTTP ' + rep.status);
+        liste = await rep.json();
+        if (!Array.isArray(liste)) throw new Error('liste invalide');
+        window.__psePerfEnd('requete_banque');
+    } catch (err) {
+        console.warn("Banque en fichiers indisponible, secours Firebase :", err);
+        isLoadingExercices = false;
+        return false;
+    }
+    allExercices = liste.filter(e => e && e.publie === true);
+    paginationAvailable = false;
+    hasMoreExercices = false;
+    renderNiveaux();
+    applyRoutePreset();
+    if (PARCOURS_MODE) {
+        var backHome = document.querySelector('.back-home');
+        if (backHome) backHome.style.display = 'none';
+    }
+    await openParcoursExerciceIfNeeded();
+    setLoadingHint('');
+    isLoadingExercices = false;
+    updateLoadMoreUI();
+    markInitialDisplay();
+    return true;
+}
+
 async function loadExercices(options = {}) {
     const append = !!options.append;
+    if (!append && sourceBanque === 'fichiers') {
+        if (await chargerBanqueFichiers()) return;
+        sourceBanque = 'firebase';
+    }
     if (isLoadingExercices) return;
     if (append && (!hasMoreExercices || !paginationAvailable)) return;
     isLoadingExercices = true;
@@ -1960,6 +2021,7 @@ async function loadExercices(options = {}) {
 
     let snap;
     try {
+        const { getDocs } = await chargerFirestore();
         if (!append) window.__psePerfStart('requete_firebase');
         snap = await getDocs(buildQueryPage());
         if (!append) window.__psePerfEnd('requete_firebase');
@@ -1971,8 +2033,8 @@ async function loadExercices(options = {}) {
             lastVisibleDoc = null;
             try {
                 if (!append) window.__psePerfStart('requete_firebase');
-                const qFallback = query(collection(db, "exercices_banque"), where("publie", "==", true));
-                snap = await getDocs(qFallback);
+                const qFallback = fs.query(fs.collection(db, "exercices_banque"), fs.where("publie", "==", true));
+                snap = await fs.getDocs(qFallback);
                 if (!append) window.__psePerfEnd('requete_firebase');
             } catch (fallbackError) {
                 setLoadingHint("Erreur de chargement des exercices.", true);
@@ -2696,7 +2758,37 @@ function backToList(fromPopstate) {
     if (!fromPopstate) history.pushState({ screen: 'select' }, '', BASE_ROUTE);
 }
 
+// Exercice de la banque en fichiers : son contenu est chargé à l'ouverture, puis gardé en mémoire
+function chargerContenuExercice(ex) {
+    if (ex.contenu) return Promise.resolve(ex);
+    return fetch('banque/exercices/' + encodeURIComponent(ex.id) + '.json', { cache: 'no-cache' })
+        .then(function (rep) {
+            if (!rep.ok) throw new Error('HTTP ' + rep.status);
+            return rep.json();
+        })
+        .then(function (complet) {
+            ex.contenu = complet.contenu;
+            return ex;
+        });
+}
+
 function startExercice(ex) {
+    if (ex && !ex.contenu && ex.id) {
+        chargerContenuExercice(ex).then(afficherExercice).catch(function (err) {
+            console.error('Exercice indisponible :', ex.id, err);
+            var hint = document.getElementById('loading-hint');
+            if (hint) {
+                hint.style.display = '';
+                hint.textContent = "Cet exercice n'a pas pu être chargé. Vérifier la connexion puis réessayer.";
+                hint.classList.add('error');
+            }
+        });
+        return;
+    }
+    afficherExercice(ex);
+}
+
+function afficherExercice(ex) {
     if (window.PSE_DEBUG_MODE) {
         console.log('DEBUG startExercice:', ex.titre, ex.type);
     }

@@ -420,6 +420,12 @@
             font-weight: 600;
         }
         .btn-exercice:hover { background: linear-gradient(135deg, #ffecb3, #ffe082) !important; }
+        .btn-exo-ligne {
+            background: linear-gradient(135deg, #e0f2f1, #b2dfdb) !important;
+            color: #00695c !important; border: 2px solid #009688 !important;
+            font-weight: 600;
+        }
+        .btn-exo-ligne:hover { background: linear-gradient(135deg, #b2dfdb, #80cbc4) !important; }
 
         .btn-autoeval {
             background: linear-gradient(135deg, #e0f7fa, #b2ebf2) !important;
@@ -2493,6 +2499,40 @@
 
     // Run when hash changes (e.g. clicking a link on the same page)
     window.addEventListener('hashchange', openAnchorTarget);
+</script>
+
+<script>
+    // Bouton « Exercices en ligne » dans chaque module des cours qui a des exercices publiés
+    // (liste lue dans banque/index.json : le bouton apparaît seul quand un exercice est ajouté)
+    (function () {
+        var NIVEAUX = { 'cap': 'CAP', '2de': 'BAC_PRO_2NDE', '1re': 'BAC_PRO_1ERE', 'tle': 'BAC_PRO_TERM' };
+        fetch('banque/index.json', { cache: 'no-cache' })
+            .then(function (rep) { return rep.ok ? rep.json() : []; })
+            .then(function (liste) {
+                var compte = {};
+                (Array.isArray(liste) ? liste : []).forEach(function (e) {
+                    if (e && e.publie === true && e.niveau && e.moduleId) {
+                        var cle = e.niveau + '|' + e.moduleId;
+                        compte[cle] = (compte[cle] || 0) + 1;
+                    }
+                });
+                document.querySelectorAll('details[id]').forEach(function (d) {
+                    var m = d.id.match(/^(cap|2de|1re|tle)-([a-d])(\d+)$/);
+                    if (!m) return;
+                    var niveau = NIVEAUX[m[1]];
+                    var module = (m[1] === 'cap' ? 'M' : '') + m[2].toUpperCase() + m[3];
+                    var n = compte[niveau + '|' + module];
+                    var liens = d.querySelector(':scope > .content-links');
+                    if (!n || !liens || liens.querySelector('.btn-exo-ligne')) return;
+                    var a = document.createElement('a');
+                    a.className = 'btn btn-exo-ligne';
+                    a.href = 'exercices.html?niveau=' + niveau + '&module=' + module;
+                    a.textContent = '✍️ Exercices en ligne (' + n + ')';
+                    liens.appendChild(a);
+                });
+            })
+            .catch(function () {});
+    })();
 </script>
 
 </body>
