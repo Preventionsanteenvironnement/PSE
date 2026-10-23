@@ -16,3 +16,19 @@ Retirer un exercice : `"publie": false` (il disparaît de la liste) ou supprimer
 
 Ne jamais mettre dans ces fichiers : données d'élèves, sujets d'évaluation non publiés,
 consignes de conception (`sourcePrompt`, refusé par le script). Tout fichier ici est public.
+
+## Parcours acteurs/CSE : entraînement mobile
+
+Les trois fichiers `exo_cse_mobile_n1.json` à `exo_cse_mobile_n3.json` portent
+les niveaux Reconnaître, Appliquer et Raisonner (six questions chacun).
+Ils utilisent `type=qcm_series_multi`, `contenu.mode=entrainement_mobile`.
+Le moteur dédié `assets/quiz-mobile.js` affiche une question à la fois ; les
+autres QCM gardent leur fonctionnement existant. Le CSS est limité à `.mq`.
+Chaque question conserve les champs QCM habituels ainsi que `titre`, `situation`,
+`retours` (un retour par choix) et `correction_pedagogique` (comprendre, exemple,
+retenir). Ne pas aplatir ni supprimer ces champs lors d'une édition.
+Les résultats de cette activité restent en mémoire le temps de l'ouverture :
+aucune écriture Firebase, aucun envoi de copie ou de note scolaire par ce moteur.
+Références pédagogiques : module C3 du professeur ; vérification institutionnelle
+INRS (acteurs et salarié compétent), Urssaf (CSE), ministère du Travail (CSSCT),
+le 23 octobre 2026. Les documents privés du professeur ne sont pas publiés.
