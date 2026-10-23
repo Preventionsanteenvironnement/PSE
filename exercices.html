@@ -789,20 +789,20 @@
             border-radius: 0 12px 12px 0; margin-bottom: 20px; font-size: 0.95rem;
             line-height: 1.6; color: #78350f;
         }
-        /* Tableaux des documents d'une étude de cas : lisibles, et défilement horizontal du tableau seul sur téléphone */
-        .ec-scenario table {
-            display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
-            border-collapse: collapse; margin: 10px 0 14px; font-size: 0.9em; line-height: 1.4;
-            background: #fff; border-radius: 8px; color: #451a03;
-        }
+        /* Tableaux des documents d'une étude de cas : tableau natif dans un conteneur qui défile seul sur téléphone */
+        .ec-table-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 14px; border-radius: 8px; }
+        .ec-table-scroll:focus-visible { outline: 3px solid #b45309; outline-offset: 2px; }
+        .ec-table-scroll table { margin: 0; }
+        .ec-scenario table { border-collapse: collapse; margin: 10px 0 14px; line-height: 1.4; background: #fff; color: #451a03; }
         .ec-scenario th, .ec-scenario td { border: 1px solid #f3d29b; padding: 6px 10px; text-align: left; vertical-align: top; }
         .ec-scenario th { background: #fef3c7; color: #78350f; font-weight: 700; }
         .ec-scenario tr:nth-child(even) td { background: #fffbeb; }
+        .ec-table-hint { display: none; margin: 10px 0 -6px; font-size: 0.85rem; font-style: italic; color: #92400e; }
+        .ec-table-hint.visible { display: block; }
         .ec-scenario h2, .ec-scenario h3 { color: #78350f; line-height: 1.25; margin: 14px 0 6px; }
         .ec-scenario h2:first-child { margin-top: 0; }
         @media (max-width: 600px) {
             .ec-scenario { padding: 12px 12px 12px 14px; font-size: 0.9rem; }
-            .ec-scenario table { font-size: 0.85em; }
             .ec-scenario th, .ec-scenario td { padding: 5px 7px; }
         }
         .ec-question { margin-bottom: 16px; }
@@ -3720,6 +3720,63 @@ function ecGuideExplicationHtml(texte) {
     }).join('');
 }
 
+// Tableaux d'un scénario : chaque tableau est placé dans un conteneur qui défile seul.
+// Si le tableau dépasse la largeur, le conteneur devient une zone nommée, atteignable au clavier
+// (Tab puis flèches) et une indication de défilement s'affiche. Le contenu stocké n'est pas modifié.
+function ecEnvelopperTableaux(zone) {
+    const scen = zone.querySelector('.ec-scenario');
+    if (!scen) return;
+    const tables = Array.prototype.slice.call(scen.querySelectorAll('table'));
+    const noms = tables.map(function (table, i) {
+        if (table.caption && table.caption.textContent.trim()) return table.caption.textContent.trim();
+        let prec = table.previousElementSibling;
+        while (prec && !/^H[1-6]$/.test(prec.tagName)) prec = prec.previousElementSibling;
+        return prec ? prec.textContent.trim() : 'Tableau ' + (i + 1);
+    });
+    tables.forEach(function (table, i) {
+        if (table.parentElement.classList.contains('ec-table-scroll')) return;
+        let nom = noms[i];
+        // Plusieurs tableaux sous le même titre : le nom reprend les en-têtes de colonnes
+        if (noms.indexOf(nom) !== noms.lastIndexOf(nom)) {
+            const ligne = table.querySelector('tr');
+            const entetes = ligne ? Array.prototype.map.call(ligne.querySelectorAll('th'), function (th) { return th.textContent.trim(); }).filter(Boolean) : [];
+            nom += entetes.length ? ' (colonnes : ' + entetes.join(', ') + ')' : ' (tableau ' + (i + 1) + ')';
+        }
+        const hint = document.createElement('p');
+        hint.className = 'ec-table-hint';
+        hint.id = 'ec-table-hint-' + i;
+        hint.textContent = 'Tableau plus large que l\u2019écran : le faire glisser, ou le sélectionner avec Tab puis utiliser les flèches.';
+        const box = document.createElement('div');
+        box.className = 'ec-table-scroll';
+        box.dataset.nom = nom;
+        table.parentNode.insertBefore(hint, table);
+        table.parentNode.insertBefore(box, table);
+        box.appendChild(table);
+        if (ecObservateurTableaux) ecObservateurTableaux.observe(box);
+    });
+    ecMajTableaux();
+}
+
+function ecMajTableaux() {
+    document.querySelectorAll('.ec-table-scroll').forEach(function (box) {
+        const hint = box.previousElementSibling;
+        const deborde = box.scrollWidth > box.clientWidth + 1;
+        if (deborde) {
+            box.setAttribute('tabindex', '0');
+            box.setAttribute('role', 'region');
+            box.setAttribute('aria-label', 'Tableau défilant : ' + box.dataset.nom);
+            if (hint) { hint.classList.add('visible'); box.setAttribute('aria-describedby', hint.id); }
+        } else {
+            ['tabindex', 'role', 'aria-label', 'aria-describedby'].forEach(function (a) { box.removeAttribute(a); });
+            if (hint) hint.classList.remove('visible');
+        }
+    });
+}
+
+// Mesure refaite dès que la largeur réelle d'un tableau est connue (premier affichage, rotation, redimensionnement)
+const ecObservateurTableaux = ('ResizeObserver' in window) ? new ResizeObserver(ecMajTableaux) : null;
+if (!ecObservateurTableaux) window.addEventListener('resize', ecMajTableaux);
+
 function renderEtudeCasGuide(zone, c) {
     let html = '<div class="ec-scenario">' + (c.scenario || '') + '</div>';
     html += '<p class="ecg-intro">Pour chaque question : écrire une réponse, même partielle, puis la comparer au corrigé. '
@@ -3745,6 +3802,7 @@ function renderEtudeCasGuide(zone, c) {
         html += '</div></div>';
     });
     zone.innerHTML = html;
+    ecEnvelopperTableaux(zone);
     const btn = document.getElementById('btn-validate');
     if (btn) btn.textContent = 'Terminer l\u2019étude de cas';
 }
@@ -3792,6 +3850,7 @@ function renderEtudeCas(zone, c) {
         html += '</div>';
     });
     zone.innerHTML = html;
+    ecEnvelopperTableaux(zone);
 }
 
 function ecQcmSelect(el) {
