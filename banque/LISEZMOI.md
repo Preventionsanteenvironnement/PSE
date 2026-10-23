@@ -44,3 +44,14 @@ aucune formule ou matrice n’est présentée comme un barème national.
 Contenu : identification/PAD, gravité et probabilité, lecture de priorité,
 justification et réévaluation. Référence principale : module C5 du professeur.
 Documents privés et données d’élèves exclus du dépôt.
+
+
+## DUERP : entraînement mobile
+
+Les fichiers `exo_duerp_mobile_n1.json` à `exo_duerp_mobile_n3.json`
+réutilisent le moteur mobile : 18 questions, trois niveaux et corrigés ciblés.
+Classement : DUERP > Parcours DUERP · Bac Pro, module C5.
+Conserver les retours par choix, les exemples, les mémos et les liens entre niveaux.
+Référence principale : module C5 du professeur ; règles recoupées avec INRS
+et ministère du Travail le 23 octobre 2026. Les grilles locales ne sont pas
+un barème national. Aucun document privé ni donnée d’élève inclus.
