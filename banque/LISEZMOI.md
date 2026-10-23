@@ -69,3 +69,13 @@ dans les corrigés des questions de croisement. Les noms complets de probabilit�
 restent au-dessus du tableau pour éviter leur chevauchement sur petit écran.
 Aucun scan de manuel ou document privé ajouté. Cette grille est un exemple
 pédagogique, pas une norme réglementaire universelle.
+
+
+## PAD : entraînement mobile
+Les fichiers `exo_pad_mobile_n1.json` à `exo_pad_mobile_n3.json` contiennent
+18 questions approuvées, module C5. Classement : PAD > Parcours PAD · Bac Pro.
+Le champ `contenu.repere_pad=true` affiche les cinq définitions accessibles
+avant chaque réponse. Préserver ce champ et tous les retours pédagogiques.
+Cas fictifs, distinction des faits et possibilités, un mécanisme par danger ;
+les atteintes progressives ne doivent pas être transformées en accidents fictifs.
+Référence : fichier C5 du professeur, non publié. Aucun document privé ajouté.

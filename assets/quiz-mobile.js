@@ -34,7 +34,7 @@ function renderMatrix(q,reveal=false){if(!q.outil)return '';const rows=[4,3,2,1]
                 <p class="mq-help">Une seule réponse. Choisis, puis lis l’explication.</p>
                 <section class="mq-card"><h3 class="mq-title" tabindex="-1">${esc(q.titre)}</h3>
                 <p class="mq-situation">${esc(q.situation)}</p>${renderMatrix(q)}<p class="mq-question">${esc(q.question)}</p>
-                <div role="group" aria-label="Une seule réponse à choisir">${q.choix.map((o,i)=>`<button type="button" class="mq-choice" data-choice="${i}" aria-pressed="false"><span class="mq-letter">${'ABC'[i]}</span><span>${esc(o.texte)}</span></button>`).join('')}</div>
+                ${contenu.repere_pad?`<details class="pad-repere"><summary>Les 5 repères du PAD</summary><dl><dt>Danger</dt><dd>Ce qui peut blesser.</dd><dt>Opérateur</dt><dd>La personne exposée.</dd><dt>Situation dangereuse</dt><dd>Comment elle est exposée pendant son activité.</dd><dt>Événement déclencheur</dt><dd>Ce qui peut conduire au dommage.</dd><dt>Dommage</dt><dd>La lésion ou l’atteinte à la santé.</dd></dl></details>`:''}<div role="group" aria-label="Une seule réponse à choisir">${q.choix.map((o,i)=>`<button type="button" class="mq-choice" data-choice="${i}" aria-pressed="false"><span class="mq-letter">${'ABC'[i]}</span><span>${esc(o.texte)}</span></button>`).join('')}</div>
                 <button type="button" class="mq-primary" data-action="check" disabled>Vérifier ma réponse</button><div class="mq-feedback-zone"></div></section>`;
             root.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', () => choose(Number(button.dataset.choice))));
             on('check', check); focus('.mq-title', true);
