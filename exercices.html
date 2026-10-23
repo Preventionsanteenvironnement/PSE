@@ -808,6 +808,29 @@
         .ec-text-input:focus { border-color: #3b82f6; }
         .ec-expected { font-size: 0.85rem; color: #16a34a; margin-top: 4px; display: none; font-style: italic; }
 
+        /* --- Etude de cas : mode « entraînement guidé » (contenu.mode === 'entrainement_guide') ---
+           Correction question par question après une réponse obligatoire ; auto-appréciation, aucune note automatique. */
+        .ecg-intro { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 12px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.9rem; }
+        .ecg-question { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; background: #fff; }
+        .ecg-question.ecg-vu { border-color: #bbf7d0; }
+        .ecg-label { display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin: 8px 0 4px; }
+        .ecg-question .ec-text-input[readonly] { background: #f8fafc; color: #334155; }
+        .ecg-msg { min-height: 1.2em; margin: 6px 0 0; font-size: 0.85rem; font-weight: 700; color: #b45309; }
+        .ecg-btn { margin-top: 8px; font: inherit; font-weight: 700; font-size: 0.9rem; padding: 10px 16px; min-height: 44px; border-radius: 999px; border: 2px solid #1e3a8a; background: #fff; color: #1e3a8a; cursor: pointer; }
+        .ecg-btn:hover, .ecg-btn:focus-visible { background: #1e3a8a; color: #fff; }
+        .ecg-btn[aria-expanded="true"] { display: none; }
+        .ecg-feedback { display: none; margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: 0.9rem; line-height: 1.55; color: #1f2937; }
+        .ecg-feedback.visible { display: block; }
+        .ecg-feedback h4 { margin: 0 0 4px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: .04em; color: #166534; }
+        .ecg-feedback p { margin: 0 0 8px; }
+        .ecg-reponse { background: #fff; border-left: 4px solid #16a34a; border-radius: 0 10px 10px 0; padding: 8px 12px; margin-bottom: 12px !important; }
+        .ecg-auto { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #bbf7d0; }
+        .ecg-auto select { font: inherit; font-size: 0.9rem; padding: 8px 10px; border-radius: 10px; border: 2px solid #cbd5e1; max-width: 100%; }
+        .ecg-note { font-size: 0.8rem; color: #64748b; margin: 6px 0 0 !important; }
+        .ecg-bilan-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; background: #fff; text-align: left; }
+        .ecg-bilan-item b { display: block; margin-bottom: 2px; }
+        .ecg-bilan-item span { font-size: 0.85rem; color: #475569; }
+
         /* === PREVENTION (Mesures de prevention) === */
         .prev-situation {
             background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px 20px;
@@ -1655,7 +1678,10 @@ const DOSSIERS_TRANSVERSAUX = [
       autoTypes: ['pictogramme'] },
     { id: 'ACTEURS_PREV', label: '👥 Acteurs de prevention', color: '#0891b2',
       description: "Les acteurs de prevention en entreprise",
-      autoTypes: [] },
+      autoTypes: [],
+      sousDossiers: [
+          { id: 'PARCOURS_CSE_BACPRO', label: 'Parcours CSE · Bac Pro' }
+      ] },
     { id: 'ANALYSE_RISQUES', label: '🔍 Analyse des risques pro.', color: '#dc2626',
       description: "Analyse des risques professionnels",
       autoTypes: [] },
@@ -2666,6 +2692,7 @@ function startExercice(ex) {
     consigneEl.style.display = consigneText ? '' : 'none';
     document.getElementById('btn-validate').style.display = '';
     document.getElementById('btn-validate').disabled = false;
+    document.getElementById('btn-validate').textContent = 'Valider mes reponses';
     document.getElementById('zone-results').style.display = 'none';
     document.getElementById('zone-results').innerHTML = '';
 
@@ -3642,7 +3669,86 @@ function renderTableau(zone, c) {
 }
 
 // --- 10. ETUDE DE CAS ---
+// Mode « entraînement guidé » : activé uniquement si le contenu le demande.
+// Les études de cas sans ce champ gardent exactement leur fonctionnement.
+const EC_GUIDE_MIN_CARACTERES = 12;
+const EC_GUIDE_MIN_MOTS = 3;
+const EC_GUIDE_POSITIONS = ['Je dois reprendre la notion', 'J\u2019ai une partie de la réponse', 'Ma réponse satisfait les critères'];
+
+function isEtudeCasGuide(c) {
+    return !!(c && c.mode === 'entrainement_guide');
+}
+
+function ecGuideReponseSuffisante(texte) {
+    const t = String(texte || '').trim();
+    return t.length >= EC_GUIDE_MIN_CARACTERES && t.split(/\s+/).filter(Boolean).length >= EC_GUIDE_MIN_MOTS;
+}
+
+// Explication en paragraphes ; « Pour comprendre : », « Confusion à éviter : »… en gras.
+function ecGuideExplicationHtml(texte) {
+    return String(texte || '').split(/\n\s*\n/).map(function (para) {
+        const p = para.trim();
+        if (!p) return '';
+        const m = p.match(/^([^:\n]{3,40}) :\s*([\s\S]*)$/);
+        if (m) return '<p><strong>' + escapeHtml(m[1]) + ' :</strong> ' + escapeHtml(m[2]).replace(/\n/g, '<br>') + '</p>';
+        return '<p>' + escapeHtml(p).replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+}
+
+function renderEtudeCasGuide(zone, c) {
+    let html = '<div class="ec-scenario">' + (c.scenario || '') + '</div>';
+    html += '<p class="ecg-intro">Pour chaque question : écrire une réponse, même partielle, puis la comparer au corrigé. '
+        + 'Aucune note automatique : la réponse se juge sur le fond, à l\u2019aide des critères.</p>';
+    (c.questions || []).forEach((q, qi) => {
+        const id = 'ecg-' + qi;
+        html += '<div class="ec-question ecg-question" data-qi="' + qi + '" data-type="' + escapeHtml(q.type || 'texte') + '">';
+        html += '<div class="ec-q-text"><span class="ec-q-num">Q' + (qi + 1) + '.</span> ' + (q.question || '') + '</div>';
+        html += '<label class="ecg-label" for="' + id + '-rep">Ma réponse</label>';
+        html += '<textarea class="ec-text-input" id="' + id + '-rep" data-qi="' + qi + '" rows="4" placeholder="Écrire ma réponse avant de voir le corrigé…"></textarea>';
+        html += '<p class="ecg-msg" id="' + id + '-msg" role="status" aria-live="polite"></p>';
+        html += '<button type="button" class="ecg-btn" data-qi="' + qi + '" aria-expanded="false" aria-controls="' + id + '-fb" onclick="ecGuideComparer(' + qi + ')">Comparer ma réponse au corrigé</button>';
+        html += '<div class="ecg-feedback" id="' + id + '-fb" tabindex="-1">';
+        html += '<h4>Une réponse possible</h4><p class="ecg-reponse">' + escapeHtml(q.reponse || '').replace(/\n/g, '<br>') + '</p>';
+        if (q.explication) html += ecGuideExplicationHtml(q.explication);
+        html += '<div class="ecg-auto"><label class="ecg-label" for="' + id + '-pos">Après comparaison, je me situe :</label>';
+        html += '<select id="' + id + '-pos"><option value="">Choisir</option>';
+        EC_GUIDE_POSITIONS.forEach(function (lib) { html += '<option>' + escapeHtml(lib) + '</option>'; });
+        html += '</select>';
+        html += '<label class="ecg-label" for="' + id + '-suite">Ce que je corrige ou complète dans ma réponse :</label>';
+        html += '<textarea class="ec-text-input" id="' + id + '-suite" rows="3"></textarea>';
+        html += '<p class="ecg-note">Cette auto-appréciation peut être discutée avec le professeur.</p></div>';
+        html += '</div></div>';
+    });
+    zone.innerHTML = html;
+    const btn = document.getElementById('btn-validate');
+    if (btn) btn.textContent = 'Terminer l\u2019étude de cas';
+}
+
+function ecGuideComparer(qi) {
+    if (!currentExo || !isEtudeCasGuide(currentExo.contenu)) return;
+    const id = 'ecg-' + qi;
+    const input = document.getElementById(id + '-rep');
+    const msg = document.getElementById(id + '-msg');
+    if (!ecGuideReponseSuffisante(input.value)) {
+        msg.textContent = 'Une réponse est obligatoire avant le corrigé, même partielle : écrire au moins quelques mots.';
+        input.focus();
+        return;
+    }
+    msg.textContent = '';
+    input.readOnly = true;   // la première tentative reste visible telle quelle pour la comparaison
+    const fb = document.getElementById(id + '-fb');
+    fb.classList.add('visible');
+    const block = input.closest('.ecg-question');
+    if (block) {
+        block.classList.add('ecg-vu');
+        const b = block.querySelector('.ecg-btn');
+        if (b) b.setAttribute('aria-expanded', 'true');
+    }
+    fb.focus();
+}
+
 function renderEtudeCas(zone, c) {
+    if (isEtudeCasGuide(c)) return renderEtudeCasGuide(zone, c);
     let html = '<div class="ec-scenario">' + (c.scenario || '') + '</div>';
     const questions = c.questions || [];
     questions.forEach((q, qi) => {
@@ -5576,6 +5682,7 @@ function renderBudgetExercice(zone, payload) {
 
 function validateExercice() {
     if (!currentExo || corrected) return;
+    if (currentExo.type === 'etude_cas' && isEtudeCasGuide(currentExo.contenu)) return terminerEtudeCasGuide();
     corrected = true;
     const type = currentExo.type;
     let correct = 0, total = 0, details = [];
@@ -7218,6 +7325,60 @@ function validateExercice() {
 
     document.getElementById('btn-validate').disabled = true;
     showResults(correct, total, details);
+}
+
+// Étude de cas guidée : pas de score. Toutes les questions doivent avoir été rédigées et comparées.
+function terminerEtudeCasGuide() {
+    const questions = (currentExo.contenu && currentExo.contenu.questions) || [];
+    for (let qi = 0; qi < questions.length; qi++) {
+        const fb = document.getElementById('ecg-' + qi + '-fb');
+        if (!fb || !fb.classList.contains('visible')) {
+            const msg = document.getElementById('ecg-' + qi + '-msg');
+            if (msg) msg.textContent = 'Cette question attend encore une réponse comparée au corrigé.';
+            const input = document.getElementById('ecg-' + qi + '-rep');
+            if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus({ preventScroll: true }); }
+            return;
+        }
+    }
+    corrected = true;
+    document.getElementById('btn-validate').disabled = true;
+    const positions = questions.map(function (q, qi) {
+        const sel = document.getElementById('ecg-' + qi + '-pos');
+        return sel ? sel.value : '';
+    });
+    let html = '<div class="results-box">';
+    html += '<div style="font-size:2rem;">📝</div>';
+    html += '<div class="score-label">Étude de cas terminée : ' + questions.length + ' réponse' + (questions.length > 1 ? 's' : '') + ' rédigée' + (questions.length > 1 ? 's' : '') + ' et comparée' + (questions.length > 1 ? 's' : '') + ' au corrigé.</div>';
+    html += '<p style="font-size:0.85rem; color:#64748b; margin:6px 0 0;">Pas de note automatique : le bilan ci-dessous reprend l\u2019auto-appréciation de chaque réponse.</p>';
+    html += '<div class="results-actions">';
+    html += '<button class="btn-retry" onclick="retryExercice()">🔄 Refaire</button>';
+    html += '<button class="btn-back-list" onclick="backToList()">← Retour</button>';
+    html += '</div></div>';
+    html += '<div class="correction-list">';
+    questions.forEach(function (q, qi) {
+        html += '<div class="ecg-bilan-item"><b>Q' + (qi + 1) + '. ' + escapeHtml(String(q.question || '').replace(/<[^>]*>/g, '')) + '</b>';
+        html += '<span>' + (positions[qi] ? escapeHtml(positions[qi]) : 'Auto-appréciation non renseignée') + '</span></div>';
+    });
+    html += '</div>';
+    const resultsZone = document.getElementById('zone-results');
+    resultsZone.innerHTML = html;
+    resultsZone.style.display = '';
+    resultsZone.scrollIntoView({ behavior: 'smooth' });
+
+    // Parcours : on signale que l'exercice est terminé, sans score de maîtrise.
+    publishParcoursResult({
+        source: 'exercices',
+        mode: 'entrainement_guide',
+        statut: 'termine',
+        ref_exercice_id: (currentExo && currentExo.id) ? currentExo.id : PARCOURS_EXO_ID,
+        score_pct: null,
+        reponses_redigees: questions.length,
+        total_questions: questions.length,
+        auto_appreciations: positions,
+        tentative: 1,
+        timestamp: Date.now(),
+        details: { type: 'etude_cas', titre: currentExo && currentExo.titre ? currentExo.titre : '', total_items: questions.length }
+    });
 }
 
 // =====================================================================
