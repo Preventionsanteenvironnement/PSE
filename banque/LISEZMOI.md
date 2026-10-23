@@ -32,3 +32,15 @@ aucune écriture Firebase, aucun envoi de copie ou de note scolaire par ce moteu
 Références pédagogiques : module C3 du professeur ; vérification institutionnelle
 INRS (acteurs et salarié compétent), Urssaf (CSE), ministère du Travail (CSSCT),
 le 23 octobre 2026. Les documents privés du professeur ne sont pas publiés.
+
+
+## Identification et estimation : entraînement mobile
+
+Les trois fichiers `exo_risques_mobile_n1.json` à `exo_risques_mobile_n3.json`
+réutilisent le même moteur mobile et les mêmes champs de corrigés.
+Classement : Estimation du risque > Identification et estimation · Bac Pro, module C5.
+Les petites grilles intégrées sont des conventions pédagogiques explicites ;
+aucune formule ou matrice n’est présentée comme un barème national.
+Contenu : identification/PAD, gravité et probabilité, lecture de priorité,
+justification et réévaluation. Référence principale : module C5 du professeur.
+Documents privés et données d’élèves exclus du dépôt.

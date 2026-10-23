@@ -73,7 +73,7 @@
         function end() {
             root.innerHTML = `<section class="mq-card"><h3 class="mq-title" tabindex="-1">${retry?'Tu as repris les questions difficiles.':'Tu as fait les six questions.'}</h3>
                 <p>${retry?'Tu peux refaire le niveau pour vérifier tes repères.':`${firstCorrect} réponse${firstCorrect>1?'s':''} juste${firstCorrect>1?'s':''} au premier essai sur ${questions.length}. Ce repère concerne seulement cet entraînement.`}</p>
-                <p><strong>À garder :</strong> chaque acteur a un rôle ; plusieurs acteurs peuvent agir ensemble.</p>
+                <p><strong>À garder :</strong> ${esc(contenu.bilan_retenir || 'chaque acteur a un rôle ; plusieurs acteurs peuvent agir ensemble.')}</p>
                 ${!retry && wrong.length?`<button type="button" class="mq-primary" data-action="retry">Réessayer les ${wrong.length} question${wrong.length>1?'s':''} à reprendre</button>`:''}
                 ${contenu.suite_exercice && onNextLevel?'<button type="button" class="mq-secondary" data-action="next-level">Découvrir le niveau suivant</button>':''}
                 <button type="button" class="mq-secondary" data-action="restart">Refaire ce niveau</button>
