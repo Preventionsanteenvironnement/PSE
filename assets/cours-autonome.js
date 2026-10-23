@@ -9,7 +9,7 @@
   var NIVEAUX = [['standard', 'Standard'], ['adapte', 'Adapté'], ['essentiel', 'Essentiel']];
   var TAILLES = [14, 16, 18, 20, 22, 24, 28, 32, 36];
   var PREF = 'pse-cours-reglages';
-  var CLE = 'pse-cours-' + C.slug;
+  var CLE = 'pse-cours-' + C.slug + (C.cpp_clair ? '-cpp2' : '');
 
   /* ───────────── mémoire locale ───────────── */
   function lireMem(k, def) {
@@ -972,7 +972,7 @@
       }).join('') + '</tbody></table>' +
       (arevoir.length ? '<p><strong>Notions à revoir :</strong></p><ul>' + arevoir.map(function (k) {
         return '<li><strong>' + esc(k) + '</strong> — séance ' + esc(notions[k].seance) + (notions[k].meta.renvoi ? ' : ' + lienRenvoi(notions[k].meta) : '') + '</li>';
-      }).join('') + '</ul>' : '<p><strong>Toutes les notions du module sont acquises.</strong></p>') +
+      }).join('') + '</ul>' : (C.cpp_clair ? '<p><strong>Tu as réussi ces questions d’entraînement.</strong> Cela ne suffit pas, à lui seul, à valider toutes les compétences.</p>' : '<p><strong>Toutes les notions du module sont acquises.</strong></p>')) +
       (acquises.length && arevoir.length ? '<p><strong>Notions acquises :</strong> ' + acquises.map(esc).join(' ; ') + '.</p>' : '') +
       '<div class="actions">' + btnAudio('bilan-s', '🔊 Écouter le résultat') + '<button type="button" data-imprimer>🖨️ Enregistrer en PDF</button></div>';
     rep.e['bilan-score'] = justes;
@@ -990,16 +990,18 @@
   function compChasse(qid, d) {
     var zones = d.zones || [];
     var toutes = d.trouver === 'toutes';
-    CHASSE[qid] = { zones: zones, trouves: {}, toutes: toutes };
+    CHASSE[qid] = { zones: zones, trouves: {}, toutes: toutes, crop: d.cadrage, choixDanger: d.choixDanger };
     var pieces = d.pieces || [];
+    var crop = d.cadrage;
+    var cropBox = crop ? ' style="aspect-ratio:' + ((d.img_w || 1536)*crop.w) + '/' + ((d.img_h || 1024)*crop.h) + '"' : '';
+    var cropImg = crop ? ' style="position:absolute;left:' + (-crop.x/crop.w*100) + '%;top:' + (-crop.y/crop.h*100) + '%;width:' + (10000/crop.w) + '%;height:' + (10000/crop.h) + '%;max-width:none"' : '';
     var html = '<div class="chasse">' +
-      '<div class="chasse-img" data-q="' + qid + '" role="img" aria-label="' + esc(d.alt || 'Vue de l\'entreprise') + '">' +
-      '<img src="' + esc(d.image) + '" alt="" draggable="false"' + (d.img_w ? ' width="' + d.img_w + '" height="' + d.img_h + '"' : '') + '>' +
+      '<div class="chasse-img" data-q="' + qid + '" role="img" aria-label="' + esc(d.alt || 'Vue de l\'entreprise') + '"' + cropBox + '>' +
+      '<img src="' + esc(d.image) + '" alt="" draggable="false"' + cropImg + (d.img_w ? ' width="' + d.img_w + '" height="' + d.img_h + '"' : '') + '>' +
       '<div class="chasse-calque" id="' + qid + '-calque"></div></div>' +
       '<p class="chasse-info" id="' + qid + '-info" aria-live="polite">' + (toutes ? 'Dangers trouvés : 0 sur ' + zones.length : '') + '</p>' +
-      (pieces.length ? '<div class="item"><label class="enonce" for="' + qid + '-piece">Pièce où se trouve ' + (toutes ? 'un danger' : 'le danger') +
-        ' (réponse possible sans l\'image)</label><select class="choix" id="' + qid + '-piece" data-k="' + qid + '-piece">' +
-        '<option value="">— Choisir une pièce —</option>' + pieces.map(function (p) { return '<option>' + esc(p) + '</option>'; }).join('') + '</select></div>' : '') +
+      (pieces.length ? '<div class="item"><label class="enonce" for="' + qid + '-piece">' + (d.choixDanger ? 'Autre façon de répondre : choisir l’élément dangereux' : ('Pièce où se trouve ' + (toutes ? 'un danger' : 'le danger') + ' (réponse possible sans l\'image)')) + '</label><select class="choix" id="' + qid + '-piece" data-k="' + qid + '-piece">' +
+        '<option value="">' + (d.choixDanger ? '— Choisir un élément —' : '— Choisir une pièce —') + '</option>' + pieces.map(function (p) { return '<option>' + esc(p) + '</option>'; }).join('') + '</select></div>' : '') +
       '</div>';
     var comp = {
       auto: true,
@@ -1019,7 +1021,8 @@
   function dessinerZone(qid, i, revele) {
     var s = CHASSE[qid], c = document.getElementById(qid + '-calque');
     if (!s || !c || c.querySelector('[data-z="' + i + '"]')) return;
-    var z = s.zones[i];
+    var z = s.zones[i], crop = s.crop;
+    if (crop) z = Object.assign({}, z, {x:(z.x-crop.x)/crop.w*100,y:(z.y-crop.y)/crop.h*100,w:z.w/crop.w*100,h:z.h/crop.h*100});
     c.insertAdjacentHTML('beforeend', '<div class="zone-danger' + (revele && !s.trouves[i] ? ' revele' : '') + '" data-z="' + i +
       '" style="left:' + z.x + '%;top:' + z.y + '%;width:' + z.w + '%;height:' + z.h + '%"><span>' + esc(z.danger) + '</span></div>');
   }
@@ -1028,6 +1031,7 @@
     if (!s) return;
     var r = el.getBoundingClientRect();
     var px = (ev.clientX - r.left) / r.width * 100, py = (ev.clientY - r.top) / r.height * 100;
+    if (s.crop) { px=s.crop.x+px/100*s.crop.w; py=s.crop.y+py/100*s.crop.h; }
     var idx = -1;
     s.zones.forEach(function (z, i) { if (px >= z.x && px <= z.x + z.w && py >= z.y && py <= z.y + z.h) idx = i; });
     var info = document.getElementById(qid + '-info');
@@ -1043,7 +1047,7 @@
     }
     if (!s.trouves[idx]) { s.trouves[idx] = true; dessinerZone(qid, idx, false); }
     var z = s.zones[idx];
-    info.textContent = '✔ Danger trouvé : ' + z.danger + ' (' + z.piece + ').' + compte();
+    info.textContent = '✔ Danger trouvé : ' + z.danger + (s.choixDanger ? '.' : ' (' + z.piece + ').') + compte();
     annoncer(info.textContent);
     rep.v[qid + '-z'] = Object.keys(s.trouves).join(',');
     sauverRep();
@@ -1199,7 +1203,7 @@
       comp: {
         auto: true,
         verifier: function () { var s = MEM[qid], n = Object.keys(s.trouvees).length; return [{ ok: n === s.total, vide: n === 0 }]; },
-        reveler: function (zone) { zone.querySelectorAll('.mem-carte').forEach(function (b) { montrerMem(qid, b, true); }); }
+        reveler: function (zone) { if (C.cpp_clair) return; zone.querySelectorAll('.mem-carte').forEach(function (b) { montrerMem(qid, b, true); }); }
       }
     };
   }
