@@ -12,412 +12,514 @@ window.MOTS = {
   "1": "La digestion des aliments",
   "2": "Les pratiques alimentaires et leurs enjeux",
   "3": "L'étiquette alimentaire",
-  "4": "Choix alimentaire et ultra-transformés"
+  "4": "Argumenter un choix alimentaire responsable"
  },
  "familles": [
   {
-   "l": "Des organes de l'appareil digestif",
+   "l": "Les organes du tube digestif",
    "m": [
+    "BOUCHE",
     "ESTOMAC",
     "INTESTIN GRÊLE",
-    "PANCRÉAS",
-    "FOIE"
+    "GROS INTESTIN",
+    "ANUS"
    ]
   },
   {
-   "l": "Les constituants alimentaires transformés par la digestion",
+   "l": "Les organes situés hors du trajet des aliments",
    "m": [
-    "GLUCIDES",
-    "PROTIDES",
+    "GLANDES SALIVAIRES",
+    "FOIE",
+    "PANCRÉAS"
+   ]
+  },
+  {
+   "l": "Les constituants des aliments",
+   "m": [
+    "AMIDON",
+    "PROTÉINES",
     "LIPIDES"
    ]
   },
   {
-   "l": "Les pratiques alimentaires",
+   "l": "Les nutriments obtenus après la digestion",
    "m": [
-    "OMNIVORE",
-    "FLEXITARIENNE",
-    "VÉGÉTARIENNE",
-    "VÉGÉTALIENNE"
+    "GLUCOSE",
+    "ACIDES AMINÉS",
+    "ACIDES GRAS",
+    "GLYCÉROL"
    ]
   },
   {
-   "l": "Ce que favorisent les excès alimentaires",
+   "l": "Des pratiques alimentaires",
    "m": [
-    "SURPOIDS",
-    "OBÉSITÉ",
-    "DIABÈTE",
-    "HYPERTENSION"
+    "VÉGÉTARISME",
+    "VÉGÉTALISME",
+    "SANS GLUTEN"
    ]
   },
   {
-   "l": "Ce que porte obligatoirement l'étiquette",
+   "l": "Des mentions obligatoires de l'étiquette",
    "m": [
     "DÉNOMINATION",
-    "INGRÉDIENTS",
-    "ALLERGÈNES",
+    "INGRÉDIENT",
+    "ALLERGÈNE",
+    "QUANTITÉ NETTE",
     "DLC",
     "DDM",
-    "VALEUR ÉNERGÉTIQUE",
-    "PROVENANCE"
+    "DÉCLARATION NUTRITIONNELLE"
    ]
   },
   {
-   "l": "Ce que mesure le score environnemental",
+   "l": "Des additifs",
    "m": [
-    "CLIMAT",
-    "BIODIVERSITÉ",
-    "POLLUTION"
+    "ADDITIF",
+    "ÉMULSIFIANT",
+    "COLORANT"
    ]
   }
  ],
  "liste": [
   {
-   "m": "DIGESTION",
+   "m": "APPAREIL DIGESTIF",
    "s": 1,
-   "d": "Transformation des aliments en nutriments.",
-   "e": "Elle associe une action mécanique (couper, broyer, mélanger) et une action chimique (les enzymes des sucs digestifs)."
+   "d": "Ensemble formé par le tube digestif et les glandes digestives.",
+   "e": "Les glandes salivaires, le foie et le pancréas sont situés hors du trajet des aliments."
   },
   {
-   "m": "NUTRIMENTS",
+   "m": "TUBE DIGESTIF",
    "s": 1,
-   "d": "Substances simples, issues de la digestion, que l'organisme peut absorber et que les cellules utilisent.",
-   "e": "Le glucose, les acides aminés, les acides gras et le glycérol en sont des exemples."
+   "d": "Trajet des aliments : bouche, œsophage, estomac, intestin grêle, gros intestin, anus.",
+   "e": "Le long du tube digestif, les aliments sont transformés."
+  },
+  {
+   "m": "BOUCHE",
+   "s": 1,
+   "d": "Premier organe du tube digestif, où les dents broient les aliments.",
+   "e": "La digestion mécanique y commence ; la salive y agit sur l'amidon."
   },
   {
    "m": "ESTOMAC",
    "s": 1,
-   "d": "Poche du tube digestif où les muscles de la paroi brassent les aliments.",
-   "e": "Le suc gastrique y commence la digestion des protides."
+   "d": "Poche du tube digestif où le brassage et les contractions réduisent les aliments en bouillie.",
+   "e": "Il sécrète l'acide chlorhydrique, un suc digestif."
   },
   {
    "m": "INTESTIN GRÊLE",
    "s": 1,
-   "d": "Long tube replié où se termine la digestion et où les nutriments passent dans le sang.",
-   "e": "Le suc pancréatique et le suc intestinal y terminent la digestion des glucides, des protides et des lipides."
+   "d": "Long tube replié où les nutriments traversent la paroi vers le sang ou la lymphe.",
+   "e": "Sa paroi forme des replis, les villosités, qui accroissent la surface d'absorption."
   },
   {
-   "m": "PANCRÉAS",
+   "m": "GROS INTESTIN",
    "s": 1,
-   "d": "Glande digestive placée sous l'estomac, que les aliments ne traversent pas.",
-   "e": "Son suc agit dans l'intestin grêle et termine la digestion des glucides, des protides et des lipides."
+   "d": "Partie du tube digestif qui encadre l'intestin grêle, avant l'anus.",
+   "e": "C'est l'avant-dernier organe du trajet des aliments."
+  },
+  {
+   "m": "ANUS",
+   "s": 1,
+   "d": "Extrémité du tube digestif.",
+   "e": "C'est le dernier organe du trajet des aliments."
+  },
+  {
+   "m": "GLANDES SALIVAIRES",
+   "s": 1,
+   "d": "Organes de l'appareil digestif situés près de la bouche, hors du trajet des aliments.",
+   "e": "La salive agit sur l'amidon dès la bouche."
   },
   {
    "m": "FOIE",
    "s": 1,
-   "d": "Glande digestive qui fabrique la bile.",
-   "e": "La bile facilite la digestion des lipides. Les aliments ne traversent pas cet organe."
+   "d": "Gros organe en haut de l'abdomen, hors du trajet des aliments, qui sécrète la bile.",
+   "e": "La bile est un suc digestif, et non une enzyme."
+  },
+  {
+   "m": "PANCRÉAS",
+   "s": 1,
+   "d": "Organe situé sous l'estomac, hors du trajet des aliments.",
+   "e": "Les enzymes du suc pancréatique participent à la digestion chimique."
+  },
+  {
+   "m": "DIGESTION",
+   "s": 1,
+   "d": "Transformation des aliments en nutriments.",
+   "e": "Elle est mécanique (dents, brassage) et chimique (enzymes, sucs digestifs)."
+  },
+  {
+   "m": "ALIMENT",
+   "s": 1,
+   "d": "Produit consommé qui apporte glucides, protéines, lipides, eau, minéraux, vitamines et fibres.",
+   "e": "La digestion le transforme en nutriments."
+  },
+  {
+   "m": "ACTION MÉCANIQUE",
+   "s": 1,
+   "d": "Action qui broie les aliments, les brasse et les fait avancer.",
+   "e": "Elle a lieu dans la bouche et l'estomac et réduit les aliments en bouillie."
+  },
+  {
+   "m": "ACTION CHIMIQUE",
+   "s": 1,
+   "d": "Action des enzymes des sucs digestifs, qui découpent les grosses molécules des aliments.",
+   "e": "Elle se déroule tout au long du tube digestif."
   },
   {
    "m": "MASTICATION",
    "s": 1,
-   "d": "Action des dents qui coupent et broient les aliments dans la bouche.",
-   "e": "C'est une action mécanique, et non chimique. Mâcher peu réduit le broyage et le mélange avec la salive.",
-   "x": "Victor mange vite et mâche peu."
+   "d": "Broyage des aliments par les dents, dans la bouche.",
+   "e": "C'est une action mécanique, et non chimique."
+  },
+  {
+   "m": "BRASSAGE",
+   "s": 1,
+   "d": "Mouvement de l'estomac qui continue de fragmenter les aliments.",
+   "e": "Avec les contractions de l'estomac, c'est une action mécanique."
+  },
+  {
+   "m": "ENZYME",
+   "s": 1,
+   "d": "Substance qui fractionne les molécules complexes en éléments plus simples, absorbables.",
+   "e": "Les enzymes réalisent la digestion chimique, avec les sucs digestifs."
+  },
+  {
+   "m": "SUC DIGESTIF",
+   "s": 1,
+   "d": "Liquide qui participe à la digestion chimique : salive, acide chlorhydrique, bile.",
+   "e": "Le suc pancréatique contient des enzymes."
   },
   {
    "m": "SALIVE",
    "s": 1,
-   "d": "Suc digestif de la bouche qui commence la digestion de l'amidon.",
-   "e": "Dans l'expérience, le tube qui en contient reste jaune-brun avec l'eau iodée : l'amidon a disparu."
+   "d": "Suc digestif de la bouche, qui agit sur l'amidon.",
+   "e": "Son action sur l'amidon est une action chimique."
   },
   {
-   "m": "ENZYMES",
+   "m": "BILE",
    "s": 1,
-   "d": "Substances des sucs digestifs qui découpent les grosses molécules des aliments en petites molécules.",
-   "e": "Elles réalisent l'action chimique de la digestion ; la salive en contient une qui digère l'amidon."
+   "d": "Suc digestif sécrété par le foie.",
+   "e": "La bile n'est pas une enzyme."
   },
   {
    "m": "AMIDON",
    "s": 1,
-   "d": "Glucide du pain, des pâtes ou du riz ; l'eau iodée le révèle en bleu-noir.",
-   "e": "Sa digestion commence dans la bouche grâce à la salive et se termine en glucose dans l'intestin grêle.",
-   "x": "Le pain du sandwich de Victor en apporte."
-  },
-  {
-   "m": "GLUCIDES",
-   "s": 1,
-   "d": "Constituants apportés par le pain, les pâtes, le riz, les fruits : amidon et sucres.",
-   "e": "Après la digestion, ils donnent du glucose."
-  },
-  {
-   "m": "PROTIDES",
-   "s": 1,
-   "d": "Constituants apportés par la viande, le poisson, les œufs, le lait, les légumes secs.",
-   "e": "Ce sont les protéines. Après la digestion, ils donnent des acides aminés.",
-   "x": "Le jambon du sandwich de Victor en apporte."
-  },
-  {
-   "m": "LIPIDES",
-   "s": 1,
-   "d": "Constituants apportés par le beurre, l'huile, le fromage : les graisses.",
-   "e": "Après la digestion, ils donnent des acides gras et du glycérol ; la bile facilite leur digestion.",
-   "x": "Le beurre du sandwich de Victor en apporte."
+   "d": "Glucide complexe du pain, des pâtes et des biscuits.",
+   "e": "La digestion le transforme en glucose.",
+   "x": "La farine de la barre chocolatée d'Agathe apporte de l'amidon."
   },
   {
    "m": "GLUCOSE",
    "s": 1,
-   "d": "Nutriment obtenu après la digestion des glucides.",
-   "e": "Il traverse les villosités intestinales, passe dans le sang et rejoint les cellules."
+   "d": "Nutriment obtenu après la digestion de l'amidon.",
+   "e": "Il traverse la paroi de l'intestin grêle et passe dans le sang."
   },
   {
-   "m": "VILLOSITÉS",
+   "m": "PROTÉINES",
    "s": 1,
-   "d": "Replis en forme de doigts de la paroi interne de l'intestin grêle, à la paroi très fine.",
-   "e": "Les nutriments les traversent pour passer dans le sang ou la lymphe."
+   "d": "Constituants des lentilles, des œufs et de la viande.",
+   "e": "La digestion les transforme en acides aminés."
+  },
+  {
+   "m": "ACIDES AMINÉS",
+   "s": 1,
+   "d": "Nutriments obtenus après la digestion des protéines.",
+   "e": "Ils traversent la paroi de l'intestin grêle."
+  },
+  {
+   "m": "LIPIDES",
+   "s": 1,
+   "d": "Constituants de l'huile, du beurre et du chocolat.",
+   "e": "La digestion les transforme en acides gras et glycérol.",
+   "x": "Le chocolat de la barre d'Agathe apporte des lipides."
+  },
+  {
+   "m": "ACIDES GRAS",
+   "s": 1,
+   "d": "Nutriments obtenus, avec le glycérol, après la digestion des lipides.",
+   "e": "Ils passent dans le sang ou la lymphe."
+  },
+  {
+   "m": "GLYCÉROL",
+   "s": 1,
+   "d": "Nutriment obtenu, avec les acides gras, après la digestion des lipides.",
+   "e": "Il traverse la paroi de l'intestin grêle."
+  },
+  {
+   "m": "NUTRIMENT",
+   "s": 1,
+   "d": "Substance utilisable par l'organisme, absorbée directement ou obtenue par la digestion.",
+   "e": "Glucose, acides aminés, acides gras et glycérol sont des nutriments."
   },
   {
    "m": "ABSORPTION INTESTINALE",
    "s": 1,
-   "d": "Passage des nutriments de l'intestin grêle vers le sang ou la lymphe.",
-   "e": "Elle se fait à travers la paroi des villosités ; le sang transporte ensuite les nutriments jusqu'aux cellules."
+   "d": "Passage des nutriments à travers la paroi de l'intestin grêle, vers le sang ou la lymphe.",
+   "e": "Les villosités accroissent considérablement la surface d'absorption."
   },
   {
-   "m": "OMNIVORE",
-   "s": 2,
-   "d": "Se dit d'une personne qui consomme des aliments d'origine animale et d'origine végétale.",
-   "e": "Elle n'exclut aucune catégorie d'aliments, contrairement aux personnes végétariennes ou végétaliennes."
+   "m": "VILLOSITÉS",
+   "s": 1,
+   "d": "Replis de la paroi de l'intestin grêle.",
+   "e": "Avec les microvillosités, elles accroissent considérablement la surface d'absorption."
   },
   {
-   "m": "FLEXITARIENNE",
-   "s": 2,
-   "d": "Pratique qui n'exclut aucun aliment, mais avec plus de protéines végétales et moins de viande et de poisson.",
-   "e": "Elle réduit la viande sans la supprimer.",
-   "x": "Nadia, 23 ans, ne prend de la viande que deux fois par semaine."
+   "m": "SANG",
+   "s": 1,
+   "d": "Liquide qui reçoit les nutriments et les transporte jusqu'aux cellules.",
+   "e": "Le glucose passe de l'intestin grêle dans le sang."
   },
   {
-   "m": "VÉGÉTARIENNE",
-   "s": 2,
-   "d": "Pratique qui exclut la chair animale mais conserve les œufs et les produits laitiers.",
-   "e": "Viande, poisson et fruits de mer sont exclus.",
-   "x": "Lina, 24 ans, ne mange plus de viande ni de poisson depuis deux ans."
-  },
-  {
-   "m": "VÉGÉTALIENNE",
-   "s": 2,
-   "d": "Pratique qui exclut tous les aliments d'origine animale : chair, œufs, produits laitiers, miel.",
-   "e": "Elle demande de la vigilance : la vitamine B12 doit être prise en complément."
-  },
-  {
-   "m": "GLUTEN",
-   "s": 2,
-   "d": "Substance présente dans le blé, le seigle ou l'orge, que certaines personnes doivent exclure.",
-   "e": "Une personne intolérante supprime tous les aliments qui en contiennent : pain, pâtes, pizzas, gâteaux.",
-   "x": "Hugo, 26 ans, vérifie chaque étiquette."
+   "m": "LYMPHE",
+   "s": 1,
+   "d": "Liquide qui, comme le sang, reçoit des nutriments absorbés.",
+   "e": "Un vaisseau lymphatique passe au centre de chaque villosité."
   },
   {
    "m": "PRATIQUE CHOISIE",
    "s": 2,
-   "d": "Manière de s'alimenter adoptée volontairement : convictions, environnement, goût, santé.",
-   "e": "Elle s'oppose à la pratique imposée par une maladie, un manque d'argent ou des contraintes du travail.",
-   "x": "Lina refuse que des animaux soient tués pour la nourrir."
+   "d": "Pratique alimentaire adoptée volontairement : convictions, environnement, goût, santé.",
+   "e": "Le végétalisme par conviction en est un exemple.",
+   "x": "Le végétarisme d'Agathe est choisi, pour le bien-être animal et pour la planète."
   },
   {
    "m": "PRATIQUE SUBIE",
    "s": 2,
-   "d": "Manière de s'alimenter imposée : maladie, allergie, intolérance, manque d'argent, contraintes du travail.",
-   "e": "Elle ne relève pas d'un choix de la personne.",
-   "x": "Victor déjeune en un quart d'heure dans sa voiture, faute de lieu pour manger."
+   "d": "Pratique alimentaire imposée : maladie, allergie, manque d'argent, contraintes du travail.",
+   "e": "Le régime sans gluten imposé par une maladie cœliaque en est un exemple.",
+   "x": "La barre chocolatée d'Agathe est subie : le distributeur ne propose que des produits sucrés ou salés et la salle n'a pas de réfrigérateur."
+  },
+  {
+   "m": "VÉGÉTARISME",
+   "s": 2,
+   "d": "Pratique alimentaire qui exclut la chair animale.",
+   "e": "Il est associé à un risque plus faible de diabète de type 2.",
+   "x": "Agathe est végétarienne depuis deux ans."
+  },
+  {
+   "m": "VÉGÉTALISME",
+   "s": 2,
+   "d": "Pratique alimentaire qui exclut tout produit d'origine animale.",
+   "e": "C'est une pratique choisie, par exemple par conviction."
+  },
+  {
+   "m": "SANS GLUTEN",
+   "s": 2,
+   "d": "Régime imposé toute la vie par une maladie cœliaque.",
+   "e": "C'est une pratique alimentaire subie."
+  },
+  {
+   "m": "BESOIN NUTRITIONNEL MOYEN",
+   "s": 2,
+   "d": "Quantité moyenne d'un nutriment nécessaire aux personnes d'une population.",
+   "e": "C'est un repère, et non le besoin d'une personne : 7 mg de fer par jour pour une femme de 18 ans et plus aux pertes menstruelles faibles à modérées."
   },
   {
    "m": "CARENCE",
    "s": 2,
-   "d": "Manque durable d'un nutriment, qui provoque des troubles.",
-   "e": "Exemples : anémie par manque de fer ou de vitamine B12, déminéralisation des os par manque de calcium."
-  },
-  {
-   "m": "ANÉMIE",
-   "s": 2,
-   "d": "Trouble dû à un manque de fer ou de vitamine B12.",
-   "e": "C'est un exemple de carence : un apport insuffisant et durable d'un nutriment."
+   "d": "Manque durable d'un nutriment.",
+   "e": "Le statut en fer des végétariens est moins favorable : il faut le surveiller.",
+   "x": "Végétarienne, Agathe doit surveiller ses apports en fer."
   },
   {
    "m": "EXCÈS ALIMENTAIRE",
    "s": 2,
    "d": "Apport trop important d'énergie, de sucres, de graisses ou de sel.",
-   "e": "L'abus d'aliments gras et sucrés favorise le surpoids, l'obésité, le diabète de type 2 et les maladies cardiovasculaires.",
-   "x": "Chips, soda et barres chocolatées chaque jour : Victor a pris quatre kilos."
+   "e": "Santé publique France recommande de limiter les boissons sucrées et les aliments gras, sucrés, salés et ultra-transformés.",
+   "x": "À la pause, Agathe achète le plus souvent une barre chocolatée et une boisson sucrée."
   },
   {
-   "m": "SURPOIDS",
+   "m": "FER HÉMINIQUE",
    "s": 2,
-   "d": "Poids trop élevé, favorisé par l'abus d'aliments gras et sucrés.",
-   "e": "C'est une conséquence des excès alimentaires, à ne pas confondre avec une carence.",
-   "x": "Victor a pris quatre kilos en trois mois."
+   "d": "Fer présent exclusivement dans les aliments d'origine animale.",
+   "e": "Son taux d'absorption est supérieur à celui du fer non héminique."
   },
   {
-   "m": "OBÉSITÉ",
+   "m": "ANÉMIE",
    "s": 2,
-   "d": "État favorisé, comme le surpoids, par l'abus d'aliments gras et sucrés.",
-   "e": "Avec le surpoids, le diabète de type 2 et les maladies cardiovasculaires, elle fait partie des effets des excès alimentaires."
+   "d": "Conséquence possible d'une déficience en fer, dite « ferriprive ».",
+   "e": "Elle peut provoquer fatigue, maux de tête, vertige, essoufflement.",
+   "x": "Agathe se sent très fatiguée en fin de poste et en a parlé au médecin du travail."
   },
   {
-   "m": "DIABÈTE",
+   "m": "DIABÈTE DE TYPE 2",
    "s": 2,
-   "d": "Maladie « de type 2 » favorisée par l'abus d'aliments gras et sucrés.",
-   "e": "Comme l'obésité et les maladies cardiovasculaires, il est favorisé par les excès alimentaires."
+   "d": "Maladie dont le risque est plus faible avec un régime végétarien.",
+   "e": "L'Assurance Maladie l'indique avec un niveau de preuves modéré."
   },
   {
-   "m": "HYPERTENSION",
+   "m": "SURFACE AGRICOLE",
    "s": 2,
-   "d": "Pression artérielle trop élevée, dont l'excès de sel est la principale cause.",
-   "e": "Un adulte ne devrait pas dépasser 5 g de sel par jour ; environ 80 % du sel est déjà présent dans les aliments."
+   "d": "Surface de terre utilisée pour produire un aliment.",
+   "e": "Pour 100 g de protéines : 164 m² pour le bœuf, 7,3 m² pour les légumineuses.",
+   "x": "Agathe est végétarienne notamment pour la planète."
   },
   {
-   "m": "GAZ À EFFET DE SERRE",
+   "m": "LÉGUMINEUSES",
    "s": 2,
-   "d": "Émissions dues à la production, la transformation et le transport des aliments, qui changent le climat.",
-   "e": "Un repas avec du bœuf en émet environ six fois plus qu'un repas végétarien.",
-   "x": "Nadia cuisine des légumes secs, meilleurs pour la planète."
+   "d": "Aliments végétaux sources de protéines, comme les lentilles et les pois.",
+   "e": "Pour 100 g de protéines, ils utilisent environ 22 fois moins de surface agricole que le bœuf."
   },
   {
-   "m": "PRÉEMBALLÉ",
+   "m": "MENTION OBLIGATOIRE",
    "s": 3,
-   "d": "Se dit d'un produit vendu déjà conditionné, comme un plat en barquette, qui porte une étiquette obligatoire.",
-   "e": "Son étiquette indique notamment la dénomination, les ingrédients, les allergènes, une date et la déclaration nutritionnelle."
+   "d": "Information que l'étiquette d'une denrée alimentaire doit porter.",
+   "e": "Le règlement (UE) n° 1169/2011 en fixe la liste."
   },
   {
    "m": "DÉNOMINATION",
    "s": 3,
-   "d": "Nom qui dit ce qu'est le produit, obligatoire sur l'étiquette.",
-   "e": "Exemple : « lasagnes à la bolognaise ». C'est la première information à lire."
+   "d": "Nom de la denrée alimentaire, mention obligatoire de l'étiquette.",
+   "e": "C'est la première mention de la liste du règlement (UE) n° 1169/2011."
   },
   {
-   "m": "INGRÉDIENTS",
+   "m": "INGRÉDIENT",
    "s": 3,
-   "d": "Éléments qui composent un produit, rangés du plus important au moins important en poids.",
-   "e": "Le premier de la liste est donc présent en plus grande quantité. Les additifs en font partie."
+   "d": "Élément de la composition d'un produit.",
+   "e": "La liste va du plus important au moins important en poids."
   },
   {
-   "m": "ALLERGÈNES",
+   "m": "ALLERGÈNE",
    "s": 3,
-   "d": "Substances qui déclenchent ou favorisent une allergie ou une intolérance, mises en relief sur l'étiquette.",
-   "e": "Quatorze doivent être signalés, dont les céréales contenant du gluten, le lait, les œufs, le céleri.",
-   "x": "Le blé du plat A interdit ce plat à Hugo."
+   "d": "Substance qui peut provoquer une allergie ou une intolérance.",
+   "e": "Il est mis en évidence dans la liste des ingrédients, par exemple en gras."
   },
   {
-   "m": "ADDITIF",
+   "m": "QUANTITÉ NETTE",
    "s": 3,
-   "d": "Substance ajoutée pour améliorer le goût, l'aspect ou la conservation d'un aliment, souvent notée E suivi d'un nombre.",
-   "e": "Son effet à long terme sur la santé est encore mal connu : par précaution, mieux vaut choisir les produits qui en contiennent le moins."
+   "d": "Quantité de denrée alimentaire, mention obligatoire de l'étiquette.",
+   "e": "Elle figure avec la dénomination, les ingrédients, la date et la déclaration nutritionnelle."
   },
   {
    "m": "DLC",
    "s": 3,
-   "d": "Date limite de consommation : « à consommer jusqu'au… », pour les produits périssables.",
-   "e": "Elle concerne par exemple un plat cuisiné frais. À ne pas confondre avec la DDM."
+   "d": "Date limite de consommation, l'une des deux dates possibles de l'étiquette.",
+   "e": "L'autre est la date de durabilité minimale (DDM)."
   },
   {
    "m": "DDM",
    "s": 3,
-   "d": "Date de durabilité minimale : « à consommer de préférence avant… ».",
-   "e": "Elle concerne par exemple les gâteaux secs ou les conserves. À ne pas confondre avec la DLC."
-  },
-  {
-   "m": "VALEUR ÉNERGÉTIQUE",
-   "s": 3,
-   "d": "Énergie apportée par un aliment, en kJ et en kcal, le plus souvent pour 100 g.",
-   "e": "Pour une barquette de 300 g du plat A : 141 × 3 = 423 kcal."
-  },
-  {
-   "m": "KILOCALORIE",
-   "s": 3,
-   "d": "Unité d'énergie notée kcal, avec le kilojoule.",
-   "e": "L'étiquette donne la valeur énergétique dans les deux unités : 590 kJ, soit 141 kcal, pour 100 g du plat A."
-  },
-  {
-   "m": "KILOJOULE",
-   "s": 3,
-   "d": "Unité d'énergie notée kJ, indiquée sur l'étiquette avec la kilocalorie.",
-   "e": "Le plat B apporte 477 kJ, soit 114 kcal, pour 100 g : moins que le plat A."
+   "d": "Date de durabilité minimale, l'une des deux dates possibles de l'étiquette.",
+   "e": "L'autre est la date limite de consommation (DLC)."
   },
   {
    "m": "PROVENANCE",
    "s": 3,
-   "d": "Pays d'origine, obligatoire sur l'étiquette pour certains produits comme les viandes.",
-   "e": "Pour une viande, c'est le pays où l'animal a été élevé et abattu.",
-   "x": "Bœuf de Pologne dans le plat A, poulet de France dans le plat B."
+   "d": "Pays d'origine d'un produit, obligatoire pour certains produits comme les viandes.",
+   "e": "L'étiquette l'indique lorsque le règlement le prévoit."
+  },
+  {
+   "m": "DÉCLARATION NUTRITIONNELLE",
+   "s": 3,
+   "d": "Mention obligatoire qui donne l'énergie et les nutriments pour 100 g.",
+   "e": "Elle permet de comparer deux produits."
+  },
+  {
+   "m": "VALEUR ÉNERGÉTIQUE",
+   "s": 3,
+   "d": "Énergie apportée par un aliment, en kilojoules (kJ) et en kilocalories (kcal), pour 100 g.",
+   "e": "Une barre de 50 g à 480 kcal pour 100 g apporte 240 kcal."
+  },
+  {
+   "m": "KILOCALORIE",
+   "s": 3,
+   "d": "Unité de la valeur énergétique, avec le kilojoule.",
+   "e": "Son symbole est kcal."
+  },
+  {
+   "m": "ADDITIF",
+   "s": 3,
+   "d": "Substance ajoutée pour conserver, colorer, épaissir ou renforcer le goût.",
+   "e": "Il figure dans la liste des ingrédients, souvent avec la lettre E."
+  },
+  {
+   "m": "ÉMULSIFIANT",
+   "s": 3,
+   "d": "Additif, comme E471.",
+   "e": "Sa présence est un indice d'aliment ultra-transformé."
+  },
+  {
+   "m": "COLORANT",
+   "s": 3,
+   "d": "Additif qui colore un produit, comme E150d.",
+   "e": "Sa présence est un indice d'aliment ultra-transformé."
   },
   {
    "m": "ALIMENT ULTRA-TRANSFORMÉ",
    "s": 3,
-   "d": "Produit qui a subi d'intenses procédés industriels, souvent avec additifs et ingrédients réservés à l'industrie.",
-   "e": "Exemples : sodas, nuggets, barres chocolatées. On y trouve amidon modifié, maltodextrine, huiles hydrogénées.",
-   "x": "Les lasagnes du plat A, avec amidon modifié et E 621."
+   "d": "Aliment qui a subi d'importantes transformations industrielles et contient des additifs ou des ingrédients réservés à l'industrie.",
+   "e": "Santé publique France recommande de limiter ces aliments.",
+   "x": "Le distributeur de la salle de pause ne propose que des biscuits, des barres chocolatées, des chips et des boissons sucrées."
   },
   {
    "m": "NUTRI-SCORE",
-   "s": 4,
-   "d": "Logo facultatif, de A à E, qui compare la qualité de produits d'un même rayon ; A est la meilleure.",
-   "e": "Plus de 87 % des aliments ultra-transformés sont classés C, D ou E. Mais il ne dit pas si un aliment est ultra-transformé."
+   "s": 3,
+   "d": "Logo facultatif qui classe la qualité nutritionnelle d'un aliment de A à E.",
+   "e": "Il ne tient pas compte du degré de transformation des aliments."
   },
   {
-   "m": "SCORE ENVIRONNEMENTAL",
+   "m": "LOCAL DE RESTAURATION",
    "s": 4,
-   "d": "Note facultative, en points : plus elle est élevée, plus l'impact du produit sur la planète est important.",
-   "e": "Il tient compte de cinq étapes : ingrédients, transformation, emballages, distribution, consommation."
+   "d": "Local que l'employeur met à disposition dans les établissements d'au moins 50 salariés.",
+   "e": "Il est doté d'un moyen de conservation ou de réfrigération des aliments (article R. 4228-22 du Code du travail).",
+   "x": "L'entrepôt d'Agathe emploie 80 salariés, mais la salle de pause n'a aucun moyen de conserver les aliments."
+  },
+  {
+   "m": "RÉFRIGÉRATEUR",
+   "s": 4,
+   "d": "Moyen de conservation des aliments que doit comporter le local de restauration.",
+   "e": "C'est une obligation dès 50 salariés.",
+   "x": "Il manque dans la salle de pause de l'entrepôt."
+  },
+  {
+   "m": "HORAIRES ATYPIQUES",
+   "s": 4,
+   "d": "Horaires de travail décalés, comme les postes du matin et de nuit.",
+   "e": "L'INRS conseille de repousser la prise de poste du matin après 6 heures.",
+   "x": "Agathe travaille de 5 h à 12 h 30."
+  },
+  {
+   "m": "COLLATION",
+   "s": 4,
+   "d": "Prise alimentaire légère, conseillée par l'INRS pour les postes du matin et de nuit.",
+   "e": "Une collation peu sucrée : fruit, laitage, fruits à coque.",
+   "x": "À la pause de 9 h, Agathe prend une barre chocolatée et une boisson sucrée."
+  },
+  {
+   "m": "PRÉVENTION COLLECTIVE",
+   "s": 4,
+   "d": "Mesure qui protège l'ensemble des salariés.",
+   "e": "Par exemple : équiper la salle de pause d'un réfrigérateur."
+  },
+  {
+   "m": "PRÉVENTION INDIVIDUELLE",
+   "s": 4,
+   "d": "Mesure que la personne applique pour elle-même.",
+   "e": "Par exemple : préparer une collation peu sucrée, boire de l'eau."
+  },
+  {
+   "m": "SANTÉ",
+   "s": 4,
+   "d": "État de bien-être physique, mental et social.",
+   "e": "Une alimentation variée et peu transformée y contribue."
   },
   {
    "m": "QUALITÉ ALIMENTAIRE",
    "s": 4,
-   "d": "Ensemble réunissant valeur nutritionnelle, degré de transformation, impact sur la planète et adaptation aux besoins.",
-   "e": "Un seul critère ne suffit pas pour juger un aliment : il faut les croiser."
+   "d": "Ensemble des qualités d'un produit ou d'un repas : qualité nutritionnelle, degré de transformation, impact environnemental.",
+   "e": "Le Nutri-Score ne renseigne que sur la qualité nutritionnelle."
   },
   {
    "m": "CRITÈRES DE CHOIX",
    "s": 4,
-   "d": "Éléments à croiser : besoins et santé, qualité nutritionnelle, transformation, impact sur la planète, prix et temps.",
-   "e": "Les croiser permet un choix alimentaire raisonné.",
-   "x": "Victor peut emporter un repas préparé la veille plutôt qu'acheter en station-service."
+   "d": "Éléments à croiser pour choisir un aliment : santé et besoins, qualité nutritionnelle, transformation, impact environnemental, prix et temps.",
+   "e": "Un choix alimentaire raisonné croise plusieurs critères."
   },
   {
-   "m": "CLIMAT",
+   "m": "IMPACT ENVIRONNEMENTAL",
    "s": 4,
-   "d": "L'un des impacts mesurés par le score environnemental, touché par les gaz à effet de serre.",
-   "e": "La production, la transformation et le transport des aliments émettent des gaz qui contribuent à son changement."
-  },
-  {
-   "m": "BIODIVERSITÉ",
-   "s": 4,
-   "d": "Ensemble du vivant, l'un des impacts pris en compte par le score environnemental.",
-   "e": "Le score environnemental mesure aussi les effets sur le climat, la pollution de l'air et de l'eau et l'usage des ressources."
-  },
-  {
-   "m": "POLLUTION",
-   "s": 4,
-   "d": "Atteinte à l'air et à l'eau, comptée parmi les impacts du score environnemental.",
-   "e": "Avec le climat, la biodiversité et l'usage des ressources, elle forme l'impact environnemental d'un aliment."
-  },
-  {
-   "m": "EMBALLAGES",
-   "s": 4,
-   "d": "L'une des cinq étapes de la vie d'un produit prises en compte par le score environnemental.",
-   "e": "Les cinq étapes : ingrédients, transformation, emballages, distribution et consommation."
-  },
-  {
-   "m": "SAISON",
-   "s": 4,
-   "d": "Les produits frais de cette période de l'année sont conseillés pour cuisiner à la maison.",
-   "e": "Les produits de saison font partie des critères liés à l'impact environnemental."
-  },
-  {
-   "m": "PRÉCAUTION",
-   "s": 4,
-   "d": "Prudence qui conduit à limiter les aliments ultra-transformés, faute de connaître l'effet à long terme des additifs.",
-   "e": "Il est conseillé de limiter leur consommation et de cuisiner davantage avec des produits frais."
-  },
-  {
-   "m": "MODÉRATION",
-   "s": 4,
-   "d": "Façon de consommer une pâtisserie maison très sucrée et riche en beurre.",
-   "e": "Une pâtisserie faite à la maison n'est pas ultra-transformée, mais elle reste très sucrée : qualité nutritionnelle et transformation sont deux notions différentes."
-  },
-  {
-   "m": "FAIT MAISON",
-   "s": 4,
-   "d": "Se dit d'un repas préparé soi-même avec des aliments peu transformés.",
-   "e": "C'est l'un des arguments du déjeuner 2 : moins d'aliments ultra-transformés, pas de soda.",
-   "x": "Une salade de lentilles et de riz préparée la veille, emportée dans une boîte isotherme."
+   "d": "Ensemble des effets d'un aliment sur l'environnement : climat, eau, sols, biodiversité.",
+   "e": "La surface agricole utilisée en est un exemple.",
+   "x": "Agathe est végétarienne notamment pour la planète."
   }
  ]
 };
