@@ -15,105 +15,121 @@ window.MOTS = {
  },
  "familles": [
   {
-   "l": "Ce qu'un aliment jeté a utilisé pour rien",
+   "l": "Les trois piliers du développement durable",
+   "m": [
+    "ÉCONOMIE",
+    "ÉCOLOGIE",
+    "SOCIAL"
+   ]
+  },
+  {
+   "l": "Les signes officiels de qualité et d'origine",
+   "m": [
+    "AOP",
+    "IGP",
+    "LABEL ROUGE",
+    "AGRICULTURE BIOLOGIQUE"
+   ]
+  },
+  {
+   "l": "Ce que le gaspillage consomme ou émet pour rien",
    "m": [
     "EAU",
     "ÉNERGIE",
-    "TERRES"
+    "GAZ À EFFET DE SERRE"
    ]
   },
   {
-   "l": "Les acteurs d'une chaîne de vente",
+   "l": "Les étapes de la chaîne alimentaire où l'on gaspille",
    "m": [
-    "PRODUCTEUR",
-    "INTERMÉDIAIRE",
-    "GROSSISTE",
-    "CONSOMMATEUR"
-   ]
-  },
-  {
-   "l": "Les étapes des pertes alimentaires, avant la vente",
-   "m": [
-    "RÉCOLTE",
     "TRANSFORMATION",
-    "TRANSPORT"
+    "RESTAURATION",
+    "DOMICILE"
    ]
   },
   {
-   "l": "Les critères d'une alimentation durable",
+   "l": "Les gestes pour acheter et cuisiner la juste quantité",
    "m": [
-    "ENVIRONNEMENT",
-    "SANTÉ",
-    "PRIX"
+    "LISTE DE COURSES",
+    "VRAC",
+    "RESTES"
+   ]
+  },
+  {
+   "l": "La hiérarchie de la loi Garot",
+   "m": [
+    "PRÉVENTION",
+    "INVENDUS",
+    "COMPOST"
    ]
   }
  ],
  "liste": [
   {
+   "m": "DÉVELOPPEMENT DURABLE",
+   "s": 1,
+   "d": "Notion officialisée au Sommet de la Terre à Rio en 1992 : répondre aux besoins du présent sans compromettre ceux des générations futures.",
+   "e": "Il repose sur trois piliers : l'économie, l'écologie et le social."
+  },
+  {
+   "m": "ÉCONOMIE",
+   "s": 1,
+   "d": "Pilier du développement durable, cité avec l'écologie et le social.",
+   "e": "Le développement durable repose sur trois piliers : économie, écologie, social."
+  },
+  {
+   "m": "ÉCOLOGIE",
+   "s": 1,
+   "d": "Pilier du développement durable, cité avec l'économie et le social.",
+   "e": "Avec l'économie et le social, c'est l'un des trois piliers officialisés au Sommet de la Terre à Rio en 1992."
+  },
+  {
+   "m": "SOCIAL",
+   "s": 1,
+   "d": "Pilier du développement durable, cité avec l'économie et l'écologie.",
+   "e": "Les trois piliers du développement durable sont l'économie, l'écologie et le social."
+  },
+  {
    "m": "ÉCORESPONSABLE",
    "s": 1,
    "d": "Qualifie une consommation qui choisit les aliments en limitant leur impact sur l'environnement.",
-   "e": "La consommation écoresponsable tient compte de l'environnement au moment de choisir ses aliments."
+   "e": "Choisir des aliments de producteurs locaux, de saison et, si possible, bio, c'est consommer de cette façon."
   },
   {
    "m": "ALIMENTATION DURABLE",
    "s": 1,
-   "d": "Façon de se nourrir qui tient compte de l'environnement, de la santé, du prix et des conditions de travail des producteurs.",
+   "d": "Façon de se nourrir qui tient compte de l'environnement, de la santé, du prix et des producteurs.",
    "e": "Elle ne se limite pas à l'environnement : la santé, le prix et les producteurs comptent aussi."
-  },
-  {
-   "m": "ENVIRONNEMENT",
-   "s": 1,
-   "d": "Milieu naturel dont la consommation écoresponsable cherche à limiter les atteintes.",
-   "e": "C'est l'un des critères d'une alimentation durable, avec la santé, le prix et les producteurs."
-  },
-  {
-   "m": "SANTÉ",
-   "s": 1,
-   "d": "Critère d'une alimentation durable, avec l'environnement, le prix et les conditions de travail des producteurs.",
-   "e": "Une alimentation durable ne protège pas seulement l'environnement : elle tient compte aussi de la santé de celui qui mange."
-  },
-  {
-   "m": "PRIX",
-   "s": 1,
-   "d": "Critère économique d'une alimentation durable, à côté de la santé et de l'environnement.",
-   "e": "Une alimentation durable tient compte du prix, et pas seulement de l'environnement."
   },
   {
    "m": "SAISONNALITÉ",
    "s": 1,
    "d": "Fait de consommer les fruits et légumes au moment de l'année où ils poussent.",
-   "e": "Un légume de saison pousse sans serre chauffée : son impact sur le climat est plus faible."
+   "e": "Santé publique France conseille de privilégier les aliments de saison."
   },
   {
-   "m": "SERRE CHAUFFÉE",
+   "m": "IMPACT CARBONE",
    "s": 1,
-   "d": "Abri vitré qu'il faut réchauffer pour produire un légume hors saison.",
-   "e": "Hors saison, une tomate cultivée ainsi a un impact sur le climat environ sept fois plus élevé."
+   "d": "Ce que mesure le graphique de l'ADEME, en kilogrammes d'équivalent CO2 par repas.",
+   "e": "Un repas avec du bœuf (4,97 kg CO2e) émet environ six fois plus qu'un repas végétarien (0,85 kg CO2e)."
   },
   {
-   "m": "CLIMAT",
+   "m": "LÉGUMES SECS",
    "s": 1,
-   "d": "Ce sur quoi une tomate hors saison a un impact environ sept fois plus élevé.",
-   "e": "Choisir des légumes de saison limite l'impact de l'alimentation sur le climat."
+   "d": "Aliments qui peuvent remplacer la viande, associés à un produit céréalier.",
+   "e": "Les choisir à la place de la viande réduit l'impact carbone du repas."
   },
   {
    "m": "CIRCUIT COURT",
    "s": 1,
    "d": "Vente directe du producteur au consommateur, ou avec un seul intermédiaire.",
-   "e": "Il ne signifie pas forcément une courte distance : il se définit par le nombre d'intermédiaires."
+   "e": "Il limite le nombre d'intermédiaires, sans imposer de proximité : ce n'est pas une question de distance."
   },
   {
    "m": "CIRCUIT LONG",
    "s": 1,
    "d": "Vente qui passe par plusieurs intermédiaires : grossiste, usine, supermarché.",
-   "e": "Exemple du cours : des tomates passées par un grossiste, une usine et un supermarché."
-  },
-  {
-   "m": "VENTE DIRECTE",
-   "s": 1,
-   "d": "Le producteur vend lui-même au consommateur, à la ferme ou au marché, sans personne entre eux.",
-   "e": "C'est la forme la plus simple du circuit court."
+   "e": "Exemple du cours : des pâtes fabriquées en usine avec le blé d'un grossiste, vendues en supermarché."
   },
   {
    "m": "INTERMÉDIAIRE",
@@ -122,161 +138,191 @@ window.MOTS = {
    "e": "Un circuit court en compte au plus un ; un circuit long en compte plusieurs."
   },
   {
-   "m": "PRODUCTEUR",
+   "m": "AGRICULTURE BIOLOGIQUE",
    "s": 1,
-   "d": "Personne qui cultive ce que mange le consommateur, et dont les conditions de travail comptent dans une alimentation durable.",
-   "e": "Dans une vente directe, il vend lui-même au consommateur."
+   "d": "Mode de production qui respecte l'environnement et le bien-être animal, garanti par le logo AB.",
+   "e": "C'est le signe officiel qui garantit le respect de l'environnement."
   },
   {
-   "m": "CONSOMMATEUR",
+   "m": "AOP",
    "s": 1,
-   "d": "Personne qui achète les aliments, au bout de la chaîne de vente.",
-   "e": "Ses choix d'achat peuvent limiter l'impact de son alimentation sur l'environnement."
+   "d": "Sigle d'un signe officiel qui garantit l'origine du produit, comme l'AOC.",
+   "e": "AOP signifie appellation d'origine protégée."
   },
   {
-   "m": "GROSSISTE",
+   "m": "IGP",
    "s": 1,
-   "d": "Intermédiaire placé entre la productrice et l'usine ou le magasin, dans une chaîne à plusieurs étapes.",
-   "e": "Avec l'usine et le supermarché, il fait partie d'un circuit long."
+   "d": "Sigle d'un signe officiel qui garantit l'origine du produit, comme l'AOP.",
+   "e": "IGP signifie indication géographique protégée."
+  },
+  {
+   "m": "LABEL ROUGE",
+   "s": 1,
+   "d": "Signe officiel qui garantit la qualité supérieure d'un produit.",
+   "e": "Les autres signes garantissent l'origine (AOP, IGP), une recette traditionnelle (STG) ou le respect de l'environnement (AB)."
+  },
+  {
+   "m": "AGRICULTURE RAISONNÉE",
+   "s": 1,
+   "d": "Démarche lancée en 2002 pour des pratiques agricoles plus respectueuses de l'environnement, aujourd'hui supprimée.",
+   "e": "Le document 4 la présente à part des signes officiels : sa suppression a été décidée."
   },
   {
    "m": "GASPILLAGE",
    "s": 2,
-   "d": "Nourriture encore comestible perdue ou jetée, à n'importe quelle étape, du champ à l'assiette.",
-   "e": "En 2024, en France : 3,9 millions de tonnes, soit 56 kilogrammes par habitant."
+   "d": "Toute nourriture destinée à la consommation humaine perdue, jetée ou dégradée, à une étape de la chaîne alimentaire.",
+   "e": "Cette définition figure dans le Code de l'environnement (article L541-15-4).",
+   "x": "l'article du SDES compte 3,9 millions de tonnes de nourriture gaspillée en France en 2024, soit 56 kg par habitant."
   },
   {
-   "m": "PERTES ALIMENTAIRES",
+   "m": "COMESTIBLE",
    "s": 2,
-   "d": "Nourriture qui disparaît avant la vente : pendant la récolte, la transformation ou le transport.",
-   "e": "Elles ont lieu avant que l'aliment arrive au consommateur."
+   "d": "Qualifie un déchet alimentaire qui pouvait encore être mangé : reste de repas, fruit dégradé.",
+   "e": "Ces déchets sont du gaspillage ; les os, les épluchures ou les coquilles d'œufs n'en sont pas.",
+   "x": "sur les 10 millions de tonnes de déchets alimentaires de 2024, 6,1 millions de tonnes sont des déchets non comestibles ; les 3,9 millions restants sont du gaspillage."
   },
   {
    "m": "SURCONSOMMATION",
    "s": 2,
    "d": "Fait d'acheter ou de consommer plus que ses besoins.",
-   "e": "C'est une cause fréquente du gaspillage à la maison."
+   "e": "Des quantités cuisinées trop copieuses laissent des restes qui s'accumulent et finissent jetés."
   },
   {
-   "m": "COMESTIBLE",
+   "m": "PERTES ALIMENTAIRES",
    "s": 2,
-   "d": "Qualifie une nourriture encore bonne à manger.",
-   "e": "En 2024, 3,9 des 10 millions de tonnes de déchets alimentaires l'étaient encore : c'est le gaspillage."
+   "d": "Nourriture perdue avant la vente : récolte, transformation, transport.",
+   "e": "Elles ont lieu avant que l'aliment soit vendu."
   },
   {
-   "m": "ÉPLUCHURES",
+   "m": "DOMICILE",
    "s": 2,
-   "d": "Déchets non mangeables, comme les os et les coquilles.",
-   "e": "Avec les os et les coquilles, elles font partie des 6,1 millions de tonnes de déchets non comestibles."
-  },
-  {
-   "m": "RÉCOLTE",
-   "s": 2,
-   "d": "Étape agricole pendant laquelle une partie de la nourriture est perdue avant la vente.",
-   "e": "Les pertes alimentaires ont lieu avant la vente : récolte, transformation, transport."
+   "d": "Lieu de la première source de gaspillage alimentaire en France : 19 kg par habitant en 2024.",
+   "e": "Le gaspillage à la maison reste prépondérant, devant la production primaire (15 kg).",
+   "x": "à la maison, 1,3 million de tonnes de nourriture gaspillée : 0,8 de restes de repas et 0,5 de produits encore emballés."
   },
   {
    "m": "TRANSFORMATION",
    "s": 2,
-   "d": "Étape où les produits agricoles sont travaillés avant la vente ; 10 kg gaspillés par habitant en 2024.",
-   "e": "Des pertes alimentaires peuvent avoir lieu à cette étape, comme pendant la récolte et le transport."
-  },
-  {
-   "m": "TRANSPORT",
-   "s": 2,
-   "d": "Acheminement des aliments, étape où des pertes peuvent avoir lieu avant la vente.",
-   "e": "Avec la récolte et la transformation, c'est une étape des pertes alimentaires."
-  },
-  {
-   "m": "MAISON",
-   "s": 2,
-   "d": "Première source de gaspillage alimentaire en France : 19 kg par habitant en 2024.",
-   "e": "C'est là que l'on gaspille le plus, devant la production agricole (15 kg)."
-  },
-  {
-   "m": "DISTRIBUTION",
-   "s": 2,
-   "d": "Étape des magasins, où l'on gaspille 4 kg de nourriture par habitant en 2024.",
-   "e": "Selon le graphique du cours, c'est l'étape où l'on gaspille le moins."
+   "d": "Étape de la chaîne alimentaire où l'on gaspille 10 kg de nourriture par habitant en 2024.",
+   "e": "Avec la production primaire (15 kg), elle forme la branche « Champ et usine » du diagramme d'Ishikawa.",
+   "x": "le graphique de l'article du SDES : transformation, 10 kg par habitant."
   },
   {
    "m": "RESTAURATION",
    "s": 2,
    "d": "Repas pris hors du domicile : 8 kg de nourriture gaspillée par habitant en 2024.",
-   "e": "La cantine d'entreprise où travaille Léna en fait partie.",
-   "x": "Dans la situation : Léna, 23 ans, est agente de restauration dans une cantine d'entreprise."
+   "e": "Avec la distribution (4 kg), elle forme la branche « Magasin et restaurant » du diagramme d'Ishikawa.",
+   "x": "le graphique de l'article du SDES : restauration hors domicile, 8 kg par habitant."
+  },
+  {
+   "m": "DLC",
+   "s": 2,
+   "d": "Sigle de la date impérative des denrées périssables : après elle, l'aliment ne se consomme plus.",
+   "e": "DLC signifie date limite de consommation : yaourts, viande fraîche, poisson, plats cuisinés non stérilisés."
+  },
+  {
+   "m": "DDM",
+   "s": 2,
+   "d": "Sigle de la date après laquelle l'aliment reste consommable sans danger, mais peut perdre goût ou texture.",
+   "e": "DDM signifie date de durabilité minimale : « à consommer de préférence avant le… »."
   },
   {
    "m": "IMPACT ENVIRONNEMENTAL",
    "s": 2,
-   "d": "Effets sur la nature : eau, énergie et terres utilisées, gaz à effet de serre émis.",
-   "e": "Un aliment jeté a utilisé ces ressources pour rien."
-  },
-  {
-   "m": "GAZ À EFFET DE SERRE",
-   "s": 2,
-   "d": "Émissions dues à la production des aliments, qui pèsent sur le climat.",
-   "e": "Un aliment jeté a fait émettre ces gaz pour rien."
+   "d": "Effets sur la nature : énergie et eau utilisées, gaz à effet de serre émis.",
+   "e": "Un aliment gaspillé a consommé de l'énergie et de l'eau pour rien."
   },
   {
    "m": "EAU",
    "s": 2,
-   "d": "Ressource utilisée pour produire un aliment et perdue quand il est jeté, comme l'énergie et les terres.",
-   "e": "Un aliment jeté a utilisé pour rien de l'eau, de l'énergie et des terres."
+   "d": "Ressource consommée inutilement, avec l'énergie, quand de la nourriture est gaspillée.",
+   "e": "Selon l'ADEME, le gaspillage entraîne la consommation inutile de ressources en énergie et en eau."
   },
   {
    "m": "ÉNERGIE",
    "s": 2,
-   "d": "Ressource utilisée pour produire la nourriture, perdue avec chaque aliment jeté.",
-   "e": "Les déchets alimentaires triés peuvent aussi être valorisés sous cette forme."
+   "d": "Ressource consommée inutilement, avec l'eau, quand de la nourriture est gaspillée.",
+   "e": "Les restes alimentaires peuvent aussi servir à la valorisation énergétique : la méthanisation."
   },
   {
-   "m": "TERRES",
+   "m": "GAZ À EFFET DE SERRE",
    "s": 2,
-   "d": "Surfaces agricoles utilisées pour produire la nourriture, gaspillées avec elle.",
-   "e": "Avec l'eau et l'énergie, elles sont utilisées pour rien quand un aliment est jeté."
+   "d": "Émissions qui pourraient être évitées en réduisant le gaspillage alimentaire.",
+   "e": "Selon l'ADEME, toutes les étapes de la chaîne alimentaire sont concernées."
   },
   {
-   "m": "DLC",
-   "s": 3,
-   "d": "Sigle de la date limite sanitaire : après elle, le produit ne se consomme plus.",
-   "e": "DLC signifie date limite de consommation : produits frais, comme les yaourts conservés au réfrigérateur."
-  },
-  {
-   "m": "DDM",
-   "s": 3,
-   "d": "Sigle de la date indicative : après elle, le produit reste consommable si l'emballage est intact.",
-   "e": "DDM signifie date de durabilité minimale : produits secs, comme les biscuits conservés au placard."
+   "m": "POLLUTION",
+   "s": 2,
+   "d": "Dégradation des sols, de l'eau ou de l'air par des déchets ou des substances nocives.",
+   "e": "Abandonnés dans la nature, les emballages plastiques polluent directement les sols et les milieux aquatiques."
   },
   {
    "m": "EMBALLAGE",
-   "s": 3,
-   "d": "Il doit être intact pour qu'un produit reste consommable après sa DDM.",
-   "e": "Il indique aussi la température et la durée de conservation à respecter."
+   "s": 2,
+   "d": "Jeté avec les ordures ménagères, il est incinéré ou mis en décharge et peut libérer des polluants.",
+   "e": "Un produit jeté encore emballé a un double impact : l'aliment gaspillé et son emballage.",
+   "x": "à la maison, 0,5 million de tonnes de produits jetés encore emballés en 2024."
   },
   {
-   "m": "CONSERVATION",
+   "m": "LOI GAROT",
    "s": 3,
-   "d": "Respect de la température et de la durée indiquées sur l'emballage.",
-   "e": "Mal conserver les aliments est une cause fréquente du gaspillage à la maison."
+   "d": "Loi de 2016 qui établit une hiérarchie des actions contre le gaspillage alimentaire.",
+   "e": "Première action : favoriser la prévention ; puis le don ou la transformation des invendus, l'alimentation animale, le compost ou la méthanisation."
   },
   {
-   "m": "TEMPÉRATURE",
+   "m": "PRÉVENTION",
    "s": 3,
-   "d": "Avec la durée, indication de l'emballage à respecter pour bien garder un aliment.",
-   "e": "La respecter fait partie d'une bonne conservation."
+   "d": "Actions qui évitent de produire des déchets.",
+   "e": "C'est la première action de la hiérarchie fixée par la loi Garot."
+  },
+  {
+   "m": "INVENDUS",
+   "s": 3,
+   "d": "Produits non vendus que la loi demande d'utiliser par le don ou la transformation.",
+   "e": "Les donner aux associations d'aide alimentaire est une mesure collective."
+  },
+  {
+   "m": "CONVENTION DE DON",
+   "s": 3,
+   "d": "Accord que certains acteurs de la chaîne alimentaire doivent proposer aux associations d'aide alimentaire.",
+   "e": "C'est une obligation prévue par la loi contre le gaspillage."
+  },
+  {
+   "m": "COMPOST",
+   "s": 3,
+   "d": "Ce que peuvent devenir les restes alimentaires, pour l'agriculture.",
+   "e": "Dans la hiérarchie de la loi Garot, il vient après la prévention, le don et l'alimentation animale."
+  },
+  {
+   "m": "TRI",
+   "s": 3,
+   "d": "Séparation des déchets selon leur nature pour les recycler ou les valoriser.",
+   "e": "Tous les emballages, y compris en plastique, se jettent dans le bac de tri : la poubelle jaune."
+  },
+  {
+   "m": "PLASTIQUE",
+   "s": 3,
+   "d": "Matière dont il vaut mieux limiter la consommation : moins de déchets, moins de pollution.",
+   "e": "Les gobelets à usage unique qui en contiennent plus de 8 % ont été progressivement interdits depuis 2020."
   },
   {
    "m": "LISTE DE COURSES",
    "s": 3,
-   "d": "Préparée avant d'aller au magasin, elle évite d'acheter plus que ses besoins.",
+   "d": "Dressée après avoir planifié les menus, elle aide à acheter la juste quantité.",
    "e": "C'est une mesure individuelle contre le gaspillage."
+  },
+  {
+   "m": "VRAC",
+   "s": 3,
+   "d": "Mode d'achat qui limite les emballages et permet de choisir soi-même la quantité.",
+   "e": "On utilise ses propres contenants ou des sachets réutilisables."
   },
   {
    "m": "RESTES",
    "s": 3,
-   "d": "Ce qui n'a pas été mangé et que l'on peut cuisiner au repas suivant.",
-   "e": "Les cuisiner est une mesure individuelle contre le gaspillage."
+   "d": "Ce qui n'a pas été mangé et que l'on peut congeler ou accommoder au lieu de le jeter.",
+   "e": "Congeler ou cuisiner les restes est une mesure individuelle contre le gaspillage.",
+   "x": "à la maison, 0,8 million de tonnes de restes de repas gaspillés en 2024."
   },
   {
    "m": "MESURES INDIVIDUELLES",
@@ -287,45 +333,20 @@ window.MOTS = {
   {
    "m": "MESURES COLLECTIVES",
    "s": 3,
-   "d": "Décisions de la loi, des entreprises ou des cantines : objectif national, dons des invendus.",
-   "e": "La loi fixe l'objectif de réduire le gaspillage de 50 % par rapport à 2015."
+   "d": "Décisions de la loi, des entreprises, des cantines : objectif de −50 %, dons des invendus.",
+   "e": "Elles s'imposent à tous les acteurs concernés : elles ne dépendent pas du geste d'une seule personne."
   },
   {
-   "m": "INVENDUS",
+   "m": "RÉGLEMENTATION",
    "s": 3,
-   "d": "Produits consommables non achetés, que les grands magasins alimentaires proposent à une association.",
-   "e": "Les magasins alimentaires de plus de 400 m² les proposent à une association."
+   "d": "Ensemble des lois et des règles qui obligent les acteurs, par exemple les lois Garot, EGalim et AGEC.",
+   "e": "Elle fixe l'objectif de réduire le gaspillage de 50 % par rapport à 2015."
   },
   {
-   "m": "ASSOCIATION",
+   "m": "CONSERVATION",
    "s": 3,
-   "d": "Elle reçoit les produits consommables non achetés des magasins alimentaires de plus de 400 m².",
-   "e": "Ce don est une mesure collective contre le gaspillage."
-  },
-  {
-   "m": "PRÉVENTION",
-   "s": 3,
-   "d": "Ensemble des actions qui évitent de produire des déchets.",
-   "e": "Elle vient avant le tri : le mieux est de ne pas produire de déchet."
-  },
-  {
-   "m": "TRI",
-   "s": 3,
-   "d": "Séparation des déchets alimentaires pour les valoriser.",
-   "e": "Les déchets triés deviennent du compost ou de l'énergie."
-  },
-  {
-   "m": "COMPOST",
-   "s": 3,
-   "d": "Ce que peuvent devenir les déchets alimentaires triés, à côté de l'énergie.",
-   "e": "C'est une façon de valoriser les déchets après le tri."
-  },
-  {
-   "m": "PORTIONS",
-   "s": 3,
-   "d": "Quantités servies à chaque convive ; les adapter évite les plateaux à moitié pleins.",
-   "e": "Les adapter fait jeter moins de nourriture et réduit les achats de la cantine.",
-   "x": "Dans la situation : à la cantine de Léna, elles sont les mêmes pour tous."
+   "d": "Respect de la température et de la durée indiquées sur l'emballage.",
+   "e": "Conserver le surplus des repas au congélateur évite de le jeter."
   }
  ]
 };
