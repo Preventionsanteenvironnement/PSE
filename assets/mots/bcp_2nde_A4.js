@@ -14,11 +14,19 @@ window.MOTS = {
  },
  "familles": [
   {
-   "l": "Les substances psychoactives du cours",
+   "l": "Les trois composantes d'une addiction",
    "m": [
-    "TABAC",
-    "ALCOOL",
-    "CANNABIS"
+    "INDIVIDU",
+    "PRODUIT",
+    "ENVIRONNEMENT"
+   ]
+  },
+  {
+   "l": "Des conditions de travail à risque",
+   "m": [
+    "STRESS",
+    "HORAIRES DÉCALÉS",
+    "SURCHARGE DE TRAVAIL"
    ]
   },
   {
@@ -30,28 +38,52 @@ window.MOTS = {
    ]
   },
   {
-   "l": "Ce qui est diminué ou troublé juste après la consommation",
+   "l": "Ce que l'alcool affecte rapidement",
    "m": [
-    "VIGILANCE",
     "RÉFLEXES",
-    "ATTENTION",
-    "MÉMOIRE"
+    "VIGILANCE",
+    "JUGEMENT"
    ]
   },
   {
-   "l": "Les conséquences personnelles d'une addiction",
+   "l": "Des effets à long terme",
    "m": [
-    "FATIGUE",
-    "DETTES",
-    "ISOLEMENT"
+    "CANCER",
+    "TROUBLES COGNITIFS",
+    "HUMEUR DÉPRESSIVE"
+   ]
+  },
+  {
+   "l": "Des conséquences professionnelles",
+   "m": [
+    "PERTE D'EMPLOI",
+    "ARRÊT DE TRAVAIL",
+    "ACCIDENT DU TRAVAIL"
+   ]
+  },
+  {
+   "l": "Des drogues illicites",
+   "m": [
+    "CANNABIS",
+    "COCAÏNE",
+    "HÉROÏNE"
+   ]
+  },
+  {
+   "l": "La prévention collective dans l'entreprise",
+   "m": [
+    "RÈGLEMENT INTÉRIEUR",
+    "DOCUMENT UNIQUE",
+    "BOISSONS SANS ALCOOL"
    ]
   },
   {
    "l": "Les aides pour se faire accompagner",
    "m": [
-    "CSAPA",
     "DROGUES INFO SERVICE",
-    "JOUEURS INFO SERVICE"
+    "ALCOOL INFO SERVICE",
+    "TABAC INFO SERVICE",
+    "CSAPA"
    ]
   }
  ],
@@ -59,312 +91,461 @@ window.MOTS = {
   {
    "m": "ADDICTION",
    "s": 1,
-   "d": "Perte de contrôle face à un produit ou à un comportement, poursuivi malgré les conséquences négatives.",
-   "e": "Consommer ou jouer ne suffit pas à en parler : c'est la perte de contrôle qui la caractérise."
+   "d": "Perte de contrôle face à un produit ou à un comportement, poursuivi malgré les conséquences.",
+   "e": "La personne ne parvient plus à réduire ou à arrêter sa consommation ou sa pratique."
   },
   {
    "m": "CONTRÔLE",
    "s": 1,
-   "d": "Ce que perd la personne dépendante : elle n'arrive plus à s'arrêter.",
-   "e": "Sa perte distingue la personne dépendante de celle qui joue ou consomme sans difficulté."
+   "d": "Ce que la personne perd progressivement dans une addiction.",
+   "e": "Elle ne parvient plus à réduire ou à arrêter, malgré les conséquences négatives."
   },
   {
-   "m": "COMPORTEMENTALE",
+   "m": "MALADIE CHRONIQUE",
    "s": 1,
-   "d": "Se dit d'une addiction sans produit, liée à une activité : jeux d'argent, jeux vidéo.",
-   "e": "Elle s'oppose à l'addiction au produit, qui concerne une substance.",
-   "x": "Dans la situation : Kylian parie en ligne la nuit et n'arrive pas à s'arrêter."
+   "d": "Ce que sont les addictions, selon l'Inserm.",
+   "e": "Elles ont des composantes cérébrales, psychologiques et sociales."
   },
   {
-   "m": "PRODUIT",
+   "m": "ADDICTION AVEC PRODUIT",
    "s": 1,
-   "d": "Substance en cause dans une addiction : tabac, alcool, cannabis.",
-   "e": "C'est aussi l'une des trois familles de facteurs de risque, avec l'individu et l'environnement."
+   "d": "Addiction à une substance : tabac, alcool, cannabis.",
+   "e": "Fumer un joint de cannabis chaque soir peut y conduire."
   },
   {
-   "m": "TABAC",
+   "m": "ADDICTION SANS PRODUIT",
    "s": 1,
-   "d": "Produit licite dont la nicotine accélère le cœur.",
-   "e": "À long terme : cancers, maladies du cœur et des poumons."
+   "d": "Addiction à une activité, sans consommation de substance psychoactive.",
+   "e": "On parle aussi d'addiction comportementale : jeux d'argent, jeux vidéo."
   },
   {
-   "m": "ALCOOL",
+   "m": "FACTEURS DE RISQUE",
    "s": 1,
-   "d": "Produit licite qui fait baisser la vigilance et les réflexes.",
-   "e": "À long terme : maladies du foie, cancers. Au volant, il est interdit à partir de 0,5 g par litre de sang, 0,2 g en permis probatoire."
-  },
-  {
-   "m": "CANNABIS",
-   "s": 1,
-   "d": "Produit illicite, classé parmi les stupéfiants.",
-   "e": "Effets immédiats : troubles de l'attention, de la mémoire et des réflexes ; à long terme, troubles psychiques."
-  },
-  {
-   "m": "JEUX D'ARGENT",
-   "s": 1,
-   "d": "Paris et parties de hasard avec mise d'une somme, pratiqués par 51,6 % des adultes en 2023.",
-   "e": "La plupart jouent sans difficulté ; 2,5 % des adultes sont des joueurs problématiques."
-  },
-  {
-   "m": "JEUX VIDÉO",
-   "s": 1,
-   "d": "Activité sur écran qui peut entraîner une addiction comportementale.",
-   "e": "Comme les paris, c'est une activité, sans produit."
-  },
-  {
-   "m": "HASARD",
-   "s": 1,
-   "d": "Ce dont dépend le résultat d'un jeu d'argent, comme dans les paris.",
-   "e": "L'article de l'OFDT porte sur les jeux d'argent et de hasard en France."
-  },
-  {
-   "m": "JOUEUR PROBLÉMATIQUE",
-   "s": 1,
-   "d": "Personne qui n'arrive plus à s'arrêter de parier malgré les pertes ; 2,5 % des adultes.",
-   "e": "Il a perdu le contrôle : c'est le signe d'une addiction comportementale."
-  },
-  {
-   "m": "FACTEUR DE RISQUE",
-   "s": 1,
-   "d": "Élément qui favorise une addiction, lié à l'individu, à l'environnement ou au produit.",
-   "e": "Exemples de la planche : un homme seul et stressé ; des collègues qui proposent une cigarette ; un jeu en ligne à portée de main."
+   "d": "Éléments liés à l'individu, au produit et à l'environnement qui favorisent une addiction.",
+   "e": "Une addiction repose sur ces trois composantes.",
+   "x": "L'article cite les horaires décalés et l'isolement des intérimaires."
   },
   {
    "m": "INDIVIDU",
    "s": 1,
-   "d": "Famille de facteurs de risque liée à la personne elle-même, par exemple le stress ou la solitude.",
-   "e": "Sur la planche : un homme seul, stressé, à son bureau le soir."
+   "d": "Composante d'une addiction : âge, sexe, maturité cérébrale, personnalité, humeur.",
+   "e": "L'initiation précoce est un facteur de risque majeur."
+  },
+  {
+   "m": "PRODUIT",
+   "s": 1,
+   "d": "Composante d'une addiction : selon lui, l'addiction s'installe plus ou moins vite.",
+   "e": "Après une ou quelques prises pour la cocaïne, très lentement pour l'alcool."
   },
   {
    "m": "ENVIRONNEMENT",
    "s": 1,
-   "d": "Famille de facteurs de risque liée à l'entourage, par exemple des collègues qui fument.",
-   "e": "Sur la planche : des collègues qui proposent une cigarette."
+   "d": "Composante d'une addiction : stress, contexte social et amical, prix, marketing.",
+   "e": "La disponibilité des produits et les normes sociales en font aussi partie.",
+   "x": "Les conditions de travail des intérimaires en font partie."
+  },
+  {
+   "m": "INITIATION PRÉCOCE",
+   "s": 1,
+   "d": "Facteur de risque majeur lié à l'individu, selon l'Inserm.",
+   "e": "Il s'agit de commencer à consommer tôt."
+  },
+  {
+   "m": "STRESS",
+   "s": 1,
+   "d": "Facteur lié au travail qui peut déclencher ou aggraver des conduites addictives.",
+   "e": "Il fait aussi partie des facteurs liés à l'environnement."
+  },
+  {
+   "m": "HORAIRES DÉCALÉS",
+   "s": 1,
+   "d": "Condition de travail qui peut déclencher ou aggraver des conduites addictives.",
+   "e": "C'est un facteur de risque lié à l'environnement.",
+   "x": "L'article les cite pour les intérimaires."
+  },
+  {
+   "m": "SURCHARGE DE TRAVAIL",
+   "s": 1,
+   "d": "Condition de travail qui peut déclencher ou aggraver des conduites addictives.",
+   "e": "La MILDECA la cite avec le stress et les horaires décalés."
+  },
+  {
+   "m": "POTS",
+   "s": 1,
+   "d": "Habitude au travail qui incite à boire : pots internes, signatures de contrats.",
+   "e": "L'INRS demande d'y fournir systématiquement des boissons non alcoolisées."
+  },
+  {
+   "m": "APÉROS",
+   "s": 1,
+   "d": "Rituels entre collègues qui incitent à consommer de l'alcool.",
+   "e": "Les afterworks en font partie."
+  },
+  {
+   "m": "INTÉRIMAIRE",
+   "s": 1,
+   "d": "Travailleur précaire particulièrement concerné par les tests positifs.",
+   "e": "Horaires décalés, logements temporaires, isolement, manque d'information.",
+   "x": "Les intérimaires sont particulièrement concernés par les tests positifs."
+  },
+  {
+   "m": "DÉPISTAGE",
+   "s": 1,
+   "d": "Test qui recherche l'alcool ou les stupéfiants chez un travailleur.",
+   "e": "Le règlement intérieur liste les postes où il peut être pratiqué.",
+   "x": "En 2025, 5,3 % des travailleurs dépistés étaient positifs, contre 2,6 % en 2017."
+  },
+  {
+   "m": "CANNABIS",
+   "s": 1,
+   "d": "Produit illicite le plus souvent retrouvé dans les tests de l'article.",
+   "e": "Il est retrouvé dans 1,8 % des tests.",
+   "x": "Le cannabis reste le produit le plus souvent retrouvé."
   },
   {
    "m": "NEURONE",
    "s": 2,
-   "d": "Cellule qui transmet le message nerveux.",
-   "e": "Au niveau d'une synapse, l'émetteur libère une molécule qui se fixe sur les récepteurs du suivant."
+   "d": "Élément du cerveau qui communique avec un autre par la synapse.",
+   "e": "Le premier libère le neurotransmetteur, le deuxième le reçoit."
   },
   {
    "m": "SYNAPSE",
    "s": 2,
    "d": "Zone de communication entre deux neurones.",
-   "e": "Le neurone émetteur y libère un neurotransmetteur, qui se fixe sur les récepteurs du neurone récepteur."
+   "e": "Le neurotransmetteur traverse cet espace."
   },
   {
    "m": "NEUROTRANSMETTEUR",
    "s": 2,
-   "d": "Molécule libérée par un neurone, qui se fixe sur les récepteurs du neurone suivant.",
-   "e": "La dopamine en est un exemple."
+   "d": "Molécule libérée par un neurone, qui se fixe sur les récepteurs du suivant.",
+   "e": "La dopamine en est un."
   },
   {
    "m": "DOPAMINE",
    "s": 2,
-   "d": "Molécule messagère du circuit de la récompense, qui intervient dans le plaisir et la motivation.",
-   "e": "Le neurone émetteur la libère dans la synapse ; elle se fixe sur les récepteurs du neurone récepteur."
+   "d": "Neurotransmetteur du circuit de la récompense.",
+   "e": "Sa libération procure un afflux de plaisir."
   },
   {
    "m": "RÉCEPTEUR",
    "s": 2,
-   "d": "Site du neurone suivant sur lequel se fixe la molécule libérée dans la synapse.",
-   "e": "La dopamine s'y fixe, ce qui transmet le message nerveux."
+   "d": "Endroit du deuxième neurone où se fixe le neurotransmetteur.",
+   "e": "Après la fixation, le message nerveux repart."
   },
   {
    "m": "MESSAGE NERVEUX",
    "s": 2,
    "d": "Information transmise de neurone en neurone.",
-   "e": "À la synapse, il passe d'un neurone à l'autre grâce à un neurotransmetteur."
+   "e": "Il passe d'un neurone à l'autre par la synapse."
   },
   {
-   "m": "RÉCOMPENSE",
+   "m": "CIRCUIT DE LA RÉCOMPENSE",
    "s": 2,
-   "d": "Circuit de neurones impliqué dans le plaisir, la motivation et le renforcement des comportements.",
-   "e": "Les substances psychoactives et certains comportements, comme les jeux d'argent, l'activent."
+   "d": "Ensemble de neurones impliqué dans le plaisir, la motivation et le renforcement des comportements.",
+   "e": "Tabac, alcool, drogues et jeux de hasard et d'argent le prennent pour cible."
   },
   {
    "m": "PLAISIR",
    "s": 2,
-   "d": "Sensation dans laquelle intervient la dopamine, avec la motivation.",
-   "e": "Le circuit de la récompense y est impliqué."
-  },
-  {
-   "m": "MOTIVATION",
-   "s": 2,
-   "d": "Envie d'agir dans laquelle intervient la dopamine, avec le plaisir.",
-   "e": "Le circuit de la récompense y est impliqué."
+   "d": "Ce que procure la libération de dopamine.",
+   "e": "En contrepartie, la substance demande au cerveau de continuer."
   },
   {
    "m": "SUBSTANCE PSYCHOACTIVE",
    "s": 2,
-   "d": "Produit qui agit sur le cerveau, comme le tabac, l'alcool ou le cannabis.",
-   "e": "Elle active le circuit de la récompense ; la répétition peut mener à la dépendance."
+   "d": "Produit qui agit sur le cerveau : tabac, alcool, cannabis.",
+   "e": "Elle libère la dopamine du circuit de la récompense."
   },
   {
    "m": "DÉPENDANCE",
    "s": 2,
    "d": "Perte de contrôle de l'usage, poursuivi malgré ses conséquences négatives.",
-   "e": "La répétition peut y mener, mais ce n'est pas automatique."
+   "e": "Elle n'est pas automatique."
   },
   {
-   "m": "RÉPÉTITION",
+   "m": "MANQUE",
    "s": 2,
-   "d": "Retour fréquent d'une consommation ou d'un comportement, qui peut mener à la dépendance.",
-   "e": "Elle renforce l'envie de recommencer, jusqu'à la perte de contrôle ; ce n'est pas automatique."
+   "d": "Ce que crée l'absence de substance ou de stimulation chez la personne dépendante.",
+   "e": "Chez elle, le circuit de la récompense est déréglé."
   },
   {
-   "m": "NICOTINE",
-   "s": 3,
-   "d": "Substance du tabac qui accélère le cœur : effet immédiat.",
-   "e": "Le tabac a aussi des effets à long terme : cancers, maladies du cœur et des poumons."
+   "m": "JEUX DE HASARD",
+   "s": 2,
+   "d": "Comportement sans produit qui agit sur le circuit de la récompense.",
+   "e": "Avec les jeux d'argent, ils peuvent provoquer une dépendance."
   },
   {
-   "m": "VIGILANCE",
+   "m": "TABAC",
+   "s": 2,
+   "d": "Produit licite qui cible le circuit de la récompense.",
+   "e": "Sa nicotine est une drogue licite."
+  },
+  {
+   "m": "ALCOOL",
    "s": 3,
-   "d": "Capacité qui baisse juste après une consommation d'alcool, avec les réflexes.",
-   "e": "Sa baisse est un effet immédiat de l'alcool."
+   "d": "Produit psychoactif, qui a un effet direct sur le cerveau.",
+   "e": "C'est une drogue licite.",
+   "x": "Les tests positifs à l'alcool sont plus fréquents le soir après 17 h et le vendredi."
+  },
+  {
+   "m": "EFFETS IMMÉDIATS",
+   "s": 3,
+   "d": "Effets juste après la consommation : baisse des réflexes, troubles de l'attention.",
+   "e": "Même à petite dose, l'alcool affecte rapidement les réflexes."
+  },
+  {
+   "m": "EFFETS À LONG TERME",
+   "s": 3,
+   "d": "Effets liés à des consommations répétées ou prolongées : cancers, maladies du foie, du cœur.",
+   "e": "Ils apparaissent après des années de consommation."
   },
   {
    "m": "RÉFLEXES",
    "s": 3,
-   "d": "Réactions rapides diminuées juste après l'alcool ou le cannabis.",
-   "e": "Leur baisse est un effet immédiat."
+   "d": "Ce que l'alcool affecte rapidement, même à petite dose.",
+   "e": "C'est un effet immédiat."
+  },
+  {
+   "m": "VIGILANCE",
+   "s": 3,
+   "d": "Ce que l'alcool affecte rapidement, avec les réflexes et le jugement.",
+   "e": "C'est un effet immédiat."
+  },
+  {
+   "m": "JUGEMENT",
+   "s": 3,
+   "d": "Capacité que l'alcool affecte rapidement, même à petite dose.",
+   "e": "C'est un effet immédiat."
   },
   {
    "m": "ATTENTION",
    "s": 3,
-   "d": "Capacité troublée juste après une consommation de cannabis, avec la mémoire.",
-   "e": "Ses troubles sont un effet immédiat du cannabis."
+   "d": "Ce qu'une prise de cannabis trouble.",
+   "e": "Les troubles de l'attention sont un effet immédiat."
   },
   {
    "m": "MÉMOIRE",
    "s": 3,
-   "d": "Faculté troublée juste après une consommation de cannabis.",
-   "e": "Ses troubles sont un effet immédiat du cannabis."
+   "d": "Ce qu'une prise de cannabis affaiblit à court terme.",
+   "e": "Une consommation régulière entraîne des difficultés de mémorisation."
+  },
+  {
+   "m": "EUPHORIE",
+   "s": 3,
+   "d": "Effet modéré d'une prise de cannabis, avec un sentiment de bien-être.",
+   "e": "Elle est suivie d'une somnolence."
   },
   {
    "m": "CANCER",
    "s": 3,
-   "d": "Maladie, effet à long terme du tabac et de l'alcool.",
-   "e": "C'est un effet à long terme : il apparaît après des consommations répétées ou prolongées."
+   "d": "Maladie que l'alcool peut provoquer.",
+   "e": "C'est un effet à long terme."
   },
   {
-   "m": "FOIE",
+   "m": "TROUBLES COGNITIFS",
    "s": 3,
-   "d": "Organe dont les maladies sont un effet à long terme de l'alcool.",
-   "e": "Ces maladies apparaissent après des consommations répétées ou prolongées."
+   "d": "Troubles que l'alcool peut provoquer après des années de consommation.",
+   "e": "C'est un effet à long terme."
+  },
+  {
+   "m": "HUMEUR DÉPRESSIVE",
+   "s": 3,
+   "d": "Effet possible d'une consommation régulière ou intensive de cannabis.",
+   "e": "C'est une conséquence personnelle."
   },
   {
    "m": "POLYCONSOMMATION",
    "s": 3,
    "d": "Consommation de plusieurs produits ; les risques augmentent.",
-   "e": "Elle cumule les effets de chaque produit.",
-   "x": "Dans la situation : Kylian fume du tabac, boit de l'alcool et fume du cannabis le week-end."
+   "e": "Alcool et cannabis : risque d'être responsable d'un accident mortel multiplié par 29."
   },
   {
-   "m": "FATIGUE",
+   "m": "ACCIDENT MORTEL",
    "s": 3,
-   "d": "Conséquence personnelle d'une addiction, citée avec les dettes et l'isolement.",
-   "e": "Elle fait partie des conséquences sur la personne elle-même."
+   "d": "Risque multiplié par 17,8 avec l'alcool et par 1,65 avec le cannabis.",
+   "e": "Avec l'alcool et le cannabis associés, ce risque est multiplié par 29."
   },
   {
-   "m": "DETTES",
+   "m": "CONSÉQUENCE PERSONNELLE",
    "s": 3,
-   "d": "Sommes dues : conséquence personnelle d'une addiction.",
-   "e": "Sur la planche : un homme fatigué devant des factures.",
-   "x": "Dans la situation : Kylian a perdu 400 € en pariant."
+   "d": "Conséquence d'une addiction sur la personne : santé, dettes, isolement.",
+   "e": "Une humeur dépressive en fait partie."
+  },
+  {
+   "m": "CONSÉQUENCE SOCIALE",
+   "s": 3,
+   "d": "Conséquence d'une addiction sur les relations : disputes, justice.",
+   "e": "La stigmatisation en fait partie."
+  },
+  {
+   "m": "CONSÉQUENCE PROFESSIONNELLE",
+   "s": 3,
+   "d": "Conséquence d'une addiction sur le travail : retards, accidents, perte d'emploi.",
+   "e": "Les arrêts de travail en font partie."
   },
   {
    "m": "ISOLEMENT",
    "s": 3,
-   "d": "Fait de se retrouver seul : conséquence personnelle d'une addiction.",
-   "e": "Les conséquences sociales, elles, touchent les relations : disputes, perte d'amis."
+   "d": "Risque accru par une addiction, comme la marginalisation et la stigmatisation.",
+   "e": "C'est une conséquence personnelle.",
+   "x": "L'article cite aussi l'isolement des intérimaires."
+  },
+  {
+   "m": "STIGMATISATION",
+   "s": 3,
+   "d": "Risque accru par une addiction : la personne est mal vue par les autres.",
+   "e": "C'est une conséquence sociale."
   },
   {
    "m": "PERTE D'EMPLOI",
    "s": 3,
-   "d": "Conséquence professionnelle d'une addiction, citée avec les retards, les erreurs et les accidents du travail.",
-   "e": "Elle fait partie des conséquences professionnelles d'une addiction."
+   "d": "Risque augmenté à court terme par l'usage d'alcool, de tabac ou de cannabis.",
+   "e": "C'est une conséquence professionnelle."
   },
   {
-   "m": "LICITE",
-   "s": 4,
-   "d": "Se dit d'un produit autorisé mais encadré, comme le tabac et l'alcool.",
-   "e": "Le tabac et l'alcool ne sont pas vendus aux mineurs."
+   "m": "ARRÊT DE TRAVAIL",
+   "s": 3,
+   "d": "Risque augmenté d'environ 60 % par une consommation régulière de cannabis.",
+   "e": "Il s'agit d'un arrêt de courte durée, de 1 à 7 jours, dans les 12 mois."
   },
   {
-   "m": "ILLICITE",
-   "s": 4,
-   "d": "Se dit d'un produit interdit, comme le cannabis.",
-   "e": "Le cannabis est un stupéfiant ; son usage peut être puni d'une amende forfaitaire de 500 €."
+   "m": "ACCIDENT DU TRAVAIL",
+   "s": 3,
+   "d": "Risque d'accident grave multiplié par 2 en cas de consommation d'alcool hebdomadaire excessive.",
+   "e": "C'est une conséquence professionnelle."
   },
   {
-   "m": "STUPÉFIANT",
+   "m": "PRODUIT LICITE",
    "s": 4,
-   "d": "Produit interdit, comme le cannabis ; conduire après en avoir consommé est interdit.",
-   "e": "Son usage peut être puni d'une amende forfaitaire de 500 €."
+   "d": "Produit autorisé mais encadré : tabac, alcool.",
+   "e": "La nicotine, l'alcool et les médicaments sont des drogues licites."
   },
   {
-   "m": "AMENDE FORFAITAIRE",
+   "m": "PRODUIT ILLICITE",
    "s": 4,
-   "d": "Sanction d'un montant fixé : 500 € pour l'usage de cannabis, 135 € pour l'alcool au volant sous 0,8 g.",
-   "e": "Elle relève de la répression."
+   "d": "Produit interdit : le cannabis et les autres stupéfiants.",
+   "e": "Le cannabis, l'héroïne et la cocaïne sont des drogues illicites."
+  },
+  {
+   "m": "COCAÏNE",
+   "s": 4,
+   "d": "Drogue illicite.",
+   "e": "Une addiction peut s'installer après une ou quelques prises."
+  },
+  {
+   "m": "HÉROÏNE",
+   "s": 4,
+   "d": "Drogue illicite citée par la MILDECA.",
+   "e": "Comme le cannabis et la cocaïne, c'est un produit interdit."
+  },
+  {
+   "m": "STUPÉFIANTS",
+   "s": 4,
+   "d": "Substances ou plantes dont l'usage illicite est puni d'un an d'emprisonnement et de 3 750 € d'amende.",
+   "e": "Conduire après en avoir fait usage est puni de trois ans d'emprisonnement et de 9 000 € d'amende."
+  },
+  {
+   "m": "VENTE AUX MINEURS",
+   "s": 4,
+   "d": "Pour les boissons alcooliques, elle est interdite par l'article L. 3342-1.",
+   "e": "C'est une mesure de prévention."
   },
   {
    "m": "PERMIS PROBATOIRE",
    "s": 4,
-   "d": "Statut du conducteur récent, pour qui la conduite est interdite dès 0,2 g d'alcool par litre de sang.",
-   "e": "Pour les autres conducteurs, le seuil est de 0,5 g.",
-   "x": "Dans la situation : Kylian, 22 ans, a son permis depuis un an et est contrôlé à 0,3 g."
+   "d": "Avec ce permis, le conducteur est en infraction dès 0,20 g/L d'alcool dans le sang.",
+   "e": "Pour les autres conducteurs, le seuil est de 0,50 g/L."
+  },
+  {
+   "m": "EMPRISONNEMENT",
+   "s": 4,
+   "d": "Peine prévue pour la conduite à 0,80 g/L ou plus, ou après usage de stupéfiants.",
+   "e": "Trois ans ; cinq ans si les deux sont associés.",
+   "x": "L'intérimaire contrôlé, positif au cannabis avec 0,60 g/L d'alcool, risque cinq ans."
+  },
+  {
+   "m": "AMENDE FORFAITAIRE",
+   "s": 4,
+   "d": "Somme de 500 € qui peut éteindre l'action publique pour usage de stupéfiants.",
+   "e": "C'est une mesure de répression."
   },
   {
    "m": "RÉGLEMENTATION",
    "s": 4,
    "d": "Ensemble des règles sur la vente, l'usage et la conduite.",
-   "e": "Les sanctions qui l'accompagnent forment la répression."
-  },
-  {
-   "m": "RÉPRESSION",
-   "s": 4,
-   "d": "Ensemble des sanctions : amendes, retrait de points.",
-   "e": "Elle accompagne la réglementation."
-  },
-  {
-   "m": "PRÉVENTION",
-   "s": 4,
-   "d": "Actions qui évitent l'addiction ou ses dommages, individuelles ou collectives.",
-   "e": "Individuelle : réduire, ne pas conduire, demander de l'aide. Collective : campagnes, interdictions, règlement intérieur."
+   "e": "Codes de la santé publique, de la route et du travail."
   },
   {
    "m": "RÈGLEMENT INTÉRIEUR",
    "s": 4,
-   "d": "Texte de l'entreprise cité parmi les actions de prévention collective.",
-   "e": "Il s'ajoute aux campagnes d'information, à l'interdiction de fumer au travail et au médecin du travail."
+   "d": "Document de l'entreprise qui peut limiter voire interdire l'alcool au travail.",
+   "e": "Il peut encadrer les pots et lister les postes soumis au dépistage."
   },
   {
-   "m": "CSAPA",
+   "m": "DOCUMENT UNIQUE",
    "s": 4,
-   "d": "Sigle des centres de soins, d'accompagnement et de prévention en addictologie.",
-   "e": "Ils accompagnent gratuitement et de façon confidentielle."
+   "d": "Document de l'évaluation des risques où inscrire le risque lié aux pratiques addictives.",
+   "e": "L'INRS y associe une démarche de prévention collective."
+  },
+  {
+   "m": "BOISSONS SANS ALCOOL",
+   "s": 4,
+   "d": "Ce qu'il faut fournir systématiquement lors des pots, selon l'INRS.",
+   "e": "C'est une mesure de prévention collective."
+  },
+  {
+   "m": "LIMITES DE JEU",
+   "s": 4,
+   "d": "Ce que chaque opérateur de jeu doit demander au joueur de fixer.",
+   "e": "C'est une règle de l'Autorité nationale des jeux."
   },
   {
    "m": "DROGUES INFO SERVICE",
    "s": 4,
-   "d": "Ligne d'aide joignable au 0 800 23 13 13, anonyme et gratuite.",
-   "e": "Le cours la cite parmi les aides, avec les CSAPA et le médecin traitant."
+   "d": "Service d'aide joignable au 0 800 23 13 13, appel anonyme et gratuit.",
+   "e": "L'appeler est une mesure de prévention individuelle."
   },
   {
-   "m": "JOUEURS INFO SERVICE",
+   "m": "ALCOOL INFO SERVICE",
    "s": 4,
-   "d": "Ligne d'aide citée par le cours pour les difficultés liées aux paris.",
-   "e": "C'est la ressource à indiquer en cas de perte de contrôle au jeu."
+   "d": "Service d'aide pour l'alcool, joignable au 0 980 980 930.",
+   "e": "L'appeler est une mesure de prévention individuelle."
   },
   {
-   "m": "ANONYME",
+   "m": "TABAC INFO SERVICE",
    "s": 4,
-   "d": "Se dit d'un appel où l'on ne donne pas son nom, comme celui au 0 800 23 13 13.",
-   "e": "L'appel est aussi gratuit."
+   "d": "Service d'aide pour le tabac, joignable au 39 89.",
+   "e": "L'appeler est une mesure de prévention individuelle."
+  },
+  {
+   "m": "CSAPA",
+   "s": 4,
+   "d": "Structure où une équipe de professionnels propose une aide médicale, psychologique et sociale.",
+   "e": "Le consulter est une mesure de prévention individuelle."
+  },
+  {
+   "m": "PRÉVENTION",
+   "s": 4,
+   "d": "Actions qui évitent l'addiction ou ses dommages.",
+   "e": "Elle s'oppose à la répression, qui sanctionne."
+  },
+  {
+   "m": "PRÉVENTION COLLECTIVE",
+   "s": 4,
+   "d": "Actions pour tous : campagnes, interdictions, règlement intérieur, médecin du travail.",
+   "e": "Fournir des boissons sans alcool lors des pots en fait partie."
+  },
+  {
+   "m": "PRÉVENTION INDIVIDUELLE",
+   "s": 4,
+   "d": "Ce que chacun fait pour se protéger : réduire, ne pas conduire, demander de l'aide.",
+   "e": "Appeler Drogues Info Service en fait partie."
+  },
+  {
+   "m": "RÉPRESSION",
+   "s": 4,
+   "d": "Sanctions prévues par la loi.",
+   "e": "Par exemple : amende forfaitaire de 500 € pour usage de stupéfiants."
   }
  ],
  "retour": "bcp_2nde_A4_jeux.html",
