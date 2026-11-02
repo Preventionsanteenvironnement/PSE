@@ -1,13 +1,13 @@
 /* donnees.js — enregistrement du parcours chef-d'œuvre.
  * Sur l'ordinateur : localStorage, clé « cdo-psr-2026:<code> ». Fichier de secours : exporter / importer (JSON).
- * En ligne (Firebase devoirs-pse) : resultats/{code}/suivi/cdo-psr-2026 (avancement, carnet, avatar)
- *   et resultats/{code}/evaluations/cdo-psr-2026-<séance> (note de l'évaluation, lue par l'Atelier PSE).
+ * En ligne (Firebase devoirs-pse) : resultats/{code}/evaluations/cdo-psr-2026-<séance> (note, tentatives, carnet de la séance),
+ *   lue par l'Atelier PSE dans son espace « Chef-d'œuvre ».
  *   Seul le code est envoyé, jamais un nom.
- * ENVOI_EN_LIGNE reste à false tant que Brahim n'a pas autorisé les écritures Firebase (AGENTS.md § 10).
+ * Envoi en ligne autorisé par Brahim le 02/11/2026. Le code ESSAI n'est jamais envoyé.
  */
 (function () {
   'use strict';
-  var ENVOI_EN_LIGNE = false;
+  var ENVOI_EN_LIGNE = true;   // autorisé par Brahim le 02/11/2026
   var CLE = 'cdo-psr-2026';
   var CODES_ESSAI = ['ESSAI'];   // code de démonstration : jamais envoyé
   var code = null, etat = null, fb = null, minuterie = null;
@@ -36,21 +36,29 @@
       return fb;
     } catch (e) { return null; }
   }
-  async function envoyerSuivi() {
-    var f = await firebase(); if (!f) return;
-    try {
-      await f.fs.setDoc(f.fs.doc(f.db, 'resultats', code, 'suivi', CLE), { eleveCode: code, source: 'chef_doeuvre_psr', etat: JSON.stringify(etat), updatedAtISO: new Date().toISOString(), updatedAt: f.fs.serverTimestamp() }, { merge: true });
-    } catch (e) { /* hors ligne : renvoyé au prochain enregistrement */ }
+  /* Une fiche par séance évaluée : resultats/{code}/evaluations/cdo-psr-2026-<séance>.
+     Pas de document dans « suivi » : cette collection sert au suivi de classe de Mon espace. [02/11/2026] */
+  function fiche(s, e) {
+    var ev = e.evaluation, suivi = JSON.parse(JSON.stringify(e)); delete suivi.evaluation;
+    return {
+      eleveCode: code, classe: 'C1PSR', devoirId: CLE + '-' + s.id, titre: 'Chef-d’œuvre — ' + s.titre,
+      note_finale: ev.note, bareme: 20, premiere_note: e.premiereNote != null ? e.premiereNote : ev.note, tentatives: e.tentatives || 1,
+      points: ev.points, total: ev.total, publie: true, autocorrected: true, source: 'chef_doeuvre_psr', type: 'chef_oeuvre',
+      module_id: s.id, seance_numero: s.numero, seance_date: s.date || '', reponses: ev.reponses || {}, suivi: JSON.stringify(suivi),
+      createdAtISO: ev.date, updatedAtISO: new Date().toISOString()
+    };
   }
-  async function envoyerNote(seance, ev) {
-    var f = await firebase(); if (!f) return;
+  async function envoyerNote(s, e) {
+    var f = await firebase(); if (!f || !e.evaluation) return;
     try {
-      await f.fs.setDoc(f.fs.doc(f.db, 'resultats', code, 'evaluations', CLE + '-' + seance.id), {
-        eleveCode: code, devoirId: CLE + '-' + seance.id, titre: 'Chef-d’œuvre — ' + seance.titre,
-        note_finale: ev.note, bareme: 20, publie: true, autocorrected: true, source: 'chef_doeuvre_psr', type: 'chef_oeuvre',
-        module_id: seance.id, reponses: ev.reponses || {}, createdAtISO: ev.date, updatedAtISO: new Date().toISOString(), updatedAt: f.fs.serverTimestamp()
-      }, { merge: true });
-    } catch (e) { /* hors ligne */ }
+      var d = fiche(s, e); d.updatedAt = f.fs.serverTimestamp();
+      await f.fs.setDoc(f.fs.doc(f.db, 'resultats', code, 'evaluations', d.devoirId), d, { merge: true });
+    } catch (err) { /* hors ligne : renvoyé au prochain enregistrement */ }
+  }
+  /* Le carnet de bord rempli après l'évaluation est renvoyé avec la fiche de la séance. */
+  async function envoyerSuivi() {
+    var S = window.CDO_SEANCES || [];
+    for (var k = 0; k < S.length; k++) { var e = etat && etat.seances[S[k].id]; if (e && e.evaluation) await envoyerNote(S[k], e); }
   }
 
   function enregistrer() {
@@ -71,7 +79,13 @@
     etat: function () { return etat; },
     seance: seance,
     enregistrer: enregistrer,
-    noter: function (s, ev) { seance(s.id).evaluation = ev; enregistrer(); envoyerNote(s, ev); },
+    /* Chaque tentative est comptée ; la meilleure note est gardée, la première aussi. */
+    noter: function (s, ev) {
+      var e = seance(s.id); e.tentatives = (e.tentatives || 0) + 1;
+      if (e.premiereNote == null) e.premiereNote = e.evaluation ? e.evaluation.note : ev.note;
+      if (!e.evaluation || ev.note >= e.evaluation.note) e.evaluation = ev;
+      ecrireLocal(); envoyerNote(s, e);
+    },
     enLigne: function () { return ENVOI_EN_LIGNE && CODES_ESSAI.indexOf(code) < 0; },
     exporter: function () {
       var blob = new Blob([JSON.stringify({ code: code, cle: CLE, etat: etat }, null, 1)], { type: 'application/json' });

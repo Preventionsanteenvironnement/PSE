@@ -210,8 +210,7 @@
       if (!ev.target.closest('[data-commencer]')) return;
       z.onclick = null; z.innerHTML = '';
       EV.lancer(z, JSON.parse(JSON.stringify(s.evaluation)), function (r) {
-        var garder = !e.evaluation || r.note >= e.evaluation.note;   // on garde la meilleure tentative
-        if (garder) D.noter(s, r);
+        D.noter(s, r);   // la meilleure tentative est gardée (donnees.js)
         z.insertAdjacentHTML('beforeend', piedEtape(s, n, 'Carnet de bord'));
       });
     };
