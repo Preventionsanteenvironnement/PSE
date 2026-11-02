@@ -9,7 +9,7 @@
   'use strict';
   var ENVOI_EN_LIGNE = true;   // autorisé par Brahim le 02/11/2026
   var CLE = 'cdo-psr-2026';
-  var CODES_ESSAI = ['ESSAI'];   // code de démonstration : jamais envoyé
+  var CODES_ESSAI = ['ESSAI', 'PROFPSE'];   // démonstration et code professeur : jamais envoyés
   var code = null, etat = null, fb = null, minuterie = null;
 
   function vide() { return { v: 1, avatar: null, seances: {}, maj: null }; }
