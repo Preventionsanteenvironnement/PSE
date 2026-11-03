@@ -8,3 +8,7 @@ Illustrations générées avec l’outil image_gen intégré (OpenAI), textes et
 Contrôles sur copie isolée : 4rôles et secondregardCodex, corrections et recontrôles. Tests Chrome à375px et1100px, toutes les15reformulations, pause/reprise et étatsanciens, épreuve20/20 et0/20 ; aucun envoi de donnéesréelles. Son réel, lecteurd’écran et expérimentationélève nonattestés.
 
 Statut de revue maintenu : validation humaine des nouvellesimages et relectureextérieureChatGPT nonrenseignées. Cette publication de revue ne vaut pas feuvert de diffusionélèves.
+
+
+## Chasses aux risques — aperçu du 3 novembre 2026
+Quatre nouveaux exercices dans Repérer un danger → S’exercer → Chasses aux risques : entrepôt, maintenance, magasin, cuisine. 20 dangers, 60 choix avec explication, indices, réessais, zoom et parcours décrit. État repris localement ou par fichier JSON. Code PROF, aucun envoi Firebase dans cet aperçu. Les visuels restent soumis à la validation de Brahim.

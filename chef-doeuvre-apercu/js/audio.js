@@ -85,7 +85,7 @@
   }
   function autorise(categorie) { var m = mode(); return m === 'tout' || m === categorie; }
   function categorie(el) {
-    return el.closest('.cdo-correction, .cdo-retour, .guide-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
+    return el.closest('.cdo-correction, .cdo-retour, .guide-retour, .chasse-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
   }
   function morceaux(conteneur) {
     var m = [];

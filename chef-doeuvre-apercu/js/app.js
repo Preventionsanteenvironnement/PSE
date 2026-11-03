@@ -43,7 +43,7 @@
   }
   function suivre() {
     A.arreter();
-    document.body.classList.remove('cdo-guide-ouvert');
+    document.body.classList.remove('cdo-guide-ouvert', 'cdo-chasses-ouvert');
     vue.classList.remove('guide-decouverte');
     vue.onclick = null; vue.onchange = null;
     var h = decodeURIComponent(location.hash.replace(/^#/, '')) || 'accueil', p = h.split('/');
@@ -51,6 +51,7 @@
     window.scrollTo(0, 0);
     ({ accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
     piedPage.innerHTML = p[0] === 'seance' && /^s0/.test(p[1]) ? 'Illustrations pédagogiques générées avec OpenAI. Repères du CAP : d’après le Ministère de l’Éducation nationale, <a href="https://www.education.gouv.fr/bo/20/Hebdo8/MENE2002480C.htm" target="_blank" rel="noopener">circulaire 2020-039 du 14 février 2020</a>.' : piedPageInitial;
+    if (p[0] === 'seance' && p[1] === 's1' && p[2] === '2') piedPage.innerHTML = 'Pictogrammes : ARASAAC (Sergio Palao, Gouvernement d’Aragon), CC BY-NC-SA. Nouvelles scènes d’entreprise : illustrations générées avec OpenAI. Repères pédagogiques : <a href="https://www.inrs.fr/demarche/nouveaux-embauches/demarche-TutoPrev.html" target="_blank" rel="noopener">INRS, démarche TutoPrév’</a>.';
     var h1 = vue.querySelector('h1'); if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
   }
   window.addEventListener('hashchange', suivre);
@@ -143,6 +144,7 @@
     vue.onclick = null;
     var s = SEANCES.filter(function (x) { return x.id === p[1] || (p[1] === 's0' && x.numero === 0); })[0]; if (!s) return aller('seances');
     var n = Math.max(0, Math.min(5, +p[2] || 0)), e = D.seance(s.id);
+    if (s.id === 's1' && n === 2) document.body.classList.add('cdo-chasses-ouvert');
     if (s.guide) { document.body.classList.add('cdo-guide-ouvert'); if (n === 1 || n === 3) vue.classList.add('guide-decouverte'); }
     enTete((s.date ? dateCourte(s.date) + ' · ' : '') + s.titre, 'seances');
     vue.innerHTML = '<nav class="cdo-etapes" aria-label="Étapes de la séance">' + ETAPES.map(function (t, i) {
@@ -204,7 +206,7 @@
   function etapeExercer(z, s, e, n) {
     var i = Math.min(e.exIndex || 0, s.exercices.length - 1);
     function un() {
-      z.innerHTML = '<div class="cdo-ex-tete">' + lisible('h1', 'S’exercer') + '<div class="cdo-ex-points" aria-label="Exercices">' + s.exercices.map(function (_, k) {
+      z.innerHTML = (s.id === 's1' ? '<div class="chasse-parcours-acces">'+lisible('p','Observer plusieurs entreprises, puis une cuisine. Repérer le danger, son type et le dommage possible.')+'<button type="button" class="cdo-btn-second" data-ex="6">Chasses aux risques · 4 lieux</button></div>' : '') + '<div class="cdo-ex-tete">' + lisible('h1', 'S’exercer') + '<div class="cdo-ex-points" aria-label="Exercices">' + s.exercices.map(function (_, k) {
         return '<button type="button" data-ex="' + k + '" class="' + (k === i ? 'actif ' : '') + (e.exercices[k] ? 'fait' : '') + '" aria-label="Exercice ' + (k + 1) + '">' + (e.exercices[k] ? ICO.ok : k + 1) + '</button>';
       }).join('') + '</div></div><div class="cdo-ex-zone"></div>' +
         '<div class="cdo-pied">' + (i ? '<button type="button" class="cdo-btn-second" data-ex="' + (i - 1) + '">' + ICO.retour + 'Exercice précédent</button>' : '<a class="cdo-btn-second" href="#seance/' + s.id + '/1">' + ICO.retour + 'Découvrir</a>') +
