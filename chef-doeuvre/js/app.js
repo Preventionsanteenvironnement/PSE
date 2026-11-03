@@ -117,9 +117,31 @@
   }
 
   /* ───────── Mes séances ───────── */
+  function exercicesRestants(s, e) {
+    return s.exercices.filter(function (_, i) { return !(e.exercices || {})[i]; }).length;
+  }
+  function epreuveValidee(s, e) {
+    if (s.id === 's1' && window.CDO_EPREUVE_DANGER) return window.CDO_EPREUVE_DANGER.terminee(e);
+    return !s.evaluation || !!e.evaluation;
+  }
+  function aValider() {
+    var lignes = SEANCES.map(function (s) {
+      var e = D.etat().seances[s.id] || {};
+      var exercices = exercicesRestants(s, e), epreuve = !epreuveValidee(s, e);
+      if (!exercices && !epreuve) return '';
+      var detail = exercices ? exercices + (exercices === 1 ? ' exercice' : ' exercices') : '';
+      if (epreuve) detail += (detail ? ' · ' : '') + '1 épreuve';
+      return '<li><a href="#seance/' + s.id + '/' + (exercices ? '2' : '3') + '">' +
+        esc(s.titre) + '</a><br><span>' + esc(detail) + '</span></li>';
+    }).filter(Boolean);
+    return '<section class="cdo-bloc">' + lisible('h2', 'À valider') +
+      (lignes.length ? lisible('p', 'Valider chaque exercice et terminer chaque épreuve.') + '<ul data-lire>' + lignes.join('') + '</ul>' :
+        lisible('p', 'Tous les exercices et toutes les épreuves sont validés.')) + '</section>';
+  }
+
   function etatSeance(s) {
     var e = D.etat().seances[s.id];
-    if (e && e.termine && (s.id!=='s1'||!window.CDO_EPREUVE_DANGER||window.CDO_EPREUVE_DANGER.terminee(e)) && (!s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation))) return 'terminee';
+    if (e && e.termine && !exercicesRestants(s, e) && epreuveValidee(s, e) && (!s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation))) return 'terminee';
     if (e && (e.objectif != null || Object.keys(e.exercices || {}).length || e.termine || (e.guide && (e.guide.position > 0 || e.guide.pause || Object.keys(e.guide.bilans || {}).length)))) return 'commencee';
     return 'afaire';
   }
@@ -137,7 +159,7 @@
           '<span class="cdo-seance-t">' + esc(s.titre) + '</span>' +
           '<span class="cdo-seance-etat">' + (st === 'terminee' ? ICO.ok + (e.evaluation ? String(e.evaluation.note).replace('.', ',') + ' / 20' : 'Terminée') : st === 'commencee' ? 'Reprendre' : 'Commencer') + '</span></a>';
       }).join('') + '</div>' +
-      '<aside class="cdo-seances-cote"><div class="cdo-bloc">' + lisible('h2', 'Mes résultats') +
+      '<aside class="cdo-seances-cote">' + aValider() + '<div class="cdo-bloc">' + lisible('h2', 'Mes résultats') +
       '<p class="cdo-ligne-res"><span>Évaluations (moyenne)</span><b>' + (moy == null ? '—' : String(moy).replace('.', ',') + ' / 20') + '</b></p>' +
       '<p class="cdo-ligne-res"><span>Séances terminées</span><b>' + SEANCES.filter(function (s) { return etatSeance(s) === 'terminee'; }).length + ' / ' + SEANCES.length + '</b></p>' +
       '<p class="cdo-discret">La note de participation est donnée par le professeur.</p></div>' +
@@ -223,7 +245,8 @@
     };
   }
   function etapeExercer(z, s, e, n) {
-    var i = Math.min(e.exIndex || 0, s.exercices.length - 1);
+    var premierRestant = s.exercices.findIndex(function (_, k) { return !e.exercices[k]; });
+    var i = premierRestant < 0 ? Math.min(e.exIndex || 0, s.exercices.length - 1) : premierRestant;
     function un() {
       z.innerHTML = (s.id === 's1' ? '<div class="chasse-parcours-acces">'+lisible('p','Observer plusieurs entreprises, puis une cuisine. Repérer et nommer les dangers. Le type et le dommage sont proposés ensuite.')+'<button type="button" class="cdo-btn-second" data-ex="6">Chasses aux risques · 4 lieux</button></div>' : '') + '<div class="cdo-ex-tete">' + lisible('h1', 'S’exercer') + '<div class="cdo-ex-points" aria-label="Exercices">' + s.exercices.map(function (_, k) {
         return '<button type="button" data-ex="' + k + '" class="' + (k === i ? 'actif ' : '') + (e.exercices[k] ? 'fait' : '') + '" aria-label="Exercice ' + (k + 1) + '">' + (e.exercices[k] ? ICO.ok : k + 1) + '</button>';
@@ -284,14 +307,15 @@
   }
   function etapeBilan(z, s, e, n) {
     var nouvelleEpreuve=s.id==='s1'&&window.CDO_EPREUVE_DANGER;
-    var peutTerminer = nouvelleEpreuve ? window.CDO_EPREUVE_DANGER.terminee(e) : !s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation);
-    var reprendreEpreuve=!!nouvelleEpreuve || (s.guide&&window.CDO_GUIDE.pret(s,e));
+    var reste = exercicesRestants(s, e), epreuveOK = epreuveValidee(s, e);
+    var peutTerminer = !reste && epreuveOK && (!s.guide || window.CDO_GUIDE.pret(s, e));
+    var reprendreEpreuve = !s.guide || window.CDO_GUIDE.pret(s, e);
     var obj = e.objectif != null ? s.objectifsEleve[e.objectif] : null;
     z.innerHTML = '<div class="cdo-bloc-grand cdo-bilan">' + AV.svg(D.etat().avatar, 150) + lisible('h1', 'Bilan de la séance') +
       (obj ? lisible('p', 'Objectif choisi : « ' + obj + ' ». Est-il atteint ?') + '<div class="cdo-choix">' + ['Oui', 'En partie', 'Pas encore'].map(function (t) { return '<button type="button" class="cdo-carte' + (e.atteint === t ? ' pris' : '') + '" data-at="' + t + '">' + t + '</button>'; }).join('') + '</div>' : '') +
       '<p class="cdo-ligne-res"><span>Exercices réussis</span><b>' + Object.keys(e.exercices || {}).length + ' / ' + s.exercices.length + '</b></p>' +
-      '<p class="cdo-ligne-res"><span>Évaluation</span><b>' + (nouvelleEpreuve&&!peutTerminer?'épreuve à passer':e.evaluation ? String(e.evaluation.note).replace('.', ',') + ' / 20' : 'non faite') + '</b></p>' +
-      (peutTerminer ? '<button type="button" class="cdo-btn" data-terminer>Terminer la séance ' + ICO.ok + '</button>' : '<a class="cdo-btn" href="#seance/' + s.id + '/' + (reprendreEpreuve ? '3' : '1') + '">' + (reprendreEpreuve ? 'Passer à l’épreuve' : 'Reprendre la découverte') + '</a>') + '</div>';
+      '<p class="cdo-ligne-res"><span>Évaluation</span><b>' + (nouvelleEpreuve&&!epreuveOK?'épreuve à passer':e.evaluation ? String(e.evaluation.note).replace('.', ',') + ' / 20' : 'non faite') + '</b></p>' +
+      (reste ? lisible('p', 'Valider les exercices restants pour terminer la séance.') + '<a class="cdo-btn" href="#seance/' + s.id + '/2">Reprendre les exercices</a>' : peutTerminer ? '<button type="button" class="cdo-btn" data-terminer>Terminer la séance ' + ICO.ok + '</button>' : '<a class="cdo-btn" href="#seance/' + s.id + '/' + (reprendreEpreuve ? '3' : '1') + '">' + (reprendreEpreuve ? 'Passer à l’épreuve' : 'Reprendre la découverte') + '</a>') + '</div>';
     z.onclick = function (ev) {
       var a = ev.target.closest('[data-at]'); if (a) { e.atteint = a.dataset.at; D.enregistrer(); z.querySelectorAll('[data-at]').forEach(function (x) { x.classList.toggle('pris', x === a); }); return; }
       if (ev.target.closest('[data-terminer]') && peutTerminer) { e.termine = true; D.enregistrer(); aller('seances'); }
