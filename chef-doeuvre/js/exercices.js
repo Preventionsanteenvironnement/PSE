@@ -36,7 +36,7 @@
   function cadre(b, corps) {
     return '<div class="cdo-ex' + (b.grandesImages ? ' cdo-grand' : '') + '" data-type="' + esc(b.type) + '">' +
       (b.titre ? '<h3 class="cdo-ex-titre" data-lire>' + son(b.titre) + '<span>' + esc(b.titre) + '</span></h3>' : '') +
-      (b.image && b.type !== 'chasse' ? '<figure class="cdo-fig"><img src="' + esc(b.image) + '" alt="' + esc(b.alt || '') + '" loading="lazy">' + (b.legende ? '<figcaption data-lire>' + esc(b.legende) + '</figcaption>' : '') + '</figure>' : '') +
+      (b.image && b.type !== 'chasse' ? '<figure class="cdo-fig"><img src="' + esc(b.image) + '" alt="' + esc(b.alt || '') + '" loading="lazy">' + (b.legende || b.alt ? '<figcaption data-lire>' + son([b.alt, b.legende].filter(Boolean).join(' ')) + (b.legende ? '<span>' + esc(b.legende) + '</span>' : '') + '</figcaption>' : '') + '</figure>' : '') +
       (b.consigne ? consigneHtml(b.consigne) : '') + corps +
       '<div class="cdo-retour" aria-live="polite"></div></div>';
   }
@@ -71,9 +71,10 @@
     var banque = melanger(attendus.concat(b.intrus ? [b.intrus] : []));
     var phrase = parts.map(function (p) { return p.trou != null ? '<button type="button" class="cdo-trou" data-t="' + p.trou + '" aria-label="Case vide ' + (p.trou + 1) + '">……</button>' : esc(p.t); }).join('');
     box.innerHTML = cadre(b, '<p class="cdo-phrase" data-lire data-dire="' + esc(String(b.source).replace(/\[[^\]]+\]/g, ' blanc ')) + '">' + son(String(b.source).replace(/\[[^\]]+\]/g, ' blanc ')) + '<span>' + phrase + '</span></p>' +
-      '<div class="cdo-banque">' + banque.map(function (w) { return '<button type="button" class="cdo-carte" data-w="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>');
+      '<div class="cdo-banque">' + banque.map(function (w) { return '<button type="button" class="cdo-carte" data-w="' + esc(w) + '">' + esc(w) + A.interne(w) + '</button>'; }).join('') + '</div>');
     var choisi = null, rempli = 0, erreurs = 0;
     box.addEventListener('click', function (ev) {
+      if (ev.target.closest('.cdo-son')) return;
       var c = ev.target.closest('.cdo-carte');
       if (c && !c.disabled) { box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lireAuto(c.dataset.w); return; }
       var t = ev.target.closest('.cdo-trou');
@@ -153,14 +154,14 @@
       var q = b.questions[i];
       box.innerHTML = cadre(b, '<p class="cdo-compteur">Question ' + (i + 1) + ' sur ' + b.questions.length + '</p>' +
         (q.image ? '<figure class="cdo-fig"><img src="' + esc(q.image) + '" alt="' + esc(q.alt || '') + '">' +
-          (q.alt ? '<figcaption>Document ' + (i + 1) + ' · Scène de travail</figcaption>' : '') + '</figure>' : '') +
+          (q.alt ? '<figcaption data-lire>' + son(q.alt) + '<span>Document ' + (i + 1) + ' · Scène de travail</span></figcaption>' : '') + '</figure>' : '') +
         '<p class="cdo-question" data-lire>' + son(q.question) + '<span>' + esc(q.question) + '</span></p>' +
         '<div class="cdo-choix">' + q.choix.map(function (c, k) { return '<button type="button" class="cdo-carte" data-k="' + k + '"><span>' + esc(c) + '</span>' + A.interne(c) + '</button>'; }).join('') + '</div>');
     }
     une();
     box.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;
-      var s = ev.target.closest('[data-suite]'); if (s) { i++; une(); return; }
+      var s = ev.target.closest('[data-suite]'); if (s) { A.arreter(); i++; une(); return; }
       var c = ev.target.closest('.cdo-choix .cdo-carte'); if (!c || c.disabled) return;
       var q = b.questions[i];
       if (+c.dataset.k === q.bonne) {
