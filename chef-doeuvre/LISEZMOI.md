@@ -27,3 +27,10 @@ Demande de M. Mecheri (1er novembre 2026). Branche `chef-doeuvre/parcours-risque
 - Contrôle des évaluations (compétence `controler-cours`) ; lexique et auto-évaluation : M. Mecheri.
 - Images : photos et illustrations réalisées pour le cours (Tableau, feuilles élèves) ; pictogrammes ARASAAC (CC BY-NC-SA, crédit en pied de page).
 - Écarts volontaires avec le Tableau (référence PSE SOL-02 / SOL-07), séance 7 : l'information et la formation accompagnent toujours les autres mesures ; le panneau « sol glissant » n'est plus une protection collective.
+
+## Audio optionnel — 3 novembre 2026
+- Mode initial : **À la demande**. Les boutons d'écoute restent disponibles, y compris sur les cartes et propositions des exercices.
+- Menu **Audio** sur chaque écran : questions et consignes, réponses et corrections, ou tout le contenu en automatique.
+- **Arrêter** annule immédiatement la lecture et les lectures en attente. Une nouvelle consigne ou action peut déclencher la lecture suivante si le mode automatique reste activé.
+- Réglage conservé sur cet ordinateur, séparément pour chaque code ; il ne modifie pas les résultats ni les données Firebase.
+- Vérification navigateur Chrome à 375 px : 48 écrans, 37 exercices et 41 questions ; synthèse vocale simulée pour contrôler les déclenchements, les quatre modes, l'arrêt et la persistance. Le rendu sonore dépend des voix disponibles sur l'appareil.

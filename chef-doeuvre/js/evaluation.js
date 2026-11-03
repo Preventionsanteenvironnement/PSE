@@ -163,10 +163,10 @@
     box.addEventListener('click', function (e) {
       if (e.target.closest('.cdo-son')) return;
       var q = qs[i], T = Q[q.type];
-      if (e.target.closest('[data-prec]')) { i--; ecran(); return; }
+      if (e.target.closest('[data-prec]')) { A.arreter(); i--; ecran(); return; }
       if (e.target.closest('[data-valider]')) {
         if (!T.pret(q, reps[i])) return;
-        if (i + 1 < qs.length) { i++; ecran(); A.arreter(); return; }
+        if (i + 1 < qs.length) { A.arreter(); i++; ecran(); return; }
         return bilan();
       }
       if (e.target.closest('.cdo-eval-q')) {
@@ -186,7 +186,7 @@
       var mot = note >= 16 ? 'Très bien.' : note >= 12 ? 'Bien.' : note >= 8 ? 'C’est un début : relisez la correction.' : 'Relisez la correction avec votre professeur.';
       box.innerHTML = '<div class="cdo-note"><span class="cdo-note-val">' + String(note).replace('.', ',') + '<small> / 20</small></span><p data-lire>' + son(mot) + esc(mot) + '</p></div>' +
         '<h3 class="cdo-ex-titre">La correction</h3><ol class="cdo-correction">' + lignes + '</ol>';
-      A.lire('Votre note : ' + String(note).replace('.', ',') + ' sur 20. ' + mot);
+      A.lireAuto('Votre note : ' + String(note).replace('.', ',') + ' sur 20. ' + mot);
       fini({ note: note, points: points, total: total, reponses: JSON.parse(JSON.stringify(reps)), date: new Date().toISOString() });
     }
     ecran();

@@ -8,7 +8,7 @@
   var A = window.CDO_AUDIO, D = window.CDO_DONNEES, AV = window.CDO_AVATAR, EX = window.CDO_EX, EV = window.CDO_EVAL;
   var esc = EX.esc, vue = document.getElementById('vue'), tete = document.getElementById('tete');
   var SEANCES = (window.CDO_SEANCES || []).slice().sort(function (a, b) { return a.numero - b.numero; });
-  window.CDO_REGLAGES = { parlerRetours: true };
+  window.CDO_REGLAGES = { parlerRetours: true }; // Le mode audio personnel contrôle les lectures automatiques.
   function son(t, l) { return A.bouton(t, l); }
   function lisible(balise, t, cls) { return '<' + balise + (cls ? ' class="' + cls + '"' : '') + ' data-lire>' + son(t) + '<span>' + esc(t) + '</span></' + balise + '>'; }
   function dateLongue(iso) { var d = new Date(iso + 'T12:00:00'); return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); }
@@ -28,7 +28,7 @@
     var c = D.code(), e = D.etat();
     tete.innerHTML = '<div class="cdo-tete-g">' + (retour ? '<button type="button" class="cdo-retour-btn" data-aller="' + retour + '">' + ICO.retour + 'Retour</button>' : '<span class="cdo-marque">Chef-d’œuvre · CAP PSR</span>') + '</div>' +
       '<div class="cdo-tete-c">' + esc(titre || '') + '</div>' +
-      '<div class="cdo-tete-d"><button type="button" class="cdo-ecouter" data-ecouter>' + A.ICONE + 'Écouter<span class="cdo-pas-mobile"> la page</span></button>' +
+      '<div class="cdo-tete-d">' + A.reglages() + '<button type="button" class="cdo-ecouter" data-ecouter>' + A.ICONE + 'Écouter<span class="cdo-pas-mobile"> la page</span></button>' +
       (c ? '<button type="button" class="cdo-moi" data-aller="moi" aria-label="Mon espace">' + AV.svg(e.avatar, 44) + '<span>' + esc(c) + '</span></button>' : '') + '</div>';
   }
   document.addEventListener('click', function (ev) {
@@ -73,7 +73,7 @@
     f.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var c = D.codeValide(inp.value);
-      if (!c) { var e = f.querySelector('.cdo-erreur'); e.hidden = false; e.textContent = 'Ce code n’est pas reconnu. Vérifier les quatre caractères.'; A.lire(e.textContent, e); return; }
+      if (!c) { var e = f.querySelector('.cdo-erreur'); e.hidden = false; e.textContent = 'Ce code n’est pas reconnu. Vérifier les quatre caractères.'; A.lireAuto(e.textContent, e); return; }
       var etat = D.ouvrir(c);
       aller(etat.avatar ? 'seances' : 'avatar');
     });
@@ -166,7 +166,7 @@
     z.onclick = function (ev) {
       if (ev.target.closest('.cdo-son')) return;
       var m = ev.target.closest('[data-meteo]'), o = ev.target.closest('[data-obj]');
-      if (m) { e.meteo = +m.dataset.meteo; D.enregistrer(); z.querySelectorAll('[data-meteo]').forEach(function (x) { x.classList.toggle('pris', x === m); x.setAttribute('aria-pressed', x === m); }); A.lire(METEOS[e.meteo].t); }
+      if (m) { e.meteo = +m.dataset.meteo; D.enregistrer(); z.querySelectorAll('[data-meteo]').forEach(function (x) { x.classList.toggle('pris', x === m); x.setAttribute('aria-pressed', x === m); }); A.lireAuto(METEOS[e.meteo].t); }
       if (o) { e.objectif = +o.dataset.obj; D.enregistrer(); z.querySelectorAll('[data-obj]').forEach(function (x) { x.classList.toggle('pris', x === o); x.setAttribute('aria-pressed', x === o); }); }
     };
   }

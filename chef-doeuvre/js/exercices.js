@@ -26,7 +26,7 @@
     z.className = 'cdo-retour ' + (ok === true ? 'ok' : ok === false ? 'ko' : '');
     z.innerHTML = txt ? son(txt) + '<span>' + esc(txt) + '</span>' : '';
     z.setAttribute('data-lire', '');
-    if (txt && dire !== false && window.CDO_REGLAGES && window.CDO_REGLAGES.parlerRetours) A.lire(txt, z);
+    if (txt && dire !== false && window.CDO_REGLAGES && window.CDO_REGLAGES.parlerRetours) A.lireAuto(txt, z);
   }
   function termine(box, opts, message) {
     box.classList.add('cdo-fini');
@@ -55,7 +55,7 @@
     box.addEventListener('click', function (ev) {
       var c = ev.target.closest('.cdo-mot'); if (!c || ev.target.closest('.cdo-son')) return;
       var d = c.querySelector('.cdo-mot-def'); d.hidden = false; c.setAttribute('aria-expanded', 'true'); c.classList.add('ouvert');
-      var m = b.mots[+c.dataset.i]; A.lire(m.mot + '. ' + m.def + (m.exemple ? '. ' + m.exemple : ''), d);
+      var m = b.mots[+c.dataset.i]; A.lireAuto(m.mot + '. ' + m.def + (m.exemple ? '. ' + m.exemple : ''), d);
       vus[c.dataset.i] = 1;
       if (Object.keys(vus).length === b.mots.length && !box.classList.contains('cdo-fini')) termine(box, opts, 'Tous les mots sont découverts.');
     });
@@ -75,7 +75,7 @@
     var choisi = null, rempli = 0, erreurs = 0;
     box.addEventListener('click', function (ev) {
       var c = ev.target.closest('.cdo-carte');
-      if (c && !c.disabled) { box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lire(c.dataset.w); return; }
+      if (c && !c.disabled) { box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lireAuto(c.dataset.w); return; }
       var t = ev.target.closest('.cdo-trou');
       if (t && choisi && !t.classList.contains('juste')) {
         if (choisi.dataset.w === attendus[+t.dataset.t]) {
@@ -103,7 +103,7 @@
     box.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;
       var c = ev.target.closest('.cdo-carte');
-      if (c && !c.disabled) { box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); pris = c; A.lire(items[+c.dataset.i].t); return; }
+      if (c && !c.disabled) { box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); pris = c; A.lireAuto(items[+c.dataset.i].t); return; }
       var col = ev.target.closest('.cdo-colonne');
       if (col && pris) {
         var it = items[+pris.dataset.i];
@@ -133,7 +133,7 @@
     box.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;
       var c = ev.target.closest('.cdo-carte'); if (!c || c.disabled) return;
-      if (c.classList.contains('cdo-g')) { box.querySelectorAll('.cdo-g').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); g = c; A.lire(paires[+c.dataset.i].g); return; }
+      if (c.classList.contains('cdo-g')) { box.querySelectorAll('.cdo-g').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); g = c; A.lireAuto(paires[+c.dataset.i].g); return; }
       if (!g) { retour(box, 'Touchez d’abord un élément de la colonne de gauche.', null); return; }
       if (c.dataset.i === g.dataset.i) {
         var n = ++faits; [g, c].forEach(function (x) { x.disabled = true; x.classList.remove('pris'); x.classList.add('relie'); x.setAttribute('data-n', n); });
@@ -210,7 +210,7 @@
     box.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;
       var c = ev.target.closest('.cdo-banque .cdo-carte');
-      if (c && !c.disabled) { box.querySelectorAll('.cdo-banque .cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lire(c.dataset.w); return; }
+      if (c && !c.disabled) { box.querySelectorAll('.cdo-banque .cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lireAuto(c.dataset.w); return; }
       var t = ev.target.closest('.cdo-trou');
       if (t && choisi && !t.classList.contains('juste')) {
         if (choisi.dataset.w === attendus[+t.dataset.t]) {
@@ -256,7 +256,7 @@
     box.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;
       var c = ev.target.closest('.cdo-banque .cdo-carte');
-      if (c && !c.disabled) { box.querySelectorAll('.cdo-banque .cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lire(c.dataset.w); return; }
+      if (c && !c.disabled) { box.querySelectorAll('.cdo-banque .cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); choisi = c; A.lireAuto(c.dataset.w); return; }
       var t = ev.target.closest('.cdo-maillon.cdo-trou');
       if (t && choisi && !t.classList.contains('juste')) {
         if (choisi.dataset.w === b.etapes[+t.dataset.e].texte) {
@@ -279,7 +279,7 @@
     dessiner();
     box.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;
-      if (ev.target.closest('[data-plus]')) { vus++; dessiner(); A.lire(b.indices[vus - 1]); return; }
+      if (ev.target.closest('[data-plus]')) { vus++; dessiner(); A.lireAuto(b.indices[vus - 1], null, 'questions'); return; }
       var c = ev.target.closest('.cdo-choix .cdo-carte'); if (!c || c.disabled) return;
       if (c.dataset.w === b.reponse) { c.classList.add('juste'); box.querySelectorAll('.cdo-choix .cdo-carte').forEach(function (x) { x.disabled = true; }); termine(box, opts, 'Exact : ' + b.reponse + '. ' + (b.explication || '')); }
       else { c.classList.add('faux'); c.disabled = true; retour(box, vus < b.indices.length ? 'Pas encore. Demandez un autre indice.' : hasard(ENCORE), false); }
@@ -335,7 +335,7 @@
       nommer.hidden = false;
       nommer.innerHTML = consigneHtml('Choisir le nom du danger entouré.') + '<div class="cdo-choix">' +
         props.map(function (p) { return '<button type="button" class="cdo-carte" data-w="' + esc(p) + '"><span>' + esc(p) + '</span>' + A.interne(p) + '</button>'; }).join('') + '</div>';
-      A.lire('Choisir le nom du danger entouré.', nommer);
+      A.lireAuto('Choisir le nom du danger entouré.', nommer, 'questions');
     });
     nommer.addEventListener('click', function (ev) {
       if (ev.target.closest('.cdo-son')) return;

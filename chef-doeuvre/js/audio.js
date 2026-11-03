@@ -10,6 +10,7 @@
   'use strict';
   var synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
   var voixFr = [], file = [], jeton = 0, eclaire = null, boutonActif = null;
+  var attente = [], minuterie = null, vus = new WeakMap();
 
   function chargerVoix() {
     if (!synth) return;
@@ -46,7 +47,7 @@
     if (boutonActif) { boutonActif.classList.remove('joue'); boutonActif.setAttribute('aria-pressed', 'false'); }
     boutonActif = null;
   }
-  function arreter() { jeton += 1; file = []; if (synth) synth.cancel(); eteindre(); }
+  function arreter() { clearTimeout(minuterie); attente = []; jeton += 1; file = []; if (synth) synth.cancel(); eteindre(); }
 
   function suivant(j) {
     if (j !== jeton) return;
@@ -75,18 +76,73 @@
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
 
   function lire(t, el, bouton) { lancer([{ t: t, el: el || null }], bouton); }
-  function lireTout(conteneur, bouton) {
-    var m = [];
-    /* Les propositions à toucher (choix, banques de mots) sont lues aussi. [Contrôle v6, n° 3] */
-    Array.prototype.forEach.call((conteneur || document).querySelectorAll('[data-lire], .cdo-choix, .cdo-banque'), function (el) {
-      if (!visible(el)) return;
-      var t;
-      if (el.matches('[data-lire]')) t = texteDe(el);
-      else t = Array.prototype.map.call(el.querySelectorAll('.cdo-carte:not(.range):not([disabled])'), function (c) { return texteDe(c); }).filter(Boolean).join('. ');
-      if (t) m.push({ t: el.matches('[data-lire]') ? t : 'Réponses proposées : ' + t + '.', el: el });
-    });
-    lancer(m, bouton);
+  function cle() {
+    return 'cdo-audio-mode:' + (window.CDO_DONNEES && window.CDO_DONNEES.code() || 'accueil');
   }
+  function mode() {
+    try { var m = localStorage.getItem(cle()); return /^(questions|reponses|tout)$/.test(m) ? m : 'manuel'; }
+    catch (e) { return 'manuel'; }
+  }
+  function autorise(categorie) { var m = mode(); return m === 'tout' || m === categorie; }
+  function categorie(el) {
+    return el.closest('.cdo-correction, .cdo-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
+  }
+  function morceaux(conteneur) {
+    var m = [];
+    Array.prototype.forEach.call((conteneur || document).querySelectorAll('[data-lire], .cdo-carte:not(.range):not([disabled])'), function (el) {
+      if (!visible(el) || el.closest('[data-audio-reglages]')) return;
+      // Les cartes déjà balisées sont lues une seule fois, dans l'ordre du document.
+      if (el.parentElement.closest('[data-lire], .cdo-carte')) return;
+      var t = texteDe(el);
+      if (t) m.push({ t: t, el: el, categorie: categorie(el) });
+    });
+    return m;
+  }
+  function lireTout(conteneur, bouton) { lancer(morceaux(conteneur), bouton); }
+  function programmer(t, el, cat) {
+    if (!autorise(cat)) return;
+    attente.push({t:t, el:el || null});
+    clearTimeout(minuterie);
+    minuterie = setTimeout(function () {
+      var liste = attente, uniques = new Set(); attente = [];
+      liste = liste.filter(function (m) { if (uniques.has(m.t)) return false; uniques.add(m.t); return true; });
+      if (liste.length) lancer(liste);
+    }, 180);
+  }
+  function lireAuto(t, el, cat) { programmer(t, el, cat || 'reponses'); }
+  function actualiser(force) {
+    var vue = document.getElementById('vue');
+    if (vue) Array.prototype.forEach.call(vue.querySelectorAll('.cdo-carte, .cdo-pastille'), function (carte) {
+      if (!carte.querySelector('.cdo-son')) carte.insertAdjacentHTML('beforeend', interne(texteDe(carte)));
+    });
+    var select = document.querySelector('[data-audio-mode]'); if (select) select.value = mode();
+    morceaux(document.getElementById('vue')).forEach(function (m) {
+      if (force || vus.get(m.el) !== m.t) {
+        vus.set(m.el, m.t); programmer(m.t, m.el, m.categorie);
+      }
+    });
+  }
+  function reglages() {
+    return '<details class="cdo-audio-reglages" data-audio-reglages><summary>Audio</summary>' +
+      '<label>Lecture automatique<select data-audio-mode>' +
+      '<option value="manuel">À la demande</option><option value="questions">Questions et consignes</option>' +
+      '<option value="reponses">Réponses et corrections</option><option value="tout">Tout le contenu</option>' +
+      '</select></label></details><button type="button" class="cdo-ecouter" data-audio-stop>Arrêter</button>';
+  }
+  document.addEventListener('change', function (ev) {
+    if (!ev.target.matches('[data-audio-mode]')) return;
+    arreter(); try { localStorage.setItem(cle(), ev.target.value); } catch (e) {}
+    actualiser(true);
+  });
+  document.addEventListener('click', function (ev) {
+    if (ev.target.closest('[data-audio-stop]')) arreter();
+  });
+  function observer() {
+    var vue = document.getElementById('vue'); if (!vue) return;
+    new MutationObserver(function () { actualiser(false); }).observe(vue, {childList:true, subtree:true, characterData:true});
+    actualiser(false);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observer); else observer();
   var ICONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path class="onde2" d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function bouton(texte, libelle) {
@@ -111,5 +167,5 @@
   }, true);
   window.addEventListener('pagehide', arreter);
 
-  window.CDO_AUDIO = { lire: lire, lireTout: lireTout, arreter: arreter, bouton: bouton, interne: interne, ICONE: ICONE, disponible: !!synth };
+  window.CDO_AUDIO = { lire: lire, lireAuto: lireAuto, mode: mode, reglages: reglages, lireTout: lireTout, arreter: arreter, bouton: bouton, interne: interne, ICONE: ICONE, disponible: !!synth };
 })();
