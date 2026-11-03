@@ -41,3 +41,9 @@ Demande de M. Mecheri (1er novembre 2026). Branche `chef-doeuvre/parcours-risque
 - Compatibilité Atelier installé : la nouvelle épreuve utilise le document existant `cdo-psr-2026-s0`, `module_id:s0`, colonne S0 « Le projet ». Le document distant antérieur reste jusqu’au passage de la nouvelle épreuve, qui le remplace ; pas de migration ni de suppression.
 - Atelier : Centre en ligne → Synchroniser MAPSE → « Chef-d’œuvre — CAP PSR 1re année (C1PSR) ». Meilleure note, première note, essais ; hors moyennes PSE et Pronote.
 - Transport testé sur données fictives et Firebase simulé ; aucune fausse note créée dans les données réelles. Première réception distante à constater après un vrai passage élève.
+
+## Raccordement du 3 novembre 2026
+- Parcours élèves complet : recherche de dangers, approfondissement optionnel et épreuve individuelle de cinq questions /20. Contenu/moteurs identiques à l’aperçu contrôlé.
+- En fin d’épreuve, note de séance s1, première/meilleure notes et tentatives vers resultats/{code}/evaluations/cdo-psr-2026-s1 (source chef_doeuvre_psr). Le suivi JSON de séance contient recherches, réponses, aides et historiques.
+- Atelier PSE : Centre en ligne → Chef-d’œuvre — CAP PSR. Réception automatique lorsque cet espace est ouvert, par écoute Firestore des seuls codes C1PSR. Notes séparées des notes PSE/Pronote ; volet Travail réalisé par élève. Si l’Atelier est fermé, les notes restent dans Firebase pour la prochaine ouverture. Synchroniser MAPSE reste disponible.
+- PROF/ESSAI ne sont jamais envoyés ; validation de transmission effectuée sur transport simulé pour ne pas créer de fausse note dans les données réelles. Première réception d’une nouvelle note réelle à constater après passage élève.

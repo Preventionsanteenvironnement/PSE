@@ -85,7 +85,7 @@
   }
   function autorise(categorie) { var m = mode(); return m === 'tout' || m === categorie; }
   function categorie(el) {
-    return el.closest('.cdo-correction, .cdo-retour, .guide-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
+    return el.closest('.cdo-correction, .cdo-retour, .guide-retour, .chasse-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
   }
   function morceaux(conteneur) {
     var m = [];
@@ -163,6 +163,7 @@
     if (!b) return;
     ev.preventDefault(); ev.stopPropagation();
     if (b.classList.contains('joue')) { arreter(); return; }
+    b.dispatchEvent(new CustomEvent('cdo-ecoute',{bubbles:true,detail:{texte:b.getAttribute('data-dire')||''}}));
     var cible = b.closest('[data-lire]') || b.parentElement;
     lire(b.getAttribute('data-dire') || texteDe(cible), cible, b);
   }, true);

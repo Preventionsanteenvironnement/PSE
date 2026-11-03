@@ -43,7 +43,7 @@
   }
   function suivre() {
     A.arreter();
-    document.body.classList.remove('cdo-guide-ouvert');
+    document.body.classList.remove('cdo-guide-ouvert', 'cdo-chasses-ouvert', 'cdo-epreuve-danger');
     vue.classList.remove('guide-decouverte');
     vue.onclick = null; vue.onchange = null;
     var h = decodeURIComponent(location.hash.replace(/^#/, '')) || 'accueil', p = h.split('/');
@@ -51,6 +51,7 @@
     window.scrollTo(0, 0);
     ({ accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
     piedPage.innerHTML = p[0] === 'seance' && /^s0/.test(p[1]) ? 'Illustrations pédagogiques générées avec OpenAI. Repères du CAP : d’après le Ministère de l’Éducation nationale, <a href="https://www.education.gouv.fr/bo/20/Hebdo8/MENE2002480C.htm" target="_blank" rel="noopener">circulaire 2020-039 du 14 février 2020</a>.' : piedPageInitial;
+    if (p[0] === 'seance' && p[1] === 's1' && (p[2] === '2'||p[2] === '3')) piedPage.innerHTML = 'Pictogrammes : ARASAAC (Sergio Palao, Gouvernement d’Aragon), CC BY-NC-SA. Nouvelles scènes d’entreprise : illustrations générées avec OpenAI. Repères pédagogiques : <a href="https://www.inrs.fr/demarche/nouveaux-embauches/demarche-TutoPrev.html" target="_blank" rel="noopener">INRS, démarche TutoPrév’</a>.';
     var h1 = vue.querySelector('h1'); if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
   }
   window.addEventListener('hashchange', suivre);
@@ -112,7 +113,7 @@
   /* ───────── Mes séances ───────── */
   function etatSeance(s) {
     var e = D.etat().seances[s.id];
-    if (e && e.termine && (!s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation))) return 'terminee';
+    if (e && e.termine && (s.id!=='s1'||!window.CDO_EPREUVE_DANGER||window.CDO_EPREUVE_DANGER.terminee(e)) && (!s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation))) return 'terminee';
     if (e && (e.objectif != null || Object.keys(e.exercices || {}).length || e.termine || (e.guide && (e.guide.position > 0 || e.guide.pause || Object.keys(e.guide.bilans || {}).length)))) return 'commencee';
     return 'afaire';
   }
@@ -143,6 +144,8 @@
     vue.onclick = null;
     var s = SEANCES.filter(function (x) { return x.id === p[1] || (p[1] === 's0' && x.numero === 0); })[0]; if (!s) return aller('seances');
     var n = Math.max(0, Math.min(5, +p[2] || 0)), e = D.seance(s.id);
+    if (s.id === 's1' && n === 3) document.body.classList.add('cdo-epreuve-danger');
+    if (s.id === 's1' && n === 2) document.body.classList.add('cdo-chasses-ouvert');
     if (s.guide) { document.body.classList.add('cdo-guide-ouvert'); if (n === 1 || n === 3) vue.classList.add('guide-decouverte'); }
     enTete((s.date ? dateCourte(s.date) + ' · ' : '') + s.titre, 'seances');
     vue.innerHTML = '<nav class="cdo-etapes" aria-label="Étapes de la séance">' + ETAPES.map(function (t, i) {
@@ -204,7 +207,7 @@
   function etapeExercer(z, s, e, n) {
     var i = Math.min(e.exIndex || 0, s.exercices.length - 1);
     function un() {
-      z.innerHTML = '<div class="cdo-ex-tete">' + lisible('h1', 'S’exercer') + '<div class="cdo-ex-points" aria-label="Exercices">' + s.exercices.map(function (_, k) {
+      z.innerHTML = (s.id === 's1' ? '<div class="chasse-parcours-acces">'+lisible('p','Observer plusieurs entreprises, puis une cuisine. Repérer et nommer les dangers. Le type et le dommage sont proposés ensuite.')+'<button type="button" class="cdo-btn-second" data-ex="6">Chasses aux risques · 4 lieux</button></div>' : '') + '<div class="cdo-ex-tete">' + lisible('h1', 'S’exercer') + '<div class="cdo-ex-points" aria-label="Exercices">' + s.exercices.map(function (_, k) {
         return '<button type="button" data-ex="' + k + '" class="' + (k === i ? 'actif ' : '') + (e.exercices[k] ? 'fait' : '') + '" aria-label="Exercice ' + (k + 1) + '">' + (e.exercices[k] ? ICO.ok : k + 1) + '</button>';
       }).join('') + '</div></div><div class="cdo-ex-zone"></div>' +
         '<div class="cdo-pied">' + (i ? '<button type="button" class="cdo-btn-second" data-ex="' + (i - 1) + '">' + ICO.retour + 'Exercice précédent</button>' : '<a class="cdo-btn-second" href="#seance/' + s.id + '/1">' + ICO.retour + 'Découvrir</a>') +
@@ -215,6 +218,7 @@
     z.onclick = function (ev) { var b = ev.target.closest('[data-ex]'); if (b) { A.arreter(); i = +b.dataset.ex; e.exIndex = i; D.enregistrer(); un(); window.scrollTo(0, 0); } };
   }
   function etapeEvaluation(z, s, e, n) {
+    if(s.id==='s1'&&window.CDO_EPREUVE_DANGER){window.CDO_EPREUVE_DANGER.rendre(z,s,e);return;}
     if (!s.evaluation) { z.innerHTML = lisible('h1', 'Évaluation') + lisible('p', 'Pas d’évaluation pour cette séance.') + piedEtape(s, n, 'Carnet de bord'); return; }
     if (s.guide && !window.CDO_GUIDE.pret(s, e)) { z.innerHTML = lisible('h1', 'Avant l’épreuve') + lisible('p', 'Terminer les trois parties et leurs petits bilans avant de commencer l’épreuve.') + '<a class="cdo-btn" href="#seance/' + s.id + '/1">Reprendre la découverte</a>'; return; }
     function debut() {
@@ -261,13 +265,15 @@
     z.oninput = function (ev) { var t = ev.target.closest('[data-lib]'); if (t) { c[t.dataset.lib + 'Libre'] = t.value.slice(0, 600); D.enregistrer(); } };
   }
   function etapeBilan(z, s, e, n) {
-    var peutTerminer = !s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation);
+    var nouvelleEpreuve=s.id==='s1'&&window.CDO_EPREUVE_DANGER;
+    var peutTerminer = nouvelleEpreuve ? window.CDO_EPREUVE_DANGER.terminee(e) : !s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation);
+    var reprendreEpreuve=!!nouvelleEpreuve || (s.guide&&window.CDO_GUIDE.pret(s,e));
     var obj = e.objectif != null ? s.objectifsEleve[e.objectif] : null;
     z.innerHTML = '<div class="cdo-bloc-grand cdo-bilan">' + AV.svg(D.etat().avatar, 150) + lisible('h1', 'Bilan de la séance') +
       (obj ? lisible('p', 'Objectif choisi : « ' + obj + ' ». Est-il atteint ?') + '<div class="cdo-choix">' + ['Oui', 'En partie', 'Pas encore'].map(function (t) { return '<button type="button" class="cdo-carte' + (e.atteint === t ? ' pris' : '') + '" data-at="' + t + '">' + t + '</button>'; }).join('') + '</div>' : '') +
       '<p class="cdo-ligne-res"><span>Exercices réussis</span><b>' + Object.keys(e.exercices || {}).length + ' / ' + s.exercices.length + '</b></p>' +
-      '<p class="cdo-ligne-res"><span>Évaluation</span><b>' + (e.evaluation ? String(e.evaluation.note).replace('.', ',') + ' / 20' : 'non faite') + '</b></p>' +
-      (peutTerminer ? '<button type="button" class="cdo-btn" data-terminer>Terminer la séance ' + ICO.ok + '</button>' : '<a class="cdo-btn" href="#seance/' + s.id + '/' + (window.CDO_GUIDE.pret(s, e) ? '3' : '1') + '">' + (window.CDO_GUIDE.pret(s, e) ? 'Passer à l’épreuve' : 'Reprendre la découverte') + '</a>') + '</div>';
+      '<p class="cdo-ligne-res"><span>Évaluation</span><b>' + (nouvelleEpreuve&&!peutTerminer?'épreuve à passer':e.evaluation ? String(e.evaluation.note).replace('.', ',') + ' / 20' : 'non faite') + '</b></p>' +
+      (peutTerminer ? '<button type="button" class="cdo-btn" data-terminer>Terminer la séance ' + ICO.ok + '</button>' : '<a class="cdo-btn" href="#seance/' + s.id + '/' + (reprendreEpreuve ? '3' : '1') + '">' + (reprendreEpreuve ? 'Passer à l’épreuve' : 'Reprendre la découverte') + '</a>') + '</div>';
     z.onclick = function (ev) {
       var a = ev.target.closest('[data-at]'); if (a) { e.atteint = a.dataset.at; D.enregistrer(); z.querySelectorAll('[data-at]').forEach(function (x) { x.classList.toggle('pris', x === a); }); return; }
       if (ev.target.closest('[data-terminer]') && peutTerminer) { e.termine = true; D.enregistrer(); aller('seances'); }
@@ -287,7 +293,7 @@
         if (!l.join('')) return '';
         return '<section class="cdo-carnet-rel" data-lire><h2>' + esc(s.titre) + '</h2><p><b>Fait :</b> ' + esc(l[0] || '—') + '</p><p><b>Appris :</b> ' + esc(l[1] || '—') + '</p><p><b>Difficile :</b> ' + esc(l[2] || '—') + '</p></section>';
       }).join('') + '</div>' +
-      '<div class="cdo-bloc">' + lisible('h2', 'Fichier de secours') + lisible('p', 'Sans Internet : enregistrer son travail dans un fichier, puis le reprendre sur un autre ordinateur.') +
+      (window.CDO_EPREUVE_DANGER?window.CDO_EPREUVE_DANGER.suivi():'') + '<div class="cdo-bloc">' + lisible('h2', 'Fichier de secours') + lisible('p', 'Sans Internet : enregistrer son travail dans un fichier, puis le reprendre sur un autre ordinateur.') +
       '<div class="cdo-banque"><button type="button" class="cdo-btn-second" data-exporter>Enregistrer le fichier</button><label class="cdo-btn-second">Reprendre un fichier<input type="file" accept=".json,application/json" hidden data-importer></label></div>' +
       '<p class="cdo-discret">' + (D.enLigne() ? 'Le travail est aussi enregistré en ligne.' : 'Le travail est enregistré sur cet ordinateur.') + '</p>' +
       '<button type="button" class="cdo-btn-second" data-sortir>Se déconnecter</button></div></div>';
