@@ -41,10 +41,10 @@
   function fiche(s, e) {
     var ev = e.evaluation, suivi = JSON.parse(JSON.stringify(e)); delete suivi.evaluation;
     return {
-      eleveCode: code, classe: 'C1PSR', devoirId: CLE + '-' + s.id, titre: 'Chef-d’œuvre — ' + s.titre,
+      eleveCode: code, classe: 'C1PSR', devoirId: CLE + '-' + (s.id === 's0-comprendre-illustre' ? 's0' : s.id), titre: 'Chef-d’œuvre — ' + s.titre,
       note_finale: ev.note, bareme: 20, premiere_note: e.premiereNote != null ? e.premiereNote : ev.note, tentatives: e.tentatives || 1,
       points: ev.points, total: ev.total, publie: true, autocorrected: true, source: 'chef_doeuvre_psr', type: 'chef_oeuvre',
-      module_id: s.id, seance_numero: s.numero, seance_date: s.date || '', reponses: ev.reponses || {}, suivi: JSON.stringify(suivi),
+      module_id: s.id === 's0-comprendre-illustre' ? 's0' : s.id, seance_numero: s.numero, seance_date: s.date || '', reponses: ev.reponses || {}, suivi: JSON.stringify(suivi),
       createdAtISO: ev.date, updatedAtISO: new Date().toISOString()
     };
   }

@@ -10,8 +10,8 @@ Demande de M. Mecheri (1er novembre 2026). Branche `chef-doeuvre/parcours-risque
 
 ## Données
 - Sur l'ordinateur : `localStorage` `cdo-psr-2026:<code>` ; fichier de secours à exporter / importer (Mon espace).
-- En ligne (Firebase `devoirs-pse`) : `resultats/{code}/suivi/cdo-psr-2026` et `resultats/{code}/evaluations/cdo-psr-2026-<séance>` (même forme que le portfolio PSR : `note_finale`, `bareme`, `devoirId`…, lue par le Centre en ligne de l'Atelier). Seul le code part, jamais un nom.
-- **`ENVOI_EN_LIGNE = false`** dans `js/donnees.js` : aucune écriture Firebase tant que M. Mecheri ne l'a pas autorisée. Code de démonstration `ESSAI` : jamais envoyé.
+- En ligne (Firebase `devoirs-pse`) : `resultats/{code}/evaluations/cdo-psr-2026-<séance>` (même forme que le portfolio PSR : `note_finale`, `bareme`, `devoirId`…, lue par le Centre en ligne de l'Atelier). Seul le code part, jamais un nom.
+- **`ENVOI_EN_LIGNE = true`** : envoi autorisé par M. Mecheri. Les codes `PROF`, `ESSAI`, `PROFPSE`, `PROFPSR` ne sont jamais envoyés.
 
 ## Note enseignant (choix par défaut, à confirmer par M. Mecheri — contrôle du 01/11/2026)
 - Les évaluations de séance sont des **quiz de séance** (part « Comprendre » de la note du chef-d'œuvre), pas des évaluations ordinaires au profil CAP (EVA-15 : 7 questions, 18 + 2 C6). Elles n'entrent pas dans la note de PSE.
@@ -34,3 +34,10 @@ Demande de M. Mecheri (1er novembre 2026). Branche `chef-doeuvre/parcours-risque
 - **Arrêter** annule immédiatement la lecture et les lectures en attente. Une nouvelle consigne ou action peut déclencher la lecture suivante si le mode automatique reste activé.
 - Réglage conservé sur cet ordinateur, séparément pour chaque code ; il ne modifie pas les résultats ni les données Firebase.
 - Vérification navigateur Chrome à 375 px : 48 écrans, 37 exercices et 41 questions ; synthèse vocale simulée pour contrôler les déclenchements, les quatre modes, l'arrêt et la persistance. Le rendu sonore dépend des voix disponibles sur l'appareil.
+
+## Activation du parcours illustré — 3 novembre 2026
+- Accès élèves : https://mapse.fr/chef-doeuvre/#code, codes existants C1PSR. Aperçu professeur conservé séparément.
+- Introduction : `s0-comprendre-illustre`, trois parties et huit questions /20. État local distinct de l’ancienne introduction pour ne pas réutiliser sa validation.
+- Compatibilité Atelier installé : la nouvelle épreuve utilise le document existant `cdo-psr-2026-s0`, `module_id:s0`, colonne S0 « Le projet ». Le document distant antérieur reste jusqu’au passage de la nouvelle épreuve, qui le remplace ; pas de migration ni de suppression.
+- Atelier : Centre en ligne → Synchroniser MAPSE → « Chef-d’œuvre — CAP PSR 1re année (C1PSR) ». Meilleure note, première note, essais ; hors moyennes PSE et Pronote.
+- Transport testé sur données fictives et Firebase simulé ; aucune fausse note créée dans les données réelles. Première réception distante à constater après un vrai passage élève.

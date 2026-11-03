@@ -70,7 +70,7 @@
   function texteDe(el) {
     if (el.getAttribute('data-dire')) return el.getAttribute('data-dire');
     var c = el.cloneNode(true);
-    Array.prototype.forEach.call(c.querySelectorAll('.cdo-son, [aria-hidden="true"], .pas-lu'), function (x) { x.remove(); });
+    Array.prototype.forEach.call(c.querySelectorAll('.cdo-son, [aria-hidden="true"], .pas-lu, details:not([open])'), function (x) { x.remove(); });
     return c.textContent.replace(/\s+/g, ' ').trim();
   }
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
@@ -85,7 +85,7 @@
   }
   function autorise(categorie) { var m = mode(); return m === 'tout' || m === categorie; }
   function categorie(el) {
-    return el.closest('.cdo-correction, .cdo-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
+    return el.closest('.cdo-correction, .cdo-retour, .guide-retour, .cdo-note, .cdo-props, .cdo-choix, .cdo-banque, .cdo-carte') ? 'reponses' : 'questions';
   }
   function morceaux(conteneur) {
     var m = [];
@@ -137,6 +137,7 @@
   document.addEventListener('click', function (ev) {
     if (ev.target.closest('[data-audio-stop]')) arreter();
   });
+  document.addEventListener('toggle', function (ev) { if (!ev.target.matches('details.cdo-explication')) return; if (!ev.target.open) { arreter(); var bloc = ev.target.closest('[data-lire]'); if (bloc) vus.set(bloc, texteDe(bloc)); return; } actualiser(false); }, true);
   function observer() {
     var vue = document.getElementById('vue'); if (!vue) return;
     new MutationObserver(function () { actualiser(false); }).observe(vue, {childList:true, subtree:true, characterData:true});

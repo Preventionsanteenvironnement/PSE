@@ -26,10 +26,10 @@
         return (q.image ? '<figure class="cdo-fig"><img src="' + esc(q.image) + '" alt="' + esc(q.alt || '') + '">' + (q.docTitre || q.legende ? '<figcaption data-lire>' + esc(q.docTitre || q.legende) + '</figcaption>' : '') + '</figure>' : '') +
           consigne(q.consigne) + '<div class="cdo-choix' + (q.choix[0] && q.choix[0].image ? ' cdo-choix-images' : '') + '">' + q.choix.map(function (c, k) {
             var t = typeof c === 'string' ? c : c.t;
-            return '<button type="button" class="cdo-carte' + (r === k ? ' pris' : '') + '" data-k="' + k + '">' + (c.image ? img(c.image) : '') + '<span>' + esc(t) + '</span>' + A.interne(t) + '</button>';
+            return '<button type="button" class="cdo-carte' + (r === k ? ' pris' : '') + '" aria-pressed="' + (r === k) + '" data-k="' + k + '">' + (c.image ? img(c.image) : '') + '<span>' + esc(t) + '</span>' + A.interne(t) + '</button>';
           }).join('') + '</div>';
       },
-      clic: function (box, ev, r) { var c = ev.target.closest('.cdo-carte'); if (!c) return r; box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); }); c.classList.add('pris'); return +c.dataset.k; },
+      clic: function (box, ev, r) { var c = ev.target.closest('.cdo-carte'); if (!c) return r; box.querySelectorAll('.cdo-carte').forEach(function (x) { x.classList.remove('pris'); x.setAttribute('aria-pressed', 'false'); }); c.classList.add('pris'); c.setAttribute('aria-pressed', 'true'); return +c.dataset.k; },
       pret: function (q, r) { return r != null; },
       noter: function (q, r) { return r === q.bonne ? q.points : 0; },
       corrige: function (q) { var c = q.choix[q.bonne]; return typeof c === 'string' ? c : c.t; },
@@ -180,7 +180,7 @@
         var juste = p === q.points;
         return '<li class="' + (juste ? 'ok' : p > 0 ? 'moyen' : 'ko') + '" data-lire><b>Question ' + (k + 1) + ' · ' + String(p).replace('.', ',') + ' / ' + q.points + '</b>' +
           '<span>Votre réponse : ' + esc(T.dit(q, reps[k])) + '</span>' + (juste ? '' : '<span>Réponse attendue : ' + esc(T.corrige(q)) + '</span>') +
-          (q.explication ? '<em>' + esc(q.explication) + '</em>' : '') + '</li>';
+          (q.explication ? '<details class="cdo-explication"><summary>Explication</summary><p data-lire>' + son(q.explication) + '<span>' + esc(q.explication) + '</span></p></details>' : '') + '</li>';
       }).join('');
       var note = Math.round(points / total * 20 * 10) / 10;
       var mot = note >= 16 ? 'Très bien.' : note >= 12 ? 'Bien.' : note >= 8 ? 'C’est un début : relisez la correction.' : 'Relisez la correction avec votre professeur.';
