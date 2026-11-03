@@ -26,7 +26,13 @@ var P = 'img/pictos/';
       ['Un four chaud', 'Le cuisinier', '[Le cuisinier sort une plaque du four chaud]'],
       ['Un produit dégraissant', 'L’agent d’entretien', '[L’agent nettoie la hotte avec le dégraissant]'],
       ['Un sac de 25 kg', 'Le commis', '[Le commis porte le sac de 25 kg]']
-    ], intrus: 'Le commis a mal au dos' }
+    ], intrus: 'Le commis a mal au dos' },
+    { type: 'qcm', titre: 'Observer la personne au travail', questions: [
+      { image: 'img/pad-coupure-travail.jpg', alt: 'Une personne en tablier tient une lame par son manche devant des carottes sur une planche.', question: 'Choisir la situation dangereuse.', choix: ['Une lame tranchante', 'Une coupure au doigt', 'Le cuisinier découpe des carottes au couteau'], bonne: 2, explication: 'En découpant les carottes, le cuisinier est exposé à la lame.' },
+      { image: 'img/pad-chute-travail.jpg', alt: 'Une personne avance dans la cuisine. Une flaque est visible sous ses pieds.', question: 'Choisir la personne exposée au sol glissant.', choix: ['Le cuisinier près du four', 'L’agent qui traverse la zone mouillée', 'Le client en salle'], bonne: 1, explication: 'L’agent marche sur le sol mouillé. Il peut glisser.' }
+    ] },
+    { type: 'trous', titre: 'Décrire la scène', consigne: 'Placer deux mots pour compléter la phrase.', image: 'img/pad-coupure-travail.jpg', alt: 'Une personne en tenue de cuisine découpe des carottes avec un outil à lame et à manche.', source: 'Le [cuisinier] découpe des carottes avec un [couteau].', intrus: 'four', indice: 'Repérer la personne et l’outil qu’elle tient.' },
+    { type: 'motCourt', titre: 'Nommer l’outil', consigne: 'Écrire le nom de l’outil en un mot.', image: 'img/pad-coupure-travail.jpg', alt: 'Le cuisinier tient un outil à lame et à manche pour découper des carottes.', acceptes: ['couteau'], indice: 'Observer l’outil utilisé pour couper les carottes.', explication: 'Un couteau.' }
   ],
   evaluation: { questions: [
     { type: 'trous', consigne: 'Compléter la définition avec deux des trois mots proposés.', source: 'L’[opérateur] est la personne qui réalise le [travail].', intrus: 'danger', points: 4 },

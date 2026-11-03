@@ -152,7 +152,8 @@
     function une() {
       var q = b.questions[i];
       box.innerHTML = cadre(b, '<p class="cdo-compteur">Question ' + (i + 1) + ' sur ' + b.questions.length + '</p>' +
-        (q.image ? '<figure class="cdo-fig">' + img(q.image, '') + '</figure>' : '') +
+        (q.image ? '<figure class="cdo-fig"><img src="' + esc(q.image) + '" alt="' + esc(q.alt || '') + '">' +
+          (q.alt ? '<figcaption>Document ' + (i + 1) + ' · Scène de travail</figcaption>' : '') + '</figure>' : '') +
         '<p class="cdo-question" data-lire>' + son(q.question) + '<span>' + esc(q.question) + '</span></p>' +
         '<div class="cdo-choix">' + q.choix.map(function (c, k) { return '<button type="button" class="cdo-carte" data-k="' + k + '"><span>' + esc(c) + '</span>' + A.interne(c) + '</button>'; }).join('') + '</div>');
     }
@@ -164,9 +165,10 @@
       var q = b.questions[i];
       if (+c.dataset.k === q.bonne) {
         box.querySelectorAll('.cdo-choix .cdo-carte').forEach(function (x) { x.disabled = true; }); c.classList.add('juste');
-        retour(box, hasard(BRAVO) + ' ' + (q.explication || ''), true);
+        var correction = q.alt ? q.choix[q.bonne] + ' — ' + (q.explication || '') : hasard(BRAVO) + ' ' + (q.explication || '');
+        retour(box, correction, true);
         if (i + 1 < b.questions.length) box.querySelector('.cdo-retour').insertAdjacentHTML('beforeend', '<button type="button" class="cdo-btn-suite" data-suite>Question suivante</button>');
-        else termine(box, opts, hasard(BRAVO) + ' ' + (q.explication || ''));
+        else termine(box, opts, correction);
       } else { c.classList.add('faux'); c.disabled = true; retour(box, q.indice || hasard(ENCORE), false); }
     });
   }
@@ -352,7 +354,28 @@
     });
   }
 
-  var TYPES = { mots: mots, trous: trous, classer: classer, relier: relier, qcm: qcm, intrus: intrus, tableau: tableau, ordre: ordre, chaine: chaine, quisuisje: quisuisje, vfserie: vfserie, chasse: chasse };
+  function motCourt(box, b, opts) {
+    box.innerHTML = cadre(b, '<form><label>Réponse <input name="mot" maxlength="32" required></label> ' +
+      '<button class="cdo-btn" type="submit">Vérifier</button></form>');
+    var form = box.querySelector('form');
+    var champ = form.elements.mot;
+    function normaliser(texte) {
+      return texte.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+        .replace(/^(une? |la |le |l['’])/, '');
+    }
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (b.acceptes.some(function (mot) { return normaliser(mot) === normaliser(champ.value); })) {
+        champ.disabled = true;
+        form.querySelector('button').disabled = true;
+        termine(box, opts, b.explication);
+      } else {
+        retour(box, b.indice, false);
+      }
+    });
+  }
+
+  var TYPES = { motCourt: motCourt, mots: mots, trous: trous, classer: classer, relier: relier, qcm: qcm, intrus: intrus, tableau: tableau, ordre: ordre, chaine: chaine, quisuisje: quisuisje, vfserie: vfserie, chasse: chasse };
   function rendre(conteneur, b, opts) {
     var box = document.createElement('section'); box.className = 'cdo-ex-boite'; conteneur.appendChild(box);
     (TYPES[b.type] || function () { box.textContent = ''; })(box, b, opts || {});

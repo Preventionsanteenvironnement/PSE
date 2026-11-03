@@ -26,7 +26,13 @@ var P = 'img/pictos/';
       { titre: 'Un danger', elements: [{ t: 'La vapeur', image: 'img/four.jpg' }, { t: 'La trancheuse', image: P + '35905.png' }, { t: 'Un sol gras', image: P + '25936.png' }] },
       { titre: 'Un dommage', elements: [{ t: 'Une brûlure', image: P + '10266.png' }, { t: 'Une fracture', image: P + '26849.png' }, { t: 'Une coupure', image: P + '5484.png' }] }
     ], indice: 'Le dommage touche la santé de la personne : une blessure ou une maladie.' },
-    { type: 'tableau', titre: 'Le danger, le dommage', consigne: 'Compléter le tableau.', colonnes: ['Le danger', 'Le dommage possible'], lignes: [['Un four chaud', '[Une brûlure]'], ['Un carton dans le passage', '[Une entorse]'], ['[Un couteau]', 'Une coupure'], ['Un sac de 25 kg', '[Un mal de dos]']], intrus: 'Une électrisation' }
+    { type: 'tableau', titre: 'Le danger, le dommage', consigne: 'Compléter le tableau.', colonnes: ['Le danger', 'Le dommage possible'], lignes: [['Un four chaud', '[Une brûlure]'], ['Un carton dans le passage', '[Une entorse]'], ['[Un couteau]', 'Une coupure'], ['Un sac de 25 kg', '[Un mal de dos]']], intrus: 'Une électrisation' },
+    { type: 'qcm', titre: 'Observer une scène de travail', questions: [
+      { image: 'img/pad-coupure-travail.jpg', alt: 'Un cuisinier découpe des carottes au couteau.', question: 'Choisir le dommage que peut causer l’outil utilisé.', choix: ['Une brûlure', 'Une coupure', 'Une entorse'], bonne: 1, explication: 'La lame peut couper la peau.' },
+      { image: 'img/pad-chute-travail.jpg', alt: 'Un agent marche dans une zone où le sol est mouillé.', question: 'Choisir le dommage possible si la personne glisse.', choix: ['Une entorse', 'Une coupure', 'Une brûlure'], bonne: 0, explication: 'Une torsion de la cheville peut causer une entorse.' },
+      { image: 'img/pad-sac-travail.jpg', alt: 'Un commis manipule un sac lourd.', question: 'Choisir le dommage possible lors du port du sac.', choix: ['Une brûlure à la main', 'Une coupure au doigt', 'Un mal de dos'], bonne: 2, explication: 'L’effort pour porter une charge lourde peut provoquer un mal de dos.' }
+    ] },
+    { type: 'motCourt', titre: 'Nommer le dommage', consigne: 'Nommer en un mot la blessure.', legende: 'La lame a ouvert la peau du doigt.', image: 'img/pad-coupure-dommage.jpg', alt: 'Un doigt porte un pansement. Un couteau est posé à côté.', acceptes: ['coupure', 'plaie', 'entaille'], indice: 'La lame a ouvert la peau. Chercher le nom précis de cette blessure.', explication: 'Une coupure.' }
   ],
   evaluation: { questions: [
     { type: 'trous', consigne: 'Compléter la définition avec deux des trois mots proposés.', source: 'Un dommage est une atteinte à la [santé] : une [blessure] ou une maladie.', intrus: 'sécurité', points: 4 },
