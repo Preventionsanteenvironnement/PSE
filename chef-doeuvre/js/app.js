@@ -66,7 +66,7 @@
     enTete('Mon chef-d’œuvre', 'accueil');
     vue.innerHTML = '<form class="cdo-code" autocomplete="off">' + lisible('h1', 'Saisir son code') +
       lisible('p', 'Le code comporte quatre caractères. Il a été remis par le professeur.') +
-      '<label for="code" class="cdo-label">Code</label><input id="code" maxlength="5" inputmode="text" autocapitalize="characters" spellcheck="false">' +
+      '<label for="code" class="cdo-label">Code</label><input id="code" maxlength="10" inputmode="text" autocapitalize="characters" spellcheck="false">' +
       '<p class="cdo-erreur" role="alert" hidden></p><button class="cdo-btn" type="submit">Valider ' + ICO.suite + '</button>' +
       '<p class="cdo-discret">Seul le code est enregistré, jamais le nom.</p></form>';
     var f = vue.querySelector('form'), inp = f.querySelector('input'); inp.focus();
