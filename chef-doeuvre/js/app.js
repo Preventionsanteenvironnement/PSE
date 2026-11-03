@@ -41,6 +41,10 @@
   function aller(route) {
     location.hash = route;
   }
+  var CLE_ACCUEIL = 'cdo-accueil-connexion';
+  function accueilEnAttente() {
+    return D.code() && sessionStorage.getItem(CLE_ACCUEIL) === D.code();
+  }
   function suivre() {
     A.arreter();
     document.body.classList.remove('cdo-guide-ouvert', 'cdo-chasses-ouvert', 'cdo-epreuve-danger');
@@ -48,8 +52,9 @@
     vue.onclick = null; vue.onchange = null;
     var h = decodeURIComponent(location.hash.replace(/^#/, '')) || 'accueil', p = h.split('/');
     if (!D.code() && ['accueil', 'code', 'outils'].indexOf(p[0]) < 0) p = ['accueil'];
+    if (accueilEnAttente() && ['code', 'avatar', 'outils'].indexOf(p[0]) < 0) p = ['meteo'];
     window.scrollTo(0, 0);
-    ({ accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
+    ({ meteo: accueilConnexion, accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
     piedPage.innerHTML = p[0] === 'seance' && /^s0/.test(p[1]) ? 'Illustrations pédagogiques générées avec OpenAI. Repères du CAP : d’après le Ministère de l’Éducation nationale, <a href="https://www.education.gouv.fr/bo/20/Hebdo8/MENE2002480C.htm" target="_blank" rel="noopener">circulaire 2020-039 du 14 février 2020</a>.' : piedPageInitial;
     if (p[0] === 'seance' && p[1] === 's1' && (p[2] === '2'||p[2] === '3')) piedPage.innerHTML = 'Pictogrammes : ARASAAC (Sergio Palao, Gouvernement d’Aragon), CC BY-NC-SA. Nouvelles scènes d’entreprise : illustrations générées avec OpenAI. Repères pédagogiques : <a href="https://www.inrs.fr/demarche/nouveaux-embauches/demarche-TutoPrev.html" target="_blank" rel="noopener">INRS, démarche TutoPrév’</a>.';
     var h1 = vue.querySelector('h1'); if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
@@ -80,7 +85,8 @@
       var c = D.codeValide(inp.value);
       if (!c) { var e = f.querySelector('.cdo-erreur'); e.hidden = false; e.textContent = 'Ce code n’est pas reconnu. Vérifier les quatre caractères.'; A.lireAuto(e.textContent, e); return; }
       var etat = D.ouvrir(c);
-      aller(etat.avatar ? 'seances' : 'avatar');
+      sessionStorage.setItem(CLE_ACCUEIL, c);
+      aller(etat.avatar ? 'meteo' : 'avatar');
     });
   }
 
@@ -138,24 +144,25 @@
       '<a class="cdo-bloc cdo-bloc-lien" href="#moi">' + lisible('h2', 'Mon carnet de bord') + '<span>Ce qui a été fait, appris, trouvé difficile à chaque séance.</span></a></aside></div>';
   }
 
-  /* ───────── Une séance en six étapes ───────── */
-  var ETAPES = ['Météo et objectif', 'Comprendre', 'S’exercer', 'Épreuve sur 20', 'Carnet de bord', 'Bilan'];
+  /* ───────── Une séance en cinq étapes ───────── */
+  var ETAPES = ['Comprendre', 'S’exercer', 'Épreuve sur 20', 'Carnet de bord', 'Bilan'];
   function ecranSeance(p) {
     vue.onclick = null;
     var s = SEANCES.filter(function (x) { return x.id === p[1] || (p[1] === 's0' && x.numero === 0); })[0]; if (!s) return aller('seances');
-    var n = Math.max(0, Math.min(5, +p[2] || 0)), e = D.seance(s.id);
+    var n = Math.max(1, Math.min(5, +p[2] || 1)), e = D.seance(s.id);
     if (s.id === 's1' && n === 3) document.body.classList.add('cdo-epreuve-danger');
     if (s.id === 's1' && n === 2) document.body.classList.add('cdo-chasses-ouvert');
     if (s.guide) { document.body.classList.add('cdo-guide-ouvert'); if (n === 1 || n === 3) vue.classList.add('guide-decouverte'); }
     enTete((s.date ? dateCourte(s.date) + ' · ' : '') + s.titre, 'seances');
-    vue.innerHTML = '<nav class="cdo-etapes" aria-label="Étapes de la séance">' + ETAPES.map(function (t, i) {
-      return '<a href="#seance/' + s.id + '/' + i + '" class="' + (i === n ? 'actif' : i < n ? 'passe' : '') + '"' + (i === n ? ' aria-current="step"' : '') + '><span>' + (i + 1) + '</span>' + esc(t) + '</a>';
+    vue.innerHTML = '<nav class="cdo-etapes" aria-label="Étapes de la séance">' + ETAPES.map(function (t, index) {
+      var i = index + 1;
+      return '<a href="#seance/' + s.id + '/' + i + '" class="' + (i === n ? 'actif' : i < n ? 'passe' : '') + '"' + (i === n ? ' aria-current="step"' : '') + '><span>' + i + '</span>' + esc(t) + '</a>';
     }).join('') + '</nav><div class="cdo-etape"></div>';
     var zone = vue.querySelector('.cdo-etape');
-    [etapeMeteo, etapeDecouvrir, etapeExercer, etapeEvaluation, etapeCarnet, etapeBilan][n](zone, s, e, n);
+    [etapeDecouvrir, etapeExercer, etapeEvaluation, etapeCarnet, etapeBilan][n - 1](zone, s, e, n);
   }
   function piedEtape(s, n, libelle) {
-    return '<div class="cdo-pied">' + (n ? '<a class="cdo-btn-second" href="#seance/' + s.id + '/' + (n - 1) + '">' + ICO.retour + 'Étape précédente</a>' : '<span></span>') +
+    return '<div class="cdo-pied">' + (n > 1 ? '<a class="cdo-btn-second" href="#seance/' + s.id + '/' + (n - 1) + '">' + ICO.retour + 'Étape précédente</a>' : '<span></span>') +
       (n < 5 ? '<a class="cdo-btn" href="#seance/' + s.id + '/' + (n + 1) + '">' + esc(libelle || 'Étape suivante') + ICO.suite + '</a>' : '') + '</div>';
   }
 
@@ -165,17 +172,28 @@
     { t: 'Moyen', svg: '<svg viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 19z"/></svg>', c: '#565b62' },
     { t: 'Difficile', svg: '<svg viewBox="0 0 24 24"><path d="M7 15h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 15z"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/></svg>', c: '#1d4ed8' }
   ];
-  function etapeMeteo(z, s, e, n) {
-    z.innerHTML = '<div class="cdo-bloc-grand">' + (s.objectif ? lisible('p', 'Objectif de la séance : ' + s.objectif, 'cdo-objectif') : '') +
+  function accueilConnexion() {
+    if (!accueilEnAttente()) { aller('seances'); return; }
+    enTete('Météo et objectifs');
+    var z = vue, e = {};
+    var objectifs = ['Découvrir une notion', 'S’exercer', 'Revoir une notion'];
+    z.innerHTML = '<div class="cdo-bloc-grand">' +
       lisible('h1', 'Météo du jour : indiquer son humeur') +
       '<div class="cdo-meteos">' + METEOS.map(function (m, i) { return '<button type="button" class="cdo-meteo' + (e.meteo === i ? ' pris' : '') + '" data-meteo="' + i + '" style="--c:' + m.c + '" aria-pressed="' + (e.meteo === i) + '">' + m.svg + '<span>' + m.t + '</span></button>'; }).join('') + '</div>' +
-      lisible('h2', 'Choisir son objectif pour la séance') +
-      '<div class="cdo-objectifs">' + s.objectifsEleve.map(function (o, i) { return '<button type="button" class="cdo-carte cdo-obj' + (e.objectif === i ? ' pris' : '') + '" data-obj="' + i + '" aria-pressed="' + (e.objectif === i) + '">' + esc(o) + A.interne(o) + '</button>'; }).join('') + '</div></div>' + piedEtape(s, n, 'Découvrir');
+      lisible('h2', 'Choisir son objectif de travail') +
+      '<div class="cdo-objectifs">' + objectifs.map(function (o, i) { return '<button type="button" class="cdo-carte cdo-obj' + (e.objectif === i ? ' pris' : '') + '" data-obj="' + i + '" aria-pressed="' + (e.objectif === i) + '">' + esc(o) + A.interne(o) + '</button>'; }).join('') + '</div></div>' + '<button type="button" class="cdo-btn" data-entree>Accéder aux séances</button>';
     z.onclick = function (ev) {
       if (ev.target.closest('.cdo-son')) return;
+      if (ev.target.closest('[data-entree]')) {
+        D.etat().dernierAccueil = { date: new Date().toISOString(), meteo: e.meteo, objectif: objectifs[e.objectif] };
+        D.enregistrer();
+        sessionStorage.removeItem(CLE_ACCUEIL);
+        aller('seances');
+        return;
+      }
       var m = ev.target.closest('[data-meteo]'), o = ev.target.closest('[data-obj]');
-      if (m) { e.meteo = +m.dataset.meteo; D.enregistrer(); z.querySelectorAll('[data-meteo]').forEach(function (x) { x.classList.toggle('pris', x === m); x.setAttribute('aria-pressed', x === m); }); A.lireAuto(METEOS[e.meteo].t); }
-      if (o) { e.objectif = +o.dataset.obj; D.enregistrer(); z.querySelectorAll('[data-obj]').forEach(function (x) { x.classList.toggle('pris', x === o); x.setAttribute('aria-pressed', x === o); }); }
+      if (m) { e.meteo = +m.dataset.meteo; z.querySelectorAll('[data-meteo]').forEach(function (x) { x.classList.toggle('pris', x === m); x.setAttribute('aria-pressed', x === m); }); A.lireAuto(METEOS[e.meteo].t); }
+      if (o) { e.objectif = +o.dataset.obj; z.querySelectorAll('[data-obj]').forEach(function (x) { x.classList.toggle('pris', x === o); x.setAttribute('aria-pressed', x === o); }); }
     };
   }
   /* Schéma du processus, en cases et flèches (texte seul) : [« Le danger », « + », « L’opérateur », « → », …]. [Contrôle 01/11, B1] */
