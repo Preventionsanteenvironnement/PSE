@@ -144,8 +144,10 @@
     dit: function (q, r) { var vus = {}; return (r || []).map(function (m) { if (m.z < 0) return 'aucun danger retenu à cet endroit'; if (vus[m.z]) return q.zones[m.z].nom + ' (déjà compté)'; vus[m.z] = 1; return q.zones[m.z].nom; }).join(' ; ') || '—'; }
   };
 
-  function lancer(conteneur, ev, fini) {
-    var qs = ev.questions, i = 0, reps = {};
+  function lancer(conteneur, ev, fini, options) {
+    options=options||{};
+    var qs = ev.questions, i = options.reprise ? Math.max(0,Math.min(ev.questions.length-1,options.reprise.index||0)) : 0, reps = options.reprise ? JSON.parse(JSON.stringify(options.reprise.reponses||{})) : {};
+    function suivi(action){if(options.suivi)options.suivi({index:i,reponses:JSON.parse(JSON.stringify(reps)),action:action,date:new Date().toISOString()});}
     qs.forEach(function (q) { if (Q[q.type].prep) Q[q.type].prep(q); });
     var total = qs.reduce(function (s, q) { return s + q.points; }, 0);
     var box = document.createElement('section'); box.className = 'cdo-eval'; conteneur.appendChild(box);
@@ -159,18 +161,19 @@
         '<div class="cdo-eval-q">' + T.html(q, reps[i]) + '</div>' +
         '<div class="cdo-eval-pied">' + (i ? '<button type="button" class="cdo-btn-second" data-prec>Question précédente</button>' : '<span></span>') +
         '<button type="button" class="cdo-btn" data-valider ' + (T.pret(q, reps[i]) ? '' : 'disabled') + '>' + (i + 1 < qs.length ? 'Valider et continuer' : 'Valider et terminer') + '</button></div>';
+      if(options.apresAffichage)options.apresAffichage(box,i);
     }
     box.addEventListener('click', function (e) {
       if (e.target.closest('.cdo-son')) return;
       var q = qs[i], T = Q[q.type];
-      if (e.target.closest('[data-prec]')) { A.arreter(); i--; ecran(); return; }
+      if (e.target.closest('[data-prec]')) { A.arreter(); i--; ecran(); suivi('precedente'); return; }
       if (e.target.closest('[data-valider]')) {
         if (!T.pret(q, reps[i])) return;
-        if (i + 1 < qs.length) { A.arreter(); i++; ecran(); return; }
+        if (i + 1 < qs.length) { A.arreter(); i++; ecran(); suivi('suivante'); return; }
         return bilan();
       }
       if (e.target.closest('.cdo-eval-q')) {
-        reps[i] = T.clic(box, e, reps[i]);
+        reps[i] = T.clic(box, e, reps[i]);suivi('reponse');
         var b = box.querySelector('[data-valider]'); if (b) b.disabled = !T.pret(q, reps[i]);
       }
     });
@@ -187,6 +190,7 @@
       box.innerHTML = '<div class="cdo-note"><span class="cdo-note-val">' + String(note).replace('.', ',') + '<small> / 20</small></span><p data-lire>' + son(mot) + esc(mot) + '</p></div>' +
         '<h3 class="cdo-ex-titre">La correction</h3><ol class="cdo-correction">' + lignes + '</ol>';
       A.lireAuto('Votre note : ' + String(note).replace('.', ',') + ' sur 20. ' + mot);
+      suivi('terminee');
       fini({ note: note, points: points, total: total, reponses: JSON.parse(JSON.stringify(reps)), date: new Date().toISOString() });
     }
     ecran();

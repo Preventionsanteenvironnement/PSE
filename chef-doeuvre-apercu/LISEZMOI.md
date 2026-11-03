@@ -12,3 +12,10 @@ Statut de revue maintenu : validation humaine des nouvellesimages et relectureex
 
 ## Chasses aux risques — aperçu du 3 novembre 2026
 Quatre nouveaux exercices dans Repérer un danger → S’exercer → Chasses aux risques : entrepôt, maintenance, magasin, cuisine. 20 dangers, 60 choix avec explication, indices, réessais, zoom et parcours décrit. État repris localement ou par fichier JSON. Code PROF, aucun envoi Firebase dans cet aperçu. Les visuels restent soumis à la validation de Brahim.
+
+## Recherche et épreuve distinctes — 3 novembre 2026
+- Mode initial des chasses : repérer et nommer ; type et dommage proposés ensuite, facultativement. Réaction visuelle et gros plan au clic, animations respectant prefers-reduced-motion.
+- Après la recherche : invitation vers une épreuve distincte, cinq choix illustrés, 4points chacun, note/20 et corrigé à la fin. Présentation bleue et entrée explicite.
+- Trace horodatée des réponses, erreurs, indices et demandes d’écoute. Réinitialisation d’une nouvelle recherche : réponses de travail remises à zéro, historique conservé par cycles.
+- Reprise de l’épreuve à la question et réponse sauvegardées ; toutes tentatives archivées, première et meilleure notes distinguées. Ancienne évaluation s1 archivée séparément, sans réutilisation de sa validation pour la nouvelle épreuve.
+- Détail du parcours dans Mon espace et export/import JSON global. Ceci reste un aperçu professeur (PROF), sans Firebase.

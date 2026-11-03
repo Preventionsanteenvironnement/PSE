@@ -163,6 +163,7 @@
     if (!b) return;
     ev.preventDefault(); ev.stopPropagation();
     if (b.classList.contains('joue')) { arreter(); return; }
+    b.dispatchEvent(new CustomEvent('cdo-ecoute',{bubbles:true,detail:{texte:b.getAttribute('data-dire')||''}}));
     var cible = b.closest('[data-lire]') || b.parentElement;
     lire(b.getAttribute('data-dire') || texteDe(cible), cible, b);
   }, true);
