@@ -235,7 +235,7 @@
       if (+c.dataset.i === prochain) {
         box.querySelectorAll('.cdo-ordre-case')[prochain].innerHTML = c.innerHTML; c.disabled = true; c.classList.add('range'); prochain++;
         retour(box, hasard(BRAVO), true);
-        if (prochain === etapes.length) termine(box, opts, b.bilan || 'Bravo. Les étapes sont dans l’ordre.');
+        if (prochain === etapes.length) termine(box, opts, b.bilan || 'Les étapes sont dans l’ordre.');
       } else {
         erreurs++; c.classList.add('faux'); setTimeout(function () { c.classList.remove('faux'); }, 600);
         retour(box, erreurs >= 2 ? 'Indice : l’étape ' + (prochain + 1) + ' est « ' + etapes[prochain] + ' ».' : 'Ce n’est pas l’étape ' + (prochain + 1) + '. Que se passe-t-il d’abord ?', false);

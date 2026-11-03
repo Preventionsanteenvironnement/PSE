@@ -43,12 +43,14 @@
   }
   function suivre() {
     A.arreter();
+    document.body.classList.remove('cdo-guide-ouvert');
+    vue.classList.remove('guide-decouverte');
     vue.onclick = null; vue.onchange = null;
     var h = decodeURIComponent(location.hash.replace(/^#/, '')) || 'accueil', p = h.split('/');
     if (!D.code() && ['accueil', 'code', 'outils'].indexOf(p[0]) < 0) p = ['accueil'];
     window.scrollTo(0, 0);
     ({ accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
-    piedPage.innerHTML = p[0] === 'seance' && /^s0/.test(p[1]) ? 'Pictogrammes : ARASAAC (Sergio Palao, Gouvernement d’Aragon), CC BY-NC-SA. D’après le Ministère de l’Éducation nationale, <a href="https://www.education.gouv.fr/bo/20/Hebdo8/MENE2002480C.htm" target="_blank" rel="noopener">circulaire 2020-039 du 14 février 2020</a>.' : piedPageInitial;
+    piedPage.innerHTML = p[0] === 'seance' && /^s0/.test(p[1]) ? 'Illustrations pédagogiques générées avec OpenAI. Repères du CAP : d’après le Ministère de l’Éducation nationale, <a href="https://www.education.gouv.fr/bo/20/Hebdo8/MENE2002480C.htm" target="_blank" rel="noopener">circulaire 2020-039 du 14 février 2020</a>.' : piedPageInitial;
     var h1 = vue.querySelector('h1'); if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
   }
   window.addEventListener('hashchange', suivre);
@@ -56,7 +58,7 @@
   /* ───────── Accueil : deux portes ───────── */
   function accueil() {
     enTete('');
-    vue.innerHTML = '<div class="cdo-accueil">' + lisible('h1', 'Chef-d’œuvre · Les risques en cuisine et leur prévention') +
+    vue.innerHTML = '<div class="cdo-accueil">' + lisible('h1', 'Comprendre le chef-d’œuvre') +
       '<div class="cdo-portes">' +
       '<a class="cdo-porte cdo-porte-1" href="#' + (D.code() ? 'seances' : 'code') + '">' + ICO.bouclier + '<span class="cdo-porte-t">Mon chef-d’œuvre</span><span>Les séances, les exercices, les évaluations, le carnet de bord.</span><span class="cdo-porte-pied">' + ICO.verrou + 'Accès avec son code</span></a>' +
       '<a class="cdo-porte cdo-porte-2" href="#outils">' + ICO.outils + '<span class="cdo-porte-t">Boîte à outils cuisine</span><span>Hygiène, production, service : fiches, exercices et missions.</span><span class="cdo-porte-pied">Accès libre</span></a>' +
@@ -110,8 +112,8 @@
   /* ───────── Mes séances ───────── */
   function etatSeance(s) {
     var e = D.etat().seances[s.id];
-    if (e && e.termine) return 'terminee';
-    if (e && (e.objectif != null || Object.keys(e.exercices || {}).length)) return 'commencee';
+    if (e && e.termine && (!s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation))) return 'terminee';
+    if (e && (e.objectif != null || Object.keys(e.exercices || {}).length || e.termine || (e.guide && (e.guide.position > 0 || e.guide.pause || Object.keys(e.guide.bilans || {}).length)))) return 'commencee';
     return 'afaire';
   }
   function mesSeances() {
@@ -119,7 +121,7 @@
     enTete('Mes séances');
     var notes = SEANCES.map(function (s) { var e = D.etat().seances[s.id]; return e && e.evaluation ? e.evaluation.note : null; }).filter(function (n) { return n != null; });
     var moy = notes.length ? Math.round(notes.reduce(function (a, b) { return a + b; }, 0) / notes.length * 2) / 2 : null;
-    vue.innerHTML = '<div class="cdo-seances"><div class="cdo-seances-liste">' + lisible('h1', 'Période 1 · Du danger à la prévention') +
+    vue.innerHTML = '<div class="cdo-seances"><div class="cdo-seances-liste">' + lisible('h1', 'Comprendre le chef-d’œuvre') +
       SEANCES.map(function (s) {
         var st = etatSeance(s), e = D.etat().seances[s.id] || {};
         return '<a class="cdo-seance-l ' + st + '" href="#seance/' + s.id + '/0">' +
@@ -136,11 +138,12 @@
   }
 
   /* ───────── Une séance en six étapes ───────── */
-  var ETAPES = ['Météo et objectif', 'Découvrir', 'S’exercer', 'Évaluation', 'Carnet de bord', 'Bilan'];
+  var ETAPES = ['Météo et objectif', 'Comprendre', 'S’exercer', 'Épreuve sur 20', 'Carnet de bord', 'Bilan'];
   function ecranSeance(p) {
     vue.onclick = null;
     var s = SEANCES.filter(function (x) { return x.id === p[1] || (p[1] === 's0' && x.numero === 0); })[0]; if (!s) return aller('seances');
     var n = Math.max(0, Math.min(5, +p[2] || 0)), e = D.seance(s.id);
+    if (s.guide) { document.body.classList.add('cdo-guide-ouvert'); if (n === 1 || n === 3) vue.classList.add('guide-decouverte'); }
     enTete((s.date ? dateCourte(s.date) + ' · ' : '') + s.titre, 'seances');
     vue.innerHTML = '<nav class="cdo-etapes" aria-label="Étapes de la séance">' + ETAPES.map(function (t, i) {
       return '<a href="#seance/' + s.id + '/' + i + '" class="' + (i === n ? 'actif' : i < n ? 'passe' : '') + '"' + (i === n ? ' aria-current="step"' : '') + '><span>' + (i + 1) + '</span>' + esc(t) + '</a>';
@@ -179,6 +182,7 @@
     }).join('') + '</figure>';
   }
   function etapeDecouvrir(z, s, e, n) {
+    if (s.guide) { window.CDO_GUIDE.rendre(z, s, e); return; }
     var page = 0;
     function afficher() {
     var cartes = s.decouverteProgressive ? [s.decouvrir[page]] : s.decouvrir;
@@ -212,12 +216,13 @@
   }
   function etapeEvaluation(z, s, e, n) {
     if (!s.evaluation) { z.innerHTML = lisible('h1', 'Évaluation') + lisible('p', 'Pas d’évaluation pour cette séance.') + piedEtape(s, n, 'Carnet de bord'); return; }
+    if (s.guide && !window.CDO_GUIDE.pret(s, e)) { z.innerHTML = lisible('h1', 'Avant l’épreuve') + lisible('p', 'Terminer les trois parties et leurs petits bilans avant de commencer l’épreuve.') + '<a class="cdo-btn" href="#seance/' + s.id + '/1">Reprendre la découverte</a>'; return; }
     function debut() {
-      z.innerHTML = '<div class="cdo-bloc-grand">' + lisible('h1', s.numero === 0 ? 'Comprendre le chef-d’œuvre · Évaluation' : 'Évaluation de la séance') +
+      z.innerHTML = '<div class="cdo-bloc-grand">' + lisible('h1', s.guide ? 'Épreuve de compréhension' : (s.numero === 0 ? 'Comprendre le chef-d’œuvre · Évaluation' : 'Évaluation de la séance')) +
         (s.evaluation.introduction ? lisible('p', s.evaluation.introduction) : '') +
         (e.evaluation ? lisible('p', 'Meilleure note : ' + String(e.evaluation.note).replace('.', ',') + ' sur 20.', 'cdo-objectif') : '') +
         lisible('p', s.evaluation.questions.length + ' questions, notées sur 20. Une seule réponse par question. La correction s’affiche à la fin.') +
-        '<button type="button" class="cdo-btn" data-commencer>' + (e.evaluation ? 'Refaire l’évaluation' : 'Commencer l’évaluation') + ICO.suite + '</button></div>' + piedEtape(s, n, 'Carnet de bord');
+        (s.guide ? window.CDO_GUIDE.recapitulatif(s) : '') + '<button type="button" class="cdo-btn" data-commencer>' + (e.evaluation ? 'Refaire l’évaluation' : 'Commencer l’évaluation') + ICO.suite + '</button></div>' + piedEtape(s, n, 'Carnet de bord');
     }
     debut();
     z.onclick = function (ev) {
@@ -256,15 +261,16 @@
     z.oninput = function (ev) { var t = ev.target.closest('[data-lib]'); if (t) { c[t.dataset.lib + 'Libre'] = t.value.slice(0, 600); D.enregistrer(); } };
   }
   function etapeBilan(z, s, e, n) {
+    var peutTerminer = !s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation);
     var obj = e.objectif != null ? s.objectifsEleve[e.objectif] : null;
     z.innerHTML = '<div class="cdo-bloc-grand cdo-bilan">' + AV.svg(D.etat().avatar, 150) + lisible('h1', 'Bilan de la séance') +
       (obj ? lisible('p', 'Objectif choisi : « ' + obj + ' ». Est-il atteint ?') + '<div class="cdo-choix">' + ['Oui', 'En partie', 'Pas encore'].map(function (t) { return '<button type="button" class="cdo-carte' + (e.atteint === t ? ' pris' : '') + '" data-at="' + t + '">' + t + '</button>'; }).join('') + '</div>' : '') +
       '<p class="cdo-ligne-res"><span>Exercices réussis</span><b>' + Object.keys(e.exercices || {}).length + ' / ' + s.exercices.length + '</b></p>' +
       '<p class="cdo-ligne-res"><span>Évaluation</span><b>' + (e.evaluation ? String(e.evaluation.note).replace('.', ',') + ' / 20' : 'non faite') + '</b></p>' +
-      '<button type="button" class="cdo-btn" data-terminer>Terminer la séance ' + ICO.ok + '</button></div>';
+      (peutTerminer ? '<button type="button" class="cdo-btn" data-terminer>Terminer la séance ' + ICO.ok + '</button>' : '<a class="cdo-btn" href="#seance/' + s.id + '/' + (window.CDO_GUIDE.pret(s, e) ? '3' : '1') + '">' + (window.CDO_GUIDE.pret(s, e) ? 'Passer à l’épreuve' : 'Reprendre la découverte') + '</a>') + '</div>';
     z.onclick = function (ev) {
       var a = ev.target.closest('[data-at]'); if (a) { e.atteint = a.dataset.at; D.enregistrer(); z.querySelectorAll('[data-at]').forEach(function (x) { x.classList.toggle('pris', x === a); }); return; }
-      if (ev.target.closest('[data-terminer]')) { e.termine = true; D.enregistrer(); aller('seances'); }
+      if (ev.target.closest('[data-terminer]') && peutTerminer) { e.termine = true; D.enregistrer(); aller('seances'); }
     };
   }
 
