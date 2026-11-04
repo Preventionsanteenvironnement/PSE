@@ -84,9 +84,9 @@
       ev.preventDefault();
       var c = D.codeValide(inp.value);
       if (!c) { var e = f.querySelector('.cdo-erreur'); e.hidden = false; e.textContent = 'Ce code n’est pas reconnu. Vérifier les quatre caractères.'; A.lireAuto(e.textContent, e); return; }
-      var etat = D.ouvrir(c);
+      D.ouvrir(c);
       sessionStorage.setItem(CLE_ACCUEIL, c);
-      aller(etat.avatar ? 'meteo' : 'avatar');
+      aller('meteo');
     });
   }
 
@@ -142,15 +142,37 @@
   function etatSeance(s) {
     var e = D.etat().seances[s.id];
     if (e && e.termine && !exercicesRestants(s, e) && epreuveValidee(s, e) && (!s.guide || (window.CDO_GUIDE.pret(s, e) && !!e.evaluation))) return 'terminee';
-    if (e && (e.objectif != null || Object.keys(e.exercices || {}).length || e.termine || (e.guide && (e.guide.position > 0 || e.guide.pause || Object.keys(e.guide.bilans || {}).length)))) return 'commencee';
+    if (e && (e.aOuvertExercices || e.evaluation || e.objectif != null || Object.keys(e.exercices || {}).length || e.termine || (e.guide && (e.guide.position > 0 || e.guide.pause || Object.keys(e.guide.bilans || {}).length)))) return 'commencee';
     return 'afaire';
+  }
+  function prochaineEtape(s, e) {
+    if (s.guide && !window.CDO_GUIDE.pret(s, e)) return 1;
+    if (!s.guide && !e.aOuvertExercices && etatSeance(s) === 'afaire') return 1;
+    if (exercicesRestants(s, e)) return 2;
+    if (!epreuveValidee(s, e)) return 3;
+    return Object.keys(e.carnet || {}).length ? 5 : 4;
+  }
+  function suiteParcours() {
+    var s = SEANCES.find(function (seance) { return etatSeance(seance) !== 'terminee'; });
+    if (!s) return '<div class="cdo-bloc">' + lisible('p', 'Parcours terminé.') + '</div>';
+    var e = D.etat().seances[s.id] || {};
+    var n = prochaineEtape(s, e);
+    var action = etatSeance(s) === 'afaire' && n === 1 ? 'Commencer' : 'Reprendre';
+    var detail = ETAPES[n - 1];
+    if (n === 2) {
+      var i = s.exercices.findIndex(function (_, index) { return !(e.exercices || {})[index]; });
+      detail = 'Exercice ' + (i + 1) + ' sur ' + s.exercices.length;
+    }
+    return '<div class="cdo-bloc">' + lisible('h2', 'Prochaine étape') +
+      lisible('p', s.titre + ' · ' + detail) +
+      '<a class="cdo-btn" href="#seance/' + s.id + '/' + n + '">' + action + ICO.suite + '</a></div>';
   }
   function mesSeances() {
     vue.onclick = null;
     enTete('Mes séances');
     var notes = SEANCES.map(function (s) { var e = D.etat().seances[s.id]; return e && e.evaluation ? e.evaluation.note : null; }).filter(function (n) { return n != null; });
     var moy = notes.length ? Math.round(notes.reduce(function (a, b) { return a + b; }, 0) / notes.length * 2) / 2 : null;
-    vue.innerHTML = '<div class="cdo-seances"><div class="cdo-seances-liste">' + lisible('h1', 'Comprendre le chef-d’œuvre') +
+    vue.innerHTML = '<div class="cdo-seances"><div class="cdo-seances-liste">' + lisible('h1', 'Mon parcours') + suiteParcours() +
       SEANCES.map(function (s) {
         var st = etatSeance(s), e = D.etat().seances[s.id] || {};
         return '<a class="cdo-seance-l ' + st + '" href="#seance/' + s.id + '/0">' +
@@ -196,27 +218,27 @@
   ];
   function accueilConnexion() {
     if (!accueilEnAttente()) { aller('seances'); return; }
-    enTete('Météo et objectifs');
-    var z = vue, e = {};
-    var objectifs = ['Découvrir une notion', 'S’exercer', 'Revoir une notion'];
-    z.innerHTML = '<div class="cdo-bloc-grand">' +
-      lisible('h1', 'Météo du jour : indiquer son humeur') +
-      '<div class="cdo-meteos">' + METEOS.map(function (m, i) { return '<button type="button" class="cdo-meteo' + (e.meteo === i ? ' pris' : '') + '" data-meteo="' + i + '" style="--c:' + m.c + '" aria-pressed="' + (e.meteo === i) + '">' + m.svg + '<span>' + m.t + '</span></button>'; }).join('') + '</div>' +
-      lisible('h2', 'Choisir son objectif de travail') +
-      '<div class="cdo-objectifs">' + objectifs.map(function (o, i) { return '<button type="button" class="cdo-carte cdo-obj' + (e.objectif === i ? ' pris' : '') + '" data-obj="' + i + '" aria-pressed="' + (e.objectif === i) + '">' + esc(o) + A.interne(o) + '</button>'; }).join('') + '</div></div>' + '<button type="button" class="cdo-btn" data-entree>Accéder aux séances</button>';
-    z.onclick = function (ev) {
-      if (ev.target.closest('.cdo-son')) return;
-      if (ev.target.closest('[data-entree]')) {
-        D.etat().dernierAccueil = { date: new Date().toISOString(), meteo: e.meteo, objectif: objectifs[e.objectif] };
-        D.enregistrer();
-        sessionStorage.removeItem(CLE_ACCUEIL);
-        aller('seances');
-        return;
-      }
-      var m = ev.target.closest('[data-meteo]'), o = ev.target.closest('[data-obj]');
-      if (m) { e.meteo = +m.dataset.meteo; z.querySelectorAll('[data-meteo]').forEach(function (x) { x.classList.toggle('pris', x === m); x.setAttribute('aria-pressed', x === m); }); A.lireAuto(METEOS[e.meteo].t); }
-      if (o) { e.objectif = +o.dataset.obj; z.querySelectorAll('[data-obj]').forEach(function (x) { x.classList.toggle('pris', x === o); x.setAttribute('aria-pressed', x === o); }); }
-    };
+    enTete('');
+    vue.innerHTML = '<dialog class="cdo-dialogue-meteo" aria-labelledby="cdo-titre-meteo">' +
+      lisible('h1', 'Comment je me sens ?') +
+      '<div class="cdo-meteos">' + METEOS.map(function (m, i) {
+        return '<button type="button" class="cdo-meteo" data-meteo="' + i + '" style="--c:' + m.c + '">' +
+          m.svg + '<span>' + m.t + '</span>' + A.interne(m.t) + '</button>';
+      }).join('') + '</div><button type="button" class="cdo-btn-second" data-audio-stop>Arrêter l’audio</button></dialog>';
+    var dialogue = vue.querySelector('dialog');
+    dialogue.querySelector('h1').id = 'cdo-titre-meteo';
+    dialogue.addEventListener('cancel', function (ev) { ev.preventDefault(); });
+    dialogue.addEventListener('click', function (ev) {
+      var choix = ev.target.closest('[data-meteo]');
+      if (!choix || ev.target.closest('.cdo-son')) return;
+      A.arreter();
+      D.etat().dernierAccueil = { date: new Date().toISOString(), meteo: +choix.dataset.meteo };
+      D.enregistrer();
+      sessionStorage.removeItem(CLE_ACCUEIL);
+      dialogue.close();
+      aller('seances');
+    });
+    dialogue.showModal();
   }
   /* Schéma du processus, en cases et flèches (texte seul) : [« Le danger », « + », « L’opérateur », « → », …]. [Contrôle 01/11, B1] */
   function schema(l) {
@@ -245,6 +267,7 @@
     };
   }
   function etapeExercer(z, s, e, n) {
+    if (!e.aOuvertExercices) { e.aOuvertExercices = true; D.enregistrer(); }
     var premierRestant = s.exercices.findIndex(function (_, k) { return !e.exercices[k]; });
     var i = premierRestant < 0 ? Math.min(e.exIndex || 0, s.exercices.length - 1) : premierRestant;
     function un() {
