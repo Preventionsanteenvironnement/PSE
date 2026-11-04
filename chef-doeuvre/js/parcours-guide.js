@@ -61,7 +61,7 @@
         // Le bilan garde son récapitulatif illustré avant la question.
         corps += (c.resume ? cartes(c.items) : image(c.aideImage, c.aideAlt)) + question(c) + bouton('aide', 'J’ai besoin d’aide', true);
       } else {
-        corps += contenu(c) + '<div class="guide-accompagnement">' + bouton('compris', 'J’ai compris') + bouton('reformuler', 'Je n’ai pas compris', true) + bouton('aide', 'J’ai besoin d’aide', true) + '</div>';
+        corps += contenu(c) + '<div class="guide-accompagnement">' + bouton('compris', c.resume ? 'Passer à la question →' : 'J’ai compris · Suivant →') + bouton('reformuler', 'Je n’ai pas compris', true) + bouton('aide', 'J’ai besoin d’aide', true) + '</div>';
       }
       corps += '<nav class="guide-navigation" aria-label="Navigation entre repères">' + (index && mode !== 'enseignant' ? bouton('precedent', 'Repère précédent', true) : '') + '</nav>';
       z.innerHTML = '<div class="guide-conteneur" data-guide-page="' + esc(c.id) + '" data-guide-mode="' + mode + '">' + corps + '</div>';
@@ -80,7 +80,7 @@
         var retour = z.querySelector('.guide-retour');
         retour.innerHTML = lire('p', bon ? 'Réponse correcte.' : 'Réponse à revoir.') +
           (bon ? '' : lire('p', 'Réponse attendue : ' + c.question.choix[c.question.bonne])) + lire('p', c.question.explication) +
-          (bon ? (index === pages.length - 1 ? '<a class="cdo-btn" href="#seance/' + s.id + '/2">S’exercer</a><a class="cdo-btn-second" href="#seance/' + s.id + '/3">Voir le récapitulatif avant l’épreuve</a>' : bouton('suivant', 'Continuer')) : bouton('reessayer', 'Réessayer') + bouton('reformuler', 'Revoir une explication', true));
+          (bon ? (index === pages.length - 1 ? '<a class="cdo-btn" href="#seance/' + s.id + '/2">S’exercer</a><a class="cdo-btn-second" href="#seance/' + s.id + '/3">Voir le récapitulatif avant l’épreuve</a>' : bouton('suivant', 'Suivant →')) : bouton('reessayer', 'Réessayer') + bouton('reformuler', 'Revoir une explication', true));
         return;
       }
       var b = ev.target.closest('[data-guide]'); if (!b) return;
