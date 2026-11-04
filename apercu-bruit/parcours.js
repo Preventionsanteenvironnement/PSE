@@ -16,7 +16,7 @@ const atelier = {image:'atelier.jpg', mot:'Atelier de menuiserie'};
 const schema = {image:'oreille.jpg', mot:'Coupe de l’oreille : le son entre par le pavillon, atteint le tympan puis l’oreille interne.'};
 
 const parcours = [
-  montre('Yanis', 'Yanis travaille dans un atelier de menuiserie. La machine est en marche.', atelier),
+  choix('Pour commencer', 'Toucher l’image pour commencer. Voici Yanis dans son atelier.', null, [atelier], 0, 'Bien. Toucher la flèche Suivant.'),
   choix('La source', 'Toucher ce qui produit le bruit dans l’atelier.', atelier, [sommeil,machine],1,'La machine en marche produit du bruit.'),
   {titre:'Puzzle', consigne:'Toucher une pièce, puis sa place dans l’image.', image:atelier, puzzle:true},
   choix('Même image', 'Retrouver l’image du concert.', concert,[machine,concert,volume],1,'C’est la même scène de concert.'),
@@ -29,7 +29,7 @@ const parcours = [
   montre('L’oreille','Le son arrive à l’oreille. Le tympan vibre. L’oreille interne transmet un message au cerveau.',schema),
   choix('Entendre','Choisir ce qui permet d’entendre.',musique,[volume,oreille],1,'L’oreille permet d’entendre.'),
   ordre('Le trajet','Placer la source du son, puis l’oreille qui le reçoit.',[oreille,machine],[1,0],'Le son de la machine arrive à l’oreille.'),
-  montre('Sifflement','Après le travail, Yanis entend un sifflement dans ses oreilles.',sifflement),
+  {...montre('Après le bruit','D’abord la ponceuse fait du bruit. Plus tard, même au calme, Yanis entend un sifflement dans ses oreilles.',oreille), avant: atelier},
   choix('L’effet','Choisir ce que Yanis ressent dans ses oreilles.',atelier,[casque,sifflement],1,'Un sifflement peut apparaître après un bruit fort.'),
   ordre('Trois images','Placer la machine, le son fort, puis le sifflement.',[sifflement,machine,fort],[1,2,0],'Le bruit fort peut avoir un effet sur les oreilles.'),
   choix('Dormir','Choisir ce que la musique forte le soir peut gêner.',musique,[sommeil,casque],0,'Le bruit peut gêner le sommeil.'),
@@ -95,8 +95,14 @@ function rendu(focus=true){
   ecran.replaceChildren();
   $('retour').textContent=validations[index]?'✓ Validé':'';
   const h=document.createElement('h2');h.id='titre';h.tabIndex=-1;h.textContent=a.titre;
-  ecran.append(h,ecoute(a.consigne));
-  if(a.image){const f=document.createElement('figure');f.append(visuel(a.image),ecoute(a.image.mot));ecran.append(f);}
+  ecran.append(h);
+  $('ecouter').setAttribute('aria-label','Écouter la consigne');
+  if(a.image && !a.puzzle){
+    const f=document.createElement('figure');
+    if(a.avant){f.className='sequence';f.append(visuel(a.avant),document.createTextNode(' → '));}
+    f.append(visuel(a.image));ecran.append(f);
+  }
+  if(a.puzzle && placees[0]==null) placees[0]=1;
   const cartes=a.puzzle?[2,0,1].map(n=>({mot:'Pièce '+(n+1),piece:n})):a.cartes;
   if(cartes){
     const ligne=document.createElement('div');ligne.className='cartes';
@@ -122,7 +128,12 @@ function rendu(focus=true){
       const carte=document.createElement('div');carte.className='carte';
       const b=bouton(c.mot,()=>{
         if(suite){selection=k;ligne.querySelectorAll('[data-piece]').forEach(x=>{x.classList.toggle('actif',+x.dataset.piece===k);x.setAttribute('aria-pressed',String(+x.dataset.piece===k));});}
-        else etat(k===a.bonne,k===a.bonne?a.retour:'Observer les images, puis essayer encore.');
+        else {
+          const juste=k===a.bonne;
+          etat(juste,juste?a.retour:(index===1?'Regarder l’outil jaune.':'Regarder la carte entourée.'));
+          ligne.querySelector('[data-piece="'+a.bonne+'"]').classList.toggle('indice',!juste && index!==1);
+          if(index===1) ecran.querySelector('figure').classList.toggle('indice-ponceuse',!juste);
+        }
       },null,c.mot);
       b.prepend(contenu(c)); b.dataset.piece=k;
       if(suite){
@@ -130,20 +141,28 @@ function rendu(focus=true){
         b.disabled=placees.includes(k);b.draggable=!b.disabled;
         b.ondragstart=ev=>ev.dataTransfer.setData('text/plain',String(k));
       }
-      carte.append(b,ecoute(c.mot));ligne.append(carte);
+      if(a.puzzle && placees.includes(k)) return;
+      carte.append(b);
+      if(!a.puzzle && index!==0) carte.append(ecoute(c.mot));
+      ligne.append(carte);
     });
     ecran.append(ligne);
     if(suite){
-      const cases=document.createElement('div');cases.className='cases';
+      const cases=document.createElement('div');cases.className=a.puzzle?'cases plateau':'cases';
       suite.forEach((_,slot)=>{
         const k=placees[slot];
         const b=bouton(k==null?String(slot+1):'✓',()=>{if(selection!=null)placer(slot,selection);},null,'Place '+(slot+1));
         if(k!=null){b.prepend(contenu(cartes[k]));b.disabled=true;}
+        else if(a.puzzle){
+          const guide=contenu(cartes[suite[slot]]);
+          guide.classList.add('fantome');b.prepend(guide);
+        }
         b.ondragover=ev=>ev.preventDefault();
         b.ondrop=ev=>{ev.preventDefault();const v=ev.dataTransfer.getData('text/plain');if(/^\d+$/.test(v))placer(slot,Number(v));};
         cases.append(b);
       });
-      ecran.append(cases);
+      if(a.puzzle) ecran.insertBefore(cases,ligne);
+      else ecran.append(cases);
     }
   }
   $('position').textContent=(index+1)+' / '+parcours.length;
