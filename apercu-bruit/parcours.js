@@ -1,0 +1,166 @@
+'use strict';
+const pic = (id, mot) => ({ image: id + '.png', mot });
+const machine = {image:'atelier.jpg', mot:'Ponceuse'}, musique = pic(38216, 'Son fort');
+const oreille = pic(2871, 'Oreille'), sifflement = pic(7157, 'Sifflement');
+const casque = pic(36357, 'Casque antibruit'), volume = pic(38215, 'Son faible');
+const pause = pic(38213, 'Pause'), concert = pic(11584, 'Concert');
+const calme = pic(5936, 'Au calme'), sommeil = pic(31276, 'Sommeil');
+const montre = (titre, consigne, image) => ({titre, consigne, image});
+const choix = (titre, consigne, image, cartes, bonne, retour) =>
+  ({titre, consigne, image, cartes, bonne, retour});
+const ordre = (titre, consigne, cartes, suite, retour) =>
+  ({titre, consigne, cartes, suite, retour});
+const faible = { mot: 'Faible', jauge: '▂' }, fort = { mot: 'Fort', jauge: '▂▅█' };
+const court = { mot: 'Peu longtemps', jauge: '●' }, long = { mot: 'Longtemps', jauge: '● ● ●' };
+const atelier = {image:'atelier.jpg', mot:'Atelier de menuiserie'};
+const schema = {image:'oreille.jpg', mot:'Coupe de l’oreille : le son entre par le pavillon, atteint le tympan puis l’oreille interne.'};
+
+const parcours = [
+  montre('Yanis', 'Yanis travaille dans un atelier de menuiserie. La machine est en marche.', atelier),
+  choix('La source', 'Toucher ce qui produit le bruit dans l’atelier.', atelier, [sommeil,machine],1,'La machine en marche produit du bruit.'),
+  {titre:'Puzzle', consigne:'Toucher une pièce, puis sa place dans l’image.', image:atelier, puzzle:true},
+  choix('Même image', 'Retrouver l’image du concert.', concert,[machine,concert,volume],1,'C’est la même scène de concert.'),
+  choix('La source', 'Toucher la scène où des enceintes diffusent de la musique.', concert,[concert,oreille],0,'L’enceinte diffuse la musique.'),
+  montre('Le volume','Une jauge courte montre un son faible. Une jauge haute montre un son fort.',volume),
+  choix('Son faible','Choisir la petite jauge.',musique,[faible,fort],0,'Le son est faible.'),
+  choix('Son fort','Choisir la grande jauge.',musique,[faible,fort],1,'Le son est fort.'),
+  ordre('Deux niveaux','Placer le niveau faible, puis le niveau fort.',[fort,faible],[1,0],'Faible, puis fort.'),
+  montre('Une pause','On peut faire une pause. Toucher Suivant pour reprendre.',pause),
+  montre('L’oreille','Le son arrive à l’oreille. Le tympan vibre. L’oreille interne transmet un message au cerveau.',schema),
+  choix('Entendre','Choisir ce qui permet d’entendre.',musique,[volume,oreille],1,'L’oreille permet d’entendre.'),
+  ordre('Le trajet','Placer la source du son, puis l’oreille qui le reçoit.',[oreille,machine],[1,0],'Le son de la machine arrive à l’oreille.'),
+  montre('Sifflement','Après le travail, Yanis entend un sifflement dans ses oreilles.',sifflement),
+  choix('L’effet','Choisir ce que Yanis ressent dans ses oreilles.',atelier,[casque,sifflement],1,'Un sifflement peut apparaître après un bruit fort.'),
+  ordre('Trois images','Placer la machine, le son fort, puis le sifflement.',[sifflement,machine,fort],[1,2,0],'Le bruit fort peut avoir un effet sur les oreilles.'),
+  choix('Dormir','Choisir ce que la musique forte le soir peut gêner.',musique,[sommeil,casque],0,'Le bruit peut gêner le sommeil.'),
+  montre('La durée','Pour protéger ses oreilles, il faut tenir compte du volume et du temps passé dans le bruit.',pause),
+  choix('Écouter moins','Choisir la durée la plus courte.',musique,[long,court],1,'Écouter moins longtemps réduit l’exposition.'),
+  ordre('La durée','Placer la durée courte, puis la durée longue.',[long,court],[1,0],'Peu longtemps, puis longtemps.'),
+  choix('Baisser','Choisir le niveau de musique le plus bas.',volume,[fort,faible],1,'Baisser le volume réduit le bruit.'),
+  choix('Faire pause','Choisir une action qui réduit le temps passé dans le bruit.',musique,[pause,fort],0,'Faire une pause réduit le temps d’écoute.'),
+  choix('S’éloigner','Au concert, choisir un endroit plus calme pour faire une pause.',concert,[concert,calme],1,'S’éloigner des enceintes permet de faire une pause au calme.'),
+  choix('Se protéger','Dans l’atelier, choisir la protection des oreilles.',atelier,[volume,casque],1,'Le casque antibruit protège les oreilles.'),
+  montre('Pour tous','Isoler la machine dans un local adapté réduit le bruit pour les personnes qui travaillent à côté.',atelier),
+  ordre('Se protéger','Placer la machine, puis la protection des oreilles.',[casque,machine],[1,0],'Dans cet atelier, le casque antibruit protège les oreilles.'),
+  montre('Une pause','On peut faire une pause avant les dernières activités.',pause),
+  choix('À vérifier','Choisir la scène qui montre des enceintes en marche.',concert,[oreille,concert,sommeil],1,'Le son sort de l’enceinte.'),
+  choix('À vérifier','Choisir ce que l’on peut entendre dans ses oreilles après un bruit fort.',atelier,[sifflement,volume],0,'Un sifflement peut être un effet du bruit.'),
+  choix('À vérifier','Choisir la jauge après avoir baissé le volume.',musique,[fort,faible],1,'La petite jauge correspond à un volume plus faible.'),
+  choix('À vérifier','Choisir ce qui protège les oreilles près de la machine.',atelier,[pause,casque,volume],1,'Le casque antibruit est la protection portée près de la machine.'),
+  montre('Bilan','On a vu la source du bruit, ses effets et les gestes pour protéger ses oreilles.',casque)
+];
+
+const $ = id => document.getElementById(id);
+const ecran = $('ecran');
+const cle = 'coup-de-pouce-bruit-v1';
+let memo = {};
+try { memo = JSON.parse(localStorage.getItem(cle)) || {}; } catch {}
+let index = Math.min(parcours.length-1,Math.max(0,Number(memo.index)||0));
+let validations = memo.validations || {};
+let muet = !!memo.muet;
+let placees = [];
+let selection = null;
+const synth = window.speechSynthesis;
+function sauver(){try{localStorage.setItem(cle,JSON.stringify({index,validations,muet}));}catch{}}
+function stop(){synth?.cancel();}
+function dire(texte){
+  stop();
+  if(muet || !synth || !texte) return;
+  const voix = new SpeechSynthesisUtterance(texte);
+  voix.lang = 'fr-FR';
+  voix.rate = 0.88;
+  synth.speak(voix);
+}
+function bouton(texte, action, classe, nom){
+  const b=document.createElement('button');
+  b.type='button'; b.textContent=texte;
+  if(classe) b.className=classe;
+  if(nom) b.setAttribute('aria-label',nom);
+  b.onclick=action; return b;
+}
+function ecoute(texte){return bouton('🔊',()=>dire(texte),'son','Écouter : '+texte);}
+function visuel(c){
+  if(c.image){const img=new Image();img.src='images/'+c.image;img.alt=c.mot;return img;}
+  const s=document.createElement('span');s.className='jauge';s.textContent=c.jauge;s.setAttribute('aria-hidden','true');return s;
+}
+function etat(ok, message){
+  const zone=$('retour');
+  zone.replaceChildren(document.createTextNode(ok?'✓ Validé':'↻ Réessayer'),ecoute(message));
+  if(ok){validations[index]=true;sauver();}
+  stop();
+}
+function rendu(focus=true){
+  stop();
+  const a=parcours[index];
+  ecran.replaceChildren();
+  $('retour').textContent=validations[index]?'✓ Validé':'';
+  const h=document.createElement('h2');h.id='titre';h.tabIndex=-1;h.textContent=a.titre;
+  ecran.append(h,ecoute(a.consigne));
+  if(a.image){const f=document.createElement('figure');f.append(visuel(a.image),ecoute(a.image.mot));ecran.append(f);}
+  const cartes=a.puzzle?[2,0,1].map(n=>({mot:'Pièce '+(n+1),piece:n})):a.cartes;
+  if(cartes){
+    const ligne=document.createElement('div');ligne.className='cartes';
+    const suite=a.puzzle?[1,2,0]:a.suite;
+    function placer(slot,k){
+      if(placees[slot]!=null) return;
+      if(k!==suite[slot]){etat(false,'Essayer une autre place.');return;}
+      placees[slot]=k; selection=null;
+      const termine=suite.every((_,i)=>placees[i]!=null);
+      rendu(false);
+      etat(termine,termine?(a.retour||'Le puzzle est complet.'):'Pièce placée. Continuer.');
+      if(!termine) $('retour').firstChild.textContent='✓ Placé';
+      ecran.querySelector('[data-piece]:not(:disabled)')?.focus({preventScroll:true});
+    }
+    function contenu(c){
+      if(c.piece==null) return visuel(c);
+      const morceau=document.createElement('span');morceau.className='piece';
+      morceau.style.backgroundImage='url(images/atelier.jpg)';
+      morceau.style.backgroundPosition=(c.piece*50)+'% center';
+      return morceau;
+    }
+    cartes.forEach((c,k)=>{
+      const carte=document.createElement('div');carte.className='carte';
+      const b=bouton(c.mot,()=>{
+        if(suite){selection=k;ligne.querySelectorAll('[data-piece]').forEach(x=>{x.classList.toggle('actif',+x.dataset.piece===k);x.setAttribute('aria-pressed',String(+x.dataset.piece===k));});}
+        else etat(k===a.bonne,k===a.bonne?a.retour:'Observer les images, puis essayer encore.');
+      },null,c.mot);
+      b.prepend(contenu(c)); b.dataset.piece=k;
+      if(suite){
+        b.setAttribute('aria-pressed',String(selection===k)); b.classList.toggle('actif',selection===k);
+        b.disabled=placees.includes(k);b.draggable=!b.disabled;
+        b.ondragstart=ev=>ev.dataTransfer.setData('text/plain',String(k));
+      }
+      carte.append(b,ecoute(c.mot));ligne.append(carte);
+    });
+    ecran.append(ligne);
+    if(suite){
+      const cases=document.createElement('div');cases.className='cases';
+      suite.forEach((_,slot)=>{
+        const k=placees[slot];
+        const b=bouton(k==null?String(slot+1):'✓',()=>{if(selection!=null)placer(slot,selection);},null,'Place '+(slot+1));
+        if(k!=null){b.prepend(contenu(cartes[k]));b.disabled=true;}
+        b.ondragover=ev=>ev.preventDefault();
+        b.ondrop=ev=>{ev.preventDefault();const v=ev.dataTransfer.getData('text/plain');if(/^\d+$/.test(v))placer(slot,Number(v));};
+        cases.append(b);
+      });
+      ecran.append(cases);
+    }
+  }
+  $('position').textContent=(index+1)+' / '+parcours.length;
+  $('progression').max=parcours.length;$('progression').value=index+1;
+  $('avant').disabled=index===0;
+  $('passer').disabled=index===parcours.length-1;
+  $('suivant').textContent=index===parcours.length-1?'Recommencer':'Suivant →';
+  if(focus) h.focus({preventScroll:true});
+}
+function aller(n){index=n;selection=null;placees=[];sauver();rendu();window.scrollTo(0,0);}
+$('avant').onclick=()=>aller(index-1);
+$('passer').onclick=()=>aller(index+1);
+$('suivant').onclick=()=>aller((index+1)%parcours.length);
+$('ecouter').onclick=()=>dire(parcours[index].consigne);
+$('stop').onclick=stop;
+function mode(){ $('muet').textContent='Audio : '+(muet?'non':'oui');$('muet').setAttribute('aria-pressed',String(muet));}
+$('muet').onclick=()=>{stop();muet=!muet;mode();sauver();};
+window.addEventListener('pagehide',stop);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+mode();rendu(false);
