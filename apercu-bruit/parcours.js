@@ -95,7 +95,13 @@ function rendu(focus=true){
   ecran.replaceChildren();
   $('retour').textContent=validations[index]?'✓ Validé':'';
   const h=document.createElement('h2');h.id='titre';h.tabIndex=-1;h.textContent=a.titre;
-  ecran.append(h);
+  const guide=document.createElement('p');
+  guide.className='guide-action';
+  guide.setAttribute('aria-live','polite');
+  guide.textContent=a.puzzle?'☝ Choisir une pièce':a.suite?'☝ Choisir une carte':a.cartes?'☝ Toucher une image':'👁 Observer';
+  if(index===0) guide.textContent='☝ Toucher l’image';
+  if(a.titre==='Une pause') guide.textContent='Ⅱ Faire une pause';
+  ecran.append(h,guide);
   $('ecouter').setAttribute('aria-label','Écouter la consigne');
   if(a.image && !a.puzzle){
     const f=document.createElement('figure');
@@ -115,6 +121,7 @@ function rendu(focus=true){
       rendu(false);
       etat(termine,termine?(a.retour||'Le puzzle est complet.'):'Pièce placée. Continuer.');
       if(!termine) $('retour').firstChild.textContent='✓ Placé';
+      else ecran.querySelector('.guide-action').textContent='→ Toucher Suivant';
       ecran.querySelector('[data-piece]:not(:disabled)')?.focus({preventScroll:true});
     }
     function contenu(c){
@@ -127,9 +134,10 @@ function rendu(focus=true){
     cartes.forEach((c,k)=>{
       const carte=document.createElement('div');carte.className='carte';
       const b=bouton(c.mot,()=>{
-        if(suite){selection=k;ligne.querySelectorAll('[data-piece]').forEach(x=>{x.classList.toggle('actif',+x.dataset.piece===k);x.setAttribute('aria-pressed',String(+x.dataset.piece===k));});}
+        if(suite){selection=k;guide.textContent='↓ Toucher une case';ligne.querySelectorAll('[data-piece]').forEach(x=>{x.classList.toggle('actif',+x.dataset.piece===k);x.setAttribute('aria-pressed',String(+x.dataset.piece===k));});}
         else {
           const juste=k===a.bonne;
+          guide.textContent=juste?'→ Toucher Suivant':'☝ Réessayer';
           etat(juste,juste?a.retour:(index===1?'Regarder l’outil jaune.':'Regarder la carte entourée.'));
           ligne.querySelector('[data-piece="'+a.bonne+'"]').classList.toggle('indice',!juste && index!==1);
           if(index===1) ecran.querySelector('figure').classList.toggle('indice-ponceuse',!juste);
@@ -176,7 +184,11 @@ function aller(n){index=n;selection=null;placees=[];sauver();rendu();window.scro
 $('avant').onclick=()=>aller(index-1);
 $('passer').onclick=()=>aller(index+1);
 $('suivant').onclick=()=>aller((index+1)%parcours.length);
-$('ecouter').onclick=()=>dire(parcours[index].consigne);
+$('ecouter').onclick=()=>{
+  const a=parcours[index];
+  if(selection!=null && (a.puzzle || a.suite)) dire('Toucher une case pour poser la carte.');
+  else dire(a.consigne);
+};
 $('stop').onclick=stop;
 function mode(){ $('muet').textContent='Audio : '+(muet?'non':'oui');$('muet').setAttribute('aria-pressed',String(muet));}
 $('muet').onclick=()=>{stop();muet=!muet;mode();sauver();};
