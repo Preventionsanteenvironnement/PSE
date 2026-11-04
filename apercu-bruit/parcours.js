@@ -56,6 +56,15 @@ const parcours = [
   ordre('Le trajet','Placer la machine, puis l’oreille.',[oreille,machine],[1,0],'Le bruit de la machine arrive à l’oreille.'),
   choix('Moins longtemps','Toucher la durée la plus courte.',concert,[court,long],0,'Rester moins longtemps réduit l’exposition au bruit.'),
   choix('Au travail','Toucher ce qui protège les oreilles.',atelier,[pause,oreille,casque],2,'Le casque antibruit protège les oreilles.'),
+  montre('Encore un peu','Toucher Suivant pour continuer.',oreille),
+  choix('Même image','Toucher la même oreille.',oreille,[casque,pause,oreille],2,'C’est la même oreille.'),
+  ordre('Son faible','Placer les enceintes, puis la petite jauge.',[faible,concert],[1,0],'La petite jauge représente un son faible.'),
+  choix('Son fort','Toucher la jauge la plus haute.',concert,[fort,faible],0,'La jauge haute représente un son fort.'),
+  choix('Pause','Toucher l’image qui montre le bouton Pause.',musique,[oreille,pause,casque],1,'Le bouton Pause arrête la musique.'),
+  ordre('Après le bruit','Placer la ponceuse, puis le sifflement.',[sifflement,machine],[1,0],'Après le bruit, Yanis entend un sifflement.'),
+  choix('Au calme','Toucher l’image de l’endroit calme.',concert,[calme,concert],0,'Faire une pause au calme réduit le temps passé dans le bruit.'),
+  choix('Les oreilles','Toucher la protection à porter sur les oreilles.',oreille,[pause,casque,volume],1,'Le casque antibruit se porte sur les oreilles.'),
+  ordre('Moins de bruit','Placer le son fort, puis le son faible.',[faible,fort],[1,0],'Baisser le volume rend le son plus faible.'),
   montre('Bilan','On a repéré des bruits et choisi des gestes pour protéger ses oreilles.',casque)
 ];
 
