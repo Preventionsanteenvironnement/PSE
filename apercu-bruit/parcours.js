@@ -20,7 +20,7 @@ const parcours = [
   choix('La source', 'Toucher ce qui produit le bruit dans l’atelier.', atelier, [sommeil,machine],1,'La machine en marche produit du bruit.'),
   {titre:'Puzzle', consigne:'Toucher une pièce, puis sa place dans l’image.', image:atelier, puzzle:true},
   choix('Même image', 'Retrouver l’image du concert.', concert,[machine,concert,volume],1,'C’est la même scène de concert.'),
-  choix('La source', 'Toucher la scène où des enceintes diffusent de la musique.', concert,[concert,oreille],0,'L’enceinte diffuse la musique.'),
+  choix('La source', 'Où sont les enceintes ?', concert,[concert,oreille],0,'L’enceinte diffuse la musique.'),
   montre('Le volume','Une jauge courte montre un son faible. Une jauge haute montre un son fort.',volume),
   choix('Son faible','Choisir la petite jauge.',musique,[faible,fort],0,'Le son est faible.'),
   choix('Son fort','Choisir la grande jauge.',musique,[faible,fort],1,'Le son est fort.'),
@@ -101,7 +101,14 @@ function rendu(focus=true){
   guide.textContent=a.puzzle?'☝ Choisir une pièce':a.suite?'☝ Choisir une carte':a.cartes?'☝ Toucher une image':'👁 Observer';
   if(index===0) guide.textContent='☝ Toucher l’image';
   if(a.titre==='Une pause') guide.textContent='Ⅱ Faire une pause';
-  ecran.append(h,guide);
+  ecran.append(h);
+  if(a.cartes || a.suite || a.puzzle){
+    const consigne=document.createElement('p');
+    consigne.className='consigne-visible';
+    consigne.textContent=a.consigne;
+    ecran.append(consigne);
+  }
+  ecran.append(guide);
   $('ecouter').setAttribute('aria-label','Écouter la consigne');
   if(a.image && !a.puzzle){
     const f=document.createElement('figure');
