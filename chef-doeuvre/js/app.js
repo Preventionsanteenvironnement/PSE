@@ -54,7 +54,7 @@
     if (!D.code() && ['accueil', 'code', 'outils'].indexOf(p[0]) < 0) p = ['accueil'];
     if (accueilEnAttente() && ['code', 'avatar', 'outils'].indexOf(p[0]) < 0) p = ['meteo'];
     window.scrollTo(0, 0);
-    ({ meteo: accueilConnexion, accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
+    ({ meteo: accueilConnexion, jeu: jeuMots, accueil: accueil, code: ecranCode, avatar: avatar, seances: mesSeances, seance: ecranSeance, moi: moi, outils: outils }[p[0]] || accueil)(p);
     piedPage.innerHTML = p[0] === 'seance' && /^s0/.test(p[1]) ? 'Illustrations pédagogiques générées avec OpenAI. Repères du CAP : d’après le Ministère de l’Éducation nationale, <a href="https://www.education.gouv.fr/bo/20/Hebdo8/MENE2002480C.htm" target="_blank" rel="noopener">circulaire 2020-039 du 14 février 2020</a>.' : piedPageInitial;
     if (p[0] === 'seance' && p[1] === 's1' && (p[2] === '2'||p[2] === '3')) piedPage.innerHTML = 'Pictogrammes : ARASAAC (Sergio Palao, Gouvernement d’Aragon), CC BY-NC-SA. Nouvelles scènes d’entreprise : illustrations générées avec OpenAI. Repères pédagogiques : <a href="https://www.inrs.fr/demarche/nouveaux-embauches/demarche-TutoPrev.html" target="_blank" rel="noopener">INRS, démarche TutoPrév’</a>.';
     var h1 = vue.querySelector('h1'); if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
@@ -167,12 +167,17 @@
       lisible('p', s.titre + ' · ' + detail) +
       '<a class="cdo-btn" href="#seance/' + s.id + '/' + n + '">' + action + ICO.suite + '</a></div>';
   }
+  function jeuMots() {
+    enTete('Mot en lumière', 'seances');
+    window.CDO_JEU_MOTS.rendre(vue);
+  }
   function mesSeances() {
     vue.onclick = null;
     enTete('Mes séances');
     var notes = SEANCES.map(function (s) { var e = D.etat().seances[s.id]; return e && e.evaluation ? e.evaluation.note : null; }).filter(function (n) { return n != null; });
     var moy = notes.length ? Math.round(notes.reduce(function (a, b) { return a + b; }, 0) / notes.length * 2) / 2 : null;
     vue.innerHTML = '<div class="cdo-seances"><div class="cdo-seances-liste">' + lisible('h1', 'Mon parcours') + suiteParcours() +
+      '<a class="cdo-bloc cdo-bloc-lien" href="#jeu">' + lisible('h2', 'Jeu bonus · Mot en lumière') + '<span>Deviner les mots du chef-d’œuvre.</span></a>' +
       SEANCES.map(function (s) {
         var st = etatSeance(s), e = D.etat().seances[s.id] || {};
         return '<a class="cdo-seance-l ' + st + '" href="#seance/' + s.id + '/0">' +
