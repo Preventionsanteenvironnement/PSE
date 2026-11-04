@@ -47,7 +47,16 @@ const parcours = [
   choix('À vérifier','Choisir un effet du bruit sur les oreilles.',atelier,[sifflement,volume],0,'Un sifflement peut être un effet du bruit.'),
   choix('À vérifier','Toucher la jauge du volume baissé.',musique,[fort,faible],1,'La petite jauge correspond à un volume plus faible.'),
   choix('À vérifier','Toucher la protection des oreilles.',atelier,[pause,casque,volume],1,'Le casque antibruit est la protection portée près de la machine.'),
-  montre('Bilan','On a vu la source du bruit, ses effets et les gestes pour protéger ses oreilles.',casque)
+  montre('Encore un peu','Toucher Suivant pour continuer.',casque),
+  choix('Même image','Toucher le même casque.',casque,[oreille,casque,pause],1,'C’est le même casque antibruit.'),
+  choix('La source','Toucher la machine qui fait du bruit.',atelier,[machine,casque,oreille],0,'La ponceuse produit du bruit.'),
+  ordre('Le volume','Placer le son fort, puis le son faible.',[faible,fort],[1,0],'Le volume a baissé.'),
+  choix('Une pause','Toucher le symbole Pause.',concert,[volume,pause],1,'Faire une pause réduit le temps passé dans le bruit.'),
+  choix('Le soir','Toucher ce que le bruit peut gêner le soir.',musique,[casque,sommeil],1,'Le bruit peut gêner le sommeil.'),
+  ordre('Le trajet','Placer la machine, puis l’oreille.',[oreille,machine],[1,0],'Le bruit de la machine arrive à l’oreille.'),
+  choix('Moins longtemps','Toucher la durée la plus courte.',concert,[court,long],0,'Rester moins longtemps réduit l’exposition au bruit.'),
+  choix('Au travail','Toucher ce qui protège les oreilles.',atelier,[pause,oreille,casque],2,'Le casque antibruit protège les oreilles.'),
+  montre('Bilan','On a repéré des bruits et choisi des gestes pour protéger ses oreilles.',casque)
 ];
 
 const $ = id => document.getElementById(id);
