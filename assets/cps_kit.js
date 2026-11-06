@@ -9,7 +9,11 @@
 "use strict";
 
 /* ---------- utilitaires ---------- */
-function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
+/* Aucun émoji à l'écran ni à l'oral (décision de Brahim, 06/11/2026) :
+   on les retire de tout ce que le moteur affiche ou lit. */
+var EMOJI_RE=/(?![\u00A9\u00AE\u2122])[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]/gu;
+function noEmoji(s){ return (s==null)?s:String(s).replace(EMOJI_RE,'').replace(/^[ \u00A0]+/,''); }
+function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=noEmoji(html); return e; }
 function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
 function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 /* [CPS] Les codes C2, E2 et S2 sont des reperes d'annexe du referentiel :
@@ -23,24 +27,25 @@ function speak(txt){
   try{
     if(!('speechSynthesis' in window) || !txt) return;
     window.speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(txt);
+    var u=new SpeechSynthesisUtterance(stripTags(noEmoji(txt)));
     u.lang='fr-FR'; u.rate=0.95;
     window.speechSynthesis.speak(u);
   }catch(e){}
 }
+function stripTags(s){ var d=document.createElement('div'); d.innerHTML=s; return d.textContent||''; }
 function stopSpeech(){ try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){} }
 function listenBtn(getText){
   // Écouter / Arrêter, plus une Pause qui n'apparaît que pendant la lecture.
   // Un élève qui perd le fil reprend où il en était, au lieu de tout relancer.
   var grp=el('span','cps-listen-grp');
   var enPause=false;
-  var b=el('button','cps-listen','🔊 Écouter');
-  var p=el('button','cps-listen cps-pause','⏸️ Pause');
+  var b=el('button','cps-listen','Écouter');
+  var p=el('button','cps-listen cps-pause','Pause');
   p.hidden=true;
   p.setAttribute('aria-label','Mettre la lecture en pause');
   function reset(){
-    b.innerHTML='🔊 Écouter'; b.classList.remove('on');
-    p.hidden=true; p.innerHTML='⏸️ Pause'; p.setAttribute('aria-label','Mettre la lecture en pause'); enPause=false;
+    b.innerHTML='Écouter'; b.classList.remove('on');
+    p.hidden=true; p.innerHTML='Pause'; p.setAttribute('aria-label','Mettre la lecture en pause'); enPause=false;
   }
   b.onclick=function(){
     try{
@@ -48,10 +53,10 @@ function listenBtn(getText){
       if(b.classList.contains('on')){ stopSpeech(); reset(); return; }
       var txt=getText(); if(!txt) return;
       stopSpeech();
-      var u=new SpeechSynthesisUtterance(txt);
+      var u=new SpeechSynthesisUtterance(stripTags(noEmoji(txt)));
       u.lang='fr-FR'; u.rate=0.95;
       u.onend=reset; u.onerror=reset;
-      b.innerHTML='⏹️ Arrêter'; b.classList.add('on');
+      b.innerHTML='Arrêter'; b.classList.add('on');
       p.hidden=false; enPause=false;
       window.speechSynthesis.speak(u);
     }catch(e){ reset(); }
@@ -59,9 +64,9 @@ function listenBtn(getText){
   p.onclick=function(){
     try{
       if(enPause){ window.speechSynthesis.resume(); enPause=false;
-        p.innerHTML='⏸️ Pause'; p.setAttribute('aria-label','Mettre la lecture en pause'); }
+        p.innerHTML='Pause'; p.setAttribute('aria-label','Mettre la lecture en pause'); }
       else { window.speechSynthesis.pause(); enPause=true;
-        p.innerHTML='▶️ Reprendre'; p.setAttribute('aria-label','Reprendre la lecture'); }
+        p.innerHTML='Reprendre'; p.setAttribute('aria-label','Reprendre la lecture'); }
     }catch(e){}
   };
   grp.appendChild(b); grp.appendChild(p);
@@ -85,7 +90,7 @@ function applyPrefs(){
 function lightbox(src,alt){
   var ov=document.getElementById('cps-lightbox');
   if(!ov){ ov=el('div','cps-lightbox'); ov.id='cps-lightbox';
-    ov.appendChild(el('img')); ov.appendChild(el('div','cps-lightbox-x','✕'));
+    ov.appendChild(el('img')); var x=el('div','cps-lightbox-x','Fermer ✕'); ov.appendChild(x);
     ov.onclick=function(){ ov.classList.remove('open'); };
     document.body.appendChild(ov);
   }
@@ -129,10 +134,10 @@ Ctrl.prototype.buildA11y=function(){
   var dys=el('button','cps-a11y-btn','Aa Confort'); dys.title='Lecture plus confortable'; if(PREFS.dys) dys.classList.add('act');
   dys.onclick=function(){ PREFS.dys=!PREFS.dys; savePrefs(); applyPrefs(); dys.classList.toggle('act', !!PREFS.dys); };
   bar.appendChild(dys);
-  var calme=el('button','cps-a11y-btn','🌙 Calme'); calme.title='Mode calme : animations et couleurs réduites'; if(PREFS.calme) calme.classList.add('act');
+  var calme=el('button','cps-a11y-btn','Calme'); calme.title='Mode calme : animations et couleurs réduites'; if(PREFS.calme) calme.classList.add('act');
   calme.onclick=function(){ PREFS.calme=!PREFS.calme; savePrefs(); applyPrefs(); calme.classList.toggle('act', !!PREFS.calme); };
   bar.appendChild(calme);
-  var pr=el('button','cps-a11y-btn','🖨️'); pr.title='Imprimer'; pr.onclick=function(){ try{ window.print(); }catch(e){} };
+  var pr=el('button','cps-a11y-btn','Imprimer'); pr.title='Imprimer'; pr.onclick=function(){ try{ window.print(); }catch(e){} };
   bar.appendChild(pr);
   return bar;
 };
@@ -149,7 +154,6 @@ Ctrl.prototype.build=function(){
   wrap.appendChild(back);
 
   var head=el('div','cps-head');
-  if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
   head.appendChild(el('h1',null,this.cfg.title||''));
   if(this.cfg.subtitle) head.appendChild(el('p',null,this.cfg.subtitle));
   if(this.cfg.code) head.appendChild(el('span','cps-pill', mentionCode(this.cfg.code)));
@@ -225,8 +229,8 @@ RENDER.gauge=function(stage, d, ctx){
     var ctr=el('div','cps-ctrls'); ctr.appendChild(listenBtn(function(){ return s.audio||s.context||''; })); box.appendChild(ctr);
     var g=el('div','cps-gauge','<div class="cps-gauge-top"><span>'+(d.label||'Ton stress')+'</span><span class="cps-gauge-val"></span></div><div class="cps-gauge-track"><i></i></div>');
     box.appendChild(g); setG(g, cur);
-    var q = combine ? ('🎯 '+(s.question||'Combine des stratégies pour descendre sous '+s.target+' / 10.'))
-                    : ('👉 '+(s.question||'Qu’est-ce que tu essaies ?'));
+    var q = combine ? (s.question||'Combine des stratégies pour descendre à '+s.target+' sur 10 ou moins.')
+                    : (s.question||'Qu’est-ce que tu essaies ?');
     box.appendChild(el('div','cps-q', q));
     var opts=el('div','cps-opts'); box.appendChild(opts);
     function goNext(){
@@ -245,17 +249,17 @@ RENDER.gauge=function(stage, d, ctx){
           setG(g, cur);
           clear(fb);
           var good=(st.effect||0) < 0;
-          fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(st.fb||'')));
+          fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+(st.fb||'')));
           if(cur <= s.target){
             var bs=opts.querySelectorAll('.cps-opt'); for(var k=0;k<bs.length;k++) bs[k].disabled=true;
-            fb.appendChild(el('div','cps-fb good','🎉 '+(s.success||'Bravo ! Ta jauge est bien redescendue : tu es prêt.')));
+            fb.appendChild(el('div','cps-fb good',(s.success||'Bravo ! Ta jauge est bien redescendue : tu es prêt.')));
             goNext();
           }
         } else {
           setG(g, st.to);
           var calm=(st.to < s.start);
           clear(fb);
-          fb.appendChild(el('div','cps-fb '+(calm?'good':'bad'), (calm?'✓ ':'💡 ')+(st.fb||'')));
+          fb.appendChild(el('div','cps-fb '+(calm?'good':'bad'), (calm?'✓ ':'✗ ')+(st.fb||'')));
           goNext();
         }
       };
@@ -290,7 +294,7 @@ RENDER.consequence=function(stage, d, ctx){
     if(it.context){ var c=el('div','cps-context'); c.appendChild(el('strong',null,'Situation')); c.appendChild(el('span',null,it.context)); prompt.appendChild(c); }
     stageBox.appendChild(prompt);
     var ctr=el('div','cps-ctrls'); ctr.appendChild(listenBtn(function(){ return it.audio||it.context||''; })); stageBox.appendChild(ctr);
-    if(it.question) stageBox.appendChild(el('div','cps-q','👉 '+it.question));
+    if(it.question) stageBox.appendChild(el('div','cps-q',it.question));
     var opts=el('div','cps-opts');
     shuffle((it.choices||[]).slice()).forEach(function(ch){
       var b=el('button','cps-opt',ch.l);
@@ -306,7 +310,7 @@ RENDER.consequence=function(stage, d, ctx){
     if(ch.img && img){ img.src=ch.img; img.alt=ch.alt||''; }
     if(ch.good) earned++;
     clear(fb);
-    fb.appendChild(el('div','cps-fb '+(ch.good?'good':'bad'), (ch.good?'✓ ':'💡 ')+(ch.fb||'')));
+    fb.appendChild(el('div','cps-fb '+(ch.good?'good':'bad'), (ch.good?'✓ ':'✗ ')+(ch.fb||'')));
     var last=(i>=items.length-1);
     var nb=el('button','cps-next', last?'Continuer →':'Scène suivante →');
     nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); ctx.next(); } else { i++; draw(); } };
@@ -334,21 +338,25 @@ RENDER.lesson=function(stage, d, ctx){
       l.appendChild(w); card.appendChild(l);
     }else{
       var ln=el('div','cps-lesson');
-      ln.appendChild(el('span','ic',b.ic||'•'));
+      var ic=noEmoji(b.ic||'').trim(); ln.appendChild(el('span','ic',(ic && ic.length<=3)?ic:'•'));
       ln.appendChild(el('div','tx',b.html||''));
       card.appendChild(ln);
     }
   });
-  var cta=el('button','cps-btn',d.cta||"▶️ Je m'entraîne");
+  var cta=el('button','cps-btn',d.cta||"Je m'entraîne →");
   cta.onclick=function(){ ctx.next(); };
   card.appendChild(cta);
   stage.appendChild(card);
-  /* lecture à la demande seulement (bouton 🔊) */
+  /* lecture à la demande seulement (bouton Écouter) */
 };
 
 /* ② CARDPICK : quiz / sort / truefalse / phone */
 RENDER.cardpick=function(stage, d, ctx){
   var items=d.items||[];
+  /* L'exemple résolu ne doit pas revenir comme question notée :
+     sans exemple dédié, on prend la 1re carte comme exemple et on ne la repose pas. */
+  var demoItem=d.demo||null;
+  if(d._demo && !demoItem && items.length>2){ demoItem=items[0]; items=items.slice(1); }
   var i=0, earned=0;
   var card=el('div','cps-card');
   var head=el('div','cps-pgwrap');
@@ -362,7 +370,7 @@ RENDER.cardpick=function(stage, d, ctx){
   var ctrls=el('div','cps-ctrls'); card.appendChild(ctrls);
   var listen=listenBtn(function(){ var it=items[i]; return it ? (it.audio||it.text) : ''; });
   ctrls.appendChild(listen);
-  var hint=el('button','cps-hint','💡 Indice'); ctrls.appendChild(hint);
+  var hint=el('button','cps-hint','Indice'); ctrls.appendChild(hint);
   var optBox=el('div',null,''); card.appendChild(optBox);
   var fb=el('div',null,''); card.appendChild(fb);
   stage.appendChild(card);
@@ -453,6 +461,8 @@ RENDER.cardpick=function(stage, d, ctx){
     buildOptions.current = shown;
     var grid=el('div', sort?'cps-bins':'cps-opts');
     if(it.opts.length===2) grid.classList.add('two');
+    /* réponses courtes (une émotion, un mot) : deux colonnes */
+    else if(!sort && it.opts.length>=4 && it.opts.every(function(o){ return String(o.l||'').replace(/<[^>]+>/g,'').length<=22; })) grid.classList.add('short');
     shown.forEach(function(entry){
       var opt=entry.opt;
       var b=el('button', sort?'cps-bin':'cps-opt', opt.l);
@@ -471,14 +481,14 @@ RENDER.cardpick=function(stage, d, ctx){
   }
 
   function drawDemo(){
-    var demo = d.demo || items[0];
-    count.textContent='Exemple'; instr.textContent=demo.instr || d.instr || '';
+    var demo = demoItem || items[0];
+    count.textContent='Exemple'; instr.innerHTML=noEmoji(demo.instr || d.instr || '');
     bar.firstChild.style.width='0%'; clear(fb); hint.style.display='none';
     buildPrompt(demo);
-    promptBox.insertBefore(el('div','cps-demo','👀 <strong>Exemple</strong> — on te montre comment faire.'), promptBox.firstChild);
+    promptBox.insertBefore(el('div','cps-demo','<strong>Exemple</strong> — on te montre comment faire.'), promptBox.firstChild);
     buildOptions(demo, {disabled:true, reveal:true});
     fb.appendChild(el('div','cps-fb good', '✓ '+(demo.ex||'')));
-    var nb=el('button','cps-next','👉 À toi de jouer !');
+    var nb=el('button','cps-next','À toi de jouer →');
     nb.onclick=function(){ hint.style.display=''; draw(); };
     fb.appendChild(nb);
   }
@@ -487,7 +497,7 @@ RENDER.cardpick=function(stage, d, ctx){
     var it=items[i];
     count.textContent=(i+1)+' / '+items.length;
     bar.firstChild.style.width=Math.round(i/items.length*100)+'%';
-    instr.textContent=it.instr || d.instr || '';
+    instr.innerHTML=noEmoji(it.instr || d.instr || '');
     clear(fb); hint.disabled=false; hint.style.display='';
     buildPrompt(it);
     buildOptions(it, {onPick:pick});
@@ -495,13 +505,14 @@ RENDER.cardpick=function(stage, d, ctx){
   }
 
   hint.onclick=function(){
+    var it=items[i];
+    hint.disabled=true;
     var btns=optBox.querySelectorAll('button');
     var shown=buildOptions.current||[];
     if(shown.length>=3){
       for(var k=0;k<shown.length;k++){ if(!shown[k].opt.ok && btns[k] && !btns[k].disabled){ btns[k].classList.add('dim'); btns[k].disabled=true; break; } }
     }
-    clear(fb); fb.appendChild(el('div','cps-fb tip','💡 '+(it.hint || d.hint || 'Relis bien la situation (tu peux l’écouter avec 🔊), puis choisis.')));
-    hint.disabled=true;
+    clear(fb); fb.appendChild(el('div','cps-fb tip','Indice : '+(it.hint || d.hint || 'Relis bien la situation (tu peux l’écouter), puis choisis.')));
   };
 
   function pick(entry,btn){
@@ -514,14 +525,14 @@ RENDER.cardpick=function(stage, d, ctx){
     if(!good){ btn.classList.remove('dim'); btn.classList.add('no'); }
     hint.disabled=true;
     clear(fb);
-    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(it.ex||'')));
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+(it.ex||'')));
     var last=(i>=items.length-1);
     var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); bar.firstChild.style.width='100%'; ctx.next(); } else { i++; draw(); } };
     fb.appendChild(nb);
   }
 
-  if(d._demo) drawDemo(); else draw();
+  if(d._demo && (demoItem||items.length)) drawDemo(); else draw();
 };
 function currentTemps(d){ return d.temps||'entraine'; }
 
@@ -567,7 +578,7 @@ RENDER.match=function(stage, d, ctx){
       if(doneCount>=pairs.length){ finish(); }
     }else{
       c.classList.add('miss'); setTimeout(function(){ c.classList.remove('miss'); },350);
-      flash('💡 Pas tout à fait, essaie une autre paire.','bad');
+      flash('✗ Pas tout à fait, essaie une autre paire.','bad');
     }
   }
   function flash(t,cl){ clear(fb); var b=el('div','cps-fb '+cl,t); fb.appendChild(b); }
@@ -578,7 +589,7 @@ RENDER.match=function(stage, d, ctx){
     nb.onclick=function(){ ctx.addScore(pairs.length, pairs.length); ctx.next(); };
     fb.appendChild(nb);
   }
-  /* lecture à la demande seulement (bouton 🔊) */
+  /* lecture à la demande seulement (bouton Écouter) */
 };
 
 /* REMETTRE DANS L'ORDRE (order) */
@@ -638,10 +649,10 @@ RENDER.order=function(stage, d, ctx){
       slotErr=true;
       chip.classList.add('cps-miss'); chip.style.animation='cpsshake .3s';
       setTimeout(function(){ chip.style.animation=''; },350);
-      clear(fb); fb.appendChild(el('div','cps-fb bad','💡 Ce n’est pas la prochaine étape. Quelle est la suite logique ?'));
+      clear(fb); fb.appendChild(el('div','cps-fb bad','✗ Ce n’est pas la prochaine étape. Quelle est la suite logique ?'));
     }
   }
-  /* lecture à la demande seulement (bouton 🔊) */
+  /* lecture à la demande seulement (bouton Écouter) */
 };
 
 /* CHOISIR UNE IMAGE PARMI DES CARTES MÉLANGÉES */
@@ -699,7 +710,7 @@ RENDER.imagepick=function(stage, d, ctx){
     btn.classList.add(good?'ok':'no');
     clear(fb);
     var msg = good ? (opt.ex||items[i].ex||'') : (opt.bad||items[i].bad||'Pas celle-ci. Regarde la carte entourée en vert, puis continue.');
-    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+msg));
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+msg));
     var last=(i>=items.length-1);
     var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); bar.firstChild.style.width='100%'; ctx.next(); } else { i++; draw(); } };
@@ -741,7 +752,7 @@ RENDER.bodymap=function(stage, d, ctx){
     for(var k=0;k<bs.length;k++){ bs[k].disabled=true; if(zones[k] && zones[k].ans===it.ok) bs[k].classList.add('ok'); }
     if(!good) b.classList.add('no');
     clear(fb);
-    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'💡 ')+(it.ex||'')));
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+(it.ex||'')));
     var last=(i>=items.length-1);
     var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); ctx.next(); } else { i++; draw(); } };
@@ -752,7 +763,7 @@ RENDER.bodymap=function(stage, d, ctx){
 
 /* MUR DES VISAGES (grid) : taper tous les visages d'une émotion */
 RENDER.grid=function(stage, d, ctx){
-  var faces=d.faces||[], need=0, got=0;
+  var faces=d.faces||[], need=0, got=0, miss=0;
   for(var n=0;n<faces.length;n++) if(faces[n].ok) need++;
   var card=el('div','cps-card');
   if(d.title) card.appendChild(el('div','cps-title',d.title));
@@ -762,18 +773,18 @@ RENDER.grid=function(stage, d, ctx){
   faces.forEach(function(f){
     var tile=el('button','cps-gtile');
     var im=el('img','cps-gimg'); im.src=f.img; im.alt=f.alt||''; im.setAttribute('loading','lazy'); tile.appendChild(im);
-    var z=el('span','cps-gzoom','🔍'); z.onclick=function(e){ e.stopPropagation(); lightbox(f.img,f.alt||''); }; tile.appendChild(z);
+    var z=el('span','cps-gzoom','Agrandir'); z.setAttribute('role','button'); z.onclick=function(e){ e.stopPropagation(); lightbox(f.img,f.alt||''); }; tile.appendChild(z);
     tile.onclick=function(){
       if(tile.classList.contains('on')) return;
       if(f.ok){
         tile.classList.add('on'); got++; clear(fb);
         if(got>=need){
           fb.appendChild(el('div','cps-fb good','✓ '+(d.success||'Bravo ! Tu as trouvé tous les visages.')));
-          var nb=el('button','cps-next','Continuer →'); nb.onclick=function(){ ctx.addScore(need,need); ctx.next(); }; fb.appendChild(nb);
+          var nb=el('button','cps-next','Continuer →'); nb.onclick=function(){ ctx.addScore(Math.max(0,need-miss),need); ctx.next(); }; fb.appendChild(nb);
         }
       } else {
-        tile.classList.add('off'); setTimeout(function(){ tile.classList.remove('off'); },500);
-        clear(fb); fb.appendChild(el('div','cps-fb bad','💡 '+(d.miss||'Non, ce visage ne montre pas cette émotion.')));
+        tile.classList.add('off'); miss++; setTimeout(function(){ tile.classList.remove('off'); },500);
+        clear(fb); fb.appendChild(el('div','cps-fb bad','✗ '+(d.miss||'Non, ce visage ne montre pas cette émotion.')));
       }
     };
     grid.appendChild(tile);
@@ -816,7 +827,7 @@ RENDER.scenario=function(stage, d, ctx){
       opts.appendChild(b);
     });
     body.appendChild(opts);
-    /* lecture à la demande seulement (bouton 🔊) */
+    /* lecture à la demande seulement (bouton Écouter) */
   }
   function choose(ci,btn){
     var c=shownChoices[ci].choice;
@@ -825,8 +836,7 @@ RENDER.scenario=function(stage, d, ctx){
     for(var k=0;k<btns.length;k++){ btns[k].disabled=true; if(!shownChoices[k].choice.good) btns[k].classList.add('dim'); }
     btn.classList.remove('dim'); btn.classList.add(c.good?'ok':'no');
     var conseq=el('div','cps-conseq');
-    conseq.appendChild(el('span','face', c.good?'😀':'😕'));
-    conseq.appendChild(el('div','cps-fb '+(c.good?'good':'bad'), c.fb||''));
+        conseq.appendChild(el('div','cps-fb '+(c.good?'good':'bad'), c.fb||''));
     body.appendChild(conseq);
     var last=(i>=scenes.length-1);
     var nb=el('button','cps-next','Continuer →');
@@ -840,33 +850,33 @@ RENDER.scenario=function(stage, d, ctx){
 RENDER.wrap=function(stage, d, ctx){
   var total=ctx.total(), score=ctx.score();
   var r= total>0 ? score/total : 1;
-  var stars= r>=0.85?'⭐⭐⭐⭐⭐' : r>=0.65?'⭐⭐⭐⭐' : r>=0.4?'⭐⭐⭐':'⭐⭐';
+  var pct=Math.round(r*100);
   var msg= r>=0.85?'Excellent ! Tu maîtrises bien.' : r>=0.65?'Bien joué, tu progresses vraiment !' : r>=0.4?'C’est un bon début, continue !':'Recommence : chaque essai te fait progresser.';
 
   var c1=el('div','cps-card');
   var sw=el('div','cps-score');
-  sw.appendChild(el('div','cps-stars',stars));
+  sw.appendChild(el('div','cps-meter','<i style="width:'+pct+'%"></i>'));
   sw.appendChild(el('div',null,'<span class="cps-num">'+score+'</span><span class="cps-tot"> / '+total+'</span>'));
   sw.appendChild(el('div','cps-msg',msg));
   c1.appendChild(sw); stage.appendChild(c1);
 
   var c2=el('div','cps-card');
-  c2.appendChild(el('div','cps-title','📌 Ce que je sais maintenant'));
+  c2.appendChild(el('div','cps-title','Ce que je sais maintenant'));
   (d.keep||[]).forEach(function(k){
-    var kk=el('div','cps-keep'); kk.appendChild(el('span','ic',k.ic||'•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk);
+    var kk=el('div','cps-keep'); kk.appendChild(el('span','ic','•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk);
   });
   if(d.self && d.self.length){
     var sf=el('div','cps-self');
-    sf.appendChild(el('p',null,'👉 Je m’auto-évalue (sans note) :'));
+    sf.appendChild(el('p',null,'Je m’auto-évalue (sans note) :'));
     d.self.forEach(function(q){
       var row=el('div','row','<span>'+q+'</span>');
       var yn=el('div','yn');
-      ['👍','🤔'].forEach(function(sym){ var b=el('button',null,sym); b.onclick=function(){ var bs=yn.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.remove('sel'); b.classList.add('sel'); }; yn.appendChild(b); });
+      ['Oui','Pas encore'].forEach(function(sym){ var b=el('button',null,sym); b.onclick=function(){ var bs=yn.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.remove('sel'); b.classList.add('sel'); }; yn.appendChild(b); });
       row.appendChild(yn); sf.appendChild(row);
     });
     c2.appendChild(sf);
   }
-  var again=el('button','cps-btn','🔄 Recommencer'); again.style.marginTop='14px';
+  var again=el('button','cps-btn','Recommencer'); again.style.marginTop='14px';
   again.onclick=function(){ ctx.restart(); };
   c2.appendChild(again);
   stage.appendChild(c2);
@@ -890,12 +900,11 @@ EscapeCtrl.prototype.build=function(){
   var wrap=el('div','cps');
   var back=el('a','cps-back','← Accueil'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
   var head=el('div','cps-head');
-  if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
   head.appendChild(el('h1',null,this.cfg.title||''));
   if(this.cfg.subtitle) head.appendChild(el('p',null,this.cfg.subtitle));
   wrap.appendChild(head);
   this.mapEl=el('div','cps-locks');
-  for(var i=0;i<this.salles.length;i++) this.mapEl.appendChild(el('div','cps-lock','🔒'));
+  for(var i=0;i<this.salles.length;i++) this.mapEl.appendChild(el('div','cps-lock','?'));
   wrap.appendChild(this.mapEl);
   this.stage=el('div','cps-stage'); wrap.appendChild(this.stage);
   app.appendChild(wrap);
@@ -905,47 +914,56 @@ EscapeCtrl.prototype.updateMap=function(){
   var locks=this.mapEl.children;
   for(var i=0;i<this.salles.length;i++){
     if(i<this.found.length){ locks[i].textContent=this.found[i]; locks[i].className='cps-lock open'; }
-    else { locks[i].textContent='🔒'; locks[i].className='cps-lock'; }
+    else { locks[i].textContent='?'; locks[i].className='cps-lock'; }
   }
 };
 EscapeCtrl.prototype.showCover=function(){
   stopSpeech(); clear(this.stage); this.updateMap();
   var self=this, c=el('div','cps-card');
-  c.appendChild(el('div','cps-title','🎯 Ta mission'));
+  c.appendChild(el('div','cps-title','Ta mission'));
   if(this.cfg.intro){
     c.appendChild(listenBtn((function(t){return function(){return t;};})(this.cfg.audio||this.cfg.intro)));
     c.appendChild(el('div','cps-instr',this.cfg.intro));
   }
-  var b=el('button','cps-btn','▶️ Commencer la mission');
+  var b=el('button','cps-btn','Commencer la mission →');
   b.onclick=function(){ self.startSalle(0); };
   c.appendChild(b); this.stage.appendChild(c);
 };
 EscapeCtrl.prototype.startSalle=function(i){
   stopSpeech(); clear(this.stage);
   var self=this, s=this.salles[i], c=el('div','cps-card');
-  c.appendChild(el('div','cps-title','🔐 '+(s.titre||('Épreuve '+(i+1)))));
+  c.appendChild(el('div','cps-title',(s.titre||('Épreuve '+(i+1)))));
   if(s.intro){ c.appendChild(listenBtn((function(t){return function(){return t;};})(s.audio||s.intro))); c.appendChild(el('div','cps-instr',s.intro)); }
-  var b=el('button','cps-btn','▶️ Commencer l’épreuve');
+  var b=el('button','cps-btn','Commencer l’épreuve →');
   b.onclick=function(){ self.runSalle(i); };
   c.appendChild(b); this.stage.appendChild(c);
 };
 EscapeCtrl.prototype.runSalle=function(i){
   stopSpeech(); clear(this.stage);
   var self=this, mod=this.salles[i].module||{};
-  mod.tag=mod.tag||('🔐 '+(this.salles[i].titre||('Épreuve '+(i+1))));
-  var ctx={ addScore:function(){}, next:function(){ self.reveal(i); }, total:function(){return 0;}, score:function(){return 0;}, restart:function(){} };
+  mod.tag=mod.tag||(this.salles[i].titre||('Épreuve '+(i+1)));
+  var pts=0, max=0;
+  var ctx={ addScore:function(p,m){ pts+=p; max+=m; }, next:function(){ if(max>0 && pts/max<0.5) self.retry(i); else self.reveal(i); }, total:function(){return max;}, score:function(){return pts;}, restart:function(){} };
   var fn=RENDER[mod.type];
   if(fn) fn(this.stage, mod, ctx); else this.reveal(i);
+};
+EscapeCtrl.prototype.retry=function(i){
+  stopSpeech(); clear(this.stage);
+  var self=this, c=el('div','cps-card');
+  c.appendChild(el('div','cps-title','Le cadenas reste fermé'));
+  c.appendChild(el('div','cps-instr','Il faut au moins la moitié de bonnes réponses pour l’ouvrir. Relis les retours, puis rejoue l’épreuve.'));
+  var b=el('button','cps-btn','Rejouer l’épreuve →'); b.onclick=function(){ self.runSalle(i); };
+  c.appendChild(b); this.stage.appendChild(c);
 };
 EscapeCtrl.prototype.reveal=function(i){
   stopSpeech(); clear(this.stage);
   var self=this, s=this.salles[i];
   this.found.push(String(s.digit)); this.updateMap();
   var c=el('div','cps-card');
-  c.appendChild(el('div','cps-title','🔓 Cadenas ouvert !'));
+  c.appendChild(el('div','cps-title','Cadenas ouvert'));
   c.appendChild(el('div','cps-reveal','Tu as trouvé le chiffre <strong>'+s.digit+'</strong>'));
   var last=(i>=this.salles.length-1);
-  var b=el('button','cps-btn', last?'🧰 Aller au coffre →':'Épreuve suivante →');
+  var b=el('button','cps-btn', last?'Aller au coffre →':'Épreuve suivante →');
   b.onclick=function(){ if(last) self.showFinal(); else self.startSalle(i+1); };
   c.appendChild(b); this.stage.appendChild(c);
 };
@@ -953,7 +971,7 @@ EscapeCtrl.prototype.showFinal=function(){
   stopSpeech(); clear(this.stage); this.updateMap();
   var self=this, code=this.salles.map(function(s){return String(s.digit);}).join(''), entry=[];
   var c=el('div','cps-card');
-  c.appendChild(el('div','cps-title','🧰 Le coffre'));
+  c.appendChild(el('div','cps-title','Le coffre'));
   c.appendChild(el('div','cps-instr','Entre le code que tu as trouvé. Les chiffres sont en haut.'));
   var slots=el('div','cps-codeslots');
   for(var k=0;k<code.length;k++) slots.appendChild(el('div','cps-codeslot',''));
@@ -961,21 +979,21 @@ EscapeCtrl.prototype.showFinal=function(){
   var fb=el('div',null,'');
   var pad=el('div','cps-pad');
   function refresh(){ for(var k=0;k<code.length;k++) slots.children[k].textContent=entry[k]||''; }
-  function check(){ if(entry.join('')===code){ self.showVictory(); } else { fb.innerHTML='<div class="cps-fb tip">💡 Ce n’est pas le bon code. Regarde bien les chiffres en haut, puis réessaie.</div>'; entry.length=0; refresh(); } }
+  function check(){ if(entry.join('')===code){ self.showVictory(); } else { fb.innerHTML='<div class="cps-fb tip">Ce n’est pas le bon code. Regarde bien les chiffres en haut, puis réessaie.</div>'; entry.length=0; refresh(); } }
   for(var n=0;n<=9;n++){ (function(n){ var b=el('button','cps-padkey',String(n)); b.onclick=function(){ if(entry.length<code.length){ entry.push(String(n)); refresh(); fb.innerHTML=''; if(entry.length===code.length) check(); } }; pad.appendChild(b); })(n); }
-  var del=el('button','cps-padkey cps-paddel','⌫'); del.onclick=function(){ entry.pop(); refresh(); fb.innerHTML=''; }; pad.appendChild(del);
+  var del=el('button','cps-padkey cps-paddel','Effacer'); del.onclick=function(){ entry.pop(); refresh(); fb.innerHTML=''; }; pad.appendChild(del);
   c.appendChild(pad); c.appendChild(fb); this.stage.appendChild(c);
 };
 EscapeCtrl.prototype.showVictory=function(){
   stopSpeech(); clear(this.stage);
   var self=this;
-  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-win','🎉')); c1.appendChild(el('div','cps-msg','Bravo ! Tu as ouvert le coffre.')); this.stage.appendChild(c1);
+  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-msg','Bravo ! Tu as ouvert le coffre.')); this.stage.appendChild(c1);
   if(this.cfg.keep && this.cfg.keep.length){
-    var c2=el('div','cps-card'); c2.appendChild(el('div','cps-title','📌 Ce que tu as appris'));
-    this.cfg.keep.forEach(function(k){ var kk=el('div','cps-keep'); kk.appendChild(el('span','ic',k.ic||'•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk); });
+    var c2=el('div','cps-card'); c2.appendChild(el('div','cps-title','Ce que tu as appris'));
+    this.cfg.keep.forEach(function(k){ var kk=el('div','cps-keep'); kk.appendChild(el('span','ic','•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk); });
     this.stage.appendChild(c2);
   }
-  var c3=el('div','cps-card'); var again=el('button','cps-btn','🔄 Rejouer'); again.onclick=function(){ self.found=[]; self.showCover(); }; c3.appendChild(again); this.stage.appendChild(c3);
+  var c3=el('div','cps-card'); var again=el('button','cps-btn','Rejouer'); again.onclick=function(){ self.found=[]; self.showCover(); }; c3.appendChild(again); this.stage.appendChild(c3);
 };
 
 /* ---------- FLASHCARDS (révision active + auto-test + collection) ---------- */
@@ -994,12 +1012,11 @@ FlashCtrl.prototype.build=function(){
   var wrap=el('div','cps');
   var back=el('a','cps-back','← Accueil'); back.href=this.cfg.back||'index.html'; wrap.appendChild(back);
   var head=el('div','cps-head');
-  if(this.cfg.icon) head.appendChild(el('span','ic',this.cfg.icon));
   head.appendChild(el('h1',null,this.cfg.title||''));
   if(this.cfg.subtitle) head.appendChild(el('p',null,this.cfg.subtitle));
   wrap.appendChild(head);
   this.badgeRow=el('div','cps-badges'); this.badges={};
-  for(var j=0;j<this.emos.length;j++){ var e=this.emos[j]; var b=el('div','cps-badge', e.emoji+'<span>'+e.label+'</span>'); this.badgeRow.appendChild(b); this.badges[e.key]=b; }
+  for(var j=0;j<this.emos.length;j++){ var e=this.emos[j]; var b=el('div','cps-badge', (e.img?'<img src="'+e.img+'" alt="">':'')+'<span>'+e.label+'</span>'); this.badgeRow.appendChild(b); this.badges[e.key]=b; }
   wrap.appendChild(this.badgeRow);
   this.stage=el('div','cps-stage'); wrap.appendChild(this.stage);
   app.appendChild(wrap);
@@ -1009,11 +1026,11 @@ FlashCtrl.prototype.resetBadges=function(){ for(var k in this.badges) this.badge
 FlashCtrl.prototype.showCover=function(){
   stopSpeech(); clear(this.stage); this.resetBadges();
   var self=this, c=el('div','cps-card');
-  c.appendChild(el('div','cps-title','🃏 Comment jouer'));
+  c.appendChild(el('div','cps-title','Comment jouer'));
   var howto='Lis la situation. Devine l’émotion dans ta tête. Retourne la carte pour vérifier. Puis dis si tu savais. But : débloquer les '+this.emos.length+' émotions !';
   c.appendChild(listenBtn(function(){ return howto; }));
   c.appendChild(el('div','cps-instr',howto));
-  var b=el('button','cps-btn','▶️ Commencer'); b.onclick=function(){ self.start(); }; c.appendChild(b);
+  var b=el('button','cps-btn','Commencer →'); b.onclick=function(){ self.start(); }; c.appendChild(b);
   this.stage.appendChild(c);
 };
 FlashCtrl.prototype.start=function(){ this.remaining=shuffle(this.cfg.cards.slice()); this.total=this.cfg.cards.length; this.known=0; this.showCard(); };
@@ -1023,13 +1040,12 @@ FlashCtrl.prototype.showCard=function(){
   if(!this.remaining.length){ this.showEnd(); return; }
   clear(this.stage);
   var self=this, card=this.remaining[0];
-  var top=el('div','cps-pgwrap'); top.appendChild(el('span','cps-tag','🃏 Carte')); top.appendChild(el('span','cps-count', this.known+' / '+this.total+' maîtrisées'));
+  var top=el('div','cps-pgwrap'); top.appendChild(el('span','cps-tag','Carte')); top.appendChild(el('span','cps-count', this.known+' / '+this.total+' maîtrisées'));
   this.stage.appendChild(top);
   var box=el('div','cps-flash'); this.stage.appendChild(box);
   function front(){
     clear(box);
     if(card.img) box.appendChild(imgEl(card.img, card.alt||card.situation||''));
-    else if(card.emoji) box.appendChild(el('div','cps-flash-em',card.emoji));
     box.appendChild(el('div','cps-flash-sit',card.situation||''));
     box.appendChild(el('div','cps-flash-q','Quelle émotion ?'));
   }
@@ -1037,20 +1053,20 @@ FlashCtrl.prototype.showCard=function(){
   var ctrls=el('div','cps-ctrls');
   ctrls.appendChild(listenBtn(function(){ return card.audio || card.situation; }));
   this.stage.appendChild(ctrls);
-  var flipBtn=el('button','cps-btn','🔄 Retourner la carte');
+  var flipBtn=el('button','cps-btn','Retourner la carte');
   flipBtn.onclick=function(){ self.flipTo(box, function(){ self.showBack(box,card); }); flipBtn.style.display='none'; ctrls.style.display='none'; };
   this.stage.appendChild(flipBtn);
 };
 FlashCtrl.prototype.showBack=function(box,card){
   var self=this, e=this.byKey[card.emotion]||{label:card.emotion,emoji:'',color:'#64748b'};
   clear(box); box.classList.add('back');
-  var band=el('div','cps-flash-band', e.emoji+' '+e.label); band.style.background=e.color; box.appendChild(band);
-  if(card.message) box.appendChild(el('div','cps-flash-line','💬 <strong>Message :</strong> '+card.message));
-  if(card.corps) box.appendChild(el('div','cps-flash-line','👋 <strong>Dans le corps :</strong> '+card.corps));
+  var band=el('div','cps-flash-band', e.label); band.style.background=e.color; box.appendChild(band);
+  if(card.message) box.appendChild(el('div','cps-flash-line','<strong>Message :</strong> '+card.message));
+  if(card.corps) box.appendChild(el('div','cps-flash-line','<strong>Dans le corps :</strong> '+card.corps));
   var row=el('div','cps-flash-rate');
-  var ok=el('button','cps-rate ok','👍 Je savais');
+  var ok=el('button','cps-rate ok','Je savais');
   ok.onclick=function(){ self.badges[card.emotion]&&self.badges[card.emotion].classList.add('on'); self.remaining.shift(); self.known++; self.showCard(); };
-  var rev=el('button','cps-rate rev','🔄 À revoir');
+  var rev=el('button','cps-rate rev','À revoir');
   rev.onclick=function(){ self.remaining.push(self.remaining.shift()); self.showCard(); };
   row.appendChild(ok); row.appendChild(rev);
   this.stage.appendChild(row);
@@ -1058,9 +1074,9 @@ FlashCtrl.prototype.showBack=function(box,card){
 FlashCtrl.prototype.showEnd=function(){
   stopSpeech(); clear(this.stage);
   var self=this;
-  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-win','🎉')); c1.appendChild(el('div','cps-msg','Bravo ! Tu as révisé toutes les émotions.')); this.stage.appendChild(c1);
+  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-msg','Bravo ! Tu as révisé toutes les émotions.')); this.stage.appendChild(c1);
   for(var k in this.badges) this.badges[k].classList.add('on');
-  var c2=el('div','cps-card'); var again=el('button','cps-btn','🔄 Recommencer'); again.onclick=function(){ self.showCover(); }; c2.appendChild(again); this.stage.appendChild(c2);
+  var c2=el('div','cps-card'); var again=el('button','cps-btn','Recommencer'); again.onclick=function(){ self.showCover(); }; c2.appendChild(again); this.stage.appendChild(c2);
 };
 
 /* ---------- API ---------- */

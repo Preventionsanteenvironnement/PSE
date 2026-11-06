@@ -314,10 +314,10 @@
     var l = document.getElementById("pseLire"), p = document.getElementById("psePause"), s = document.getElementById("pseStop");
     if (!l) return;
     l.innerHTML = etat === "lecture"
-      ? '⏸️ <span class="pse-mot">Pause</span>'
+      ? '<span class="pse-mot">Pause</span>'
       : etat === "pause"
-        ? '▶️ <span class="pse-mot">Reprendre</span>'
-        : '🔊 <span class="pse-mot">Écouter</span>';
+        ? '<span class="pse-mot">Reprendre</span>'
+        : '<span class="pse-mot">Écouter</span>';
     l.disabled = false;
     p.disabled = (etat !== "lecture");
     s.disabled = (etat === "arret");
@@ -377,7 +377,7 @@
       btn.classList.toggle("pse-on", actif && etat === "lecture");
       btn.classList.toggle("pse-pause", actif && etat === "pause");
       btn.setAttribute("aria-pressed", actif && etat !== "arret" ? "true" : "false");
-      btn.textContent = actif && etat === "lecture" ? "⏸" : actif && etat === "pause" ? "▶" : "🔊";
+      btn.textContent = actif && etat === "lecture" ? "Pause" : actif && etat === "pause" ? "Reprendre" : "Écouter";
       btn.setAttribute("aria-label", actif && etat === "lecture" ? "Mettre cette partie en pause" : actif && etat === "pause" ? "Reprendre cette partie" : "Écouter cette partie");
       btn.title = btn.getAttribute("aria-label");
     });
@@ -402,7 +402,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pse-audio-partie";
-      btn.textContent = "🔊";
+      btn.textContent = "Écouter";
       btn.setAttribute("aria-label", "Écouter cette partie");
       btn.title = "Écouter cette partie";
       btn.addEventListener("click", function (e) {
@@ -426,14 +426,14 @@
     bar.setAttribute("aria-label", "Outils de lecture");
     bar.innerHTML =
       '<span class="pse-lab">LECTURE</span>' +
-      '<button id="pseLire" type="button" aria-label="Écouter la question">🔊 <span class="pse-mot">Écouter</span></button>' +
-      '<button id="psePause" type="button" aria-label="Mettre la lecture en pause">⏸️ <span class="pse-mot">Pause</span></button>' +
-      '<button id="pseStop" type="button" aria-label="Arrêter la lecture">⏹️</button>' +
+      '<button id="pseLire" type="button" aria-label="Écouter la question"><span class="pse-mot">Écouter</span></button>' +
+      '<button id="psePause" type="button" aria-label="Mettre la lecture en pause"><span class="pse-mot">Pause</span></button>' +
+      '<button id="pseStop" type="button" aria-label="Arrêter la lecture">Arrêter</button>' +
       '<span class="pse-sep"></span>' +
       '<span class="pse-lab">TEXTE</span>' +
       '<button id="pseMoins" type="button" aria-label="Réduire la taille du texte">A−</button>' +
       '<button id="psePlus" type="button" aria-label="Agrandir la taille du texte">A+</button>' +
-      '<button id="pseDys" type="button" aria-pressed="false" title="Police plus lisible et texte plus espacé">Dys</button>' +
+      '<button id="pseDys" type="button" aria-pressed="false" title="Police plus lisible et texte plus espacé">Aa Confort</button>' +
       '<span class="pse-etat" id="pseEtat"></span>';
     document.body.insertBefore(bar, document.body.firstChild);
 
