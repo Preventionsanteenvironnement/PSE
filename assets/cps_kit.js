@@ -19,9 +19,10 @@ function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floo
 /* [CPS] Les codes C2, E2 et S2 sont des reperes d'annexe du referentiel :
    le Tome I ne les detaille pas. Le guide impose de le signaler plutot que
    de les presenter comme du Tome I. */
+/* La mention « repère d’annexe » concerne l’enseignant, pas l’élève :
+   elle reste dans le code (commentaire ci-dessus), pas à l’écran. */
 function mentionCode(code){
-  var annexe = /^[CES]2\./.test(code||'');
-  return 'Compétence ' + code + (annexe ? ' · repère d’annexe, ' : ' · ') + 'Santé publique France 2025';
+  return 'Compétence ' + code + ' · Santé publique France 2025';
 }
 function speak(txt){
   try{
@@ -171,7 +172,7 @@ Ctrl.prototype.build=function(){
   app.appendChild(wrap);
 
   var foot=el('div','cps-foot');
-  foot.innerHTML='CPS — Compétence <strong>'+(this.cfg.code||'')+(this.cfg.ref?' « '+this.cfg.ref+' »':'')+'</strong>'+(/^[CES]2\./.test(this.cfg.code||'')?' <em>(repère d’annexe)</em>':'')+'<br>Référentiel des compétences psychosociales — Santé publique France, 2025 · Niveau CAP';
+  foot.innerHTML='CPS — Compétence <strong>'+(this.cfg.code||'')+(this.cfg.ref?' « '+this.cfg.ref+' »':'')+'</strong>'+'<br>Référentiel des compétences psychosociales — Santé publique France, 2025 · Niveau CAP';
   app.appendChild(foot);
 };
 Ctrl.prototype.setStep=function(k){
