@@ -476,9 +476,10 @@ RENDER.cardpick=function(stage, d, ctx){
   }
   function focusCard(){
     setTimeout(function(){
-      try{ stage.scrollIntoView({block:'start', behavior:'smooth'}); }
+      /* défilement immédiat : sur téléphone, l'image et les réponses doivent être à l'écran */
+      try{ window.scrollTo(0, stage.getBoundingClientRect().top + window.pageYOffset - 4); }
       catch(e){ stage.scrollIntoView(); }
-    }, 0);
+    }, 30);
   }
 
   function drawDemo(){
