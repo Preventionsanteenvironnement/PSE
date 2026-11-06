@@ -4,7 +4,7 @@
 <script src="assets/audio-pause.js?v=2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CPS E1.2 — Reconnaître les émotions</title>
+<title>CPS E1.2 — Reconnaître les 6 émotions</title>
 <link rel="stylesheet" href="assets/cps_kit.css?v=20260822b">
 </head>
 <body>
@@ -13,8 +13,25 @@
 <div id="cps-app"></div>
 <script src="assets/cps_kit.js?v=20260822b"></script>
 <script>
-var IMG = "assets/emotions/e1-2/";
-var I = function(name){ return IMG + name; };
+var K = "assets/cps/emotions/";
+/* Les 14 cartes : le texte alternatif décrit le visage et le geste, sans nommer l'émotion. */
+var CARTES = {
+  "noa-joie":{"f":"carte-noa-joie.jpg","k":"joie","alt":"Noa, grand sourire, un poing levé"},
+  "ines-joie":{"f":"carte-ines-joie.jpg","k":"joie","alt":"Inès, grand sourire, les deux mains ouvertes vers le haut"},
+  "malik-tristesse":{"f":"carte-malik-tristesse.jpg","k":"tristesse","alt":"Malik, regard vers le bas, coins de la bouche tombants, épaules basses"},
+  "lina-tristesse":{"f":"carte-lina-tristesse.jpg","k":"tristesse","alt":"Lina, tête penchée, regard vers le bas, bras serrés contre elle"},
+  "lina-colere":{"f":"carte-lina-colere.jpg","k":"colere","alt":"Lina, sourcils froncés, regard dur, poings serrés le long du corps"},
+  "noa-colere":{"f":"carte-noa-colere.jpg","k":"colere","alt":"Noa, sourcils froncés, dents serrées, un poing fermé"},
+  "ines-peur":{"f":"carte-ines-peur.jpg","k":"peur","alt":"Inès, yeux grands ouverts, dents serrées, mains levées devant elle"},
+  "malik-peur":{"f":"carte-malik-peur.jpg","k":"peur","alt":"Malik, sourcils relevés, bouche crispée, poings serrés contre la poitrine"},
+  "lina-peur":{"f":"carte-lina-peur.jpg","k":"peur","alt":"Lina, sourcils relevés, bouche crispée, mains jointes contre la poitrine"},
+  "lina-surprise":{"f":"carte-lina-surprise.jpg","k":"surprise","alt":"Lina, yeux ronds, bouche ouverte en rond, une main près de la joue"},
+  "noa-surprise":{"f":"carte-noa-surprise.jpg","k":"surprise","alt":"Noa, yeux ronds, sourcils hauts, bouche ouverte en rond"},
+  "malik-surprise":{"f":"carte-malik-surprise.jpg","k":"surprise","alt":"Malik, yeux ronds, bouche ouverte, une main ouverte paume vers le haut"},
+  "malik-degout":{"f":"carte-malik-degout.jpg","k":"degout","alt":"Malik, nez plissé, lèvre relevée, tête qui se détourne, main qui repousse"},
+  "ines-degout":{"f":"carte-ines-degout.jpg","k":"degout","alt":"Inès, nez plissé, bouche tordue, une main levée qui repousse"}
+};
+var ORDRE_MUR = ["lina-surprise","malik-peur","noa-joie","ines-degout","lina-tristesse","noa-colere","ines-peur","malik-surprise","lina-colere","malik-tristesse","noa-surprise","lina-peur","ines-joie","malik-degout"];
 var OPTS = function(bonne){
   return [
     {"l":"Joie","ok":bonne==="joie"},
@@ -25,131 +42,118 @@ var OPTS = function(bonne){
     {"l":"Dégoût","ok":bonne==="degout"}
   ];
 };
-var IMGOPTS = function(bonne, noms){
-  return noms.map(function(n){
-    return {"img":I(n.f),"alt":n.alt,"ok":n.k===bonne,"ex":n.ex||""};
+/* Une carte pour le quiz « Quelle émotion ? » */
+var QUIZ = function(nom, ex, hint){
+  var c = CARTES[nom];
+  return {"img":K+c.f,"alt":c.alt,"text":"Quelle émotion montre ce visage ?","audio":"Observe le visage et les gestes. Quelle émotion montre cette personne ?","opts":OPTS(c.k),"ex":ex,"hint":hint};
+};
+/* Quatre cartes à comparer : la première est la bonne */
+var CHOIX = function(bonne, autres, ex){
+  return [bonne].concat(autres).map(function(nom, i){
+    var c = CARTES[nom];
+    return i===0 ? {"img":K+c.f,"alt":c.alt,"ok":true,"ex":ex} : {"img":K+c.f,"alt":c.alt};
   });
+};
+/* Mur des visages : les 14 cartes, celles de l'émotion cherchée sont justes */
+var MUR = function(k){
+  return ORDRE_MUR.map(function(nom){ var c = CARTES[nom]; return {"img":K+c.f,"alt":c.alt,"ok":c.k===k}; });
 };
 CPS.init({
   "theme":"emo",
   "code":"E1.2",
   "ref":"Identifier ses émotions",
   "icon":"",
-  "title":"Reconnaître les émotions",
-  "subtitle":"Observe le visage, le corps et le contexte.",
+  "title":"Reconnaître les 6 émotions",
+  "subtitle":"Observe le visage et le corps. Les autres t’aident à te comprendre.",
   "parcours":[
     {
-      "temps":"decouvre","type":"lesson","title":"Lire les indices",
-      "audio":"Pour reconnaître une émotion, on ne devine pas au hasard. On observe plusieurs indices : le visage, le corps, les gestes et le contexte. Ensuite, on formule une hypothèse : cette personne semble joyeuse, triste, en colère, avoir peur, être surprise ou dégoûtée.",
+      "temps":"decouvre","type":"lesson","title":"Six émotions, six visages",
+      "audio":"Il existe six grandes émotions : la joie, la tristesse, la colère, la peur, la surprise et le dégoût. Chacune se voit sur le visage et dans le corps. Apprendre à les reconnaître chez les autres t’aide à repérer les tiennes. On reste prudent : on dit il semble, ou elle a l’air.",
       "blocks":[
-        {"img":I("methode-visage-corps-contexte.jpg"),"alt":"Trois images pour observer le visage, le corps et le contexte","html":"Avant de répondre, cherche <strong>3 indices</strong> : visage, corps, contexte."},
-        {"ic":"","html":"<strong>Visage</strong> : yeux, sourcils, bouche, regard."},
-        {"ic":"","html":"<strong>Corps</strong> : épaules, mains, posture, mouvement de recul ou d’ouverture."},
-        {"ic":"","html":"<strong>Contexte</strong> : que vient-il de se passer ? réussite, erreur, surprise, danger, exclusion..."},
-        {"ic":"","html":"On dit plutôt : <strong>elle semble...</strong> ou <strong>il a l’air...</strong>. On reste prudent : une image donne des indices, pas une certitude absolue."}
+        {"img":K+"affiche-6-emotions.jpg","alt":"Affiche : six visages, chacun avec le nom de son émotion","html":"Il existe <strong>6 grandes émotions</strong>. Chacune a son visage."},
+        {"ic":"","html":"<strong>Joie</strong> : grand sourire, yeux plissés, bras ouverts ou poing levé."},
+        {"ic":"","html":"<strong>Tristesse</strong> : regard vers le bas, bouche qui tombe, épaules basses."},
+        {"ic":"","html":"<strong>Colère</strong> : sourcils froncés, mâchoire serrée, poings fermés."},
+        {"ic":"","html":"<strong>Peur</strong> : sourcils relevés, bouche crispée, mains qui protègent."},
+        {"ic":"","html":"<strong>Surprise</strong> : yeux ronds, sourcils hauts, bouche ouverte en rond."},
+        {"ic":"","html":"<strong>Dégoût</strong> : nez plissé, lèvre relevée, main qui repousse."},
+        {"ic":"","html":"<strong>Peur ou surprise ?</strong> Les deux ouvrent grand les yeux. Dans la peur, le visage se crispe."},
+        {"ic":"","html":"On dit : <strong>il semble…</strong> ou <strong>elle a l’air…</strong>. Un visage donne des indices, pas une certitude."},
+        {"ic":"","html":"Reconnaître l’émotion des autres t’aide à <strong>repérer la tienne</strong>."}
       ],
       "cta":"Je m’entraîne"
     },
     {
-      "temps":"entraine","type":"cardpick","variant":"quiz",
-      "instr":"Observe le visage et le corps. Quelle émotion est la plus probable ?",
-      "demo":{"img":I("indice-joie-visage-corps.jpg"),"alt":"une élève sourit avec les poings levés","audio":"Une élève sourit avec les poings levés après une réussite.","opts":OPTS("joie"),"ex":"Le sourire, les yeux ouverts et les épaules détendues orientent vers la joie."},
+      "temps":"entraine","type":"cardpick","variant":"quiz","tag":"Quelle émotion ?",
+      "instr":"Observe le visage et les gestes. Choisis l’émotion la plus probable.",
+      "demo":QUIZ("noa-joie","Grand sourire, yeux plissés, poing levé : c’est la joie.",""),
       "items":[
-        {"img":I("indice-tristesse-posture.jpg"),"alt":"un élève regarde vers le bas, bras fermés","audio":"Un élève regarde vers le bas, les épaules basses et les bras fermés.","opts":OPTS("tristesse"),"ex":"Regard baissé, corps fermé, peu d’énergie : on pense à la tristesse."},
-        {"img":I("indice-colere-tension.jpg"),"alt":"un élève fronce les sourcils et serre les mains","audio":"Un élève fronce les sourcils, serre les mains et reste très tendu.","opts":OPTS("colere"),"ex":"Sourcils serrés, mâchoire tendue, mains fermées : ce sont des indices de colère."},
-        {"img":I("indice-peur-corps.jpg"),"alt":"une élève a les yeux inquiets et une main sur la poitrine","audio":"Une élève a les yeux inquiets, une main sur la poitrine et l’autre sur le ventre.","opts":OPTS("peur"),"ex":"Yeux inquiets, corps contracté, main sur le ventre : on pense à la peur ou au stress."},
-        {"img":I("indice-surprise-visage.jpg"),"alt":"un élève lit une feuille avec les yeux grands ouverts","audio":"Un élève lit une feuille avec les yeux grands ouverts et la bouche entrouverte.","opts":OPTS("surprise"),"ex":"Yeux grands ouverts, bouche entrouverte, corps figé : c’est la surprise."},
-        {"img":I("indice-degout-recul.jpg"),"alt":"une élève recule légèrement et plisse le nez","audio":"Une élève recule légèrement, plisse le nez et éloigne sa main.","opts":OPTS("degout"),"ex":"Le nez plissé et le geste de recul indiquent souvent le dégoût."},
-        {"img":I("scene-joie-atelier.jpg"),"alt":"un élève sourit après une réussite en atelier","audio":"Un élève sourit après une réussite en atelier.","opts":OPTS("joie"),"ex":"Sourire, posture ouverte et geste de satisfaction : c’est la joie ou la fierté."}
+        QUIZ("lina-colere","Sourcils froncés, regard dur, poings serrés : c’est la colère.","Regarde les sourcils et les mains."),
+        QUIZ("malik-tristesse","Regard vers le bas, bouche qui tombe, épaules basses : c’est la tristesse.","Regarde où va le regard."),
+        QUIZ("ines-peur","Yeux grands ouverts, bouche crispée, mains qui protègent : c’est la peur.","Les mains protègent ou repoussent ?"),
+        QUIZ("noa-surprise","Yeux ronds, sourcils hauts, bouche ouverte en rond : c’est la surprise.","Regarde la forme de la bouche."),
+        QUIZ("malik-degout","Nez plissé, lèvre relevée, main qui repousse : c’est le dégoût.","Regarde le nez."),
+        QUIZ("ines-joie","Grand sourire, mains ouvertes vers le haut : c’est la joie.","Regarde la bouche."),
+        QUIZ("lina-peur","Sourcils relevés, bouche crispée, mains serrées contre la poitrine : c’est la peur.","Le visage est-il détendu ou crispé ?"),
+        QUIZ("malik-surprise","Yeux ronds, bouche ouverte, visage non crispé : c’est la surprise.","Le visage est-il détendu ou crispé ?"),
+        QUIZ("ines-degout","Nez plissé, bouche tordue, main qui repousse : c’est le dégoût.","Regarde le nez et la main."),
+        QUIZ("lina-tristesse","Tête penchée, regard bas, bras serrés : c’est la tristesse.","Regarde la tête et les bras.")
       ]
     },
     {
-      "temps":"entraine","type":"imagepick","tag":"Comparer les indices",
-      "instr":"Lis la consigne, puis choisis l’image qui correspond le mieux.",
+      "temps":"entraine","type":"imagepick","tag":"Trouve le visage",
+      "instr":"Lis la consigne. Touche le visage qui correspond.",
       "items":[
-        {
-          "text":"Trouve la personne qui semble avoir peur ou être très stressée.",
-          "audio":"Trouve la personne qui semble avoir peur ou être très stressée.",
-          "options":IMGOPTS("peur",[
-            {"k":"peur","f":"indice-peur-corps.jpg","alt":"élève inquiète, main sur la poitrine","ex":"Oui : le corps est tendu et le regard est inquiet."},
-            {"k":"surprise","f":"indice-surprise-visage.jpg","alt":"élève surpris devant une feuille"},
-            {"k":"tristesse","f":"indice-tristesse-posture.jpg","alt":"élève triste, regard baissé"},
-            {"k":"degout","f":"indice-degout-recul.jpg","alt":"élève dégoûtée, main en recul"}
-          ])
-        },
-        {
-          "text":"Trouve la personne dont le visage et les mains montrent une tension de colère.",
-          "audio":"Trouve la personne dont le visage et les mains montrent une tension de colère.",
-          "options":IMGOPTS("colere",[
-            {"k":"joie","f":"indice-joie-visage-corps.jpg","alt":"élève joyeuse"},
-            {"k":"colere","f":"indice-colere-tension.jpg","alt":"élève en colère","ex":"Oui : sourcils froncés, mains serrées, posture tendue."},
-            {"k":"surprise","f":"nuance-surprise-pas-peur.jpg","alt":"élève surpris"},
-            {"k":"calme","f":"nuance-calme-attention.jpg","alt":"élève calme et attentif"}
-          ])
-        },
-        {
-          "text":"Trouve la scène où le corps recule parce que quelque chose repousse la personne.",
-          "audio":"Trouve la scène où le corps recule parce que quelque chose repousse la personne.",
-          "options":IMGOPTS("degout",[
-            {"k":"degout","f":"scene-degout-cuisine.jpg","alt":"élève devant un aliment abîmé","ex":"Oui : recul, grimace et main qui éloigne indiquent le dégoût."},
-            {"k":"tristesse","f":"scene-tristesse-isolement.jpg","alt":"élève isolée"},
-            {"k":"joie","f":"scene-joie-atelier.jpg","alt":"élève heureux en atelier"},
-            {"k":"peur","f":"scene-peur-evaluation.jpg","alt":"élève inquiet avant une évaluation"}
-          ])
-        },
-        {
-          "text":"Trouve la personne qui semble surtout triste : corps fermé, regard bas, peu d’énergie.",
-          "audio":"Trouve la personne qui semble surtout triste.",
-          "options":IMGOPTS("tristesse",[
-            {"k":"tristesse","f":"scene-tristesse-isolement.jpg","alt":"élève assise à l’écart","ex":"Oui : isolement, regard bas et posture fermée orientent vers la tristesse."},
-            {"k":"colere","f":"scene-colere-limite.jpg","alt":"élève en colère en atelier"},
-            {"k":"surprise","f":"scene-surprise-consigne.jpg","alt":"élève surpris en classe"},
-            {"k":"joie","f":"nuance-soulagement-joie.jpg","alt":"élève soulagé après une tâche"}
-          ])
-        }
+        {"text":"Trouve le visage qui montre la peur.","audio":"Trouve le visage qui montre la peur.",
+         "options":CHOIX("malik-peur",["lina-surprise","noa-colere","malik-tristesse"],"Oui : sourcils relevés, bouche crispée, poings contre la poitrine."),
+         "bad":"Pas celui-ci. Dans la peur, le visage se crispe et les mains protègent."},
+        {"text":"Trouve le visage qui montre la surprise.","audio":"Trouve le visage qui montre la surprise.",
+         "options":CHOIX("lina-surprise",["ines-peur","ines-joie","lina-colere"],"Oui : yeux ronds, bouche ouverte en rond, visage non crispé."),
+         "bad":"Pas celui-ci. Dans la surprise, la bouche s’ouvre en rond et le visage n’est pas crispé."},
+        {"text":"Trouve le visage qui montre le dégoût.","audio":"Trouve le visage qui montre le dégoût.",
+         "options":CHOIX("ines-degout",["noa-colere","lina-tristesse","malik-surprise"],"Oui : nez plissé, bouche tordue, main qui repousse."),
+         "bad":"Pas celui-ci. Dans le dégoût, le nez se plisse et la main repousse."},
+        {"text":"Trouve le visage qui montre la colère.","audio":"Trouve le visage qui montre la colère.",
+         "options":CHOIX("noa-colere",["malik-degout","lina-peur","noa-joie"],"Oui : sourcils froncés, dents serrées, poing fermé."),
+         "bad":"Pas celui-ci. Dans la colère, les sourcils se froncent et les poings se ferment."},
+        {"text":"Trouve le visage qui montre la tristesse.","audio":"Trouve le visage qui montre la tristesse.",
+         "options":CHOIX("lina-tristesse",["noa-surprise","ines-peur","lina-colere"],"Oui : tête penchée, regard bas, bras serrés."),
+         "bad":"Pas celui-ci. Dans la tristesse, le regard descend et les épaules tombent."}
       ]
     },
     {
-      "temps":"situation","type":"grid","title":"Le mur des émotions",
-      "instr":"Trouve TOUTES les images qui montrent surtout de la colère ou une forte tension.",
-      "audio":"Trouve toutes les images qui montrent surtout de la colère ou une forte tension.",
-      "success":"Bravo ! Tu as repéré plusieurs indices de colère : visage tendu, bras fermés, mains serrées.",
-      "miss":"Pas celle-ci. Cherche plutôt sourcils froncés, mâchoire tendue, mains serrées ou bras fermés.",
-      "faces":[
-        {"img":I("indice-colere-tension.jpg"),"ok":true,"alt":"visage en colère, mains serrées"},
-        {"img":I("indice-joie-visage-corps.jpg"),"ok":false,"alt":"visage joyeux"},
-        {"img":I("nuance-colere-blessee.jpg"),"ok":true,"alt":"élève contrariée face à une critique"},
-        {"img":I("indice-peur-corps.jpg"),"ok":false,"alt":"élève inquiète"},
-        {"img":I("scene-colere-limite.jpg"),"ok":true,"alt":"élève contrarié en atelier"},
-        {"img":I("indice-surprise-visage.jpg"),"ok":false,"alt":"élève surpris"},
-        {"img":I("nuance-calme-attention.jpg"),"ok":false,"alt":"élève calme et attentif"},
-        {"img":I("indice-degout-recul.jpg"),"ok":false,"alt":"élève dégoûtée"},
-        {"img":I("indice-tristesse-posture.jpg"),"ok":false,"alt":"élève triste"}
-      ]
+      "temps":"situation","type":"grid","title":"Le mur des visages : la peur",
+      "instr":"Touche tous les visages qui montrent la peur.",
+      "audio":"Touche tous les visages qui montrent la peur.",
+      "success":"Tu as trouvé les trois visages de peur : sourcils relevés, bouche crispée, mains qui protègent.",
+      "miss":"Pas celui-ci. Cherche les sourcils relevés, la bouche crispée et les mains qui protègent.",
+      "faces":MUR("peur")
     },
     {
-      "temps":"situation","type":"grid","title":"Le mur peur / stress",
-      "instr":"Trouve TOUTES les images qui montrent surtout de la peur, du stress ou de l’appréhension.",
-      "audio":"Trouve toutes les images qui montrent surtout de la peur, du stress ou de l’appréhension.",
-      "success":"Très bien. Tu as distingué peur / stress de surprise, tristesse ou calme.",
-      "miss":"Pas celle-ci. Cherche plutôt regard inquiet, corps tendu, main vers le ventre ou la poitrine.",
-      "faces":[
-        {"img":I("indice-peur-corps.jpg"),"ok":true,"alt":"élève inquiète, main sur la poitrine et le ventre"},
-        {"img":I("scene-peur-evaluation.jpg"),"ok":true,"alt":"élève inquiète avant une évaluation"},
-        {"img":I("nuance-surprise-pas-peur.jpg"),"ok":false,"alt":"élève surpris par une annonce"},
-        {"img":I("indice-surprise-visage.jpg"),"ok":false,"alt":"élève surpris devant une feuille"},
-        {"img":I("scene-tristesse-isolement.jpg"),"ok":false,"alt":"élève isolée et triste"},
-        {"img":I("nuance-calme-attention.jpg"),"ok":false,"alt":"élève calme et attentif"},
-        {"img":I("scene-colere-limite.jpg"),"ok":false,"alt":"élève en colère en atelier"},
-        {"img":I("indice-degout-recul.jpg"),"ok":false,"alt":"élève dégoûtée"},
-        {"img":I("nuance-soulagement-joie.jpg"),"ok":false,"alt":"élève soulagé"}
-      ]
+      "temps":"situation","type":"grid","title":"Le mur des visages : la surprise",
+      "instr":"Touche tous les visages qui montrent la surprise.",
+      "audio":"Touche tous les visages qui montrent la surprise.",
+      "success":"Tu as trouvé les trois visages de surprise : yeux ronds, bouche ouverte en rond, visage non crispé.",
+      "miss":"Pas celui-ci. Cherche les yeux ronds et la bouche ouverte en rond, sans visage crispé.",
+      "faces":MUR("surprise")
+    },
+    {
+      "temps":"situation","type":"lesson","title":"Et toi ?",
+      "audio":"Regarde la scène. Inès doit présenter son travail devant la classe. Et toi, à sa place, qu’est-ce que tu ressentirais ? Où dans ton corps ? Réponds dans ta tête ou à voix basse. Il n’y a pas de mauvaise réponse.",
+      "blocks":[
+        {"img":"assets/cps/scenes/scene-ines-peur-oral.jpg","alt":"Inès debout devant la classe, une feuille serrée dans les mains, les camarades la regardent","html":"Inès doit présenter son travail devant la classe."},
+        {"ic":"","html":"À sa place, <strong>qu’est-ce que tu ressentirais</strong> ?"},
+        {"ic":"","html":"<strong>Où dans ton corps</strong> le sentirais-tu ? Ventre, gorge, mains, poitrine ?"},
+        {"ic":"","html":"Réponds dans ta tête ou à voix basse. Il n’y a pas de mauvaise réponse."}
+      ],
+      "cta":"Je fais le point"
     },
     {
       "temps":"point","type":"wrap",
       "keep":[
-        {"ic":"","html":"On reconnaît une émotion avec des <strong>indices visibles</strong> : visage, corps, gestes."},
-        {"ic":"","html":"Le <strong>contexte</strong> aide à comprendre : réussite, critique, surprise, danger, rejet."},
+        {"ic":"","html":"Il existe <strong>6 grandes émotions</strong> : joie, tristesse, colère, peur, surprise, dégoût."},
+        {"ic":"","html":"On les reconnaît avec des <strong>indices visibles</strong> : yeux, sourcils, bouche, mains, posture."},
+        {"ic":"","html":"Peur et surprise ouvrent les yeux. Dans la <strong>peur</strong>, le visage se crispe."},
         {"ic":"","html":"On formule une <strong>hypothèse</strong> : « il semble... », « elle a l’air... »."}
       ],
       "self":["Je repère des indices sur le visage et le corps","Je compare plusieurs images avant de répondre","Je peux nommer l’émotion la plus probable"]

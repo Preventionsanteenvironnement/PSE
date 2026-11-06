@@ -47,6 +47,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 .recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
 .badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
 @media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+.jimg{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:14px;margin:6px 0 10px;background:#fff}
+.jimgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 <link rel="stylesheet" href="assets/acces.css?v=4">
 <script src="assets/acces.js?v=4" defer></script>
@@ -61,84 +63,114 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 (function(){
   var scene=document.getElementById('scene');
   var idx=0;
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
   function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
   function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
   function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
 
   var STEPS=[
-    { type:'intro', text:"Chaque jour, on reçoit des infos : une rumeur, une publicité, un message, l’avis des copains. Mais tout n’est pas vrai ! Vous allez apprendre à <strong>vérifier avant de croire</strong> — et à <strong>penser par vous-même</strong>." },
-
-    { type:'chain', title:"La rumeur qui se déforme",
-      intro:"Regardez ce qui arrive à une info quand elle passe de personne en personne. Cliquez pour la faire avancer.",
-      links:[
-        {ct:"Ce qui s’est vraiment passé",cm:"Sami a eu 12 au contrôle de maths.",cls:"start"},
-        {ct:"Un élève répète",cm:"Il paraît que Sami a eu une note bizarre…"},
-        {ct:"Un autre répète",cm:"On dit que Sami a été aidé pendant le contrôle…"},
-        {ct:"À la fin de la journée",cm:"Tout le monde dit que Sami a triché !",cls:"end"}
-      ],
-      next:"→ Quelqu’un le répète",
-      concl:"Au départ, c’était vrai. À l’arrivée, c’est <strong>faux</strong>. Une rumeur se déforme à chaque bouche : voilà pourquoi il faut <strong>vérifier</strong>." },
+    { type:'intro', text:"Dans ta tête passent des idées sur toi et sur les autres. Autour de toi circulent des infos. Tout n’est pas vrai. Tu vas apprendre à <strong>vérifier avant de croire</strong>." },
 
     { type:'notion',
-      teach:"Une <strong>info</strong>, on peut la <strong>vérifier</strong> (une preuve, une source sûre). Une <strong>rumeur</strong>, c’est ce que les gens <strong>répètent sans preuve</strong>.",
+      teach:"Une pensée sur toi est une <strong>croyance</strong>. Un <strong>fait</strong>, lui, se vérifie : « j’ai eu 7 au contrôle ».",
+      q:"« Je suis nul en maths. » C’est…",
+      options:[
+        {l:"un fait prouvé",ok:false},
+        {l:"une croyance sur moi",ok:true},
+        {l:"une vérité pour toujours",ok:false}
+      ],
+      wrong:"Pas tout à fait. Aucune mesure ne prouve « nul en maths ». C’est une croyance.",
+      good:"Exactement. C’est une croyance. Tu peux la vérifier avec des faits." },
+
+    { type:'cases',
+      teach:"Pour questionner une pensée, je me demande : <strong>« Qu’est-ce qui me fait penser ça ? Est-ce toujours vrai ? »</strong>",
+      q:"Quelle pensée est la plus juste ?",
+      items:[
+        { text:"Tu as raté ton contrôle de maths. Une voix dit : « je suis nul en maths ».",
+          options:[
+            {l:"« Je suis nul, c’est comme ça. »",good:false,fb:"Tu prends ta croyance pour un fait."},
+            {l:"« J’ai raté celui-ci. J’ai réussi le précédent. »",good:true,fb:"Oui : tu t’appuies sur des faits, pas sur une croyance."},
+            {l:"« Les maths, ce n’est pas pour moi. »",good:false,fb:"Encore une croyance, sans preuve."}
+          ] },
+        { text:"À l’atelier, ton brin d’osier casse. Tu penses : « je ne suis pas fait pour ça ».",
+          options:[
+            {l:"« Mon brin a cassé. Je demande comment éviter ça. »",good:true,fb:"Oui : tu décris le fait et tu cherches une solution."},
+            {l:"« Je suis nul, j’arrête la vannerie. »",good:false,fb:"Un brin cassé ne dit pas qui tu es."},
+            {l:"« De toute façon, je rate tout. »",good:false,fb:"« Tout » exagère : ce n’est pas un fait."}
+          ] }
+      ] },
+
+    { type:'chain', title:"La rumeur qui se déforme",
+      intro:"Les idées sur les autres aussi peuvent être fausses. Regarde ce qui arrive à une info qui passe de bouche en bouche. Clique pour la faire avancer.",
+      links:[
+        {ct:"Ce qui s’est vraiment passé",cm:"Malik a eu 12 au contrôle de maths.",cls:"start"},
+        {ct:"Un élève répète",cm:"Il paraît que Malik a eu une note bizarre…"},
+        {ct:"Un autre répète",cm:"On dit que Malik a été aidé pendant le contrôle…"},
+        {ct:"À la fin de la journée",cm:"Tout le monde dit que Malik a triché !",cls:"end"}
+      ],
+      next:"→ Quelqu’un le répète",
+      concl:"Au départ, c’était vrai. À l’arrivée, c’est <strong>faux</strong>. Une rumeur se déforme : il faut <strong>vérifier</strong>." },
+
+    { type:'notion',
+      teach:"Une <strong>info</strong> se <strong>vérifie</strong> : une preuve, une source sûre. Une <strong>rumeur</strong>, c’est ce que les gens <strong>répètent sans preuve</strong>.",
       q:"Une rumeur, c’est…",
       options:[
         {l:"une information déjà vérifiée",ok:false},
-        {l:"ce que les gens répètent sans preuve",ok:true},
-        {l:"toujours vrai si tout le monde le dit",ok:false}
+        {l:"vrai si tout le monde le dit",ok:false},
+        {l:"ce qu’on répète sans preuve",ok:true}
       ],
-      wrong:"Pas tout à fait. Une rumeur n’a pas de preuve : ce n’est pas parce que beaucoup la répètent qu’elle est vraie.",
-      good:"Exactement. Sans preuve, ce n’est qu’une rumeur — même si tout le monde la répète." },
+      wrong:"Pas tout à fait. Beaucoup de gens peuvent répéter une chose fausse.",
+      good:"Exactement. Sans preuve, ce n’est qu’une rumeur, même si tout le monde la répète." },
 
     { type:'cases',
-      teach:"Le réflexe de l’enquêteur : avant de croire, je me demande <strong>« Qui le dit ? »</strong> et <strong>« Y a-t-il une preuve ? »</strong>.",
-      q:"Mène l’enquête. Quel est le bon réflexe ?",
+      teach:"Avant de croire, je me demande : <strong>« Qui le dit ? »</strong> et <strong>« Où je peux vérifier ? »</strong>",
+      q:"Quel est le bon réflexe ?",
       items:[
-        { text:"Un copain vous dit : « Il paraît que le contrôle de demain est annulé. »",
+        { text:"Un copain te dit : « Il paraît que le contrôle de demain est annulé. »",
           options:[
-            {l:"Je vérifie auprès du professeur",good:true,fb:"Bon réflexe : vous allez à la source sûre avant de croire."},
-            {l:"Je le répète à toute la classe",good:false,fb:"Vous propagez une info non vérifiée : c’est ainsi que naissent les rumeurs."},
-            {l:"Je décide que c’est sûrement vrai",good:false,fb:"« Il paraît » n’est pas une preuve."}
+            {l:"Je le répète à toute la classe",good:false,fb:"Tu répands une info non vérifiée : c’est ainsi que naissent les rumeurs."},
+            {l:"Je demande au professeur",good:true,fb:"Bon réflexe : tu vas à la source avant de croire."},
+            {l:"Je décide que c’est vrai",good:false,fb:"« Il paraît » n’est pas une preuve."}
           ] },
-        { text:"Une publicité affiche : « Maigrissez en 7 jours, sans aucun effort ! »",
+        { text:"Un message dit : « Le tabac est la première cause de mortalité évitable par cancer. Source : Institut national du cancer. »",
           options:[
-            {l:"Je me méfie : c’est trop beau, et une pub cherche à vendre",good:true,fb:"Exact : quand c’est trop beau et que ça veut vendre, on se méfie."},
+            {l:"Je le crois : une source est écrite",good:false,fb:"N’importe qui peut écrire un nom d’organisme. Tu vérifies sur son site."},
+            {l:"Je ne crois jamais aucun message",good:false,fb:"Certaines infos sont vraies. Il faut les vérifier, pas tout rejeter."},
+            {l:"Je vérifie sur le site de l’Institut",good:true,fb:"Oui : tu vérifies sur le site de l’organisme. Ici, l’info est confirmée."}
+          ] },
+        { text:"Une pub affiche : « Perds 10 kg en 7 jours, sans effort ! »",
+          options:[
             {l:"Je commande tout de suite",good:false,fb:"Une promesse trop belle est presque toujours fausse."},
-            {l:"Je partage à mes amis",good:false,fb:"Partager sans vérifier, c’est répandre l’intox."}
-          ] },
-        { text:"Un message reçu : « Partage ce message à 10 personnes, sinon il t’arrivera malheur ! »",
-          options:[
-            {l:"Je ne partage pas : c’est une chaîne, sans aucune preuve",good:true,fb:"Bravo : une menace dans un message en chaîne, c’est du vent."},
-            {l:"Je partage, au cas où",good:false,fb:"La peur n’est pas une preuve. Ces chaînes sont fausses."}
+            {l:"Je me méfie : la pub veut vendre",good:true,fb:"Oui : trop beau, et quelqu’un veut te vendre quelque chose."},
+            {l:"Je la partage à mes amis",good:false,fb:"Partager sans vérifier, c’est répandre l’intox."}
           ] }
       ] },
 
     { type:'choice',
-      text:"Dans votre groupe, tout le monde dit qu’un nouvel élève est « bizarre » et personne ne lui parle. Et vous ?",
+      text:"Dans ton groupe, tout le monde dit que Noa, le nouveau, est « bizarre ». Personne ne lui parle. Et toi ?",
       options:[
-        {l:"Je me fais MON propre avis : je vais lui parler d’abord",good:true,fb:"C’est ça, penser par soi-même : vous jugez après avoir vérifié, pas en suivant le groupe."},
-        {l:"Je fais comme les autres, je l’évite",good:false,fb:"Suivre le groupe sans réfléchir, c’est juger sans savoir."},
-        {l:"Je répète aux autres qu’il est bizarre",good:false,fb:"Vous propagez un jugement non vérifié : une rumeur de plus."}
+        {l:"Je fais comme les autres, je l’évite",good:false,fb:"Tu suis une idée du groupe, sans savoir si elle est vraie."},
+        {l:"Je vais lui parler pour me faire mon avis",good:true,fb:"Tu vérifies par toi-même au lieu de suivre une idée toute faite."},
+        {l:"Je répète aux autres qu’il est bizarre",good:false,fb:"Tu fais circuler une idée non vérifiée."}
       ] },
 
     { type:'perso',
-      text:"À vous. Pensez à une information qu’on vous a racontée récemment. <strong>Comment pourriez-vous vérifier</strong> si elle est vraie ? <strong>Qui</strong> pourrait vous le confirmer ?",
-      note:"Répondez dans votre tête, à l’oral () ou en une phrase. Il n’y a pas de mauvaise réponse." },
+      text:"À toi. Pense à une idée que tu as sur toi. <strong>Qu’est-ce qui te fait penser ça ?</strong> Est-ce <strong>toujours vrai</strong> ?",
+      note:"Réponds dans ta tête, à l’oral ou en une phrase. Il n’y a pas de mauvaise réponse." },
 
     { type:'bilan',
       recap:[
-        "Avant de croire, je me demande : <strong>qui le dit ?</strong> et <strong>y a-t-il une preuve ?</strong>",
-        "Une rumeur se déforme et n’est <strong>pas une preuve</strong>, même si tout le monde la répète.",
-        "Je me fais <strong>mon propre avis</strong> ; je ne suis pas le groupe sans réfléchir."
+        "Une pensée sur moi ou sur les autres est une <strong>croyance</strong>, pas un fait.",
+        "Je la questionne : <strong>qu’est-ce qui me fait penser ça ? Est-ce toujours vrai ?</strong>",
+        "Pour une info, je vérifie <strong>sur le site de l’organisme</strong> avant de croire ou de partager."
       ] }
   ];
-
   function render(){
     var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
 
     if(s.type==='intro'){
-      scene.innerHTML='<div class="hero"><span class="ic"></span><h1>Vrai, ou juste une rumeur ?</h1><p>Compétence C1.2 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      scene.innerHTML='<div class="hero"><span class="ic"></span><h1>Vrai, ou juste une rumeur ?</h1><p>Compétence C1.2</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
       var b=document.createElement('button'); b.className='btn'; b.textContent='Commencer l’enquête'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
     }
 
@@ -162,12 +194,12 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       scene.innerHTML='<div class="card"><button class="say">Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
       scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
       var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
-      s.options.forEach(function(o){
+      shuffle(s.options).forEach(function(o){
         var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
         b.onclick=function(){
           if(done)return;
           if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
-          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+s.wrong+' <strong>Réessayez.</strong></div>'; }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+s.wrong+' <strong>Réessaie.</strong></div>'; }
         };
         opts.appendChild(b);
       });
@@ -181,9 +213,9 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       var area=scene.querySelector('#cs');
       function drawCase(){
         var it=s.items[j];
-        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        area.innerHTML=(it.img?'<img class="jimg" src="'+it.img+'" alt="'+(it.alt||'')+'">':'')+'<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
         var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), picked=false;
-        it.options.forEach(function(o){
+        shuffle(it.options).forEach(function(o){
           var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
           b.onclick=function(){
             if(picked)return; picked=true;
@@ -205,7 +237,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       scene.innerHTML='<div class="card"><button class="say">Écouter</button><p class="txt">'+s.text+'</p><div class="opts"></div><div class="fb"></div></div>';
       scene.querySelector('.say').onclick=function(){ speak(s.text); };
       var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), picked=false;
-      s.options.forEach(function(o){
+      shuffle(s.options).forEach(function(o){
         var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
         b.onclick=function(){
           if(picked)return; picked=true;
@@ -226,7 +258,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
     }
 
     if(s.type==='bilan'){
-      var h='<div class="hero"><span class="ic"></span><h1>Enquête réussie !</h1><p>Vous savez vérifier avant de croire.</p></div><div class="card"><div class="badge">Bon réflexe d’enquêteur</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      var h='<div class="hero"><span class="ic"></span><h1>Enquête réussie !</h1><p>Tu sais vérifier avant de croire.</p></div><div class="card"><div class="badge">Bon réflexe d’enquêteur</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
       s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
       h+='</ul></div>';
       scene.innerHTML=h;

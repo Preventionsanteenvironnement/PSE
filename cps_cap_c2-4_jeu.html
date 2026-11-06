@@ -52,6 +52,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 .recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
 .badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
 @media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}.mitem{font-size:.9rem}}
+.jimg{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:14px;margin:6px 0 10px;background:#fff}
+.jimgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 <link rel="stylesheet" href="assets/acces.css?v=4">
 <script src="assets/acces.js?v=4" defer></script>
@@ -66,90 +68,154 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 (function(){
   var scene=document.getElementById('scene');
   var idx=0;
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
   function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
   function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
   function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
 
   var STEPS=[
-    { type:'intro', text:"Personne ne s’en sort tout seul sur tout. Demander de l’aide, ce n’est <strong>pas une faiblesse</strong> : c’est malin. Encore faut-il savoir <strong>à qui</strong>, et <strong>comment</strong>." },
+    { type:'intro', text:"Personne ne s’en sort seul sur tout. Demander de l’aide n’est <strong>pas une faiblesse</strong>. Encore faut-il savoir <strong>à qui</strong>, et <strong>comment</strong>." },
 
     { type:'notion',
-      teach:"Quand on est bloqué, demander de l’aide est une <strong>bonne idée</strong> : c’est souvent en demandant qu’on apprend et qu’on avance.",
+      teach:"Quand tu es bloqué, demander de l’aide est une <strong>bonne idée</strong> : c’est souvent en demandant qu’on avance.",
       q:"Demander de l’aide, c’est…",
       options:[
-        {l:"une chose intelligente quand on est bloqué",ok:true},
         {l:"une faiblesse à cacher",ok:false},
-        {l:"déranger les autres pour rien",ok:false}
+        {l:"déranger les autres pour rien",ok:false},
+        {l:"un bon moyen d’avancer",ok:true}
       ],
-      wrong:"Pas tout à fait. Demander n’est ni une honte ni un dérangement : c’est une façon d’avancer.",
-      good:"Exactement. Bien demander, c’est se donner les moyens de réussir." },
+      wrong:"Pas tout à fait. Demander n’est ni une honte ni un dérangement.",
+      good:"Exactement. Bien demander, c’est te donner les moyens de réussir." },
 
     { type:'match',
-      teach:"Selon le problème, on ne demande pas à la même personne. Reliez chaque situation à la <strong>bonne personne</strong>.",
-      q:"Cliquez une situation, puis la personne qui peut aider.",
+      teach:"Selon le problème, on ne demande pas à la même personne. Relie chaque situation à la <strong>bonne personne</strong>.",
+      q:"Clique une situation, puis la personne qui peut aider.",
       left:[
-        {k:0,t:"Je suis harcelé ou menacé"},
+        {k:0,t:"On me harcèle au lycée ou en ligne"},
         {k:1,t:"Je me suis blessé, je me sens mal"},
-        {k:2,t:"Je ne comprends pas le cours"},
-        {k:3,t:"Je me dispute souvent avec un camarade"}
+        {k:2,t:"Je ne comprends pas le cours de maths"},
+        {k:3,t:"Une dispute avec un camarade dure depuis des semaines"}
       ],
       right:[
-        {k:2,t:"Le professeur"},
-        {k:0,t:"Un adulte de confiance (CPE, parent)"},
-        {k:3,t:"Le CPE, pour en parler"},
+        {k:2,t:"Le professeur de maths"},
+        {k:0,t:"Le CPE ou le 3018"},
+        {k:3,t:"Le professeur principal"},
         {k:1,t:"L’infirmière scolaire"}
       ],
-      bad:"Pas tout à fait : réfléchissez à qui s’occupe de ce genre de problème.",
-      done:"Bravo : à chaque problème, sa bonne personne." },
+      bad:"Pas tout à fait : qui s’occupe de ce genre de problème ?",
+      done:"À chaque problème, sa bonne personne." },
 
     { type:'cases',
-      teach:"Une bonne demande est <strong>claire</strong> et <strong>polie</strong> : on dit ce dont on a besoin.",
+      teach:"Une bonne demande est <strong>claire</strong> et <strong>polie</strong> : tu dis ce dont tu as besoin.",
       q:"Quelle est la bonne façon de demander ?",
       items:[
-        { text:"Vous n’avez pas compris la consigne du professeur.",
+        { text:"Tu n’as pas compris la consigne du professeur.",
           options:[
-            {l:"« Excusez-moi, je n’ai pas compris la consigne, pouvez-vous m’expliquer ? »",good:true,fb:"Oui : poli, clair, et vous dites précisément ce qu’il vous faut."},
-            {l:"« J’ai rien compris, c’est nul. »",good:false,fb:"Ce n’est ni poli ni clair : on ne sait pas ce qu’il vous faut."},
-            {l:"Je ne dis rien et je reste bloqué.",good:false,fb:"Rester bloqué sans demander, c’est se priver d’aide."}
+            {l:"« J’ai rien compris, c’est nul. »",good:false,fb:"Ce n’est ni poli ni clair : on ne sait pas ce qu’il te faut."},
+            {l:"« Pardon, vous pouvez réexpliquer la consigne ? »",good:true,fb:"Oui : poli, clair, et tu dis ce qu’il te faut."},
+            {l:"Je ne dis rien et je reste bloqué.",good:false,fb:"Rester bloqué sans demander, c’est te priver d’aide."}
           ] },
-        { text:"Vous voulez l’aide d’un camarade sur un exercice.",
+        { text:"Tu veux l’aide d’un camarade sur un exercice.",
           options:[
-            {l:"« Tu peux m’aider à comprendre cet exercice, s’il te plaît ? »",good:true,fb:"Oui : vous demandez de l’aide pour comprendre, poliment."},
-            {l:"« Fais-le à ma place. »",good:false,fb:"Là, vous ne demandez pas de l’aide : vous demandez qu’on travaille pour vous."},
-            {l:"« Donne-moi tes réponses. »",good:false,fb:"Copier n’est pas demander de l’aide, et vous n’apprenez rien."}
+            {l:"« Fais-le à ma place. »",good:false,fb:"Là, tu demandes qu’on travaille pour toi."},
+            {l:"« Donne-moi tes réponses. »",good:false,fb:"Copier n’est pas demander de l’aide. Tu n’apprends rien."},
+            {l:"« Tu m’expliques celui-là ? »",good:true,fb:"Oui : tu demandes à comprendre, simplement."}
+          ] },
+        { text:"Tu bloques depuis vingt minutes. Une voix dit : « si je demande, on va me prendre pour un nul ».",
+          options:[
+            {l:"Je demande quand même",good:true,fb:"Oui : cette pensée est un avis, pas un fait. Demander te fait avancer."},
+            {l:"Je reste bloqué pour ne pas avoir l’air bête",good:false,fb:"Tu perds du temps et l’aide dont tu as besoin."},
+            {l:"Je copie discrètement sur le voisin",good:false,fb:"Tu n’apprends rien, et le problème reste entier."}
           ] }
       ] },
 
     { type:'cases',
-      teach:"Parfois, une pensée nous retient : « on va me prendre pour un nul ». C’est un avis, pas une vérité.",
-      q:"Que faites-vous ?",
+      teach:"Face à un danger, d’abord tu <strong>protèges</strong> : tu arrêtes la machine. Ensuite tu <strong>alertes</strong> les secours.",
+      imgs:[
+        {src:"assets/cps/cognitif/urgence-arret-machine.jpg",alt:"Malik appuie sur le gros bouton rouge d’une machine d’atelier."},
+        {src:"assets/cps/cognitif/urgence-appel-secours.jpg",alt:"Inès téléphone, calme. Elle lève une main pour faire signe."}
+      ],
+      q:"Que fais-tu ?",
       items:[
-        { text:"Vous galérez depuis vingt minutes. Une voix dit : « si je demande, on va me prendre pour un nul ».",
+        { text:"À l’atelier, la main d’un camarade est coincée dans une machine qui tourne. Que fais-tu d’abord ?",
           options:[
-            {l:"Je demande quand même : c’est en demandant qu’on apprend",good:true,fb:"Oui : demander est un signe d’intelligence, pas de faiblesse."},
-            {l:"Je reste bloqué pour ne pas avoir l’air bête",good:false,fb:"Vous perdez du temps et l’aide dont vous avez besoin."},
-            {l:"Je copie discrètement sur le voisin",good:false,fb:"Vous n’apprenez rien, et le problème reste entier."}
+            {l:"J’appelle le 15 tout de suite",good:false,fb:"Alerter, oui, mais après. La machine tourne encore : tu protèges d’abord."},
+            {l:"J’appuie sur l’arrêt d’urgence",good:true,fb:"Oui : tu protèges d’abord. La machine s’arrête, le danger aussi."},
+            {l:"Je tire sa main pour la dégager",good:false,fb:"La machine tourne : tu risques d’être blessé aussi."}
+          ] },
+        { text:"La machine est arrêtée. Sa main est toujours coincée. Que fais-tu maintenant ?",
+          options:[
+            {l:"Je dégage sa main moi-même",good:false,fb:"Bouger la victime peut aggraver la blessure."},
+            {l:"J’attends le retour du formateur",good:false,fb:"Chaque minute compte : tu alertes tout de suite."},
+            {l:"J’appelle le 15, puis le formateur",good:true,fb:"Oui : tu as protégé, maintenant tu alertes."}
+          ] }
+      ] },
+
+    { type:'cases',
+      teach:"Les numéros d’urgence : <strong>15</strong> SAMU, <strong>18</strong> pompiers, <strong>17</strong> police, <strong>112</strong> dans toute l’Europe, <strong>114</strong> par SMS si tu ne peux pas parler, <strong>119</strong> enfance en danger, <strong>3018</strong> cyberharcèlement.",
+      q:"Quel numéro appelles-tu ?",
+      items:[
+        { text:"Un début d’incendie dans l’atelier.",
+          options:[
+            {l:"18",good:true,fb:"Oui : le 18, ce sont les pompiers."},
+            {l:"119",good:false,fb:"Le 119, c’est pour un enfant en danger."},
+            {l:"3018",good:false,fb:"Le 3018, c’est pour le cyberharcèlement."}
+          ] },
+        { text:"Une camarade s’effondre et ne répond plus.",
+          options:[
+            {l:"17",good:false,fb:"Le 17, c’est la police. Ici, c’est un problème de santé."},
+            {l:"15",good:true,fb:"Oui : le 15, c’est le SAMU, pour les urgences de santé."},
+            {l:"3018",good:false,fb:"Le 3018, c’est pour le cyberharcèlement."}
+          ] },
+        { text:"Une bagarre violente éclate devant le lycée.",
+          options:[
+            {l:"119",good:false,fb:"Le 119, c’est pour un enfant en danger."},
+            {l:"15",good:false,fb:"Le 15, c’est pour la santé. Ici, il faut arrêter la violence."},
+            {l:"17",good:true,fb:"Oui : le 17, c’est la police, pour les violences."}
+          ] },
+        { text:"En voyage en Espagne, tu vois un accident de la route.",
+          options:[
+            {l:"112",good:true,fb:"Oui : le 112 marche dans toute l’Europe."},
+            {l:"114",good:false,fb:"Le 114, c’est par SMS, si tu ne peux pas parler."},
+            {l:"3018",good:false,fb:"Le 3018, c’est pour le cyberharcèlement."}
+          ] },
+        { text:"Tu dois alerter les secours, mais tu ne peux pas parler au téléphone.",
+          options:[
+            {l:"112",good:false,fb:"Le 112 est un appel vocal. Ici, tu ne peux pas parler."},
+            {l:"114",good:true,fb:"Oui : au 114, tu écris par SMS."},
+            {l:"18",good:false,fb:"Le 18 est un appel vocal. Ici, tu ne peux pas parler."}
+          ] },
+        { text:"Un enfant de ton immeuble est souvent frappé chez lui.",
+          options:[
+            {l:"3018",good:false,fb:"Le 3018, c’est pour le cyberharcèlement."},
+            {l:"114",good:false,fb:"Le 114, c’est par SMS, si tu ne peux pas parler."},
+            {l:"119",good:true,fb:"Oui : le 119, c’est pour un enfant en danger."}
+          ] },
+        { text:"Des photos de toi circulent en ligne, avec des insultes.",
+          options:[
+            {l:"3018",good:true,fb:"Oui : le 3018 aide en cas de cyberharcèlement. Gratuit et confidentiel."},
+            {l:"18",good:false,fb:"Le 18, ce sont les pompiers."},
+            {l:"119",good:false,fb:"Le 119, c’est pour un enfant en danger."}
           ] }
       ] },
 
     { type:'perso',
-      text:"À vous. Pensez à une difficulté où vous auriez besoin d’aide. <strong>À qui</strong> pourriez-vous demander ? Et <strong>comment</strong> lui diriez-vous, en une phrase polie ?",
-      note:"Répondez dans votre tête, à l’oral () ou en une phrase. Il n’y a pas de mauvaise réponse." },
+      text:"À toi. Pense à une difficulté où tu aurais besoin d’aide. <strong>À qui</strong> pourrais-tu demander ? <strong>Comment</strong> le dirais-tu, en une phrase ?",
+      note:"Réponds dans ta tête, à l’oral ou en une phrase. Il n’y a pas de mauvaise réponse." },
 
     { type:'bilan',
       recap:[
-        "Demander de l’aide, ce n’est pas une faiblesse : c’est <strong>malin</strong>.",
         "Je choisis la <strong>bonne personne</strong> selon mon problème.",
-        "Je fais une demande <strong>claire et polie</strong> : je dis ce dont j’ai besoin."
+        "Je fais une demande <strong>claire et polie</strong> : je dis ce dont j’ai besoin.",
+        "Face à un danger : je <strong>protège</strong>, puis j’<strong>alerte</strong> le bon numéro."
       ] }
   ];
-
   function render(){
     var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
 
     if(s.type==='intro'){
-      scene.innerHTML='<div class="hero"><span class="ic"></span><h1>Savoir demander de l’aide</h1><p>Compétence C2.4 · repère d’annexe, Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      scene.innerHTML='<div class="hero"><span class="ic"></span><h1>Savoir demander de l’aide</h1><p>Compétence C2.4</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
       var b=document.createElement('button'); b.className='btn'; b.textContent='Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
     }
 
@@ -157,12 +223,12 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       scene.innerHTML='<div class="card"><button class="say">Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
       scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
       var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
-      s.options.forEach(function(o){
+      shuffle(s.options).forEach(function(o){
         var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
         b.onclick=function(){
           if(done)return;
           if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
-          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+s.wrong+' <strong>Réessayez.</strong></div>'; }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+s.wrong+' <strong>Réessaie.</strong></div>'; }
         };
         opts.appendChild(b);
       });
@@ -174,7 +240,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       scene.querySelector('.say').onclick=function(){ speak(s.teach); };
       var ml=scene.querySelector('#ml'), mr=scene.querySelector('#mr'), fb=scene.querySelector('.fb');
       var selLeft=null, pairsLeft=0;
-      s.left.forEach(function(it){
+      shuffle(s.left).forEach(function(it){
         var b=document.createElement('button'); b.className='mitem'; b.textContent=it.t; b.setAttribute('data-k',it.k);
         b.onclick=function(){
           if(b.classList.contains('ok'))return;
@@ -183,11 +249,11 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
         };
         ml.appendChild(b);
       });
-      s.right.forEach(function(it){
+      shuffle(s.right).forEach(function(it){
         var b=document.createElement('button'); b.className='mitem'; b.textContent=it.t; b.setAttribute('data-k',it.k);
         b.onclick=function(){
           if(b.classList.contains('ok'))return;
-          if(!selLeft){ fb.innerHTML='<div class="msg bad">Choisissez d’abord une situation à gauche.</div>'; return; }
+          if(!selLeft){ fb.innerHTML='<div class="msg bad">Choisis d’abord une situation à gauche.</div>'; return; }
           if(selLeft.getAttribute('data-k')===b.getAttribute('data-k')){
             selLeft.classList.remove('sel'); selLeft.classList.add('ok'); selLeft.disabled=true;
             b.classList.add('ok'); b.disabled=true; selLeft=null; pairsLeft++;
@@ -205,19 +271,19 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 
     if(s.type==='cases'){
       var j=0;
-      scene.innerHTML='<div class="card"><button class="say">Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div id="cc"></div></div>';
+      scene.innerHTML='<div class="card"><button class="say">Écouter</button><div class="teach">'+s.teach+'</div>'+(s.imgs?'<div class="jimgs">'+s.imgs.map(function(m){return '<img class="jimg" src="'+m.src+'" alt="'+m.alt+'">';}).join('')+'</div>':'')+'<div class="q">'+s.q+'</div><div id="cc"></div></div>';
       scene.querySelector('.say').onclick=function(){ speak(s.teach); };
       var area=scene.querySelector('#cc');
       function drawCase(){
         var it=s.items[j];
-        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        area.innerHTML=(it.img?'<img class="jimg" src="'+it.img+'" alt="'+(it.alt||'')+'">':'')+'<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
         var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
-        it.options.forEach(function(o){
+        shuffle(it.options).forEach(function(o){
           var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
           b.onclick=function(){
             if(done)return;
             if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
-            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+o.fb+' <strong>Réessayez.</strong></div>'; }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+o.fb+' <strong>Réessaie.</strong></div>'; }
           };
           opts.appendChild(b);
         });
@@ -233,7 +299,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
     }
 
     if(s.type==='bilan'){
-      var h='<div class="hero"><span class="ic"></span><h1>Bien joué !</h1><p>Vous savez demander de l’aide.</p></div><div class="card"><div class="badge">Je sais demander</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      var h='<div class="hero"><span class="ic"></span><h1>Bien joué !</h1><p>Tu sais demander de l’aide.</p></div><div class="card"><div class="badge">Je sais demander</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
       s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
       h+='</ul></div>';
       scene.innerHTML=h;

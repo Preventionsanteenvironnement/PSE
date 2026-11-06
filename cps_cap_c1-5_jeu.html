@@ -49,6 +49,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 .recap li{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:.98rem}
 .badge{text-align:center;font-size:1.1rem;font-weight:900;color:#1e40af;margin:10px 0}
 @media(max-width:600px){.wrap{padding:10px}.card{padding:16px}.txt{font-size:1.05rem}.hero h1{font-size:1.3rem}}
+.jimg{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:14px;margin:6px 0 10px;background:#fff}
+.jimgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 <link rel="stylesheet" href="assets/acces.css?v=4">
 <script src="assets/acces.js?v=4" defer></script>
@@ -63,91 +65,99 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 (function(){
   var scene=document.getElementById('scene');
   var idx=0;
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function speak(t){ try{ if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'')); u.lang='fr-FR'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
   function go(i){ idx=i; try{speechSynthesis.cancel();}catch(e){} render(); }
   function progress(){ document.getElementById('progbar').style.width=Math.round(idx/(STEPS.length-1)*100)+'%'; document.getElementById('proglabel').textContent='Étape '+(idx+1)+' / '+STEPS.length; }
   function continueBtn(label){ var b=document.createElement('button'); b.className='btn'; b.textContent=label||'Continuer →'; b.onclick=function(){ go(idx+1); }; return b; }
 
   var STEPS=[
-    { type:'intro', text:"On voit souvent ce qu’on rate, rarement ce qu’on réussit. Pourtant, chacun a des <strong>forces</strong>. Vous allez apprendre à voir les vôtres et à vous parler avec respect." },
+    { type:'intro', text:"On voit souvent ce qu’on rate, rarement ce qu’on réussit. Pourtant, chacun a des <strong>forces</strong>. Tu vas apprendre à voir les tiennes et à te parler avec respect." },
 
     { type:'notion',
-      teach:"Une <strong>force</strong>, ce n’est pas seulement avoir de bonnes notes. C’est une qualité ou quelque chose que vous faites bien : être patient, aider les autres, être courageux, savoir écouter, être manuel…",
+      teach:"Une <strong>force</strong>, ce n’est pas seulement avoir de bonnes notes. C’est une qualité ou une chose que tu fais bien : être patient, aider, être manuel…",
       q:"Une force, c’est…",
       options:[
-        {l:"une qualité ou quelque chose qu’on fait bien",ok:true},
         {l:"seulement avoir de bonnes notes",ok:false},
+        {l:"une qualité ou une chose que je fais bien",ok:true},
         {l:"être meilleur que les autres",ok:false}
       ],
-      wrong:"Pas tout à fait. Une force n’est pas réservée aux notes ni à la comparaison : c’est une qualité bien à vous.",
-      good:"Exactement. C’est une qualité ou quelque chose que vous faites bien, à votre manière." },
+      wrong:"Pas tout à fait. Une force ne dépend ni des notes ni des autres. C’est une qualité à toi.",
+      good:"Exactement. C’est une qualité, ou une chose que tu fais bien, à ta manière." },
 
     { type:'cases',
-      teach:"Chaque action montre une <strong>force cachée</strong>. À vous de la repérer.",
+      teach:"Chaque action montre une <strong>force</strong>. À toi de la repérer.",
       q:"Quelle force cette personne montre-t-elle ?",
       items:[
-        { text:"Léa explique calmement l’exercice à un camarade qui n’a pas compris.",
+        { text:"Malik a raté deux fois le fond du panier. Il a recommencé jusqu’au bout.",
+          img:"assets/cps/scenes/scene-malik-joie-panier.jpg",
+          alt:"À l’atelier de vannerie, Malik montre un panier en osier terminé. Mme Roche, à côté de lui, lève le pouce.",
           options:[
-            {l:"La patience et l’entraide",good:true,fb:"Oui : elle prend le temps et elle aide. De vraies forces."},
-            {l:"La chance",good:false,fb:"Ce n’est pas de la chance : c’est une qualité qu’elle met en pratique."},
-            {l:"Rien de spécial",good:false,fb:"Au contraire : aider avec patience, c’est une belle force."}
+            {l:"La chance",good:false,fb:"Il a raté deux fois : ce n’est pas de la chance."},
+            {l:"La vitesse",good:false,fb:"Il a mis du temps. Sa force, c’est d’avoir continué."},
+            {l:"La persévérance",good:true,fb:"Oui : recommencer jusqu’au bout, c’est de la persévérance."}
           ] },
-        { text:"Malgré sa peur, Sami passe à l’oral jusqu’au bout.",
+        { text:"Lina explique calmement la recette à un camarade qui n’a pas compris.",
           options:[
+            {l:"La patience et l’entraide",good:true,fb:"Oui : elle prend le temps et elle aide."},
+            {l:"La chance",good:false,fb:"Ce n’est pas de la chance : c’est une qualité qu’elle utilise."},
+            {l:"Rien de spécial",good:false,fb:"Aider avec patience, c’est une vraie force."}
+          ] },
+        { text:"Malgré sa peur, Inès passe à l’oral jusqu’au bout.",
+          options:[
+            {l:"L’inconscience",good:false,fb:"Elle avait peur, justement : elle a été courageuse."},
             {l:"Le courage",good:true,fb:"Oui : avoir peur et le faire quand même, c’est du courage."},
-            {l:"L’inconscience",good:false,fb:"Il a eu peur, justement : il a fait preuve de courage."},
             {l:"De la chance",good:false,fb:"Tenir jusqu’au bout malgré la peur, ce n’est pas un hasard."}
           ] },
-        { text:"Tom range et nettoie l’atelier sans qu’on le lui demande.",
+        { text:"Noa range et nettoie l’atelier sans qu’on le lui demande.",
           options:[
-            {l:"Le sens des responsabilités",good:true,fb:"Oui : il agit sans qu’on l’oblige. Une vraie force."},
-            {l:"L’ennui",good:false,fb:"Prendre soin du lieu, c’est être responsable, pas s’ennuyer."},
-            {l:"La maladresse",good:false,fb:"Au contraire, il fait preuve de sérieux."}
+            {l:"L’ennui",good:false,fb:"Prendre soin du lieu, c’est être responsable."},
+            {l:"La maladresse",good:false,fb:"Au contraire, il fait preuve de sérieux."},
+            {l:"Le sens des responsabilités",good:true,fb:"Oui : il agit sans qu’on l’oblige."}
           ] }
       ] },
 
     { type:'cases',
-      teach:"<strong>Accepter un compliment</strong>, c’est reconnaître sa force — ce n’est pas se vanter.",
-      q:"On vous fait un compliment. Quelle est la bonne réponse ?",
+      teach:"<strong>Accepter un compliment</strong>, c’est reconnaître sa force. Ce n’est pas se vanter.",
+      q:"On te fait un compliment. Que réponds-tu ?",
       items:[
-        { text:"« Bravo, ton travail est vraiment soigné ! »",
+        { text:"« Ton travail est vraiment soigné ! »",
           options:[
-            {l:"« Merci, ça me fait plaisir. »",good:true,fb:"Juste : vous accueillez le compliment avec simplicité."},
-            {l:"« Mais non, c’est nul. »",good:false,fb:"Vous vous rabaissez : votre travail mérite d’être reconnu."},
-            {l:"« C’est juste de la chance. »",good:false,fb:"Ce n’est pas de la chance : c’est votre soin."}
+            {l:"« Mais non, c’est nul. »",good:false,fb:"Tu te rabaisses : ton travail mérite d’être reconnu."},
+            {l:"« Merci, ça me fait plaisir. »",good:true,fb:"Tu accueilles le compliment simplement."},
+            {l:"« C’est juste de la chance. »",good:false,fb:"Ce n’est pas de la chance : c’est ton soin."}
           ] },
         { text:"« Tu as bien aidé ton camarade aujourd’hui. »",
           options:[
-            {l:"« Merci, c’est normal d’aider. »",good:true,fb:"Vous acceptez le compliment sans en faire trop : parfait."},
-            {l:"« Bof, j’ai rien fait. »",good:false,fb:"Vous effacez votre geste : pourtant vous avez bien agi."},
-            {l:"« Évidemment, je suis le meilleur. »",good:false,fb:"Là, on se vante : accepter, ce n’est pas se sur-vendre."}
+            {l:"« Bof, j’ai rien fait. »",good:false,fb:"Tu effaces ton geste : pourtant, tu as aidé."},
+            {l:"« Évidemment, je suis le meilleur. »",good:false,fb:"Là, tu te vantes. Accepter, ce n’est pas en rajouter."},
+            {l:"« Merci, ça m’a fait plaisir. »",good:true,fb:"Tu acceptes le compliment sans en faire trop."}
           ] }
       ] },
 
     { type:'pick',
-      teach:"Voici des forces possibles. Lesquelles vous ressemblent le plus ?",
-      q:"Composez votre blason : choisissez vos forces.",
+      teach:"Voici des forces possibles. Lesquelles te ressemblent le plus ?",
+      q:"Compose ton blason : choisis tes forces.",
       min:2, max:4,
       options:["Patient(e)","Courageux(se)","Drôle","À l’écoute","Manuel(le)","Organisé(e)","Généreux(se)","Persévérant(e)","Créatif(ve)","Calme","Fiable","Débrouillard(e)"],
-      done:"Voilà <strong>votre blason</strong> : des forces sur lesquelles vous pouvez vous appuyer." },
+      done:"Voilà <strong>ton blason</strong> : des forces sur lesquelles tu peux t’appuyer." },
 
     { type:'perso',
-      text:"À vous. Citez <strong>deux de vos forces</strong>. Et une chose que vous avez <strong>bien faite récemment</strong>, même petite.",
-      note:"Répondez dans votre tête, à l’oral () ou en une phrase. Il n’y a pas de mauvaise réponse." },
+      text:"À toi. Cite <strong>deux de tes forces</strong>. Et une chose que tu as <strong>bien faite récemment</strong>, même petite.",
+      note:"Réponds dans ta tête, à l’oral ou en une phrase. Il n’y a pas de mauvaise réponse." },
 
     { type:'bilan',
       recap:[
-        "Une <strong>force</strong>, c’est une qualité ou quelque chose qu’on fait bien — pas seulement les notes.",
+        "Une <strong>force</strong>, c’est une qualité ou une chose qu’on fait bien. Pas seulement les notes.",
         "J’<strong>accepte un compliment</strong> : « merci », sans me rabaisser ni me vanter.",
         "Je m’<strong>appuie sur mes forces</strong> pour avancer."
       ] }
   ];
-
   function render(){
     var s=STEPS[idx]; progress(); window.scrollTo({top:0,behavior:'smooth'});
 
     if(s.type==='intro'){
-      scene.innerHTML='<div class="hero"><span class="ic"></span><h1>Mes forces</h1><p>Compétence C1.5 · Santé publique France 2025</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
+      scene.innerHTML='<div class="hero"><span class="ic"></span><h1>Mes forces</h1><p>Compétence C1.5</p></div><div class="card"><p class="txt">'+s.text+'</p></div>';
       var b=document.createElement('button'); b.className='btn'; b.textContent='Commencer'; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
     }
 
@@ -155,12 +165,12 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       scene.innerHTML='<div class="card"><button class="say">Écouter</button><div class="teach">'+s.teach+'</div><div class="q">'+s.q+'</div><div class="opts"></div><div class="fb"></div></div>';
       scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
       var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), done=false;
-      s.options.forEach(function(o){
+      shuffle(s.options).forEach(function(o){
         var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
         b.onclick=function(){
           if(done)return;
           if(o.ok){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+s.good+'</div>'; fb.appendChild(continueBtn()); }
-          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+s.wrong+' <strong>Réessayez.</strong></div>'; }
+          else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+s.wrong+' <strong>Réessaie.</strong></div>'; }
         };
         opts.appendChild(b);
       });
@@ -174,14 +184,14 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       var area=scene.querySelector('#cc');
       function drawCase(){
         var it=s.items[j];
-        area.innerHTML='<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
+        area.innerHTML=(it.img?'<img class="jimg" src="'+it.img+'" alt="'+(it.alt||'')+'">':'')+'<p class="txt">'+it.text+'</p><div class="opts"></div><div class="fb"></div>';
         var opts=area.querySelector('.opts'), fb=area.querySelector('.fb'), done=false;
-        it.options.forEach(function(o){
+        shuffle(it.options).forEach(function(o){
           var b=document.createElement('button'); b.className='opt'; b.textContent=o.l;
           b.onclick=function(){
             if(done)return;
             if(o.good){ done=true; opts.querySelectorAll('.opt').forEach(function(x){x.disabled=true;}); b.classList.add('ok'); fb.innerHTML='<div class="msg good">✓ '+o.fb+'</div>'; var nb=document.createElement('button'); nb.className='btn'; nb.textContent=(j>=s.items.length-1)?'Continuer →':'Suivant →'; nb.onclick=function(){ if(j>=s.items.length-1){ go(idx+1);} else {j++; drawCase();} }; fb.appendChild(nb); }
-            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+o.fb+' <strong>Réessayez.</strong></div>'; }
+            else { b.classList.add('no'); b.disabled=true; fb.innerHTML='<div class="msg bad">'+o.fb+' <strong>Réessaie.</strong></div>'; }
           };
           opts.appendChild(b);
         });
@@ -195,8 +205,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       scene.querySelector('.say').onclick=function(){ speak(s.teach+' '+s.q); };
       var chips=scene.querySelector('.chips'), hint=scene.querySelector('.hint'), fb=scene.querySelector('.fb'), sel=[];
       var cont=continueBtn('Valider mon blason →'); cont.disabled=true;
-      function refresh(){ hint.textContent=sel.length+' choisie(s) — choisissez-en '+s.min+' à '+s.max+'.'; cont.disabled=(sel.length<s.min||sel.length>s.max); }
-      s.options.forEach(function(o){
+      function refresh(){ hint.textContent=sel.length+' choisie(s) — choisis-en '+s.min+' à '+s.max+'.'; cont.disabled=(sel.length<s.min||sel.length>s.max); }
+      shuffle(s.options).forEach(function(o){
         var c=document.createElement('button'); c.className='chip'; c.textContent=o;
         c.onclick=function(){
           var i=sel.indexOf(o);
@@ -219,7 +229,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
     }
 
     if(s.type==='bilan'){
-      var h='<div class="hero"><span class="ic"></span><h1>Bravo !</h1><p>Vous savez voir vos forces.</p></div><div class="card"><div class="badge">Forces repérées</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que vous avez appris :</p><ul class="recap">';
+      var h='<div class="hero"><span class="ic"></span><h1>Bilan</h1><p>Tu sais voir tes forces.</p></div><div class="card"><div class="badge">Forces repérées</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
       s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
       h+='</ul></div>';
       scene.innerHTML=h;
