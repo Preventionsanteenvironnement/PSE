@@ -50,16 +50,20 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 .jimgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 <link rel="stylesheet" href="assets/acces.css?v=5">
+<link rel="stylesheet" href="assets/cps_moi.css?v=20261107">
 <script src="assets/acces.js?v=5" defer></script>
 </head>
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← Accueil</a>
+  <div data-cps-moi="retour" data-code="C2.1" data-titre="L’escalier vers mon objectif" data-fam="Penser et agir"></div>
   <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
   <div id="scene"></div>
 </div>
+<script src="assets/cps_moi.js?v=20261107"></script>
 <script>
 (function(){
+  var MOI={code:"C2.1", titre:"L’escalier vers mon objectif", fam:"Penser et agir", defi:{"q": "Choisis une seule chose à essayer cette semaine.", "opts": ["Faire la première marche de mon escalier", "Écrire mon objectif avec une date", "Cocher chaque étape faite"]}, duo:{"duree": "10 minutes", "situation": "En classe. Chacun prend l’objectif noté dans « Et moi ? », ou en invente un.", "roleA": "Présente ton objectif et tes trois premières étapes.", "roleB": "Écoute. Dis si chaque étape est une action simple. Propose une étape plus petite si besoin.", "observe": ["A dit exactement ce qu’il veut faire", "Les étapes de A sont dans l’ordre", "B propose une amélioration concrète"]}};
   var scene=document.getElementById('scene');
   var idx=0;
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -125,9 +129,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
           ] }
       ] },
 
-    { type:'perso',
-      text:"À toi. Pense à un <strong>objectif</strong> que tu as. Quelles seraient les <strong>3 premières étapes</strong> ? Et un obstacle possible : comment le franchir ?",
-      note:"Réponds dans ta tête, à l’oral ou en une phrase. Il n’y a pas de mauvaise réponse." },
+    { type:'moi', spec:{"tag": "Et moi ?", "title": "Mon escalier", "intro": "Pense à un objectif qui compte pour toi. Tu n’as pas à le montrer.", "steps": [{"kind": "texte", "q": "Écris ton objectif en une phrase.", "carnet": "Mon objectif", "aide": "Exemple : je finis ma fiche de stage avant vendredi.", "criteres": ["Je sais exactement quoi faire", "Il y a une date ou un moment"]}, {"kind": "texte", "q": "Écris les trois premières marches de ton escalier.", "carnet": "Mes trois premières étapes", "lignes": 4, "aide": "1. … 2. … 3. …", "etiquettes": ["1.", "2.", "3.", "ce soir", "demain", "cette semaine"], "criteres": ["Chaque étape est une action simple", "Les étapes sont dans l’ordre"]}, {"kind": "choix", "q": "Quel obstacle peut arriver ?", "carnet": "Un obstacle possible", "opts": ["La fatigue", "Le téléphone", "Le manque de temps", "Je ne sais pas comment faire", "Le découragement"], "autre": true}, {"kind": "choix", "q": "Que feras-tu face à cet obstacle ?", "carnet": "Ma solution face à l’obstacle", "opts": ["Je fais une étape plus petite", "Je demande de l’aide", "Je range ce qui me distrait", "Je me rappelle pourquoi je le fais"], "autre": true}], "fin": "Garde ton escalier sous les yeux. Coche chaque marche franchie."} },
 
     { type:'bilan',
       recap:[
@@ -203,18 +205,21 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       return;
     }
 
-    if(s.type==='perso'){
-      scene.innerHTML='<div class="card"><button class="say">Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
-      scene.querySelector('.say').onclick=function(){ speak(s.text); };
-      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    if(s.type==='moi'){
+      scene.innerHTML='<div class="moi-zone"></div>';
+      var mz=scene.querySelector('.moi-zone');
+      if(window.CPSMoi){ CPSMoi.sequence(mz, s.spec, {code:MOI.code, titre:MOI.titre, fam:MOI.fam, next:function(){ go(idx+1); }, nextLabel:'Continuer →'}); }
+      else { var mb=document.createElement('button'); mb.className='btn'; mb.textContent='Continuer →'; mb.onclick=function(){ go(idx+1); }; mz.appendChild(mb); }
+      return;
     }
 
     if(s.type==='bilan'){
-      var h='<div class="hero"><span class="ic"></span><h1>Objectif en vue !</h1><p>Tu sais avancer pas à pas.</p></div><div class="card"><div class="badge">Pas à pas</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
+      var h='<div class="hero"><span class="ic"></span><h1>Fin de l’activité</h1><p>Avancer pas à pas vers un objectif.</p></div><div class="card"><div class="badge">Pas à pas</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
       s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
       h+='</ul></div>';
       scene.innerHTML=h;
       var c=scene.querySelector('.card');
+      if(window.CPSMoi){ var fz=document.createElement('div'); c.appendChild(fz); CPSMoi.defi(fz, MOI.defi, MOI); CPSMoi.duo(fz, MOI.duo); }
       var rb=document.createElement('button'); rb.className='btn'; rb.textContent='Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
       var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
       return;

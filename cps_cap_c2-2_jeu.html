@@ -57,16 +57,20 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
 .jimgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 <link rel="stylesheet" href="assets/acces.css?v=5">
+<link rel="stylesheet" href="assets/cps_moi.css?v=20261107">
 <script src="assets/acces.js?v=5" defer></script>
 </head>
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← Accueil</a>
+  <div data-cps-moi="retour" data-code="C2.2" data-titre="La vague de l’envie" data-fam="Penser et agir"></div>
   <div class="prog"><div class="label" id="proglabel"></div><div class="track"><i id="progbar"></i></div></div>
   <div id="scene"></div>
 </div>
+<script src="assets/cps_moi.js?v=20261107"></script>
 <script>
 (function(){
+  var MOI={code:"C2.2", titre:"La vague de l’envie", fam:"Penser et agir", defi:{"q": "Choisis une seule chose à essayer cette semaine.", "opts": ["Compter jusqu’à dix avant de répondre", "Attendre d’être calme pour envoyer un message", "Attendre le soir avant un achat"]}, duo:{"duree": "10 minutes", "situation": "En stage, ton tuteur te reprend devant un client. L’envie de répondre tout de suite monte.", "roleA": "Tu joues le stagiaire. Tu laisses passer la vague, puis tu réponds calmement.", "roleB": "Tu joues le tuteur. Tu fais une remarque courte et polie, puis tu observes.", "observe": ["A attend avant de répondre", "A garde une voix posée", "A répond sur le travail demandé"]}};
   var scene=document.getElementById('scene');
   var idx=0;
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -133,9 +137,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
           ] }
       ] },
 
-    { type:'perso',
-      text:"À toi. Repense à une fois où tu as <strong>agi trop vite</strong>. Qu’aurais-tu pu faire en <strong>attendant quelques secondes</strong> ?",
-      note:"Réponds dans ta tête, à l’oral ou en une phrase. Il n’y a pas de mauvaise réponse." },
+    { type:'moi', spec:{"tag": "Et moi ?", "title": "Une fois où j’ai agi trop vite", "intro": "Pense à un moment où tu as agi trop vite. Tu n’as pas à le raconter.", "steps": [{"kind": "choix", "q": "Où était-ce ?", "carnet": "Lieu de la situation", "opts": ["En cours", "En atelier ou en cuisine", "En stage", "Pendant une pause", "Sur mon téléphone", "En dehors du lycée"]}, {"kind": "choix", "q": "Qu’as-tu fait trop vite ?", "carnet": "Ce que j’ai fait trop vite", "opts": ["J’ai répondu sèchement", "J’ai envoyé un message", "Je suis parti", "J’ai acheté quelque chose", "J’ai laissé tomber mon travail"], "autre": true}, {"kind": "echelle", "q": "L’envie était forte à combien ?", "carnet": "Force de l’envie", "bas": "Très faible", "haut": "Très forte"}, {"kind": "choix", "q": "Qu’aurais-tu pu faire pour laisser passer la vague ?", "carnet": "Ce que j’aurais pu faire", "multi": true, "opts": ["M’arrêter quelques secondes", "Respirer ou compter jusqu’à dix", "M’éloigner un moment", "Attendre le soir pour décider"], "autre": true}], "fin": "La prochaine fois, tu sais déjà quel geste essayer."} },
 
     { type:'bilan',
       recap:[
@@ -223,18 +225,21 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7fc;
       return;
     }
 
-    if(s.type==='perso'){
-      scene.innerHTML='<div class="card"><button class="say">Écouter</button><p class="txt">'+s.text+'</p><div class="msg" style="background:#eff6ff;border:2px solid #bfdbfe;color:#1e40af">'+s.note+'</div></div>';
-      scene.querySelector('.say').onclick=function(){ speak(s.text); };
-      var b=document.createElement('button'); b.className='btn'; b.textContent="J’y ai réfléchi →"; b.onclick=function(){ go(idx+1); }; scene.querySelector('.card').appendChild(b); return;
+    if(s.type==='moi'){
+      scene.innerHTML='<div class="moi-zone"></div>';
+      var mz=scene.querySelector('.moi-zone');
+      if(window.CPSMoi){ CPSMoi.sequence(mz, s.spec, {code:MOI.code, titre:MOI.titre, fam:MOI.fam, next:function(){ go(idx+1); }, nextLabel:'Continuer →'}); }
+      else { var mb=document.createElement('button'); mb.className='btn'; mb.textContent='Continuer →'; mb.onclick=function(){ go(idx+1); }; mz.appendChild(mb); }
+      return;
     }
 
     if(s.type==='bilan'){
-      var h='<div class="hero"><span class="ic"></span><h1>Bien maîtrisé !</h1><p>Tu sais laisser passer la vague.</p></div><div class="card"><div class="badge">J’attends avant d’agir</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
+      var h='<div class="hero"><span class="ic"></span><h1>Fin de l’activité</h1><p>Laisser passer la vague avant d’agir.</p></div><div class="card"><div class="badge">J’attends avant d’agir</div><p class="txt" style="font-size:1rem;font-weight:800;color:#1e40af">Ce que tu as appris :</p><ul class="recap">';
       s.recap.forEach(function(r){ h+='<li>'+r+'</li>'; });
       h+='</ul></div>';
       scene.innerHTML=h;
       var c=scene.querySelector('.card');
+      if(window.CPSMoi){ var fz=document.createElement('div'); c.appendChild(fz); CPSMoi.defi(fz, MOI.defi, MOI); CPSMoi.duo(fz, MOI.duo); }
       var rb=document.createElement('button'); rb.className='btn'; rb.textContent='Recommencer'; rb.onclick=function(){ go(0); }; c.appendChild(rb);
       var hb=document.createElement('a'); hb.className='btn soft'; hb.href='index.html'; hb.textContent='← Retour à l’accueil'; c.appendChild(hb);
       return;

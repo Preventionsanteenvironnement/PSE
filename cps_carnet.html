@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPS — Mon carnet</title>
+<link rel="stylesheet" href="assets/cps_kit.css?v=20261107">
+<link rel="stylesheet" href="assets/cps_moi.css?v=20261107">
+<style>
+.carnet-fam{font-size:1.1rem;font-weight:800;color:#16385c;margin:18px 0 6px;border-bottom:2px solid #e2e8f0;padding-bottom:4px}
+.carnet-page{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.carnet-page h3{font-size:1rem;color:#0f2a47;margin-bottom:6px}
+.carnet-page h3 a{color:inherit}
+.carnet-l{display:flex;flex-direction:column;border-top:1px solid #eef1f5;padding:6px 0}
+.carnet-l span{font-size:.82rem;color:#475569}
+.carnet-l small{font-size:.75rem;color:#64748b}
+.carnet-essai{background:#f8fafc;border-left:4px solid #16385c;border-radius:8px;padding:8px 10px;margin:6px 0}
+.carnet-outils{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.carnet-vide{background:#fff;border-radius:16px;padding:18px;text-align:center;color:#475569}
+@media print{ .cps-a11y,.carnet-outils,#pse-retour,.cps-back{display:none!important} .carnet-page{box-shadow:none;border:1px solid #999;break-inside:avoid} }
+</style>
+</head>
+<body class="t-cog">
+<div id="pse-retour" style="background:#16385c;color:#fff;font-family:Arial,sans-serif;font-size:13px;padding:7px 14px;line-height:1.4"><a href="index.html" style="color:#ffd166;text-decoration:none;font-weight:700">Accueil PSE</a> <span style="opacity:.6">›</span> CPS — Mon carnet</div>
+<div class="cps">
+  <a class="cps-back" href="index.html">← Accueil</a>
+  <div class="cps-head"><h1>Mon carnet</h1><p>Ce que tu as noté sur toi dans les activités. Il n’y a pas de note.</p></div>
+  <div class="moi-card" style="border-color:#c9d6e4">
+    <p class="moi-intro">Ce carnet reste sur cet appareil. Il n’est envoyé à personne : ni au professeur, ni au lycée. Tu peux l’imprimer pour le garder, ou le montrer si tu le souhaites.</p>
+    <label class="moi-crit"><input type="checkbox" id="partage"><span><strong>J’utilise un appareil partagé</strong> (tablette ou ordinateur de la classe) : ne rien garder après la fermeture de la page.</span></label>
+    <div class="carnet-outils">
+      <button class="moi-btn" id="imprimer" type="button">Imprimer mon carnet</button>
+      <button class="moi-btn2" id="effacer" type="button">Effacer tout mon carnet</button>
+    </div>
+  </div>
+  <div id="contenu"></div>
+</div>
+<div class="cps-foot">Compétences psychosociales · Niveau CAP et Bac Pro<br>D’après Santé publique France, 2025</div>
+<script src="assets/cps_moi.js?v=20261107"></script>
+<script>
+(function(){
+  var C=CPSMoi.carnet, box=document.getElementById('contenu');
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function fr(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  function draw(){
+    var c=C.lire(); box.innerHTML='';
+    if(!c.entries.length && !Object.keys(c.defis).length){
+      box.innerHTML='<div class="carnet-vide">Ton carnet est vide pour l’instant. Il se remplit quand tu réponds aux questions « Et moi ? » et « Pour moi » des activités.</div>';
+      return;
+    }
+    var fams={}, ordre=[];
+    c.entries.forEach(function(e){
+      var f=e.fam||'Autres activités';
+      if(!fams[f]){ fams[f]={}; ordre.push(f); }
+      var k=e.code||e.titre;
+      if(!fams[f][k]) fams[f][k]={titre:e.titre, code:e.code, l:[]};
+      fams[f][k].l.push(e);
+    });
+    ordre.forEach(function(f){
+      var h=document.createElement('div'); h.className='carnet-fam'; h.textContent=f; box.appendChild(h);
+      Object.keys(fams[f]).forEach(function(k){
+        var p=fams[f][k], d=document.createElement('div'); d.className='carnet-page';
+        var html='<h3>'+esc(p.code?p.code+' · ':'')+esc(p.titre)+'</h3>';
+        var df=c.defis[(p.code||'')+'|'+(p.titre||'')];
+        if(df) html+='<div class="carnet-essai"><strong>Mon essai</strong> ('+fr(df.date)+') : '+esc(df.strat)+' — '+esc((df.moment||'').toLowerCase())+(df.retour?'<br><strong>Retour</strong> : '+esc(df.retour.res)+(df.retour.note?' — '+esc(df.retour.note):''):'<br>Retour : pas encore fait.')+'</div>';
+        p.l.slice().reverse().forEach(function(e){
+          html+='<div class="carnet-l"><span>'+esc(e.label)+'</span><strong>'+esc(e.valeur)+'</strong><small>'+fr(e.date)+'</small></div>';
+        });
+        d.innerHTML=html; box.appendChild(d);
+      });
+    });
+  }
+  var cb=document.getElementById('partage');
+  cb.checked=C.partage();
+  cb.onchange=function(){
+    if(cb.checked && !confirm('Sur un appareil partagé, ton carnet ne sera pas gardé. Ce qui est déjà noté sur cet appareil sera effacé. Continuer ?')){ cb.checked=false; return; }
+    C.setPartage(cb.checked); draw();
+  };
+  document.getElementById('imprimer').onclick=function(){ window.print(); };
+  document.getElementById('effacer').onclick=function(){
+    if(confirm('Effacer tout ton carnet sur cet appareil ? On ne pourra pas le récupérer.')){ C.effacer(); draw(); }
+  };
+  draw();
+})();
+</script>
+</body>
+</html>

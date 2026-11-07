@@ -54,17 +54,35 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8f5f7;
 </style>
 <link rel="stylesheet" href="assets/acces.css?v=5">
 <script src="assets/acces.js?v=5" defer></script>
+<link rel="stylesheet" href="assets/cps_moi.css?v=20261107">
 </head>
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← Accueil</a>
+  <div data-cps-moi="retour" data-code="E2.3" data-titre="Une journée sous tension" data-fam="Mes émotions"></div>
   <div class="hud" id="hud"></div>
   <div id="scene"></div>
+  <div id="fin-moi" hidden>
+    <div data-cps-moi="sequence" data-code="E2.3" data-titre="Une journée sous tension" data-fam="Mes émotions">
+      <script type="application/json">{"tag":"Et moi ?","title":"Mon stress à moi","intro":"Tu as aidé Sami. Maintenant, pense à une journée chargée pour toi.","steps":[
+        {"kind":"echelle","q":"Pendant une journée chargée, mon stress monte à combien ?","carnet":"Mon stress un jour chargé","bas":"Calme, détendu","haut":"Je dois faire une pause"},
+        {"kind":"choix","q":"Mes signes à moi, quand le stress monte :","carnet":"Mes signes du stress","multi":true,"autre":true,"opts":["Souffle court","Ventre serré","Épaules tendues","Cœur qui bat vite","Mains moites","Fatigue","Je m’énerve vite"]},
+        {"kind":"choix","q":"Parmi les gestes de Sami, celui qui m’aiderait le plus :","carnet":"Le geste qui m’aiderait","autre":true,"opts":["Respirer lentement","Marcher un peu","Relire mes idées","Demander un conseil","Me coucher plus tôt","Dire ce que je ressens avec « je »"]}
+      ]}</script>
+    </div>
+    <div data-cps-moi="defi" data-code="E2.3" data-titre="Une journée sous tension" data-fam="Mes émotions">
+      <script type="application/json">{"q":"Choisis une seule chose à essayer cette semaine.","opts":["Avant un moment stressant, respirer lentement une minute","La veille d’un jour important, préparer mon sac et me coucher plus tôt","Quand le stress monte, combiner deux gestes : respirer et relire mes idées"]}</script>
+    </div>
+    <div data-cps-moi="duo">
+      <script type="application/json">{"duree":"10 minutes","situation":"En cuisine, il reste dix minutes avant le service. Une commande s’ajoute.","roleA":"Dis ton stress sur 10 et un signe de ton corps. Choisis deux gestes pour le faire baisser.","roleB":"Écoute. Demande : « Qu’est-ce que tu fais en premier ? ». Note les deux gestes de A.","observe":["A donne un chiffre sur 10","A nomme un signe du corps","A choisit deux gestes possibles tout de suite"]}</script>
+    </div>
+  </div>
 </div>
 <script>
 (function(){
   var scene=document.getElementById('scene');
   var hud=document.getElementById('hud');
+  var finMoi=document.getElementById('fin-moi');
   var stress=3, energie=7, idx=0;
   function clamp(n){ return Math.max(0,Math.min(10,n)); }
   function col(type,v){
@@ -208,9 +226,9 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8f5f7;
     }
 
     if(s.type==='combine'){
-      /* le défi part du stress acquis pendant la journée, augmenté par l'oral */
+      /* l’étape part du stress acquis pendant la journée, augmenté par l'oral */
       if(!s._started){ stress=clamp(stress+(s.bump||0)); s._started=true; } renderHUD(s.day);
-      scene.innerHTML='<div class="card"><button class="say">Écouter</button><p class="txt">Le défi. '+s.text+'</p><div class="opts"></div><div class="fb"></div></div>';
+      scene.innerHTML='<div class="card"><button class="say">Écouter</button><p class="txt">Dernière étape. '+s.text+'</p><div class="opts"></div><div class="fb"></div></div>';
       scene.querySelector('.say').onclick=function(){ speak(s.text); };
       var opts=scene.querySelector('.opts'), fb=scene.querySelector('.fb'), won=false;
       shuffle(s.strategies).forEach(function(st){
@@ -235,8 +253,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8f5f7;
 
     if(s.type==='bilan'){
       var bonne=(stress<=4 && energie>=5);
-      var titre=bonne?'Belle journée !':'Journée difficile';
-      var sous=bonne?'Sami a fait baisser son stress et gardé de l’énergie. Tu l’as bien aidé.'
+      var titre=bonne?'Journée bien menée':'Journée difficile';
+      var sous=bonne?'Sami a fait baisser son stress et gardé de l’énergie. Tes choix l’ont aidé.'
                     :'La journée a été rude. Rejoue-la pour aider Sami à mieux la traverser.';
       scene.innerHTML='<div class="hero"><span class="ic"></span><h1>'+titre+'</h1><p>'+sous+'</p></div>'+
         '<div class="card"><div class="badge">Tu as traversé la journée de Sami</div>'+
@@ -249,9 +267,10 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8f5f7;
         '</ul></div>';
       var c=scene.querySelector('.card');
       var rb=document.createElement('button'); rb.className='btn'; rb.textContent='Rejouer la journée';
-      rb.onclick=function(){ stress=3; energie=7; STEPS.forEach(function(x){ delete x._started; }); go(0); }; c.appendChild(rb);
+      rb.onclick=function(){ if(finMoi){ finMoi.hidden=true; } stress=3; energie=7; STEPS.forEach(function(x){ delete x._started; }); go(0); }; c.appendChild(rb);
       var hb=document.createElement('a'); hb.className='btn soft'; hb.style.textAlign='center'; hb.style.textDecoration='none'; hb.href='index.html'; hb.textContent='← Retour à l’accueil';
       c.appendChild(hb);
+      if(finMoi){ finMoi.hidden=false; }
       return;
     }
   }
@@ -259,5 +278,6 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f8f5f7;
   render();
 })();
 </script>
+<script src="assets/cps_moi.js?v=20261107"></script>
 </body>
 </html>

@@ -197,8 +197,13 @@ Ctrl.prototype.render=function(){
     isLast:(this.idx>=this.parc.length-1),
     score:function(){ return self.score; },
     total:function(){ return self.max; },
-    restart:function(){ self.idx=0; self.score=0; self.max=0; self.render(); }
+    restart:function(){ self.idx=0; self.score=0; self.max=0; self.render(); },
+    page:{code:this.cfg.code, titre:this.cfg.title, fam:famille(this.cfg.theme)}
   };
+  if(this.idx===0 && !this._retourVu && window.CPSMoi){
+    this._retourVu=true;
+    if(window.CPSMoi.retour(this.stage, {code:this.cfg.code, titre:this.cfg.title, fam:famille(this.cfg.theme), next:function(){ self.render(); }})) return;
+  }
   var fn=RENDER[sc.type];
   if(fn) fn(this.stage, sc, ctx);
   else this.stage.appendChild(el('div','cps-card',null));
@@ -206,6 +211,14 @@ Ctrl.prototype.render=function(){
 
 /* ---------- rendus de mécaniques ---------- */
 var RENDER={};
+function famille(t){ return t==='emo'?'Mes émotions':(t==='soc'?'Les autres et moi':'Penser et agir'); }
+
+/* ET MOI ? : l'élève travaille sur lui-même (cps_moi.js). Rien n'est noté. */
+RENDER.moi=function(stage, d, ctx){
+  if(!window.CPSMoi){ ctx.next(); return; }
+  var o=ctx.page; o.next=function(){ ctx.next(); };
+  window.CPSMoi.sequence(stage, d, o);
+};
 
 /* JAUGE : on essaie des stratégies, on voit l'effet sur une jauge (ex. stress) */
 RENDER.gauge=function(stage, d, ctx){
@@ -253,7 +266,7 @@ RENDER.gauge=function(stage, d, ctx){
           fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+(st.fb||'')));
           if(cur <= s.target){
             var bs=opts.querySelectorAll('.cps-opt'); for(var k=0;k<bs.length;k++) bs[k].disabled=true;
-            fb.appendChild(el('div','cps-fb good',(s.success||'Bravo ! Ta jauge est bien redescendue : tu es prêt.')));
+            fb.appendChild(el('div','cps-fb good',(s.success||'Ta jauge est redescendue. Tu peux reprendre ton activité.')));
             goNext();
           }
         } else {
@@ -527,7 +540,7 @@ RENDER.cardpick=function(stage, d, ctx){
     if(!good){ btn.classList.remove('dim'); btn.classList.add('no'); }
     hint.disabled=true;
     clear(fb);
-    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+(it.ex||'')));
+    fb.appendChild(el('div','cps-fb '+(good?'good':'bad'), (good?'✓ ':'✗ ')+(entry.opt.fb ? entry.opt.fb+' ' : '')+(it.ex||'')));
     var last=(i>=items.length-1);
     var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ if(last){ ctx.addScore(earned, items.length); bar.firstChild.style.width='100%'; ctx.next(); } else { i++; draw(); } };
@@ -586,7 +599,7 @@ RENDER.match=function(stage, d, ctx){
   function flash(t,cl){ clear(fb); var b=el('div','cps-fb '+cl,t); fb.appendChild(b); }
   function finish(){
     clear(fb);
-    fb.appendChild(el('div','cps-fb good','✓ Bravo, tout est relié !'));
+    fb.appendChild(el('div','cps-fb good','✓ Tout est relié correctement.'));
     var nb=el('button','cps-next','Continuer →');
     nb.onclick=function(){ ctx.addScore(pairs.length, pairs.length); ctx.next(); };
     fb.appendChild(nb);
@@ -642,7 +655,7 @@ RENDER.order=function(stage, d, ctx){
       slotErr=false; expect++;
       clear(fb);
       if(expect>=steps.length){
-        fb.appendChild(el('div','cps-fb good','✓ Parfait, tout est dans l’ordre !'));
+        fb.appendChild(el('div','cps-fb good','✓ Tout est dans le bon ordre.'));
         var nb=el('button','cps-next','Continuer →');
         nb.onclick=function(){ ctx.addScore(pts, steps.length); ctx.next(); };
         fb.appendChild(nb);
@@ -781,7 +794,7 @@ RENDER.grid=function(stage, d, ctx){
       if(f.ok){
         tile.classList.add('on'); got++; clear(fb);
         if(got>=need){
-          fb.appendChild(el('div','cps-fb good','✓ '+(d.success||'Bravo ! Tu as trouvé tous les visages.')));
+          fb.appendChild(el('div','cps-fb good','✓ '+(d.success||'Tu as trouvé tous les visages.')));
           var nb=el('button','cps-next','Continuer →'); nb.onclick=function(){ ctx.addScore(Math.max(0,need-miss),need); ctx.next(); }; fb.appendChild(nb);
         }
       } else {
@@ -853,7 +866,7 @@ RENDER.wrap=function(stage, d, ctx){
   var total=ctx.total(), score=ctx.score();
   var r= total>0 ? score/total : 1;
   var pct=Math.round(r*100);
-  var msg= r>=0.85?'Excellent ! Tu maîtrises bien.' : r>=0.65?'Bien joué, tu progresses vraiment !' : r>=0.4?'C’est un bon début, continue !':'Recommence : chaque essai te fait progresser.';
+  var msg= r>=0.85?'La plupart de tes réponses sont justes.' : r>=0.65?'Une bonne partie de tes réponses sont justes. Relis les explications des autres.' : r>=0.4?'Une partie de tes réponses sont justes. Refais le parcours en écoutant les explications.':'Refais le parcours : prends le temps de lire ou d’écouter chaque explication.';
 
   var c1=el('div','cps-card');
   var sw=el('div','cps-score');
@@ -867,7 +880,9 @@ RENDER.wrap=function(stage, d, ctx){
   (d.keep||[]).forEach(function(k){
     var kk=el('div','cps-keep'); kk.appendChild(el('span','ic','•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk);
   });
-  if(d.self && d.self.length){
+  if(d.self && d.self.length && window.CPSMoi){
+    window.CPSMoi.choixSoi(c2, d.self, ctx.page);
+  } else if(d.self && d.self.length){
     var sf=el('div','cps-self');
     sf.appendChild(el('p',null,'Je m’auto-évalue (sans note) :'));
     d.self.forEach(function(q){
@@ -878,6 +893,8 @@ RENDER.wrap=function(stage, d, ctx){
     });
     c2.appendChild(sf);
   }
+  if(window.CPSMoi && d.defi) window.CPSMoi.defi(c2, d.defi, ctx.page);
+  if(window.CPSMoi && d.duo) window.CPSMoi.duo(c2, d.duo);
   var again=el('button','cps-btn','Recommencer'); again.style.marginTop='14px';
   again.onclick=function(){ ctx.restart(); };
   c2.appendChild(again);
@@ -989,7 +1006,7 @@ EscapeCtrl.prototype.showFinal=function(){
 EscapeCtrl.prototype.showVictory=function(){
   stopSpeech(); clear(this.stage);
   var self=this;
-  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-msg','Bravo ! Tu as ouvert le coffre.')); this.stage.appendChild(c1);
+  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-msg','Le coffre est ouvert.')); this.stage.appendChild(c1);
   if(this.cfg.keep && this.cfg.keep.length){
     var c2=el('div','cps-card'); c2.appendChild(el('div','cps-title','Ce que tu as appris'));
     this.cfg.keep.forEach(function(k){ var kk=el('div','cps-keep'); kk.appendChild(el('span','ic','•')); kk.appendChild(el('span',null,k.html||'')); c2.appendChild(kk); });
@@ -1029,7 +1046,7 @@ FlashCtrl.prototype.showCover=function(){
   stopSpeech(); clear(this.stage); this.resetBadges();
   var self=this, c=el('div','cps-card');
   c.appendChild(el('div','cps-title','Comment jouer'));
-  var howto='Lis la situation. Devine l’émotion dans ta tête. Retourne la carte pour vérifier. Puis dis si tu savais. But : débloquer les '+this.emos.length+' émotions !';
+  var howto='Lis la situation. Devine l’émotion dans ta tête. Retourne la carte pour vérifier. Puis dis si tu savais. Objectif : revoir les '+this.emos.length+' émotions.';
   c.appendChild(listenBtn(function(){ return howto; }));
   c.appendChild(el('div','cps-instr',howto));
   var b=el('button','cps-btn','Commencer →'); b.onclick=function(){ self.start(); }; c.appendChild(b);
@@ -1076,7 +1093,7 @@ FlashCtrl.prototype.showBack=function(box,card){
 FlashCtrl.prototype.showEnd=function(){
   stopSpeech(); clear(this.stage);
   var self=this;
-  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-msg','Bravo ! Tu as révisé toutes les émotions.')); this.stage.appendChild(c1);
+  var c1=el('div','cps-card'); c1.appendChild(el('div','cps-msg','Tu as révisé toutes les émotions.')); this.stage.appendChild(c1);
   for(var k in this.badges) this.badges[k].classList.add('on');
   var c2=el('div','cps-card'); var again=el('button','cps-btn','Recommencer'); again.onclick=function(){ self.showCover(); }; c2.appendChild(again); this.stage.appendChild(c2);
 };
