@@ -172,7 +172,7 @@ Ctrl.prototype.build=function(){
   app.appendChild(wrap);
 
   var foot=el('div','cps-foot');
-  foot.innerHTML='Compétence <strong>'+(this.cfg.code||'')+'</strong> · Niveau CAP<br>D’après Santé publique France, 2025';
+  foot.innerHTML='Compétence <strong>'+(this.cfg.code||'')+'</strong> · Niveau '+(this.cfg.niveau||'CAP')+'<br>D’après Santé publique France, 2025';
   app.appendChild(foot);
 };
 Ctrl.prototype.setStep=function(k){
@@ -927,7 +927,7 @@ EscapeCtrl.prototype.build=function(){
   wrap.appendChild(this.mapEl);
   this.stage=el('div','cps-stage'); wrap.appendChild(this.stage);
   app.appendChild(wrap);
-  var foot=el('div','cps-foot'); foot.innerHTML='Escape game — Compétences psychosociales · Santé publique France 2025 · Niveau CAP'; app.appendChild(foot);
+  var foot=el('div','cps-foot'); foot.innerHTML='Escape game · Niveau '+(this.cfg.niveau||'CAP')+'<br>D’après Santé publique France, 2025'; app.appendChild(foot);
 };
 EscapeCtrl.prototype.updateMap=function(){
   var locks=this.mapEl.children;

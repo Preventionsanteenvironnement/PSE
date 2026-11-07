@@ -355,7 +355,7 @@ function choixSoi(box, items, opts){
 }
 
 /* ---------- mon essai de la semaine ---------- */
-var MOMENTS=['En atelier','En cuisine','En cours','Pendant la pause','En stage','En dehors du lycée'];
+var MOMENTS=['En cours','Pendant une pause','En stage ou au travail','À la maison','Avec des amis','Dans un lieu public'];
 function defi(box, spec, opts){
   opts=opts||{};
   var w=el('div','moi-defi');
