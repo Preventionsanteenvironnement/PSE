@@ -172,7 +172,7 @@ Ctrl.prototype.build=function(){
   app.appendChild(wrap);
 
   var foot=el('div','cps-foot');
-  foot.innerHTML='CPS — Compétence <strong>'+(this.cfg.code||'')+(this.cfg.ref?' « '+this.cfg.ref+' »':'')+'</strong>'+'<br>Référentiel des compétences psychosociales — Santé publique France, 2025 · Niveau CAP';
+  foot.innerHTML='Compétence <strong>'+(this.cfg.code||'')+'</strong> · Niveau CAP<br>D’après Santé publique France, 2025';
   app.appendChild(foot);
 };
 Ctrl.prototype.setStep=function(k){
