@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche de révision B4 — Le bruit au quotidien | mapse.fr</title>
+<style>
+  :root {
+    --theme: #388e3c; --theme-dark: #1b5e20;
+    --vert: #D8F3DC; --vert-b: #95CFA5;
+    --ambre: #FFF1C1; --ambre-b: #E3C46B;
+    --ciel: #D6EAF8; --ciel-b: #8DB9DE;
+    --orange: #FFE5D0; --orange-b: #EDB48A;
+    --gris: #ECEFF1; --gris-b: #B0BEC5;
+    --rose: #FCE1F1; --rose-b: #E3A3C8;
+    --violet: #E8DFF5; --violet-b: #B8A4DA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #222; min-height: 100vh; padding: 20px 16px 40px; line-height: 1.5;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+  #progression { position: fixed; top: 0; left: 0; height: 5px; width: 0; background: var(--theme); z-index: 10; transition: width .1s; }
+  header {
+    background: linear-gradient(135deg, var(--theme), var(--theme-dark)); color: #fff;
+    padding: 24px 24px; border-radius: 14px; text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1); margin-bottom: 20px;
+  }
+  .theme-tag { display: inline-block; background: rgba(255,255,255,.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+  h1 { font-size: 1.7rem; font-weight: 800; line-height: 1.2; margin-bottom: 4px; }
+  .subtitle { font-size: .95rem; opacity: .92; }
+  .barre-haut { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 22px; }
+  .bouton {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer;
+    background: var(--theme); color: #fff; border: 0; border-radius: 10px; padding: 11px 18px;
+    font: inherit; font-weight: 700; font-size: 15px; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .bouton.secondaire { background: #fff; color: var(--theme-dark); border: 2px solid var(--theme); }
+  .bouton:hover { filter: brightness(1.08); }
+  .bouton:focus-visible, .carte-tourne:focus-visible, .choix:focus-visible, input[type=range]:focus-visible { outline: 3px solid #1565c0; outline-offset: 3px; }
+  .intro { background: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.05); font-size: 15px; }
+
+  section.partie { background: #fff; border-radius: 16px; padding: 20px 18px 18px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+  h2 { font-size: 1.2rem; text-align: center; margin-bottom: 14px; color: #263238; }
+  h3 { font-size: 1rem; text-align: center; margin: 16px 0 10px; color: #37474f; }
+  .aide { text-align: center; font-size: 13.5px; color: #546e7a; margin-bottom: 12px; }
+
+  .grille { display: grid; gap: 12px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 640px) { .g2, .g3 { grid-template-columns: 1fr; } .g4 { grid-template-columns: repeat(2, 1fr); } }
+
+  .carte { border-radius: 14px; border-width: 1.5px; border-style: solid; padding: 14px 14px; text-align: center; font-size: 14.5px; }
+  .carte img { width: 52px; height: 52px; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .carte .titre { font-weight: 800; margin-bottom: 4px; font-size: 15.5px; }
+  .vert { background: var(--vert); border-color: var(--vert-b); }
+  .ambre { background: var(--ambre); border-color: var(--ambre-b); }
+  .ciel { background: var(--ciel); border-color: var(--ciel-b); }
+  .orange { background: var(--orange); border-color: var(--orange-b); }
+  .gris { background: var(--gris); border-color: var(--gris-b); }
+  .rose { background: var(--rose); border-color: var(--rose-b); }
+  .violet { background: var(--violet); border-color: var(--violet-b); }
+  .note { border-radius: 10px; border: 1.5px solid var(--ciel-b); background: var(--ciel); padding: 10px 14px; margin-top: 12px; font-size: 14px; text-align: center; }
+  .note.grise { background: var(--gris); border-color: var(--gris-b); }
+
+  /* Apparition au défilement */
+  .apparait { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+  .apparait.vu { opacity: 1; transform: none; }
+  .grille .apparait:nth-child(2) { transition-delay: .12s; }
+  .grille .apparait:nth-child(3) { transition-delay: .24s; }
+  .grille .apparait:nth-child(4) { transition-delay: .36s; }
+  .grille .apparait:nth-child(5) { transition-delay: .48s; }
+
+  /* Cartes à retourner */
+  .carte-tourne { perspective: 900px; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; min-height: 150px; width: 100%; }
+  .carte-tourne .dedans { position: relative; width: 100%; height: 100%; min-height: 150px; transition: transform .6s; transform-style: preserve-3d; }
+  .carte-tourne[aria-pressed="true"] .dedans { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 14px; border-width: 1.5px; border-style: solid; padding: 12px; text-align: center; font-size: 14.5px; }
+  .face.dos { transform: rotateY(180deg); }
+  .face .titre { font-weight: 800; font-size: 16px; }
+  .face img { width: 52px; height: 52px; object-fit: contain; margin-bottom: 6px; }
+  .face .touche { font-size: 12px; color: #607d8b; margin-top: 6px; }
+
+  /* Échelle et curseur */
+  .echelle { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
+  .chevron { clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%, 10% 50%); padding: 10px 6px 10px 14px; text-align: center; font-size: 13px; line-height: 1.25; border: 0; }
+  .chevron b { display: block; font-size: 14px; }
+  .chevron.actif { outline: none; filter: saturate(1.6) brightness(.97); transform: scale(1.06); }
+  .chevron { transition: transform .3s, filter .3s; }
+  @media (max-width: 640px) { .echelle { grid-template-columns: 1fr; } .chevron { clip-path: none; border-radius: 10px; padding: 8px; } }
+  .curseur-zone { background: #fafafa; border: 1.5px dashed #b0bec5; border-radius: 14px; padding: 14px; }
+  .curseur-zone label { display: block; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  input[type=range] { width: 100%; height: 34px; accent-color: var(--theme); }
+  .graduation { display: flex; justify-content: space-between; font-size: 12px; color: #607d8b; }
+  .afficheur { margin-top: 10px; border-radius: 12px; padding: 12px; text-align: center; transition: background .4s, border-color .4s; border: 2px solid; }
+  .afficheur .db { font-size: 2rem; font-weight: 900; }
+  .afficheur .ou { font-weight: 700; }
+  .vagues { display: flex; justify-content: center; gap: 4px; height: 34px; align-items: center; margin: 6px 0; }
+  .vagues span { width: 6px; border-radius: 3px; background: #455a64; height: 6px; animation: onde 1s ease-in-out infinite; }
+  .vagues span:nth-child(2) { animation-delay: .1s; } .vagues span:nth-child(3) { animation-delay: .2s; }
+  .vagues span:nth-child(4) { animation-delay: .3s; } .vagues span:nth-child(5) { animation-delay: .4s; }
+  .vagues span:nth-child(6) { animation-delay: .3s; } .vagues span:nth-child(7) { animation-delay: .2s; }
+  @keyframes onde { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(var(--amp, 1)); } }
+
+  .durees { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  @media (max-width: 640px) { .durees { grid-template-columns: repeat(2, 1fr); } }
+  .duree { border-radius: 12px; border-width: 1.5px; border-style: solid; padding: 10px 6px; text-align: center; font-weight: 800; }
+  .duree .barre { height: 8px; border-radius: 4px; background: rgba(0,0,0,.18); margin: 8px auto 0; width: 0; transition: width 1.2s ease; }
+  .duree .barre.vu { width: var(--l); }
+
+  /* Trajet du son */
+  .schema { position: relative; width: 100%; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--gris-b); background: #fff; }
+  .schema img { display: block; width: 100%; height: auto; }
+  .point { position: absolute; width: 4.2%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #ffeb3b 0 35%, rgba(255,152,0,.85) 36% 60%, rgba(255,152,0,0) 61%); transform: translate(-50%, -50%); transition: left 1s ease-in-out, top 1s ease-in-out; pointer-events: none; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { filter: drop-shadow(0 0 2px #ff9800); } 50% { filter: drop-shadow(0 0 10px #ff9800); } }
+  .repere { position: absolute; border: 3px solid #e65100; border-radius: 12px; transform: translate(-50%, -50%); transition: all .8s ease; pointer-events: none; background: rgba(255,235,59,.18); }
+  .commandes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  .etape-texte { margin-top: 10px; text-align: center; font-size: 15.5px; min-height: 3em; background: var(--ambre); border: 1.5px solid var(--ambre-b); border-radius: 12px; padding: 10px; }
+  .etape-texte b { color: #bf360c; }
+  .points-etapes { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+  .points-etapes span { width: 10px; height: 10px; border-radius: 50%; background: #cfd8dc; }
+  .points-etapes span.fait { background: var(--theme); }
+
+  /* Compteurs */
+  .compteur { font-variant-numeric: tabular-nums; }
+
+  /* Quiz */
+  .quiz { margin-top: 16px; border-top: 2px dashed #cfd8dc; padding-top: 12px; }
+  .quiz .entete { font-weight: 800; text-align: center; color: var(--theme-dark); margin-bottom: 8px; }
+  .question { margin-bottom: 12px; }
+  .question p { font-weight: 700; margin-bottom: 6px; }
+  .choix { display: block; width: 100%; text-align: left; font: inherit; font-size: 15px; background: #f5f7f8; border: 2px solid #cfd8dc; border-radius: 10px; padding: 9px 12px; margin-bottom: 6px; cursor: pointer; }
+  .choix:hover:not(:disabled) { border-color: var(--theme); }
+  .choix.bon { background: #c8e6c9; border-color: #2e7d32; }
+  .choix.faux { background: #ffcdd2; border-color: #c62828; }
+  .choix:disabled { cursor: default; color: #222; }
+  .retour { font-size: 14px; font-weight: 700; min-height: 1.3em; }
+  .retour.ok { color: #2e7d32; } .retour.ko { color: #c62828; }
+
+  .score { position: sticky; bottom: 10px; margin: 0 auto 18px; max-width: 360px; background: #263238; color: #fff; border-radius: 30px; text-align: center; padding: 9px 16px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.25); z-index: 5; }
+  .fin { text-align: center; }
+  footer { text-align: center; font-size: 12px; color: #666; padding: 16px 0; }
+  footer a { color: var(--theme-dark); text-decoration: none; font-weight: 600; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .apparait { opacity: 1; transform: none; transition: none; }
+    .vagues span, .point { animation: none; }
+    .carte-tourne .dedans, .point, .repere, .duree .barre { transition: none; }
+  }
+</style>
+<!-- Mesure d'audience anonyme (GoatCounter) : chemin de page seul, sans paramètres -->
+<script>window.goatcounter={path:function(){return location.pathname||"/"}};</script>
+<script data-goatcounter="https://brahms.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div id="progression" aria-hidden="true"></div>
+<div class="container">
+
+  <header>
+    <div class="theme-tag">Thématique B · CAP</div>
+    <h1>Fiche de révision B4 — Le bruit au quotidien</h1>
+    <div class="subtitle">Révise en t'amusant, puis télécharge ta fiche</div>
+  </header>
+
+  <div class="barre-haut">
+    <a class="bouton" href="cap_B4/fiche-revision-B4-bruit-au-quotidien.pdf" download>📄 Télécharger la fiche PDF</a>
+    <a class="bouton secondaire" href="cap_B4.html">← Module B4</a>
+  </div>
+
+  <div class="intro">
+    Fais défiler la page : les notions apparaissent une à une. <strong>Touche les cartes</strong> pour les retourner, <strong>fais glisser le curseur</strong> des décibels, regarde <strong>le trajet du son</strong>, puis réponds au <strong>« Teste-toi »</strong> à la fin de chaque partie.
+  </div>
+
+  <!-- 1 -->
+  <section class="partie" aria-labelledby="t1">
+    <h2 id="t1">1. Le son et le bruit</h2>
+    <p class="aide">Touche une carte pour voir sa définition.</p>
+    <div class="grille g2">
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face ciel"><img src="cap_B4/cours-images/ar-27073.png" alt=""><span class="titre">Le son</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos ciel"><span class="titre">Le son</span><span>Une vibration de l'air qui se propage sous la forme d'une <b>onde sonore</b>.</span></div>
+      </div></button>
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face rose"><img src="cap_B4/cours-images/ar-7157.png" alt=""><span class="titre">Le bruit</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos rose"><span class="titre">Le bruit</span><span>Un son ou un ensemble de sons perçu comme <b>gênant</b>.</span></div>
+      </div></button>
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face orange"><img src="cap_B4/cours-images/ar-38215.png" alt=""><span class="titre">L'intensité</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos orange"><span class="titre">L'intensité</span><span>Son faible ou fort. Elle se mesure en <b>décibels : dB(A)</b>.</span></div>
+      </div></button>
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face violet"><img src="cap_B4/cours-images/ar-24791.png" alt=""><span class="titre">La fréquence</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos violet"><span class="titre">La fréquence</span><span>Son grave ou aigu : vibrations par seconde. Elle se mesure en <b>hertz : Hz</b>. L'oreille perçoit de 20 à 20 000 Hz.</span></div>
+      </div></button>
+    </div>
+    <div class="quiz" data-quiz="1"></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="partie" aria-labelledby="t2">
+    <h2 id="t2">2. L'échelle des niveaux sonores</h2>
+    <div class="echelle apparait" id="echelle">
+      <div class="chevron vert" data-db="0"><b>0 dB(A)</b>seuil d'audibilité</div>
+      <div class="chevron vert" data-db="50"><b>50 dB(A)</b>conversation</div>
+      <div class="chevron ambre" data-db="80"><b>80 dB(A)</b>seuil de nocivité</div>
+      <div class="chevron orange" data-db="102"><b>102 dB(A)</b>concert (max.)</div>
+      <div class="chevron rose" data-db="120"><b>120 dB(A)</b>seuil de douleur</div>
+    </div>
+    <div class="curseur-zone apparait">
+      <label for="curseur">Fais glisser le curseur : quel est le danger ?</label>
+      <input type="range" id="curseur" min="0" max="120" step="1" value="50" aria-describedby="afficheur">
+      <div class="graduation" aria-hidden="true"><span>0</span><span>30</span><span>60</span><span>90</span><span>120</span></div>
+      <div class="afficheur" id="afficheur" aria-live="polite">
+        <div class="vagues" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="db"><span id="valeur">50</span> dB(A)</div>
+        <div class="ou" id="repere"></div>
+        <div id="oms"></div>
+      </div>
+    </div>
+    <div class="note apparait">Plus le niveau sonore est élevé, plus le bruit est dangereux. Le seuil de nocivité vaut pour 8 heures par jour.</div>
+    <div class="quiz" data-quiz="2"></div>
+  </section>
+
+  <!-- 3 -->
+  <section class="partie" aria-labelledby="t3">
+    <h2 id="t3">3. Le niveau sonore et la durée d'exposition</h2>
+    <p class="aide"><b>Durée d'écoute sans risque, par semaine (OMS) :</b></p>
+    <div class="durees" id="durees">
+      <div class="duree vert apparait">80 dB(A)<br>40 h<div class="barre" style="--l:100%"></div></div>
+      <div class="duree vert apparait">85 dB(A)<br>12 h 30<div class="barre" style="--l:31%"></div></div>
+      <div class="duree ambre apparait">90 dB(A)<br>4 h<div class="barre" style="--l:10%"></div></div>
+      <div class="duree orange apparait">95 dB(A)<br>1 h 15<div class="barre" style="--l:4%"></div></div>
+      <div class="duree rose apparait">100 dB(A)<br>20 min<div class="barre" style="--l:2%"></div></div>
+    </div>
+    <div class="note apparait">Le risque dépend du niveau sonore <b>ET</b> de la durée d'exposition.<br>Plus le niveau sonore augmente, plus la durée d'écoute sans risque diminue.</div>
+    <div class="quiz" data-quiz="3"></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="partie" aria-labelledby="t4">
+    <h2 id="t4">4. L'appareil auditif : le trajet du son</h2>
+    <p class="aide">Appuie sur « Lancer le son » ou avance étape par étape.</p>
+    <div class="schema apparait" id="schema">
+      <img src="cap_B4/images/b4-trajet-son-schema.png" alt="Schéma de l'appareil auditif : oreille externe (pavillon, conduit auditif), oreille moyenne (tympan, osselets), oreille interne (cochlée et cellules ciliées), nerf auditif, cerveau.">
+      <div class="repere" id="repere-trajet" aria-hidden="true"></div>
+      <div class="point" id="point" aria-hidden="true"></div>
+    </div>
+    <div class="etape-texte" id="etape-texte" aria-live="polite">Le son arrive de l'extérieur…</div>
+    <div class="points-etapes" id="points-etapes" aria-hidden="true"></div>
+    <div class="commandes">
+      <button class="bouton secondaire" id="precedent">◀ Étape précédente</button>
+      <button class="bouton" id="lancer">▶ Lancer le son</button>
+      <button class="bouton secondaire" id="suivant">Étape suivante ▶</button>
+    </div>
+    <div class="note grise apparait">Les cellules ciliées de la cochlée transforment les vibrations en influx nerveux ; le nerf auditif le conduit au cerveau.</div>
+    <div class="quiz" data-quiz="4"></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="partie" aria-labelledby="t5">
+    <h2 id="t5">5. Les effets du bruit sur la santé</h2>
+    <div class="grille g2">
+      <div class="carte ambre apparait"><img src="cap_B4/cours-images/ar-2871.png" alt=""><div class="titre">La fatigue auditive</div>Sifflements ou bourdonnements : les <b>acouphènes</b>, et une baisse de l'audition. Elle disparaît avec le repos, si l'exposition au bruit ne recommence pas.</div>
+      <div class="carte rose apparait"><img src="cap_B4/cours-images/ar-4748.png" alt=""><div class="titre">La surdité</div>Un bruit intense et prolongé détruit les <b>cellules ciliées</b>. Elles ne se réparent pas : la perte d'audition est <b>définitive</b>.</div>
+    </div>
+    <h3>Les effets extra-auditifs : sur le reste de l'organisme</h3>
+    <div class="grille g4">
+      <div class="carte violet apparait"><img src="cap_B4/cours-images/ar-2314.png" alt=""><div class="titre">La fatigue</div></div>
+      <div class="carte violet apparait"><img src="cap_B4/cours-images/ar-38930.png" alt=""><div class="titre">Le stress</div></div>
+      <div class="carte violet apparait"><img src="cap_B4/cours-images/ar-31276.png" alt=""><div class="titre">Les troubles du sommeil</div></div>
+      <div class="carte violet apparait"><img src="cap_B4/cours-images/ar-35553.png" alt=""><div class="titre">Moins de concentration</div></div>
+    </div>
+    <div class="note grise apparait">Conséquences : isolement et conflits avec l'entourage ; au travail, baisse de la concentration, signal d'alarme masqué, accidents.</div>
+    <div class="quiz" data-quiz="5"></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="partie" aria-labelledby="t6">
+    <h2 id="t6">6. Protéger son audition</h2>
+    <div class="grille g4">
+      <div class="carte vert apparait"><img src="cap_B4/cours-images/ar-38215.png" alt=""><div class="titre">Réduire le volume</div>Écouteurs à <b>60 % au plus</b> du maximum ; s'éloigner des enceintes et des machines.</div>
+      <div class="carte vert apparait"><img src="cap_B4/cours-images/ar-38213.png" alt=""><div class="titre">Limiter la durée</div>Écouter moins longtemps et faire des <b>pauses</b>.</div>
+      <div class="carte vert apparait"><img src="cap_B4/cours-images/ar-32808.png" alt=""><div class="titre">Se protéger</div>Bouchons d'oreilles ou casque antibruit, <b>bien mis et portés pendant tout le bruit</b>.</div>
+      <div class="carte rose apparait"><img src="cap_B4/cours-images/ar-38082.png" alt=""><div class="titre">Réagir</div>Sifflement ou baisse d'audition qui persiste après un bruit très fort : consulter <b>en urgence à l'hôpital</b>.</div>
+    </div>
+    <div class="quiz" data-quiz="6"></div>
+  </section>
+
+  <!-- 7 -->
+  <section class="partie" aria-labelledby="t7">
+    <h2 id="t7">7. La réglementation</h2>
+    <div class="grille g2">
+      <div class="carte orange apparait"><img src="cap_B4/cours-images/ar-36357.png" alt=""><div class="titre">Au travail</div>L'employeur réduit le bruit, d'abord à la source.<br>Au-dessus de <b><span class="compteur" data-cible="80">80</span> dB(A)</b> sur 8 h : il met à disposition des protecteurs et forme les salariés.<br>Au-dessus de <b><span class="compteur" data-cible="85">85</span> dB(A)</b> : il signale les zones bruyantes et <b>contrôle le port</b> des protecteurs.</div>
+      <div class="carte orange apparait"><img src="cap_B4/cours-images/ar-11584.png" alt=""><div class="titre">Concerts et discothèques</div><b><span class="compteur" data-cible="102">102</span> dB(A)</b> au plus, en moyenne sur 15 minutes.<br>L'organisateur informe le public des risques, donne <b>gratuitement</b> des protections auditives et crée des <b>zones de repos auditif</b>.</div>
+    </div>
+    <div class="quiz" data-quiz="7"></div>
+  </section>
+
+  <!-- 8 -->
+  <section class="partie" aria-labelledby="t8">
+    <h2 id="t8">8. Les bruits de voisinage</h2>
+    <div class="grille g2">
+      <div class="carte ciel apparait"><img src="cap_B4/cours-images/ar-5936.png" alt=""><div class="titre">Le comportement civique</div>Limiter le bruit que l'on fait : baisser la musique, prévenir ses voisins avant une fête.</div>
+      <div class="carte ciel apparait"><img src="cap_B4/cours-images/ar-10172.png" alt=""><div class="titre">La répression</div>Bruit anormal par son intensité, sa durée ou sa répétition, de jour comme de nuit : constat de la police, amende de <b><span class="compteur" data-cible="68">68</span> €</b>.</div>
+    </div>
+    <div class="quiz" data-quiz="8"></div>
+  </section>
+
+  <!-- Pièges -->
+  <section class="partie" aria-labelledby="t9">
+    <h2 id="t9">Les pièges à éviter</h2>
+    <p class="aide">Touche la carte pour voir la bonne réponse.</p>
+    <div class="grille g3">
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face ciel"><span class="titre">dB(A) ou Hz ?</span><span>Avec quoi mesure-t-on l'intensité ? et la fréquence ?</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos vert"><span>L'intensité se mesure en <b>dB(A)</b> ; la fréquence, en <b>hertz (Hz)</b>.</span></div>
+      </div></button>
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face ciel"><span class="titre">Ça passe ou c'est définitif ?</span><span>Fatigue auditive et surdité, est-ce pareil ?</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos vert"><span>La fatigue auditive passe avec le repos ; la surdité due au bruit est <b>définitive</b>.</span></div>
+      </div></button>
+      <button class="carte-tourne apparait" aria-pressed="false"><div class="dedans">
+        <div class="face ciel"><span class="titre">Je l'enlève un moment ?</span><span>Un protecteur protège-t-il si on l'enlève de temps en temps ?</span><span class="touche">Touche pour retourner</span></div>
+        <div class="face dos vert"><span>Un protecteur ne protège que s'il est porté <b>pendant tout le bruit</b>.</span></div>
+      </div></button>
+    </div>
+  </section>
+
+  <div class="score" id="score" aria-live="polite">Teste-toi : 0 / 16</div>
+
+  <div class="fin">
+    <a class="bouton" href="cap_B4/fiche-revision-B4-bruit-au-quotidien.pdf" download>📄 Télécharger la fiche PDF</a>
+    <p style="margin-top:12px"><a class="bouton secondaire" href="cap_B4_jeux.html">🎮 Continuer avec les jeux du B4</a></p>
+  </div>
+
+  <footer>
+    Pictogrammes : ARASAAC (Gobierno de Aragón, licence CC BY-NC-SA). Sources du cours : INRS, OMS, Inserm, Code de la santé publique, Service-Public.<br>
+    <a href="https://mapse.fr">mapse.fr</a> · Ressource pédagogique M. MECHERI
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var calme = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Barre de progression */
+  var barre = document.getElementById("progression");
+  function majProgression() {
+    var h = document.documentElement.scrollHeight - innerHeight;
+    barre.style.width = (h > 0 ? (scrollY / h) * 100 : 0) + "%";
+  }
+  addEventListener("scroll", majProgression, { passive: true });
+
+  /* Compteurs qui défilent */
+  function compter(el) {
+    var cible = +el.dataset.cible, t0 = null;
+    if (calme) { el.textContent = cible; return; }
+    function pas(t) { if (!t0) t0 = t; var p = Math.min(1, (t - t0) / 900); el.textContent = Math.round(cible * p); if (p < 1) requestAnimationFrame(pas); }
+    requestAnimationFrame(pas);
+  }
+
+  /* Apparition au défilement */
+  var vus = document.querySelectorAll(".apparait, .duree .barre, .compteur");
+  if ("IntersectionObserver" in window && !calme) {
+    var obs = new IntersectionObserver(function (entrees) {
+      entrees.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target;
+        el.classList.add("vu");
+        if (el.classList.contains("compteur")) compter(el);
+        obs.unobserve(el);
+      });
+    }, { threshold: 0.15 });
+    vus.forEach(function (el) { obs.observe(el); });
+  } else {
+    vus.forEach(function (el) { el.classList.add("vu"); });
+  }
+
+  /* Cartes à retourner */
+  document.querySelectorAll(".carte-tourne").forEach(function (b) {
+    b.addEventListener("click", function () { b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"); });
+  });
+
+  /* Curseur des décibels */
+  var curseur = document.getElementById("curseur"), aff = document.getElementById("afficheur");
+  var valeur = document.getElementById("valeur"), rep = document.getElementById("repere"), oms = document.getElementById("oms");
+  var paliers = [[80, "40 h"], [85, "12 h 30"], [90, "4 h"], [95, "1 h 15"], [100, "20 min"]];
+  var couleurs = { vert: ["#D8F3DC", "#95CFA5"], ambre: ["#FFF1C1", "#E3C46B"], orange: ["#FFE5D0", "#EDB48A"], rose: ["#FCE1F1", "#E3A3C8"] };
+  function majCurseur() {
+    var v = +curseur.value, c, r, o = "";
+    valeur.textContent = v;
+    if (v < 50) { c = "vert"; r = v === 0 ? "Seuil d'audibilité : on commence à entendre." : "Son faible, pas de danger."; }
+    else if (v < 80) { c = "vert"; r = v === 50 ? "C'est le niveau d'une conversation." : "En dessous du seuil de nocivité."; }
+    else if (v < 102) { c = v < 90 ? "ambre" : "orange"; r = v === 80 ? "Seuil de nocivité : le bruit devient dangereux (8 heures par jour)." : "Au-dessus du seuil de nocivité : le bruit est dangereux."; }
+    else if (v < 120) { c = "orange"; r = v === 102 ? "Niveau maximum autorisé en concert." : "Plus fort que le maximum autorisé en concert : très dangereux."; }
+    else { c = "rose"; r = "Seuil de douleur : le son fait mal."; }
+    if (v >= 80 && v <= 100) {
+      for (var i = 0; i < paliers.length; i++) {
+        if (paliers[i][0] === v) { o = "Durée d'écoute sans risque (OMS) : " + paliers[i][1] + " par semaine."; break; }
+        if (paliers[i + 1] && v > paliers[i][0] && v < paliers[i + 1][0]) { o = "Durée d'écoute sans risque (OMS) : entre " + paliers[i][1] + " et " + paliers[i + 1][1] + " par semaine."; break; }
+      }
+    } else if (v > 100) { o = "Durée d'écoute sans risque : encore moins que 20 min par semaine."; }
+    if (v >= 120) c = "rose";
+    rep.textContent = r; oms.textContent = o;
+    aff.style.background = couleurs[c][0]; aff.style.borderColor = couleurs[c][1];
+    aff.style.setProperty("--amp", (1 + v / 12).toFixed(1));
+    document.querySelectorAll("#echelle .chevron").forEach(function (ch) {
+      ch.classList.toggle("actif", Math.abs(+ch.dataset.db - v) <= 3);
+    });
+  }
+  curseur.addEventListener("input", majCurseur); majCurseur();
+
+  /* Trajet du son (coordonnées sur le schéma 1800 × 940) */
+  var W = 1800, H = 940;
+  var etapes = [
+    { x: 135, y: 400, l: [120, 635, 150, 50], t: "<b>1. Le pavillon</b> capte l'onde sonore." },
+    { x: 380, y: 412, l: [370, 481, 220, 50], t: "<b>2. Le conduit auditif</b> : l'onde sonore le parcourt jusqu'au tympan." },
+    { x: 542, y: 410, l: [535, 521, 130, 50], t: "<b>3. Le tympan</b> vibre." },
+    { x: 720, y: 400, l: [730, 471, 150, 50], t: "<b>4. Les osselets</b>, trois petits os de l'oreille moyenne, transmettent les vibrations." },
+    { x: 1105, y: 415, l: [1120, 588, 210, 80], t: "<b>5. La cochlée</b> : ses cellules ciliées transforment les vibrations en influx nerveux." },
+    { x: 1320, y: 370, l: [1360, 451, 180, 50], t: "<b>6. Le nerf auditif</b> conduit l'influx nerveux jusqu'au cerveau." },
+    { x: 1640, y: 230, l: [1640, 230, 250, 130], t: "<b>7. Le cerveau</b> interprète le son." }
+  ];
+  var point = document.getElementById("point"), cadre = document.getElementById("repere-trajet");
+  var texte = document.getElementById("etape-texte"), pts = document.getElementById("points-etapes");
+  etapes.forEach(function () { pts.appendChild(document.createElement("span")); });
+  var n = -1, minuterie = null;
+  function placer(i) {
+    n = Math.max(-1, Math.min(etapes.length - 1, i));
+    if (n < 0) {
+      point.style.left = "1%"; point.style.top = (400 / H * 100) + "%";
+      cadre.style.opacity = 0; texte.textContent = "Le son arrive de l'extérieur…";
+    } else {
+      var e = etapes[n];
+      point.style.left = (e.x / W * 100) + "%"; point.style.top = (e.y / H * 100) + "%";
+      cadre.style.opacity = 1;
+      cadre.style.left = (e.l[0] / W * 100) + "%"; cadre.style.top = (e.l[1] / H * 100) + "%";
+      cadre.style.width = (e.l[2] / W * 100) + "%"; cadre.style.height = (e.l[3] / H * 100) + "%";
+      texte.innerHTML = e.t;
+    }
+    pts.querySelectorAll("span").forEach(function (s, k) { s.classList.toggle("fait", k <= n); });
+  }
+  function arreter() { clearInterval(minuterie); minuterie = null; document.getElementById("lancer").textContent = "▶ Lancer le son"; }
+  document.getElementById("suivant").addEventListener("click", function () { arreter(); placer(n + 1); });
+  document.getElementById("precedent").addEventListener("click", function () { arreter(); placer(n - 1); });
+  document.getElementById("lancer").addEventListener("click", function () {
+    if (minuterie) { arreter(); return; }
+    placer(-1);
+    this.textContent = "⏸ Pause";
+    minuterie = setInterval(function () { if (n >= etapes.length - 1) { arreter(); return; } placer(n + 1); }, 2600);
+    setTimeout(function () { if (minuterie) placer(0); }, 300);
+  });
+  placer(-1);
+
+  /* Teste-toi */
+  var Q = {
+    1: [["L'intensité d'un son se mesure en…", ["décibels : dB(A)", "hertz : Hz", "minutes"]],
+        ["Un son grave ou aigu : c'est…", ["la fréquence", "l'intensité", "le bruit"]]],
+    2: [["Le seuil de nocivité est à…", ["80 dB(A)", "50 dB(A)", "120 dB(A)"]],
+        ["120 dB(A), c'est…", ["le seuil de douleur", "le seuil d'audibilité", "une conversation"]]],
+    3: [["À 95 dB(A), la durée d'écoute sans risque (OMS) est de…", ["1 h 15 par semaine", "4 h par semaine", "40 h par semaine"]],
+        ["Quand le niveau sonore augmente, la durée d'écoute sans risque…", ["diminue", "augmente", "ne change pas"]]],
+    4: [["Qui transforme les vibrations en influx nerveux ?", ["les cellules ciliées de la cochlée", "les osselets", "le tympan"]],
+        ["Juste après le tympan, le son passe par…", ["les osselets", "la cochlée", "le pavillon"]]],
+    5: [["La fatigue auditive…", ["disparaît avec le repos, si l'exposition ne recommence pas", "est toujours définitive", "n'a aucun signe"]],
+        ["Les acouphènes, ce sont…", ["des sifflements ou bourdonnements", "des troubles du sommeil", "des cellules de l'oreille"]]],
+    6: [["Le volume des écouteurs doit rester à…", ["60 % au plus du maximum", "100 % du maximum", "80 % au moins du maximum"]],
+        ["Un sifflement persiste après un bruit très fort. Que faire ?", ["consulter en urgence à l'hôpital", "attendre une semaine", "remettre la musique plus fort"]]],
+    7: [["Au-dessus de 85 dB(A), l'employeur…", ["contrôle le port des protecteurs", "n'a rien à faire", "ferme l'entreprise"]],
+        ["En concert, le niveau sonore est limité à…", ["102 dB(A) au plus", "120 dB(A) au plus", "50 dB(A) au plus"]]],
+    8: [["L'amende pour un bruit de voisinage constaté est de…", ["68 €", "1 500 €", "5 €"]],
+        ["Un bruit de voisinage peut être sanctionné…", ["de jour comme de nuit", "seulement la nuit", "seulement le week-end"]]]
+  };
+  var total = 0, bons = 0, scoreEl = document.getElementById("score");
+  function melanger(t) { t = t.slice(); for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = t[i]; t[i] = t[j]; t[j] = x; } return t; }
+  function majScore() { scoreEl.textContent = "Teste-toi : " + bons + " / " + total + (bons === total ? " — Bravo, tout est juste ! 🎉" : ""); }
+  document.querySelectorAll(".quiz").forEach(function (zone) {
+    var qs = Q[zone.dataset.quiz]; if (!qs) return;
+    var h = document.createElement("div"); h.className = "entete"; h.textContent = "✏️ Teste-toi"; zone.appendChild(h);
+    qs.forEach(function (q) {
+      total++;
+      var bloc = document.createElement("div"); bloc.className = "question";
+      var p = document.createElement("p"); p.textContent = q[0]; bloc.appendChild(p);
+      var retour = document.createElement("div"); retour.className = "retour"; retour.setAttribute("aria-live", "polite");
+      var boutons = [];
+      melanger(q[1].map(function (txt, k) { return { txt: txt, bon: k === 0 }; })).forEach(function (o) {
+        var b = document.createElement("button"); b.className = "choix"; b.textContent = o.txt;
+        b.addEventListener("click", function () {
+          boutons.forEach(function (x) { x.disabled = true; if (x._bon) x.classList.add("bon"); });
+          if (o.bon) { bons++; retour.className = "retour ok"; retour.textContent = "✔ Bonne réponse !"; }
+          else { b.classList.add("faux"); retour.className = "retour ko"; retour.textContent = "✘ Pas tout à fait : la bonne réponse est en vert."; }
+          majScore();
+        });
+        b._bon = o.bon; boutons.push(b); bloc.appendChild(b);
+      });
+      bloc.appendChild(retour); zone.appendChild(bloc);
+    });
+  });
+  majScore();
+})();
+</script>
+</body>
+</html>
