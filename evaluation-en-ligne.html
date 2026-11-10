@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Évaluation en ligne | mapse.fr</title>
+<style>
+  :root { --bleu: #1565c0; --bleu-f: #0d47a1; --rouge: #c62828; --vert: #2e7d32; --gris: #eceff1; --texte: #1f2933; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f6f8; color: var(--texte); line-height: 1.5; font-size: 1.000rem; }
+  .page { max-width: 860px; margin: 0 auto; padding: 18px 16px 60px; }
+  header.titre { background: linear-gradient(135deg, var(--bleu), var(--bleu-f)); color: #fff; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 18px; }
+  header.titre h1 { font-size: 1.45rem; }
+  .carte { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .ecran { display: none; } .ecran.actif { display: block; }
+  label.grand { display: block; font-weight: 700; margin-bottom: 8px; font-size: 1.05rem; }
+  input.code { font-size: 1.6rem; letter-spacing: 6px; text-transform: uppercase; text-align: center; width: 100%; max-width: 280px; padding: 10px; border: 2px solid #90a4ae; border-radius: 10px; display: block; margin: 0 auto 12px; }
+  .bouton { display: inline-block; background: var(--bleu); color: #fff; border: 0; border-radius: 10px; padding: 12px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+  .bouton:disabled { opacity: .5; cursor: default; }
+  .bouton.vert { background: var(--vert); } .bouton.blanc { background: #fff; color: var(--bleu-f); border: 2px solid var(--bleu); }
+  .centre { text-align: center; }
+  .message { margin-top: 10px; font-weight: 600; min-height: 1.4em; } .message.erreur { color: var(--rouge); }
+  ul.regles { margin: 10px 0 10px 22px; } ul.regles li { margin-bottom: 6px; }
+  .avert { background: #fff8e1; border: 2px solid #ffb300; border-radius: 10px; padding: 12px; margin: 12px 0; }
+
+  .barre { position: sticky; top: 0; z-index: 20; background: #263238; color: #fff; display: flex; flex-wrap: wrap; gap: 10px 18px; justify-content: space-between; align-items: center; padding: 8px 14px; border-radius: 0 0 12px 12px; margin: -18px -16px 16px; font-size: 0.875rem; }
+  .barre b { font-variant-numeric: tabular-nums; }
+  .chrono.bientot { color: #ffcc80; } .chrono.fini { color: #ef9a9a; }
+  .situation { background: #e3f2fd; border-left: 5px solid var(--bleu); padding: 12px 14px; border-radius: 8px; }
+  .doc { border: 1.5px solid #b0bec5; border-radius: 10px; padding: 12px 14px; margin-top: 12px; background: #fafafa; }
+  .doc h3 { font-size: 1rem; margin-bottom: 6px; } .doc p { margin-bottom: 6px; } .doc .source { font-size: 0.812rem; color: #546e7a; font-style: italic; }
+  .question { border-top: 2px dashed #cfd8dc; padding-top: 14px; margin-top: 14px; }
+  .chapeau { font-style: italic; color: #37474f; margin: 12px 0 2px; font-weight: 600; }
+  .num { display: inline-block; background: var(--bleu); color: #fff; border-radius: 6px; padding: 0 8px; margin-right: 6px; font-weight: 700; }
+  .points { color: #607d8b; font-size: 0.875rem; }
+  .aide { background: #f1f8e9; border: 1.5px dashed #8bc34a; border-radius: 8px; padding: 6px 10px; margin: 6px 0; font-size: 0.938rem; }
+  textarea.reponse-eleve { width: 100%; font: inherit; line-height: 1.5; padding: 8px 10px; border: 2px solid #b0bec5; border-radius: 8px; margin-top: 8px; resize: none; overflow: hidden; min-height: 4.8em; }
+  textarea.trou { display: inline-block; vertical-align: bottom; font: inherit; line-height: 1.5; width: 160px; max-width: 100%; min-height: 0; padding: 2px 6px; margin: 2px 4px; border: 0; border-bottom: 2px solid var(--bleu); border-radius: 4px 4px 0 0; background: #f5f9ff; resize: none; overflow: hidden; }
+  .choix { display: block; padding: 8px 10px; border: 2px solid #cfd8dc; border-radius: 8px; margin-top: 6px; cursor: pointer; }
+  .choix input { margin-right: 8px; transform: scale(1.2); }
+  table.tab { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  table.tab th, table.tab td { border: 1.5px solid #90a4ae; padding: 6px 8px; vertical-align: top; text-align: left; }
+  table.tab th { background: #eceff1; }
+  table.tab textarea { width: 100%; font: inherit; line-height: 1.5; border: 0; margin: 0; padding: 4px 6px; background: #f5f9ff; min-height: 3em; resize: none; overflow: hidden; }
+  .envoi { text-align: center; margin-top: 22px; }
+
+  #alerte { position: fixed; inset: 0; z-index: 100; background: rgba(183, 28, 28, .96); color: #fff; display: none; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+  #alerte.visible { display: flex; }
+  #alerte h2 { font-size: 1.6rem; margin-bottom: 10px; }
+  #alerte p { font-size: 1.1rem; margin-bottom: 8px; }
+  #modale { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 16px; }
+  #modale.visible { display: flex; }
+  #modale .carte { max-width: 460px; }
+
+  /* ── Accessibilité : taille du texte et mode sombre (gardés sur l'appareil) ── */
+  html { font-size: calc(16px * var(--zoom, 1)); }
+  body { font-size: 1rem; }
+  .acces { position: fixed; right: 10px; bottom: 10px; z-index: 95; display: flex; gap: 6px; background: rgba(38,50,56,.92); padding: 6px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.3); }
+  .acces button { font: inherit; font-size: 15px; font-weight: 800; min-width: 42px; min-height: 40px; border: 0; border-radius: 8px; background: #fff; color: #263238; cursor: pointer; }
+  .acces button:focus-visible { outline: 3px solid #ffca28; outline-offset: 2px; }
+  html.sombre body { background: #121417; color: #e8eaed; }
+  html.sombre .carte, html.sombre #modale .carte { background: #1e2227; box-shadow: none; }
+  html.sombre .situation { background: #17283a; }
+  html.sombre .doc { background: #191c20; border-color: #4a5560; }
+  html.sombre .doc .source, html.sombre .points, html.sombre .chapeau { color: #b0bec5; }
+  html.sombre textarea, html.sombre table.tab textarea, html.sombre textarea.trou { background: #0f1720; color: #e8eaed; border-color: #546e7a; }
+  html.sombre textarea.trou { border-bottom-color: #64b5f6; }
+  html.sombre table.tab th { background: #263238; color: #e8eaed; } html.sombre table.tab th, html.sombre table.tab td { border-color: #546e7a; }
+  html.sombre .aide { background: #1b2a17; border-color: #7cb342; }
+  html.sombre .avert { background: #2e2610; border-color: #ffb300; }
+  html.sombre .choix { border-color: #546e7a; }
+  html.sombre input.code { background: #0f1720; color: #e8eaed; }
+  html.sombre .message.erreur { color: #ef9a9a; }
+  @media print { body * { display: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 1. Code élève -->
+  <section class="ecran actif" id="e-code">
+    <header class="titre"><h1>✍️ Évaluation en ligne</h1><div>mapse.fr · PSE · M. MECHERI</div></header>
+    <div class="carte centre">
+      <label class="grand" for="code">Entre ton code élève</label>
+      <input class="code" id="code" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="bouton" id="b-code">Continuer</button>
+      <div class="message" id="m-code" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- 2. Consignes -->
+  <section class="ecran" id="e-regles">
+    <header class="titre"><h1 id="r-titre">Évaluation</h1><div id="r-sous"></div></header>
+    <div class="carte">
+      <p><b>Avant de commencer, lis bien :</b></p>
+      <ul class="regles">
+        <li>Tu as <b id="r-duree"></b> pour faire l'évaluation. Le temps restant s'affiche en haut de l'écran.</li>
+        <li>L'évaluation s'ouvre <b>en plein écran</b>. Reste dessus jusqu'à la fin.</li>
+        <li><b>Si tu quittes la page</b> (autre onglet, autre fenêtre, autre application, sortie du plein écran), une alerte s'affiche. <b>Chaque sortie est notée avec l'heure et la durée, et signalée au professeur.</b></li>
+        <li id="r-max" hidden></li>
+        <li>Le copier-coller, le clic droit et l'impression sont bloqués.</li>
+        <li>Tes réponses sont gardées sur l'appareil pendant que tu travailles. Tu n'envoies ta copie <b>qu'une seule fois</b>, à la fin.</li>
+        <li>Quand le temps est fini, ta copie part toute seule.</li>
+      </ul>
+      <div class="avert">Tu dois travailler <b>seul</b>, sans cours, sans téléphone et sans Internet, comme en classe.</div>
+      <div class="centre">
+        <label class="grand" for="mdp">Mot de passe de l'épreuve <span style="font-weight:400">(donné par le professeur ou l'adulte présent)</span></label>
+        <input class="code" id="mdp" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" style="letter-spacing:3px">
+        <button class="bouton vert" id="b-commencer">Commencer l'évaluation</button>
+        <div class="message" id="m-regles" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Évaluation -->
+  <section class="ecran" id="e-eval">
+    <div class="barre"><span>Code <b id="b-code-aff"></b></span><span>Temps restant <b class="chrono" id="chrono">--:--</b></span><span>Sorties <b id="b-sorties">0</b></span></div>
+    <h1 id="eval-titre" style="font-size:1.3rem;text-align:center;margin-bottom:12px"></h1>
+    <div class="carte" id="sujet"></div>
+    <div class="carte" id="questions"></div>
+    <div class="envoi"><button class="bouton vert" id="b-envoyer">📤 J'ai fini : envoyer ma copie</button>
+      <div class="message" id="m-envoi" aria-live="polite"></div>
+      <button class="bouton" id="b-renvoyer" hidden>🔁 Renvoyer ma copie</button></div>
+  </section>
+
+  <!-- 4. Récépissé -->
+  <section class="ecran" id="e-fin">
+    <header class="titre"><h1>Copie envoyée</h1></header>
+    <div class="carte centre" id="fin-texte"></div>
+  </section>
+
+  <!-- Messages bloquants -->
+  <section class="ecran" id="e-bloque">
+    <header class="titre"><h1>Évaluation en ligne</h1></header>
+    <div class="carte centre" id="bloque-texte"></div>
+  </section>
+</div>
+
+<div class="acces" role="toolbar" aria-label="Accessibilité">
+  <button id="a-moins" aria-label="Texte plus petit">A−</button>
+  <button id="a-plus" aria-label="Texte plus grand">A+</button>
+  <button id="a-sombre" aria-label="Mode sombre ou clair">🌙</button>
+</div>
+
+<div id="alerte" role="alertdialog" aria-live="assertive">
+  <div>
+    <h2>⚠️ Tu as quitté l'évaluation</h2>
+    <p id="alerte-n"></p>
+    <p>Cette sortie est notée et sera signalée au professeur.</p>
+    <p><button class="bouton blanc" id="b-revenir">Revenir à l'évaluation</button></p>
+  </div>
+</div>
+
+<div id="modale" role="dialog" aria-modal="true">
+  <div class="carte centre">
+    <p style="font-weight:700;margin-bottom:8px">Envoyer ta copie maintenant ?</p>
+    <p id="modale-vides" style="margin-bottom:12px"></p>
+    <button class="bouton blanc" id="b-annuler">Non, je continue</button>
+    <button class="bouton vert" id="b-confirmer">Oui, j'envoie</button>
+  </div>
+</div>
+
+<textarea class="reponse-eleve" data-qid="_journal_sorties" id="journal" hidden></textarea>
+<textarea class="reponse-eleve" data-qid="_resume_surveillance" id="resume" hidden></textarea>
+
+<script src="assets/eval-garde.js"></script>
+<script type="module">
+  /* Envoi des copies : moteur commun des devoirs (resultats/{code}/copies/{id}_copie_1). */
+  import "./assets/pse-runner.js";
+  window.__RUNNER_PRET = true;
+  document.dispatchEvent(new Event("runner-pret"));
+</script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var EVAL = null, ACCES = null, CODE = "", VERSION = null, fin = 0, minuterie = null, envoye = false, envoiEnCours = false;
+  var CLE_BROUILLON = "", SESSION = Math.random().toString(36).slice(2, 10), dernierDistant = 0;
+
+  /* ── Heure du serveur (le site), indépendante de l'horloge de l'appareil ──
+     On lit l'heure dans l'en-tête Date du site, puis on avance avec une horloge monotone :
+     changer l'heure de l'appareil ne change ni le chrono ni l'ouverture. */
+  var HEURE_SERVEUR = Date.now(), PERF0 = performance.now(), heureFiable = false;
+  async function lireHeureServeur() {
+    try {
+      var r = await fetch("evaluations-en-ligne/index.json?h=" + Date.now(), { method: "HEAD", cache: "no-store" });
+      var d = Date.parse(r.headers.get("Date") || "");
+      if (!isNaN(d)) { HEURE_SERVEUR = d; PERF0 = performance.now(); heureFiable = true; }
+    } catch (e) {}
+  }
+  function maintenant() { return HEURE_SERVEUR + (performance.now() - PERF0); }
+
+  function ecran(id) { document.querySelectorAll(".ecran").forEach(function (e) { e.classList.toggle("actif", e.id === id); }); scrollTo(0, 0); }
+  function bloquer(html) { $("bloque-texte").innerHTML = html; ecran("e-bloque"); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function md(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<i>$2</i>"); }
+  function paras(s) { return String(s || "").split(/\n+/).map(function (l) { return l.trim() ? "<p>" + md(l) + "</p>" : ""; }).join(""); }
+  function heure(d) { return new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }); }
+  function jour(d) { return new Date(d).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }); }
+  function runnerPret() { return new Promise(function (r) { if (window.__RUNNER_PRET) r(); else document.addEventListener("runner-pret", r, { once: true }); }); }
+
+  /* ── Un seul onglet à la fois ── */
+  var canal = ("BroadcastChannel" in window) ? new BroadcastChannel("mapse-eval-en-ligne") : null, ouvertIci = false;
+  if (canal) canal.onmessage = function (m) { if (m.data && m.data.q === "qui" && ouvertIci && m.data.cle === CLE_BROUILLON && m.data.s !== SESSION) canal.postMessage({ r: "moi", cle: CLE_BROUILLON }); };
+  function autreOnglet() {
+    return new Promise(function (res) {
+      if (!canal) return res(false);
+      var vu = false, f = function (m) { if (m.data && m.data.r === "moi" && m.data.cle === CLE_BROUILLON) vu = true; };
+      canal.addEventListener("message", f); canal.postMessage({ q: "qui", cle: CLE_BROUILLON, s: SESSION });
+      setTimeout(function () { canal.removeEventListener("message", f); res(vu); }, 400);
+    });
+  }
+
+  /* ── Suivi en ligne (début, brouillon, sorties) : resultats/{code}/suivi/{id} ──
+     Le début est enregistré au serveur : recharger la page ou vider l'appareil ne redonne pas de temps.
+     Le brouillon y est copié régulièrement : si l'appareil s'éteint, le professeur récupère quand même les réponses. */
+  function refSuivi() { return window.db.collection("resultats").doc(CODE).collection("suivi").doc(EVAL.id); }
+  async function lireSuivi() { try { var d = await refSuivi().get(); return d.exists ? d.data() : null; } catch (e) { return null; } }
+  function ecrireSuivi(donnees) { try { return refSuivi().set(donnees, { merge: true }).catch(function () {}); } catch (e) { return Promise.resolve(); } }
+
+  /* ── 1. Code ─────────────────────────────────────────── */
+  async function chercher() {
+    var code = ($("code").value || "").trim().toUpperCase();
+    $("m-code").className = "message"; $("m-code").textContent = "Recherche…";
+    if (code.length < 4) { $("m-code").className = "message erreur"; $("m-code").textContent = "Le code a au moins 4 caractères."; return; }
+    try {
+      await lireHeureServeur();
+      var idx = await (await fetch("evaluations-en-ligne/index.json?ts=" + Date.now(), { cache: "no-store" })).json();
+      var trouvees = [];
+      for (var i = 0; i < idx.evaluations.length; i++) {
+        var ev = await (await fetch("evaluations-en-ligne/" + idx.evaluations[i] + ".json?ts=" + Date.now(), { cache: "no-store" })).json();
+        if (ev.acces && ev.acces[code]) trouvees.push(ev);
+      }
+      if (!trouvees.length) { $("m-code").className = "message erreur"; $("m-code").textContent = "Aucune évaluation en ligne n'est prévue pour ce code. Vérifie ton code ou demande au professeur."; return; }
+      var t = maintenant(), ouverte = trouvees.filter(function (e) { return Date.parse(e.ouverture) <= t && t <= Date.parse(e.fermeture); })[0];
+      if (!ouverte) {
+        var e0 = trouvees[0], o = Date.parse(e0.ouverture);
+        bloquer(t < o ? "Ton évaluation ouvrira le <b>" + jour(o) + " à " + heure(o) + "</b>." : "Cette évaluation est fermée depuis le <b>" + jour(Date.parse(e0.fermeture)) + "</b>. Demande au professeur.");
+        return;
+      }
+      EVAL = ouverte; CODE = code; ACCES = ouverte.acces[code];
+      CLE_BROUILLON = "mapse_eval_en_ligne_" + EVAL.id + "_" + CODE;
+      $("m-code").textContent = "Vérification de ta copie…";
+      await runnerPret();
+      try {
+        var snap = await window.db.collection("resultats").doc(CODE).collection("copies").doc(EVAL.id + "_copie_1").get();
+        if (snap.exists) { bloquer("Tu as déjà envoyé ta copie pour cette évaluation. Une seule copie est acceptée."); return; }
+      } catch (e) { /* hors ligne : l'envoi vérifiera de nouveau */ }
+      if (await autreOnglet()) { bloquer("Cette évaluation est déjà ouverte dans un autre onglet. Ferme cette page et retourne sur l'autre."); return; }
+      preparerRegles();
+    } catch (e) {
+      $("m-code").className = "message erreur"; $("m-code").textContent = "Impossible de charger l'évaluation. Vérifie ta connexion Internet.";
+    }
+  }
+
+  /* ── 2. Consignes et mot de passe ───────────────────── */
+  function dureeMin() { return Math.round((EVAL.duree_min || 60) * (ACCES.tiers ? 4 / 3 : 1)); }
+  function preparerRegles() {
+    $("r-titre").textContent = "Évaluation en ligne";
+    $("r-sous").textContent = "Code " + CODE;
+    var d = dureeMin(); $("r-duree").textContent = (d >= 60 ? Math.floor(d / 60) + " h " + (d % 60 ? String(d % 60).padStart(2, "0") : "") : d + " min") + (ACCES.tiers ? " (avec ton tiers-temps)" : "");
+    if (EVAL.max_sorties) { $("r-max").hidden = false; $("r-max").innerHTML = "<b>Au bout de " + EVAL.max_sorties + " sorties, l'évaluation se ferme et ta copie part telle quelle.</b>"; }
+    if (!EVAL.chiffre) { $("mdp").hidden = true; $("mdp").previousElementSibling.hidden = true; }
+    ecran("e-regles");
+  }
+  function b64(s) { return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+  async function dechiffrer(mdp) {
+    var c = EVAL.chiffre;
+    var base = await crypto.subtle.importKey("raw", new TextEncoder().encode(mdp.trim().toUpperCase()), "PBKDF2", false, ["deriveKey"]);
+    var cle = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(c.sel), iterations: c.iterations, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    var clair = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(c.iv) }, cle, b64(c.donnees));
+    return JSON.parse(new TextDecoder().decode(clair));
+  }
+
+  /* ── 3. Sujet ────────────────────────────────────────── */
+  function construire() {
+    $("eval-titre").textContent = "Évaluation " + (VERSION.module || "") + " — " + VERSION.titre;
+    $("b-code-aff").textContent = CODE;
+    var h = '<h2 style="font-size:1.1rem;margin-bottom:6px">Situation</h2><div class="situation">' + paras(VERSION.situation) + "</div>";
+    (VERSION.documents || []).forEach(function (d) {
+      h += '<div class="doc"><h3>Document ' + esc(d.ref) + " — " + esc(d.titre) + "</h3>" + paras(d.contenu) + (d.source ? '<p class="source">' + esc(d.source) + "</p>" : "") + "</div>";
+    });
+    $("sujet").innerHTML = h;
+    $("questions").innerHTML = VERSION.questions.map(question).join("");
+    document.body.dataset.idExercice = EVAL.id;
+    window.__PSE_BLUEPRINT = { format: "mapse-evaluation-en-ligne", id: EVAL.id, version: ACCES.version, code_evaluation: VERSION.code, date_epreuve: EVAL.date_epreuve, questions: VERSION.questions.map(function (x) { return x.num; }) };
+    $("questions").addEventListener("input", function (e) { if (e.target.tagName === "TEXTAREA") ajuster(e.target); sauver(); });
+    $("questions").addEventListener("change", sauver);
+    window.addEventListener("resize", ajusterTout);
+  }
+
+  function question(x) {
+    var qid = x.num, lignes = String(x.libelle || "").split("\n"), corps = "", choix = [], nbTrous = 0, aTableau = !!x.tableau;
+    var h = '<div class="question">' + (x.chapeau ? '<p class="chapeau">' + md(x.chapeau) + "</p>" : "");
+    lignes.forEach(function (l, i) {
+      var t = l.trim(); if (!t) return;
+      if (/^☐/.test(t)) { choix.push(t.replace(/^☐\s*/, "")); return; }
+      if (/^(Mots proposés|Pistes)\s*:/i.test(t)) { corps += '<p class="aide">' + md(t) + "</p>"; return; }
+      if (/…{3,}|\.{6,}/.test(t)) {
+        var morceaux = t.split(/…{3,}\s*|\.{6,}\s*/);
+        corps += "<p>" + morceaux.map(function (m, k) { return md(m) + (k < morceaux.length - 1 ? '<textarea class="trou reponse-eleve" rows="1" data-qid="' + qid + "#" + (++nbTrous) + '" aria-label="Mot à compléter ' + nbTrous + '"></textarea>' : ""); }).join("") + "</p>";
+        return;
+      }
+      if (i === 0) { h += '<p><span class="num">' + esc(x.num) + "</span>" + md(t) + (x.bareme ? ' <span class="points">(' + String(x.bareme).replace(".", ",") + " pt" + (x.bareme > 1 ? "s" : "") + ")</span>" : "") + "</p>"; return; }
+      corps += "<p>" + md(t) + "</p>";
+    });
+    h += corps;
+    choix.forEach(function (c) { h += '<label class="choix"><input type="radio" class="reponse-eleve" name="q' + qid.replace(/\W/g, "_") + '" data-qid="' + qid + '" value="' + esc(c) + '">' + md(c) + "</label>"; });
+    if (aTableau) {
+      h += '<table class="tab"><thead><tr>' + x.tableau.colonnes.map(function (c) { return "<th>" + md(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
+      x.tableau.lignes.forEach(function (ligne, li) {
+        var nbEleve = ligne.filter(function (z) { return z.prof == null; }).length;
+        h += "<tr>" + ligne.map(function (c, ci) {
+          return c.prof != null ? "<td>" + md(c.prof) + "</td>" : '<td><textarea class="reponse-eleve" rows="2" data-qid="' + qid + "#L" + (li + 1) + (nbEleve > 1 ? "C" + (ci + 1) : "") + '" aria-label="Réponse ligne ' + (li + 1) + '"></textarea></td>';
+        }).join("") + "</tr>";
+      });
+      h += "</tbody></table>";
+    }
+    if (!choix.length && !nbTrous && !aTableau) h += '<textarea class="reponse-eleve" data-qid="' + qid + '" rows="' + Math.max(3, x.lignes || 3) + '" aria-label="Réponse à la question ' + esc(x.num) + '"></textarea>';
+    return h + "</div>";
+  }
+
+  /* ── Zones de réponse qui grandissent avec le texte (aucune limite de longueur) ── */
+  var mesure = document.createElement("canvas").getContext("2d");
+  function ajuster(el) {
+    if (el.classList.contains("trou")) {
+      var st = getComputedStyle(el); mesure.font = st.fontWeight + " " + st.fontSize + " " + st.fontFamily;
+      var parent = el.parentElement.getBoundingClientRect().width || 300;
+      var plusLongue = el.value.split("\n").reduce(function (m, l) { return Math.max(m, mesure.measureText(l).width); }, 0);
+      el.style.width = Math.min(parent - 12, Math.max(160, plusLongue + 30)) + "px";
+    }
+    el.style.height = "auto";
+    el.style.height = (el.scrollHeight + 4) + "px";
+  }
+  function ajusterTout() { document.querySelectorAll("#questions textarea").forEach(ajuster); }
+
+  /* ── Brouillon : sur l'appareil à chaque frappe, en ligne toutes les 30 s et à chaque sortie ── */
+  function champs() { return Array.prototype.slice.call(document.querySelectorAll("#questions .reponse-eleve")); }
+  function reponses() { var r = {}; champs().forEach(function (el) { if (el.type === "radio") { if (el.checked) r[el.dataset.qid] = el.value; } else if (el.value) r[el.dataset.qid] = el.value; }); return r; }
+  function sauver() {
+    if (envoye) return;
+    try { localStorage.setItem(CLE_BROUILLON, JSON.stringify({ r: reponses(), garde: window.EvalGarde ? EvalGarde.etat() : null })); }
+    catch (e) { $("m-envoi").className = "message erreur"; $("m-envoi").textContent = "Attention : ton appareil ne garde pas le brouillon. N'actualise pas la page."; }
+  }
+  function sauverEnLigne(force) {
+    if (envoye || !CODE || (!force && Date.now() - dernierDistant < 30000)) return;
+    dernierDistant = Date.now();
+    var r = EvalGarde.resume();
+    ecrireSuivi({ brouillon: reponses(), sorties: r.sorties, journal: EvalGarde.journal(), maj: firebase.firestore.FieldValue.serverTimestamp(), session: SESSION, version: ACCES.version });
+  }
+  function restaurer() {
+    try {
+      var b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); if (!b) return false;
+      champs().forEach(function (el) { var v = b.r[el.dataset.qid]; if (v == null) return; if (el.type === "radio") el.checked = el.value === v; else el.value = v; });
+      if (b.garde) EvalGarde.charger(b.garde);
+      return true;
+    } catch (e) { return false; }
+  }
+  function remplirDepuis(r) { champs().forEach(function (el) { var v = r[el.dataset.qid]; if (v == null) return; if (el.type === "radio") el.checked = el.value === v; else if (!el.value) el.value = v; }); }
+
+  /* ── Chrono ──────────────────────────────────────────── */
+  function tic() {
+    var reste = Math.max(0, Math.round((fin - maintenant()) / 1000)), c = $("chrono");
+    c.textContent = Math.floor(reste / 60) + ":" + String(reste % 60).padStart(2, "0");
+    c.className = "chrono" + (reste <= 0 ? " fini" : reste <= 300 ? " bientot" : "");
+    if (reste <= 0) { clearInterval(minuterie); envoyer("temps écoulé"); }
+    else sauverEnLigne(false);
+  }
+
+  /* ── Démarrer ───────────────────────────────────────── */
+  async function commencer() {
+    var m = $("m-regles"); m.className = "message"; m.textContent = "Ouverture…";
+    $("b-commencer").disabled = true;
+    try {
+      await lireHeureServeur();
+      if (maintenant() > Date.parse(EVAL.fermeture)) { bloquer("L'évaluation vient de fermer. Demande au professeur."); return; }
+      if (EVAL.chiffre) {
+        try { VERSION = (await dechiffrer($("mdp").value || ""))[ACCES.version]; }
+        catch (e) { m.className = "message erreur"; m.textContent = "Mot de passe incorrect. Demande-le au professeur."; $("b-commencer").disabled = false; return; }
+      } else VERSION = EVAL.versions[ACCES.version];
+      if (await autreOnglet()) { bloquer("Cette évaluation est déjà ouverte dans un autre onglet."); return; }
+      ouvertIci = true;
+      construire();
+      var dejaIci = restaurer();
+      var suivi = await lireSuivi(), debut;
+      if (suivi && suivi.debutMs) {
+        debut = suivi.debutMs;
+        if (suivi.brouillon) remplirDepuis(suivi.brouillon);
+        if (!dejaIci) { EvalGarde.charger({ evts: [], nbSorties: suivi.sorties | 0 }); }
+      } else {
+        debut = maintenant();
+        await ecrireSuivi({ debut: firebase.firestore.FieldValue.serverTimestamp(), debutMs: Math.round(debut), heureFiable: heureFiable, session: SESSION, version: ACCES.version, eleveCode: CODE, devoirId: EVAL.id });
+      }
+      fin = Math.min(debut + dureeMin() * 60000, Date.parse(EVAL.fermeture));
+      try { localStorage.setItem("devoir_start_time_" + EVAL.id, String(Math.round(debut))); } catch (e) {}
+      ajusterTout();
+      ecran("e-eval");
+      setTimeout(ajusterTout, 60);
+      EvalGarde.demarrer({
+        pleinEcran: true, maxSorties: EVAL.max_sorties || 0,
+        surChangement: function () { sauver(); },
+        surSortie: function (n) { $("b-sorties").textContent = n; $("alerte-n").textContent = "Sortie n° " + n + ", à " + heure(maintenant()) + "."; montrer("alerte", "b-revenir"); sauverEnLigne(true); },
+        surRetour: function () { },
+        surMax: function (n) { envoyer("fermée après " + n + " sorties"); }
+      });
+      $("b-sorties").textContent = EvalGarde.resume().sorties;
+      tic(); minuterie = setInterval(tic, 1000);
+      sauver(); sauverEnLigne(true);
+    } catch (e) {
+      m.className = "message erreur"; m.textContent = "Impossible d'ouvrir l'évaluation : vérifie ta connexion."; $("b-commencer").disabled = false;
+    }
+  }
+
+  /* ── Fenêtres d'alerte : focus dedans, fond inactif ── */
+  function montrer(id, bouton) { $(id).classList.add("visible"); document.querySelector(".page").inert = true; setTimeout(function () { $(bouton).focus(); }, 30); }
+  function cacher(id) { $(id).classList.remove("visible"); if (!$("alerte").classList.contains("visible") && !$("modale").classList.contains("visible")) document.querySelector(".page").inert = false; }
+  function revenir() { EvalGarde.revenirEvaluation().then(function () { if (!EvalGarde.enSortie()) cacher("alerte"); }); }
+  setInterval(function () { if ($("alerte").classList.contains("visible") && window.EvalGarde && !EvalGarde.enSortie()) cacher("alerte"); }, 500);
+
+  /* ── Envoi ───────────────────────────────────────────── */
+  function vides() {
+    var faits = {}; champs().forEach(function (el) { var q = el.dataset.qid.split("#")[0]; if (!(q in faits)) faits[q] = false; if ((el.type === "radio" ? el.checked : el.value.trim())) faits[q] = true; });
+    return Object.keys(faits).filter(function (q) { return !faits[q]; });
+  }
+  function demander() {
+    var v = vides();
+    $("modale-vides").textContent = v.length ? "Attention : question" + (v.length > 1 ? "s" : "") + " sans réponse : " + v.join(", ") + "." : "Toutes les questions ont une réponse.";
+    montrer("modale", "b-annuler");
+  }
+  var MOTIF = "";
+  async function envoyer(motif) {
+    if (envoye || envoiEnCours) return; envoiEnCours = true;
+    if (!MOTIF) MOTIF = motif || "élève";
+    cacher("modale");
+    clearInterval(minuterie);
+    if (window.EvalGarde && !$("journal").value) {
+      EvalGarde.arreter();                     /* clôt la sortie en cours AVANT le résumé */
+      var res = EvalGarde.resume();
+      $("journal").value = EvalGarde.journal() + "\nEnvoi : " + MOTIF;
+      $("resume").value = JSON.stringify({ version: ACCES.version, code_evaluation: VERSION.code, sorties: res.sorties, secondes_hors_page: res.secondesHors, copier: res.copier, coller: res.coller, blocages: res.blocages, plein_ecran_possible: res.pleinEcranPossible, tiers_temps: !!ACCES.tiers, duree_min: dureeMin(), motif_envoi: MOTIF, date_epreuve: EVAL.date_epreuve, heure_fiable: heureFiable });
+      window.__RES = res;
+      champs().forEach(function (el) { if (el.type === "radio") el.addEventListener("click", function (e) { e.preventDefault(); }); else el.readOnly = true; });
+    }
+    cacher("alerte");
+    var res2 = window.__RES;
+    $("b-envoyer").disabled = true; $("b-envoyer").textContent = "Envoi en cours…"; $("b-renvoyer").hidden = true;
+    $("m-envoi").className = "message"; $("m-envoi").textContent = "";
+    var ok = false;
+    try {
+      await runnerPret();
+      await window.envoyerCopie(CODE, { total: res2.coller, external: 0, document: 0 }, {
+        code: CODE, classe: ACCES.classe,
+        focus: { focusLeaves: res2.sorties, copyAttempts: res2.copier, pasteBlocked: res2.coller },
+        chrono: { actif: true, minutesAllouees: dureeMin(), secondesRestantes: Math.max(0, Math.round((fin - maintenant()) / 1000)), tempsEcoule: MOTIF === "temps écoulé" }
+      });
+    } catch (e) { $("m-envoi").className = "message erreur"; $("m-envoi").textContent = "Envoi impossible : " + (e && e.message ? e.message : "erreur inconnue"); }
+    try { ok = (await window.db.collection("resultats").doc(CODE).collection("copies").doc(EVAL.id + "_copie_1").get()).exists; } catch (e) {}
+    envoiEnCours = false;
+    if (ok) {
+      envoye = true;
+      ecrireSuivi({ envoye: true, envoyeLe: firebase.firestore.FieldValue.serverTimestamp() });
+      try { localStorage.removeItem(CLE_BROUILLON); } catch (e) {}
+      $("fin-texte").innerHTML = "<p style='font-size:1.15rem'>✅ Ta copie est bien arrivée chez le professeur, le " + jour(maintenant()) + " à " + heure(maintenant()) + ".</p><p style='margin-top:8px'>Code : <b>" + esc(CODE) + "</b>" + (MOTIF !== "élève" ? " · " + esc(MOTIF) : "") + "</p><p style='margin-top:8px'>Tu peux fermer cette page.</p>";
+      ecran("e-fin");
+    } else {
+      /* Copie figée : plus rien ne se modifie, mais rien n'est perdu ; on peut renvoyer. */
+      $("b-envoyer").textContent = "Copie figée, pas encore arrivée";
+      $("m-envoi").className = "message erreur";
+      $("m-envoi").textContent = "⚠️ Ta copie n'est pas encore arrivée. Tes réponses sont gardées. Préviens le professeur et appuie sur « Renvoyer ».";
+      $("b-renvoyer").hidden = false;
+    }
+  }
+  window.addEventListener("online", function () { if (!envoye && $("journal").value) envoyer(MOTIF); });
+
+  $("b-code").addEventListener("click", chercher);
+  $("code").addEventListener("keydown", function (e) { if (e.key === "Enter") chercher(); });
+  $("mdp").addEventListener("keydown", function (e) { if (e.key === "Enter") commencer(); });
+  $("b-commencer").addEventListener("click", commencer);
+  $("b-revenir").addEventListener("click", revenir);
+  $("b-envoyer").addEventListener("click", demander);
+  $("b-renvoyer").addEventListener("click", function () { setTimeout(function () { envoyer(MOTIF); }, 0); });
+  $("b-annuler").addEventListener("click", function () { cacher("modale"); });
+  $("b-confirmer").addEventListener("click", function () { envoyer(""); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("modale").classList.contains("visible")) cacher("modale"); });
+  window.addEventListener("pagehide", function () { if (CODE && !envoye && window.EvalGarde) { sauver(); try { sauverEnLigne(true); } catch (e) {} } });
+
+  /* ── Accessibilité ── */
+  var ZOOMS = [0.9, 1, 1.15, 1.3, 1.5, 1.75, 2], zi = 1;
+  function appliquerAcces() {
+    document.documentElement.style.setProperty("--zoom", ZOOMS[zi]);
+    var sombre = document.documentElement.classList.contains("sombre");
+    $("a-sombre").textContent = sombre ? "☀️" : "🌙";
+    try { localStorage.setItem("mapse_eval_acces_affichage", JSON.stringify({ zi: zi, sombre: sombre })); } catch (e) {}
+    setTimeout(ajusterTout, 50);
+  }
+  try { var pa = JSON.parse(localStorage.getItem("mapse_eval_acces_affichage") || "null"); if (pa) { zi = Math.min(ZOOMS.length - 1, Math.max(0, pa.zi | 0)); if (pa.sombre) document.documentElement.classList.add("sombre"); } } catch (e) {}
+  $("a-moins").addEventListener("click", function () { zi = Math.max(0, zi - 1); appliquerAcces(); });
+  $("a-plus").addEventListener("click", function () { zi = Math.min(ZOOMS.length - 1, zi + 1); appliquerAcces(); });
+  $("a-sombre").addEventListener("click", function () { document.documentElement.classList.toggle("sombre"); appliquerAcces(); });
+  appliquerAcces();
+})();
+</script>
+</body>
+</html>
