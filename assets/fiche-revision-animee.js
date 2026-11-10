@@ -37,13 +37,32 @@
       .replace(/÷/g, " divisé par ").replace(/×/g, " multiplié par ").replace(/≈/g, " environ ")
       .replace(/(\d) (\d{3})/g, "$1$2").replace(/\s+/g, " ").trim();
   }
-  function parler(texte) {
+  /* Un bouton 🔊 lance la lecture ; le même bouton met en pause, puis reprend. Rien ne se lit sans geste de l'élève
+     (audio-pause.js ajoute aussi le bandeau Pause / Reprendre / Arrêter en bas de l'écran). */
+  var actif = null, etat = "arret";
+  function libeller(b, e) {
+    if (!b) return;
+    b.textContent = e === "lecture" ? "⏸ Pause" : e === "pause" ? "▶ Reprendre" : "🔊 Écouter";
+    b.setAttribute("aria-pressed", e === "arret" ? "false" : "true");
+  }
+  function fini(u) { return function () { if (u._fiche === actif) { libeller(actif, "arret"); actif = null; etat = "arret"; } }; }
+  function parler(texte, bouton) {
     if (!synth) return;
-    synth.cancel();
+    if (bouton && bouton === actif && etat === "lecture") { synth.pause(); etat = "pause"; libeller(bouton, etat); return; }
+    if (bouton && bouton === actif && etat === "pause") { synth.resume(); etat = "lecture"; libeller(bouton, etat); return; }
+    synth.cancel(); libeller(actif, "arret");
     var u = new SpeechSynthesisUtterance(propre(texte));
     u.lang = "fr-FR"; u.rate = 0.95; if (voixFr) u.voice = voixFr;
+    actif = bouton || null; etat = "lecture"; u._fiche = actif; libeller(actif, etat);
+    u.onend = fini(u); u.onerror = fini(u);
     synth.speak(u);
   }
+  /* Le bandeau commun (Pause / Arrêter) garde le bouton de la carte à jour */
+  setInterval(function () {
+    if (!actif || !synth) return;
+    var e = synth.paused ? "pause" : synth.speaking ? "lecture" : "arret";
+    if (e !== etat) { etat = e; libeller(actif, e); if (e === "arret") actif = null; }
+  }, 400);
   function texteDe(el) {
     var c = el.cloneNode(true);
     c.querySelectorAll(".audio-mini, .touche, script, style").forEach(function (x) { x.remove(); });
@@ -55,7 +74,8 @@
     var b = document.createElement("button");
     b.type = "button"; b.className = "btn audio-mini"; b.textContent = "🔊 Écouter";
     b.setAttribute("aria-label", libelle || "Écouter");
-    b.addEventListener("click", function (e) { e.stopPropagation(); parler(typeof source === "function" ? source() : texteDe(source)); });
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function (e) { e.stopPropagation(); parler(typeof source === "function" ? source() : texteDe(source), b); });
     return b;
   }
   window.ficheParler = parler;
