@@ -444,6 +444,32 @@
   }
 
   /* ── Démarrer ───────────────────────────────────────── */
+  /* ── [CHOIX NIVEAU 12/11/2026] Fenêtre du choix du niveau (une seule fois, avec le professeur) ── */
+  var TOUTES = null;
+  var NIVEAUX = [["standard", "Standard", "La version normale."], ["adapte", "Adapté", "Avec des mots proposés pour t'aider."], ["essentiel", "Essentiel", "Tout à l'oral : tu écoutes et tu touches les mots."]];
+  function choisirNiveau() {
+    return new Promise(function (fini) {
+      var f = document.createElement("div");
+      f.setAttribute("role", "dialog"); f.setAttribute("aria-modal", "true"); f.setAttribute("aria-label", "Choix du niveau");
+      f.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(10,20,30,.72);display:flex;align-items:center;justify-content:center;padding:16px";
+      function liste() {
+        f.innerHTML = '<div class="carte" style="max-width:560px;width:100%"><h2 style="margin:0 0 6px">' + bEcoute("Choisis ton niveau avec le professeur. Standard : la version normale. Adapté : avec des mots proposés pour t'aider. Essentiel : tout à l'oral, tu écoutes et tu touches les mots.", "le choix du niveau") + "Choisis ton niveau</h2><p style=\"margin:0 0 12px\">avec le professeur</p>"
+          + NIVEAUX.map(function (n) { return '<div class="ligne-ecoute" style="margin:8px 0">' + bEcoute(n[1] + ". " + n[2], n[1]) + '<button type="button" class="bouton" data-niv="' + n[0] + '" style="flex:1;text-align:left;margin:0"><b>' + n[1] + "</b><br><span style=\"font-weight:400\">" + n[2] + "</span></button></div>"; }).join("") + "</div>";
+        f.querySelectorAll("[data-niv]").forEach(function (b) { b.addEventListener("click", function () { confirmer(b.dataset.niv); }); });
+        var p = f.querySelector("[data-niv]"); if (p) p.focus();
+      }
+      function confirmer(v) {
+        var n = NIVEAUX.filter(function (x) { return x[0] === v; })[0];
+        f.innerHTML = '<div class="carte centre" style="max-width:520px;width:100%"><h2>' + bEcoute("Tu as choisi : " + n[1] + ". On ne pourra plus changer. On commence ?", "la confirmation") + "Tu as choisi : " + n[1] + "</h2><p>On ne pourra plus changer de niveau.</p>"
+          + '<button type="button" class="bouton vert" id="niv-ok">Oui, je commence</button> <button type="button" class="bouton" id="niv-retour" style="background:#78909c">Revenir</button></div>';
+        f.querySelector("#niv-ok").addEventListener("click", function () { arreter(); f.remove(); fini(v); });
+        f.querySelector("#niv-retour").addEventListener("click", liste);
+        f.querySelector("#niv-ok").focus();
+      }
+      liste(); document.body.appendChild(f);
+    });
+  }
+
   async function commencer() {
     var m = $("m-regles"); m.className = "message"; m.textContent = "Ouverture…";
     $("b-commencer").disabled = true;
@@ -451,9 +477,16 @@
       await lireHeureServeur();
       if (maintenant() > Date.parse(EVAL.fermeture)) { bloquer("L'évaluation vient de fermer. Demande au professeur."); return; }
       if (EVAL.chiffre) {
-        try { VERSION = (await dechiffrer($("mdp").value || ""))[ACCES.version]; }
+        try { TOUTES = await dechiffrer($("mdp").value || ""); VERSION = TOUTES[ACCES.version]; }
         catch (e) { m.className = "message erreur"; m.textContent = "Mot de passe incorrect. Demande-le au professeur."; $("b-commencer").disabled = false; return; }
-      } else VERSION = EVAL.versions[ACCES.version];
+      } else { TOUTES = EVAL.versions; VERSION = TOUTES[ACCES.version]; }
+      if (EVAL.choix_niveau) {   // [CHOIX NIVEAU 12/11/2026] choisi à la 1re connexion, avec le professeur, puis verrouillé
+        var cleNiv = "mapse_eval_niveau_" + EVAL.id + "_" + CODE, s0 = await lireSuivi(), niv = s0 && s0.version;
+        if (!niv) { try { niv = localStorage.getItem(cleNiv); } catch (e) {} }
+        if (!TOUTES[niv]) { m.textContent = "Choix du niveau…"; niv = await choisirNiveau(); }
+        try { localStorage.setItem(cleNiv, niv); } catch (e) {}
+        ACCES.version = niv; VERSION = TOUTES[niv]; m.textContent = "Ouverture…";
+      }
       if (await autreOnglet()) { bloquer("Cette évaluation est déjà ouverte dans un autre onglet."); return; }
       ouvertIci = true;
       construire();
