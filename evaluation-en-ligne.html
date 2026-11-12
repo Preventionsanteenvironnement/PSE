@@ -89,6 +89,10 @@
   html.sombre .puce { background: #0f1720; color: #e8eaed; border-color: #546e7a; }
   html.sombre .puce.choisie { background: #1b3a1f; border-color: #81c784; }
   html.sombre .trou-choisi { color: #90caf9; border-color: #64b5f6; }
+  /* [LIRECOULEUR 12/11/2026] Syllabes colorées (moteur LireCouleur de l'Atelier, syllabes calculées à l'export) */
+  .lc0 { color: #19366b; } .lc1 { color: #b32631; } .lc2 { color: #38752c; }
+  html.sombre .lc0 { color: #90caf9; } html.sombre .lc1 { color: #ef9a9a; } html.sombre .lc2 { color: #a5d6a7; }
+  #a-lc.actif { outline: 3px solid #f9a825; }
   @media print { body * { display: none !important; } }
 </style>
 </head>
@@ -158,6 +162,7 @@
   <button id="a-moins" aria-label="Texte plus petit">A−</button>
   <button id="a-plus" aria-label="Texte plus grand">A+</button>
   <button id="a-sombre" aria-label="Mode sombre ou clair">🌙</button>
+  <button id="a-lc" aria-label="Syllabes en couleur (LireCouleur)" aria-pressed="false" title="Syllabes en couleur" hidden>🎨</button>
   <button id="a-stop" aria-label="Arrêter la lecture à voix haute">⏹</button>
 </div>
 
@@ -489,7 +494,7 @@
       }
       if (await autreOnglet()) { bloquer("Cette évaluation est déjà ouverte dans un autre onglet."); return; }
       ouvertIci = true;
-      construire();
+      construire(); lcPret();
       var dejaIci = restaurer();
       var suivi = await lireSuivi(), debut;
       if (suivi && suivi.debutMs) {
@@ -608,6 +613,35 @@
   $("a-sombre").addEventListener("click", function () { document.documentElement.classList.toggle("sombre"); appliquerAcces(); });
   $("a-stop").addEventListener("click", arreter);
   if (!synth) $("a-stop").hidden = true;
+  /* ── [LIRECOULEUR 12/11/2026] Bouton 🎨 pour tous : colore les syllabes du sujet (jamais les réponses tapées) ── */
+  var LC_MOT = /[A-Za-zÀ-ÖØ-öø-ÿŒœ]+/g, lcActif = false;
+  try { lcActif = localStorage.getItem("mapse_eval_lirecouleur") === "1"; } catch (e) {}
+  function lcColorer(racine, syl) {
+    var w = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT), noeuds = [], n, phase = 0;
+    while ((n = w.nextNode())) { if (n.nodeValue.trim() && !n.parentElement.closest("textarea,input,script,style,.ecouter,.son,.trou-choisi,[data-lc]")) noeuds.push(n); }
+    noeuds.forEach(function (n) {
+      var t = n.nodeValue, frag = document.createDocumentFragment(), pos = 0, m;
+      LC_MOT.lastIndex = 0;
+      while ((m = LC_MOT.exec(t))) {
+        var s = syl[m[0]]; if (!s) continue;
+        if (m.index > pos) frag.append(document.createTextNode(t.slice(pos, m.index)));
+        s.forEach(function (x) { var sp = document.createElement("span"); sp.dataset.lc = "1"; sp.className = "lc" + (phase++ % 3); sp.textContent = x; frag.append(sp); });
+        pos = m.index + m[0].length;
+      }
+      if (pos === 0) return;
+      if (pos < t.length) frag.append(document.createTextNode(t.slice(pos)));
+      n.replaceWith(frag);
+    });
+  }
+  function lcEnlever(racine) { racine.querySelectorAll("span[data-lc]").forEach(function (sp) { sp.replaceWith(document.createTextNode(sp.textContent)); }); racine.normalize(); }
+  function lcAppliquer() {
+    var syl = VERSION && VERSION.syllabes; if (!syl) return;
+    ["eval-titre", "sujet", "questions"].forEach(function (id) { var r = $(id); if (!r) return; lcEnlever(r); if (lcActif) lcColorer(r, syl); });
+    $("a-lc").classList.toggle("actif", lcActif); $("a-lc").setAttribute("aria-pressed", lcActif ? "true" : "false");
+    setTimeout(ajusterTout, 50);
+  }
+  window.lcPret = function () { if (VERSION && VERSION.syllabes) { $("a-lc").hidden = false; lcAppliquer(); } };
+  $("a-lc").addEventListener("click", function () { lcActif = !lcActif; try { localStorage.setItem("mapse_eval_lirecouleur", lcActif ? "1" : "0"); } catch (e) {} lcAppliquer(); });
   appliquerAcces();
 })();
 </script>
