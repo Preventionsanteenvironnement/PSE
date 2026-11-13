@@ -59,6 +59,25 @@
   .acces { position: fixed; right: 10px; bottom: 10px; z-index: 95; display: flex; gap: 6px; background: rgba(38,50,56,.92); padding: 6px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.3); }
   .acces button { font: inherit; font-size: 15px; font-weight: 800; min-width: 42px; min-height: 40px; border: 0; border-radius: 8px; background: #fff; color: #263238; cursor: pointer; }
   .acces button:focus-visible { outline: 3px solid #ffca28; outline-offset: 2px; }
+  .acces button.actif { background: #ffca28; }
+
+  /* ── [CALCULATRICE 13/11/2026] ── */
+  #calc { position: fixed; right: 10px; bottom: 62px; z-index: 96; width: 232px; background: #fff; color: #263238; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.35); padding: 8px; }
+  #calc[hidden] { display: none; }
+  .calc-tete { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 14px; padding: 2px 4px 6px; }
+  .calc-tete button { border: 0; background: transparent; font: inherit; font-size: 17px; cursor: pointer; color: inherit; min-width: 32px; min-height: 32px; }
+  #calc-ecran { display: block; text-align: right; font-size: 26px; font-weight: 800; background: #eef3fa; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; overflow-x: auto; white-space: nowrap; }
+  .calc-touches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .calc-touches button { font: inherit; font-size: 18px; font-weight: 800; min-height: 44px; border: 0; border-radius: 8px; background: #eceff1; color: #263238; cursor: pointer; }
+  .calc-touches button.op { background: #d6e4f5; }
+  .calc-touches button.eff { background: #ffd9d9; }
+  .calc-touches button.egal { grid-column: span 4; background: #1d4e89; color: #fff; }
+  .calc-touches button:focus-visible { outline: 3px solid #ffca28; outline-offset: 2px; }
+  html.sombre #calc { background: #1f2733; color: #e8eaed; }
+  html.sombre #calc-ecran { background: #121a24; color: #e8eaed; }
+  html.sombre .calc-touches button { background: #2d3847; color: #e8eaed; }
+  html.sombre .calc-touches button.op { background: #38506d; }
+  html.sombre .calc-touches button.eff { background: #5a3340; }
   html.sombre body { background: #121417; color: #e8eaed; }
   html.sombre .carte, html.sombre #modale .carte { background: #1e2227; box-shadow: none; }
   html.sombre .situation { background: #17283a; }
@@ -163,7 +182,21 @@
   <button id="a-plus" aria-label="Texte plus grand">A+</button>
   <button id="a-sombre" aria-label="Mode sombre ou clair">🌙</button>
   <button id="a-lc" aria-label="Syllabes en couleur (LireCouleur)" aria-pressed="false" title="Syllabes en couleur" hidden>🎨</button>
+  <button id="a-calc" aria-label="Calculatrice" aria-pressed="false" title="Calculatrice">🧮</button>
   <button id="a-stop" aria-label="Arrêter la lecture à voix haute">⏹</button>
+</div>
+
+<!-- [CALCULATRICE 13/11/2026, demande de Brahim] Calculatrice intégrée : l'élève n'a pas à quitter la page. -->
+<div id="calc" hidden role="dialog" aria-label="Calculatrice">
+  <div class="calc-tete"><span>Calculatrice</span><button type="button" id="calc-fermer" aria-label="Fermer la calculatrice">✕</button></div>
+  <output id="calc-ecran" aria-live="polite">0</output>
+  <div class="calc-touches">
+    <button type="button" data-c="7">7</button><button type="button" data-c="8">8</button><button type="button" data-c="9">9</button><button type="button" class="op" data-c="/">÷</button>
+    <button type="button" data-c="4">4</button><button type="button" data-c="5">5</button><button type="button" data-c="6">6</button><button type="button" class="op" data-c="*">×</button>
+    <button type="button" data-c="1">1</button><button type="button" data-c="2">2</button><button type="button" data-c="3">3</button><button type="button" class="op" data-c="-">−</button>
+    <button type="button" data-c="0">0</button><button type="button" data-c=",">,</button><button type="button" class="eff" data-c="C">C</button><button type="button" class="op" data-c="+">+</button>
+    <button type="button" class="egal" data-c="=">=</button>
+  </div>
 </div>
 
 <div id="alerte" role="alertdialog" aria-live="assertive">
@@ -338,15 +371,33 @@
     document.querySelectorAll(".trou-choisi").forEach(function (t) { var c = document.querySelector('.reponse-eleve[data-qid="' + t.dataset.qid + '"]'); t.textContent = c && c.value ? c.value : "…………"; });
   }
 
+  function docHTML(d) {
+    return '<div class="doc"><h3>' + bEcoute("Document " + d.ref + ". " + d.titre + ". " + d.contenu, "le document " + d.ref) + "Document " + esc(d.ref) + " — " + esc(d.titre) + "</h3>" + paras(d.contenu) + images(d.images) + (d.source ? '<p class="source">' + esc(d.source) + "</p>" : "") + "</div>";
+  }
+
   function construire() {
     $("eval-titre").textContent = "Évaluation " + (VERSION.module || "") + " — " + VERSION.titre;
     $("b-code-aff").textContent = CODE;
     var h = '<h2 style="font-size:1.1rem;margin-bottom:6px">' + bEcoute("Situation. " + VERSION.situation, "la situation") + 'Situation</h2><div class="situation">' + paras(VERSION.situation) + images(VERSION.situation_images) + "</div>";
-    (VERSION.documents || []).forEach(function (d) {
-      h += '<div class="doc"><h3>' + bEcoute("Document " + d.ref + ". " + d.titre + ". " + d.contenu, "le document " + d.ref) + "Document " + esc(d.ref) + " — " + esc(d.titre) + "</h3>" + paras(d.contenu) + images(d.images) + (d.source ? '<p class="source">' + esc(d.source) + "</p>" : "") + "</div>";
-    });
+    var docs = VERSION.documents || [];
+    /* [ORDRE DES DOCUMENTS 13/11/2026, règle de Brahim] Chaque document se place juste avant son
+       premier bloc de questions, comme sur la copie papier : situation → ses questions → doc. 1 →
+       ses questions → doc. 2 → … L'élève ne remonte jamais chercher un document plus haut.
+       Les sujets exportés avant cette date n'ont pas le champ « doc » : on garde l'ancien affichage. */
+    var relies = VERSION.questions.some(function (x) { return x.doc; });
+    if (!relies) docs.forEach(function (d) { h += docHTML(d); });
     $("sujet").innerHTML = h;
-    $("questions").innerHTML = VERSION.questions.map(question).join("");
+    var vus = {}, flot = [];
+    VERSION.questions.forEach(function (x) {
+      if (relies && x.doc && !vus[x.doc]) {
+        vus[x.doc] = 1;
+        var d = docs.filter(function (dd) { return String(dd.ref) === String(x.doc); })[0];
+        if (d) flot.push(docHTML(d));
+      }
+      flot.push(question(x));
+    });
+    if (relies) docs.forEach(function (d) { if (!vus[d.ref]) flot.unshift(docHTML(d)); });
+    $("questions").innerHTML = flot.join("");
     document.body.dataset.idExercice = EVAL.id;
     window.__PSE_BLUEPRINT = { format: "mapse-evaluation-en-ligne", id: EVAL.id, version: ACCES.version, code_evaluation: VERSION.code, date_epreuve: EVAL.date_epreuve, questions: VERSION.questions.map(function (x) { return x.num; }) };
     $("questions").addEventListener("input", function (e) { if (e.target.tagName === "TEXTAREA") ajuster(e.target); sauver(); });
@@ -642,6 +693,50 @@
   }
   window.lcPret = function () { if (VERSION && VERSION.syllabes) { $("a-lc").hidden = false; lcAppliquer(); } };
   $("a-lc").addEventListener("click", function () { lcActif = !lcActif; try { localStorage.setItem("mapse_eval_lirecouleur", lcActif ? "1" : "0"); } catch (e) {} lcAppliquer(); });
+  /* ── [CALCULATRICE 13/11/2026, demande de Brahim] Calculatrice simple, sans eval() ── */
+  (function () {
+    var ecran = $("calc-ecran"), boite = $("calc"), bouton = $("a-calc");
+    var saisie = "0", garde = null, op = null, neuf = true;
+    function fr(x) {
+      if (!isFinite(x)) return "Erreur";
+      var s = Math.round(x * 1e6) / 1e6;
+      return String(s).replace(".", ",");
+    }
+    function afficher() { ecran.textContent = saisie; }
+    function nombre(s) { return parseFloat(String(s).replace(",", ".")); }
+    function calculer() {
+      if (op === null || garde === null) return nombre(saisie);
+      var a = garde, b = nombre(saisie);
+      return op === "+" ? a + b : op === "-" ? a - b : op === "*" ? a * b : (b === 0 ? NaN : a / b);
+    }
+    function touche(c) {
+      if (c === "C") { saisie = "0"; garde = null; op = null; neuf = true; return afficher(); }
+      if (c >= "0" && c <= "9") {
+        saisie = (neuf || saisie === "0") ? c : saisie + c; neuf = false; return afficher();
+      }
+      if (c === ",") {
+        if (neuf) { saisie = "0,"; neuf = false; } else if (saisie.indexOf(",") < 0) saisie += ",";
+        return afficher();
+      }
+      if (c === "=") {
+        var r = calculer(); saisie = fr(r); garde = null; op = null; neuf = true; return afficher();
+      }
+      var r2 = calculer();
+      saisie = fr(r2); garde = nombre(saisie); op = c; neuf = true; afficher();
+    }
+    boite.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-c]"); if (b) touche(b.dataset.c);
+    });
+    function ouvrir(v) {
+      boite.hidden = !v; bouton.classList.toggle("actif", v); bouton.setAttribute("aria-pressed", v ? "true" : "false");
+      try { localStorage.setItem("mapse_eval_calc", v ? "1" : "0"); } catch (e) {}
+    }
+    bouton.addEventListener("click", function () { ouvrir(boite.hidden); });
+    $("calc-fermer").addEventListener("click", function () { ouvrir(false); });
+    var ouverte = false; try { ouverte = localStorage.getItem("mapse_eval_calc") === "1"; } catch (e) {}
+    ouvrir(ouverte); afficher();
+  })();
+
   appliquerAcces();
 })();
 </script>
