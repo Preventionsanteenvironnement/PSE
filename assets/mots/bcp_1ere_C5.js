@@ -83,7 +83,7 @@ window.MOTS = {
    "s": 1,
    "d": "Composante qui désigne la personne qui travaille : âge, expérience, formation, état de santé.",
    "e": "C'est le « I » de l'ITaMaMi.",
-   "x": "Kenza, 22 ans, employée de libre-service depuis cinq mois."
+   "x": "Pauline, 22 ans, employée de libre-service depuis cinq mois."
   },
   {
    "m": "TÂCHE",
@@ -97,7 +97,7 @@ window.MOTS = {
    "s": 1,
    "d": "Ce que la personne fait réellement pour réaliser le travail demandé.",
    "e": "Elle peut s'écarter de ce qui est prescrit, souvent à cause du matériel ou du milieu.",
-   "x": "Kenza monte sur l'escabeau les bras chargés, sans se tenir."
+   "x": "Pauline monte sur l'escabeau les bras chargés, sans se tenir."
   },
   {
    "m": "MATÉRIEL",
@@ -118,14 +118,14 @@ window.MOTS = {
    "s": 1,
    "d": "Différence entre ce que la personne fait réellement et le travail prescrit.",
    "e": "C'est dans cette différence que naissent beaucoup de situations dangereuses.",
-   "x": "Pressée, Kenza prend l'escabeau au lieu de la plateforme."
+   "x": "Pressée, Pauline prend l'escabeau au lieu de la plateforme."
   },
   {
    "m": "HORAIRES",
    "s": 1,
    "d": "Heures de travail : un élément du milieu.",
    "e": "Une heure limite peut pousser à aller trop vite.",
-   "x": "Kenza doit finir avant l'ouverture à 9 heures."
+   "x": "Pauline doit finir avant l'ouverture à 9 heures."
   },
   {
    "m": "AMBIANCE",
@@ -145,7 +145,7 @@ window.MOTS = {
    "s": 1,
    "d": "Objets lourds à porter, qui font partie du matériel.",
    "e": "Les porter de façon répétée peut provoquer des douleurs.",
-   "x": "Kenza porte des packs d'eau de 9 kg."
+   "x": "Pauline porte des packs d'eau de 9 kg."
   },
   {
    "m": "PAD",
@@ -165,21 +165,21 @@ window.MOTS = {
    "s": 2,
    "d": "Personne qui réalise le travail.",
    "e": "Exemple du cours : un agent d'entretien.",
-   "x": "Kenza est l'opératrice dans le PAD de sa chute."
+   "x": "Pauline est l'opératrice dans le PAD de sa chute."
   },
   {
    "m": "SITUATION DANGEREUSE",
    "s": 2,
    "d": "Moment où l'opérateur se trouve exposé à ce qui peut provoquer un dommage.",
    "e": "Exemple du cours : l'agent marche sur le sol mouillé.",
-   "x": "Kenza monte sur l'escabeau les bras chargés, sans se tenir."
+   "x": "Pauline monte sur l'escabeau les bras chargés, sans se tenir."
   },
   {
    "m": "ÉVÉNEMENT DÉCLENCHEUR",
    "s": 2,
    "d": "Ce qui provoque le dommage ; on le dit aussi « dangereux ».",
    "e": "Exemple du cours : l'agent glisse. Sa probabilité compte dans l'évaluation du risque.",
-   "x": "L'escabeau bascule : Kenza perd l'équilibre."
+   "x": "L'escabeau bascule : Pauline perd l'équilibre."
   },
   {
    "m": "DOMMAGE",
@@ -198,7 +198,7 @@ window.MOTS = {
    "s": 2,
    "d": "Événement qui provoque un dommage immédiat, une blessure.",
    "e": "Il s'oppose au dommage qui apparaît peu à peu après une exposition répétée.",
-   "x": "Lundi, l'escabeau a basculé et Kenza est tombée."
+   "x": "Lundi, l'escabeau a basculé et Pauline est tombée."
   },
   {
    "m": "MALADIE",
@@ -211,21 +211,21 @@ window.MOTS = {
    "s": 2,
    "d": "Blessure d'une articulation, par exemple du poignet, donnée comme exemple de dommage.",
    "e": "Dans l'exemple du cours, l'agent glisse sur le sol mouillé et se fait ce type de blessure.",
-   "x": "Kenza s'est tordu le poignet en tombant."
+   "x": "Pauline s'est tordu le poignet en tombant."
   },
   {
    "m": "FRACTURE",
    "s": 2,
    "d": "Os cassé : un dommage grave possible lors d'une chute.",
    "e": "Une chute de hauteur peut en causer une grave, aux séquelles permanentes.",
-   "x": "C'est le dommage le plus grave possible pour Kenza."
+   "x": "C'est le dommage le plus grave possible pour Pauline."
   },
   {
    "m": "EXPOSITION",
    "s": 2,
    "d": "Fait d'être en présence d'un danger ; répétée, elle peut créer un dommage.",
    "e": "Le mal de dos n'apparaît pas en une seconde : c'est sa répétition, jour après jour, qui crée le dommage.",
-   "x": "Kenza porte des charges chaque matin."
+   "x": "Pauline porte des charges chaque matin."
   },
   {
    "m": "IMMÉDIAT",
@@ -238,7 +238,7 @@ window.MOTS = {
    "s": 2,
    "d": "Se dit d'une douleur qui dure, apparue après une exposition répétée.",
    "e": "Elle s'oppose au dommage immédiat de l'accident.",
-   "x": "Kenza a mal au dos presque chaque soir."
+   "x": "Pauline a mal au dos presque chaque soir."
   },
   {
    "m": "APPRÉCIATION",
@@ -257,7 +257,7 @@ window.MOTS = {
    "s": 3,
    "d": "Importance du dommage possible, de l'accident sans arrêt de travail au décès.",
    "e": "C'est l'un des deux critères croisés dans la grille, avec la probabilité d'occurrence.",
-   "x": "La chute de Kenza peut causer une fracture aux séquelles permanentes."
+   "x": "La chute de Pauline peut causer une fracture aux séquelles permanentes."
   },
   {
    "m": "PROBABILITÉ",
@@ -270,7 +270,7 @@ window.MOTS = {
    "s": 3,
    "d": "Nombre de fois où l'opérateur est exposé au danger (… d'exposition).",
    "e": "Plus elle est grande, plus la possibilité que le dommage arrive augmente.",
-   "x": "Kenza est exposée chaque jour, avant l'ouverture."
+   "x": "Pauline est exposée chaque jour, avant l'ouverture."
   },
   {
    "m": "GRILLE",
@@ -351,7 +351,7 @@ window.MOTS = {
    "s": 4,
    "d": "Mesure qui évite le risque ou le combat à la source : le premier niveau de l'échelle.",
    "e": "Si le risque n'existe plus, personne n'y est exposé.",
-   "x": "Avec les produits lourds en bas, Kenza n'a plus besoin de monter."
+   "x": "Avec les produits lourds en bas, Pauline n'a plus besoin de monter."
   },
   {
    "m": "PROTECTION COLLECTIVE",
@@ -391,7 +391,7 @@ window.MOTS = {
    "s": 4,
    "d": "Apprentissage des bons gestes et des mesures de prévention.",
    "e": "Elle fait partie du neuvième principe : donner les instructions appropriées aux travailleurs.",
-   "x": "Former Kenza au travail en hauteur et au port de charges."
+   "x": "Former Pauline au travail en hauteur et au port de charges."
   },
   {
    "m": "DUERP",

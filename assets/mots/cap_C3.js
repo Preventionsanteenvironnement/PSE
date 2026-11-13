@@ -83,7 +83,7 @@ window.MOTS = {
    "s": 1,
    "d": "Message qui indique ce qu'il faut faire ou ne pas faire pour travailler sans danger.",
    "e": "Elle peut être visuelle, écrite ou orale. Donner les instructions appropriées fait partie des principes généraux de prévention.",
-   "x": "Dans la situation : Inès ne suit pas celles de la fiche de poste parce qu'elle est pressée."
+   "x": "Dans la situation : Laura ne suit pas celles de la fiche de poste parce qu'elle est pressée."
   },
   {
    "m": "VISUELLE",
@@ -151,7 +151,7 @@ window.MOTS = {
    "s": 1,
    "d": "La personne qui travaille, avec son âge, son expérience, sa formation.",
    "e": "C'est la première composante de l'ITaMaMi.",
-   "x": "Dans la situation : Inès, 24 ans, employée polyvalente depuis quatre mois."
+   "x": "Dans la situation : Laura, 24 ans, employée polyvalente depuis quatre mois."
   },
   {
    "m": "TÂCHE",
@@ -165,7 +165,7 @@ window.MOTS = {
    "s": 1,
    "d": "Ce que la personne fait réellement pour réaliser le travail demandé.",
    "e": "Quand elle s'écarte de la tâche, cet écart peut exposer au danger.",
-   "x": "Dans la situation : Inès nettoie la lame avec une éponge, trancheuse branchée, sans gants."
+   "x": "Dans la situation : Laura nettoie la lame avec une éponge, trancheuse branchée, sans gants."
   },
   {
    "m": "MATÉRIEL",
@@ -217,7 +217,7 @@ window.MOTS = {
    "s": 2,
    "d": "Personne qui réalise le travail.",
    "e": "Dans le PAD, il fait le lien entre le danger et la situation dangereuse.",
-   "x": "Dans la situation : Inès."
+   "x": "Dans la situation : Laura."
   },
   {
    "m": "PAD",
@@ -230,13 +230,13 @@ window.MOTS = {
    "s": 2,
    "d": "Moment où l'opérateur se trouve exposé à ce qui peut le blesser.",
    "e": "Exemple : l'agent d'entretien marche sur le sol mouillé.",
-   "x": "Dans la situation : Inès nettoie la lame de la trancheuse branchée, sans gants."
+   "x": "Dans la situation : Laura nettoie la lame de la trancheuse branchée, sans gants."
   },
   {
    "m": "ÉVÉNEMENT DANGEREUX",
    "s": 2,
    "d": "Fait qui déclenche le dommage.",
-   "e": "Exemple : l'agent glisse. La consigne « Débrancher la trancheuse » empêche celui de la situation d'Inès.",
+   "e": "Exemple : l'agent glisse. La consigne « Débrancher la trancheuse » empêche celui de la situation de Laura.",
    "x": "Dans la situation : la trancheuse se met en marche pendant le nettoyage."
   },
   {
@@ -281,7 +281,7 @@ window.MOTS = {
    "s": 2,
    "d": "Dommage que peut provoquer un couteau ou une lame.",
    "e": "C'est le dommage potentiel du PAD de la trancheuse.",
-   "x": "Dans la situation : Chloé, la collègue d'Inès, s'est déjà blessée ainsi en nettoyant la trancheuse."
+   "x": "Dans la situation : Chloé, la collègue de Laura, s'est déjà blessée ainsi en nettoyant la trancheuse."
   },
   {
    "m": "ENTORSE",
@@ -344,7 +344,7 @@ window.MOTS = {
    "s": 3,
    "d": "Équipement individuel porté aux mains ; anti-coupure pour nettoyer la trancheuse.",
    "e": "La lame reste coupante même débranchée : ils restent nécessaires.",
-   "x": "Dans la situation : Inès nettoie la lame sans eux."
+   "x": "Dans la situation : Laura nettoie la lame sans eux."
   },
   {
    "m": "LUNETTES",
@@ -381,7 +381,7 @@ window.MOTS = {
    "s": 3,
    "d": "Apprentissage qui permet aux salariés d'appliquer les consignes et les mesures de prévention.",
    "e": "Elle vient en dernier dans l'ordre des mesures, avec l'information.",
-   "x": "Dans la situation : apprendre à Inès à nettoyer la trancheuse avec la fiche de poste."
+   "x": "Dans la situation : apprendre à Laura à nettoyer la trancheuse avec la fiche de poste."
   }
  ]
 };

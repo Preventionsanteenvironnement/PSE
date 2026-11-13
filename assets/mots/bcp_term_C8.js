@@ -87,7 +87,7 @@ window.MOTS = {
    "s": 1,
    "d": "Événement survenu par le fait ou à l'occasion de l'activité professionnelle, quelle qu'en soit la cause, et qui provoque une lésion.",
    "e": "Trois critères sont recherchés : un fait accidentel soudain, une lésion physique ou psychique, un lien avec le travail.",
-   "x": "Dans la situation : Inès se tord la cheville dans l'entrepôt, pendant son service."
+   "x": "Dans la situation : Clara se tord la cheville dans l'entrepôt, pendant son service."
   },
   {
    "m": "ACCIDENT DE TRAJET",
@@ -132,7 +132,7 @@ window.MOTS = {
    "s": 1,
    "d": "Il est informé par le salarié dans les 24 heures, puis déclare l'accident à la caisse dans les 48 heures.",
    "e": "Il remet aussi au salarié la feuille d'accident du travail et, en cas d'arrêt, envoie l'attestation de salaire.",
-   "x": "Dans la situation : Distripièces, l'entreprise d'Inès."
+   "x": "Dans la situation : Distripièces, l'entreprise de Clara."
   },
   {
    "m": "CAISSE",
@@ -164,7 +164,7 @@ window.MOTS = {
    "s": 1,
    "d": "Document remis par l'employeur, présenté à chaque professionnel de santé pour ne pas avancer les frais.",
    "e": "Les soins liés à l'accident sont alors pris en charge dans la limite des tarifs de l'Assurance Maladie.",
-   "x": "Dans la situation : Inès craint de payer elle-même ses soins ; ce document l'en dispense."
+   "x": "Dans la situation : Clara craint de payer elle-même ses soins ; ce document l'en dispense."
   },
   {
    "m": "ATTESTATION DE SALAIRE",
@@ -177,19 +177,19 @@ window.MOTS = {
    "s": 1,
    "d": "Période d'interruption de l'activité, prescrite par le médecin après un accident ou une maladie.",
    "e": "Pendant cette période, la perte de revenu est compensée par une indemnité journalière.",
-   "x": "Dans la situation : 21 jours pour Inès."
+   "x": "Dans la situation : 21 jours pour Clara."
   },
   {
    "m": "ENTORSE",
    "s": 1,
    "d": "Lésion de la cheville diagnostiquée aux urgences après la glissade du marchepied.",
-   "e": "C'est la lésion qui, avec le fait soudain et le lien avec le travail, fait de la chute d'Inès un accident du travail."
+   "e": "C'est la lésion qui, avec le fait soudain et le lien avec le travail, fait de la chute de Clara un accident du travail."
   },
   {
    "m": "MARCHEPIED",
    "s": 1,
    "d": "Appareil roulant dont le frein ne bloquait plus les roues dans l'entrepôt de Distripièces.",
-   "e": "C'est l'élément matériel qui a favorisé l'accident : le danger venait de l'équipement, pas d'Inès."
+   "e": "C'est l'élément matériel qui a favorisé l'accident : le danger venait de l'équipement, pas de Clara."
   },
   {
    "m": "TABLEAU",
@@ -239,7 +239,7 @@ window.MOTS = {
    "s": 2,
    "d": "Prise en charge des soins liés à l'accident ou à la maladie : consultations, examens, rééducation.",
    "e": "Il s'agit de soins, et non d'argent versé : c'est la différence avec la prestation en espèces.",
-   "x": "Dans la situation : les deux radiographies et les dix séances de kinésithérapie d'Inès."
+   "x": "Dans la situation : les deux radiographies et les dix séances de kinésithérapie de Clara."
   },
   {
    "m": "PRESTATION EN ESPÈCES",
@@ -268,7 +268,7 @@ window.MOTS = {
   {
    "m": "KINÉSITHÉRAPIE",
    "s": 2,
-   "d": "Séances de rééducation prescrites à Inès : dix séances pour sa cheville.",
+   "d": "Séances de rééducation prescrites à Clara : dix séances pour sa cheville.",
    "e": "Ce sont des soins, donc des prestations en nature, et non une somme d'argent versée."
   },
   {
@@ -276,7 +276,7 @@ window.MOTS = {
    "s": 2,
    "d": "Somme versée pour chaque jour d'arrêt : 60 % du salaire de base par jour jusqu'au 28e jour, puis 80 %.",
    "e": "Le salaire journalier de base vaut le salaire brut du mois précédent divisé par 30,42.",
-   "x": "Dans la situation : 1 850 ÷ 30,42 = 60,82 € ; 60 % donnent 36,49 € par jour pour Inès."
+   "x": "Dans la situation : 1 850 ÷ 30,42 = 60,82 € ; 60 % donnent 36,49 € par jour pour Clara."
   },
   {
    "m": "CONSOLIDATION",
