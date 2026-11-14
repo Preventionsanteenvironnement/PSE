@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script src="assets/audio-pause.js?v=2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo des achats — Les achats · D3 · CAP · PSE</title>
+<meta name="description" content="Fais varier les frais de livraison et le jour de livraison : observe le prix total et le délai de rétractation — D3 CAP · Doc. 1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --jaune:#FFD23F; --vrai:#2FBF71; --vrai-f:#16733F; --faux:#FF6B57; --faux-f:#B3261E; --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;color:var(--clair);font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.08rem;line-height:1.5;
+  background:radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),linear-gradient(160deg,var(--fond1),var(--fond2));background-attachment:fixed}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:4px solid var(--jaune);outline-offset:3px}
+.page{max-width:1100px;margin:0 auto;padding:1.4rem 1.1rem 3rem}
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.9rem,5.5vw,2.8rem);line-height:1.02;margin:0}
+header p{margin:.45rem 0 0;opacity:.85}
+.patients{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem;margin:1.2rem 0}
+.pat{position:relative;border:2px solid var(--ligne);background:rgba(255,255,255,.07);border-radius:18px;padding:.7rem;display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;font-weight:700;text-align:left}
+.pat:hover{background:rgba(255,255,255,.13)}
+.pat[aria-current="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+.pat .emo{font-size:1.7rem;line-height:1}
+.pat .et{position:absolute;top:.5rem;right:.6rem;color:var(--jaune);font-size:.9rem}
+.pat[aria-current="true"] .et{color:#B8860B}
+
+.jeu{display:grid;gap:1.1rem}
+@media (min-width:900px){.jeu{grid-template-columns:1fr 330px;align-items:start}.bareme{position:sticky;top:1rem}}
+.panneau{background:var(--clair);color:var(--encre);border-radius:24px;padding:clamp(1.1rem,3.5vw,1.8rem);box-shadow:0 30px 60px -25px rgba(0,0,0,.6)}
+.histoire{display:flex;gap:.9rem;align-items:flex-start;padding-bottom:1rem;border-bottom:2px solid #DDE4E0;margin-bottom:1rem}
+.histoire .emo{font-size:2.8rem;line-height:1}
+.histoire h2{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:1.6rem;margin:0}
+.histoire p{margin:.3rem 0 0;font-size:1.12rem}
+.num{font-weight:700;color:var(--doux);font-size:.95rem;display:flex;justify-content:space-between;gap:1rem}
+.pts{display:flex;gap:5px;align-items:center}
+.pts i{width:10px;height:10px;border-radius:50%;background:#C9D3CD}
+.pts i.fait{background:var(--vrai-f)}.pts i.ici{background:#E0A800}
+.consigne{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.25rem,3.2vw,1.5rem);line-height:1.25;margin:.3rem 0 .9rem}
+.consigne b{font-weight:800;color:#8A6A00}
+.opts{display:grid;gap:.5rem}
+.opt{text-align:left;border:2px solid #B9C5BE;background:#fff;border-radius:14px;padding:.8rem 1rem;font-weight:700}
+.opt:hover{border-color:var(--encre)}
+.opt:disabled{cursor:default}
+.opt.bon{background:#DDF4E7;border-color:var(--vrai-f)}
+.opt.mauvais{background:#FFE3DE;border-color:var(--faux-f)}
+.saisie{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.saisie input{flex:1 1 140px;min-width:0;height:56px;border-radius:14px;border:3px solid var(--encre);background:#fff;color:var(--encre);font-size:1.4rem;font-weight:700;padding:0 .8rem;font-variant-numeric:tabular-nums}
+.saisie span{font-weight:700}
+.valider,.continuer{height:56px;border-radius:999px;border:0;background:var(--encre);color:var(--clair);font-weight:700;font-size:1.1rem;padding:0 1.4rem}
+.continuer{width:100%;margin-top:.9rem}
+.fb{margin-top:.8rem;border-radius:14px}
+.fb:not(:empty){padding:.7rem .9rem}
+.fb.ok{background:#DDF4E7;border-left:6px solid var(--vrai-f)}
+.fb.ko{background:#FFE3DE;border-left:6px solid var(--faux-f)}
+.fb.ind{background:#FFF4C2;border-left:6px solid #E0A800}
+.fb.neutre{background:#EAF0EC;border-left:6px solid var(--doux)}
+.outils{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.8rem}
+.outil{border:2px solid #B9C5BE;background:transparent;border-radius:999px;padding:.3rem .8rem;font-size:.95rem;font-weight:700}
+.calc{margin-top:.8rem;background:#E7EEEA;border-radius:16px;padding:.7rem;max-width:360px}
+.calc[hidden]{display:none}
+.ecran{background:#fff;border-radius:10px;padding:.4rem .7rem;text-align:right;font-size:1.35rem;font-weight:700;min-height:2.2rem;overflow-x:auto;white-space:nowrap}
+.touches{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.5rem}
+.touches button{height:46px;border-radius:10px;border:0;background:#fff;font-weight:700;font-size:1.15rem}
+.touches .op{background:#FFF0B3}.touches .eg{background:var(--jaune)}.touches .large{grid-column:span 2}
+
+.bareme{background:#FFFFFF;color:#1B1F1D;border-radius:14px;padding:1rem 1.1rem;box-shadow:0 20px 40px -25px rgba(0,0,0,.6);font-size:.97rem}
+.bareme h2{font-size:1.05rem;margin:0 0 .6rem;text-decoration:underline;text-underline-offset:4px}
+.bareme h3{font-size:.95rem;margin:.8rem 0 .3rem;color:#1D5E50}
+.bareme .l{display:flex;justify-content:space-between;gap:.6rem;border-bottom:1px solid #DDE3E0;padding:.3rem 0;font-variant-numeric:tabular-nums}
+.bareme .l b{white-space:nowrap}
+.bareme ul{margin:.2rem 0 0;padding-left:1.1rem}
+.bareme .src{font-size:.8rem;color:#6B7570;margin:.7rem 0 0}
+.formule{margin-top:.8rem;background:#FFF4C2;border-radius:10px;padding:.5rem .7rem;font-weight:700}
+.fin{text-align:left}
+.etoiles{font-size:2.4rem;letter-spacing:.2rem;color:#E0A800;line-height:1.2}
+.retenir{border:3px solid var(--encre);border-radius:16px;padding:.8rem 1rem;margin-top:.8rem}
+.retenir b{display:block;font-family:Fraunces,Georgia,serif;font-size:1.1rem}
+.sec{background:transparent!important;color:var(--encre)!important;border:2px solid var(--encre)!important;margin-top:.5rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+
+.exp{display:grid;gap:1rem}
+.curseur{background:#EEF3F0;border-radius:16px;padding:.8rem 1rem}
+.curseur label{display:flex;justify-content:space-between;gap:.6rem;font-weight:700;flex-wrap:wrap}
+.curseur output{font-variant-numeric:tabular-nums;color:#8A6A00;font-size:1.25rem}
+.curseur input[type=range]{width:100%;height:44px;accent-color:#13302A}
+.pas{display:flex;gap:.4rem;margin-top:.3rem}.pas button{min-width:56px;height:44px;border-radius:12px;border:2px solid #B9C5BE;background:#fff;font-weight:700;font-size:1.2rem}
+.resultat{border-radius:16px;padding:1rem 1.1rem;font-size:1.12rem;border-left:8px solid var(--doux);background:#EAF0EC}
+.resultat.vert{border-left-color:var(--vrai-f);background:#DDF4E7}.resultat.orange{border-left-color:#E0A800;background:#FFF4C2}.resultat.rouge{border-left-color:var(--faux-f);background:#FFE3DE}
+.resultat .grand{display:block;font-family:Fraunces,Georgia,serif;font-weight:800;font-size:1.6rem;line-height:1.15;margin-bottom:.3rem}
+.defi{border:3px solid var(--encre);border-radius:16px;padding:.8rem 1rem}
+.defi h3{margin:0 0 .3rem;font-family:Fraunces,Georgia,serif}
+</style>
+<script>window.goatcounter={path:function(){return location.pathname||"/"}};</script>
+<script data-goatcounter="https://brahms.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Labo des achats</h1>
+    <p>Fais varier les frais de livraison et le jour de livraison : observe le prix total et le délai de rétractation — D3 CAP · Doc. 1</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="cap_D3_jeux.html">← Toutes les révisions D3</a></nav>
+  <nav class="patients" id="patients" aria-label="Choisir une expérience"></nav>
+  <div class="jeu">
+    <main class="panneau" id="zone"></main>
+    <aside class="bareme" aria-label="Ce que dit le cours">
+      <h2>Ce que dit le cours</h2>
+      <h3>Comparer deux offres (Doc. 1)</h3>
+      <div class="l"><span>Site en ligne</span><b>89,00 € + 9,90 € de livraison, livré en 5 jours</b></div>
+      <div class="l"><span>Magasin de la ville</span><b>99,00 €, tout de suite</b></div>
+      <div class="formule">Prix total = prix du produit + frais de livraison.</div>
+      <h3>Le délai de rétractation (Doc. 1)</h3>
+      <div class="l"><span>Durée</span><b>14 jours</b></div>
+      <div class="l"><span>Pour un bien, il commence</span><b>le lendemain de la livraison</b></div>
+      <div class="l"><span>Exemple du cours</span><b>livré le 5 octobre → jusqu'au 19 octobre</b></div>
+      <p class="src">D'après Service-Public.</p>
+    </aside>
+  </div>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+<script>
+const EXPERIENCES=[{id:'livraison',emoji:'🚚',nom:'Les frais de livraison',texte:'Sur le site, l\'aspirateur coûte 89,00 €. Au magasin de la ville, il coûte 99,00 €, sans frais. Fais glisser le curseur pour changer les frais de livraison du site.',calcul:'total',retenir:'Le prix total d\'un achat en ligne, c\'est le prix du produit plus les frais de livraison. Il faut comparer les prix totaux, pas seulement les prix affichés.',curseurs:[{id:'prix',label:'Prix sur le site',min:89,max:89,step:1,val:89,unite:'€',format:'eur'},{id:'frais',label:'Frais de livraison',min:0,max:20,step:0.1,val:0,unite:'€',format:'eur'}],defis:[{verbe:'Régler',txt:'le curseur sur les frais de livraison du site de Nathan : 9,90 €.',test:v=>Math.abs(v.frais-9.9)<0.01,ok:'89,00 + 9,90 = 98,90 € : à peine moins que le magasin.',aide:'Utilise les boutons + et − pour arriver à 9,9.'},{verbe:'Trouver',txt:'les frais de livraison pour lesquels le site coûte autant que le magasin. Règle le curseur.',test:v=>Math.abs(v.frais-10)<0.01,ok:'89 + 10 = 99 € : au-delà de 10 € de frais, le magasin devient moins cher.',aide:'Cherche ce qu\'il faut ajouter à 89 € pour arriver à 99 €.'}]},{id:'retract',emoji:'📅',nom:'Le délai de rétractation',texte:'Nathan reçoit en octobre un bien acheté en ligne. Fais glisser le curseur pour changer le jour de la livraison.',calcul:'retract',retenir:'Pour un bien acheté à distance, le délai de rétractation de 14 jours commence le lendemain de la livraison.',curseurs:[{id:'jour',label:'Jour de livraison (octobre)',min:1,max:16,step:1,val:1,unite:''}],defis:[{verbe:'Régler',txt:'le curseur sur le jour de livraison de l\'aspirateur : le 5 octobre.',test:v=>v.jour===5,ok:'Livré le 5 octobre : le délai commence le 6 et finit le 19 octobre.',aide:'Mets le curseur sur 5.'},{verbe:'Trouver',txt:'le jour de livraison pour lequel Nathan peut se rétracter jusqu\'au 30 octobre.',test:v=>v.jour===16,ok:'Livré le 16 octobre : du 17 au 30 octobre, cela fait 14 jours.',aide:'Le dernier jour, c\'est le jour de livraison + 14.'}]}];
+const FORMATS={eur:x=>(+x).toFixed(2).replace('.',',')};
+const CALCULS={total:v=>{const t=+(v.prix+v.frais).toFixed(2),m=99,f=x=>x.toFixed(2).replace('.',',');return{couleur:t<m?'vert':(t===m?'orange':'rouge'),titre:'Prix total sur le site : '+f(t)+' €',texte:f(v.prix)+' € + '+f(v.frais)+' € de livraison = '+f(t)+' €<br>Au magasin : 99,00 €, tout de suite.<br>'+(t<m?'Le site est moins cher de '+f(m-t)+' €.':(t===m?'Les deux prix totaux sont égaux.':'Le magasin est moins cher de '+f(t-m)+' €.'))}},retract:v=>{const j=v.jour,d=j+1,fin=j+14;return{couleur:'vert',titre:'Jusqu\'au '+fin+' octobre',texte:'Livraison : le '+j+' octobre.<br>1er jour du délai : le '+d+' octobre (le lendemain).<br>14e jour du délai : le '+fin+' octobre.<br><small>Calcul du cours : 14 jours à partir du lendemain de la livraison.</small>'}}};
+const $=id=>document.getElementById(id);
+const CLE="labo-CAPD3";let pref={faits:{}};
+try{pref=Object.assign(pref,JSON.parse(localStorage.getItem(CLE)||"{}"))}catch(x){}
+function sauver(){try{localStorage.setItem(CLE,JSON.stringify(pref))}catch(x){}}
+let X,val,d;
+function liste(){
+  $("patients").innerHTML=EXPERIENCES.map(x=>`<button class="pat" data-id="${x.id}" aria-current="${X===x}"><span class="emo" aria-hidden="true">${x.emoji}</span>${x.nom}${pref.faits[x.id]?'<span class="et" aria-label="défi réussi">★</span>':""}</button>`).join("");
+  $("patients").querySelectorAll(".pat").forEach(b=>b.onclick=()=>demarrer(EXPERIENCES.find(x=>x.id===b.dataset.id)));
+}
+function demarrer(x){X=x;val={};X.curseurs.forEach(c=>val[c.id]=c.val);d=0;liste();rendre()}
+function rendre(){
+  $("zone").innerHTML=`<div class="histoire"><span class="emo" aria-hidden="true">${X.emoji}</span><div><h2>${X.nom}</h2><p>${X.texte}</p></div></div>
+  <div class="exp">${X.curseurs.map(c=>c.min===c.max?`<div class="curseur"><b>${c.label} : ${String(c.val).replace(".",",")}${c.unite?" "+c.unite:""}</b> <small>(fixé)</small><output id="o_${c.id}" hidden></output><input type="hidden" id="c_${c.id}" value="${c.val}"></div>`:`<div class="curseur"><label for="c_${c.id}"><span>${c.label}</span><output id="o_${c.id}" for="c_${c.id}"></output></label>
+    <input type="range" id="c_${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${val[c.id]}" aria-describedby="res">
+    <div class="pas"><button type="button" data-c="${c.id}" data-s="-1" aria-label="Diminuer : ${c.label}">−</button><button type="button" data-c="${c.id}" data-s="1" aria-label="Augmenter : ${c.label}">+</button></div></div>`).join("")}
+  <div class="resultat" id="res" role="status" aria-live="polite"></div>
+  <div class="defi" id="defi"></div></div>`;
+  X.curseurs.forEach(c=>{const r=$("c_"+c.id);r.addEventListener("input",()=>{val[c.id]=+r.value;maj()});});
+  $("zone").querySelectorAll(".pas button").forEach(b=>b.onclick=()=>{const c=X.curseurs.find(k=>k.id===b.dataset.c),r=$("c_"+c.id);
+    let v=Math.min(c.max,Math.max(c.min,val[c.id]+(+b.dataset.s)*c.step));val[c.id]=v;r.value=v;maj()});
+  maj();defi();
+}
+function aff(c){return (c.format?FORMATS[c.format](val[c.id]):String(val[c.id]).replace(".",","))+(c.unite?" "+c.unite:"")}
+function maj(){
+  X.curseurs.forEach(c=>{$("o_"+c.id).textContent=aff(c);$("c_"+c.id).setAttribute("aria-valuetext",aff(c))});
+  const r=CALCULS[X.calcul](val);const z=$("res");z.className="resultat "+(r.couleur||"");z.innerHTML=`<span class="grand">${r.titre}</span>${r.texte}`;
+}
+function defi(){
+  const D=X.defis[d],z=$("defi");
+  if(!D){z.innerHTML=`<h3>✓ Tous les défis sont réussis</h3><p>${X.retenir}</p>`;pref.faits[X.id]=1;sauver();liste();return}
+  z.innerHTML=`<h3>Défi ${d+1} / ${X.defis.length}</h3><p class="consigne" style="font-size:1.15rem;margin:.2rem 0 .6rem"><b>${D.verbe}</b> ${D.txt}</p><button class="valider" id="bD">C'est ma réponse</button><div class="fb" id="fbD" role="status"></div>`;
+  $("bD").onclick=()=>{const ok=CALCULS[X.calcul](val),bon=D.test(val);const f=$("fbD");
+    if(bon){f.className="fb ok";f.innerHTML=`<b>✓ Bravo !</b> ${D.ok}`;d++;setTimeout(defi,2200)}
+    else{f.className="fb ko";f.innerHTML=`<b>Pas encore.</b> ${D.aide}`}};
+}
+demarrer(EXPERIENCES[0]);
+</script>
+<script src="assets/audio-partout.js?v=1" defer></script>
+</body>
+</html>

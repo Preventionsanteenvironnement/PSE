@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script src="assets/audio-pause.js?v=2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mission achats raisonnés — Les achats · D3 · CAP · PSE</title>
+<meta name="description" content="Comparer deux offres, se rétracter, lire une étiquette, choisir — D3 CAP">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fond1:#0F3D36; --fond2:#1D5E50; --clair:#F4F8F5; --encre:#13302A; --doux:#5B7A71;
+  --jaune:#FFD23F; --vrai:#2FBF71; --vrai-f:#16733F; --faux:#FF6B57; --faux-f:#B3261E; --ligne:rgba(255,255,255,.22);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;color:var(--clair);font-family:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;font-size:1.08rem;line-height:1.5;
+  background:radial-gradient(1200px 600px at 15% -10%,rgba(255,210,63,.13),transparent 60%),radial-gradient(900px 700px at 110% 110%,rgba(120,220,180,.14),transparent 60%),linear-gradient(160deg,var(--fond1),var(--fond2));background-attachment:fixed}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:4px solid var(--jaune);outline-offset:3px}
+.page{max-width:1100px;margin:0 auto;padding:1.4rem 1.1rem 3rem}
+header h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(1.9rem,5.5vw,2.8rem);line-height:1.02;margin:0}
+header p{margin:.45rem 0 0;opacity:.85}
+.patients{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem;margin:1.2rem 0}
+.pat{position:relative;border:2px solid var(--ligne);background:rgba(255,255,255,.07);border-radius:18px;padding:.7rem;display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;font-weight:700;text-align:left}
+.pat:hover{background:rgba(255,255,255,.13)}
+.pat[aria-current="true"]{background:var(--clair);color:var(--encre);border-color:var(--clair)}
+.pat .emo{font-size:1.7rem;line-height:1}
+.pat .et{position:absolute;top:.5rem;right:.6rem;color:var(--jaune);font-size:.9rem}
+.pat[aria-current="true"] .et{color:#B8860B}
+
+.jeu{display:grid;gap:1.1rem}
+@media (min-width:900px){.jeu{grid-template-columns:1fr 330px;align-items:start}.bareme{position:sticky;top:1rem}}
+.panneau{background:var(--clair);color:var(--encre);border-radius:24px;padding:clamp(1.1rem,3.5vw,1.8rem);box-shadow:0 30px 60px -25px rgba(0,0,0,.6)}
+.histoire{display:flex;gap:.9rem;align-items:flex-start;padding-bottom:1rem;border-bottom:2px solid #DDE4E0;margin-bottom:1rem}
+.histoire .emo{font-size:2.8rem;line-height:1}
+.histoire h2{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:1.6rem;margin:0}
+.histoire p{margin:.3rem 0 0;font-size:1.12rem}
+.num{font-weight:700;color:var(--doux);font-size:.95rem;display:flex;justify-content:space-between;gap:1rem}
+.pts{display:flex;gap:5px;align-items:center}
+.pts i{width:10px;height:10px;border-radius:50%;background:#C9D3CD}
+.pts i.fait{background:var(--vrai-f)}.pts i.ici{background:#E0A800}
+.consigne{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.25rem,3.2vw,1.5rem);line-height:1.25;margin:.3rem 0 .9rem}
+.consigne b{font-weight:800;color:#8A6A00}
+.opts{display:grid;gap:.5rem}
+.opt{text-align:left;border:2px solid #B9C5BE;background:#fff;border-radius:14px;padding:.8rem 1rem;font-weight:700}
+.opt:hover{border-color:var(--encre)}
+.opt:disabled{cursor:default}
+.opt.bon{background:#DDF4E7;border-color:var(--vrai-f)}
+.opt.mauvais{background:#FFE3DE;border-color:var(--faux-f)}
+.saisie{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.saisie input{flex:1 1 140px;min-width:0;height:56px;border-radius:14px;border:3px solid var(--encre);background:#fff;color:var(--encre);font-size:1.4rem;font-weight:700;padding:0 .8rem;font-variant-numeric:tabular-nums}
+.saisie span{font-weight:700}
+.valider,.continuer{height:56px;border-radius:999px;border:0;background:var(--encre);color:var(--clair);font-weight:700;font-size:1.1rem;padding:0 1.4rem}
+.continuer{width:100%;margin-top:.9rem}
+.fb{margin-top:.8rem;border-radius:14px}
+.fb:not(:empty){padding:.7rem .9rem}
+.fb.ok{background:#DDF4E7;border-left:6px solid var(--vrai-f)}
+.fb.ko{background:#FFE3DE;border-left:6px solid var(--faux-f)}
+.fb.ind{background:#FFF4C2;border-left:6px solid #E0A800}
+.fb.neutre{background:#EAF0EC;border-left:6px solid var(--doux)}
+.outils{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.8rem}
+.outil{border:2px solid #B9C5BE;background:transparent;border-radius:999px;padding:.3rem .8rem;font-size:.95rem;font-weight:700}
+.calc{margin-top:.8rem;background:#E7EEEA;border-radius:16px;padding:.7rem;max-width:360px}
+.calc[hidden]{display:none}
+.ecran{background:#fff;border-radius:10px;padding:.4rem .7rem;text-align:right;font-size:1.35rem;font-weight:700;min-height:2.2rem;overflow-x:auto;white-space:nowrap}
+.touches{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.5rem}
+.touches button{height:46px;border-radius:10px;border:0;background:#fff;font-weight:700;font-size:1.15rem}
+.touches .op{background:#FFF0B3}.touches .eg{background:var(--jaune)}.touches .large{grid-column:span 2}
+
+.bareme{background:#FFFFFF;color:#1B1F1D;border-radius:14px;padding:1rem 1.1rem;box-shadow:0 20px 40px -25px rgba(0,0,0,.6);font-size:.97rem}
+.bareme h2{font-size:1.05rem;margin:0 0 .6rem;text-decoration:underline;text-underline-offset:4px}
+.bareme h3{font-size:.95rem;margin:.8rem 0 .3rem;color:#1D5E50}
+.bareme .l{display:flex;justify-content:space-between;gap:.6rem;border-bottom:1px solid #DDE3E0;padding:.3rem 0;font-variant-numeric:tabular-nums}
+.bareme .l b{white-space:nowrap}
+.bareme ul{margin:.2rem 0 0;padding-left:1.1rem}
+.bareme .src{font-size:.8rem;color:#6B7570;margin:.7rem 0 0}
+.formule{margin-top:.8rem;background:#FFF4C2;border-radius:10px;padding:.5rem .7rem;font-weight:700}
+.fin{text-align:left}
+.etoiles{font-size:2.4rem;letter-spacing:.2rem;color:#E0A800;line-height:1.2}
+.retenir{border:3px solid var(--encre);border-radius:16px;padding:.8rem 1rem;margin-top:.8rem}
+.retenir b{display:block;font-family:Fraunces,Georgia,serif;font-size:1.1rem}
+.sec{background:transparent!important;color:var(--encre)!important;border:2px solid var(--encre)!important;margin-top:.5rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.fil{margin:0 0 .7rem}
+.fil a{color:var(--clair);opacity:.85;text-decoration:underline;text-underline-offset:4px;font-size:1rem;padding:.35rem .1rem;display:inline-block}
+.fil a:hover{opacity:1}
+</style>
+<!-- Mesure d'audience anonyme (GoatCounter) : chemin de page seul, sans paramètres -->
+<script>window.goatcounter={path:function(){return location.pathname||"/"}};</script>
+<script data-goatcounter="https://brahms.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Mission achats raisonnés</h1>
+    <p>Comparer deux offres, se rétracter, lire une étiquette, choisir — D3 CAP</p>
+  </header>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="cap_D3_jeux.html">← Toutes les révisions D3</a></nav>
+  <nav class="patients" id="patients" aria-label="Choisir une situation"></nav>
+  <div class="jeu">
+    <main class="panneau" id="zone"></main>
+    <aside class="bareme" aria-label="Ce que dit le cours">
+      <h2>Ce que dit le cours</h2>
+      <h3>Acheter en ligne (Doc. 1)</h3>
+      <div class="l"><span>Avantages</span><b>grand choix, prix faciles à comparer, livraison à domicile</b></div>
+      <div class="l"><span>Limites</span><b>produit pas vu, frais de livraison, délai de livraison</b></div>
+      <div class="l"><span>À lire avant de commander</span><b>conditions générales de vente (CGV)</b></div>
+      <div class="l"><span>Délai de rétractation</span><b>14 jours</b></div>
+      <div class="l"><span>Pour un bien, il commence</span><b>le lendemain de la livraison</b></div>
+      <div class="l"><span>Se rétracter</span><b>formulaire ou déclaration, puis renvoi du produit sous 14 jours</b></div>
+      <div class="l"><span>Le vendeur rembourse</span><b>dans les 14 jours</b></div>
+      <div class="l"><span>Pas de rétractation</span><b>produit personnalisé, aliment périssable, produit d'hygiène ouvert</b></div>
+      <div class="formule">Prix total = prix du produit + frais de livraison.</div>
+      <h3>L'étiquette (Doc. 2)</h3>
+      <div class="l"><span>DLC « à consommer jusqu'au… »</span><b>limite impérative</b></div>
+      <div class="l"><span>DDM « à consommer de préférence avant… »</span><b>indicative</b></div>
+      <div class="l"><span>Allergènes</span><b>mis en relief dans les ingrédients</b></div>
+      <div class="l"><span>Stockage</span><b>respecter la température indiquée</b></div>
+      <h3>Les signes officiels et le commerce équitable (Doc. 3)</h3>
+      <div class="l"><span>Agriculture biologique</span><b>sans OGM, très peu de produits chimiques de synthèse</b></div>
+      <div class="l"><span>Label Rouge</span><b>qualité supérieure</b></div>
+      <div class="l"><span>AOP</span><b>toutes les étapes dans une même aire géographique</b></div>
+      <div class="l"><span>Signes officiels</span><b>contrôlés par les pouvoirs publics</b></div>
+      <div class="l"><span>Commerce équitable</span><b>rétribution plus juste des producteurs</b></div>
+      
+      <p class="src">D'après Service-Public, la DGCCRF et l'INAO.</p>
+    </aside>
+  </div>
+  <div class="sr" aria-live="polite" id="annonce"></div>
+</div>
+
+<script>
+(function(){const S=window.SpeechSynthesisUtterance;if(!S)return;
+ const sig=t=>String(t).replace(/dB\(A\)/g,"décibels A").replace(/(\d) Hz/g,"$1 hertz").replace(/\bHz\b/g,"hertz").replace(/\bOMS\b/g,"O M S").replace(/(\d+) €/g,"$1 euros").replace(/(\d+) %/g,"$1 pour cent");
+ window.SpeechSynthesisUtterance=function(t){return new S(sig(t))};})();
+
+/* ===== PATIENTS (situations fictives, montants du cours) =====
+   choix : opts [texte, 1 si bonne réponse, message si mauvaise] · saisie : rep, pieges [[valeur, message]] */
+const PARCOURS_OPTS_IND=["Relis le cadre « Le parcours reste respecté si… ».","A-t-il ou a-t-elle un médecin traitant déclaré ? Consulte-t-il ou elle un spécialiste en accès direct ? Est-ce une urgence ?"];
+const PATIENTS=[{"id": "aspirateur", "emoji": "🛒", "nom": "Nathan choisit son aspirateur", "histoire": "Nathan, 25 ans, est employé en CDI dans une jardinerie. Il équipe son petit studio et veut un aspirateur. Sur un site en ligne, l'aspirateur coûte 89,00 € avec 9,90 € de frais de livraison ; il est livré en 5 jours. Au magasin de sa ville, le même aspirateur coûte 99,00 €, à emporter tout de suite. La garantie est de 2 ans dans les deux cas.", "retenir": "Pour comparer deux offres, on calcule le prix total (prix + frais de livraison) et on regarde les autres critères : délai, garantie, besoin. Ici, les prix totaux sont presque égaux : le magasin répond mieux au besoin de Nathan, qui veut son aspirateur tout de suite.", "etapes": [{"type": "saisie", "unite": "€", "verbe": "Relever", "txt": "les frais de livraison du site en ligne, en euros.", "rep": 9.9, "ind": ["Relis l'histoire : le site ajoute des frais."], "pieges": [[89, "89,00 €, c'est le prix de l'aspirateur, sans les frais."], [99, "99,00 €, c'est le prix au magasin."]], "ok": "Le site ajoute 9,90 € de frais de livraison."}, {"type": "saisie", "unite": "€", "verbe": "Calculer", "txt": "le prix total de l'aspirateur acheté sur le site, en euros.", "rep": 98.9, "ind": ["Prix total = prix du produit + frais de livraison.", "89,00 + 9,90."], "pieges": [[89, "89,00 €, c'est sans les frais de livraison : ajoute 9,90 €."], [99, "99,00 €, c'est le prix du magasin, pas celui du site."]], "ok": "89,00 + 9,90 = 98,90 € : à peine moins que les 99,00 € du magasin."}, {"type": "choix", "verbe": "Identifier", "txt": "une limite de l'achat en ligne pour Nathan.", "ind": ["Relis la ligne « Limites » du cours."], "opts": [["Il doit attendre 5 jours la livraison.", 1], ["Il peut comparer facilement les prix.", 0, "Comparer les prix facilement, c'est un avantage de l'achat en ligne, pas une limite."], ["Il a le même aspirateur garanti 2 ans.", 0, "La garantie est la même en ligne et au magasin : ce n'est pas une limite."]], "ok": "Le délai de livraison est une limite de l'achat en ligne, comme les frais de livraison et le produit pas vu avant l'achat."}, {"type": "choix", "verbe": "Choisir", "txt": "l'offre qui répond le mieux au besoin de Nathan, qui veut son aspirateur tout de suite.", "ind": ["Les prix totaux sont presque égaux : regarde le délai."], "opts": [["Le magasin : même prix ou presque, et tout de suite.", 1], ["Le site : il est toujours moins cher en ligne.", 0, "Avec les frais de livraison, le site coûte 98,90 € : presque autant que le magasin."], ["Le site : la garantie y est plus longue.", 0, "La garantie est de 2 ans dans les deux offres."]], "ok": "98,90 € et 99,00 € : les prix totaux sont presque égaux ; le magasin donne l'aspirateur tout de suite."}]}, {"id": "retractation", "emoji": "📦", "nom": "Nathan change d'avis", "histoire": "Nathan a aussi commandé en ligne une lampe de bureau. Elle est livrée le lundi 5 octobre. En la déballant, il se rend compte qu'elle est trop grande pour son studio. Il veut renoncer à son achat.", "retenir": "Pour un achat à distance, l'acheteur a 14 jours pour se rétracter ; pour un bien, le délai commence le lendemain de la livraison. Il envoie un formulaire ou une déclaration, renvoie le produit dans les 14 jours, et le vendeur rembourse dans les 14 jours.", "etapes": [{"type": "saisie", "unite": "jours", "verbe": "Relever", "txt": "la durée du délai de rétractation d'un achat à distance, en jours.", "rep": 14, "ind": ["Relis la ligne « Délai de rétractation »."], "pieges": [[7, "7 jours, c'est seulement la moitié du délai du cours."], [30, "30 jours n'est pas le délai de rétractation du cours."]], "ok": "L'acheteur dispose d'un délai de rétractation de 14 jours."}, {"type": "choix", "verbe": "Indiquer", "txt": "le jour où commence le délai de rétractation de Nathan.", "ind": ["Pour un bien, le délai commence le lendemain de la livraison."], "opts": [["Le mardi 6 octobre, lendemain de la livraison.", 1], ["Le lundi 5 octobre, jour de la livraison.", 0, "Pour un bien, le délai commence le lendemain de la livraison, pas le jour même."], ["Le jour où Nathan a passé sa commande.", 0, "Pour un bien, le délai commence après la livraison, pas à la commande."]], "ok": "La lampe est livrée le 5 octobre : le délai commence le lendemain, le 6 octobre."}, {"type": "choix", "verbe": "Indiquer", "txt": "le dernier jour où Nathan peut se rétracter.", "ind": ["Le 6 octobre est le 1er jour.", "Compte 14 jours à partir du 6 octobre."], "opts": [["Le 19 octobre.", 1], ["Le 20 octobre.", 0, "Le 6 octobre est le 1er jour : le 14e jour est le 19 octobre."], ["Le 18 octobre.", 0, "Le 18 octobre n'est que le 13e jour : il reste encore un jour."]], "ok": "Du 6 au 19 octobre : 14 jours. Nathan peut se rétracter jusqu'au 19 octobre."}, {"type": "choix", "verbe": "Indiquer", "txt": "ce que Nathan doit faire pour se rétracter.", "ind": ["Relis la ligne « Se rétracter »."], "opts": [["Envoyer un formulaire ou une déclaration, puis renvoyer la lampe.", 1], ["Garder la lampe et demander un bon d'achat au vendeur.", 0, "Pour se rétracter, il faut renvoyer le produit ; le vendeur rembourse."], ["Attendre que le vendeur vienne reprendre la lampe chez lui.", 0, "C'est l'acheteur qui envoie sa déclaration et renvoie le produit."]], "ok": "Nathan envoie un formulaire ou une déclaration au vendeur, puis renvoie la lampe dans les 14 jours ; le vendeur le rembourse dans les 14 jours."}]}, {"id": "jambon", "emoji": "🥓", "nom": "Le jambon de Nathan", "histoire": "Le samedi, Nathan fait ses courses. Il achète du jambon. L'étiquette indique : « Jambon cuit supérieur, 4 tranches. Ingrédients : jambon de porc, sel, bouillon, LAIT (lactose), conservateur. 160 g. À consommer jusqu'au 12/10/2026. Conservation entre 0 °C et 4 °C ; après ouverture, à consommer sous 48 heures. » Nathan garde souvent ses aliments frais hors du réfrigérateur.", "retenir": "La DLC est une limite impérative. Les allergènes sont mis en relief dans les ingrédients. Il faut respecter la température indiquée : un aliment frais laissé au chaud peut devenir dangereux avant sa date.", "etapes": [{"type": "choix", "verbe": "Identifier", "txt": "le type de date du jambon.", "ind": ["« À consommer jusqu'au… »."], "opts": [["Une DLC : une limite impérative.", 1], ["Une DDM : une date indicative.", 0, "La DDM s'écrit « à consommer de préférence avant… » ; ici, c'est « à consommer jusqu'au… »."], ["Une AOP : une date d'origine.", 0, "L'AOP est un signe officiel d'origine, pas une date."]], "ok": "« À consommer jusqu'au… » : c'est une DLC, une limite impérative pour un aliment très périssable."}, {"type": "choix", "verbe": "Relever", "txt": "l'allergène du jambon.", "ind": ["Les allergènes sont mis en relief dans les ingrédients."], "opts": [["Le lait.", 1], ["Le sel.", 0, "Le sel n'est pas mis en relief : regarde le mot écrit en lettres capitales."], ["Le porc.", 0, "Le porc n'est pas mis en relief : regarde le mot écrit en lettres capitales."]], "ok": "LAIT est écrit en lettres capitales : c'est l'allergène, mis en relief dans la liste des ingrédients."}, {"type": "saisie", "unite": "°C", "verbe": "Relever", "txt": "la température la plus haute de conservation du jambon, en degrés.", "rep": 4, "ind": ["Conservation entre 0 °C et … °C."], "pieges": [[0, "0 °C, c'est la température la plus basse."], [48, "48, ce sont les heures pour le manger après ouverture, pas des degrés."]], "ok": "Le jambon se conserve entre 0 °C et 4 °C : au réfrigérateur."}, {"type": "choix", "verbe": "Justifier", "txt": "que Nathan ne doit pas manger ce jambon, ouvert il y a trois jours, même avant sa DLC.", "ind": ["Relis la ligne « après ouverture » de l'étiquette."], "opts": [["Après ouverture, il se mange sous 48 heures ; trois jours, c'est trop.", 1], ["La DLC est dépassée depuis trois jours, donc il est périmé.", 0, "La DLC n'est pas dépassée ; c'est le délai après ouverture qui l'est."], ["Le jambon contient du lait, donc personne ne peut le manger.", 0, "Le lait est un allergène : il gêne seulement les personnes allergiques."]], "ok": "Après ouverture : 48 heures au plus. Trois jours, c'est 72 heures ; et un aliment frais mal conservé peut devenir dangereux avant sa date."}]}, {"id": "raisonne", "emoji": "🧺", "nom": "Nathan fait des achats raisonnés", "histoire": "Nathan veut mieux acheter. Dans le magasin, il voit un paquet de pâtes « à consommer de préférence avant… », des poulets Label Rouge, un fromage AOP et un café du commerce équitable. Il se demande ce qui protège les consommateurs et ce qu'il peut faire lui-même.", "retenir": "Pour tous les consommateurs, des règles protègent : le délai de rétractation de 14 jours, les signes officiels contrôlés par les pouvoirs publics. Pour lui-même, Nathan fait une liste selon ses besoins, compare les prix totaux et lit l'étiquette.", "etapes": [{"type": "choix", "verbe": "Classer", "txt": "la date du paquet de pâtes.", "ind": ["« À consommer de préférence avant… »."], "opts": [["DDM : le produit peut encore être mangé après, s'il est bien conservé.", 1], ["DLC : le produit est impropre à la consommation après cette date.", 0, "Les pâtes sont un produit sec : leur date est une DDM, indicative."]], "ok": "Les pâtes portent une DDM : après, elles peuvent être consommées si l'emballage est intact et si elles ont été bien conservées ; elles perdent seulement du goût ou des vitamines."}, {"type": "choix", "verbe": "Identifier", "txt": "le signe qui garantit une qualité supérieure aux produits similaires.", "ind": ["Relis la partie « Les signes officiels »."], "opts": [["Le Label Rouge.", 1], ["L'AOP.", 0, "L'AOP garantit que toutes les étapes de production sont dans une même aire géographique."], ["Le commerce équitable.", 0, "Le commerce équitable veille à une rétribution plus juste des producteurs."]], "ok": "Le Label Rouge garantit un niveau de qualité supérieur aux produits similaires."}, {"type": "choix", "verbe": "Proposer", "txt": "une protection collective, prévue pour tous les consommateurs.", "ind": ["Cherche une règle ou un contrôle qui vaut pour tout le monde."], "opts": [["Les signes officiels, contrôlés par les pouvoirs publics.", 1], ["Une marque commerciale connue sur l'emballage.", 0, "Une marque commerciale ne garantit ni l'origine ni la qualité."], ["Un prix élevé, signe d'un bon produit de qualité.", 0, "Le cours ne dit pas que le prix garantit la qualité ; ce sont les signes officiels."]], "ok": "Les signes officiels sont contrôlés par les pouvoirs publics ; la loi donne aussi à tous un délai de rétractation de 14 jours pour un achat à distance."}, {"type": "choix", "verbe": "Proposer", "txt": "un geste individuel pour que Nathan fasse des achats raisonnés.", "ind": ["Pense à ce que Nathan peut faire avant et pendant ses courses."], "opts": [["Faire une liste selon ses besoins et comparer les prix totaux.", 1], ["Acheter toujours le produit le moins cher, sans lire l'étiquette.", 0, "Le prix seul ne suffit pas : il faut aussi lire l'étiquette et penser à son besoin."], ["Choisir toujours la marque la plus connue du rayon du magasin.", 0, "Une marque commerciale ne garantit ni l'origine ni la qualité."]], "ok": "Faire une liste selon ses besoins, comparer les prix totaux et lire l'étiquette : date, allergènes, conservation, signes officiels."}]}];
+
+/* ===== Outils ===== */
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const lireNombre=s=>parseFloat(String(s).replace(/[\s\u202f€]/g,"").replace(",","."));
+const tactile=matchMedia("(hover:none)").matches;
+function annoncer(t){$("annonce").textContent=t}
+const CLE="mission-CAPD3";
+let pref={etoiles:{}};
+try{pref=Object.assign(pref,JSON.parse(localStorage.getItem(CLE)||"{}"))}catch(e){}
+function sauver(){try{localStorage.setItem(CLE,JSON.stringify(pref))}catch(e){}}
+let P,k,err,ind,niv,resolu;
+
+function liste(){
+  $("patients").innerHTML=PATIENTS.map(p=>`<button class="pat" data-id="${p.id}" aria-current="${P===p}"><span class="emo" aria-hidden="true">${p.emoji}</span>${p.nom}${pref.etoiles[p.id]?`<span class="et" aria-label="${pref.etoiles[p.id]} étoiles">${"★".repeat(pref.etoiles[p.id])}</span>`:""}</button>`).join("");
+  $("patients").querySelectorAll(".pat").forEach(b=>b.onclick=()=>demarrer(PATIENTS.find(p=>p.id===b.dataset.id)));
+}
+function demarrer(p){P=p;k=0;err=0;ind=0;liste();etape()}
+function etape(){
+  const E=P.etapes[k];resolu=false;niv=0;
+  let zone=E.type==="choix"
+    ?`<div class="opts">${E.opts.map((o,i)=>i).sort(()=>Math.random()-.5).map(i=>`<button class="opt" data-i="${i}">☐ ${E.opts[i][0]}</button>`).join("")}</div>`
+    :`<div class="saisie"><input id="inp" inputmode="decimal" autocomplete="off" aria-label="Ta réponse en ${E.unite||'euros'}"><span>${E.unite||"€"}</span><button class="valider" id="bVal">Valider</button></div>`;
+  $("zone").innerHTML=`
+    <div class="histoire"><span class="emo" aria-hidden="true">${P.emoji}</span><div><h2>${P.nom}</h2><p>${P.histoire}</p></div></div>
+    <div class="num"><span>Étape ${k+1} / ${P.etapes.length}</span><span class="pts" aria-hidden="true">${P.etapes.map((_,j)=>`<i class="${j<k?"fait":j===k?"ici":""}"></i>`).join("")}</span></div>
+    <p class="consigne"><b>${E.verbe}</b> ${E.txt}</p>
+    <div id="rep">${zone}</div>
+    <div class="fb" id="fb" role="status" aria-live="polite"></div>
+    <div class="outils"><button class="outil" id="bInd">💡 Indice</button><button class="outil" id="bLire">🔊 Écouter</button>${E.type==="saisie"?'<button class="outil" id="bCalc">🧮 Calculatrice</button>':""}</div>
+    <div class="calc" id="calc" hidden></div>`;
+  $("bInd").onclick=()=>{if(resolu)return;const t=E.ind[Math.min(niv,E.ind.length-1)];if(niv<E.ind.length){ind++;niv++}fb("ind",`<b>💡 Indice :</b> ${t}`)};
+  $("bLire").onclick=()=>lire(`${P.histoire} ${E.verbe} ${E.txt}`);
+  if(E.type==="choix")$("rep").querySelectorAll(".opt").forEach(o=>o.onclick=()=>choisir(+o.dataset.i,o));
+  else{
+    $("bVal").onclick=valider;$("inp").addEventListener("keydown",e=>{if(e.key==="Enter")valider()});
+    $("bCalc").onclick=()=>{const c=$("calc");c.hidden=!c.hidden};construireCalc();
+    if(!tactile)$("inp").focus({preventScroll:true});
+  }
+  annoncer(`${P.nom}. ${E.verbe} ${E.txt}`);
+}
+function fb(c,h){const f=$("fb");f.className="fb "+c;f.innerHTML=h}
+function choisir(i,o){
+  if(resolu)return;const E=P.etapes[k],op=E.opts[i];
+  if(op[1]){o.classList.add("bon");o.textContent="☑ "+op[0];reussir(E.ok)}
+  else{err++;o.classList.add("mauvais");o.disabled=true;fb("ko",`<b>Pas tout à fait.</b> ${op[2]}`)}
+}
+function valider(){
+  if(resolu)return;const E=P.etapes[k],x=lireNombre($("inp").value);
+  if(isNaN(x)){fb("neutre","Écris un nombre, par exemple 12,50.");return}
+  if(Math.abs(x-E.rep)<.005){reussir(E.ok);return}
+  err++;const p=(E.pieges||[]).find(q=>Math.abs(q[0]-x)<.005&&q[1]);
+  fb("ko",`<b>Pas encore.</b> ${p?p[1]:"Vérifie ton calcul ou demande un indice."}`);
+}
+function reussir(msg){
+  resolu=true;fb("ok",`<b>✓ Bravo !</b> ${msg}`);
+  $("rep").querySelectorAll("button,input").forEach(x=>x.disabled=true);
+  const der=k===P.etapes.length-1;
+  const b=document.createElement("button");b.className="continuer";b.textContent=der?"Voir le bilan":"Étape suivante";
+  b.onclick=()=>{arreterVoix();k++;der?fin():etape()};
+  $("rep").appendChild(b);b.focus({preventScroll:true});
+  const c=$("calc");if(c)c.hidden=true;
+}
+function fin(){
+  const pts=err+ind,et=pts<=1?3:pts<=3?2:1;
+  pref.etoiles[P.id]=Math.max(pref.etoiles[P.id]||0,et);sauver();liste();
+  const i=PATIENTS.indexOf(P),suiv=PATIENTS[i+1];
+  $("zone").innerHTML=`<div class="fin">
+    <div class="histoire"><span class="emo" aria-hidden="true">${P.emoji}</span><div><h2>${P.nom} : terminé</h2><p>${err} erreur${err>1?"s":""} · ${ind} indice${ind>1?"s":""}</p></div></div>
+    <div class="etoiles" aria-label="${et} étoile${et>1?"s":""} sur 3">${"★".repeat(et)}<span style="opacity:.25">${"★".repeat(3-et)}</span></div>
+    <div class="retenir"><b>À retenir</b>${P.retenir}</div>
+    ${suiv?`<button class="continuer" id="bSuiv">Situation suivante : ${suiv.nom} →</button>`:""}
+    <button class="continuer sec" id="bRec">Refaire ce dossier</button></div>`;
+  if(suiv)$("bSuiv").onclick=()=>{demarrer(suiv);scrollTo({top:0,behavior:"smooth"})};
+  $("bRec").onclick=()=>demarrer(P);
+  $("bSuiv")?$("bSuiv").focus({preventScroll:true}):$("bRec").focus({preventScroll:true});
+}
+
+/* ===== Calculatrice ===== */
+let expr="";
+function construireCalc(){
+  expr="";const T=["7","8","9","÷","4","5","6","×","1","2","3","−","0",",","=","+","C","⌫"];
+  $("calc").innerHTML=`<div class="ecran" id="ecran">0</div><div class="touches">${T.map(t=>`<button data-t="${t}" class="${"÷×−+".includes(t)?"op":t==="="?"eg":""}${t==="C"||t==="⌫"?" large":""}" aria-label="${{"÷":"diviser","×":"multiplier","−":"moins","+":"plus","⌫":"effacer","C":"tout effacer"}[t]||t}">${t}</button>`).join("")}</div>
+    <button class="outil" id="bCopie" style="margin-top:.5rem;width:100%">↳ Mettre le résultat dans ma réponse</button>`;
+  $("calc").querySelectorAll("[data-t]").forEach(x=>x.onclick=()=>touche(x.dataset.t));
+  $("bCopie").onclick=()=>{const i=$("inp");if(i&&expr){calc();i.value=expr;i.focus()}};
+}
+function touche(t){if(t==="C")expr="";else if(t==="⌫")expr=expr.slice(0,-1);else if(t==="=")calc();else expr+=t;$("ecran").textContent=expr||"0"}
+function calc(){const e=expr.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/,/g,".");if(!/^[0-9.+\-*/]+$/.test(e))return;
+  try{let r=Function(`"use strict";return (${e})`)();if(!isFinite(r)){expr="";$("ecran").textContent="Erreur";return}r=Math.round(r*10000)/10000;expr=String(r).replace(".",",")}catch(x){expr="";$("ecran").textContent="Erreur";return}$("ecran").textContent=expr}
+
+/* ===== Voix ===== */
+let voix=null;
+function choisirVoix(){const l=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang));voix=l.find(x=>/fr-FR/i.test(x.lang)&&/(google|natural|online|amélie|thomas|denise|henri)/i.test(x.name))||l.find(x=>/fr-FR/i.test(x.lang))||l[0]||null}
+if("speechSynthesis" in window){choisirVoix();speechSynthesis.onvoiceschanged=choisirVoix}
+function lire(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/(\d+),(\d+) €/g,"$1 euros $2").replace(/€/g,"euros"));u.lang="fr-FR";if(voix)u.voice=voix;u.rate=.95;speechSynthesis.speak(u)}
+function arreterVoix(){if("speechSynthesis" in window)speechSynthesis.cancel()}
+
+demarrer(PATIENTS[0]);
+</script>
+<script src="assets/audio-partout.js?v=1" defer></script>
+</body>
+</html>
