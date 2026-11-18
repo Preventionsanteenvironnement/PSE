@@ -62,21 +62,21 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
   <button class="btn" id="bZones">🎨<span class="t">Zones</span></button>
   <button class="btn" id="bMission">🎯<span class="t">Missions</span></button>
   <button class="btn" id="bCarnet">📒<span class="t">Carnet</span></button>
-  <button class="btn" id="bMoins" title="Voir plus large">−</button><button class="btn" id="bPlus" title="Voir de plus près">+</button><button class="btn" id="bSon">🔊</button>
+  <button class="btn" id="bMoins" title="Voir plus large">−</button><button class="btn" id="bPlus" title="Voir de plus près">+</button><button class="btn" id="bBulles" title="Bulles : au choix ou automatiques">💬<span class="t" id="bBullesT">Au choix</span></button><button class="btn" id="bSon" title="Lecture automatique des noms">🔇</button>
   <button class="btn" id="bAide">❓</button>
 </div>
 <div id="banniere"><span id="banZone"></span><b id="banNom"></b></div>
-<div id="bulle"><span class="neuf" id="bNeuf">Nouveau !</span><img id="bImg" alt=""><div id="bVenir" style="display:none;height:70px;border-radius:12px;background:#f1efe9;color:#777;font-weight:700;font-size:13px;text-align:center;padding-top:26px">image à venir</div><h3 id="bNom"></h3><p id="bFct"></p><span class="tag" id="bTag"></span></div>
+<div id="bulle"><span class="neuf" id="bNeuf">Nouveau !</span><img id="bImg" alt=""><div id="bVenir" style="display:none;height:70px;border-radius:12px;background:#f1efe9;color:#777;font-weight:700;font-size:13px;text-align:center;padding-top:26px">image à venir</div><h3 id="bNom"></h3><button id="bEcoute" title="Écouter" style="position:absolute;right:12px;top:118px;border:0;border-radius:20px;width:38px;height:38px;background:#e5f1ef;font-size:18px;cursor:pointer">🔊</button><p id="bFct"></p><span class="tag" id="bTag"></span></div>
 <div id="legende"><b>Les zones</b><br><i style="background:var(--sale)"></i>Zone sale<br><i style="background:var(--propre)"></i>Zone propre<br><i style="background:var(--clients)"></i>Zone clients<br><i style="background:var(--circulation)"></i>Circulation<br><i style="background:var(--annexe)"></i>Annexes</div>
 <div id="mission"><span class="fl" id="mFl">🎯</span><b>Mission</b><div id="mTxt"></div><small id="mScore"></small></div>
 <div id="situation"><p>Plan de situation</p><svg id="sitSvg"></svg></div>
-<div id="fondu"></div><div id="toast"></div>
+<button id="bVoir" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:8;display:none;border:0;border-radius:24px;background:#0f6b63;color:#fff;font-weight:800;font-size:16px;padding:12px 22px;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer">👁 Voir</button><div id="fondu"></div><div id="toast"></div>
 <div class="modal vu" id="accueil"><div class="boite">
   <h1>Le plateau technique PSR</h1>
   <p class="aide">Circule dans le plateau. Approche-toi d’un objet : une bulle apparaît avec son image, son <b>nom exact</b> et à quoi il sert. Recule : elle disparaît. Passe les portes pour entrer dans chaque pièce, dessinée d’après le plan validé.</p>
   <p class="aide"><b>Choisis ton personnage :</b></p>
   <div class="choix" id="choixPerso"></div>
-  <p class="aide">🖱️ / 👆 Touche un endroit pour y aller · ⌨️ <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> · 🎨 voir les zones · 🎯 missions · 📒 carnet des objets découverts</p>
+  <p class="aide">Quand un petit <b>i</b> apparaît sur un objet, touche l’objet (ou « 👁 Voir », ou <kbd>Entrée</kbd>) pour ouvrir sa bulle. 💬 bulles automatiques ou au choix · 🔇/🔊 lecture des noms.</p><p class="aide">🖱️ / 👆 Touche un endroit pour y aller · ⌨️ <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> · 🎨 voir les zones · 🎯 missions · 📒 carnet des objets découverts</p>
   <p style="text-align:center"><button class="gros" id="go">Entrer dans le plateau →</button></p>
 </div></div>
 <div class="modal" id="carnet"><div class="boite"><h1>📒 Mon carnet</h1><p class="aide" id="carnetTxt"></p><div class="grille" id="carnetGrille"></div><p style="text-align:center;margin-top:14px"><button class="gros" data-ferme>Continuer</button></p></div></div>
@@ -90,11 +90,11 @@ const NOMZONE={sale:'Zone sale',propre:'Zone propre',clients:'Zone clients',circ
 const $=id=>document.getElementById(id);
 const imgs={};function img(src){if(!src)return null;if(!imgs[src]){const i=new Image();i.src=src;imgs[src]=i;}return imgs[src];}
 const objets=D.objets.map((o,i)=>Object.assign({k:i},o));
-let scene='couloir', S=D.scenes[scene], choixPerso='calot', voix=true, montrerZones=false;
+let scene='couloir', S=D.scenes[scene], choixPerso='calot', voix=false, montrerZones=false, bullesAuto=false, candidat=null;
 const moi={x:320,y:1000,dir:'haut',pas:0,chemin:null,dansPorte:true};
 let decouverts={};try{decouverts=JSON.parse(localStorage.getItem('plateau2d-carnet')||'{}')}catch(e){}
 function sauver(){try{localStorage.setItem('plateau2d-carnet',JSON.stringify(decouverts))}catch(e){}}
-function dire(t){if(!voix||!('speechSynthesis' in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';u.rate=.95;speechSynthesis.speak(u);}
+function dire(t,force){if((!voix&&!force)||!('speechSynthesis' in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';u.rate=.95;speechSynthesis.speak(u);}
 // ── grille
 function cellule(x,y){return [Math.floor((x-S.cadre[0])/S.cell),Math.floor((y-S.cadre[1])/S.cell)];}
 function libre(x,y){const [i,j]=cellule(x,y);const r=S.grille[j];return !!r&&r[i]==='1';}
@@ -132,7 +132,10 @@ $('choixPerso').onclick=e=>{const b=e.target.closest('button');if(!b)return;choi
 $('go').onclick=()=>{demarre=true;$('accueil').classList.remove('vu');banniere('Grand couloir','Entrée du plateau','circulation');dire('Bienvenue dans le plateau technique');};
 $('bAide').onclick=()=>$('accueil').classList.add('vu');
 $('bMoins').onclick=()=>{zU=Math.max(.45,zU/1.25);};$('bPlus').onclick=()=>{zU=Math.min(2.2,zU*1.25);};
-$('bSon').onclick=()=>{voix=!voix;$('bSon').textContent=voix?'🔊':'🔇';};
+$('bSon').onclick=()=>{voix=!voix;$('bSon').textContent=voix?'🔊':'🔇';toast(voix?'Lecture automatique des noms : oui':'Lecture automatique : non','#334');};
+$('bBulles').onclick=()=>{bullesAuto=!bullesAuto;$('bBullesT').textContent=bullesAuto?'Automatiques':'Au choix';toast(bullesAuto?'Les bulles s’ouvrent toutes seules':'Les bulles s’ouvrent quand tu touches l’objet','#334');};
+$('bVoir').onclick=()=>{if(candidat)montrerBulle(candidat);};
+$('bEcoute').onclick=e=>{e.stopPropagation();if(actif)dire(actif.nom+'. '+(actif.fct||''),true);};
 $('bZones').onclick=()=>{montrerZones=!montrerZones;$('bZones').classList.toggle('on',montrerZones);$('legende').style.display=montrerZones?'block':'none';};
 document.querySelectorAll('[data-ferme]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('vu'));
 $('bCarnet').onclick=()=>{const n=Object.keys(decouverts).length,t=objets.length;
@@ -163,10 +166,11 @@ function changer(p){if(enTransition)return;enTransition=true;$('fondu').style.op
     banniere(p.nom,'Tu entres','circulation');},300);}
 function portes(){return D.portes.filter(p=>p.scene===scene);}
 // ── commandes
-const touches={};addEventListener('keydown',e=>{touches[e.key.toLowerCase()]=true;if(e.key.startsWith('Arrow'))e.preventDefault();});addEventListener('keyup',e=>{touches[e.key.toLowerCase()]=false;});
-cv.addEventListener('pointerdown',e=>{const [x,y]=monde(e.clientX,e.clientY);const c=chemin(moi.x,moi.y,x,y);if(c){moi.chemin=c.slice(1);}
-  const o=objetSous(x,y);if(o&&Math.hypot(o.cx-moi.x,o.cy-moi.y)<S.perso*3){montrerBulle(o,true);} });
-function objetSous(x,y){return objets.find(o=>o.scene===scene&&x>=o.x&&x<=o.x+o.l&&y>=o.y&&y<=o.y+o.h);}
+const touches={};addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&candidat&&!$('accueil').classList.contains('vu')){e.preventDefault();montrerBulle(candidat);return;}touches[e.key.toLowerCase()]=true;if(e.key.startsWith('Arrow'))e.preventDefault();});addEventListener('keyup',e=>{touches[e.key.toLowerCase()]=false;});
+cv.addEventListener('pointerdown',e=>{const [x,y]=monde(e.clientX,e.clientY);
+  const o=objetSous(x,y);if(o&&distObj(o)<S.perso*3){montrerBulle(o);return;}
+  const c=chemin(moi.x,moi.y,x,y);if(c){moi.chemin=c.slice(1);} });
+function objetSous(x,y){const m=S.perso*.4;return objets.find(o=>o.scene===scene&&x>=o.x-(o.mur?m:2)&&x<=o.x+o.l+(o.mur?m:2)&&y>=o.y-(o.mur?m:2)&&y<=o.y+o.h+(o.mur?m:2));}
 objets.forEach(o=>{o.cx=o.x+o.l/2;o.cy=o.y+o.h/2;});
 // ── bulle
 let actif=null;
@@ -175,7 +179,7 @@ function montrerBulle(o){actif=o;const b=$('bulle');$('bImg').style.display=o.fa
   const z=S.zones.find(z=>dansPoly(o.cx,o.cy,z.poly))||(scene==='couloir'?D.situation.find(e=>dansPoly(o.cx,o.cy,e.poly)):null);
   $('bTag').textContent=z?z.nom+' · '+NOMZONE[z.zone]:'';$('bTag').style.background=z?COUL[z.zone]:'#777';
   const neuf=!decouverts[o.id];$('bNeuf').style.display=neuf?'block':'none';if(neuf){decouverts[o.id]=Date.now();sauver();majCompteur();}
-  b.classList.add('vu');dire(o.nom);verifierMission({objet:o});}
+  b.classList.add('vu');dire(o.nom);verifierMission({objet:o});$('bVoir').style.display='none';}
 function cacherBulle(){actif=null;$('bulle').classList.remove('vu');}
 // ── missions
 const ZM=[['sale','Va dans la zone sale'],['propre','Va dans la zone propre'],['clients','Va dans la zone clients']];
@@ -211,7 +215,10 @@ function boucle(t){const dt=Math.min(.05,(t-tPrec)/1000);tPrec=t;
   camX+=(moi.x-camX)*Math.min(1,dt*6);camY+=(moi.y-camY)*Math.min(1,dt*6);
   // proximité
   let proche=null,pd=S.perso*1.5;for(const o of objets){if(o.scene!==scene)continue;const d=distObj(o);if(d<pd){pd=d;proche=o;}}
-  if(proche&&proche!==actif)montrerBulle(proche);else if(!proche&&actif&&distObj(actif)>S.perso*1.9)cacherBulle();
+  candidat=proche;
+  if(bullesAuto){if(proche&&proche!==actif)montrerBulle(proche);}
+  if(actif&&distObj(actif)>S.perso*1.9)cacherBulle();
+  if(!bullesAuto&&candidat&&candidat!==actif){$('bVoir').style.display='block';$('bVoir').textContent='👁 Voir : '+(decouverts[candidat.id]?candidat.nom:'cet objet');}else $('bVoir').style.display='none';
   if(actif){const [bx,by]=ecran(actif.cx,actif.y);const b=$('bulle');b.style.left=Math.max(130,Math.min(innerWidth-130,bx))+'px';b.style.top=Math.max(300,by-8)+'px';}
   suivreZone();dessiner(t);requestAnimationFrame(boucle);}
 function dessiner(t){const r=devicePixelRatio;cx.setTransform(r,0,0,r,0,0);cx.fillStyle='#11161a';cx.fillRect(0,0,innerWidth,innerHeight);
@@ -232,6 +239,7 @@ function dessiner(t){const r=devicePixelRatio;cx.setTransform(r,0,0,r,0,0);cx.fi
     if(im&&im.complete){cx.drawImage(im,a,b,w,h);}else{cx.fillStyle='#ede9df';cx.fillRect(a,b,w,h);cx.strokeStyle='#777';cx.strokeRect(a,b,w,h);}
     if(o===actif){cx.strokeStyle='#ffd84d';cx.lineWidth=4;cx.strokeRect(a-2,b-2,w+4,h+4);}
     else if(!decouverts[o.id]){cx.fillStyle=`rgba(255,216,77,${.5+.4*Math.sin(t/250+o.k)})`;cx.beginPath();cx.arc(a+w-2,b+2,4,0,7);cx.fill();}}
+  if(!bullesAuto&&candidat&&candidat!==actif){const [a,b]=ecran(candidat.cx,candidat.y);const r=11+2*Math.sin(t/200);cx.beginPath();cx.arc(a,b-6,r,0,7);cx.fillStyle='#0f6b63';cx.fill();cx.lineWidth=2;cx.strokeStyle='#fff';cx.stroke();cx.fillStyle='#fff';cx.font='800 15px Georgia,serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('i',a,b-5);cx.textBaseline='alphabetic';}
   // chemin
   if(moi.chemin&&moi.chemin.length){cx.fillStyle='rgba(15,107,99,.5)';const last=moi.chemin[moi.chemin.length-1];const [a,b]=ecran(last[0],last[1]);cx.beginPath();cx.arc(a,b,6,0,7);cx.fill();}
   // personnages
