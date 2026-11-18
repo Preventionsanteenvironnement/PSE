@@ -87,6 +87,25 @@
       ecrireLocal(); envoyerNote(s, e);
     },
     enLigne: function () { return ENVOI_EN_LIGNE && CODES_ESSAI.indexOf(code) < 0; },
+    /* [PLATEAU 18/11/2026] Jeu « Mon plateau technique » : tout le travail (progression ET pièce en cours)
+       est gardé dans resultats/{code}/stats/cdo-psr-2026-plateau, pour le retrouver sur n'importe quel ordinateur.
+       Collection autorisée aux codes élèves par les règles du 18/11/2026 ; aucune note, rien dans « evaluations ». */
+    plateauLire: async function () {
+      var f = await firebase(); if (!f) return null;
+      try {
+        var s = await f.fs.getDoc(f.fs.doc(f.db, 'resultats', code, 'stats', CLE + '-plateau'));
+        return s.exists() && s.data().plateau ? JSON.parse(s.data().plateau) : null;
+      } catch (e) { return null; }
+    },
+    plateauEcrire: async function (p) {
+      var f = await firebase(); if (!f) return false;
+      try {
+        await f.fs.setDoc(f.fs.doc(f.db, 'resultats', code, 'stats', CLE + '-plateau'), {
+          eleveCode: code, classe: 'C1PSR', type: 'cdo_plateau', plateau: JSON.stringify(p), maj: p.maj || new Date().toISOString(), updatedAt: f.fs.serverTimestamp()
+        });
+        return true;
+      } catch (e) { return false; }
+    },
     exporter: function () {
       var blob = new Blob([JSON.stringify({ code: code, cle: CLE, etat: etat }, null, 1)], { type: 'application/json' });
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'chef-doeuvre-' + code + '.json'; a.click();
