@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Plateau PSR · circuler et découvrir</title>
+<!-- [MAQUETTE 2D 18/11/2026] Demande de Brahim : circuler dans le plateau technique, voir les zones, les personnages,
+     et découvrir chaque objet en s'approchant (bulle avec l'image de la bibliothèque, nom exact, fonction).
+     Chaque pièce est affichée avec son plan validé (dossier Plateau technique) ; les pièces sont reliées par leurs vraies portes. -->
+<style>
+:root{--vert:#0f6b63;--encre:#1a1f24;--fond:#11161a;--carte:#fff;--sale:#e0533d;--propre:#1f9d63;--clients:#7b5cd6;--circulation:#7a8794;--annexe:#c08a2b;--inutilise:#999}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:var(--fond);font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--encre)}
+canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:10px 12px;pointer-events:none;z-index:5}
+.hud>*{pointer-events:auto}
+.titre{background:rgba(255,255,255,.94);border-radius:14px;padding:8px 14px;box-shadow:0 4px 16px rgba(0,0,0,.25);font-weight:800;font-size:15px;line-height:1.15}
+.titre small{display:block;font-weight:600;color:#556;font-size:12px}
+.esp{flex:1}
+.btn{border:0;border-radius:12px;background:rgba(255,255,255,.94);padding:9px 12px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:inline-flex;gap:6px;align-items:center}
+.btn.on{background:var(--vert);color:#fff}
+.compteur{background:#ffd84d;border-radius:12px;padding:8px 12px;font-weight:800;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#banniere{position:fixed;left:50%;top:70px;transform:translate(-50%,-20px);opacity:0;transition:.45s;z-index:6;background:rgba(17,22,26,.86);color:#fff;border-radius:16px;padding:10px 20px;text-align:center;pointer-events:none}
+#banniere.vu{opacity:1;transform:translate(-50%,0)}#banniere b{display:block;font-size:20px}#banniere span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+#bulle{position:fixed;z-index:7;width:250px;background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.4);padding:10px;transform:translate(-50%,-100%) scale(.6);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+#bulle.vu{opacity:1;transform:translate(-50%,-100%) scale(1);pointer-events:auto}
+#bulle:after{content:"";position:absolute;left:50%;bottom:-12px;margin-left:-12px;border:12px solid transparent;border-bottom:0;border-top-color:#fff}
+#bulle img{width:100%;height:150px;object-fit:contain;background:radial-gradient(#fff,#eef1f0);border-radius:12px}
+#bulle h3{margin:8px 4px 2px;font-size:17px;line-height:1.15}#bulle p{margin:2px 4px;font-size:13px;color:#444}
+#bulle .tag{display:inline-block;margin:6px 4px 0;padding:2px 9px;border-radius:9px;color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+#bulle .neuf{position:absolute;top:-10px;right:-8px;background:#ffd84d;border-radius:12px;padding:3px 9px;font-weight:800;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+#situation{position:fixed;right:12px;bottom:12px;width:170px;z-index:5;background:rgba(255,255,255,.94);border-radius:14px;padding:6px 6px 2px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+#situation p{margin:0 0 3px;font-size:11px;font-weight:800;text-align:center;color:#334}
+#situation polygon{stroke:#555;stroke-width:3}#situation .ici{fill:#ffd84d!important;animation:cl .8s infinite alternate}@keyframes cl{to{fill:#fff3b0!important}}
+#mission{position:fixed;left:12px;bottom:12px;z-index:5;max-width:330px;background:rgba(255,255,255,.95);border-radius:16px;padding:10px 14px;box-shadow:0 4px 16px rgba(0,0,0,.3);display:none}
+#mission b{color:var(--vert)}#mission .fl{font-size:22px;float:right;margin-left:8px}
+#legende{position:fixed;left:12px;top:70px;z-index:5;background:rgba(255,255,255,.95);border-radius:14px;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.3);font-size:13px;display:none}
+#legende i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+.modal{position:fixed;inset:0;z-index:20;background:rgba(10,14,18,.75);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.vu{display:flex}.boite{background:#fff;border-radius:22px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:22px}
+.boite h1{margin:0 0 6px}.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.fiche{border:2px solid #e3e1da;border-radius:14px;padding:6px;text-align:center;font-size:12px;font-weight:700}
+.fiche img{width:100%;height:80px;object-fit:contain}.fiche.cache{opacity:.45;filter:grayscale(1)}.fiche.cache b{visibility:hidden}
+.choix{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:16px 0}
+.choix button{border:3px solid #ddd;border-radius:18px;background:#f7f6f2;padding:12px;cursor:pointer;width:170px;font-weight:800;font-size:14px}
+.choix button.pris{border-color:var(--vert);background:#e5f1ef}.choix img{width:110px;height:110px;object-fit:contain;display:block;margin:0 auto 6px}
+.gros{font-size:18px;padding:14px 26px;border-radius:16px;border:0;background:var(--vert);color:#fff;font-weight:800;cursor:pointer}
+.aide{color:#555;font-size:14px;line-height:1.45}.aide kbd{background:#eee;border-radius:5px;padding:1px 6px;font-weight:700}
+#fondu{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .28s;z-index:15}
+#toast{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.7);z-index:16;background:#16a34a;color:#fff;border-radius:22px;padding:16px 28px;font-weight:800;font-size:22px;opacity:0;transition:.3s;pointer-events:none;text-align:center}
+#toast.vu{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:17;pointer-events:none;animation:tombe 2.4s linear forwards}@keyframes tombe{to{transform:translateY(105vh) rotate(720deg)}}
+@media(max-width:700px){.titre{font-size:13px}.btn{padding:8px 9px;font-size:12px}.btn .t{display:none}#situation{width:120px}#bulle{width:210px}#bulle img{height:120px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="titre" id="titre">Plateau technique PSR<small id="sousTitre">Circuler et découvrir</small></div>
+  <div class="esp"></div>
+  <span class="compteur" id="compteur" title="Objets découverts">🔍 0</span>
+  <button class="btn" id="bZones">🎨<span class="t">Zones</span></button>
+  <button class="btn" id="bMission">🎯<span class="t">Missions</span></button>
+  <button class="btn" id="bCarnet">📒<span class="t">Carnet</span></button>
+  <button class="btn" id="bMoins" title="Voir plus large">−</button><button class="btn" id="bPlus" title="Voir de plus près">+</button><button class="btn" id="bSon">🔊</button>
+  <button class="btn" id="bAide">❓</button>
+</div>
+<div id="banniere"><span id="banZone"></span><b id="banNom"></b></div>
+<div id="bulle"><span class="neuf" id="bNeuf">Nouveau !</span><img id="bImg" alt=""><div id="bVenir" style="display:none;height:70px;border-radius:12px;background:#f1efe9;color:#777;font-weight:700;font-size:13px;text-align:center;padding-top:26px">image à venir</div><h3 id="bNom"></h3><p id="bFct"></p><span class="tag" id="bTag"></span></div>
+<div id="legende"><b>Les zones</b><br><i style="background:var(--sale)"></i>Zone sale<br><i style="background:var(--propre)"></i>Zone propre<br><i style="background:var(--clients)"></i>Zone clients<br><i style="background:var(--circulation)"></i>Circulation<br><i style="background:var(--annexe)"></i>Annexes</div>
+<div id="mission"><span class="fl" id="mFl">🎯</span><b>Mission</b><div id="mTxt"></div><small id="mScore"></small></div>
+<div id="situation"><p>Plan de situation</p><svg id="sitSvg"></svg></div>
+<div id="fondu"></div><div id="toast"></div>
+<div class="modal vu" id="accueil"><div class="boite">
+  <h1>Le plateau technique PSR</h1>
+  <p class="aide">Circule dans le plateau. Approche-toi d’un objet : une bulle apparaît avec son image, son <b>nom exact</b> et à quoi il sert. Recule : elle disparaît. Passe les portes pour entrer dans chaque pièce, dessinée d’après le plan validé.</p>
+  <p class="aide"><b>Choisis ton personnage :</b></p>
+  <div class="choix" id="choixPerso"></div>
+  <p class="aide">🖱️ / 👆 Touche un endroit pour y aller · ⌨️ <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> · 🎨 voir les zones · 🎯 missions · 📒 carnet des objets découverts</p>
+  <p style="text-align:center"><button class="gros" id="go">Entrer dans le plateau →</button></p>
+</div></div>
+<div class="modal" id="carnet"><div class="boite"><h1>📒 Mon carnet</h1><p class="aide" id="carnetTxt"></p><div class="grille" id="carnetGrille"></div><p style="text-align:center;margin-top:14px"><button class="gros" data-ferme>Continuer</button></p></div></div>
+<script src="donnees.js"></script>
+<script>
+(function(){
+'use strict';
+const D=window.PLATEAU, cv=document.getElementById('c'), cx=cv.getContext('2d');
+const COUL={sale:'#e0533d',propre:'#1f9d63',clients:'#7b5cd6',circulation:'#7a8794',annexe:'#c08a2b',inutilise:'#999'};
+const NOMZONE={sale:'Zone sale',propre:'Zone propre',clients:'Zone clients',circulation:'Circulation',annexe:'Annexe',inutilise:'Non utilisé'};
+const $=id=>document.getElementById(id);
+const imgs={};function img(src){if(!src)return null;if(!imgs[src]){const i=new Image();i.src=src;imgs[src]=i;}return imgs[src];}
+const objets=D.objets.map((o,i)=>Object.assign({k:i},o));
+let scene='couloir', S=D.scenes[scene], choixPerso='calot', voix=true, montrerZones=false;
+const moi={x:320,y:1000,dir:'haut',pas:0,chemin:null,dansPorte:true};
+let decouverts={};try{decouverts=JSON.parse(localStorage.getItem('plateau2d-carnet')||'{}')}catch(e){}
+function sauver(){try{localStorage.setItem('plateau2d-carnet',JSON.stringify(decouverts))}catch(e){}}
+function dire(t){if(!voix||!('speechSynthesis' in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';u.rate=.95;speechSynthesis.speak(u);}
+// ── grille
+function cellule(x,y){return [Math.floor((x-S.cadre[0])/S.cell),Math.floor((y-S.cadre[1])/S.cell)];}
+function libre(x,y){const [i,j]=cellule(x,y);const r=S.grille[j];return !!r&&r[i]==='1';}
+function chemin(ax,ay,bx,by){ // A*
+  const G=S.grille,W=G[0].length,Hh=G.length;let [si,sj]=cellule(ax,ay),[ti,tj]=cellule(bx,by);
+  if(!(G[tj]&&G[tj][ti]==='1')){let best=null,bd=1e9;for(let r=1;r<12&&!best;r++)for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++){const a=ti+di,b=tj+dj;if(G[b]&&G[b][a]==='1'){const d=di*di+dj*dj;if(d<bd){bd=d;best=[a,b];}}}if(!best)return null;[ti,tj]=best;}
+  const key=(i,j)=>j*W+i,open=[[si,sj]],g={},f={},from={};g[key(si,sj)]=0;f[key(si,sj)]=0;const ferme=new Set();
+  let n=0;while(open.length&&n++<40000){let bi=0;for(let q=1;q<open.length;q++)if(f[key(...open[q])]<f[key(...open[bi])])bi=q;const [i,j]=open.splice(bi,1)[0],kk=key(i,j);
+    if(i===ti&&j===tj){const p=[];let c=kk;while(c!==undefined){p.push([(c%W)*S.cell+S.cadre[0]+S.cell/2,Math.floor(c/W)*S.cell+S.cadre[1]+S.cell/2]);c=from[c];}return p.reverse();}
+    ferme.add(kk);for(const [di,dj,cc] of [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[1,-1,1.41],[-1,1,1.41],[-1,-1,1.41]]){const a=i+di,b=j+dj;if(a<0||b<0||a>=W||b>=Hh||G[b][a]!=='1')continue;if(di&&dj&&(G[j][a]!=='1'||G[b][i]!=='1'))continue;
+      const k2=key(a,b);if(ferme.has(k2))continue;const ng=g[kk]+cc;if(g[k2]===undefined||ng<g[k2]){g[k2]=ng;f[k2]=ng+Math.hypot(ti-a,tj-b);from[k2]=kk;if(!open.some(o=>o[0]===a&&o[1]===b))open.push([a,b]);}}}
+  return null;}
+// ── caméra
+let zoom=1,camX=0,camY=0,zU=1;
+function zoomBase(){return (44/S.perso)*Math.min(1.2,Math.max(.7,innerWidth/1100))*zU;}
+addEventListener('wheel',e=>{zU=Math.max(.45,Math.min(2.2,zU*(e.deltaY>0?.9:1.1)));},{passive:true});
+function redim(){cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;}
+addEventListener('resize',redim);redim();
+function ecran(x,y){return [(x-camX)*zoom+innerWidth/2,(y-camY)*zoom+innerHeight/2];}
+function monde(px,py){return [(px-innerWidth/2)/zoom+camX,(py-innerHeight/2)/zoom+camY];}
+// ── personnages non joueurs
+const PNJ=[
+  {scene:'cuisine',perso:'chef',zone:[90,160,580,420]},{scene:'cuisine',perso:'charlotte',zone:[90,160,580,420]},
+  {scene:'cuisine',perso:'client',zone:[90,720,580,990]},{scene:'cuisine',perso:'bleu',zone:[90,450,520,690]},
+  {scene:'04',perso:'plonge',zone:[205,240,365,445]},{scene:'04',perso:'calot',zone:[80,80,190,440]},
+  {scene:'03',perso:'livreur',zone:[200,140,520,460]},{scene:'couloir',perso:'plonge',zone:[380,920,690,1015]},
+  {scene:'couloir',perso:'rose',zone:[380,700,690,900]},{scene:'01',perso:'plonge',zone:[150,120,560,290]}
+].map(p=>Object.assign(p,{x:0,y:0,dir:'bas',chemin:null,attente:0,pas:0,place:false}));
+function placerPNJ(p){const sc=D.scenes[p.scene];for(let t=0;t<200;t++){const x=p.zone[0]+Math.random()*(p.zone[2]-p.zone[0]),y=p.zone[1]+Math.random()*(p.zone[3]-p.zone[1]);
+  const i=Math.floor((x-sc.cadre[0])/sc.cell),j=Math.floor((y-sc.cadre[1])/sc.cell);if(sc.grille[j]&&sc.grille[j][i]==='1'){return [x,y];}}return null;}
+// ── interface
+const persos=['calot','charlotte'];
+$('choixPerso').innerHTML=persos.map(p=>`<button data-p="${p}" class="${p===choixPerso?'pris':''}"><img src="${D.persos[p].bas}" alt="">${p==='calot'?'Élève avec calot':'Élève avec charlotte'}</button>`).join('');
+$('choixPerso').onclick=e=>{const b=e.target.closest('button');if(!b)return;choixPerso=b.dataset.p;$('choixPerso').querySelectorAll('button').forEach(x=>x.classList.toggle('pris',x===b));};
+$('go').onclick=()=>{demarre=true;$('accueil').classList.remove('vu');banniere('Grand couloir','Entrée du plateau','circulation');dire('Bienvenue dans le plateau technique');};
+$('bAide').onclick=()=>$('accueil').classList.add('vu');
+$('bMoins').onclick=()=>{zU=Math.max(.45,zU/1.25);};$('bPlus').onclick=()=>{zU=Math.min(2.2,zU*1.25);};
+$('bSon').onclick=()=>{voix=!voix;$('bSon').textContent=voix?'🔊':'🔇';};
+$('bZones').onclick=()=>{montrerZones=!montrerZones;$('bZones').classList.toggle('on',montrerZones);$('legende').style.display=montrerZones?'block':'none';};
+document.querySelectorAll('[data-ferme]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('vu'));
+$('bCarnet').onclick=()=>{const n=Object.keys(decouverts).length,t=objets.length;
+  $('carnetTxt').textContent=`${n} objet${n>1?'s':''} découvert${n>1?'s':''} sur ${t}. Approche-toi des objets pour remplir ton carnet.`;
+  $('carnetGrille').innerHTML=objets.map(o=>`<div class="fiche ${decouverts[o.id]?'':'cache'}">${o.face?`<img src="${o.face}" alt="">`:'<div style="height:80px;display:flex;align-items:center;justify-content:center;color:#888">image à venir</div>'}<b>${o.nom}</b></div>`).join('');$('carnet').classList.add('vu');};
+function majCompteur(){$('compteur').textContent='🔍 '+Object.keys(decouverts).length+' / '+objets.length;}majCompteur();
+let tBan=null;function banniere(nom,zoneTxt,zone){$('banNom').textContent=nom;$('banZone').textContent=zoneTxt;$('banZone').style.color=COUL[zone]||'#ffd84d';$('banniere').classList.add('vu');clearTimeout(tBan);tBan=setTimeout(()=>$('banniere').classList.remove('vu'),2600);}
+function toast(t,c){const e=$('toast');e.textContent=t;e.style.background=c||'#16a34a';e.classList.add('vu');setTimeout(()=>e.classList.remove('vu'),1400);}
+function confettis(){const c=['#0f6b63','#f2b705','#e0533d','#2563eb','#16a34a','#db2777'];for(let i=0;i<60;i++){const s=document.createElement('i');s.className='confetti';s.style.left=Math.random()*100+'vw';s.style.background=c[i%6];s.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),3200);}}
+// plan de situation
+(function(){const xs=D.situation.flatMap(e=>e.poly.map(p=>p[0])),ys=D.situation.flatMap(e=>e.poly.map(p=>p[1]));const x0=Math.min(...xs)-10,y0=Math.min(...ys)-10,w=Math.max(...xs)-x0+10,h=Math.max(...ys)-y0+30;
+  $('sitSvg').setAttribute('viewBox',`${x0} ${y0} ${w} ${h}`);$('sitSvg').innerHTML='<defs><pattern id="hh" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#eee"/><line y2="14" stroke="#aaa" stroke-width="5"/></pattern></defs>'+
+  D.situation.map((e,i)=>`<polygon data-i="${i}" points="${e.poly.map(p=>p.join(',')).join(' ')}" fill="${e.zone==='inutilise'?'url(#hh)':e.zone==='circulation'?'#e4e6ea':'#f1e7cf'}"><title>${e.nom}</title></polygon>`).join('')+`<text x="320" y="1040" text-anchor="middle" font-size="26" font-weight="800" fill="#b33">▲ entrée</text>`;})();
+function situationIci(pid){$('sitSvg').querySelectorAll('polygon').forEach(p=>p.classList.toggle('ici',D.situation[p.dataset.i].id===pid));}
+// ── zones / pièce courante
+function dansPoly(x,y,poly){let r=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)r=!r;}return r;}
+function zoneIci(){return S.zones.find(z=>dansPoly(moi.x,moi.y,z.poly));}
+const PIDZ={'Atelier production (cuisine)':'05','Petit couloir':'06','Salle de distribution':'06','Restaurant « Le Petit Gourmet »':'07','Plonge':'04','Légumerie':'04','Secteur d’approvisionnement (réception)':'03','Local d’entretien':'01'};
+let zoneAvant=null;
+function suivreZone(){const z=zoneIci();const nom=z?z.nom:S.titre;if(nom!==zoneAvant){zoneAvant=nom;if(z){banniere(z.nom,NOMZONE[z.zone],z.zone);verifierMission({zone:z.zone,piece:z.nom});}
+  $('sousTitre').textContent=(z?z.nom+' · '+NOMZONE[z.zone]:S.titre);
+  const sit=scene==='couloir'?(D.situation.find(e=>dansPoly(moi.x,moi.y,e.poly))||{}).id:PIDZ[nom];situationIci(sit);}}
+// ── changer de pièce
+let enTransition=false;
+function changer(p){if(enTransition)return;enTransition=true;$('fondu').style.opacity=1;
+  setTimeout(()=>{scene=p.cible;S=D.scenes[scene];moi.x=p.arrivee[0];moi.y=p.arrivee[1];moi.chemin=null;moi.dansPorte=true;zoneAvant=null;
+    zoom=zoomBase();camX=moi.x;camY=moi.y;$('fondu').style.opacity=0;enTransition=false;cacherBulle();
+    banniere(p.nom,'Tu entres','circulation');},300);}
+function portes(){return D.portes.filter(p=>p.scene===scene);}
+// ── commandes
+const touches={};addEventListener('keydown',e=>{touches[e.key.toLowerCase()]=true;if(e.key.startsWith('Arrow'))e.preventDefault();});addEventListener('keyup',e=>{touches[e.key.toLowerCase()]=false;});
+cv.addEventListener('pointerdown',e=>{const [x,y]=monde(e.clientX,e.clientY);const c=chemin(moi.x,moi.y,x,y);if(c){moi.chemin=c.slice(1);}
+  const o=objetSous(x,y);if(o&&Math.hypot(o.cx-moi.x,o.cy-moi.y)<S.perso*3){montrerBulle(o,true);} });
+function objetSous(x,y){return objets.find(o=>o.scene===scene&&x>=o.x&&x<=o.x+o.l&&y>=o.y&&y<=o.y+o.h);}
+objets.forEach(o=>{o.cx=o.x+o.l/2;o.cy=o.y+o.h/2;});
+// ── bulle
+let actif=null;
+function distObj(o){const dx=Math.max(o.x-moi.x,0,moi.x-(o.x+o.l)),dy=Math.max(o.y-moi.y,0,moi.y-(o.y+o.h));return Math.hypot(dx,dy);}
+function montrerBulle(o){actif=o;const b=$('bulle');$('bImg').style.display=o.face?'block':'none';if(o.face)$('bImg').src=o.face;$('bVenir').style.display=o.face?'none':'block';$('bNom').textContent=o.nom;$('bFct').textContent=o.fct||'';
+  const z=S.zones.find(z=>dansPoly(o.cx,o.cy,z.poly))||(scene==='couloir'?D.situation.find(e=>dansPoly(o.cx,o.cy,e.poly)):null);
+  $('bTag').textContent=z?z.nom+' · '+NOMZONE[z.zone]:'';$('bTag').style.background=z?COUL[z.zone]:'#777';
+  const neuf=!decouverts[o.id];$('bNeuf').style.display=neuf?'block':'none';if(neuf){decouverts[o.id]=Date.now();sauver();majCompteur();}
+  b.classList.add('vu');dire(o.nom);verifierMission({objet:o});}
+function cacherBulle(){actif=null;$('bulle').classList.remove('vu');}
+// ── missions
+const ZM=[['sale','Va dans la zone sale'],['propre','Va dans la zone propre'],['clients','Va dans la zone clients']];
+let mission=null,score=0,missionsOn=false;
+function nouvelleMission(){const r=Math.random();
+  if(r<.25){const z=ZM[Math.floor(Math.random()*3)];mission={type:'zone',zone:z[0],txt:z[1]+'.'};}
+  else{const cands=objets.filter(o=>o.face);const o=cands[Math.floor(Math.random()*cands.length)];const piece=(D.situation.find(e=>e.id===o.piece)||{}).nom||'';
+    mission={type:'objet',id:o.id,txt:'Trouve : « '+o.nom+' » ('+piece+').'};}
+  $('mTxt').textContent=mission.txt;$('mScore').textContent='Missions réussies : '+score;dire(mission.txt);}
+$('bMission').onclick=()=>{missionsOn=!missionsOn;$('bMission').classList.toggle('on',missionsOn);$('mission').style.display=missionsOn?'block':'none';if(missionsOn&&!mission)nouvelleMission();};
+function verifierMission(ev){if(!missionsOn||!mission)return;
+  if((mission.type==='zone'&&ev.zone===mission.zone)||(mission.type==='objet'&&ev.objet&&ev.objet.id===mission.id)){score++;toast('Bravo ! Mission réussie 🎉');confettis();mission=null;setTimeout(nouvelleMission,1600);}}
+// ── boucle
+let tPrec=performance.now(),demarre=false;
+function boucle(t){const dt=Math.min(.05,(t-tPrec)/1000);tPrec=t;
+  if(!demarre){dessiner(t);requestAnimationFrame(boucle);return;}
+  // déplacement
+  const v=S.perso*4.2*dt;let dx=0,dy=0;
+  if(touches['arrowup']||touches['z']||touches['w'])dy-=1;if(touches['arrowdown']||touches['s'])dy+=1;if(touches['arrowleft']||touches['q']||touches['a'])dx-=1;if(touches['arrowright']||touches['d'])dx+=1;
+  if(dx||dy){moi.chemin=null;const n=Math.hypot(dx,dy);dx=dx/n*v;dy=dy/n*v;}
+  else if(moi.chemin&&moi.chemin.length){const [tx,ty]=moi.chemin[0],d=Math.hypot(tx-moi.x,ty-moi.y);if(d<v){moi.x=tx;moi.y=ty;moi.chemin.shift();}else{dx=(tx-moi.x)/d*v;dy=(ty-moi.y)/d*v;}}
+  if(dx||dy){if(libre(moi.x+dx,moi.y))moi.x+=dx;if(libre(moi.x,moi.y+dy))moi.y+=dy;moi.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');moi.pas+=dt*10;}
+  // portes
+  let surPorte=null;for(const p of portes()){const r=p.rect;if(moi.x>=r[0]&&moi.x<=r[2]&&moi.y>=r[1]&&moi.y<=r[3])surPorte=p;}
+  if(!surPorte)moi.dansPorte=false;else if(!moi.dansPorte)changer(surPorte);
+  // PNJ
+  for(const p of PNJ){if(p.scene!==scene)continue;if(!p.place){const q=placerPNJ(p);if(q){p.x=q[0];p.y=q[1];}p.place=true;}
+    if(p.attente>0){p.attente-=dt;continue;}
+    if(!p.chemin||!p.chemin.length){const q=placerPNJ(p);if(q){const s0=S;p.chemin=(chemin(p.x,p.y,q[0],q[1])||[]).slice(1);}p.attente=1+Math.random()*3;continue;}
+    const [tx,ty]=p.chemin[0],d=Math.hypot(tx-p.x,ty-p.y),w=S.perso*2.2*dt;if(d<w){p.x=tx;p.y=ty;p.chemin.shift();}else{const ax=(tx-p.x)/d*w,ay=(ty-p.y)/d*w;p.x+=ax;p.y+=ay;p.dir=Math.abs(ax)>Math.abs(ay)?(ax>0?'droite':'gauche'):(ay>0?'bas':'haut');p.pas+=dt*8;}}
+  // caméra
+  const zc=zoomBase();zoom+=(zc-zoom)*Math.min(1,dt*8);
+  camX+=(moi.x-camX)*Math.min(1,dt*6);camY+=(moi.y-camY)*Math.min(1,dt*6);
+  // proximité
+  let proche=null,pd=S.perso*1.5;for(const o of objets){if(o.scene!==scene)continue;const d=distObj(o);if(d<pd){pd=d;proche=o;}}
+  if(proche&&proche!==actif)montrerBulle(proche);else if(!proche&&actif&&distObj(actif)>S.perso*1.9)cacherBulle();
+  if(actif){const [bx,by]=ecran(actif.cx,actif.y);const b=$('bulle');b.style.left=Math.max(130,Math.min(innerWidth-130,bx))+'px';b.style.top=Math.max(300,by-8)+'px';}
+  suivreZone();dessiner(t);requestAnimationFrame(boucle);}
+function dessiner(t){const r=devicePixelRatio;cx.setTransform(r,0,0,r,0,0);cx.fillStyle='#11161a';cx.fillRect(0,0,innerWidth,innerHeight);
+  const [ox,oy]=ecran(S.cadre[0],S.cadre[1]);const f=img(S.fond);if(f&&f.complete)cx.drawImage(f,ox,oy,(S.cadre[2]-S.cadre[0])*zoom,(S.cadre[3]-S.cadre[1])*zoom);
+  if(montrerZones){for(const z of S.zones){if(scene==='couloir'&&D.scenes[D.sceneDePiece[(D.situation.find(e=>e.nom===z.nom)||{}).id]])continue;
+      cx.beginPath();z.poly.forEach((p,i)=>{const [a,b]=ecran(p[0],p[1]);i?cx.lineTo(a,b):cx.moveTo(a,b);});cx.closePath();cx.fillStyle=COUL[z.zone]+'40';cx.fill();cx.strokeStyle=COUL[z.zone];cx.lineWidth=3;cx.stroke();}}
+  // pièces fermées (couloir) : nom de la pièce et invitation à passer la porte
+  if(scene==='couloir'){cx.textAlign='center';for(const e of D.situation){const xs=e.poly.map(p=>p[0]),ys=e.poly.map(p=>p[1]);const [a,b]=ecran((Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2);
+      if(e.id==='couloir')continue;const ferme=D.sceneDePiece[e.id];cx.font='800 '+Math.max(11,13*zoom/2.2)+'px -apple-system,Helvetica,sans-serif';cx.fillStyle=e.zone==='inutilise'?'#666':'#2a2a2a';
+      cx.fillText(e.nom,a,b);if(ferme){cx.font='600 '+Math.max(10,11*zoom/2.2)+'px -apple-system,Helvetica,sans-serif';cx.fillStyle='#0f6b63';cx.fillText('passe la porte pour entrer',a,b+16*zoom/2);}}}
+  // portes : lueur
+  for(const p of portes()){const [a,b]=ecran(p.rect[0],p.rect[1]);const w=(p.rect[2]-p.rect[0])*zoom,h=(p.rect[3]-p.rect[1])*zoom;cx.fillStyle=`rgba(255,216,77,${.35+.25*Math.sin(t/300)})`;cx.fillRect(a-3,b-3,w+6,h+6);}
+  // objets
+  for(const o of objets){if(o.scene!==scene)continue;const [a,b]=ecran(o.x,o.y),w=o.l*zoom,h=o.h*zoom;
+    if(o.mur){const ri=Math.max(9,S.perso*.38*zoom);const ccx=a+w/2,ccy=b+h/2;cx.beginPath();cx.arc(ccx,ccy,ri,0,7);cx.fillStyle='#fff';cx.fill();cx.lineWidth=2;cx.strokeStyle=o===actif?'#ffd84d':'#333';cx.stroke();
+      const im=img(o.face);if(im&&im.complete){cx.save();cx.beginPath();cx.arc(ccx,ccy,ri-2,0,7);cx.clip();const s=Math.min((ri*1.6)/im.width,(ri*1.6)/im.height);cx.drawImage(im,ccx-im.width*s/2,ccy-im.height*s/2,im.width*s,im.height*s);cx.restore();}continue;}
+    if(o.dessine)continue;const im=img(o.dessus);
+    if(im&&im.complete){cx.drawImage(im,a,b,w,h);}else{cx.fillStyle='#ede9df';cx.fillRect(a,b,w,h);cx.strokeStyle='#777';cx.strokeRect(a,b,w,h);}
+    if(o===actif){cx.strokeStyle='#ffd84d';cx.lineWidth=4;cx.strokeRect(a-2,b-2,w+4,h+4);}
+    else if(!decouverts[o.id]){cx.fillStyle=`rgba(255,216,77,${.5+.4*Math.sin(t/250+o.k)})`;cx.beginPath();cx.arc(a+w-2,b+2,4,0,7);cx.fill();}}
+  // chemin
+  if(moi.chemin&&moi.chemin.length){cx.fillStyle='rgba(15,107,99,.5)';const last=moi.chemin[moi.chemin.length-1];const [a,b]=ecran(last[0],last[1]);cx.beginPath();cx.arc(a,b,6,0,7);cx.fill();}
+  // personnages
+  const tous=PNJ.filter(p=>p.scene===scene&&p.place).concat([{x:moi.x,y:moi.y,dir:moi.dir,pas:moi.pas,perso:choixPerso,moi:true}]);tous.sort((p,q)=>p.y-q.y);
+  for(const p of tous){const im=img(D.persos[p.perso][p.dir]);const sz=S.perso*zoom*1.25,bob=Math.sin(p.pas)*2;const [a,b]=ecran(p.x,p.y);
+    cx.fillStyle='rgba(0,0,0,.22)';cx.beginPath();cx.ellipse(a,b+sz*.32,sz*.3,sz*.12,0,0,7);cx.fill();
+    if(im&&im.complete)cx.drawImage(im,a-sz/2,b-sz/2+bob,sz,sz);if(p.moi){cx.strokeStyle='#ffd84d';cx.lineWidth=3;cx.beginPath();cx.arc(a,b+sz*.32,sz*.34,0,7);cx.stroke();}}
+  // flèche de mission
+  if(missionsOn&&mission&&mission.type==='objet'){const o=objets.find(x=>x.id===mission.id);if(o&&o.scene===scene){const [a,b]=ecran(o.cx,o.cy);const [ma,mb]=ecran(moi.x,moi.y);const ang=Math.atan2(b-mb,a-ma);
+      cx.save();cx.translate(ma+Math.cos(ang)*60,mb+Math.sin(ang)*60);cx.rotate(ang);cx.fillStyle='#ffd84d';cx.strokeStyle='#333';cx.beginPath();cx.moveTo(16,0);cx.lineTo(-8,-10);cx.lineTo(-8,10);cx.closePath();cx.fill();cx.stroke();cx.restore();$('mFl').textContent='👉';}else $('mFl').textContent='🚪';}}
+// départ : entrée du plateau
+moi.x=320;moi.y=1005;zoom=zoomBase();camX=moi.x;camY=moi.y;
+window.MAQUETTE={aller:(sc,x,y)=>{scene=sc;S=D.scenes[sc];moi.x=x;moi.y=y;moi.chemin=null;moi.dansPorte=true;zoneAvant=null;camX=x;camY=y;zoom=zoomBase();},zoom:z=>{zU=z;}};   // pour les tests
+requestAnimationFrame(boucle);
+})();
+</script>
+</body>
+</html>
