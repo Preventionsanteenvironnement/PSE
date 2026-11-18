@@ -11,8 +11,8 @@
   'use strict';
   var PD = window.CDO_PLATEAU_DONNEES;
   var NIVEAUX = [
-    { n: 1, nom: 'Découverte', aide: 'Les emplacements et les noms sont dessinés dans la pièce.', tol: 5 },
-    { n: 2, nom: 'Apprenti', aide: 'Les emplacements sont dessinés, sans les noms.', tol: 5 },
+    { n: 1, nom: 'Découverte', aide: 'Les emplacements sont dessinés en pointillé. À toi de trouver quel objet va où !', tol: 5 },
+    { n: 2, nom: 'Apprenti', aide: 'Les objets arrivent sans leur nom : le nom apparaît quand l’objet est bien placé.', tol: 5 },
     { n: 3, nom: 'Commis', aide: 'La pièce est vide : il faut se souvenir de la place de chaque objet.', tol: 7 },
     { n: 4, nom: 'Chef', aide: 'Les objets arrivent avec leur nom seulement. Le temps est compté.', tol: 7 }
   ];
@@ -116,8 +116,8 @@
   }
   function encours(cle, val) {
     var P = prog(); P.encours = P.encours || {};
-    if (val === undefined) { var e = P.encours[cle]; return e && !e.fini ? e : undefined; }
-    if (val === null) P.encours[cle] = { fini: true, t: Date.now() }; else { val.t = Date.now(); P.encours[cle] = val; }
+    if (val === undefined) { var e = P.encours[cle]; return e && !e.fini && e.ver === PD.ver ? e : undefined; }   // ancienne version du plan : on repart à neuf
+    if (val === null) P.encours[cle] = { fini: true, t: Date.now() }; else { val.t = Date.now(); val.ver = PD.ver; P.encours[cle] = val; }
   }
   function noterMots(liste) { var m = prog().mots; liste.forEach(function (x) { if (m.indexOf(x) < 0) m.push(x); }); }
   function etoiles(n) { var s = ''; for (var i = 1; i <= 3; i++) s += '<span class="pl-et' + (i <= n ? ' pris' : '') + '">★</span>'; return s; }
@@ -198,7 +198,7 @@
       '</div></div>' +
       lignes +
       (P.mots.length ? '<details class="pl-mots"><summary>Mes mots du plateau (' + P.mots.length + ')</summary><ul>' + P.mots.map(function (m) { return '<li>' + A().interne(m) + esc(m) + '</li>'; }).join('') + '</ul></details>' : '') +
-      '<p class="pl-discret">D’autres pièces arriveront : local d’entretien, salle d’approvisionnement, légumerie et plonge.</p></div>';
+      '<p class="pl-discret">D’autres pièces arriveront : local d’entretien, secteur d’approvisionnement (réception), légumerie et plonge.</p></div>';
   }
 
   /* ═════════ Jeu 1 : les espaces ═════════ */
@@ -209,6 +209,10 @@
       if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) dedans = !dedans;
     }
     return dedans;
+  }
+  var HACHURE = '<defs><pattern id="pl-sol" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#eee3c9"/><path d="M16 0H0V16" fill="none" stroke="#dccca6" stroke-width="1"/></pattern><pattern id="pl-hach" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#f1efe9"/><line x1="0" y1="0" x2="0" y2="14" stroke="#b5b1a6" stroke-width="3"/></pattern></defs>';
+  function hallTexte() {
+    return PD.espaces.filter(function (e) { return e.inutilise; }).map(function (e) { var c = centrePoly(e); return '<text class="pl-inutil" x="' + c[0] + '" y="' + c[1] + '" text-anchor="middle">non utilisé</text>'; }).join('');
   }
   function centrePoly(e) {
     var C = { 'Grand couloir': [407, 470], 'Local d’entretien': [600, 385], 'Atelier production (cuisine)': [190, 540] };
@@ -221,10 +225,10 @@
     var ec = encours('espaces') || {};
     var place = ec.place || {}, erreurs = ec.erreurs || 0, verifs = ec.verifs || 0, valides = ec.valides || [];   // place[nom étiquette] = nom de l'espace où elle est posée
     function garder() { encours('espaces', { place: place, erreurs: erreurs, verifs: verifs, valides: valides }); sauver(); }
-    var noms = melanger(PD.espaces.map(function (e) { return e.nom; }));
+    var noms = melanger(PD.espaces.filter(function (e) { return !e.inutilise; }).map(function (e) { return e.nom; }));
     vue.innerHTML = '<div class="pl-jeu pl-jeu-espaces"><div class="pl-consigne"><h1>Les espaces du plateau</h1><p><b>Placer</b> le nom de chaque espace sur le plan. Tu entres par le bas : l’entrée du grand couloir.</p></div>' +
       '<div class="pl-scene"><div class="pl-carte-wrap"><svg class="pl-carte" viewBox="' + ox + ' ' + oy + ' ' + W + ' ' + H + '">' +
-      PD.espaces.map(function (e, i) { return '<polygon data-esp="' + i + '" class="' + (e.couloir ? 'couloir' : '') + '" points="' + e.poly.map(function (q) { return q.join(','); }).join(' ') + '"/>'; }).join('') +
+      HACHURE + PD.espaces.map(function (e, i) { return '<polygon data-esp="' + i + '" class="' + (e.couloir ? 'couloir' : '') + (e.inutilise ? ' inutilise' : '') + '" points="' + e.poly.map(function (q) { return q.join(','); }).join(' ') + '"/>'; }).join('') + hallTexte() +
       PD.portes.map(function (q) { return '<line class="porte" x1="' + q[0] + '" y1="' + q[1] + '" x2="' + q[2] + '" y2="' + q[3] + '"/>'; }).join('') +
       '<text class="entree" x="' + PD.entree[0] + '" y="' + (PD.entree[1] + 26) + '" text-anchor="middle">▲ ENTRÉE</text></svg><div class="pl-etiq-poses"></div></div>' +
       '<div class="pl-bac"><p class="pl-bac-t">Les noms à placer</p><div class="pl-bac-liste"></div></div></div>' +
@@ -244,7 +248,7 @@
         debut: function () { b.classList.add('prise'); return fantomeDe(esc(nom), b.offsetWidth, b.offsetHeight); },
         fin: function (e) {
           b.classList.remove('prise');
-          var q = versPlan(e.clientX, e.clientY), cible = PD.espaces.filter(function (x) { return dansPoly(q[0], q[1], x.poly); })[0];
+          var q = versPlan(e.clientX, e.clientY), cible = PD.espaces.filter(function (x) { return !x.inutilise && dansPoly(q[0], q[1], x.poly); })[0];
           if (cible) {
             Object.keys(place).forEach(function (k) { if (place[k] === cible.nom && k !== nom) delete place[k]; });   // une étiquette par espace
             place[nom] = cible.nom; bip(520, .06);
@@ -315,7 +319,7 @@
     }, 500);
     // emplacements dessinés (niveaux 1 et 2)
     if (N.n <= 2) cibles.innerHTML = objets.map(function (o) {
-      return '<div class="pl-cible' + (o.mur ? ' rond' : '') + '" data-c="' + o.k + '" style="' + boite(o) + '">' + (N.n === 1 ? '<span>' + esc(o.nom) + '</span>' : '') + '</div>';
+      return '<div class="pl-cible' + (o.mur ? ' rond' : '') + '" data-c="' + o.k + '" style="' + boite(o) + '">' + '' + '</div>';
     }).join('');
     function boite(o) {
       if (o.mur) return 'left:' + (o.x + o.l / 2) + '%;top:' + (o.y + o.h / 2) + '%;';
@@ -350,12 +354,12 @@
       b.dataset.k = o.k;
       if (dansBac) {
         b.className += ' dans-bac';
-        b.innerHTML = (chef ? '' : '<span class="pl-vign">' + visuel(o) + '</span>') + '<span class="pl-obj-nom">' + esc(o.nom) + '</span>';
+        b.innerHTML = (chef ? '' : '<span class="pl-vign">' + visuel(o) + '</span>') + (N.n === 2 ? '<span class="pl-obj-nom pl-mystere">?</span>' : '<span class="pl-obj-nom">' + esc(o.nom) + '</span>');
       } else {
         var oo = juste[o.k] != null ? objets[juste[o.k]] : o;   // un objet juste prend la forme de sa place (ex. table posée en long ou en large)
         var t = tailleEcran(oo); b.style.width = t[0] + 'px'; b.style.height = t[1] + 'px';
         var pos = pose[o.k].p; b.style.left = pos[0] + '%'; b.style.top = pos[1] + '%';
-        b.innerHTML = visuel(oo);
+        b.innerHTML = visuel(oo) + (juste[o.k] != null ? '<span class="pl-nom-juste">' + esc(o.nom) + '</span>' : '');
         b.title = o.nom;
       }
       glisser(b, {
@@ -369,7 +373,7 @@
           } else delete pose[o.k];
           dessiner(); garder();
         },
-        toucher: function () { info(o, b); }
+        toucher: function () { if (N.n === 2 && juste[o.k] == null) { bulle(scene, 'Trouve sa place : son nom apparaîtra !', 'indice'); return; } info(o, b); }
       });
       return b;
     }
@@ -405,7 +409,7 @@
       if (faux.length) setTimeout(sonFaux, bons.length ? 300 : 0);
       ret.innerHTML = (bons.length ? '<div class="pl-msg bravo"><b>' + hasard(BRAVO) + '</b> ' + bons.map(function (o) { return '<span class="pl-mot">✔ ' + esc(o.nom) + '</span>'; }).join(' ') + '</div>' : '') +
         (faux.length ? '<div class="pl-msg courage"><b>' + hasard(COURAGE) + '</b><ul>' + faux.map(function (o) {
-          var e = essais[o.k], ind = o.coteTxt ? (/^[A-D]$/.test(o.cote) ? 'Sa place : contre le mur ' + o.cote + ', côté ' + o.coteTxt + '.' : 'Sa place : côté ' + o.coteTxt + '.') : '';
+          var e = essais[o.k], ind = (o.zone ? 'Sa place : dans ' + o.zone + (o.coteTxt ? ', ' : '.') : (o.coteTxt ? 'Sa place : ' : '')) + (o.coteTxt ? (/^[A-D]$/.test(o.cote) ? 'contre le mur ' + o.cote + ', côté ' + o.coteTxt + '.' : 'côté ' + o.coteTxt + '.') : '');
           if (e >= 2 && o.fonction) ind += ' À quoi il sert : ' + o.fonction.charAt(0).toLowerCase() + o.fonction.slice(1);
           return '<li><b>« ' + esc(o.nom) + ' »</b> : pas à la bonne place. ' + esc(ind) + (e >= 3 ? ' <i>Regarde la pièce : sa place clignote.</i>' : '') + '</li>';
         }).join('') + '</ul></div>' : '');
@@ -461,7 +465,7 @@
       return { type: 'nom2img', enonce: 'Où est « ' + o.nom + ' » ?', choix: choix.map(function (c) { return { img: c.img, t: c.nom }; }), bon: bon, expl: expl, mot: o.nom };
     });
   }
-  function libelleCote(o) { return /^[A-D]$/.test(o.cote) ? 'Contre le mur ' + o.cote + ', côté ' + o.coteTxt : 'Côté ' + o.coteTxt; }
+  function libelleCote(o) { var t = /^[A-D]$/.test(o.cote) ? 'contre le mur ' + o.cote + ', côté ' + o.coteTxt : 'côté ' + o.coteTxt; t = o.zone ? 'Dans ' + o.zone + ', ' + t : t; return t.charAt(0).toUpperCase() + t.slice(1); }
   function questionsMurs(P) {
     var avec = melanger(uniques(P.objets).filter(function (o) { return o.coteTxt; })).slice(0, 8);
     var cotes = []; P.objets.forEach(function (o) { if (o.coteTxt && cotes.indexOf(libelleCote(o)) < 0) cotes.push(libelleCote(o)); });
@@ -472,16 +476,16 @@
     });
   }
   function questionsOu() {
-    var noms = PD.espaces.map(function (e) { return e.nom; });
-    return melanger(PD.espaces).map(function (e) {
+    var esp = PD.espaces.filter(function (e) { return !e.inutilise; }), noms = esp.map(function (e) { return e.nom; });
+    return melanger(esp).map(function (e) {
       var choix = melanger([e.nom].concat(melanger(noms.filter(function (n) { return n !== e.nom; })).slice(0, 3)));
       return { type: 'carte', enonce: 'Quel est l’espace en jaune sur le plan ?', zone: PD.espaces.indexOf(e), choix: choix.map(function (c) { return { t: c }; }), bon: choix.indexOf(e.nom), expl: 'C’est « ' + e.nom + ' ».', mot: e.nom };
     });
   }
   function carteSVG(zone) {
     var c = PD.cadre, W = c[2] - c[0] + 40, H = c[3] - c[1] + 70, ox = c[0] - 20, oy = c[1] - 30;
-    return '<svg class="pl-carte pl-carte-petite" viewBox="' + ox + ' ' + oy + ' ' + W + ' ' + H + '">' + PD.espaces.map(function (e, i) {
-      return '<polygon class="' + (e.couloir ? 'couloir ' : '') + (i === zone ? 'vise' : '') + '" points="' + e.poly.map(function (q) { return q.join(','); }).join(' ') + '"/>';
+    return '<svg class="pl-carte pl-carte-petite" viewBox="' + ox + ' ' + oy + ' ' + W + ' ' + H + '">' + HACHURE + PD.espaces.map(function (e, i) {
+      return '<polygon class="' + (e.couloir ? 'couloir ' : '') + (e.inutilise ? 'inutilise ' : '') + (i === zone ? 'vise' : '') + '" points="' + e.poly.map(function (q) { return q.join(','); }).join(' ') + '"/>';
     }).join('') + PD.portes.map(function (q) { return '<line class="porte" x1="' + q[0] + '" y1="' + q[1] + '" x2="' + q[2] + '" y2="' + q[3] + '"/>'; }).join('') +
       '<text class="entree" x="' + PD.entree[0] + '" y="' + (PD.entree[1] + 26) + '" text-anchor="middle">▲ ENTRÉE</text></svg>';
   }
