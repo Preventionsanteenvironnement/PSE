@@ -52,7 +52,13 @@
     ]);
     const app = appM.initializeApp(CONFIG, 'mapse-direct');
     const auth = authM.getAuth(app);
-    const db = fsM.initializeFirestore(app, { ignoreUndefinedProperties: true });
+    // Long polling forcé : le direct « en continu » (WebChannel) s'est bloqué sur un iPad (Safari) le 18/11/2026,
+    // et il peut aussi buter sur le proxy d'un lycée. Le long polling est un peu plus lent mais plus robuste.
+    const db = fsM.initializeFirestore(app, {
+      ignoreUndefinedProperties: true,
+      experimentalAutoDetectLongPolling: false,
+      experimentalForceLongPolling: true
+    });
     // attendre que Firebase ait relu la connexion gardée sur cet appareil
     await new Promise(r => { const u = authM.onAuthStateChanged(auth, () => { u(); r(); }); });
     return Object.assign({}, authM, fsM, { auth, db });
@@ -142,6 +148,7 @@
 
   /* ---------- Outils ---------- */
   const cacheSeances = {}, cacheEleves = {}, cacheConsignes = {};
+  let placePerdue = false;
   const refSeance = (f, id) => f.doc(f.db, 'direct_seances', id);
   const refEleve = (f, id, code) => f.doc(f.db, 'direct_seances', id, 'eleves', normaliserCode(code));
   const refConsigne = (f, id, code) => f.doc(f.db, 'direct_seances', id, 'consignes', normaliserCode(code));
@@ -159,11 +166,33 @@
     return pret.then(f => f.setDoc(fabriqueRef(f), p, { mergeFields: Object.keys(p) }))
       .catch(e => signaler(quoi + ' : l’enregistrement n’est pas passé (' + (e.code || e.message) + ').', e));
   }
-  function abonnement(fabrique, quoi) {
+  /* Liaison en direct. Le diagnostic (nombre d'élèves reçus, dernière nouvelle) s'affiche en bas du tableau de bord
+     et de la télécommande : il dit tout de suite si les nouvelles arrivent. */
+  const diag = { eleves: null, derniere: 0, erreur: '' };
+  function majDiag() {
+    if (!document.body || document.body.classList.contains('projection') || !document.body.classList.length) return;
+    let b = document.getElementById('direct-diag');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'direct-diag';
+      b.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:8000;background:rgba(15,23,42,.82);color:#e2e8f0;font:12px/1.3 system-ui,sans-serif;padding:4px 9px;border-radius:8px;pointer-events:none';
+      document.body.appendChild(b);
+      setInterval(majDiag, 1000);
+    }
+    if (diag.erreur) { b.textContent = '⚠ Liaison : ' + diag.erreur; b.style.background = 'rgba(127,29,29,.9)'; return; }
+    if (diag.eleves === null) { b.textContent = '⏳ Liaison en cours…'; return; }
+    const s = Math.round((Date.now() - diag.derniere) / 1000);
+    b.textContent = '📡 ' + diag.eleves + ' élève(s) reçu(s) · dernière nouvelle il y a ' + s + ' s';
+    b.style.background = s > 60 ? 'rgba(146,64,14,.9)' : 'rgba(15,23,42,.82)';
+  }
+  function abonnement(quoi, fabriqueRef, traiter) {
     let u = null, fini = false;
     assurerConnexion().then(f => {
       if (fini) return;
-      u = fabrique(f, e => signaler(quoi + ' : la liaison en direct est coupée (' + (e.code || e.message) + ').', e));
+      u = f.onSnapshot(fabriqueRef(f), sn => { if (!fini) traiter(sn); }, e => {
+        signaler(quoi + ' : la liaison en direct est coupée (' + (e.code || e.message) + '). Recharge la page.', e);
+        if (quoi === 'Élèves') { diag.erreur = e.code || e.message; majDiag(); }
+      });
     }).catch(e => signaler('Connexion impossible.', e));
     return () => { fini = true; if (u) u(); };
   }
@@ -238,28 +267,30 @@
     },
     ecouterEleves(id, rappel) {
       // La présence est datée à l'heure de CET appareil (à la réception), pas à l'horloge de l'élève, souvent décalée.
-      const recuLe = {};
-      let premier = true;
-      return abonnement((f, erreur) => f.onSnapshot(f.collection(f.db, 'direct_seances', id, 'eleves'), snap => {
-        if (!premier) snap.docChanges().forEach(ch => { if (ch.type !== 'removed') recuLe[ch.doc.id] = Date.now(); });
-        premier = false;
+      // Un signe de vie nouveau = la valeur « vu » a changé depuis la dernière lecture.
+      const recuLe = {}, dernierVu = {};
+      return abonnement('Élèves', f => f.collection(f.db, 'direct_seances', id, 'eleves'), snap => {
+        diag.eleves = snap.size; diag.derniere = Date.now(); diag.erreur = ''; majDiag();
         const res = {};
         snap.forEach(d => {
           const e = d.data();
+          if (d.id in dernierVu && dernierVu[d.id] !== e.vu) recuLe[d.id] = Date.now();
+          dernierVu[d.id] = e.vu;
           if (recuLe[d.id] && e.connecte !== false) e.vu = recuLe[d.id];
           res[d.id] = e;
         });
+        Object.keys(dernierVu).forEach(c => { if (!res[c]) { delete dernierVu[c]; delete recuLe[c]; } });
         cacheEleves[id] = res;
         rappel(Object.assign({}, res));
-      }, erreur), 'Élèves');
+      });
     },
     ecouterConsignes(id, rappel) {
-      return abonnement((f, erreur) => f.onSnapshot(f.collection(f.db, 'direct_seances', id, 'consignes'), snap => {
+      return abonnement('Consignes', f => f.collection(f.db, 'direct_seances', id, 'consignes'), snap => {
         const res = {};
         snap.forEach(d => { res[d.id] = d.data(); });
         cacheConsignes[id] = res;
         rappel(Object.assign({}, res));
-      }, erreur), 'Consignes');
+      });
     },
 
     /* --- élève --- */
@@ -299,25 +330,32 @@
       cacheEleves[id] = cacheEleves[id] || {};
       const p = Object.assign(propre(patch), { code, majLe: Date.now() });
       cacheEleves[id][code] = Object.assign({}, cacheEleves[id][code] || {}, p);
+      if (placePerdue) return cacheEleves[id][code];
+      // updateDoc et non setDoc : si le professeur a libéré la place, cet appareil ne recrée pas la case
+      // (la case a été créée une fois pour toutes par rejoindre()).
       assurerConnexion().then(f => {
         p.uid = f.auth.currentUser.uid;
-        return f.setDoc(refEleve(f, id, code), p, { mergeFields: Object.keys(p) });
-      }).catch(e => signaler(e.code === 'permission-denied'
-        ? 'Ton travail ne s’enregistre plus : ton code est utilisé sur un autre appareil. Préviens ton professeur.'
-        : 'Ton travail ne s’enregistre pas (Internet ?). Garde la page ouverte.', e));
+        return f.updateDoc(refEleve(f, id, code), p);
+      }).catch(e => {
+        if (e.code === 'not-found' || e.code === 'permission-denied') {
+          if (!placePerdue) { placePerdue = true; console.warn('MaPSE Direct : place perdue', e.code); if (moteurFirebase.surPlacePerdue) moteurFirebase.surPlacePerdue(e.code); }
+          return;
+        }
+        signaler('Ton travail ne s’enregistre pas (Internet ?). Garde la page ouverte.', e);
+      });
       return cacheEleves[id][code];
     },
     ecouterConsigne(id, code, rappel) {
-      return abonnement((f, erreur) => f.onSnapshot(refConsigne(f, id, code), s => rappel(s.exists() ? s.data() : {}), erreur), 'Messages du professeur');
+      return abonnement('Messages du professeur', f => refConsigne(f, id, code), s => rappel(s.exists() ? s.data() : {}));
     },
 
     /* --- tous --- */
     ecouterSeance(id, rappel) {
-      return abonnement((f, erreur) => f.onSnapshot(refSeance(f, id), s => {
+      return abonnement('Séance', f => refSeance(f, id), s => {
         const v = avecIdSeance(s);
         if (v) cacheSeances[id] = v;
         rappel(v);
-      }, erreur), 'Séance');
+      });
     },
     async lireSeance(id) {
       if (!id) return null;

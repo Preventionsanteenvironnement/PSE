@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MaPSE Direct</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="css/direct.css">
+<link rel="stylesheet" href="css/direct.css?v=20261118c">
 </head>
 <body>
 <header class="barre">
@@ -48,13 +48,17 @@
   <button type="button" class="nav cache" id="b-suiv">Suivant →</button>
 </nav>
 
-<script src="js/direct-store.js"></script>
-<script src="js/direct-firebase.js"></script>
-<script src="js/direct-activites.js"></script>
+<script src="js/direct-store.js?v=20261118c"></script>
+<script src="js/direct-firebase.js?v=20261118c"></script>
+<script src="js/direct-activites.js?v=20261118c"></script>
 <script>
 (function () {
   'use strict';
   const D = window.MapseDirect, store = D.store, el = D.el;
+  if (!D.moteur) { // direct-firebase.js ne s'est pas chargé : ne jamais basculer en mode essai sans le dire
+    document.body.innerHTML = '<main class="page"><div class="carte"><h1>Connexion impossible</h1><p>La page n’a pas pu se charger entièrement. Vérifie Internet, puis recharge la page.</p></div></main>';
+    return;
+  }
   const $ = id => document.getElementById(id);
   const SESSION = 'mapse-direct-eleve';
 
@@ -148,14 +152,28 @@
     const carte = $('vue-entree').querySelector('.carte');
     carte.innerHTML = '';
     carte.appendChild(el('div', { classe: 'etape-num', texte: 'Un instant' }));
-    carte.appendChild(el('h1', { texte: e && e.code === 'place-prise' ? 'Ton code est déjà connecté' : 'Connexion impossible' }));
-    carte.appendChild(el('p', { texte: e && e.code === 'place-prise'
+    const c = e && e.code;
+    carte.appendChild(el('h1', { texte: c === 'place-prise' ? 'Ton code est déjà connecté' : c === 'place-liberee' ? 'Tu continues sur un autre appareil' : 'Connexion impossible' }));
+    carte.appendChild(el('p', { texte: c === 'place-prise'
       ? 'Ton code est déjà utilisé sur un autre appareil pour cette séance. Lève la main : ton professeur peut libérer ta place, puis touche « Réessayer ».'
-      : 'Vérifie Internet, puis touche « Réessayer ».' }));
+      : c === 'place-liberee'
+        ? 'Ton professeur a libéré ta place : cette page s’arrête ici. Continue sur l’autre appareil, ou touche « Réessayer » pour revenir sur celui-ci.'
+        : 'Vérifie Internet, puis touche « Réessayer ».' }));
     carte.appendChild(el('button', { type: 'button', classe: 'bouton-principal', onclick: () => location.reload() }, ['Réessayer']));
     $('vue-entree').classList.remove('cache');
     $('vue-seance').classList.add('cache');
     $('dock').classList.add('cache');
+  }
+
+  /* Fin de séance ou place libérée : plus aucun signe de vie ni écoute. */
+  let battement = null, termine = false;
+  const ecoutes = [];
+  function arreter() {
+    if (termine) return;
+    termine = true;
+    clearInterval(battement);
+    ecoutes.splice(0).forEach(u => { try { u(); } catch (e) {} });
+    try { sessionStorage.removeItem(SESSION); } catch (e) {}
   }
 
   /* ---------- Séance ---------- */
@@ -174,14 +192,17 @@
     $('vue-seance').classList.remove('cache');
     $('dock').classList.remove('cache');
     majEntete();
-    store.ecouterSeance(id, s => { seance = s; rafraichir(); });
-    store.ecouterConsigne(id, code, c => { consigne = c || {}; rafraichir(); });
-    setInterval(() => ecrireMoi({ vu: Date.now() }), D.BATTEMENT_MS || 5000);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ecrireMoi({ vu: Date.now(), connecte: true }); });
-    window.addEventListener('beforeunload', () => ecrireMoi({ connecte: false, vu: Date.now() - D.PRESENCE_MS }));
+    ecoutes.push(store.ecouterSeance(id, s => { seance = s; rafraichir(); }));
+    ecoutes.push(store.ecouterConsigne(id, code, c => { consigne = c || {}; rafraichir(); }));
+    battement = setInterval(() => ecrireMoi({ vu: Date.now() }), D.BATTEMENT_MS || 5000);
+    document.addEventListener('visibilitychange', () => { if (!termine && document.visibilityState === 'visible') ecrireMoi({ vu: Date.now(), connecte: true }); });
+    window.addEventListener('beforeunload', () => { if (!termine) ecrireMoi({ connecte: false, vu: Date.now() - D.PRESENCE_MS }); });
+    // Le professeur a libéré la place (changement d'appareil) : cet appareil s'arrête et le dit.
+    store.surPlacePerdue = () => { arreter(); bloquer({ code: 'place-liberee' }); };
   }
 
   function ecrireMoi(patch) {
+    if (termine) return;
     Object.assign(moi, patch);
     store.majEleve(seance.id, code, patch);
   }
@@ -197,7 +218,7 @@
 
   function rafraichir() {
     if (!seance) return;
-    if (!seance.ouverte) { $('voile-fin').classList.remove('cache'); return; }
+    if (!seance.ouverte) { arreter(); $('voile-fin').classList.remove('cache'); return; }
     document.body.classList.toggle('grand', !!consigne.grand);
     $('voile-fige').classList.toggle('cache', !seance.fige);
     // le professeur a refusé le pseudo : on en redemande un

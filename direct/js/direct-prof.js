@@ -5,6 +5,10 @@
 (function () {
   'use strict';
   const D = window.MapseDirect, store = D.store, el = D.el;
+  if (!D.moteur) { // direct-firebase.js ne s'est pas chargé : ne jamais basculer en mode essai sans le dire
+    document.body.innerHTML = '<main class="page"><div class="carte"><h1>Connexion impossible</h1><p>La page n’a pas pu se charger entièrement. Vérifie Internet, puis recharge la page.</p></div></main>';
+    return;
+  }
   const $ = id => document.getElementById(id);
   const NOMS_LOCAUX = 'mapse-direct-noms-locaux';
   const ICONES = { juste: '✔', partiel: '◐', faux: '✗', en_cours: '…', a_valider: '✎', fait: '✔' };

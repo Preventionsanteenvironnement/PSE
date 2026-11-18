@@ -62,6 +62,18 @@ cd ~/Documents/GitHub/PSE-direct && python3 -m http.server 8080
 
 **Publié sur mapse.fr le 18/11/2026**, avec l'accord de M. Mecheri. **Pas encore fait** : essai avec une vraie classe, relecture du contenu de la séance B4 par M. Mecheri, et le tableau de bord dans l'Atelier (plan, étape B).
 
+## Corrections du 18/11/2026 (après le premier essai iPad et l'avis de Codex)
+
+- **Long polling forcé** (`experimentalForceLongPolling`) : le direct « en continu » s'est bloqué sur un iPad (Safari). Une première « liaison de secours » a été abandonnée : Codex a montré qu'elle passait par le même mécanisme.
+- **Ligne de diagnostic** en bas du tableau de bord et de la télécommande : « 📡 N élève(s) reçu(s) · dernière nouvelle il y a X s ». Elle devient orange après 60 s sans nouvelle, rouge en cas d'erreur.
+- **Place libérée** : l'ancien appareil écrit avec `updateDoc`, il ne peut donc plus recréer la case. Il s'arrête et affiche « Tu continues sur un autre appareil ».
+- **Fin de séance** : l'élève n'envoie plus rien (signes de vie et écoutes arrêtés). Vérifié : aucune écriture dans les 35 s suivantes.
+- **Moteur absent** : si `direct-firebase.js` ne se charge pas, la page affiche « Connexion impossible » au lieu de passer en mode essai.
+- **Numéros de version** sur les scripts et styles (`?v=…`), à changer à chaque publication.
+- **Règle préparée, NON publiée** : `~/Documents/MaPSE Direct/Règles Firebase/regles-firestore-2026-11-18b-PROPOSITION.rules`. Seul le professeur peut lister les séances ; un appareil connecté lit seulement une séance dont il connaît l'identifiant.
+- **À trancher par M. Mecheri** : pseudos libres ou générés ; réponses libres projetées.
+- **Avis complet de Codex** : `~/Documents/MaPSE Direct/Avis Codex — MaPSE Direct et iPad (18-11-2026).md`.
+
 ## Contenus
 
 La séance B4 reprend la situation de l'escape game (Camille, 92 dB(A), 8 h). Les seuils viennent de l'évaluation contrôlée : 85 dB(A) = « à partir de », contrôle du port des protecteurs. **Relecture de M. Mecheri nécessaire avant tout usage en classe.** Les pictogrammes sont ARASAAC (CC BY-NC-SA, Sergio Palao) : citer la licence sur la page avant publication.
