@@ -88,7 +88,8 @@ const D=window.PLATEAU, cv=document.getElementById('c'), cx=cv.getContext('2d');
 const COUL={sale:'#e0533d',propre:'#1f9d63',clients:'#7b5cd6',circulation:'#7a8794',annexe:'#c08a2b',inutilise:'#999'};
 const NOMZONE={sale:'Zone sale',propre:'Zone propre',clients:'Zone clients',circulation:'Circulation',annexe:'Annexe',inutilise:'Non utilisé'};
 const $=id=>document.getElementById(id);
-const imgs={};function img(src){if(!src)return null;if(!imgs[src]){const i=new Image();i.src=src;imgs[src]=i;}return imgs[src];}
+const imgs={};function img(src){if(!src)return null;if(!imgs[src]){const i=new Image();i.essais=0;i.onerror=()=>{if(i.essais++<6)setTimeout(()=>{i.src=src+(src.includes('?')?'&':'?')+'r='+i.essais;},1500*i.essais);};i.src=src;imgs[src]=i;}return imgs[src];}
+function pret(i){return !!(i&&i.complete&&i.naturalWidth>0);}
 const objets=D.objets.map((o,i)=>Object.assign({k:i},o));
 let scene='couloir', S=D.scenes[scene], choixPerso='calot', voix=false, montrerZones=false, bullesAuto=false, candidat=null;
 const moi={x:320,y:1000,dir:'haut',pas:0,chemin:null,dansPorte:true};
@@ -196,7 +197,7 @@ function verifierMission(ev){if(!missionsOn||!mission)return;
 // ── boucle
 let tPrec=performance.now(),demarre=false;
 function boucle(t){const dt=Math.min(.05,(t-tPrec)/1000);tPrec=t;
-  if(!demarre){dessiner(t);requestAnimationFrame(boucle);return;}
+  if(!demarre){try{dessiner(t);}catch(err){}requestAnimationFrame(boucle);return;}
   // déplacement
   const v=S.perso*4.2*dt;let dx=0,dy=0;
   if(touches['arrowup']||touches['z']||touches['w'])dy-=1;if(touches['arrowdown']||touches['s'])dy+=1;if(touches['arrowleft']||touches['q']||touches['a'])dx-=1;if(touches['arrowright']||touches['d'])dx+=1;
@@ -222,9 +223,9 @@ function boucle(t){const dt=Math.min(.05,(t-tPrec)/1000);tPrec=t;
   if(actif&&distObj(actif)>S.perso*1.9)cacherBulle();
   if(!bullesAuto&&candidat&&candidat!==actif){$('bVoir').style.display='block';$('bVoir').textContent='👁 Voir : '+(decouverts[candidat.id]?candidat.nom:'cet objet');}else $('bVoir').style.display='none';
   if(actif){const [bx,by]=ecran(actif.cx,actif.y);const b=$('bulle');b.style.left=Math.max(130,Math.min(innerWidth-130,bx))+'px';b.style.top=Math.max(300,by-8)+'px';}
-  suivreZone();dessiner(t);requestAnimationFrame(boucle);}
+  try{suivreZone();dessiner(t);}catch(err){console.warn(err);}requestAnimationFrame(boucle);}
 function dessiner(t){const r=devicePixelRatio;cx.setTransform(r,0,0,r,0,0);cx.fillStyle='#11161a';cx.fillRect(0,0,innerWidth,innerHeight);
-  const [ox,oy]=ecran(S.cadre[0],S.cadre[1]);const f=img(S.fond);if(f&&f.complete)cx.drawImage(f,ox,oy,(S.cadre[2]-S.cadre[0])*zoom,(S.cadre[3]-S.cadre[1])*zoom);
+  const [ox,oy]=ecran(S.cadre[0],S.cadre[1]);const f=img(S.fond);if(pret(f))cx.drawImage(f,ox,oy,(S.cadre[2]-S.cadre[0])*zoom,(S.cadre[3]-S.cadre[1])*zoom);
   if(montrerZones){for(const z of S.zones){if(scene==='couloir'&&D.scenes[D.sceneDePiece[(D.situation.find(e=>e.nom===z.nom)||{}).id]])continue;
       cx.beginPath();z.poly.forEach((p,i)=>{const [a,b]=ecran(p[0],p[1]);i?cx.lineTo(a,b):cx.moveTo(a,b);});cx.closePath();cx.fillStyle=COUL[z.zone]+'40';cx.fill();cx.strokeStyle=COUL[z.zone];cx.lineWidth=3;cx.stroke();}}
   // pièces fermées (couloir) : nom de la pièce et invitation à passer la porte
@@ -236,9 +237,9 @@ function dessiner(t){const r=devicePixelRatio;cx.setTransform(r,0,0,r,0,0);cx.fi
   // objets
   for(const o of objets){if(o.scene!==scene)continue;const [a,b]=ecran(o.x,o.y),w=o.l*zoom,h=o.h*zoom;
     if(o.mur){const ri=Math.max(9,S.perso*.38*zoom);const ccx=a+w/2,ccy=b+h/2;cx.beginPath();cx.arc(ccx,ccy,ri,0,7);cx.fillStyle='#fff';cx.fill();cx.lineWidth=2;cx.strokeStyle=o===actif?'#ffd84d':'#333';cx.stroke();
-      const im=img(o.face);if(im&&im.complete){cx.save();cx.beginPath();cx.arc(ccx,ccy,ri-2,0,7);cx.clip();const s=Math.min((ri*1.6)/im.width,(ri*1.6)/im.height);cx.drawImage(im,ccx-im.width*s/2,ccy-im.height*s/2,im.width*s,im.height*s);cx.restore();}continue;}
+      const im=img(o.face);if(pret(im)){cx.save();cx.beginPath();cx.arc(ccx,ccy,ri-2,0,7);cx.clip();const s=Math.min((ri*1.6)/im.width,(ri*1.6)/im.height);cx.drawImage(im,ccx-im.width*s/2,ccy-im.height*s/2,im.width*s,im.height*s);cx.restore();}continue;}
     if(o.dessine)continue;const im=img(o.dessus);
-    if(im&&im.complete){cx.drawImage(im,a,b,w,h);}else{cx.fillStyle='#ede9df';cx.fillRect(a,b,w,h);cx.strokeStyle='#777';cx.strokeRect(a,b,w,h);}
+    if(pret(im)){cx.drawImage(im,a,b,w,h);}else{cx.fillStyle='#ede9df';cx.fillRect(a,b,w,h);cx.strokeStyle='#777';cx.strokeRect(a,b,w,h);}
     if(o===actif){cx.strokeStyle='#ffd84d';cx.lineWidth=4;cx.strokeRect(a-2,b-2,w+4,h+4);}
     else if(!decouverts[o.id]){cx.fillStyle=`rgba(255,216,77,${.5+.4*Math.sin(t/250+o.k)})`;cx.beginPath();cx.arc(a+w-2,b+2,4,0,7);cx.fill();}}
   if(!bullesAuto&&candidat&&candidat!==actif){const [a,b]=ecran(candidat.cx,candidat.y);const r=11+2*Math.sin(t/200);cx.beginPath();cx.arc(a,b-6,r,0,7);cx.fillStyle='#0f6b63';cx.fill();cx.lineWidth=2;cx.strokeStyle='#fff';cx.stroke();cx.fillStyle='#fff';cx.font='800 15px Georgia,serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('i',a,b-5);cx.textBaseline='alphabetic';}
@@ -248,7 +249,7 @@ function dessiner(t){const r=devicePixelRatio;cx.setTransform(r,0,0,r,0,0);cx.fi
   const tous=PNJ.filter(p=>p.scene===scene&&p.place).concat([{x:moi.x,y:moi.y,dir:moi.dir,pas:moi.pas,perso:choixPerso,moi:true}]);tous.sort((p,q)=>p.y-q.y);
   for(const p of tous){const im=img(D.persos[p.perso][p.dir]);const sz=S.perso*zoom*1.25,bob=Math.sin(p.pas)*2;const [a,b]=ecran(p.x,p.y);
     cx.fillStyle='rgba(0,0,0,.22)';cx.beginPath();cx.ellipse(a,b+sz*.32,sz*.3,sz*.12,0,0,7);cx.fill();
-    if(im&&im.complete)cx.drawImage(im,a-sz/2,b-sz/2+bob,sz,sz);if(p.moi){cx.strokeStyle='#ffd84d';cx.lineWidth=3;cx.beginPath();cx.arc(a,b+sz*.32,sz*.34,0,7);cx.stroke();}}
+    if(pret(im))cx.drawImage(im,a-sz/2,b-sz/2+bob,sz,sz);if(p.moi){cx.strokeStyle='#ffd84d';cx.lineWidth=3;cx.beginPath();cx.arc(a,b+sz*.32,sz*.34,0,7);cx.stroke();}}
   // flèche de mission
   if(missionsOn&&mission&&mission.type==='objet'){const o=objets.find(x=>x.id===mission.id);if(o&&o.scene===scene){const [a,b]=ecran(o.cx,o.cy);const [ma,mb]=ecran(moi.x,moi.y);const ang=Math.atan2(b-mb,a-ma);
       cx.save();cx.translate(ma+Math.cos(ang)*60,mb+Math.sin(ang)*60);cx.rotate(ang);cx.fillStyle='#ffd84d';cx.strokeStyle='#333';cx.beginPath();cx.moveTo(16,0);cx.lineTo(-8,-10);cx.lineTo(-8,10);cx.closePath();cx.fill();cx.stroke();cx.restore();$('mFl').textContent='👉';}else $('mFl').textContent='🚪';}}
