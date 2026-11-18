@@ -66,7 +66,7 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair
   <button class="btn" id="bAide">❓</button>
 </div>
 <div id="banniere"><span id="banZone"></span><b id="banNom"></b></div>
-<div id="bulle"><span class="neuf" id="bNeuf">Nouveau !</span><img id="bImg" alt=""><div id="bVenir" style="display:none;height:70px;border-radius:12px;background:#f1efe9;color:#777;font-weight:700;font-size:13px;text-align:center;padding-top:26px">image à venir</div><h3 id="bNom"></h3><button id="bEcoute" title="Écouter" style="position:absolute;right:12px;top:118px;border:0;border-radius:20px;width:38px;height:38px;background:#e5f1ef;font-size:18px;cursor:pointer">🔊</button><p id="bFct"></p><span class="tag" id="bTag"></span></div>
+<div id="bulle"><span class="neuf" id="bNeuf">Nouveau !</span><img id="bImg" alt=""><div id="bVenir" style="display:none;height:70px;border-radius:12px;background:#f1efe9;color:#777;font-weight:700;font-size:13px;text-align:center;padding-top:26px">image à venir</div><button id="bFerme" title="Fermer" aria-label="Fermer" style="position:absolute;left:-10px;top:-10px;border:0;border-radius:50%;width:34px;height:34px;background:#1a1f24;color:#fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)">✕</button><h3 id="bNom"></h3><button id="bEcoute" title="Écouter" style="position:absolute;right:12px;top:118px;border:0;border-radius:20px;width:38px;height:38px;background:#e5f1ef;font-size:18px;cursor:pointer">🔊</button><p id="bFct"></p><span class="tag" id="bTag"></span></div>
 <div id="legende"><b>Les zones</b><br><i style="background:var(--sale)"></i>Zone sale<br><i style="background:var(--propre)"></i>Zone propre<br><i style="background:var(--clients)"></i>Zone clients<br><i style="background:var(--circulation)"></i>Circulation<br><i style="background:var(--annexe)"></i>Annexes</div>
 <div id="mission"><span class="fl" id="mFl">🎯</span><b>Mission</b><div id="mTxt"></div><small id="mScore"></small></div>
 <div id="situation"><p>Plan de situation</p><svg id="sitSvg"></svg></div>
@@ -134,6 +134,7 @@ $('bAide').onclick=()=>$('accueil').classList.add('vu');
 $('bMoins').onclick=()=>{zU=Math.max(.45,zU/1.25);};$('bPlus').onclick=()=>{zU=Math.min(2.2,zU*1.25);};
 $('bSon').onclick=()=>{voix=!voix;$('bSon').textContent=voix?'🔊':'🔇';toast(voix?'Lecture automatique des noms : oui':'Lecture automatique : non','#334');};
 $('bBulles').onclick=()=>{bullesAuto=!bullesAuto;$('bBullesT').textContent=bullesAuto?'Automatiques':'Au choix';toast(bullesAuto?'Les bulles s’ouvrent toutes seules':'Les bulles s’ouvrent quand tu touches l’objet','#334');};
+$('bFerme').onclick=e=>{e.stopPropagation();if(actif)fermeA=actif;cacherBulle();};
 $('bVoir').onclick=()=>{if(candidat)montrerBulle(candidat);};
 $('bEcoute').onclick=e=>{e.stopPropagation();if(actif)dire(actif.nom+'. '+(actif.fct||''),true);};
 $('bZones').onclick=()=>{montrerZones=!montrerZones;$('bZones').classList.toggle('on',montrerZones);$('legende').style.display=montrerZones?'block':'none';};
@@ -166,14 +167,14 @@ function changer(p){if(enTransition)return;enTransition=true;$('fondu').style.op
     banniere(p.nom,'Tu entres','circulation');},300);}
 function portes(){return D.portes.filter(p=>p.scene===scene);}
 // ── commandes
-const touches={};addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&candidat&&!$('accueil').classList.contains('vu')){e.preventDefault();montrerBulle(candidat);return;}touches[e.key.toLowerCase()]=true;if(e.key.startsWith('Arrow'))e.preventDefault();});addEventListener('keyup',e=>{touches[e.key.toLowerCase()]=false;});
+const touches={};addEventListener('keydown',e=>{if(e.key==='Escape'&&actif){fermeA=actif;cacherBulle();return;}if((e.key==='Enter'||e.key===' ')&&candidat&&!$('accueil').classList.contains('vu')){e.preventDefault();montrerBulle(candidat);return;}touches[e.key.toLowerCase()]=true;if(e.key.startsWith('Arrow'))e.preventDefault();});addEventListener('keyup',e=>{touches[e.key.toLowerCase()]=false;});
 cv.addEventListener('pointerdown',e=>{const [x,y]=monde(e.clientX,e.clientY);
   const o=objetSous(x,y);if(o&&distObj(o)<S.perso*3){montrerBulle(o);return;}
   const c=chemin(moi.x,moi.y,x,y);if(c){moi.chemin=c.slice(1);} });
 function objetSous(x,y){const m=S.perso*.4;return objets.find(o=>o.scene===scene&&x>=o.x-(o.mur?m:2)&&x<=o.x+o.l+(o.mur?m:2)&&y>=o.y-(o.mur?m:2)&&y<=o.y+o.h+(o.mur?m:2));}
 objets.forEach(o=>{o.cx=o.x+o.l/2;o.cy=o.y+o.h/2;});
 // ── bulle
-let actif=null;
+let actif=null,fermeA=null;
 function distObj(o){const dx=Math.max(o.x-moi.x,0,moi.x-(o.x+o.l)),dy=Math.max(o.y-moi.y,0,moi.y-(o.y+o.h));return Math.hypot(dx,dy);}
 function montrerBulle(o){actif=o;const b=$('bulle');$('bImg').style.display=o.face?'block':'none';if(o.face)$('bImg').src=o.face;$('bVenir').style.display=o.face?'none':'block';$('bNom').textContent=o.nom;$('bFct').textContent=o.fct||'';
   const z=S.zones.find(z=>dansPoly(o.cx,o.cy,z.poly))||(scene==='couloir'?D.situation.find(e=>dansPoly(o.cx,o.cy,e.poly)):null);
@@ -216,7 +217,8 @@ function boucle(t){const dt=Math.min(.05,(t-tPrec)/1000);tPrec=t;
   // proximité
   let proche=null,pd=S.perso*1.5;for(const o of objets){if(o.scene!==scene)continue;const d=distObj(o);if(d<pd){pd=d;proche=o;}}
   candidat=proche;
-  if(bullesAuto){if(proche&&proche!==actif)montrerBulle(proche);}
+  if(fermeA&&distObj(fermeA)>S.perso*1.9)fermeA=null;
+  if(bullesAuto){if(proche&&proche!==actif&&proche!==fermeA)montrerBulle(proche);}
   if(actif&&distObj(actif)>S.perso*1.9)cacherBulle();
   if(!bullesAuto&&candidat&&candidat!==actif){$('bVoir').style.display='block';$('bVoir').textContent='👁 Voir : '+(decouverts[candidat.id]?candidat.nom:'cet objet');}else $('bVoir').style.display='none';
   if(actif){const [bx,by]=ecran(actif.cx,actif.y);const b=$('bulle');b.style.left=Math.max(130,Math.min(innerWidth-130,bx))+'px';b.style.top=Math.max(300,by-8)+'px';}
