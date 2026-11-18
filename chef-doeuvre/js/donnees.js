@@ -91,12 +91,14 @@
        est gardé dans resultats/{code}/stats/cdo-psr-2026-plateau, pour le retrouver sur n'importe quel ordinateur.
        Collection autorisée aux codes élèves par les règles du 18/11/2026 ; aucune note, rien dans « evaluations ». */
     plateauLire: async function () {
-      var f = await firebase(); if (!f) return null;
+      var f = await firebase(); if (!f) return { ok: false };
       try {
         var s = await f.fs.getDoc(f.fs.doc(f.db, 'resultats', code, 'stats', CLE + '-plateau'));
-        return s.exists() && s.data().plateau ? JSON.parse(s.data().plateau) : null;
-      } catch (e) { return null; }
+        return { ok: true, p: s.exists() && s.data().plateau ? JSON.parse(s.data().plateau) : null };
+      } catch (e) { return { ok: false }; }   // lecture impossible : le jeu n'écrasera pas la version en ligne
     },
+    /* Enregistre sur l'ordinateur seulement (le jeu du plateau envoie sa propre fiche, pas les notes des séances). */
+    enregistrerLocal: function () { etat.maj = new Date().toISOString(); ecrireLocal(); },
     plateauEcrire: async function (p) {
       var f = await firebase(); if (!f) return false;
       try {

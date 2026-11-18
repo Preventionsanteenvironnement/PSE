@@ -5,7 +5,7 @@
  *    puis « Vérifier » : ce qui est juste devient vert, ce qui est faux est marqué en rouge avec un indice.
  *    Quatre niveaux : Découverte (emplacements et noms) → Apprenti (emplacements) → Commis (pièce vide) → Chef (les noms seuls, chrono).
  * Données : plateau/donnees-plateau.js (généré depuis le référentiel du plateau et la bibliothèque d'images).
- * Progression : D.etat().plateau, enregistrée sur l'ordinateur avec le reste du parcours (pas d'envoi en ligne de ce jeu).
+ * Progression : D.etat().plateau (pièce en cours comprise) — sur l'ordinateur ET en ligne : resultats/{code}/stats/cdo-psr-2026-plateau.
  */
 (function () {
   'use strict';
@@ -15,6 +15,15 @@
     { n: 2, nom: 'Apprenti', aide: 'Les emplacements sont dessinés, sans les noms.', tol: 5 },
     { n: 3, nom: 'Commis', aide: 'La pièce est vide : il faut se souvenir de la place de chaque objet.', tol: 7 },
     { n: 4, nom: 'Chef', aide: 'Les objets arrivent avec leur nom seulement. Le temps est compté.', tol: 7 }
+  ];
+  /* Six activités par pièce : on place, on apprend les noms, on replace avec moins d'aide, on se repère, etc. */
+  var ACT = [
+    { type: 'placer', nv: 1, nom: 'Découverte', ico: '🧩' },
+    { type: 'quiz', mode: 'noms', nom: 'Les noms', ico: '🔤' },
+    { type: 'placer', nv: 2, nom: 'Apprenti', ico: '🧩' },
+    { type: 'quiz', mode: 'murs', nom: 'Se repérer', ico: '🧭' },
+    { type: 'placer', nv: 3, nom: 'Commis', ico: '🧩' },
+    { type: 'placer', nv: 4, nom: 'Chef', ico: '⏱️' }
   ];
   var BRAVO = ['Bravo !', 'Très bien !', 'Excellent !', 'Super, c’est juste !', 'Tu connais ta cuisine !', 'Parfait !', 'Bien joué !', 'Quel professionnel !'];
   var COURAGE = ['Presque ! Regarde les indices.', 'Continue, tu progresses !', 'Pas grave, on corrige et on recommence.', 'Observe bien les murs de la pièce.'];
@@ -43,39 +52,72 @@
     return !!resultat(pid, n - 1);
   }
   function etoilesTotales() {
-    var t = prog().espaces ? prog().espaces.etoiles : 0;
+    var t = (prog().espaces ? prog().espaces.etoiles : 0) + (prog().espacesQuiz ? prog().espacesQuiz.etoiles : 0);
     Object.keys(prog().pieces).forEach(function (k) { Object.keys(prog().pieces[k]).forEach(function (n) { t += prog().pieces[k][n].etoiles || 0; }); });
     return t;
   }
-  var minuterieNuage = null, charge = null;
-  function etatNuage(t) { var b = document.querySelector('.pl-nuage'); if (b) { b.textContent = t; } }
+  /* ───── enregistrement : sur l'ordinateur à chaque geste, en ligne (Firebase) 1 s après ─────
+     Sécurité : on n'écrit JAMAIS en ligne avant d'avoir relu la version en ligne (sinon un nouvel ordinateur,
+     encore vide, pourrait écraser le travail de l'élève). La version la plus récente gagne. */
+  var minuterieNuage = null, charge = null, aEnvoyer = false;
+  function etatNuage(t, cls) { var b = document.querySelector('.pl-nuage'); if (b) { b.textContent = t; b.className = 'pl-nuage ' + (cls || ''); } }
   function envoyerNuage() {
-    clearTimeout(minuterieNuage);
-    if (!D().enLigne()) { etatNuage('💾 Enregistré sur cet ordinateur'); return; }
-    etatNuage('☁️ Enregistrement…');
-    D().plateauEcrire(prog()).then(function (ok) { etatNuage(ok ? '☁️ Enregistré en ligne' : '💾 Enregistré sur cet ordinateur (hors ligne)'); });
+    clearTimeout(minuterieNuage); minuterieNuage = null;
+    if (!D().enLigne()) { aEnvoyer = false; etatNuage('💾 Enregistré sur cet ordinateur (code d’essai)'); return; }
+    if (!charge || !charge.lu) { aEnvoyer = true; etatNuage('⏳ Connexion…', 'attente'); chargerNuage(true); return; }
+    etatNuage('☁️ Enregistrement…', 'attente');
+    var copie = JSON.parse(JSON.stringify(prog()));
+    D().plateauEcrire(copie).then(function (ok) {
+      if (ok) { aEnvoyer = false; etatNuage('☁️ Enregistré en ligne', 'ok'); }
+      else { aEnvoyer = true; etatNuage('⚠️ Pas de réseau : enregistré sur cet ordinateur, nouvel essai dans 10 s', 'ko'); clearTimeout(minuterieNuage); minuterieNuage = setTimeout(envoyerNuage, 10000); }
+    });
   }
-  /* Tout est enregistré : sur l'ordinateur tout de suite, en ligne 1 s après le dernier geste. */
   function sauver() {
-    prog().maj = new Date().toISOString(); D().enregistrer();
+    prog().maj = new Date().toISOString(); D().enregistrerLocal(); aEnvoyer = true;
     clearTimeout(minuterieNuage); minuterieNuage = setTimeout(envoyerNuage, 1000);
   }
-  window.addEventListener('pagehide', function () { if (minuterieNuage) envoyerNuage(); });
-  /* Au premier passage : on reprend la version la plus récente (en ligne ou sur cet ordinateur). */
-  function chargerNuage() {
+  window.addEventListener('pagehide', function () { if (aEnvoyer) envoyerNuage(); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && aEnvoyer) envoyerNuage(); });
+  /* Relit la version en ligne : au premier passage, puis à chaque retour au menu (au plus toutes les 30 s). */
+  function chargerNuage(forcer) {
     var c = D().code();
-    if (charge && charge.code === c) return charge.p;
-    var p = (D().enLigne() ? D().plateauLire() : Promise.resolve(null)).then(function (nuage) {
-      var loc = prog();
-      if (nuage && (!loc.maj || nuage.maj > loc.maj)) { D().etat().plateau = nuage; D().enregistrer(); }
-      else if (loc.maj && (!nuage || loc.maj > nuage.maj)) envoyerNuage();
-    }).catch(function () {});
-    charge = { code: c, p: p }; return p;
+    if (charge && charge.code === c && charge.encours) return charge.encours;
+    if (!forcer && charge && charge.code === c && charge.lu && Date.now() - charge.t < 30000) return Promise.resolve();
+    var ch = charge = { code: c, t: Date.now(), lu: charge && charge.code === c && charge.lu };
+    if (!D().enLigne()) { ch.lu = true; return Promise.resolve(); }
+    ch.encours = D().plateauLire().then(function (r) {
+      ch.encours = null;
+      if (!r || !r.ok) { if (aEnvoyer) { clearTimeout(minuterieNuage); minuterieNuage = setTimeout(envoyerNuage, 10000); } return; }
+      ch.lu = true; ch.t = Date.now();
+      var loc = JSON.parse(JSON.stringify(prog())), nuage = r.p, f = fusion(loc, nuage);
+      var avantLocal = JSON.stringify(loc), apres = JSON.stringify(f);
+      if (apres !== avantLocal) { D().etat().plateau = f; D().enregistrerLocal(); ch.remplace = true; }
+      if (!nuage || apres !== JSON.stringify(nuage)) { aEnvoyer = true; envoyerNuage(); }
+      else if (aEnvoyer) envoyerNuage();
+    }).catch(function () { ch.encours = null; });
+    return ch.encours;
+  }
+  /* Fusion de deux versions (cet ordinateur / en ligne) : rien ne se perd.
+     Résultats : la meilleure note d'étoiles ; mots : tous ; travail en cours : celui de la version la plus récente. */
+  function meilleur(a, b) { if (!a) return b || null; if (!b) return a; return (b.etoiles || 0) > (a.etoiles || 0) ? b : a; }
+  function fusion(a, b) {
+    a = a || {}; b = b || {};
+    var recent = (a.maj || '') >= (b.maj || '') ? a : b, ancien = recent === a ? b : a;
+    var f = { pieces: {}, mots: [], encours: {}, maj: recent.maj || ancien.maj || null };
+    f.espaces = meilleur(a.espaces, b.espaces); f.espacesQuiz = meilleur(a.espacesQuiz, b.espacesQuiz);
+    [a, b].forEach(function (v) { Object.keys(v.pieces || {}).forEach(function (pid) {
+      f.pieces[pid] = f.pieces[pid] || {};
+      Object.keys(v.pieces[pid]).forEach(function (n) { f.pieces[pid][n] = meilleur(f.pieces[pid][n], v.pieces[pid][n]); });
+    }); (v.mots || []).forEach(function (m) { if (f.mots.indexOf(m) < 0) f.mots.push(m); }); });
+    [a, b].forEach(function (v) { Object.keys(v.encours || {}).forEach(function (k) {   // par activité, le plus récent gagne (même « terminé »)
+      var e = v.encours[k], d = f.encours[k]; if (e && (!d || (e.t || 0) > (d.t || 0))) f.encours[k] = e;
+    }); });
+    return f;
   }
   function encours(cle, val) {
     var P = prog(); P.encours = P.encours || {};
-    if (val === undefined) return P.encours[cle];
-    if (val === null) delete P.encours[cle]; else P.encours[cle] = val;
+    if (val === undefined) { var e = P.encours[cle]; return e && !e.fini ? e : undefined; }
+    if (val === null) P.encours[cle] = { fini: true, t: Date.now() }; else { val.t = Date.now(); P.encours[cle] = val; }
   }
   function noterMots(liste) { var m = prog().mots; liste.forEach(function (x) { if (m.indexOf(x) < 0) m.push(x); }); }
   function etoiles(n) { var s = ''; for (var i = 1; i <= 3; i++) s += '<span class="pl-et' + (i <= n ? ' pris' : '') + '">★</span>'; return s; }
@@ -139,18 +181,21 @@
     var P = prog(), esp = P.espaces;
     var lignes = PD.pieces.map(function (p, i) {
       var ouverte = niveauOuvert(p.id, 1);
-      var niv = NIVEAUX.map(function (N) {
-        var r = resultat(p.id, N.n), ok = niveauOuvert(p.id, N.n);
-        return ok ? '<a class="pl-niv' + (r ? ' fait' : '') + '" href="#plateau/' + p.id + '/' + N.n + '"><b>' + N.n + '</b><span>' + N.nom + '</span><span class="pl-mini-et">' + etoiles(r ? r.etoiles : 0) + '</span></a>'
-          : '<span class="pl-niv ferme" title="À débloquer"><b>🔒</b><span>' + N.nom + '</span></span>';
+      var niv = ACT.map(function (N, k) {
+        var n = k + 1, r = resultat(p.id, n), ok = niveauOuvert(p.id, n);
+        return ok ? '<a class="pl-niv' + (r ? ' fait' : '') + '" href="#plateau/' + p.id + '/' + n + '"><b>' + N.ico + ' ' + n + '</b><span>' + N.nom + '</span><span class="pl-mini-et">' + etoiles(r ? r.etoiles : 0) + '</span></a>'
+          : '<span class="pl-niv ferme" title="Se débloque après l’activité précédente"><b>🔒 ' + n + '</b><span>' + N.nom + '</span></span>';
       }).join('');
-      return '<div class="pl-carte-piece' + (ouverte ? '' : ' fermee') + '"><div class="pl-carte-t"><span class="pl-num">' + (i + 2) + '</span><div><h3>' + esc(p.nom) + '</h3><p>' + p.objets.length + ' objets à placer' + (ouverte ? '' : ' · se débloque après la pièce précédente') + '</p></div></div><div class="pl-nivs">' + niv + '</div></div>';
+      var faits = ACT.filter(function (_, k) { return resultat(p.id, k + 1); }).length;
+      return '<div class="pl-carte-piece' + (ouverte ? '' : ' fermee') + '"><div class="pl-carte-t"><span class="pl-num">' + (i + 2) + '</span><div><h3>' + esc(p.nom) + '</h3><p>' + p.objets.length + ' objets · ' + faits + ' / ' + ACT.length + ' activités réussies' + (ouverte ? '' : ' · se débloque après la pièce précédente') + '</p></div></div><div class="pl-nivs">' + niv + '</div></div>';
     }).join('');
     vue.innerHTML = '<div class="pl-menu">' +
       '<div class="pl-banniere"><div><h1>Mon plateau technique</h1><p>Apprendre à se situer dans le plateau, à nommer les espaces et chaque objet. Le plateau se remplit au fur et à mesure.</p></div>' +
       '<div class="pl-score"><span class="pl-gros">' + etoilesTotales() + '</span><span>★ gagnées</span><span class="pl-mots-n">' + P.mots.length + ' mots appris</span></div></div>' +
       '<div class="pl-carte-piece"><div class="pl-carte-t"><span class="pl-num">1</span><div><h3>Les espaces du plateau</h3><p>Placer le nom de chaque espace sur le plan.</p></div></div><div class="pl-nivs">' +
-      '<a class="pl-niv' + (esp ? ' fait' : '') + '" href="#plateau/espaces"><b>1</b><span>Les espaces</span><span class="pl-mini-et">' + etoiles(esp ? esp.etoiles : 0) + '</span></a></div></div>' +
+      '<a class="pl-niv' + (esp ? ' fait' : '') + '" href="#plateau/espaces"><b>🧩 1</b><span>Placer les noms</span><span class="pl-mini-et">' + etoiles(esp ? esp.etoiles : 0) + '</span></a>' +
+      (esp || libre() ? '<a class="pl-niv' + (P.espacesQuiz ? ' fait' : '') + '" href="#plateau/espaces/ou"><b>🧭 2</b><span>Où suis-je ?</span><span class="pl-mini-et">' + etoiles(P.espacesQuiz ? P.espacesQuiz.etoiles : 0) + '</span></a>' : '<span class="pl-niv ferme"><b>🔒 2</b><span>Où suis-je ?</span></span>') +
+      '</div></div>' +
       lignes +
       (P.mots.length ? '<details class="pl-mots"><summary>Mes mots du plateau (' + P.mots.length + ')</summary><ul>' + P.mots.map(function (m) { return '<li>' + A().interne(m) + esc(m) + '</li>'; }).join('') + '</ul></details>' : '') +
       '<p class="pl-discret">D’autres pièces arriveront : local d’entretien, salle d’approvisionnement, légumerie et plonge.</p></div>';
@@ -246,7 +291,7 @@
 
   /* ═════════ Jeu 2 : une pièce ═════════ */
   function jeuPiece(vue, pid, n) {
-    var P = PD.pieces.filter(function (p) { return p.id === pid; })[0], N = NIVEAUX[n - 1];
+    var P = PD.pieces.filter(function (p) { return p.id === pid; })[0], N = NIVEAUX[(ACT[n - 1] || {}).nv - 1];
     if (!P || !N) { location.hash = 'plateau'; return; }
     if (!niveauOuvert(pid, n)) { location.hash = 'plateau'; return; }
     var objets = P.objets.map(function (o, i) { return Object.assign({ k: i }, o); });
@@ -254,8 +299,8 @@
     var pose = ec.pose || {}, juste = ec.juste || {}, essais = ec.essais || {}, erreurs = ec.erreurs || 0, debut = Date.now() - (ec.temps || 0) * 1000, minuteur = null;
     function garder() { encours(cleEC, { pose: pose, juste: juste, essais: essais, erreurs: erreurs, temps: Math.round((Date.now() - debut) / 1000) }); sauver(); }
     var ordre = melanger(objets);
-    var chef = n === 4;
-    vue.innerHTML = '<div class="pl-jeu"><div class="pl-consigne"><h1>' + esc(P.nom) + '</h1><p class="pl-niv-badge">Niveau ' + n + ' · ' + N.nom + '</p><p><b>Placer</b> chaque objet à sa place dans la pièce, puis <b>vérifier</b>. ' + esc(N.aide) + '</p></div>' +
+    var chef = N.n === 4;
+    vue.innerHTML = '<div class="pl-jeu"><div class="pl-consigne"><h1>' + esc(P.nom) + '</h1><p class="pl-niv-badge">Activité ' + n + ' · ' + N.nom + '</p><p><b>Placer</b> chaque objet à sa place dans la pièce, puis <b>vérifier</b>. ' + esc(N.aide) + '</p></div>' +
       '<div class="pl-barre"><div class="pl-barre-r"></div></div>' +
       '<div class="pl-scene"><div class="pl-piece" style="aspect-ratio:' + (1 / P.ratio) + '"><img class="pl-fond" src="' + P.fond + '" alt="Plan vu de dessus : ' + esc(P.nom) + ', vide." draggable="false"><div class="pl-cibles"></div><div class="pl-poses"></div><div class="pl-splash">' + esc(P.nom) + '</div></div>' +
       '<div class="pl-bac"><p class="pl-bac-t">Les objets à placer <span class="pl-reste"></span></p><div class="pl-bac-liste"></div></div></div>' +
@@ -269,8 +314,8 @@
       var t = Math.floor((Date.now() - debut) / 1000); vue.querySelector('.pl-chrono').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
     }, 500);
     // emplacements dessinés (niveaux 1 et 2)
-    if (n <= 2) cibles.innerHTML = objets.map(function (o) {
-      return '<div class="pl-cible' + (o.mur ? ' rond' : '') + '" data-c="' + o.k + '" style="' + boite(o) + '">' + (n === 1 ? '<span>' + esc(o.nom) + '</span>' : '') + '</div>';
+    if (N.n <= 2) cibles.innerHTML = objets.map(function (o) {
+      return '<div class="pl-cible' + (o.mur ? ' rond' : '') + '" data-c="' + o.k + '" style="' + boite(o) + '">' + (N.n === 1 ? '<span>' + esc(o.nom) + '</span>' : '') + '</div>';
     }).join('');
     function boite(o) {
       if (o.mur) return 'left:' + (o.x + o.l / 2) + '%;top:' + (o.y + o.h / 2) + '%;';
@@ -379,10 +424,10 @@
         if (!avant || et > avant.etoiles || (et === avant.etoiles && temps < avant.temps)) pr.pieces[pid][n] = { etoiles: et, erreurs: erreurs, temps: temps, date: new Date().toISOString() };
         var mots = []; objets.forEach(function (o) { if (mots.indexOf(o.nom) < 0) mots.push(o.nom); }); noterMots([P.nom].concat(mots));
         encours(cleEC, null); sauver(); sonFin(); confettis(scene);
-        var suiv = n < 4 ? ['#plateau/' + pid + '/' + (n + 1), 'Niveau ' + (n + 1) + ' · ' + NIVEAUX[n].nom] : null;
+        var suiv = n < ACT.length ? ['#plateau/' + pid + '/' + (n + 1), 'Activité ' + (n + 1) + ' · ' + ACT[n].nom] : null;
         var i = PD.pieces.indexOf(P);
         if (!suiv && PD.pieces[i + 1]) suiv = ['#plateau/' + PD.pieces[i + 1].id + '/1', 'Pièce suivante : ' + PD.pieces[i + 1].nom];
-        setTimeout(function () { fin(vue, P.nom + ' · niveau ' + n, et, erreurs, chef ? temps : null, [P.nom].concat(mots), suiv && suiv[0], suiv && suiv[1]); }, 900);
+        setTimeout(function () { fin(vue, P.nom + ' · ' + N.nom, et, erreurs, chef ? temps : null, [P.nom].concat(mots), suiv && suiv[0], suiv && suiv[1]); }, 900);
       }
     };
   }
@@ -400,21 +445,144 @@
     var a = f.querySelector('.cdo-btn') || f.querySelector('a'); if (a) a.focus();
   }
 
+  /* ═════════ Quiz : les noms, se repérer, où suis-je ═════════ */
+  function uniques(objets) { var vus = {}; return objets.filter(function (o) { if (vus[o.nom]) return false; vus[o.nom] = 1; return true; }); }
+  function autresNoms(nom, piece) {
+    var ici = uniques(piece.objets).map(function (o) { return o; }), ailleurs = [];
+    PD.pieces.forEach(function (q) { if (q !== piece) ailleurs = ailleurs.concat(uniques(q.objets)); });
+    return melanger(ici.filter(function (o) { return o.nom !== nom; })).concat(melanger(ailleurs).filter(function (o) { return o.nom !== nom; }));
+  }
+  function questionsNoms(P) {
+    var liste = melanger(uniques(P.objets)).slice(0, 10);
+    return liste.map(function (o, i) {
+      var leurres = autresNoms(o.nom, P).slice(0, 2), choix = melanger([o].concat(leurres));
+      var bon = choix.indexOf(o), expl = '« ' + o.nom + ' »' + (o.fonction ? ' : ' + o.fonction.charAt(0).toLowerCase() + o.fonction.slice(1) : '.');
+      if (i % 2 === 0) return { type: 'img2nom', enonce: 'Comment s’appelle cet objet ?', img: o.img, choix: choix.map(function (c) { return { t: c.nom }; }), bon: bon, expl: expl, mot: o.nom };
+      return { type: 'nom2img', enonce: 'Où est « ' + o.nom + ' » ?', choix: choix.map(function (c) { return { img: c.img, t: c.nom }; }), bon: bon, expl: expl, mot: o.nom };
+    });
+  }
+  function libelleCote(o) { return /^[A-D]$/.test(o.cote) ? 'Contre le mur ' + o.cote + ', côté ' + o.coteTxt : 'Côté ' + o.coteTxt; }
+  function questionsMurs(P) {
+    var avec = melanger(uniques(P.objets).filter(function (o) { return o.coteTxt; })).slice(0, 8);
+    var cotes = []; P.objets.forEach(function (o) { if (o.coteTxt && cotes.indexOf(libelleCote(o)) < 0) cotes.push(libelleCote(o)); });
+    return avec.map(function (o) {
+      var juste = libelleCote(o), autres = melanger(cotes.filter(function (c) { return c !== juste; })).slice(0, 3), choix = melanger([juste].concat(autres));
+      return { type: 'murs', enonce: 'Dans la pièce, où se trouve « ' + o.nom + ' » ?', img: o.img, choix: choix.map(function (c) { return { t: c }; }), bon: choix.indexOf(juste),
+        expl: '« ' + o.nom + ' » : ' + juste.charAt(0).toLowerCase() + juste.slice(1) + '. Regarde sa place sur le plan.', mot: o.nom, place: { pid: P.id, k: P.objets.indexOf(o) } };
+    });
+  }
+  function questionsOu() {
+    var noms = PD.espaces.map(function (e) { return e.nom; });
+    return melanger(PD.espaces).map(function (e) {
+      var choix = melanger([e.nom].concat(melanger(noms.filter(function (n) { return n !== e.nom; })).slice(0, 3)));
+      return { type: 'carte', enonce: 'Quel est l’espace en jaune sur le plan ?', zone: PD.espaces.indexOf(e), choix: choix.map(function (c) { return { t: c }; }), bon: choix.indexOf(e.nom), expl: 'C’est « ' + e.nom + ' ».', mot: e.nom };
+    });
+  }
+  function carteSVG(zone) {
+    var c = PD.cadre, W = c[2] - c[0] + 40, H = c[3] - c[1] + 70, ox = c[0] - 20, oy = c[1] - 30;
+    return '<svg class="pl-carte pl-carte-petite" viewBox="' + ox + ' ' + oy + ' ' + W + ' ' + H + '">' + PD.espaces.map(function (e, i) {
+      return '<polygon class="' + (e.couloir ? 'couloir ' : '') + (i === zone ? 'vise' : '') + '" points="' + e.poly.map(function (q) { return q.join(','); }).join(' ') + '"/>';
+    }).join('') + PD.portes.map(function (q) { return '<line class="porte" x1="' + q[0] + '" y1="' + q[1] + '" x2="' + q[2] + '" y2="' + q[3] + '"/>'; }).join('') +
+      '<text class="entree" x="' + PD.entree[0] + '" y="' + (PD.entree[1] + 26) + '" text-anchor="middle">▲ ENTRÉE</text></svg>';
+  }
+  function miniPlan(place) {
+    var P = PD.pieces.filter(function (x) { return x.id === place.pid; })[0], o = P.objets[place.k];
+    var st = o.mur ? 'left:' + (o.x + o.l / 2) + '%;top:' + (o.y + o.h / 2) + '%;width:6%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%)' : 'left:' + o.x + '%;top:' + o.y + '%;width:' + o.l + '%;height:' + o.h + '%';
+    return '<div class="pl-mini-plan" style="aspect-ratio:' + (1 / P.ratio) + '"><img src="' + P.fond + '" alt=""><div class="pl-mini-cible" style="' + st + '"><img src="' + o.img + '" alt=""></div></div>';
+  }
+  function quiz(vue, cfg) {
+    var ec = encours(cfg.cle);
+    if (!ec || !Array.isArray(ec.qs) || !ec.qs.length || !(ec.i >= 0)) ec = { qs: cfg.fabriquer(), i: 0, erreurs: 0 };   // quiz neuf (ou reprise abîmée)
+    function garder() { encours(cfg.cle, ec); sauver(); }
+    garder();
+    vue.innerHTML = '<div class="pl-jeu pl-quiz"><div class="pl-consigne"><h1>' + esc(cfg.titre) + '</h1><p class="pl-niv-badge">' + esc(cfg.badge) + '</p><p>' + cfg.consigne + '</p></div>' +
+      '<div class="pl-barre"><div class="pl-barre-r"></div></div><div class="pl-q"></div><div class="pl-actions"><span class="pl-compteur"></span><span class="pl-nuage"></span></div></div>';
+    var zone = vue.querySelector('.pl-q');
+    function poser() {
+      if (ec.i >= ec.qs.length) return terminer();
+      var q = ec.qs[ec.i], repondu = false;
+      vue.querySelector('.pl-barre-r').style.width = (ec.i / ec.qs.length * 100) + '%';
+      vue.querySelector('.pl-compteur').textContent = 'Question ' + (ec.i + 1) + ' / ' + ec.qs.length + ' · ' + ec.erreurs + ' erreur' + (ec.erreurs > 1 ? 's' : '');
+      zone.innerHTML = '<div class="pl-q-carte"><h2 data-lire>' + A().bouton(q.enonce) + '<span>' + esc(q.enonce) + '</span></h2>' +
+        (q.type === 'carte' ? carteSVG(q.zone) : q.img ? '<div class="pl-q-img"><img src="' + q.img + '" alt="L’objet à reconnaître"></div>' : '') +
+        '<div class="pl-q-choix ' + (q.type === 'nom2img' ? 'images' : '') + '">' + q.choix.map(function (c, k) {
+          return '<button type="button" class="pl-choix" data-k="' + k + '">' + (q.type === 'nom2img' ? '<img src="' + c.img + '" alt="Proposition ' + (k + 1) + '"><span class="pl-cache">' + esc(c.t) + '</span>' : esc(c.t)) + '</button>';
+        }).join('') + '</div><div class="pl-q-retour" aria-live="polite"></div></div>';
+      zone.querySelectorAll('.pl-choix').forEach(function (b) {
+        b.onclick = function () {
+          if (repondu) return; repondu = true;
+          var k = +b.dataset.k, ok = k === q.bon;
+          zone.querySelectorAll('.pl-choix').forEach(function (x, j) { x.disabled = true; if (j === q.bon) x.classList.add('juste'); else if (j === k) x.classList.add('faux'); x.classList.add('revele'); });
+          if (ok) { sonJuste(); bulle(zone, hasard(BRAVO), 'bravo'); } else { sonFaux(); ec.erreurs++; }
+          ec.i++; garder();
+          vue.querySelector('.pl-compteur').textContent = 'Question ' + ec.i + ' / ' + ec.qs.length + ' · ' + ec.erreurs + ' erreur' + (ec.erreurs > 1 ? 's' : '');
+          vue.querySelector('.pl-barre-r').style.width = (ec.i / ec.qs.length * 100) + '%';
+          zone.querySelector('.pl-q-retour').innerHTML = '<div class="pl-msg ' + (ok ? 'bravo' : 'courage') + '"><b>' + (ok ? hasard(BRAVO) : 'La bonne réponse est en vert.') + '</b> ' + esc(q.expl) + '</div>' +
+            (q.place ? miniPlan(q.place) : '') +
+            '<button type="button" class="cdo-btn" data-suite>' + (ec.i >= ec.qs.length ? 'Voir mon résultat' : 'Question suivante') + ' →</button>';
+          dire(q.mot);
+          zone.querySelector('[data-suite]').onclick = poser; zone.querySelector('[data-suite]').focus();
+        };
+      });
+    }
+    function terminer() {
+      var et = ec.erreurs === 0 ? 3 : ec.erreurs <= 2 ? 2 : 1, mots = [];
+      ec.qs.forEach(function (q) { if (mots.indexOf(q.mot) < 0) mots.push(q.mot); });
+      encours(cfg.cle, null); cfg.resultat(et, ec.erreurs); noterMots(mots); sauver(); sonFin(); confettis(vue.querySelector('.pl-jeu'));
+      vue.querySelector('.pl-barre-r').style.width = '100%';
+      fin(vue, cfg.titre + ' · ' + cfg.badge, et, ec.erreurs, null, mots, cfg.suivant && cfg.suivant[0], cfg.suivant && cfg.suivant[1]);
+    }
+    poser();
+  }
+  function quizPiece(vue, P, n) {
+    var act = ACT[n - 1];
+    quiz(vue, {
+      cle: P.id + '-' + n, titre: P.nom, badge: 'Activité ' + n + ' · ' + act.nom,
+      consigne: act.mode === 'noms' ? '<b>Reconnaître</b> chaque objet de la pièce et son nom exact.' : '<b>Retrouver</b> où se trouve chaque objet dans la pièce : contre quel mur, de quel côté.',
+      fabriquer: function () { return act.mode === 'noms' ? questionsNoms(P) : questionsMurs(P); },
+      resultat: function (et, err) { var pr = prog(); pr.pieces[P.id] = pr.pieces[P.id] || {}; var a = pr.pieces[P.id][n]; if (!a || et > a.etoiles) pr.pieces[P.id][n] = { etoiles: et, erreurs: err, date: new Date().toISOString() }; },
+      suivant: ['#plateau/' + P.id + '/' + (n + 1), 'Activité ' + (n + 1) + ' · ' + ACT[n].nom]
+    });
+  }
+  function quizEspaces(vue) {
+    if (!prog().espaces && !libre()) { location.hash = 'plateau'; return; }
+    quiz(vue, {
+      cle: 'espaces-ou', titre: 'Où suis-je ?', badge: 'Les espaces · activité 2',
+      consigne: '<b>Nommer</b> l’espace colorié en jaune sur le plan du plateau.',
+      fabriquer: questionsOu,
+      resultat: function (et, err) { var pr = prog(); if (!pr.espacesQuiz || et > pr.espacesQuiz.etoiles) pr.espacesQuiz = { etoiles: et, erreurs: err, date: new Date().toISOString() }; },
+      suivant: ['#plateau/' + PD.pieces[0].id + '/1', 'Entrer dans le ' + PD.pieces[0].nom.replace('Restaurant ', 'restaurant ')]
+    });
+  }
+
+  function dessinerJeu(vue, p) {
+    if (p[1] === 'espaces') return p[2] === 'ou' ? quizEspaces(vue) : jeuEspaces(vue);
+    if (p[1] && p[2]) {
+      var P = PD.pieces.filter(function (x) { return x.id === p[1]; })[0], n = Math.max(1, Math.min(ACT.length, +p[2] || 1));
+      if (!P || !niveauOuvert(p[1], n)) { location.hash = 'plateau'; return; }
+      return ACT[n - 1].type === 'quiz' ? quizPiece(vue, P, n) : jeuPiece(vue, p[1], n);
+    }
+    menu(vue);
+  }
+
   window.CDO_PLATEAU = {
     rendre: function (vue, p) {
       if (!PD) { vue.innerHTML = '<p>Le plateau n’a pas pu être chargé.</p>'; return; }
-      if (!charge || charge.code !== D().code()) {
+      var premier = !charge || charge.code !== D().code() || !charge.lu, h = location.hash;
+      if (premier) {
         vue.innerHTML = '<p class="pl-attente">Chargement de mon plateau…</p>';
-        var h = location.hash;
-        chargerNuage().then(function () { if (location.hash === h) window.CDO_PLATEAU.rendre(vue, p); });
+        Promise.race([chargerNuage(), new Promise(function (r) { setTimeout(r, 6000); })]).then(function () { if (location.hash === h) dessinerJeu(vue, p); });
         return;
       }
-      if (p[1] === 'espaces') return jeuEspaces(vue);
-      if (p[1] && p[2]) return jeuPiece(vue, p[1], Math.max(1, Math.min(4, +p[2] || 1)));
-      menu(vue);
+      dessinerJeu(vue, p);
+      if (!p[1]) {   // retour au menu : on relit la version en ligne (un autre ordinateur a pu avancer)
+        var avant = charge.remplace; charge.remplace = false;
+        var attente = chargerNuage();
+        if (attente && attente.then) attente.then(function () { if (charge.remplace && location.hash === h) dessinerJeu(vue, p); });
+      }
     },
     titre: function (p) {
-      if (p[1] === 'espaces') return 'Les espaces du plateau';
+      if (p[1] === 'espaces') return p[2] === 'ou' ? 'Où suis-je ?' : 'Les espaces du plateau';
       var P = PD && PD.pieces.filter(function (x) { return x.id === p[1]; })[0];
       return P ? P.nom : 'Mon plateau technique';
     }
