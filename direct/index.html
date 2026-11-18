@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MaPSE Direct</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/direct.css">
+</head>
+<body>
+<header class="barre">
+  <div class="logo">MaPSE <span>DIRECT</span></div>
+  <div class="espace"></div>
+  <span class="pastille-demo" title="Prototype : rien n'est envoyé sur Internet">Essai</span>
+  <div class="info" id="info-eleve"></div>
+</header>
+
+<!-- 1. Entrée -->
+<main class="page" id="vue-entree">
+  <div class="carte entree">
+    <div class="etape-num" id="entree-num">Étape 1 sur 2</div>
+    <h1 id="entree-titre">Entre ton code</h1>
+    <p id="entree-texte">Ton code a 4 caractères. Ton professeur te l’a donné.</p>
+    <form id="form-entree" autocomplete="off">
+      <input class="champ" id="champ" maxlength="8" inputmode="text" aria-label="Code" autofocus>
+      <div class="erreur" id="erreur" role="alert"></div>
+      <button class="bouton-principal" type="submit" id="bouton-entree">Je continue</button>
+    </form>
+    <p><a href="../index.html">← Revenir sur mapse.fr</a></p>
+  </div>
+</main>
+
+<!-- 2. Salle d'attente / séance -->
+<main class="page cache" id="vue-seance">
+  <div class="progression" id="progression" aria-hidden="true"></div>
+  <div class="carte activite" id="activite" aria-live="polite"></div>
+</main>
+
+<div class="voile cache" id="voile-fige"><div><div class="grand-texte">👀 Regarde le tableau</div><p>Ton professeur parle à la classe.</p></div></div>
+<div class="voile cache" id="voile-fin"><div><div class="grand-texte">🎉 La séance est terminée</div><p>Merci pour ta participation. Tu peux fermer cette page.</p></div></div>
+<div class="messages" id="messages" aria-live="assertive"></div>
+
+<nav class="dock cache" id="dock">
+  <button type="button" class="nav cache" id="b-prec">← Retour</button>
+  <button type="button" id="b-ecouter">🔊 Écouter</button>
+  <button type="button" class="main-levee" id="b-main">✋ J’ai besoin d’aide</button>
+  <button type="button" class="fini" id="b-fini">✅ J’ai fini</button>
+  <button type="button" class="nav cache" id="b-suiv">Suivant →</button>
+</nav>
+
+<script src="js/direct-store.js"></script>
+<script src="js/direct-firebase.js"></script>
+<script src="js/direct-activites.js"></script>
+<script>
+(function () {
+  'use strict';
+  const D = window.MapseDirect, store = D.store, el = D.el;
+  const $ = id => document.getElementById(id);
+  const SESSION = 'mapse-direct-eleve';
+
+  let code = null, seance = null, consigne = {}, moi = null;
+  let cleAffichee = '', lus = new Set(), dernierTexte = '';
+
+  /* ---------- Entrée en deux temps : code élève, puis code de séance ---------- */
+  let etapeEntree = 1;
+  $('form-entree').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    if ($('bouton-entree').disabled) return;
+    const v = $('champ').value.trim();
+    $('erreur').textContent = '';
+    if (etapeEntree === 1) {
+      const c = D.normaliserCode(v);
+      if (c.length !== 4) { $('erreur').textContent = 'Ton code doit avoir 4 caractères (lettres et chiffres).'; return; }
+      code = c; etapeEntree = 2;
+      $('entree-num').textContent = 'Étape 2 sur 2';
+      $('entree-titre').textContent = 'Entre le code de la séance';
+      $('entree-texte').textContent = 'Il est affiché au tableau : 4 chiffres.';
+      $('champ').value = ''; $('champ').setAttribute('inputmode', 'numeric'); $('champ').focus();
+      return;
+    }
+    let s = null;
+    $('bouton-entree').disabled = true;
+    try { s = await store.trouverSeance(v); }
+    catch (e) { console.error(e); $('erreur').textContent = 'Connexion impossible. Vérifie Internet, puis réessaie.'; return; }
+    finally { $('bouton-entree').disabled = false; }
+    if (!s) { $('erreur').textContent = 'Aucune séance ouverte avec ce code. Vérifie au tableau.'; return; }
+    if (s.codesAutorises && s.codesAutorises.length && s.codesAutorises.indexOf(code) === -1) {
+      $('erreur').textContent = 'Ton code n’est pas prévu pour cette séance. Vérifie ton code ou demande à ton professeur.';
+      etapeEntree = 1; $('entree-num').textContent = 'Étape 1 sur 2'; $('entree-titre').textContent = 'Entre ton code';
+      $('entree-texte').textContent = 'Ton code a 4 caractères.'; $('champ').value = ''; return;
+    }
+    try { sessionStorage.setItem(SESSION, JSON.stringify({ id: s.id, code })); } catch (e) {}
+    let deja = null;
+    $('bouton-entree').disabled = true;
+    try { deja = await store.rejoindre(s.id, code); }
+    catch (e) { bloquer(e); return; }
+    finally { $('bouton-entree').disabled = false; }
+    if (deja && deja.pseudo) demarrer(s.id); else choisirProfil(s.id, false);
+  });
+
+  /* ---------- Étape 3 : pseudo et avatar (vus par les camarades ; le code reste pour le professeur) ---------- */
+  const AVATARS = ['🦊', '🐼', '🐯', '🦁', '🐸', '🐵', '🐧', '🦉', '🐙', '🦄', '🐢', '🐬', '🐝', '🦋', '🐨', '🐰', '🐻', '🐺', '🦖', '🐳', '🌵', '🚀', '⚡', '🎧'];
+  const NOMS = ['Renard', 'Panda', 'Tigre', 'Lion', 'Hibou', 'Dauphin', 'Koala', 'Loup', 'Aigle', 'Tortue', 'Comète', 'Éclair'];
+  const QUALITES = ['rapide', 'malin', 'calme', 'curieux', 'courageux', 'joyeux', 'agile', 'brillant'];
+  const PROFIL = 'mapse-direct-profil'; // souvenir sur cet appareil, pour les séances suivantes
+  function nettoyerPseudo(p) { return String(p || '').replace(/[^A-Za-zÀ-ÖØ-öø-ÿ0-9 '\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16); }
+  function choisirProfil(id, refaire) {
+    let memo = {}; try { memo = JSON.parse(localStorage.getItem(PROFIL + ':' + code) || '{}'); } catch (e) {}
+    let avatar = memo.avatar || AVATARS[Math.floor(Math.random() * AVATARS.length)];
+    const carte = $('vue-entree').querySelector('.carte');
+    carte.innerHTML = '';
+    carte.appendChild(el('div', { classe: 'etape-num', texte: refaire ? 'Ton professeur te demande un autre pseudo' : 'Dernière étape' }));
+    carte.appendChild(el('h1', { texte: 'Choisis ton pseudo et ton avatar' }));
+    carte.appendChild(el('p', { texte: 'Les autres verront seulement ton pseudo et ton avatar. Ton professeur sait que c’est toi grâce à ton code.' }));
+    const grille = el('div', { classe: 'avatars', role: 'radiogroup', 'aria-label': 'Avatar' });
+    function dessinerAvatars() {
+      grille.innerHTML = '';
+      AVATARS.forEach(a => grille.appendChild(el('button', { type: 'button', classe: 'avatar-choix' + (a === avatar ? ' pris' : ''), 'aria-label': 'Avatar ' + a, onclick: () => { avatar = a; dessinerAvatars(); } }, [a])));
+    }
+    dessinerAvatars();
+    carte.appendChild(grille);
+    const champ = el('input', { classe: 'champ champ-pseudo', maxlength: '16', 'aria-label': 'Pseudo', placeholder: 'Ton pseudo' });
+    champ.value = refaire ? '' : (memo.pseudo || '');
+    const err = el('div', { classe: 'erreur', role: 'alert' });
+    carte.appendChild(el('div', { classe: 'ligne-pseudo' }, [champ, el('button', { type: 'button', classe: 'bouton-second', onclick: () => {
+      champ.value = NOMS[Math.floor(Math.random() * NOMS.length)] + ' ' + QUALITES[Math.floor(Math.random() * QUALITES.length)]; } }, ['🎲 Au hasard'])]));
+    carte.appendChild(err);
+    carte.appendChild(el('button', { type: 'button', classe: 'bouton-principal', onclick: () => {
+      const p = nettoyerPseudo(champ.value);
+      if (p.length < 2) { err.textContent = 'Écris un pseudo d’au moins 2 lettres, ou touche « Au hasard ».'; return; }
+      if (p.toUpperCase().replace(/\s/g, '') === code) { err.textContent = 'Ne mets pas ton code comme pseudo : il doit rester secret.'; return; }
+      try { localStorage.setItem(PROFIL + ':' + code, JSON.stringify({ pseudo: p, avatar })); } catch (e) {}
+      store.majEleve(id, code, { code, pseudo: p, avatar, pseudoLe: Date.now() });
+      if (refaire) { moi.pseudo = p; moi.avatar = avatar; moi.pseudoLe = Date.now(); $('vue-entree').classList.add('cache'); $('vue-seance').classList.remove('cache'); $('dock').classList.remove('cache'); majEntete(); }
+      else demarrer(id);
+    } }, ['C’est parti !']));
+    $('vue-entree').classList.remove('cache');
+    $('vue-seance').classList.add('cache');
+    $('dock').classList.add('cache');
+    champ.focus();
+  }
+  function majEntete() { $('info-eleve').textContent = (moi.avatar || '') + ' ' + (moi.pseudo || '') + ' · ' + code; }
+
+  /* Ce code est déjà pris sur un autre appareil (ou la connexion a échoué) : on le dit clairement. */
+  function bloquer(e) {
+    if (e) console.error(e);
+    try { sessionStorage.removeItem(SESSION); } catch (x) {}
+    const carte = $('vue-entree').querySelector('.carte');
+    carte.innerHTML = '';
+    carte.appendChild(el('div', { classe: 'etape-num', texte: 'Un instant' }));
+    carte.appendChild(el('h1', { texte: e && e.code === 'place-prise' ? 'Ton code est déjà connecté' : 'Connexion impossible' }));
+    carte.appendChild(el('p', { texte: e && e.code === 'place-prise'
+      ? 'Ton code est déjà utilisé sur un autre appareil pour cette séance. Lève la main : ton professeur peut libérer ta place, puis touche « Réessayer ».'
+      : 'Vérifie Internet, puis touche « Réessayer ».' }));
+    carte.appendChild(el('button', { type: 'button', classe: 'bouton-principal', onclick: () => location.reload() }, ['Réessayer']));
+    $('vue-entree').classList.remove('cache');
+    $('vue-seance').classList.add('cache');
+    $('dock').classList.add('cache');
+  }
+
+  /* ---------- Séance ---------- */
+  async function demarrer(id) {
+    let deja = null;
+    try {
+      seance = await store.lireSeance(id);
+      if (!seance) return;
+      deja = await store.rejoindre(id, code); // en ligne : vérifie que la place est bien à cet appareil
+    } catch (e) { bloquer(e); return; }
+    moi = Object.assign({ code, reponses: {}, position: 0, arriveLe: Date.now() }, deja || {}, (await store.lireEleve(id, code)) || {});
+    moi.reponses = moi.reponses || {};
+    lus = new Set(moi.messagesLus || []); // messages déjà fermés : ne pas les remontrer après un rechargement
+    ecrireMoi({ code, vu: Date.now(), connecte: true });
+    $('vue-entree').classList.add('cache');
+    $('vue-seance').classList.remove('cache');
+    $('dock').classList.remove('cache');
+    majEntete();
+    store.ecouterSeance(id, s => { seance = s; rafraichir(); });
+    store.ecouterConsigne(id, code, c => { consigne = c || {}; rafraichir(); });
+    setInterval(() => ecrireMoi({ vu: Date.now() }), D.BATTEMENT_MS || 5000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ecrireMoi({ vu: Date.now(), connecte: true }); });
+    window.addEventListener('beforeunload', () => ecrireMoi({ connecte: false, vu: Date.now() - D.PRESENCE_MS }));
+  }
+
+  function ecrireMoi(patch) {
+    Object.assign(moi, patch);
+    store.majEleve(seance.id, code, patch);
+  }
+  function agir(patch) { ecrireMoi(Object.assign({ derniereAction: Date.now() }, patch)); }
+
+  function indexCourant() {
+    const n = seance.activites.length;
+    if (seance.mode === 'pilote' && !consigne.libere) return Math.min(seance.etape || 0, n - 1);
+    let p = moi.position || 0;
+    const limite = consigne.libere ? n - 1 : (seance.arret != null ? seance.arret : n - 1);
+    return Math.max(0, Math.min(p, limite, n - 1));
+  }
+
+  function rafraichir() {
+    if (!seance) return;
+    if (!seance.ouverte) { $('voile-fin').classList.remove('cache'); return; }
+    document.body.classList.toggle('grand', !!consigne.grand);
+    $('voile-fige').classList.toggle('cache', !seance.fige);
+    // le professeur a refusé le pseudo : on en redemande un
+    if (consigne.repseudo && consigne.repseudo > (moi.pseudoLe || 0) && $('vue-entree').classList.contains('cache')) { choisirProfil(seance.id, true); return; }
+    // la main est baissée par le professeur (« J'arrive »)
+    if (moi.main && consigne.baisserMain && consigne.baisserMain > (moi.mainLe || 0)) agir({ main: false });
+    const i = indexCourant();
+    if (moi.actuelle !== i) agir({ actuelle: i, actuelleLe: Date.now(), fini: false });
+    // en mode piloté, la position suit le professeur : si la classe passe en rythme libre, l'élève repart d'ici
+    if (seance.mode === 'pilote' && !consigne.libere && moi.position !== i) ecrireMoi({ position: i });
+    const act = seance.activites[i];
+    // barre d'avancement
+    const prog = $('progression'); prog.innerHTML = '';
+    seance.activites.forEach((a, k) => { const b = document.createElement('i'); if (k < i || moi.reponses[a.id]) b.className = 'faite'; if (k === i) b.className = 'courante'; prog.appendChild(b); });
+    // navigation au rythme de l'élève
+    const libre = seance.mode !== 'pilote' || consigne.libere;
+    $('b-prec').classList.toggle('cache', !libre);
+    $('b-suiv').classList.toggle('cache', !libre);
+    $('b-prec').disabled = i === 0;
+    const limite = consigne.libere ? seance.activites.length - 1 : (seance.arret != null ? seance.arret : seance.activites.length - 1);
+    $('b-suiv').disabled = i >= Math.min(limite, seance.activites.length - 1);
+    $('b-suiv').textContent = (seance.arret != null && i >= seance.arret && !consigne.libere && i < seance.activites.length - 1) ? '⏸ Attends ton professeur' : 'Suivant →';
+    $('b-main').classList.toggle('active', !!moi.main);
+    $('b-fini').classList.toggle('active', !!moi.fini);
+    // activité : on ne redessine que si quelque chose la concernant a changé
+    const valid = (consigne.validations || {})[act.id];
+    const cleNouvelle = [act.id, JSON.stringify(moi.reponses[act.id] || null), valid || '', consigne.grand ? 1 : 0].join('|');
+    if (cleNouvelle !== cleAffichee) {
+      const nouvelleActivite = cleAffichee.split('|')[0] !== act.id;
+      cleAffichee = cleNouvelle;
+      dessinerActivite(act, valid);
+      if (nouvelleActivite && consigne.audio) lire(act);
+    }
+    afficherMessages();
+  }
+
+  function dessinerActivite(act, validation) {
+    const zone = $('activite'); zone.innerHTML = '';
+    const type = D.types[act.type];
+    if (!type) { zone.textContent = 'Activité inconnue : ' + act.type; return; }
+    zone.appendChild(el('div', { classe: 'act-aide', texte: type.nom }));
+    type.afficher(act, zone, { reponse: moi.reponses[act.id], validation }, rep => {
+      const reponses = Object.assign({}, moi.reponses, { [act.id]: Object.assign({ le: Date.now() }, rep) });
+      const tentatives = Object.assign({}, moi.tentatives || {});
+      // un essai = une réponse donnée ou une vérification, pas chaque étiquette déplacée
+      if (!(rep.placements && !rep.verifie)) tentatives[act.id] = (tentatives[act.id] || 0) + 1;
+      agir({ reponses, tentatives });
+      rafraichir();
+    });
+  }
+
+  function afficherMessages() {
+    const boite = $('messages');
+    (consigne.messages || []).forEach(m => {
+      if (lus.has(m.id) || boite.querySelector('[data-id="' + m.id + '"]')) return;
+      const carte = el('div', { classe: 'message' + (m.genre === 'bravo' ? ' bravo' : ''), 'data-id': m.id }, [
+        el('div', { classe: 'de', texte: m.genre === 'bravo' ? 'Bravo de ton professeur' : 'Message de ton professeur' }),
+        el('div', { texte: m.texte }),
+        el('button', { type: 'button', texte: 'J’ai compris', onclick: () => { lus.add(m.id); carte.remove(); agir({ messagesLus: Array.from(lus) }); } })
+      ]);
+      boite.appendChild(carte);
+      if (consigne.audio) parler(m.texte);
+    });
+  }
+
+  /* ---------- Boutons ---------- */
+  $('b-main').addEventListener('click', () => { agir({ main: !moi.main, mainLe: Date.now() }); rafraichir(); });
+  $('b-fini').addEventListener('click', () => { agir({ fini: !moi.fini }); rafraichir(); });
+  $('b-prec').addEventListener('click', () => { agir({ position: Math.max(0, indexCourant() - 1) }); rafraichir(); });
+  $('b-suiv').addEventListener('click', () => { agir({ position: indexCourant() + 1 }); rafraichir(); });
+  $('b-ecouter').addEventListener('click', () => lire(seance.activites[indexCourant()]));
+
+  function lire(act) { const t = D.types[act.type]; if (t) parler(t.texteALire(act)); }
+  function parler(texte) {
+    if (!('speechSynthesis' in window) || !texte) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texte); u.lang = 'fr-FR'; u.rate = 0.92;
+    speechSynthesis.speak(u);
+  }
+
+  /* ---------- Reprise après une coupure ---------- */
+  (async () => {
+    try {
+      const memo = JSON.parse(sessionStorage.getItem(SESSION) || 'null');
+      if (memo && memo.id && memo.code) {
+        const s = await store.lireSeance(memo.id);
+        if (s && s.ouverte) { code = memo.code; demarrer(memo.id); }
+      }
+    } catch (e) {}
+  })();
+})();
+</script>
+</body>
+</html>

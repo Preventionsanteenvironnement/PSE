@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MaPSE Direct — Télécommande</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/direct.css">
+</head>
+<body class="telecommande">
+<header class="barre"><div class="logo">MaPSE <span>DIRECT</span></div><div class="espace"></div><div class="info">📱 Télécommande</div></header>
+<main class="tele">
+  <div class="carte" style="padding:14px">
+    <div class="aide-clavier" id="classe"></div>
+    <div class="etape-actuelle" id="etape"></div>
+    <div class="compteurs" id="compteurs"></div>
+  </div>
+  <div class="gros">
+    <button type="button" class="clair" id="t-prec">◀ Avant</button>
+    <button type="button" id="t-suiv">Suivant ▶</button>
+    <button type="button" class="clair" id="t-fige">⏸ Figer</button>
+    <button type="button" class="clair" id="t-mode">🚶 Rythme libre</button>
+    <button type="button" class="clair" id="t-projeter">📺 Projeter</button>
+    <button type="button" class="clair" id="t-arret">🛑 Arrêt ici</button>
+  </div>
+  <div class="carte" style="padding:14px;margin-top:14px">
+    <h3>✋ Mains levées</h3>
+    <div class="mains" id="mains"></div>
+    <h3 style="margin-top:12px">⏳ Bloqués depuis 2 min</h3>
+    <div class="mains" id="bloques"></div>
+  </div>
+  <p class="aide-clavier">Dans ce prototype, la télécommande parle au tableau de bord sur le même navigateur. Avec Firebase, elle marchera depuis ton iPhone, n’importe où.</p>
+</main>
+<script src="js/direct-store.js"></script>
+<script src="js/direct-firebase.js"></script>
+<script src="js/direct-activites.js"></script>
+<script>
+(function () {
+  'use strict';
+  const D = window.MapseDirect, store = D.store, el = D.el;
+  const $ = id => document.getElementById(id);
+  const id = new URLSearchParams(location.search).get('seance');
+  let seance = null, eleves = {};
+  const maj = p => store.majSeance(id, p);
+  const present = e => e && e.vu && Date.now() - e.vu < D.PRESENCE_MS;
+
+  function dessiner() {
+    if (!seance) { $('etape').textContent = 'Séance introuvable'; return; }
+    if (!seance.ouverte) { $('etape').textContent = 'Séance terminée'; return; }
+    const a = seance.activites[seance.etape || 0];
+    $('classe').textContent = seance.classe + ' · code ' + seance.codeSeance;
+    $('etape').textContent = 'Étape ' + ((seance.etape || 0) + 1) + '/' + seance.activites.length + ' — ' + (a.titre || '');
+    const pres = Object.values(eleves).filter(present);
+    const ont = pres.filter(e => e.reponses && e.reponses[a.id]).length;
+    $('compteurs').innerHTML = '';
+    [['Connectés', pres.length], ['Ont répondu', ont], ['✋', pres.filter(e => e.main).length]].forEach(([t, v]) => $('compteurs').appendChild(el('div', { classe: 'compteur' }, [t + ' ', el('b', { texte: String(v) })])));
+    $('t-fige').classList.toggle('on', !!seance.fige); $('t-fige').textContent = seance.fige ? '▶ Libérer' : '⏸ Figer';
+    $('t-mode').classList.toggle('on', seance.mode !== 'pilote'); $('t-mode').textContent = seance.mode === 'pilote' ? '🚶 Rythme libre' : '🎯 Piloté';
+    $('t-projeter').classList.toggle('on', seance.projeter === a.id);
+    $('t-arret').classList.toggle('on', seance.arret != null);
+    $('t-arret').disabled = seance.mode === 'pilote';
+    const mains = $('mains'); mains.innerHTML = '';
+    pres.filter(e => e.main).forEach(e => mains.appendChild(el('div', { classe: 'main-ligne' }, [el('span', { texte: e.code }),
+      el('button', { type: 'button', classe: 'petit', onclick: () => { store.majConsigne(id, e.code, { baisserMain: Date.now() }); store.ajouterMessage(id, e.code, 'J’arrive pour t’aider.', 'aide'); } }, ['J’arrive'])])));
+    if (!mains.children.length) mains.appendChild(el('p', { classe: 'aide-clavier', texte: 'Aucune.' }));
+    const bl = $('bloques'); bl.innerHTML = '';
+    pres.filter(e => {
+      const act = seance.activites[e.actuelle || 0];
+      if (!act || act.type === 'etape' || e.main || e.fini) return false;
+      const r = e.reponses && e.reponses[act.id];
+      if (r) { const st = D.types[act.type].corriger(act, r); if (st.statut === 'juste' || st.statut === 'a_valider' || st.statut === 'fait') return false; }
+      return Date.now() - Math.max(e.actuelleLe || 0, e.derniereAction || 0) > 120000;
+    }).forEach(e => bl.appendChild(el('div', { classe: 'main-ligne', style: 'background:#fffbeb;border-color:#fde68a' }, [el('span', { texte: e.code + ' · étape ' + ((e.actuelle || 0) + 1) }),
+      el('button', { type: 'button', classe: 'petit', onclick: () => store.ajouterMessage(id, e.code, 'Besoin d’un coup de main ? Relis la consigne avec le bouton 🔊, ou lève la main.', 'aide') }, ['Relancer'])])));
+    if (!bl.children.length) bl.appendChild(el('p', { classe: 'aide-clavier', texte: 'Personne.' }));
+  }
+
+  $('t-prec').onclick = () => { if ((seance.etape || 0) > 0) maj({ etape: seance.etape - 1, projeter: null }); };
+  $('t-suiv').onclick = () => { if ((seance.etape || 0) < seance.activites.length - 1) maj({ etape: (seance.etape || 0) + 1, projeter: null }); };
+  $('t-fige').onclick = () => maj({ fige: !seance.fige });
+  $('t-mode').onclick = () => maj(seance.mode === 'pilote' ? { mode: 'libre' } : { mode: 'pilote', arret: null });
+  $('t-projeter').onclick = () => { const a = seance.activites[seance.etape || 0]; maj({ projeter: seance.projeter === a.id ? null : a.id }); };
+  $('t-arret').onclick = () => { if (seance.mode !== 'pilote') maj({ arret: seance.arret != null ? null : (seance.etape || 0) }); };
+
+  function lancer() {
+    store.ecouterSeance(id, s => { seance = s; dessiner(); });
+    store.ecouterEleves(id, e => { eleves = e; dessiner(); });
+  }
+  if (D.moteur === 'firebase') D.porteProf(lancer); else lancer();
+  setInterval(dessiner, 3000);
+})();
+</script>
+</body>
+</html>

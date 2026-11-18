@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MaPSE Direct — Écran projeté</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/direct.css">
+</head>
+<body class="projection">
+<main class="page" style="max-width:1300px">
+  <div class="carte" style="display:flex;justify-content:space-between;align-items:center;gap:20px">
+    <div><div style="opacity:.75">Va sur <b>mapse.fr/direct</b>, tape ton code, puis le code de la séance :</div></div>
+    <div class="code-seance" id="code" style="color:#5eead4"></div>
+  </div>
+  <div class="carte" id="contenu"></div>
+  <p style="opacity:.6;font-size:.6rem">Aucun nom ni code d’élève n’apparaît sur cet écran.</p>
+</main>
+<script src="js/direct-store.js"></script>
+<script src="js/direct-firebase.js"></script>
+<script src="js/direct-activites.js"></script>
+<script>
+(function () {
+  'use strict';
+  const D = window.MapseDirect, store = D.store, el = D.el;
+  const id = new URLSearchParams(location.search).get('seance');
+  let seance = null, eleves = {};
+  const zone = document.getElementById('contenu');
+
+  function barres(a, reps) {
+    const bloc = el('div', { classe: 'barres' });
+    const ligne = (t, nb, tot, bonne) => el('div', { classe: 'barre-ligne' }, [
+      el('div', { classe: 'barre-fond', style: 'height:44px' }, [el('div', { classe: 'barre-plein' + (bonne ? ' bonne' : ''), style: 'width:' + (tot ? Math.round(100 * nb / tot) : 0) + '%' }), el('span', { classe: 'barre-texte', style: 'top:6px;font-size:.8rem', texte: t })]),
+      el('b', { texte: String(nb) })]);
+    if (a.type === 'qcm' || a.type === 'sondage') a.choix.forEach((c, i) => bloc.appendChild(ligne((a.type === 'qcm' ? String.fromCharCode(65 + i) + '. ' : '') + c, reps.filter(r => r.choix === i).length, reps.length, a.type === 'qcm' && i === a.bonne)));
+    else if (a.type === 'classer' || a.type === 'processus') a.items.forEach(it => bloc.appendChild(ligne(it.texte + ' → ' + a.cases.find(c => c.id === it.case).nom, reps.filter(r => r.placements && r.placements[it.id] === it.case).length, reps.length, true)));
+    else if (a.type === 'courte') reps.slice(-6).forEach(r => bloc.appendChild(el('div', { classe: 'carte', style: 'margin:0;font-size:.8rem', texte: '« ' + r.texte + ' »' })));
+    return bloc;
+  }
+
+  function dessiner() {
+    if (!seance) { zone.textContent = 'Séance introuvable.'; return; }
+    document.getElementById('code').textContent = seance.ouverte ? seance.codeSeance : '';
+    zone.innerHTML = '';
+    if (!seance.ouverte) { zone.appendChild(el('h1', { texte: 'Séance terminée. Merci à tous !' })); return; }
+    const a = seance.activites[seance.etape || 0];
+    const presents = Object.values(eleves).filter(e => e.vu && Date.now() - e.vu < D.PRESENCE_MS);
+    zone.appendChild(el('div', { style: 'opacity:.7;font-size:.7rem', texte: 'Étape ' + ((seance.etape || 0) + 1) + ' / ' + seance.activites.length + ' · ' + presents.length + ' élève(s) connecté(s)' }));
+    zone.appendChild(el('h1', { texte: a.titre || '' }));
+    if (a.texte) a.texte.split('\n').forEach(p => zone.appendChild(el('p', { texte: p })));
+    if (a.question) zone.appendChild(el('p', { style: 'font-weight:700', texte: a.question }));
+    if (a.consigne) zone.appendChild(el('p', { style: 'font-weight:700', texte: a.consigne }));
+    if (seance.projeter === a.id) {
+      const reps = presents.concat(Object.values(eleves)).filter((e, i, t) => t.indexOf(e) === i).map(e => e.reponses && e.reponses[a.id]).filter(Boolean);
+      zone.appendChild(el('p', { style: 'opacity:.75', texte: reps.length + ' réponse(s)' }));
+      zone.appendChild(barres(a, reps));
+    } else if (a.type !== 'etape') {
+      const nb = Object.values(eleves).filter(e => e.reponses && e.reponses[a.id]).length;
+      zone.appendChild(el('p', { style: 'font-size:1.4rem;opacity:.85', texte: '✍️ ' + nb + ' réponse(s) reçue(s)…' }));
+    }
+    if (seance.fige) zone.appendChild(el('p', { style: 'font-size:1.2rem;color:#fde68a', texte: '👀 Tout le monde regarde le tableau.' }));
+  }
+
+  function lancer() {
+    store.ecouterSeance(id, s => { seance = s; dessiner(); });
+    store.ecouterEleves(id, e => { eleves = e; dessiner(); });
+  }
+  if (D.moteur === 'firebase') D.porteProf(lancer); else lancer();
+})();
+</script>
+</body>
+</html>

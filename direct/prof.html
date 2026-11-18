@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MaPSE Direct — Tableau de bord</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/direct.css">
+<link rel="stylesheet" href="css/prof.css">
+</head>
+<body class="prof">
+<header class="barre prof-barre">
+  <div class="logo">MaPSE <span>DIRECT</span></div>
+  <div class="prof-titre" id="titre-seance">Tableau de bord du professeur</div>
+  <div class="espace"></div>
+  <div class="chrono" id="chrono" title="Durée de la séance"></div>
+  <span class="pastille-demo" title="Prototype : tout reste dans ce navigateur">Essai — rien n’est envoyé sur Internet</span>
+</header>
+
+<!-- ============ Préparer ou reprendre une séance ============ -->
+<main class="page" id="vue-preparer">
+  <div class="carte">
+    <h1>Lancer une séance en direct</h1>
+    <p class="aide-clavier">1. Choisis la séance. 2. Indique la classe et les codes des élèves. 3. Lance : un code de séance s’affiche, à donner aux élèves.</p>
+    <h3>La séance</h3>
+    <div class="liste-seances" id="liste-catalogue"></div>
+    <h3 style="margin-top:18px">La classe</h3>
+    <p><input id="p-classe" class="act-texte" style="max-width:280px" placeholder="Ex. : C1CAN" value="Classe d’essai"></p>
+    <h3>Les codes des élèves</h3>
+    <p class="aide-clavier">Un code par ligne ou séparés par des espaces. Dans l’Atelier PSE, cette liste viendra toute seule du fichier des codes. Ici : des codes fictifs. Tu pourras ajouter d’autres élèves ou des invités pendant la séance.</p>
+    <textarea id="p-codes" class="codes" rows="3">TEST AB12 CD34 EF56 GH78 JK90 LM13 NP24</textarea>
+    <p class="aide-clavier">Facultatif — les noms (« CODE Prénom », un par ligne) : ils restent sur cet ordinateur et ne sont jamais envoyés.</p>
+    <textarea id="p-noms" class="codes" rows="2" style="text-transform:none;letter-spacing:0" placeholder="AB12 Élève fictif 1"></textarea>
+    <p style="margin-top:16px"><button class="bouton-principal" id="b-lancer" type="button">▶ Lancer la séance</button></p>
+  </div>
+  <div class="carte" id="bloc-reprendre">
+    <h3>Reprendre une séance</h3>
+    <div class="liste-seances" id="liste-mes-seances"></div>
+  </div>
+</main>
+
+<!-- ============ Pendant la séance ============ -->
+<div class="prof-grille cache" id="vue-seance">
+  <section>
+    <div class="carte pilotage">
+      <div class="commandes">
+        <button type="button" id="c-prec" title="Flèche gauche">◀</button>
+        <div class="etape-actuelle" id="etape-actuelle"></div>
+        <button type="button" id="c-suiv" title="Flèche droite">▶</button>
+        <span class="sep"></span>
+        <button type="button" id="c-fige" title="Espace">⏸ Figer les écrans</button>
+        <button type="button" id="c-mode" title="L">🚶 Rythme libre</button>
+        <button type="button" id="c-arret" title="A">🛑 Point d’arrêt ici</button>
+        <button type="button" id="c-projeter" title="P">📺 Projeter les réponses</button>
+      </div>
+      <div class="frise" id="frise" aria-label="Les activités de la séance"></div>
+      <div class="indicateurs" id="indicateurs"></div>
+    </div>
+    <div class="carte">
+      <div class="commandes onglets" style="margin-bottom:12px">
+        <button type="button" class="on" id="v-mosaique">Mosaïque</button>
+        <button type="button" id="v-suivi">Suivi de la classe</button>
+        <button type="button" id="v-question">Par question</button>
+        <button type="button" id="v-fil">Fil des réponses</button>
+        <span style="flex:1"></span>
+        <label class="aide-clavier"><input type="checkbox" id="voir-noms" checked> noms</label>
+        <label class="aide-clavier">Alerte « bloqué » après <select id="seuil"><option value="60">1 min</option><option value="120" selected>2 min</option><option value="180">3 min</option><option value="300">5 min</option></select></label>
+      </div>
+      <div id="zone-vue"></div>
+    </div>
+    <p class="aide-clavier"><kbd>←</kbd> <kbd>→</kbd> étape · <kbd>Espace</kbd> figer · <kbd>L</kbd> rythme libre · <kbd>A</kbd> point d’arrêt · <kbd>P</kbd> projeter · <kbd>1</kbd>–<kbd>4</kbd> vues · <kbd>Tab</kbd> puis <kbd>Entrée</kbd> ouvrir un élève · <kbd>Échap</kbd> fermer</p>
+  </section>
+  <aside>
+    <div class="carte carte-code">
+      <div class="aide-clavier">Code de la séance, à donner aux élèves</div>
+      <div class="code-seance" id="code-seance"></div>
+      <div class="aide-clavier" id="adresse-eleve"></div>
+      <div class="commandes" style="margin-top:10px">
+        <button type="button" id="c-ouvrir-projection">🖥 Écran projeté</button>
+        <button type="button" id="c-ouvrir-tele">📱 Télécommande</button>
+      </div>
+    </div>
+    <div class="carte panneau" id="panneau"></div>
+    <div class="carte">
+      <h3>Ajouter à la séance</h3>
+      <p class="aide-clavier">Un élève d’une autre classe avec son code, ou un invité sans code (la séance lui donne un code d’invité).</p>
+      <div class="ligne-ajout"><input id="aj-code" class="act-texte" maxlength="4" placeholder="Code (ex. QR63)" style="text-transform:uppercase"><button type="button" class="petit" id="aj-eleve">＋ Élève</button></div>
+      <div class="ligne-ajout"><input id="aj-invite" class="act-texte" maxlength="24" placeholder="Nom de l’invité (pour toi)"><button type="button" class="petit" id="aj-inv">＋ Invité</button></div>
+      <div class="aide-clavier" id="aj-retour" role="status"></div>
+    </div>
+    <div class="carte">
+      <h3>Fin de séance</h3>
+      <div class="commandes">
+        <button type="button" id="c-bilan">⬇ Bilan (tableur)</button>
+        <button type="button" class="bouton-danger" id="c-fermer">Terminer la séance</button>
+      </div>
+      <div id="bloc-demo">
+      <h3 style="margin-top:16px">Démonstration</h3>
+      <p class="aide-clavier">Pour voir le tableau de bord vivre sans élèves : des élèves fictifs se connectent et répondent tout seuls.</p>
+      <div class="commandes"><button type="button" id="c-simu">🤖 Lancer des élèves fictifs</button></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script src="js/direct-store.js"></script>
+<script src="js/direct-firebase.js"></script>
+<script src="js/direct-activites.js"></script>
+<script src="seances/catalogue.js"></script>
+<script src="js/direct-simulation.js"></script>
+<script src="js/direct-prof.js"></script>
+</body>
+</html>
