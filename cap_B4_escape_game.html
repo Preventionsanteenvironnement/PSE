@@ -157,6 +157,7 @@
   .acces button.actif { background: var(--jaune); }
   button:focus-visible, input:focus-visible { outline: 3px solid var(--jaune); outline-offset: 2px; }
   .discret { color: var(--doux); font-size: .85rem; }
+  .stop-lecture { position: fixed; left: 10px; bottom: 10px; z-index: 60; font: inherit; font-size: 1.05rem; font-weight: 800; background: var(--rouge); color: #fff; border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
   [hidden] { display: none !important; }
   @media (max-width: 600px) {
     html { font-size: calc(16px * var(--zoom)); }
@@ -170,6 +171,7 @@
     .choix img { height: 90px; }
     .roue b, .roue button { width: 2.1rem; }
     .acces button { min-width: 34px; min-height: 34px; font-size: 13px; }
+    .stop-lecture { bottom: 62px; }
   }
 </style>
 </head>
@@ -187,6 +189,7 @@
   <div id="ecran"></div>
 </main>
 
+<button class="stop-lecture" id="stop-lecture" hidden aria-label="Arrêter la lecture">⏹ Arrêter</button>
 <div class="acces" role="toolbar" aria-label="Accessibilité">
   <button id="a-moins" aria-label="Texte plus petit">A−</button>
   <button id="a-plus" aria-label="Texte plus grand">A+</button>
@@ -226,6 +229,9 @@
     { id: "c7", lab: "5.1", comp: "proposer" }, { id: "c8", lab: "5.2", comp: "proposer" }
   ];
   var CODE_COFFRE = "79187329";
+  // [OUVERTURE 19/11/2026, demande de Brahim] Ouvert avec le code jusqu'à fin novembre ; après, on ne peut plus commencer.
+  var FERMETURE = new Date("2026-11-30T23:59:59+01:00");
+  function estFerme() { return Date.now() > FERMETURE.getTime(); }
 
   var SALLES = [
     { titre: "Salle 1 · Découvrir le danger", img: "picto-bruyant.png",
@@ -307,37 +313,51 @@
   // Étapes : 0 = situation, 1..6 = salles, 7 = mission finale, 8 = coffre, 9 = fin
   var NB_ETAPES = 9;
 
-  /* ════════ LECTURE À VOIX HAUTE ▶ / ⏸ ════════ */
-  var synth = window.speechSynthesis, lecture = null; // { btn, el }
+  /* ════════ LECTURE À VOIX HAUTE ▶ / ⏸ / ⏹ ════════
+     [AUDIO 19/11/2026] La lecture est découpée en phrases, dites une par une. ⏸ arrête après avoir noté la phrase en cours ;
+     ▶ reprend à cette phrase. Ainsi la pause marche partout (Android ne sait pas mettre speechSynthesis en pause).
+     Le gros bouton « ⏹ Arrêter » (en bas à gauche) apparaît dès qu'une lecture est en cours ou en pause. */
+  var synth = window.speechSynthesis, lecture = null; // { btn, el, morceaux, i, pause, u }
   function voixFr() { if (!synth) return null; var v = synth.getVoices().filter(function (x) { return /^fr/i.test(x.lang); }); return v.filter(function (x) { return /fr[-_]FR/i.test(x.lang); })[0] || v[0] || null; }
-  function oral(t) { return String(t).replace(/dB\(A\)/g, " décibels A").replace(/(\d+) ?%/g, "$1 pour cent").replace(/[→–—]/g, ", ").replace(/…+|_{2,}/g, ", blanc, ").replace(/[▶⏸🔊🔓🔒]/g, ""); }
-  function decouper(t) { return (String(t).match(/[^.!?:;]+[.!?:;]*/g) || []).map(function (m) { return m.trim(); }); }
-  function finLecture() { if (lecture) { lecture.btn.textContent = "▶"; lecture.btn.classList.remove("actif"); lecture.btn.setAttribute("aria-label", "Écouter"); if (lecture.el) lecture.el.classList.remove("en-lecture"); } lecture = null; }
-  function arreter() { if (synth) synth.cancel(); finLecture(); }
+  function oral(t) { return String(t).replace(/dB\(A\)/g, " décibels A").replace(/(\d+) ?%/g, "$1 pour cent").replace(/[→–—]/g, ", ").replace(/…+|_{2,}/g, ", blanc, ").replace(/[▶⏸⏹🔊🔓🔒👥🧍]/g, ""); }
+  function decouper(t) { return (String(t).match(/[^.!?:;]+[.!?:;]*/g) || []).map(function (m) { return m.trim(); }).filter(Boolean); }
+  function etatBouton(btn, etat) {
+    if (!btn) return;
+    btn.textContent = etat === "lit" ? "⏸" : "▶";
+    btn.classList.toggle("actif", etat !== "repos");
+    btn.setAttribute("aria-label", etat === "lit" ? "Pause" : etat === "pause" ? "Reprendre la lecture" : "Écouter");
+  }
+  function majStop() { var b = $("stop-lecture"); if (b) b.hidden = !lecture; }
+  function finLecture() {
+    if (lecture) { etatBouton(lecture.btn, "repos"); if (lecture.el) lecture.el.classList.remove("en-lecture"); }
+    lecture = null; majStop();
+  }
+  function arreter() { var l = lecture; lecture = null; if (synth) synth.cancel(); lecture = l; finLecture(); }
+  function direMorceau() {
+    var l = lecture; if (!l || l.pause) return;
+    if (l.i >= l.morceaux.length) return finLecture();
+    var u = new SpeechSynthesisUtterance(l.morceaux[l.i]), voix = voixFr();
+    u.lang = "fr-FR"; u.rate = 0.92; if (voix) u.voice = voix;
+    u.onend = u.onerror = function () { if (lecture === l && l.u === u && !l.pause) { l.i++; direMorceau(); } };
+    l.u = u; synth.speak(u);
+  }
+  function demarrer(btn, texte, el) {
+    if (!synth) return;
+    arreter();
+    lecture = { btn: btn, el: el, morceaux: decouper(oral(texte)), i: 0, pause: false, u: null };
+    etatBouton(btn, "lit"); if (el) el.classList.add("en-lecture"); majStop();
+    direMorceau();
+  }
   function lire(btn, texte, el) {
     if (!synth) return;
     if (lecture && lecture.btn === btn) {
-      if (synth.paused) { synth.resume(); btn.textContent = "⏸"; btn.setAttribute("aria-label", "Pause"); }
-      else { synth.pause(); btn.textContent = "▶"; btn.setAttribute("aria-label", "Reprendre"); }
-      return;
+      if (lecture.pause) { lecture.pause = false; etatBouton(btn, "lit"); direMorceau(); }       // ▶ reprendre
+      else { lecture.pause = true; lecture.u = null; synth.cancel(); etatBouton(btn, "pause"); } // ⏸ pause
+      majStop(); return;
     }
-    arreter();
-    lecture = { btn: btn, el: el };
-    btn.textContent = "⏸"; btn.classList.add("actif"); btn.setAttribute("aria-label", "Pause");
-    if (el) el.classList.add("en-lecture");
-    var morceaux = decouper(oral(texte)).filter(function (m) { return m.trim(); });
-    var voix = voixFr();
-    morceaux.forEach(function (m, k) {
-      var u = new SpeechSynthesisUtterance(m); u.lang = "fr-FR"; u.rate = 0.92; if (voix) u.voice = voix;
-      if (k === morceaux.length - 1) u.onend = function () { if (lecture && lecture.btn === btn) finLecture(); };
-      synth.speak(u);
-    });
+    demarrer(btn, texte, el);
   }
-  function dire(texte) { // lecture sans bouton (chemin vert, retours)
-    if (!synth) return; arreter();
-    var voix = voixFr();
-    decouper(oral(texte)).forEach(function (m) { if (!m.trim()) return; var u = new SpeechSynthesisUtterance(m); u.lang = "fr-FR"; u.rate = 0.92; if (voix) u.voice = voix; synth.speak(u); });
-  }
+  function dire(texte) { demarrer(null, texte, null); } // lecture automatique (chemin vert, retours) : ⏹ l'arrête
   // Un bouton ▶ porte le texte à lire dans data-texte (ou lit l'élément data-cible)
   function bLire(texte, cible) { return synth ? '<button class="lire" type="button" aria-label="Écouter" data-texte="' + esc(texte) + '"' + (cible ? ' data-cible="' + cible + '"' : "") + ">▶</button>" : ""; }
 
@@ -387,10 +407,14 @@
   }
 
   function ecranCode() {
+    if (estFerme()) {
+      var tf = "Cet escape game est fermé depuis le 30 novembre 2026. Demande à ton professeur.";
+      return '<div class="carte salle"><h2><img src="' + IMG + 'cadenas.png" alt="" style="height:2rem">Escape game fermé</h2><div class="ligne-lue lu" id="t-ferme"><div class="gros">' + tf + "</div>" + bLire(tf, "t-ferme") + "</div></div>";
+    }
     return '<div class="carte salle"><h2><img src="' + IMG + 'cadenas.png" alt="" style="height:2rem">Entre ton code élève</h2>' +
       '<div class="ligne-lue lu" id="t-code"><div class="gros">Tape ton code de 4 caractères, puis appuie sur « Entrer ».</div>' + bLire("Tape ton code de 4 caractères, puis appuie sur Entrer.", "t-code") + "</div>" +
       '<p style="text-align:center"><input class="code-eleve" id="in-code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code élève"></p>' +
-      '<p style="text-align:center"><button class="btn" id="b-code">Entrer</button></p><div class="retour" id="r-code"></div></div>';
+      '<p style="text-align:center"><button class="btn" id="b-code">Entrer</button></p><p class="discret" style="text-align:center">Ouvert jusqu\'au lundi 30 novembre 2026, 23 h 59.</p><div class="retour" id="r-code"></div></div>';
   }
   function ecranChemin() {
     return '<div class="carte salle"><h2>Choisis ton chemin</h2>' +
@@ -648,6 +672,7 @@
   });
 
   function entrerCode() {
+    if (estFerme()) return afficher();
     var code = ($("in-code").value || "").trim().toUpperCase(), r = $("r-code");
     var A = window.ANNUAIRE || null, classe = null;
     if (code === "ESSAI") classe = "ESSAI";
@@ -668,6 +693,7 @@
 
   if (!synth) $("a-stop").hidden = true;
   $("a-stop").addEventListener("click", arreter);
+  $("stop-lecture").addEventListener("click", arreter);
 
   /* ── Accessibilité : taille, sombre, noir et blanc, luminosité (gardés sur l'appareil) ── */
   var ZOOMS = [0.9, 1, 1.15, 1.3, 1.5, 1.75, 2], zi = 1, LUMS = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.45], li = 3, nb = false;
