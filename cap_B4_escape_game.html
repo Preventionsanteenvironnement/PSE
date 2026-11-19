@@ -4,94 +4,187 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escape game B4 — Sauver les oreilles de Camille · CAP · PSE</title>
-<!-- [ESCAPE GAME B4 18/11/2026, demande de Brahim] Jeu en ligne (pas une évaluation) : même contenu que l'escape game papier
-     « Mission : sauver les oreilles de Camille » (version finale 3.1). Audio, taille du texte, sombre, noir et blanc, luminosité. -->
+<!-- [ESCAPE GAME B4 NOTÉ 19/11/2026, demande de Brahim, plan validé]
+     Escape game interactif du module B4 (CAP) : Camille, 6 salles, 8 cadenas, mission finale, coffre.
+     Code élève à l'entrée ; chemin bleu (lecture) ou vert (phrases courtes, images, lecture automatique) : mêmes points.
+     Audio ▶/⏸ sur chaque texte et chaque réponse. Une erreur donne un indice, puis un 2e, puis la réponse : rien ne bloque.
+     La grille par compétence et la note sur 20 partent dans resultats/{code}/copies/ESCAPE-B4-CAP_copie_N (comme les
+     devoirs en ligne) ; l'élève ne voit jamais sa note. Code d'essai : ESSAI (classe ESSAI).
+     Images : banques de l'Atelier PSE (illustrations B4, pictogrammes ARASAAC, CC BY-NC-SA, Sergio Palao / Gouvernement d'Aragon). -->
 <style>
-  :root { --zoom: 1; --lum: 1; --gris: 0; --fond: #f4f6f8; --carte: #fff; --texte: #1b1f24; --doux: #546e7a; --bord: #b0bec5; --bleu: #1d4e89; --vert: #2e7d32; --rouge: #c62828; --jaune: #ffca28; }
-  html { font-size: calc(17px * var(--zoom)); filter: grayscale(var(--gris)) brightness(var(--lum)); }
+  :root { --zoom: 1; --lum: 1; --gris: 0; --fond: #eef3f8; --carte: #fff; --texte: #1b1f24; --doux: #546e7a; --bord: #b0bec5;
+          --bleu: #1d4e89; --vert: #2e7d32; --rouge: #c62828; --jaune: #ffca28; --or: #f9a825; --chemin: #1d4e89; }
+  html { font-size: calc(18px * var(--zoom)); filter: grayscale(var(--gris)) brightness(var(--lum)); }
   html.sombre { --fond: #121417; --carte: #1e2227; --texte: #e8eaed; --doux: #b0bec5; --bord: #4a5560; --bleu: #90caf9; --vert: #81c784; --rouge: #ef9a9a; }
+  body.chemin-vert { --chemin: #2e7d32; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--fond); color: var(--texte); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; padding: 12px 12px 90px; }
-  main { max-width: 860px; margin: 0 auto; }
-  a.retour { color: var(--bleu); font-weight: 700; }
-  h1 { font-size: 1.6rem; display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; padding: 0 12px 100px; }
+  main { max-width: 900px; margin: 0 auto; }
+  a.retour { color: var(--bleu); font-weight: 700; display: inline-block; margin: 10px 0 0; }
+  h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 8px 0; flex-wrap: wrap; }
   h1 img { height: 2.2rem; }
-  .carte { background: var(--carte); border: 1.5px solid var(--bord); border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
-  .regle { border-style: dashed; }
-  .pictos { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
-  .pictos img { width: 72px; height: 72px; object-fit: contain; background: #fff; border-radius: 10px; border: 1px solid var(--bord); }
+  h2 { font-size: 1.3rem; margin: 0 0 8px; display: flex; align-items: center; gap: 10px; color: var(--chemin); }
+  .carte { background: var(--carte); border: 1.5px solid var(--bord); border-radius: 16px; padding: 14px 16px; margin: 12px 0; }
+  .salle { border-top: 10px solid var(--chemin); }
+  .gros { font-size: 1.15rem; }
+  img.illu { width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; background: #fff; display: block; margin: 8px auto; }
+  .pictos { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 8px 0; }
+  .pictos img { width: 92px; height: 92px; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--bord); padding: 4px; }
+  body.chemin-vert .pictos img { width: 120px; height: 120px; }
+
+  /* Barre du haut : trousseau de clés + progression */
+  .barre { position: sticky; top: 0; z-index: 20; background: var(--carte); border-bottom: 2px solid var(--bord); margin: 0 -12px; padding: 8px 12px; }
+  .barre-in { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .trousseau { display: flex; gap: 5px; flex-wrap: wrap; }
+  .cle { width: 2.4rem; height: 2.7rem; border: 2px dashed var(--bord); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; line-height: 1; }
+  .cle small { font-size: .55rem; color: var(--doux); font-weight: 400; margin-top: 2px; }
+  .cle.ok { border: 2px solid var(--or); background: rgba(249,168,37,.18); animation: pop .5s ease; }
+  .progres { flex: 1; min-width: 140px; }
+  .progres .rail { height: 12px; background: rgba(127,127,127,.2); border-radius: 99px; overflow: hidden; }
+  .progres .rail b { display: block; height: 100%; width: 0; background: var(--chemin); transition: width .6s ease; }
+  .progres span { font-size: .8rem; color: var(--doux); }
+
+  /* Lecture à voix haute */
+  .lu { position: relative; }
+  .lire { font: inherit; font-size: .95rem; font-weight: 800; min-width: 2.6rem; height: 2.3rem; border: 2px solid var(--chemin); color: var(--chemin); background: var(--carte); border-radius: 999px; cursor: pointer; padding: 0 10px; vertical-align: middle; flex: 0 0 auto; }
+  .lire.actif { background: var(--chemin); color: #fff; }
+  .en-lecture { outline: 3px solid var(--jaune); outline-offset: 3px; border-radius: 8px; }
+  .ligne-lue { display: flex; gap: 10px; align-items: flex-start; }
+  .ligne-lue > div { flex: 1; }
+
+  /* Choix en cartes */
+  .choix-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+  .choix { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; font: inherit; font-size: 1rem; background: var(--carte); color: var(--texte); border: 3px solid var(--bord); border-radius: 14px; padding: 10px; cursor: pointer; transition: transform .15s; }
+  .choix:hover { transform: translateY(-3px); }
+  .choix img { width: 100%; height: 120px; object-fit: contain; background: #fff; border-radius: 10px; }
+  body.chemin-vert .choix img { height: 150px; }
+  .choix .n { display: inline-flex; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 3px solid currentColor; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+  .choix .lire { position: absolute; top: 6px; right: 6px; }
+  .choix.bon { border-color: var(--vert); background: rgba(46,125,50,.14); }
+  .choix.faux { border-color: var(--rouge); animation: secoue .4s; }
+  .choix:disabled { cursor: default; }
+  .choix.eteint { opacity: .45; }
+
+  /* Phrase à trous avec banque de mots */
+  .phrase { font-size: 1.15rem; margin: 10px 0; }
+  .trou { display: inline-block; min-width: 7rem; border-bottom: 3px solid var(--chemin); text-align: center; font-weight: 800; padding: 0 6px; }
+  .banque { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+  .mot { font: inherit; font-size: 1.15rem; font-weight: 700; padding: 8px 16px; border-radius: 12px; border: 3px solid var(--bord); background: var(--carte); color: var(--texte); cursor: pointer; }
+  .mot.faux { border-color: var(--rouge); animation: secoue .4s; }
+  .mot.bon { border-color: var(--vert); background: rgba(46,125,50,.14); }
+  .lettres { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0; }
+  .lettres span { width: 2rem; height: 2.3rem; display: flex; align-items: center; justify-content: center; border: 2px solid var(--vert); border-radius: 6px; font-weight: 800; position: relative; animation: pop .35s both; }
+  .lettres span i { position: absolute; bottom: -1.1rem; font-size: .7rem; font-style: normal; color: var(--doux); }
+
+  /* Trouble à classer */
+  .trouble { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0 4px; }
+  .trouble img { width: 110px; height: 110px; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--bord); }
+
+  /* Indices et retours */
+  .retour { margin: 8px 0; padding: 10px 12px; border-radius: 12px; font-weight: 700; display: none; }
+  .retour.indice { display: block; background: rgba(255,202,40,.2); border: 2px solid var(--or); }
+  .retour.reponse { display: block; background: rgba(29,78,137,.1); border: 2px solid var(--bleu); }
+  .retour.ok { display: block; background: rgba(46,125,50,.12); border: 2px solid var(--vert); color: var(--vert); }
+
+  /* Documents */
+  .doc { border-left: 8px solid var(--doux); }
   .doc h3 { margin: 0 0 6px; font-size: 1.05rem; }
-  .doc .source { font-size: .85rem; font-style: italic; color: var(--doux); text-align: right; margin: 6px 0 0; }
-  .porte { border-left: 10px solid var(--bleu); }
-  .porte h2 { font-size: 1.15rem; margin: 0 0 4px; }
-  .chapeau { color: var(--doux); font-style: italic; margin: 0 0 8px; }
-  .q { margin: 10px 0 4px; font-weight: 700; }
-  .choix { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; font-size: 1rem; background: var(--carte); color: var(--texte); border: 2px solid var(--bord); border-radius: 10px; padding: 9px 12px; margin: 6px 0; cursor: pointer; }
-  .choix .n { flex: 0 0 auto; display: inline-flex; width: 2rem; height: 2rem; border-radius: 50%; border: 2px solid currentColor; align-items: center; justify-content: center; font-weight: 800; }
-  .choix:focus-visible, input:focus-visible, button:focus-visible { outline: 3px solid var(--jaune); outline-offset: 2px; }
-  .choix.bon { border-color: var(--vert); background: rgba(46,125,50,.12); }
-  .choix.faux { border-color: var(--rouge); background: rgba(198,40,40,.10); }
-  input.mot { font: inherit; font-size: 1.05rem; padding: 6px 10px; border: 2px solid var(--bord); border-radius: 8px; background: var(--carte); color: var(--texte); min-width: 12rem; }
-  button.valider { font: inherit; font-weight: 700; background: var(--bleu); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; margin-left: 6px; }
-  html.sombre button.valider { color: #10202f; }
-  .retour-msg { min-height: 1.4em; font-weight: 700; margin: 4px 0; }
-  .retour-msg.ok { color: var(--vert); } .retour-msg.ko { color: var(--rouge); }
-  table { border-collapse: collapse; width: 100%; margin: 6px 0; }
-  td, th { border: 1.5px solid var(--bord); padding: 6px 8px; text-align: left; }
-  th { background: rgba(127,127,127,.15); }
-  td select { font: inherit; font-size: 1rem; padding: 5px; border-radius: 6px; border: 2px solid var(--bord); background: var(--carte); color: var(--texte); max-width: 100%; }
-  .coffre { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--carte); border: 2.5px solid var(--texte); border-radius: 14px; padding: 8px 12px; }
-  .coffre img { height: 2.4rem; }
-  .cases { display: flex; gap: 6px; flex-wrap: wrap; }
-  .case { width: 2.6rem; text-align: center; }
-  .case b { display: flex; align-items: center; justify-content: center; height: 2.6rem; border: 2px solid var(--texte); border-radius: 8px; font-size: 1.4rem; }
-  .case b.plein { background: rgba(46,125,50,.15); border-color: var(--vert); }
-  .case small { font-size: .75rem; color: var(--doux); }
-  .ouvrir { text-align: center; }
-  .ouvrir input { width: 12rem; text-align: center; letter-spacing: .3em; font-size: 1.3rem; }
+  .source { font-size: .8rem; font-style: italic; color: var(--doux); text-align: right; margin: 6px 0 0; }
+  .jauge { position: relative; height: 34px; margin: 30px 6px 64px; border-radius: 8px; background: linear-gradient(90deg, #43a047 0%, #c0ca33 50%, #fb8c00 66%, #e53935 85%, #8e0000 100%); }
+  .jauge .rep { position: absolute; top: -4px; bottom: -4px; border-left: 3px solid var(--texte); }
+  .jauge .rep span { position: absolute; top: 38px; left: -2.2rem; width: 4.4rem; text-align: center; font-size: .72rem; font-weight: 700; }
+  .jauge .camille { position: absolute; top: -30px; left: 0; transform: translateX(-50%); transition: left 2.2s cubic-bezier(.3,.8,.3,1); text-align: center; font-weight: 800; font-size: .85rem; white-space: nowrap; }
+  .jauge .camille::after { content: ""; display: block; margin: 0 auto; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 12px solid var(--rouge); }
+  .chaine { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+  .chaine div { border: 2px solid var(--bord); border-radius: 10px; padding: 6px 10px; opacity: 0; transform: translateX(-20px); transition: all .5s; background: var(--carte); }
+  .chaine div.vu { opacity: 1; transform: none; }
+  .chaine div.fin { border-color: var(--rouge); font-weight: 800; }
+  .mesures { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+  .mesures figure { margin: 0; border: 2px solid var(--bord); border-radius: 12px; padding: 8px; background: var(--carte); text-align: center; }
+  .mesures img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
+
+  /* Tri final */
+  .tri-item { border: 2px solid var(--bord); border-radius: 12px; padding: 10px; margin: 10px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .tri-item .txt { flex: 1 1 220px; font-weight: 700; }
+  .tri-item button.cat { font: inherit; font-weight: 800; padding: 8px 12px; border-radius: 10px; border: 3px solid var(--bord); background: var(--carte); color: var(--texte); cursor: pointer; }
+  .tri-item button.cat.bon { border-color: var(--vert); background: rgba(46,125,50,.14); }
+  .tri-item button.cat.faux { border-color: var(--rouge); animation: secoue .4s; }
+  .tri-item.fait { border-color: var(--vert); }
+
+  /* Boutons généraux */
+  .btn { font: inherit; font-size: 1.1rem; font-weight: 800; background: var(--chemin); color: #fff; border: 0; border-radius: 12px; padding: 12px 20px; cursor: pointer; }
+  .btn.second { background: transparent; color: var(--chemin); border: 2px solid var(--chemin); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  html.sombre .btn { color: #10202f; }
+  html.sombre .btn.second { color: var(--chemin); }
+  .actions { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin: 14px 0; }
+  input.code-eleve { font: inherit; font-size: 1.6rem; font-weight: 800; letter-spacing: .3em; text-transform: uppercase; text-align: center; width: 12rem; padding: 8px; border: 3px solid var(--chemin); border-radius: 12px; background: var(--carte); color: var(--texte); }
+  .chemins { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .chemins button { font: inherit; text-align: center; border-radius: 16px; padding: 16px; cursor: pointer; background: var(--carte); color: var(--texte); border: 4px solid; }
+  .chemins button b { display: block; font-size: 1.3rem; margin: 6px 0; }
+  .chemins .b { border-color: #1d4e89; } .chemins .v { border-color: #2e7d32; }
+  .chemins img { height: 70px; }
+
+  /* Coffre */
+  .roues { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
+  .roue { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .roue button { font: inherit; width: 2.6rem; height: 1.8rem; border: 0; border-radius: 6px; background: rgba(127,127,127,.2); color: var(--texte); cursor: pointer; font-weight: 800; }
+  .roue b { width: 2.6rem; height: 3rem; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; border: 3px solid var(--texte); border-radius: 8px; background: var(--carte); transition: transform .3s; }
+  .roue b.tourne { animation: tourne .5s; }
+  .roue b.vert { border-color: var(--vert); background: rgba(46,125,50,.15); }
+  .roue b.rouge { border-color: var(--rouge); animation: secoue .4s; }
+  .roue small { font-size: .65rem; color: var(--doux); }
+  .coffre-img { display: block; margin: 0 auto; height: 140px; transition: transform .6s; }
+  .coffre-img.ouvre { animation: ouvre 1.2s ease forwards; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 16px; z-index: 100; animation: tombe linear forwards; pointer-events: none; }
   .bravo { text-align: center; font-size: 1.3rem; font-weight: 800; color: var(--vert); }
-  .bravo img { height: 6rem; display: block; margin: 8px auto; }
-  .ecouter { font: inherit; font-size: .95rem; border: 1.5px solid var(--bleu); color: var(--bleu); background: transparent; border-radius: 999px; padding: 2px 10px; cursor: pointer; margin-left: 6px; vertical-align: middle; }
+
+  /* Clé qui vole vers le trousseau */
+  .cle-vol { position: fixed; z-index: 90; font-size: 2.2rem; pointer-events: none; transition: all .9s cubic-bezier(.5,-0.3,.6,1.3); }
+
+  /* Transitions de porte */
+  .ecran { animation: porte .55s ease; }
+  @keyframes porte { from { opacity: 0; transform: perspective(900px) rotateY(-14deg) translateX(30px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.4); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  @keyframes secoue { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+  @keyframes tourne { 0% { transform: rotateX(0); } 100% { transform: rotateX(360deg); } }
+  @keyframes ouvre { 0% { transform: scale(1) rotate(0); } 30% { transform: scale(1.1) rotate(-6deg); } 60% { transform: scale(1.1) rotate(6deg); } 100% { transform: scale(1.25); } }
+  @keyframes tombe { to { transform: translateY(110vh) rotate(720deg); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
   .acces { position: fixed; right: 10px; bottom: 10px; z-index: 50; display: flex; gap: 6px; flex-wrap: wrap; background: rgba(38,50,56,.94); padding: 6px; border-radius: 12px; }
   .acces button { font: inherit; font-size: 15px; font-weight: 800; min-width: 42px; min-height: 40px; border: 0; border-radius: 8px; background: #fff; color: #263238; cursor: pointer; }
   .acces button.actif { background: var(--jaune); }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--jaune); outline-offset: 2px; }
+  .discret { color: var(--doux); font-size: .85rem; }
+  [hidden] { display: none !important; }
+  @media (max-width: 600px) {
+    html { font-size: calc(16px * var(--zoom)); }
+    .barre-in { gap: 6px; }
+    .barre-in > img { display: none; }
+    .trousseau { flex-wrap: nowrap; gap: 3px; }
+    .cle { width: 2.05rem; height: 2.4rem; font-size: 1rem; }
+    .progres { flex-basis: 100%; }
+    h1 { font-size: 1.15rem; flex-wrap: nowrap; }
+    h1 img { height: 1.6rem; }
+    .choix img { height: 90px; }
+    .roue b, .roue button { width: 2.1rem; }
+    .acces button { min-width: 34px; min-height: 34px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
+<div class="barre" id="barre" hidden>
+  <div class="barre-in">
+    <img src="cap_B4/escape/picto-cles.png" alt="Mes clés" style="height:2.4rem">
+    <div class="trousseau" id="trousseau" aria-label="Mes clés"></div>
+    <div class="progres"><div class="rail"><b id="rail"></b></div><span id="progres-txt"></span></div>
+  </div>
+</div>
 <main>
-  <p><a class="retour" href="index.html#cap-b4">← Retour au module B4</a></p>
+  <a class="retour" href="index.html#cap-b4">← Retour au module B4</a>
   <h1><img src="cap_B4/escape/oreille.png" alt="">Mission : sauver les oreilles de Camille<img src="cap_B4/escape/cadenas.png" alt=""></h1>
-
-  <div class="coffre" aria-live="polite">
-    <img src="cap_B4/escape/coffre.png" alt="Coffre">
-    <b>Code du coffre</b>
-    <div class="cases" id="cases"></div>
-  </div>
-
-  <div class="carte regle">
-    <b>Comment jouer</b><button class="ecouter" data-lire="regle">🔊 Écouter</button>
-    <p id="regle">Chaque bonne réponse ouvre un cadenas et donne un chiffre du code du coffre. Quand je coche une réponse, le chiffre est son numéro. Quand j'écris un mot, le chiffre est le nombre de lettres du mot. Tu peux utiliser ton cours. Quand les 8 chiffres sont trouvés, ouvre le coffre en bas de la page.</p>
-  </div>
-
-  <div class="carte">
-    <b>La situation</b><button class="ecouter" data-lire="situation">🔊 Écouter</button>
-    <div class="pictos">
-      <img src="cap_B4/escape/serveuse.png" alt="Camille, serveuse"><img src="cap_B4/escape/concert.png" alt="La salle de concert">
-      <img src="cap_B4/escape/ecouteurs.png" alt="Les écouteurs"><img src="cap_B4/escape/insomnie.png" alt="Elle dort mal">
-    </div>
-    <p id="situation">Camille, 24 ans, est serveuse dans une salle de concert. Les soirs de concert, son exposition au bruit, mesurée sur sa journée de travail de 8 heures, est de 92 dB(A). Son employeur lui a donné des bouchons d'oreilles, mais elle les enlève pour entendre les clients. Après le service, elle rentre chez elle en écoutant de la musique avec ses écouteurs, au volume maximal. Depuis lundi, elle entend des sifflements dans les oreilles et elle dort mal.</p>
-  </div>
-
-  <div id="jeu"></div>
-
-  <div class="carte ouvrir" id="ouvrir">
-    <b>Ouvrir le coffre</b><button class="ecouter" data-lire="ouvrir-txt">🔊 Écouter</button>
-    <p id="ouvrir-txt">Tape les 8 chiffres du code, dans l'ordre des cadenas.</p>
-    <input id="code" class="mot" inputmode="numeric" maxlength="8" aria-label="Code du coffre, 8 chiffres">
-    <button class="valider" id="b-ouvrir">Ouvrir</button>
-    <div class="retour-msg" id="r-code" aria-live="polite"></div>
-    <div id="bravo" hidden class="bravo"><img src="cap_B4/escape/bravo.png" alt="">Bravo ! Le coffre est ouvert : tu as sauvé les oreilles de Camille.</div>
-  </div>
+  <div id="ecran"></div>
 </main>
 
 <div class="acces" role="toolbar" aria-label="Accessibilité">
@@ -104,123 +197,477 @@
   <button id="a-stop" aria-label="Arrêter la lecture à voix haute">⏹</button>
 </div>
 
+<script type="module" src="annuaire.js"></script>
 <script>
 (function () {
   "use strict";
+  var ID = "ESCAPE-B4-CAP", TITRE = "Escape game B4 — Sauver les oreilles de Camille", IMG = "cap_B4/escape/";
   var $ = function (id) { return document.getElementById(id); };
-  var LABELS = ["1.1", "2.1", "3.1", "3.1", "3.2", "4.1", "5.1", "5.2"];
-  var trouve = [null, null, null, null, null, null, null, null];
-
-  var DOCS = {
-    d1: { titre: "Document 1 — Les seuils du bruit et les obligations de l'employeur",
-          html: "<p><b>0 dB(A)</b> : seuil d'audibilité. <b>80 dB(A)</b> : seuil de nocivité (8 h par jour). <b>120 dB(A)</b> : seuil de douleur.</p><p><b>Au travail</b> (exposition mesurée sur 8 heures), l'employeur a des obligations :<br>– Au-dessus de <b>80 dB(A)</b> : il met des protecteurs individuels contre le bruit à disposition.<br>– À partir de <b>85 dB(A)</b> : il contrôle le port des protecteurs.</p>",
-          source: "D'après l'INRS, Bruit — Définitions et Bruit — Réglementation." },
-    d2: { titre: "Document 2 — L'oreille et les effets du bruit",
-          html: "<p>Bruit intense et prolongé → détruit peu à peu → les cellules ciliées de l'oreille interne → ne se réparent pas → perte d'audition définitive : la surdité.</p><p>– <b>Effets auditifs</b> : acouphènes (sifflements, bourdonnements), baisse de l'audition, surdité.<br>– <b>Effets extra-auditifs</b> : fatigue, stress, troubles du sommeil.</p>",
-          source: "D'après l'INRS, Bruit — Effets sur la santé, et l'Inserm, Troubles de l'audition, surdités." },
-    d3: { titre: "Document 3 — Les mesures de prévention contre le bruit",
-          html: "<p>– Régler le volume des écouteurs à 60 % au plus du maximum ; faire des pauses.<br>– Porter les bouchons d'oreilles bien mis, pendant toute la durée du bruit.<br>– L'employeur évalue le bruit et le réduit, d'abord à la source.</p>",
-          source: "D'après l'OMS, Écoute sans risque, et l'INRS, Bruit — Réglementation et Démarche de prévention." }
-  };
-
-  // type c = cocher (chiffre = numéro), m = mot (chiffre = nombre de lettres), t = tableau
-  var PORTES = [
-    { nom: "Porte 1 · Découvrir le danger", chapeau: "À partir de la situation de Camille :", qs: [
-      { i: 0, type: "c", num: "1.1", texte: "Identifier le problème de Camille, en cochant la proposition exacte.",
-        choix: [[2, "Camille dort mal : comment retrouver un bon sommeil ?"], [7, "Camille est exposée à des bruits forts : comment protéger son audition ?"], [4, "Camille entend mal les clients : comment mieux communiquer au travail ?"]], bon: 7 } ] },
-    { nom: "Porte 2 · Vérifier la sécurité au travail", doc: "d1", chapeau: "À partir de la situation de Camille et du document 1 :", qs: [
-      { i: 1, type: "m", num: "2.1", texte: "Indiquer l'obligation de l'employeur de Camille, en complétant : « Son employeur doit ……… le port des protecteurs. »", mots: ["controler", "contrôler"] } ] },
-    { nom: "Porte 3 · Comprendre les effets du bruit", doc: "d2", chapeau: "À partir de la situation de Camille et du document 2 :", qs: [
-      { i: 2, type: "t", num: "3.1", texte: "Indiquer le type d'effet de chaque trouble, en complétant le tableau.",
-        options: [[1, "effet auditif"], [8, "effet extra-auditif"], [6, "effet sur la peau"]],
-        lignes: [["Ligne 1", "Elle entend des sifflements.", 1], ["Ligne 2", "Elle dort mal.", 8]] },
-      { i: 4, type: "m", num: "3.2", texte: "Indiquer le risque pour Camille sans bouchons, en complétant : « Ses cellules ciliées peuvent être détruites. Le nom de cette perte d'audition définitive : la ……… »", mots: ["surdite", "surdité"] } ] },
-    { nom: "Porte 4 · Protéger Camille au travail", doc: "d3", chapeau: "À partir de la situation de Camille et des documents 2 et 3 :", qs: [
-      { i: 5, type: "c", num: "4.1", texte: "Choisir la justification du port des bouchons tout le service, en cochant.",
-        choix: [[6, "Les enlever quelques minutes pour parler ne change rien."], [3, "Portés tout le temps du bruit, ils protègent ses cellules ciliées."], [8, "Les bouchons protègent même s'ils sont mal mis."]], bon: 3 } ] },
-    { nom: "Porte 5 · Choisir les bonnes mesures", chapeau: "À partir de la situation de Camille et du document 3 :", qs: [
-      { i: 6, type: "c", num: "5.1", texte: "Choisir une mesure individuelle pour le trajet du retour, en cochant.",
-        choix: [[5, "L'employeur contrôle le port des bouchons."], [8, "Porter ses bouchons d'oreilles pendant le service."], [2, "Régler le volume de ses écouteurs à 60 % au plus."]], bon: 2 },
-      { i: 7, type: "c", num: "5.2", texte: "Choisir une mesure collective de l'employeur, en cochant.",
-        choix: [[1, "Camille porte ses bouchons pendant tout le service."], [9, "Réduire le bruit de la salle à la source."], [7, "Demander à chacun d'acheter ses bouchons."]], bon: 9 } ] }
-  ];
-
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function sansAccent(s) { return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, ""); }
 
-  function majCoffre() {
-    $("cases").innerHTML = LABELS.map(function (l, k) {
-      return '<div class="case"><b class="' + (trouve[k] != null ? "plein" : "") + '">' + (trouve[k] != null ? trouve[k] : "") + "</b><small>" + l + "</small></div>";
-    }).join("");
-  }
-  function message(id, ok, txt) { var m = $(id); m.className = "retour-msg " + (ok ? "ok" : "ko"); m.textContent = txt; }
+  /* ════════ CONTENU (escape game papier « Camille », version finale 3.1, rendu interactif) ════════ */
+  var SITUATION = {
+    bleu: "Camille, 24 ans, est serveuse dans une salle de concert. Les soirs de concert, son exposition au bruit, mesurée sur sa journée de travail de 8 heures, est de 92 dB(A). Son employeur lui a donné des bouchons d'oreilles, mais elle les enlève pour entendre les clients. Après le service, elle rentre chez elle en écoutant de la musique avec ses écouteurs, au volume maximal. Depuis lundi, elle entend des sifflements dans les oreilles et elle dort mal.",
+    vert: "Camille a 24 ans. Elle est serveuse dans une salle de concert. Au travail, le bruit est très fort : 92 dB(A). Elle a des bouchons d'oreilles, mais elle les enlève. Après le travail, elle écoute de la musique très fort avec ses écouteurs. Maintenant, elle entend des sifflements. Et elle dort mal."
+  };
+  var COMP = {
+    identifier: "Identifier le problème posé par la situation",
+    document: "Exploiter un document",
+    effets: "Expliquer les effets du bruit sur la santé",
+    justifier: "Justifier une mesure de prévention",
+    proposer: "Proposer des mesures de prévention collective et individuelle"
+  };
+  // Les 8 cadenas : chiffre = numéro de la bonne réponse, ou nombre de lettres du mot.
+  var CADENAS = [
+    { id: "c1", lab: "1.1", comp: "identifier" }, { id: "c2", lab: "2.1", comp: "document" },
+    { id: "c3", lab: "3.1", comp: "effets" }, { id: "c4", lab: "3.1", comp: "effets" },
+    { id: "c5", lab: "3.2", comp: "effets" }, { id: "c6", lab: "4.1", comp: "justifier" },
+    { id: "c7", lab: "5.1", comp: "proposer" }, { id: "c8", lab: "5.2", comp: "proposer" }
+  ];
+  var CODE_COFFRE = "79187329";
 
-  var h = "";
-  PORTES.forEach(function (p, pi) {
-    if (p.doc) { var d = DOCS[p.doc];
-      h += '<div class="carte doc"><h3 id="t-' + p.doc + '">' + esc(d.titre) + '<button class="ecouter" data-lire="' + p.doc + '">🔊 Écouter</button></h3><div id="' + p.doc + '">' + d.html +
-        (p.doc === "d3" ? '<div class="pictos"><img src="cap_B4/escape/bouchons.png" alt="Bouchons d\'oreilles"></div>' : "") + '</div><p class="source">' + esc(d.source) + "</p></div>"; }
-    h += '<div class="carte porte"><h2>' + esc(p.nom) + '</h2><p class="chapeau">' + esc(p.chapeau) + "</p>";
-    p.qs.forEach(function (q) {
-      var id = "q" + q.i;
-      h += '<p class="q" id="' + id + '-t">' + esc(q.num) + " " + esc(q.texte) + '<button class="ecouter" data-lire="' + id + '-t">🔊</button></p>';
-      if (q.type === "c") {
-        q.choix.forEach(function (c) { h += '<button class="choix" data-q="' + q.i + '" data-v="' + c[0] + '"><span class="n">' + c[0] + "</span><span>" + esc(c[1]) + "</span></button>"; });
-      } else if (q.type === "m") {
-        h += '<input class="mot" id="' + id + '-in" aria-label="Le mot à écrire, question ' + q.num + '"><button class="valider" data-mot="' + q.i + '">Valider</button>';
-      } else {
-        h += "<table><tr><th></th><th>Le trouble de Camille</th><th>Le type d'effet</th></tr>" + q.lignes.map(function (l, li) {
-          return "<tr><td><b>" + l[0] + "</b></td><td>" + esc(l[1]) + '</td><td><select id="' + id + "-s" + li + '" aria-label="Type d\'effet, ' + l[0] + '"><option value="">— choisir —</option>' +
-            q.options.map(function (o) { return '<option value="' + o[0] + '">' + o[0] + " · " + esc(o[1]) + "</option>"; }).join("") + "</select></td></tr>";
-        }).join("") + '</table><button class="valider" data-tab="' + q.i + '">Valider</button>';
-      }
-      h += '<div class="retour-msg" id="' + id + '-r" aria-live="polite"></div>';
-    });
-    h += "</div>";
-  });
-  $("jeu").innerHTML = h;
+  var SALLES = [
+    { titre: "Salle 1 · Découvrir le danger", img: "picto-bruyant.png",
+      items: [{ cad: "c1", type: "choix", bon: 7,
+        q: { bleu: "1.1 À partir de la situation de Camille : identifier le problème de Camille, en choisissant la proposition exacte.", vert: "Quel est le problème de Camille ? Choisis une carte." },
+        choix: [[2, "Camille dort mal : comment retrouver un bon sommeil ?", "picto-dormir.png"],
+                [7, "Camille est exposée à des bruits forts : comment protéger son audition ?", "picto-bruyant.png"],
+                [4, "Camille entend mal les clients : comment mieux communiquer au travail ?", "serveuse.png"]],
+        indices: ["Cherche ce qui cause ses sifflements et son mauvais sommeil.", "Camille travaille dans un bruit de 92 dB(A) : c'est ce bruit qui met ses oreilles en danger."],
+        expl: "Le problème, c'est le bruit fort : il menace son audition. Le mauvais sommeil en est une conséquence." }] },
+    { titre: "Salle 2 · Vérifier la sécurité au travail", doc: "d1",
+      items: [{ cad: "c2", type: "mot", mots: ["contrôler", "oublier", "interdire"], bon: "contrôler",
+        q: { bleu: "2.1 À partir de la situation de Camille et du document 1 : indiquer l'obligation de l'employeur de Camille, en complétant la phrase.", vert: "Que doit faire le patron de Camille ? Choisis le bon mot." },
+        avant: "Son employeur doit", apres: "le port des protecteurs.",
+        indices: ["Lis la ligne du document 1 qui commence par « À partir de 85 dB(A) ».", "Camille est à 92 dB(A) : c'est au-dessus de 85 dB(A)."],
+        expl: "À partir de 85 dB(A), l'employeur contrôle le port des protecteurs. Camille est à 92 dB(A)." }] },
+    { titre: "Salle 3 · Comprendre les effets du bruit", doc: "d2",
+      items: [
+        { cad: "c3", type: "choix", bon: 1, trouble: ["Elle entend des sifflements.", "acouphene.png"],
+          q: { bleu: "3.1 À partir du document 2 : indiquer le type d'effet de ce trouble (ligne 1).", vert: "Les sifflements : c'est quel effet ?" },
+          choix: [[1, "effet auditif", "picto-oreille-picto.png"], [8, "effet extra-auditif", "picto-fatigue.png"], [6, "effet sur la peau", ""]],
+          indices: ["Les sifflements, ça se passe dans quelle partie du corps ?", "Document 2 : les acouphènes (sifflements) sont dans la liste des effets auditifs."],
+          expl: "Les sifflements (acouphènes) touchent l'oreille : c'est un effet auditif." },
+        { cad: "c4", type: "choix", bon: 8, trouble: ["Elle dort mal.", "insomnie.png"],
+          q: { bleu: "3.1 À partir du document 2 : indiquer le type d'effet de ce trouble (ligne 2).", vert: "Elle dort mal : c'est quel effet ?" },
+          choix: [[1, "effet auditif", "picto-oreille-picto.png"], [8, "effet extra-auditif", "picto-fatigue.png"], [6, "effet sur la peau", ""]],
+          indices: ["Le sommeil, est-ce que ça se passe dans l'oreille ?", "Document 2 : les troubles du sommeil sont des effets extra-auditifs, en dehors de l'oreille."],
+          expl: "Mal dormir touche tout le corps, pas l'oreille : c'est un effet extra-auditif." }] },
+    { titre: "Salle 4 · Le risque sans bouchons", doc: "d2", imgDoc: "oreille-coupe.jpg",
+      items: [{ cad: "c5", type: "mot", mots: ["fatigue", "surdité", "douleur"], bon: "surdité",
+        q: { bleu: "3.2 À partir du document 2 : indiquer le risque pour Camille sans bouchons, en complétant la phrase.", vert: "Sans bouchons, que risque Camille ? Choisis le bon mot." },
+        avant: "Ses cellules ciliées peuvent être détruites. Le nom de cette perte d'audition définitive : la", apres: ".",
+        indices: ["Lis la dernière case de la chaîne du document 2.", "Le mot commence par « sur… »."],
+        expl: "Les cellules ciliées détruites ne se réparent pas : c'est la surdité, une perte d'audition définitive." }] },
+    { titre: "Salle 5 · Protéger Camille au travail", doc: "d3",
+      items: [{ cad: "c6", type: "choix", bon: 3,
+        q: { bleu: "4.1 À partir des documents 2 et 3 : choisir la justification du port des bouchons pendant tout le service.", vert: "Pourquoi Camille doit garder ses bouchons tout le temps ?" },
+        choix: [[6, "Les enlever quelques minutes pour parler ne change rien.", "serveuse.png"],
+                [3, "Portés tout le temps du bruit, ils protègent ses cellules ciliées.", "protections.jpg"],
+                [8, "Les bouchons protègent même s'ils sont mal mis.", "bouchons.png"]],
+        indices: ["Relis la 2e mesure du document 3 : « pendant toute la durée du bruit ».", "Document 2 : les cellules ciliées détruites ne se réparent pas."],
+        expl: "Les bouchons protègent seulement s'ils sont bien mis, pendant tout le bruit : ils protègent ses cellules ciliées." }] },
+    { titre: "Salle 6 · Choisir les bonnes mesures", doc: "d3",
+      items: [
+        { cad: "c7", type: "choix", bon: 2,
+          q: { bleu: "5.1 À partir du document 3 : choisir une mesure individuelle pour le trajet du retour.", vert: "Sur le trajet du retour, que fait Camille pour ses oreilles ?" },
+          choix: [[5, "L'employeur contrôle le port des bouchons.", "picto-patron.png"],
+                  [8, "Porter ses bouchons d'oreilles pendant le service.", "bouchons.png"],
+                  [2, "Régler le volume de ses écouteurs à 60 % au plus.", "volume60.jpg"]],
+          indices: ["Sur le trajet du retour, Camille n'est plus au travail. Qu'utilise-t-elle ?", "Une mesure individuelle, c'est Camille qui la fait elle-même, avec ses écouteurs."],
+          expl: "Sur le trajet, Camille règle ses écouteurs à 60 % au plus : c'est une mesure individuelle." },
+        { cad: "c8", type: "choix", bon: 9,
+          q: { bleu: "5.2 À partir du document 3 : choisir une mesure collective de l'employeur.", vert: "Que fait le patron pour protéger tout le monde ?" },
+          choix: [[1, "Camille porte ses bouchons pendant tout le service.", "bouchons.png"],
+                  [9, "Réduire le bruit de la salle à la source.", "concert.png"],
+                  [7, "Demander à chacun d'acheter ses bouchons.", "protections.jpg"]],
+          indices: ["Une mesure collective protège tout le monde en même temps.", "Document 3 : l'employeur réduit le bruit, d'abord à la source."],
+          expl: "Réduire le bruit à la source protège tous les salariés à la fois : c'est une mesure collective." }] }
+  ];
+  var FINALE = [
+    { t: "L'employeur réduit le bruit de la salle, à la source.", c: "col" },
+    { t: "Camille garde ses bouchons bien mis pendant tout le service.", c: "ind" },
+    { t: "L'employeur contrôle le port des protecteurs.", c: "col" },
+    { t: "Camille règle ses écouteurs à 60 % au plus et fait des pauses.", c: "ind" }
+  ];
+  var DOCS = {
+    d1: { titre: "Document 1 — Les seuils du bruit et les obligations de l'employeur", source: "D'après l'INRS, Bruit — Définitions et Bruit — Réglementation.",
+          texte: "0 dB(A) : seuil d'audibilité. 80 dB(A) : seuil de nocivité, 8 heures par jour. 120 dB(A) : seuil de douleur. Au travail, exposition mesurée sur 8 heures, l'employeur a des obligations. Au-dessus de 80 dB(A) : il met des protecteurs individuels contre le bruit à disposition. À partir de 85 dB(A) : il contrôle le port des protecteurs." },
+    d2: { titre: "Document 2 — L'oreille et les effets du bruit", source: "D'après l'INRS, Bruit — Effets sur la santé, et l'Inserm, Troubles de l'audition, surdités.",
+          texte: "Un bruit intense et prolongé détruit peu à peu les cellules ciliées de l'oreille interne. Elles ne se réparent pas. C'est une perte d'audition définitive : la surdité. Effets auditifs : acouphènes, c'est-à-dire sifflements et bourdonnements, baisse de l'audition, surdité. Effets extra-auditifs : fatigue, stress, troubles du sommeil." },
+    d3: { titre: "Document 3 — Les mesures de prévention contre le bruit", source: "D'après l'OMS, Écoute sans risque, et l'INRS, Bruit — Réglementation et Démarche de prévention.",
+          texte: "Régler le volume des écouteurs à 60 pour cent au plus du maximum, et faire des pauses. Porter les bouchons d'oreilles bien mis, pendant toute la durée du bruit. L'employeur évalue le bruit et le réduit, d'abord à la source." }
+  };
 
-  function trouveQ(i) { var r; PORTES.forEach(function (p) { p.qs.forEach(function (q) { if (q.i === i) r = q; }); }); return r; }
+  /* ════════ ÉTAT DE LA PARTIE (gardé sur l'appareil) ════════ */
+  var P = null; // { code, classe, chemin, etape, cad: {c1: {essais, niveau, chiffre, reps}}, finale: [...], debut, fini, envoye }
+  function cle(code) { return "mapse_escape_b4_partie_" + code; }
+  function sauver() { if (!P) return; try { localStorage.setItem(cle(P.code), JSON.stringify(P)); } catch (e) {} }
+  // Étapes : 0 = situation, 1..6 = salles, 7 = mission finale, 8 = coffre, 9 = fin
+  var NB_ETAPES = 9;
 
-  document.addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
-    if (b.classList.contains("choix")) {
-      var q = trouveQ(+b.dataset.q), v = +b.dataset.v;
-      document.querySelectorAll('.choix[data-q="' + q.i + '"]').forEach(function (x) { x.classList.remove("bon", "faux"); });
-      if (v === q.bon) { b.classList.add("bon"); trouve[q.i] = v; message("q" + q.i + "-r", true, "🔓 Cadenas ouvert ! Chiffre : " + v); }
-      else { b.classList.add("faux"); message("q" + q.i + "-r", false, "🔒 Ce n'est pas la bonne réponse. Relis la situation et les documents."); }
-      majCoffre();
-    } else if (b.dataset.mot) {
-      var qm = trouveQ(+b.dataset.mot), val = $("q" + qm.i + "-in").value;
-      if (qm.mots.map(sansAccent).indexOf(sansAccent(val)) >= 0) { var n = sansAccent(val).length; trouve[qm.i] = n; message("q" + qm.i + "-r", true, "🔓 Cadenas ouvert ! Le mot a " + n + " lettres : chiffre " + n); }
-      else message("q" + qm.i + "-r", false, "🔒 Ce n'est pas le bon mot. Cherche dans le document.");
-      majCoffre();
-    } else if (b.dataset.tab) {
-      var qt = trouveQ(+b.dataset.tab), ok = true;
-      qt.lignes.forEach(function (l, li) { if (+$("q" + qt.i + "-s" + li).value !== l[2]) ok = false; });
-      if (ok) { trouve[2] = qt.lignes[0][2]; trouve[3] = qt.lignes[1][2]; message("q" + qt.i + "-r", true, "🔓 Deux cadenas ouverts ! Chiffres : " + trouve[2] + " et " + trouve[3]); }
-      else message("q" + qt.i + "-r", false, "🔒 Au moins une ligne est fausse. Relis le document 2.");
-      majCoffre();
-    } else if (b.id === "b-ouvrir") {
-      var c = $("code").value.replace(/\D/g, "");
-      if (c === "79187329") { message("r-code", true, "🔓 Le coffre s'ouvre !"); $("bravo").hidden = false; parler($("bravo").textContent); }
-      else { message("r-code", false, "🔒 Ce n'est pas le bon code. Vérifie chaque cadenas."); $("bravo").hidden = true; }
-    } else if (b.dataset.lire) {
-      var el = $(b.dataset.lire); if (el) parler((el.innerText || el.textContent).replace(/🔊.*$/, ""));
+  /* ════════ LECTURE À VOIX HAUTE ▶ / ⏸ ════════ */
+  var synth = window.speechSynthesis, lecture = null; // { btn, el }
+  function voixFr() { if (!synth) return null; var v = synth.getVoices().filter(function (x) { return /^fr/i.test(x.lang); }); return v.filter(function (x) { return /fr[-_]FR/i.test(x.lang); })[0] || v[0] || null; }
+  function oral(t) { return String(t).replace(/dB\(A\)/g, " décibels A").replace(/(\d+) ?%/g, "$1 pour cent").replace(/[→–—]/g, ", ").replace(/…+|_{2,}/g, ", blanc, ").replace(/[▶⏸🔊🔓🔒]/g, ""); }
+  function decouper(t) { return (String(t).match(/[^.!?:;]+[.!?:;]*/g) || []).map(function (m) { return m.trim(); }); }
+  function finLecture() { if (lecture) { lecture.btn.textContent = "▶"; lecture.btn.classList.remove("actif"); lecture.btn.setAttribute("aria-label", "Écouter"); if (lecture.el) lecture.el.classList.remove("en-lecture"); } lecture = null; }
+  function arreter() { if (synth) synth.cancel(); finLecture(); }
+  function lire(btn, texte, el) {
+    if (!synth) return;
+    if (lecture && lecture.btn === btn) {
+      if (synth.paused) { synth.resume(); btn.textContent = "⏸"; btn.setAttribute("aria-label", "Pause"); }
+      else { synth.pause(); btn.textContent = "▶"; btn.setAttribute("aria-label", "Reprendre"); }
+      return;
     }
+    arreter();
+    lecture = { btn: btn, el: el };
+    btn.textContent = "⏸"; btn.classList.add("actif"); btn.setAttribute("aria-label", "Pause");
+    if (el) el.classList.add("en-lecture");
+    var morceaux = decouper(oral(texte)).filter(function (m) { return m.trim(); });
+    var voix = voixFr();
+    morceaux.forEach(function (m, k) {
+      var u = new SpeechSynthesisUtterance(m); u.lang = "fr-FR"; u.rate = 0.92; if (voix) u.voice = voix;
+      if (k === morceaux.length - 1) u.onend = function () { if (lecture && lecture.btn === btn) finLecture(); };
+      synth.speak(u);
+    });
+  }
+  function dire(texte) { // lecture sans bouton (chemin vert, retours)
+    if (!synth) return; arreter();
+    var voix = voixFr();
+    decouper(oral(texte)).forEach(function (m) { if (!m.trim()) return; var u = new SpeechSynthesisUtterance(m); u.lang = "fr-FR"; u.rate = 0.92; if (voix) u.voice = voix; synth.speak(u); });
+  }
+  // Un bouton ▶ porte le texte à lire dans data-texte (ou lit l'élément data-cible)
+  function bLire(texte, cible) { return synth ? '<button class="lire" type="button" aria-label="Écouter" data-texte="' + esc(texte) + '"' + (cible ? ' data-cible="' + cible + '"' : "") + ">▶</button>" : ""; }
+
+  /* ════════ BARRE DU HAUT ════════ */
+  function majBarre() {
+    $("barre").hidden = !P || P.etape == null;
+    if (!P) return;
+    $("trousseau").innerHTML = CADENAS.map(function (c) {
+      var r = P.cad[c.id];
+      return '<div class="cle' + (r && r.chiffre != null ? " ok" : "") + '" id="cle-' + c.id + '">' + (r && r.chiffre != null ? r.chiffre : "") + "<small>" + c.lab + "</small></div>";
+    }).join("");
+    var e = Math.min(P.etape, NB_ETAPES);
+    $("rail").style.width = Math.round(e / NB_ETAPES * 100) + "%";
+    $("progres-txt").textContent = e === 0 ? "La situation" : e <= 6 ? "Salle " + e + " sur 6" : e === 7 ? "Mission finale" : "Le coffre";
+  }
+  function voleCle(depuis, cadId, chiffre) {
+    var cible = $("cle-" + cadId); if (!cible || !depuis) return;
+    var a = depuis.getBoundingClientRect(), b = cible.getBoundingClientRect();
+    var k = document.createElement("div"); k.className = "cle-vol"; k.textContent = "🔑";
+    k.style.left = (a.left + a.width / 2 - 18) + "px"; k.style.top = (a.top + a.height / 2 - 18) + "px";
+    document.body.appendChild(k);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { k.style.left = (b.left) + "px"; k.style.top = (b.top) + "px"; k.style.transform = "scale(.6) rotate(360deg)"; }); });
+    setTimeout(function () { k.remove(); majBarre(); }, 950);
+  }
+
+  /* ════════ RÈGLE DE NOTATION (cachée à l'élève) ════════
+     Par cadenas : trouvé seul = 3 (Maîtrisé) ; après 1 indice = 2 ; après 2 indices = 1 ; réponse montrée = 0.
+     8 cadenas × 2 points = 16 ; mission finale : 4 mesures × 1 point = 4. Total sur 20. */
+  var NIVEAUX = ["Insuffisant", "Fragile", "Satisfaisant", "Maîtrisé"];
+  function niveauDe(erreurs) { return Math.max(0, 3 - erreurs); }
+
+  /* ════════ ÉCRANS ════════ */
+  function afficher() {
+    arreter();
+    var h = "";
+    if (!P) h = ecranCode();
+    else if (!P.chemin) h = ecranChemin();
+    else if (P.etape === 0) h = ecranSituation();
+    else if (P.etape >= 1 && P.etape <= 6) h = ecranSalle(SALLES[P.etape - 1]);
+    else if (P.etape === 7) h = ecranFinale();
+    else if (P.etape === 8) h = ecranCoffre();
+    else h = ecranFin();
+    $("ecran").innerHTML = '<div class="ecran">' + h + "</div>";
+    majBarre();
+    window.scrollTo(0, 0);
+    apresAffichage();
+  }
+
+  function ecranCode() {
+    return '<div class="carte salle"><h2><img src="' + IMG + 'cadenas.png" alt="" style="height:2rem">Entre ton code élève</h2>' +
+      '<div class="ligne-lue lu" id="t-code"><div class="gros">Tape ton code de 4 caractères, puis appuie sur « Entrer ».</div>' + bLire("Tape ton code de 4 caractères, puis appuie sur Entrer.", "t-code") + "</div>" +
+      '<p style="text-align:center"><input class="code-eleve" id="in-code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code élève"></p>' +
+      '<p style="text-align:center"><button class="btn" id="b-code">Entrer</button></p><div class="retour" id="r-code"></div></div>';
+  }
+  function ecranChemin() {
+    return '<div class="carte salle"><h2>Choisis ton chemin</h2>' +
+      '<div class="ligne-lue lu" id="t-ch"><div class="gros">Les deux chemins mènent au même coffre. Tu peux changer de chemin à tout moment.</div>' + bLire("Choisis ton chemin. Le chemin bleu : je lis les textes. Le chemin vert : j'écoute, avec des images et des phrases courtes. Les deux chemins mènent au même coffre.", "t-ch") + "</div>" +
+      '<div class="chemins"><button class="b" data-chemin="bleu"><img src="' + IMG + 'picto-oreille-picto.png" alt=""><b>Chemin bleu</b>Je lis les textes</button>' +
+      '<button class="v" data-chemin="vert"><img src="' + IMG + 'ecouteurs.png" alt=""><b>Chemin vert</b>J\'écoute, avec des images et des phrases courtes</button></div></div>';
+  }
+  function ecranSituation() {
+    var t = SITUATION[P.chemin];
+    return '<div class="carte salle"><h2>La situation de Camille</h2>' +
+      '<div class="pictos"><img src="' + IMG + 'serveuse.png" alt="Camille, serveuse"><img src="' + IMG + 'concert.png" alt="La salle de concert"><img src="' + IMG + 'ecouteurs.png" alt="Ses écouteurs"><img src="' + IMG + 'acouphene.png" alt="Des sifflements dans les oreilles"><img src="' + IMG + 'insomnie.png" alt="Elle dort mal"></div>' +
+      '<div class="ligne-lue lu" id="t-sit"><div class="gros">' + esc(t) + "</div>" + bLire(t, "t-sit") + "</div></div>" +
+      '<div class="carte"><div class="ligne-lue lu" id="t-regle"><div><b>Comment jouer.</b> Dans chaque salle, une bonne réponse te donne une <b>clé avec un chiffre</b>. Si tu te trompes, tu reçois un indice. Avec les 8 clés, tu ouvres le coffre. Tu as le droit à ton cours.</div>' +
+      bLire("Comment jouer. Dans chaque salle, une bonne réponse te donne une clé avec un chiffre. Si tu te trompes, tu reçois un indice. Avec les 8 clés, tu ouvres le coffre. Tu as le droit à ton cours.", "t-regle") + "</div></div>" +
+      '<div class="actions"><button class="btn second" data-chemin-change="1">Changer de chemin</button><button class="btn" data-suivant="1">Entrer dans la salle 1 →</button></div>';
+  }
+  function htmlDoc(d, s) {
+    var D = DOCS[d], h = '<div class="carte doc"><div class="ligne-lue lu" id="t-' + d + '"><div><h3>' + esc(D.titre) + "</h3>";
+    if (d === "d1") {
+      h += '<div class="jauge" id="jauge"><div class="camille" id="camille">Camille : 92 dB(A)</div>' +
+        [[0, "0 · audibilité", "top:38px;left:0;text-align:left"], [80, "80 · nocivité", ""], [85, "85 · contrôle", "top:60px"], [120, "120 · douleur", ""]].map(function (r) { return '<div class="rep" style="left:' + (r[0] / 130 * 100) + '%"><span style="' + r[2] + '">' + r[1] + "</span></div>"; }).join("") + "</div>" +
+        "<p><b>Au travail</b> (exposition mesurée sur 8 heures), l'employeur a des obligations :<br>– Au-dessus de <b>80 dB(A)</b> : il met des protecteurs individuels contre le bruit à disposition.<br>– À partir de <b>85 dB(A)</b> : il <b>contrôle</b> le port des protecteurs.</p>" +
+        '<img class="illu" src="' + IMG + 'echelle-db.jpg" alt="Échelle des niveaux sonores : de la chambre calme (30 dB) à l\'avion (130 dB)">';
+    } else if (d === "d2") {
+      h += (s && s.imgDoc ? '<img class="illu" src="' + IMG + s.imgDoc + '" alt="Coupe de l\'oreille : oreille externe, moyenne et interne, cochlée">' : "") +
+        '<div class="chaine" id="chaine"><div>🔊 Bruit intense et prolongé</div><div>↓ détruit peu à peu les <b>cellules ciliées</b> de l\'oreille interne</div><div>↓ elles <b>ne se réparent pas</b></div><div class="fin">↓ perte d\'audition définitive : la <b>surdité</b></div></div>' +
+        '<div class="pictos"><img src="' + IMG + 'acouphene.png" alt="Sifflements"><img src="' + IMG + 'picto-sourd.png" alt="Surdité"><img src="' + IMG + 'picto-fatigue.png" alt="Fatigue"><img src="' + IMG + 'picto-stress.png" alt="Stress"><img src="' + IMG + 'picto-dormir.png" alt="Sommeil"></div>' +
+        "<p>– <b>Effets auditifs</b> : acouphènes (sifflements, bourdonnements), baisse de l'audition, surdité.<br>– <b>Effets extra-auditifs</b> : fatigue, stress, troubles du sommeil.</p>";
+    } else {
+      h += '<div class="mesures"><figure><img src="' + IMG + 'volume60.jpg" alt="Volume à 60 %"><figcaption>Régler le volume des écouteurs à <b>60 % au plus</b> ; faire des pauses.</figcaption></figure>' +
+        '<figure><img src="' + IMG + 'protections.jpg" alt="Bouchons et casque antibruit"><figcaption>Porter les bouchons <b>bien mis</b>, pendant <b>toute la durée</b> du bruit.</figcaption></figure>' +
+        '<figure><img src="' + IMG + 'atelier-panneau.jpg" alt="Atelier avec panneau d\'obligation de protection auditive"><figcaption>L\'employeur évalue le bruit et le <b>réduit, d\'abord à la source</b>.</figcaption></figure></div>';
+    }
+    return h + '<p class="source">' + esc(D.source) + "</p></div>" + bLire(D.titre + ". " + D.texte, "t-" + d) + "</div></div>";
+  }
+  function ecranSalle(s) {
+    var h = '<div class="carte salle"><h2>' + (s.img ? '<img src="' + IMG + s.img + '" alt="" style="height:2.2rem">' : "") + esc(s.titre) + "</h2></div>";
+    if (s.doc) h += htmlDoc(s.doc, s);
+    s.items.forEach(function (it) { h += htmlItem(it); });
+    var fini = s.items.every(function (it) { return P.cad[it.cad] && P.cad[it.cad].chiffre != null; });
+    return h + '<div class="actions"><button class="btn second" data-precedent="1">← Revenir</button>' +
+      '<button class="btn" data-suivant="1" id="b-suivant"' + (fini ? "" : " disabled") + ">" + (P.etape < 6 ? "Salle suivante →" : "Mission finale →") + "</button></div>";
+  }
+  function htmlItem(it) {
+    var r = P.cad[it.cad] || {}, q = it.q[P.chemin], fait = r.chiffre != null;
+    var h = '<div class="carte" id="item-' + it.cad + '"><div class="ligne-lue lu" id="q-' + it.cad + '"><div class="gros"><b>' + esc(q) + "</b></div>" + bLire(q, "q-" + it.cad) + "</div>";
+    if (it.trouble) h += '<div class="trouble"><img src="' + IMG + it.trouble[1] + '" alt=""><div class="gros"><b>' + esc(it.trouble[0]) + "</b></div>" + bLire(it.trouble[0]) + "</div>";
+    if (it.type === "choix") {
+      h += '<div class="choix-grille">' + it.choix.map(function (c) {
+        var cls = fait ? (c[0] === it.bon ? " bon" : " eteint") : "";
+        return '<button class="choix' + cls + '" data-cad="' + it.cad + '" data-v="' + c[0] + '"' + (fait ? " disabled" : "") + ">" +
+          (c[2] ? '<img src="' + IMG + c[2] + '" alt="">' : '<div style="height:60px"></div>') + '<span class="n">' + c[0] + "</span><span>" + esc(c[1]) + "</span>" +
+          (synth ? '<span class="lire" role="button" tabindex="0" aria-label="Écouter" data-texte="' + esc("Numéro " + c[0] + " : " + c[1]) + '">▶</span>' : "") + "</button>";
+      }).join("") + "</div>";
+    } else {
+      h += '<div class="phrase">' + esc(it.avant) + ' <span class="trou" id="trou-' + it.cad + '">' + (fait ? esc(it.bon) : "") + "</span> " + esc(it.apres) + "</div>" +
+        '<div class="banque">' + it.mots.map(function (m) { return '<button class="mot' + (fait && m === it.bon ? " bon" : "") + '" data-cad="' + it.cad + '" data-mot="' + esc(m) + '"' + (fait ? " disabled" : "") + ">" + esc(m) + "</button>"; }).join("") +
+        bLire("Les mots : " + it.mots.join(", ")) + "</div>" + '<div class="lettres" id="lettres-' + it.cad + '">' + (fait ? lettres(it.bon) : "") + "</div>";
+    }
+    h += '<div class="retour" id="r-' + it.cad + '"></div>';
+    return h + "</div>";
+  }
+  function lettres(m) { return sansAccent(m).split("").map(function (l, k) { return '<span style="animation-delay:' + (k * 0.12) + 's">' + l.toUpperCase() + "<i>" + (k + 1) + "</i></span>"; }).join(""); }
+  function retour(cad, cls, txt) { var r = $("r-" + cad); if (!r) return; r.className = "retour " + cls; r.innerHTML = '<div class="ligne-lue"><div>' + esc(txt) + "</div>" + bLire(txt) + "</div>"; if (P.chemin === "vert") dire(txt); }
+
+  function trouverItem(cad) { var r; SALLES.forEach(function (s) { s.items.forEach(function (it) { if (it.cad === cad) r = it; }); }); return r; }
+  function repondre(cad, valeur, bouton) {
+    var it = trouverItem(cad); P.cad[cad] = P.cad[cad] || { essais: 0, reps: [] };
+    var r = P.cad[cad]; if (r.chiffre != null) return;
+    var juste = it.type === "choix" ? (+valeur === it.bon) : (valeur === it.bon);
+    r.essais++; r.reps.push(String(valeur));
+    var erreurs = r.essais - 1;
+    if (juste || erreurs >= 2 && !juste && r.essais >= 3) {
+      // Trouvé, ou 3e erreur : la réponse est montrée et la clé est donnée (rien ne bloque).
+      var montre = !juste;
+      r.niveau = montre ? 0 : niveauDe(erreurs);
+      r.chiffre = it.type === "choix" ? it.bon : sansAccent(it.bon).length;
+      r.montre = montre;
+      sauver();
+      var item = $("item-" + cad);
+      if (it.type === "choix") {
+        item.querySelectorAll(".choix").forEach(function (b) { b.disabled = true; b.classList.remove("faux"); b.classList.add(+b.dataset.v === it.bon ? "bon" : "eteint"); });
+      } else {
+        $("trou-" + cad).textContent = it.bon;
+        item.querySelectorAll(".mot").forEach(function (b) { b.disabled = true; b.classList.remove("faux"); if (b.dataset.mot === it.bon) b.classList.add("bon"); });
+        $("lettres-" + cad).innerHTML = lettres(it.bon);
+      }
+      var msg = it.type === "choix" ? "Clé gagnée : chiffre " + r.chiffre + "." : "Le mot « " + it.bon + " » a " + r.chiffre + " lettres. Clé gagnée : chiffre " + r.chiffre + ".";
+      retour(cad, montre ? "reponse" : "ok", (montre ? "Voici la réponse. " + it.expl + " " : "Bravo ! ") + msg);
+      voleCle(item.querySelector(".bon") || bouton, cad, r.chiffre);
+      var s = SALLES[P.etape - 1];
+      if (s.items.every(function (x) { return P.cad[x.cad] && P.cad[x.cad].chiffre != null; })) { var bs = $("b-suivant"); if (bs) { bs.disabled = false; bs.style.animation = "pop .6s"; } }
+    } else {
+      sauver();
+      if (bouton) { bouton.classList.add("faux"); setTimeout(function () { bouton.classList.remove("faux"); }, 600); }
+      retour(cad, "indice", (r.essais === 1 ? "Indice 1 : " : "Indice 2 : ") + it.indices[Math.min(r.essais, 2) - 1]);
+    }
+  }
+
+  function ecranFinale() {
+    var t = { bleu: "Mission finale. Pour protéger Camille, classe chaque mesure : est-ce une mesure collective (l'employeur protège tout le monde) ou une mesure individuelle (Camille se protège elle-même) ?",
+              vert: "Dernière mission ! Pour chaque mesure : qui la fait ? Le patron pour tout le monde (collective) ? Ou Camille pour elle-même (individuelle) ?" }[P.chemin];
+    P.finale = P.finale || FINALE.map(function () { return { essais: 0, reps: [] }; });
+    var h = '<div class="carte salle"><h2><img src="' + IMG + 'coffre.png" alt="" style="height:2.2rem">Mission finale · Le plan de prévention de Camille</h2>' +
+      '<div class="ligne-lue lu" id="t-fin"><div class="gros">' + esc(t) + "</div>" + bLire(t, "t-fin") + "</div>" +
+      '<div class="pictos"><img src="' + IMG + 'picto-patron.png" alt="L\'employeur : mesure collective"><img src="' + IMG + 'atelier-panneau.jpg" alt="Atelier : protection de tous" style="width:160px"><img src="' + IMG + 'bouchons.png" alt="Camille : mesure individuelle"><img src="' + IMG + 'volume60.jpg" alt="Écouteurs à 60 %" style="width:160px"></div></div><div class="carte">';
+    FINALE.forEach(function (f, k) {
+      var r = P.finale[k], fait = r.fait;
+      h += '<div class="tri-item' + (fait ? " fait" : "") + '" id="tri-' + k + '"><div class="txt">' + esc(f.t) + "</div>" + bLire(f.t) +
+        ["col", "ind"].map(function (c) { return '<button class="cat' + (fait && f.c === c ? " bon" : "") + '" data-tri="' + k + '" data-c="' + c + '"' + (fait ? " disabled" : "") + ">" + (c === "col" ? "👥 Collective" : "🧍 Individuelle") + "</button>"; }).join("") +
+        '<div class="retour" id="rt-' + k + '" style="flex-basis:100%"></div></div>';
+    });
+    var tout = P.finale.every(function (r) { return r.fait; });
+    return h + "</div>" + '<div class="actions"><button class="btn second" data-precedent="1">← Revenir</button><button class="btn" data-suivant="1" id="b-suivant"' + (tout ? "" : " disabled") + ">Ouvrir le coffre →</button></div>";
+  }
+  function trier(k, c, bouton) {
+    var f = FINALE[k], r = P.finale[k]; if (r.fait) return;
+    r.essais++; r.reps.push(c);
+    var juste = c === f.c, zone = $("rt-" + k);
+    if (juste || r.essais >= 2) {
+      r.fait = true; r.niveau = juste ? (r.essais === 1 ? 3 : 1) : 0; sauver();
+      $("tri-" + k).classList.add("fait");
+      $("tri-" + k).querySelectorAll(".cat").forEach(function (b) { b.disabled = true; b.classList.remove("faux"); if (b.dataset.c === f.c) b.classList.add("bon"); });
+      var txt = (juste ? "Bravo ! " : "Voici la réponse : ") + (f.c === "col" ? "c'est l'employeur qui protège tout le monde : mesure collective." : "c'est Camille qui se protège elle-même : mesure individuelle.");
+      zone.className = "retour " + (juste ? "ok" : "reponse"); zone.textContent = txt; if (P.chemin === "vert") dire(txt);
+      if (P.finale.every(function (x) { return x.fait; })) { var bs = $("b-suivant"); bs.disabled = false; bs.style.animation = "pop .6s"; dire("Mission accomplie ! Avec ces mesures, Camille protège ses oreilles au travail et sur le trajet. Va ouvrir le coffre."); }
+    } else {
+      sauver(); bouton.classList.add("faux"); setTimeout(function () { bouton.classList.remove("faux"); }, 600);
+      zone.className = "retour indice"; zone.textContent = "Indice : qui fait cette mesure ? L'employeur, pour tout le monde ? Ou Camille, pour elle-même ?";
+      if (P.chemin === "vert") dire(zone.textContent);
+    }
+  }
+
+  var roues = [0, 0, 0, 0, 0, 0, 0, 0], essaisCoffre = 0;
+  function ecranCoffre() {
+    var t = "Tourne chaque roue pour mettre le chiffre de ta clé, dans l'ordre des clés. Puis appuie sur Ouvrir.";
+    return '<div class="carte salle" style="text-align:center"><h2 style="justify-content:center">Le coffre</h2>' +
+      '<img class="coffre-img" id="coffre-img" src="' + IMG + 'coffre.png" alt="Le coffre fermé">' +
+      '<div class="ligne-lue lu" id="t-cof" style="text-align:left"><div class="gros">' + esc(t) + "</div>" + bLire(t, "t-cof") + "</div>" +
+      '<div class="roues">' + CADENAS.map(function (c, k) { return '<div class="roue"><button data-roue="' + k + '" data-d="1" aria-label="Augmenter le chiffre ' + (k + 1) + '">▲</button><b id="roue-' + k + '">' + roues[k] + '</b><button data-roue="' + k + '" data-d="-1" aria-label="Diminuer le chiffre ' + (k + 1) + '">▼</button><small>clé ' + c.lab + "</small></div>"; }).join("") + "</div>" +
+      '<p><button class="btn" id="b-ouvrir">🔓 Ouvrir le coffre</button> <button class="btn second" id="b-aide-coffre" hidden>Recopier mes clés</button></p><div class="retour" id="r-coffre"></div></div>';
+  }
+  function ouvrirCoffre() {
+    var bon = true;
+    CADENAS.forEach(function (c, k) { var b = $("roue-" + k); b.classList.remove("vert", "rouge"); void b.offsetWidth; if (String(roues[k]) === CODE_COFFRE[k]) b.classList.add("vert"); else { b.classList.add("rouge"); bon = false; } });
+    if (bon) {
+      $("coffre-img").classList.add("ouvre"); var rc = $("r-coffre"); rc.className = "retour ok"; rc.textContent = "Le coffre s'ouvre !"; dire("Le coffre s'ouvre ! Bravo ! Tu as sauvé les oreilles de Camille.");
+      confettis();
+      setTimeout(function () { P.etape = 9; P.fini = P.fini || new Date().toISOString(); sauver(); afficher(); envoyer(); }, 1800);
+    } else {
+      essaisCoffre++;
+      var r = $("r-coffre"); r.className = "retour indice"; r.textContent = "Les chiffres en rouge ne sont pas bons. Regarde tes clés en haut de l'écran.";
+      if (essaisCoffre >= 2) $("b-aide-coffre").hidden = false;
+      if (P.chemin === "vert") dire(r.textContent);
+    }
+  }
+  function confettis() {
+    var couleurs = ["#f9a825", "#2e7d32", "#1d4e89", "#c62828", "#8e24aa"];
+    for (var i = 0; i < 70; i++) { var c = document.createElement("div"); c.className = "confetti"; c.style.left = Math.random() * 100 + "vw"; c.style.background = couleurs[i % 5]; c.style.animationDuration = (1.8 + Math.random() * 1.8) + "s"; c.style.animationDelay = (Math.random() * .6) + "s"; document.body.appendChild(c); setTimeout(function (x) { return function () { x.remove(); }; }(c), 4200); }
+  }
+  function ecranFin() {
+    var t = "Mission réussie ! Le coffre est ouvert : tu as sauvé les oreilles de Camille. Ton travail est envoyé à ton professeur.";
+    return '<div class="carte salle bravo"><img src="' + IMG + 'bravo.png" alt="" style="height:7rem;display:block;margin:8px auto">' +
+      '<div class="ligne-lue lu" id="t-bravo"><div>' + esc(t) + "</div>" + bLire(t, "t-bravo") + "</div>" +
+      '<p class="discret" id="etat-envoi">Envoi en cours…</p><p><button class="btn" id="b-renvoyer" hidden>Réessayer l\'envoi</button></p></div>';
+  }
+
+  /* ════════ GRILLE, NOTE ET ENVOI (résultat réservé au professeur) ════════ */
+  function bilan() {
+    var grille = {}, points = 0, detail = {};
+    Object.keys(COMP).forEach(function (k) { grille[COMP[k]] = { total: 0, max: 0 }; });
+    CADENAS.forEach(function (c) {
+      var r = P.cad[c.id] || { essais: 0, niveau: 0 }, n = r.chiffre != null ? r.niveau : 0, pts = Math.round(2 * n / 3 * 100) / 100;
+      points += pts; grille[COMP[c.comp]].total += n; grille[COMP[c.comp]].max += 3;
+      detail[c.id + " (" + c.lab + ")"] = { niveau: NIVEAUX[n], essais: r.essais || 0, reponses: (r.reps || []).join(" / "), reponse_montree: !!r.montre, points: pts, sur: 2 };
+    });
+    (P.finale || []).forEach(function (r, k) {
+      var n = r.fait ? r.niveau : 0, pts = Math.round(n / 3 * 100) / 100;
+      points += pts; grille[COMP.proposer].total += n; grille[COMP.proposer].max += 3;
+      detail["finale " + (k + 1)] = { mesure: FINALE[k].t, attendu: FINALE[k].c === "col" ? "collective" : "individuelle", niveau: NIVEAUX[n], essais: r.essais, reponses: r.reps.join(" / "), points: pts, sur: 1 };
+    });
+    var competences = {};
+    Object.keys(grille).forEach(function (k) { var g = grille[k], ratio = g.max ? g.total / g.max : 0; competences[k] = ratio >= 0.85 ? "Maîtrisé" : ratio >= 0.6 ? "Satisfaisant" : ratio >= 0.35 ? "Fragile" : "Insuffisant"; });
+    return { note: Math.round(points * 10) / 10, competences: competences, detail: detail };
+  }
+  function attendreDb(delai) {
+    return new Promise(function (ok, ko) {
+      var t0 = Date.now();
+      (function essai() { try { if (window._ensureDb) { var db = window._ensureDb(); if (db) return ok(db); } } catch (e) {}
+        if (Date.now() - t0 > delai) return ko(new Error("Connexion impossible")); setTimeout(essai, 300); })();
+    });
+  }
+  function envoyer() {
+    if (!P || P.envoye) { etatEnvoi(true); return; }
+    var b = bilan();
+    var data = {
+      eleveCode: P.code, devoirId: ID, exercice: ID, titre: TITRE, type: "escape_game", module: "B4", diplome: "CAP",
+      classe: P.classe, eleve: { userCode: P.code, classe: P.classe }, chemin: P.chemin,
+      note_auto: b.note, score: b.note, note_sur: 20, competences: b.competences, reponses: b.detail,
+      debut: P.debut, fin: P.fini, tempsSecondes: Math.round((new Date(P.fini) - new Date(P.debut)) / 1000),
+      createdAtISO: new Date().toISOString(), appareil: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Mobile" : "Ordinateur"
+    };
+    $("etat-envoi").textContent = "Envoi en cours…";
+    attendreDb(12000).then(function (db) {
+      var col = db.collection("resultats").doc(P.code).collection("copies");
+      if (window.firebase && firebase.firestore && firebase.firestore.FieldValue) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      function tenter(n) {
+        if (n > 9) throw new Error("Trop de parties envoyées");
+        var ref = col.doc(ID + "_copie_" + n);
+        return ref.get().then(function (snap) { if (snap.exists) return tenter(n + 1); data.tentative = n; return ref.set(data).then(function () { return n; }); });
+      }
+      return tenter(1);
+    }).then(function () { P.envoye = new Date().toISOString(); sauver(); etatEnvoi(true); })
+      .catch(function (e) { console.warn(e); etatEnvoi(false); });
+  }
+  function etatEnvoi(ok) {
+    var e = $("etat-envoi"), b = $("b-renvoyer"); if (!e) return;
+    e.textContent = ok ? "✅ Ton travail est bien arrivé chez ton professeur." : "⚠️ L'envoi n'a pas marché (connexion ?). Ton travail est gardé sur cet appareil : appuie sur « Réessayer », ou appelle ton professeur.";
+    b.hidden = ok;
+  }
+
+  /* ════════ APRÈS AFFICHAGE : animations des documents, lecture auto (chemin vert) ════════ */
+  function apresAffichage() {
+    var c = $("camille"); if (c) setTimeout(function () { c.style.left = (92 / 130 * 100) + "%"; }, 300);
+    var ch = $("chaine"); if (ch) ch.querySelectorAll("div").forEach(function (d, k) { setTimeout(function () { d.classList.add("vu"); }, 400 + k * 650); });
+    var ic = $("in-code"); if (ic) ic.focus();
+    if (P && P.chemin === "vert") {
+      var premier = document.querySelector("#ecran .salle .lire, #ecran .item .lire") || document.querySelector("#ecran .lire");
+      if (P.etape >= 1 && P.etape <= 6) premier = document.querySelector('#ecran [id^="q-"] .lire');
+      if (premier) setTimeout(function () { premier.click(); }, 500);
+    }
+  }
+
+  /* ════════ CLICS ════════ */
+  document.addEventListener("click", function (e) {
+    var lb = e.target.closest(".lire");
+    if (lb) { e.preventDefault(); e.stopPropagation(); var cible = lb.dataset.cible ? $(lb.dataset.cible) : null; lire(lb, lb.dataset.texte, cible); return; }
+    var b = e.target.closest("button"); if (!b) return;
+    if (b.id === "b-code") return entrerCode();
+    if (b.dataset.chemin) { P.chemin = b.dataset.chemin; document.body.classList.toggle("chemin-vert", P.chemin === "vert"); sauver(); return afficher(); }
+    if (b.dataset.cheminChange) { P.chemin = null; sauver(); return afficher(); }
+    if (b.dataset.suivant) { P.etape++; sauver(); return afficher(); }
+    if (b.dataset.precedent) { P.etape = Math.max(0, P.etape - 1); sauver(); return afficher(); }
+    if (b.classList.contains("choix") && !b.disabled) return repondre(b.dataset.cad, b.dataset.v, b);
+    if (b.classList.contains("mot") && !b.disabled) { $("trou-" + b.dataset.cad).textContent = b.dataset.mot; return repondre(b.dataset.cad, b.dataset.mot, b); }
+    if (b.dataset.tri != null && !b.disabled) return trier(+b.dataset.tri, b.dataset.c, b);
+    if (b.dataset.roue != null) { var k = +b.dataset.roue; roues[k] = (roues[k] + (+b.dataset.d) + 10) % 10; var r = $("roue-" + k); r.textContent = roues[k]; r.classList.remove("tourne", "rouge", "vert"); void r.offsetWidth; r.classList.add("tourne"); return; }
+    if (b.id === "b-ouvrir") return ouvrirCoffre();
+    if (b.id === "b-aide-coffre") { CADENAS.forEach(function (c, k) { var x = P.cad[c.id]; roues[k] = x && x.chiffre != null ? x.chiffre : 0; $("roue-" + k).textContent = roues[k]; }); return; }
+    if (b.id === "b-renvoyer") return envoyer();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target.id === "in-code") entrerCode();
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("lire") && e.target.tagName === "SPAN") { e.preventDefault(); e.target.click(); }
   });
 
-  /* ── Lecture à voix haute (voix française de l'appareil) ── */
-  var synth = window.speechSynthesis;
-  function parler(t) {
-    if (!synth) return; synth.cancel();
-    t = String(t).replace(/dB\(A\)/g, "décibels A").replace(/→/g, ", ").replace(/🔊|🔓|🔒/g, "");
-    var u = new SpeechSynthesisUtterance(t); u.lang = "fr-FR"; u.rate = 0.95;
-    var v = synth.getVoices().filter(function (x) { return /^fr/i.test(x.lang); })[0]; if (v) u.voice = v;
-    synth.speak(u);
+  function entrerCode() {
+    var code = ($("in-code").value || "").trim().toUpperCase(), r = $("r-code");
+    var A = window.ANNUAIRE || null, classe = null;
+    if (code === "ESSAI") classe = "ESSAI";
+    else if (A && A[code]) classe = A[code];
+    if (!classe) {
+      r.className = "retour indice";
+      r.textContent = !A ? "Patiente quelques secondes (connexion en cours), puis appuie de nouveau sur « Entrer »." : "Ce code n'est pas reconnu. Vérifie ton code (4 caractères) ou demande à ton professeur.";
+      if (!A) setTimeout(function () { if (window.ANNUAIRE) r.className = "retour"; }, 3000);
+      return;
+    }
+    var ancien = null; try { ancien = JSON.parse(localStorage.getItem(cle(code)) || "null"); } catch (x) {}
+    if (ancien && !ancien.envoye) P = ancien; // reprise d'une partie commencée
+    else P = { code: code, classe: classe, chemin: null, etape: 0, cad: {}, finale: null, debut: new Date().toISOString() };
+    document.body.classList.toggle("chemin-vert", P.chemin === "vert");
+    sauver(); afficher();
+    if (P.etape === 9 && !P.envoye) envoyer();
   }
-  $("a-stop").addEventListener("click", function () { if (synth) synth.cancel(); });
-  if (!synth) { $("a-stop").hidden = true; document.querySelectorAll(".ecouter").forEach(function (b) { b.hidden = true; }); }
+
+  if (!synth) $("a-stop").hidden = true;
+  $("a-stop").addEventListener("click", arreter);
 
   /* ── Accessibilité : taille, sombre, noir et blanc, luminosité (gardés sur l'appareil) ── */
   var ZOOMS = [0.9, 1, 1.15, 1.3, 1.5, 1.75, 2], zi = 1, LUMS = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.45], li = 3, nb = false;
@@ -237,7 +684,8 @@
   $("a-nb").addEventListener("click", function () { nb = !nb; appliquer(); });
   $("a-lum-moins").addEventListener("click", function () { li--; appliquer(); });
   $("a-lum-plus").addEventListener("click", function () { li++; appliquer(); });
-  appliquer(); majCoffre();
+  appliquer();
+  afficher();
 })();
 </script>
 </body>
