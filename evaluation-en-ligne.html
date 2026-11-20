@@ -53,6 +53,15 @@
   #alerte.visible { display: flex; }
   #alerte h2 { font-size: 1.6rem; margin-bottom: 10px; }
   #alerte p { font-size: 1.1rem; margin-bottom: 8px; }
+  /* [APPEL PROF 20/11/2026] au bout de max_sorties : écran bloqué, le professeur décide */
+  #prof { position: fixed; inset: 0; z-index: 110; background: rgba(230, 81, 0, .97); color: #fff; display: none; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+  #prof.visible { display: flex; }
+  #prof h2 { font-size: 1.8rem; margin-bottom: 10px; }
+  #prof p { font-size: 1.15rem; margin-bottom: 8px; }
+  #prof .reserve { margin-top: 18px; padding-top: 12px; border-top: 2px dashed rgba(255,255,255,.7); }
+  #prof .bouton { position: relative; overflow: hidden; margin: 6px; user-select: none; -webkit-user-select: none; touch-action: none; }
+  #prof .bouton .jauge { position: absolute; left: 0; bottom: 0; height: 5px; width: 0; background: #ffeb3b; }
+  #prof .bouton.appui .jauge { width: 100%; transition: width 2s linear; }
   #modale { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 16px; }
   #modale.visible { display: flex; }
   #modale .carte { max-width: 460px; }
@@ -221,6 +230,19 @@
   </div>
 </div>
 
+<div id="prof" role="alertdialog" aria-live="assertive">
+  <div>
+    <h2>🖐 Appelle ton professeur</h2>
+    <p id="prof-n"></p>
+    <p>Ton évaluation est bloquée. Lève la main : ton professeur vient et décide si tu continues ou si ta copie part.</p>
+    <div class="reserve">
+      <p style="font-weight:700">Réservé au professeur — garder le doigt appuyé 2 secondes</p>
+      <button class="bouton blanc" id="b-prof-continuer"><span class="jauge"></span>✅ Laisser continuer</button>
+      <button class="bouton" id="b-prof-envoyer" style="background:#b71c1c;color:#fff"><span class="jauge"></span>📤 Envoyer la copie telle qu'elle</button>
+    </div>
+  </div>
+</div>
+
 <div id="modale" role="dialog" aria-modal="true">
   <div class="carte centre">
     <p style="font-weight:700;margin-bottom:8px">Envoyer ta copie maintenant ?</p>
@@ -233,7 +255,7 @@
 <textarea class="reponse-eleve" data-qid="_journal_sorties" id="journal" hidden></textarea>
 <textarea class="reponse-eleve" data-qid="_resume_surveillance" id="resume" hidden></textarea>
 
-<script src="assets/eval-garde.js"></script>
+<script src="assets/eval-garde.js?v=20261120"></script>
 <script type="module">
   /* Envoi des copies : moteur commun des devoirs (resultats/{code}/copies/{id}_copie_1). */
   import "./assets/pse-runner.js";
@@ -329,7 +351,7 @@
     $("r-titre").textContent = "Évaluation en ligne";
     $("r-sous").textContent = "Code " + CODE;
     var d = dureeMin(); $("r-duree").textContent = (d >= 60 ? Math.floor(d / 60) + " h " + (d % 60 ? String(d % 60).padStart(2, "0") : "") : d + " min") + (ACCES.tiers ? " (avec ton tiers-temps)" : "");
-    if (EVAL.max_sorties) { $("r-max").hidden = false; $("r-max").innerHTML = "<b>Au bout de " + EVAL.max_sorties + " sorties, l'évaluation se ferme et ta copie part telle quelle.</b>"; }
+    if (EVAL.max_sorties) { $("r-max").hidden = false; $("r-max").innerHTML = "<b>Au bout de " + EVAL.max_sorties + " sorties, l'évaluation se bloque : tu dois appeler ton professeur. C'est lui qui décide si tu continues ou si ta copie part.</b>"; }
     if (!EVAL.chiffre) { $("mdp").hidden = true; $("mdp").previousElementSibling.hidden = true; }
     ecran("e-regles");
   }
@@ -592,9 +614,11 @@
         surChangement: function () { sauver(); },
         surSortie: function (n) { $("b-sorties").textContent = n; $("alerte-n").textContent = "Sortie n° " + n + ", à " + heure(maintenant()) + "."; montrer("alerte", "b-revenir"); sauverEnLigne(true); },
         surRetour: function () { },
-        surMax: function (n) { envoyer("fermée après " + n + " sorties"); }
+        surMax: function (n) { appelProf(n); }
       });
       $("b-sorties").textContent = EvalGarde.resume().sorties;
+      var attente = false; try { attente = localStorage.getItem(CLE_BROUILLON + "_prof") === "1"; } catch (e) {}
+      if (attente || (suivi && suivi.attenteProf)) appelProf(EvalGarde.resume().sorties);
       tic(); minuterie = setInterval(tic, 1000);
       sauver(); sauverEnLigne(true);
     } catch (e) {
@@ -602,9 +626,43 @@
     }
   }
 
+  /* ── [APPEL PROF 20/11/2026] Au bout de max_sorties (puis à chaque nouvelle sortie) : bloqué jusqu'à la décision du professeur.
+     Pas de code : deux boutons « réservés au professeur », appui long de 2 s ; la décision est notée dans le journal de la copie. ── */
+  function appelProf(n) {
+    if (envoye) return;
+    $("prof-n").textContent = "Tu es sorti(e) de l'évaluation " + n + " fois.";
+    try { localStorage.setItem(CLE_BROUILLON + "_prof", "1"); } catch (e) {}
+    ecrireSuivi({ attenteProf: true });
+    if (!$("prof").classList.contains("visible")) (EvalGarde.noter || function () {})("appel du professeur", n + " sorties");
+    $("prof").classList.add("visible"); document.querySelector(".page").inert = true;
+    sauverEnLigne(true);
+  }
+  function finAppelProf() {
+    $("prof").classList.remove("visible");
+    try { localStorage.removeItem(CLE_BROUILLON + "_prof"); } catch (e) {}
+    ecrireSuivi({ attenteProf: false });
+    if (!$("alerte").classList.contains("visible") && !$("modale").classList.contains("visible")) document.querySelector(".page").inert = false;
+  }
+  function appuiLong(id, action) {
+    var b = $(id), t = null;
+    function lacher() { clearTimeout(t); b.classList.remove("appui"); }
+    b.addEventListener("pointerdown", function (e) { e.preventDefault(); b.classList.add("appui"); t = setTimeout(function () { lacher(); action(); }, 2000); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { b.addEventListener(ev, lacher); });
+    b.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  }
+  appuiLong("b-prof-continuer", function () {
+    (EvalGarde.noter || function () {})("professeur", "reprise autorisée après " + EvalGarde.resume().sorties + " sorties");
+    finAppelProf(); sauverEnLigne(true);
+    if (EvalGarde.pleinEcran) EvalGarde.pleinEcran();
+  });
+  appuiLong("b-prof-envoyer", function () {
+    (EvalGarde.noter || function () {})("professeur", "copie envoyée telle quelle");
+    finAppelProf(); envoyer("envoyée par le professeur après " + EvalGarde.resume().sorties + " sorties");
+  });
+
   /* ── Fenêtres d'alerte : focus dedans, fond inactif ── */
   function montrer(id, bouton) { $(id).classList.add("visible"); document.querySelector(".page").inert = true; setTimeout(function () { $(bouton).focus(); }, 30); }
-  function cacher(id) { $(id).classList.remove("visible"); if (!$("alerte").classList.contains("visible") && !$("modale").classList.contains("visible")) document.querySelector(".page").inert = false; }
+  function cacher(id) { $(id).classList.remove("visible"); if (!$("alerte").classList.contains("visible") && !$("modale").classList.contains("visible") && !$("prof").classList.contains("visible")) document.querySelector(".page").inert = false; }
   function revenir() { EvalGarde.revenirEvaluation().then(function () { if (!EvalGarde.enSortie()) cacher("alerte"); }); }
   setInterval(function () { if ($("alerte").classList.contains("visible") && window.EvalGarde && !EvalGarde.enSortie()) cacher("alerte"); }, 500);
 

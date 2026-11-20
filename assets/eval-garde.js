@@ -101,6 +101,8 @@
       try { if (pleinEcranActif()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
     },
     pleinEcran: pleinEcran,
+    /* [APPEL PROF 20/11/2026] noter une décision du professeur dans le journal */
+    noter: function (type, detail) { noter(type, detail); changement(); },
     /* État complet (événements et compteurs), pour le garder sur l'appareil et le retrouver après un rechargement. */
     etat: function () { return { evts: evts.slice(), nbSorties: nbSorties, nbCopier: nbCopier, nbColler: nbColler, sortieEnCours: sortieEnCours }; },
     charger: function (e) {
