@@ -39,6 +39,10 @@
   textarea.trou { display: inline-block; vertical-align: bottom; font: inherit; line-height: 1.5; width: 160px; max-width: 100%; min-height: 0; padding: 2px 6px; margin: 2px 4px; border: 0; border-bottom: 2px solid var(--bleu); border-radius: 4px 4px 0 0; background: #f5f9ff; resize: none; overflow: hidden; }
   .choix { display: block; padding: 8px 10px; border: 2px solid #cfd8dc; border-radius: 8px; margin-top: 6px; cursor: pointer; }
   .choix input { margin-right: 8px; transform: scale(1.2); }
+  /* [CASES 20/11/2026] « Label Rouge : ☐ … ☐ … » : une rangée de cases par ligne */
+  .rangee { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; padding-top: 6px; border-top: 1px dashed #cfd8dc; }
+  .rangee-lib { font-weight: 600; flex: 1 1 100%; }
+  .rangee .choix { display: inline-block; margin-top: 0; }
   table.tab { width: 100%; border-collapse: collapse; margin-top: 8px; }
   table.tab th, table.tab td { border: 1.5px solid #90a4ae; padding: 6px 8px; vertical-align: top; text-align: left; }
   table.tab th { background: #eceff1; }
@@ -424,9 +428,22 @@
       + (x.tableau ? ". Le tableau : " + x.tableau.lignes.map(function (lg) { return lg.filter(function (c) { return c.prof != null; }).map(function (c) { return c.prof; }).join(", "); }).join(". ") : "")
       + (banque.length ? ". Les mots proposés : " + banque.join(", ") : "");
     var h = '<div class="question">' + (x.chapeau ? '<p class="chapeau">' + md(x.chapeau) + "</p>" : "");
+    // [CASES 20/11/2026] Cases « ☐ » au milieu d'une ligne : sur la ligne de la question, elles deviennent les choix
+    // (ou sont retirées si les mêmes choix suivent, une ligne chacun) ; sur une autre ligne, une rangée à cocher à part.
+    var casesEnLignes = lignes.some(function (l, k) { return k > 0 && /^\s*☐/.test(l); }), nbRangees = 0;
     lignes.forEach(function (l, i) {
       var t = l.trim(); if (!t) return;
       if (/^☐/.test(t)) { choix.push(t.replace(/^☐\s*/, "")); return; }
+      if (t.indexOf("☐") > 0) {
+        var avant = t.slice(0, t.indexOf("☐")).trim(), opts = t.slice(t.indexOf("☐")).split("☐").map(function (o) { return o.trim(); }).filter(Boolean);
+        if (i === 0) { t = avant; if (!casesEnLignes) opts.forEach(function (o) { choix.push(o); }); }
+        else {
+          var rid = qid + "#C" + (++nbRangees), nom = ("q" + rid).replace(/\W/g, "_");
+          corps += '<div class="rangee" role="radiogroup" aria-label="' + esc(avant) + '"><span class="rangee-lib">' + bEcoute(t.replace(/☐/g, ","), "cette ligne") + " " + md(avant) + "</span>"
+            + opts.map(function (o) { return '<label class="choix"><input type="radio" class="reponse-eleve" name="' + nom + '" data-qid="' + rid + '" value="' + esc(o) + '">' + md(o) + "</label>"; }).join("") + "</div>";
+          return;
+        }
+      }
       if (/^Mots proposés\s*:/i.test(t)) { if (!puces) corps += '<p class="aide">Mots proposés : </p><div class="puces">' + banque.map(function (m) { return '<button type="button" class="puce" data-mot="' + esc(m) + '"><span class="son">🔊</span>' + md(m) + "</button>"; }).join("") + "</div>"; return; }
       if (/^Pistes\s*:/i.test(t)) { corps += '<p class="aide">' + bEcoute(t, "les pistes") + md(t) + "</p>"; return; }
       if (/…{3,}|\.{6,}/.test(t)) {
@@ -456,7 +473,7 @@
       });
       h += "</tbody></table>";
     }
-    if (!choix.length && !nbTrous && !aTableau) h += '<textarea class="reponse-eleve" data-qid="' + qid + '" rows="' + Math.max(3, x.lignes || 3) + '" aria-label="Réponse à la question ' + esc(x.num) + '"></textarea>';
+    if (!choix.length && !nbTrous && !aTableau && !nbRangees) h += '<textarea class="reponse-eleve" data-qid="' + qid + '" rows="' + Math.max(3, x.lignes || 3) + '" aria-label="Réponse à la question ' + esc(x.num) + '"></textarea>';
     return h + "</div>";
   }
 
