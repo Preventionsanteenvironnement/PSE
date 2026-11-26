@@ -23,3 +23,12 @@ function inlineCompletion(w,phraseMode){
  const start=inputs.indexOf(input);inputs.slice(start).forEach((x,j)=>{if(chars[j]!==undefined){x.value=chars[j];x.classList.add('filled');}});inputs[Math.min(start+chars.length,inputs.length-1)]?.focus();}
  form.append(group);return {form,answer:()=>units.map((unit,i)=>{const input=inputs.find(x=>Number(x.dataset.unit)===i);return input?input.value:unit;}).join(phraseMode?' ':''),reveal:()=>{inputs.forEach(x=>{x.value=units[Number(x.dataset.unit)];x.classList.add('filled');});},inputs};
 }
+
+function showValidation(article,nextButton,word){
+ article.classList.add('step-validated');
+ article.querySelectorAll('.choices button').forEach(b=>{if(normalize(b.textContent)===normalize(word)){b.classList.add('answer-validated');b.setAttribute('aria-pressed','true');const tick=document.createElement('span');tick.textContent='✓ ';tick.setAttribute('aria-hidden','true');b.prepend(tick);}});
+ article.querySelectorAll('input,textarea').forEach(input=>{input.classList.add('answer-validated');input.readOnly=true;});
+ const badge=document.createElement('p');badge.className='validation-badge';badge.textContent='✓ Étape validée';
+ if(nextButton){article.insertBefore(badge,nextButton);nextButton.classList.add('continue-validated');}else article.append(badge);
+ article.querySelectorAll('button[type="submit"]').forEach(b=>{b.textContent='✓ Validé';b.classList.add('answer-validated');});
+}
