@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Évaluation en audio | mapse.fr</title>
+<style>
+  :root { --bleu:#1565c0; --bleu-f:#0d47a1; --vert:#2e7d32; --texte:#10171f; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: Verdana, system-ui, sans-serif; background:#f4f6f8; color:var(--texte); line-height:1.6; font-size:20px; }
+  .page { max-width:900px; margin:0 auto; padding:20px 18px 60px; }
+  header.titre { background:linear-gradient(135deg,var(--bleu),var(--bleu-f)); color:#fff; border-radius:14px; padding:20px; text-align:center; margin-bottom:18px; }
+  .carte { background:#fff; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:16px; }
+  .ecran { display:none; } .ecran.actif { display:block; }
+  label.grand { display:block; font-weight:700; margin-bottom:8px; }
+  input.code { font-size:1.6rem; letter-spacing:6px; text-transform:uppercase; text-align:center; width:100%; max-width:300px; padding:10px; border:2px solid #90a4ae; border-radius:10px; display:block; margin:0 auto 12px; }
+  .bouton { background:var(--bleu); color:#fff; border:0; border-radius:10px; padding:12px 20px; font:inherit; font-weight:700; cursor:pointer; }
+  .message { margin-top:10px; min-height:1.4em; }
+  .message.erreur { color:#b71c1c; font-weight:700; }
+  /* Mode audio : gros, très contrasté, une seule chose à l'écran */
+  #audio { display:none; }
+  body.audio { background:#0b1016; }
+  body.audio .page { max-width:1100px; }
+  body.audio #saisie, body.audio header.titre { display:none; }
+  body.audio #audio { display:block; color:#fff; }
+  #audio h1 { font-size:2.1rem; margin-bottom:14px; color:#9fd2ff; }
+  #audio .txt { font-size:1.7rem; }
+  #audio .txt p { margin-bottom:14px; }
+  #audio ul { list-style:none; margin-top:18px; }
+  #audio li { font-size:1.7rem; padding:14px 18px; border:3px solid #2d3b4a; border-radius:12px; margin-bottom:12px; }
+  #audio li.ici { border-color:#ffd54f; background:#1b2735; }
+  #audio li.choisi { border-color:#66bb6a; }
+  #audio .barre { margin-top:22px; font-size:1.2rem; color:#9bb0c4; }
+  #audio .ou { font-size:1.2rem; color:#9bb0c4; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="titre"><h1>Évaluation en audio</h1><p>Page spéciale : tout se fait au clavier, rien à écrire.</p></header>
+
+  <div id="saisie" class="ecran actif">
+    <div class="carte">
+      <p style="margin-bottom:14px"><b>À remplir par le professeur</b>, puis l'élève prend le clavier.</p>
+      <label class="grand" for="code">Code de l'élève</label>
+      <input class="code" id="code" maxlength="12" autocomplete="off">
+      <label class="grand" for="mdp">Mot de passe de l'épreuve</label>
+      <input class="code" id="mdp" style="letter-spacing:2px" autocomplete="off">
+      <p style="text-align:center"><button class="bouton" id="b-ouvrir">Ouvrir l'évaluation</button></p>
+      <p class="message" id="m"></p>
+    </div>
+  </div>
+
+  <div id="audio">
+    <div class="ou" id="ou"></div>
+    <h1 id="t"></h1>
+    <div class="txt" id="c"></div>
+    <ul id="l"></ul>
+    <div class="barre" id="b"></div>
+  </div>
+</div>
+
+<div id="champs" hidden></div>
+
+<script type="module">
+  import "./assets/pse-runner.js";
+  window.__RUNNER_PRET = true; document.dispatchEvent(new Event("runner-pret"));
+</script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (i) { return document.getElementById(i); };
+  var EVAL=null, ACCES=null, CODE="", V=null, ECRANS=[], i=0, choix=0, enAttente=null, fin=0, minuterie=null, envoye=false;
+
+  /* ── Heure du serveur, comme la page ordinaire ── */
+  var H=Date.now(), P0=performance.now();
+  async function heureServeur(){ try{ var r=await fetch("evaluations-en-ligne/index.json?h="+Date.now(),{method:"HEAD",cache:"no-store"}); var d=Date.parse(r.headers.get("Date")||""); if(!isNaN(d)){H=d;P0=performance.now();} }catch(e){} }
+  function maintenant(){ return H + (performance.now()-P0); }
+
+  /* ── Voix ── */
+  var synth = ("speechSynthesis" in window) ? speechSynthesis : null, voix=null, file=[];
+  function choisirVoix(){ if(!synth) return; var v=synth.getVoices().filter(function(x){return /^fr/i.test(x.lang);}); voix=v[0]||null; }
+  if (synth) { choisirVoix(); synth.onvoiceschanged = choisirVoix; }
+  function dire(lignes){
+    if(!synth) return; synth.cancel(); file = [].concat(lignes).filter(Boolean);
+    file.forEach(function(t){ var u=new SpeechSynthesisUtterance(String(t)); u.lang="fr-FR"; u.rate=0.95; if(voix)u.voice=voix; synth.speak(u); });
+  }
+  function relire(){ dire(ECRANS[i] ? texteEcran(ECRANS[i]) : ""); }
+
+  /* ── Déchiffrement : même mécanique que la page ordinaire ── */
+  function b64(s){ return Uint8Array.from(atob(s), function(c){return c.charCodeAt(0);}); }
+  async function dechiffrer(c, mdp){
+    var base = await crypto.subtle.importKey("raw", new TextEncoder().encode(mdp.trim().toUpperCase()), "PBKDF2", false, ["deriveKey"]);
+    var cle = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64(c.sel), iterations:c.iterations, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+    var clair = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64(c.iv)}, cle, b64(c.donnees));
+    return JSON.parse(new TextDecoder().decode(clair));
+  }
+
+  /* ── Lecture du sujet : chaque question devient un ou plusieurs écrans à choisir ── */
+  function sansGras(t){ return String(t||"").replace(/\*\*(.+?)\*\*/g,"$1"); }
+  function decouper(q){
+    var lignes = sansGras(q.libelle).split("\n").map(function(l){return l.trim();}).filter(Boolean);
+    var consigne = lignes.shift() || "";
+    var sousQ = [], simples = [];
+    lignes.forEach(function(l){
+      var parts = l.split("☐").map(function(x){return x.trim();}).filter(function(x){return x!=="";});
+      if (l.indexOf("☐") === 0) { simples.push(parts[0]); return; }          /* une proposition par ligne */
+      if (parts.length >= 2) {                                                /* intitulé : ☐ a  ☐ b */
+        var intitule = parts.shift().replace(/[:：]\s*$/,"").trim();
+        sousQ.push({ intitule: intitule, options: parts });
+      }
+    });
+    if (simples.length) sousQ.unshift({ intitule: "", options: simples });
+    return { consigne: consigne, sousQ: sousQ };
+  }
+  function construire(){
+    var e = [], docsLus = {};
+    e.push({ genre:"intro" });
+    e.push({ genre:"situation" });
+    (V.questions||[]).forEach(function(q){
+      var d = q.doc;
+      if (d && !docsLus[d]) { docsLus[d]=1; e.push({ genre:"doc", ref:String(d) }); }
+      var dec = decouper(q);
+      dec.sousQ.forEach(function(sq, k){
+        e.push({ genre:"question", q:q, consigne:dec.consigne, sq:sq, rang:k+1, total:dec.sousQ.length });
+      });
+    });
+    e.push({ genre:"fin" });
+    return e;
+  }
+  function docDe(ref){ return (V.documents||[]).filter(function(d){ return String(d.ref)===String(ref); })[0]; }
+
+  /* ── Réponses ── */
+  var REP = {};
+  function cleDe(ec){ return ec.q.num + "|" + ec.rang; }
+  function enregistrer(ec, texte){
+    REP[cleDe(ec)] = { qid: ec.q.num, intitule: ec.sq.intitule, valeur: texte };
+    var id = "r_" + cleDe(ec).replace(/\W/g,"_");
+    var el = $(id);
+    if (!el) { el = document.createElement("input"); el.type="hidden"; el.id=id; el.className="reponse-eleve"; el.dataset.qid = ec.q.num; $("champs").appendChild(el); }
+    el.value = ec.sq.intitule ? (ec.sq.intitule + " → " + texte) : texte;
+    try { localStorage.setItem(CLE(), JSON.stringify(REP)); } catch(e){}
+  }
+  function CLE(){ return "mapse_audio_" + (EVAL?EVAL.id:"") + "_" + CODE; }
+  function sansReponse(){ var n=[]; ECRANS.forEach(function(ec){ if(ec.genre==="question" && !REP[cleDe(ec)]) n.push(ec.q.num + (ec.total>1 ? " ligne "+ec.rang : "")); }); return n; }
+
+  /* ── Ce que la voix dit, écran par écran ── */
+  function texteEcran(ec){
+    if (ec.genre==="intro") return ["Bonjour. Tu vas passer l'évaluation : " + (V.titre||"") + ".",
+      "Tu n'as rien à écrire. Tu écoutes, tu choisis ta réponse avec les flèches du bas et du haut, et tu valides avec Entrée.",
+      "La barre d'espace met la voix en pause, et la relance. Si tu n'entends plus rien, appuie dessus : je relis l'écran.",
+      "La flèche droite avance, la flèche gauche revient en arrière.",
+      "Appuie sur la flèche droite quand tu es prêt."];
+    if (ec.genre==="situation") return ["La situation.", sansGras(V.situation), "Fin de la situation. Flèche droite pour continuer."];
+    if (ec.genre==="doc") { var d=docDe(ec.ref)||{}; return ["Document " + ec.ref + ". " + sansGras(d.titre||""), sansGras(d.contenu||d.corps||""), "Fin du document. Flèche droite pour continuer."]; }
+    if (ec.genre==="fin") {
+      var m = sansReponse();
+      return ["C'est la fin de l'évaluation.",
+        m.length ? ("Il te reste " + m.length + " réponse" + (m.length>1?"s":"") + " à donner : " + m.join(", ") + ". Flèche gauche pour y revenir.")
+                 : "Tu as répondu à toutes les questions.",
+        "Pour envoyer ta copie, appuie deux fois sur Entrée."];
+    }
+    var t = ["Question " + ec.q.num + (ec.total>1 ? ", ligne " + ec.rang + " sur " + ec.total : "") + "."];
+    if (ec.q.chapeau) t.push(sansGras(ec.q.chapeau));
+    if (ec.rang===1) t.push(ec.consigne);
+    if (ec.sq.intitule) t.push(ec.sq.intitule);
+    t.push("Il y a " + ec.sq.options.length + " réponses possibles.");
+    t.push("Réponse 1 sur " + ec.sq.options.length + " : " + ec.sq.options[0]);
+    t.push("Flèche bas pour entendre la suivante. Entrée pour choisir celle-ci.");
+    return t;
+  }
+
+  /* ── Affichage (pour le professeur qui regarde par-dessus l'épaule) ── */
+  function peindre(){
+    var ec = ECRANS[i];
+    $("ou").textContent = "Écran " + (i+1) + " sur " + ECRANS.length + (fin ? " · " + Math.max(0,Math.round((fin-maintenant())/60000)) + " min restantes" : "");
+    $("l").innerHTML = ""; $("b").textContent = "espace : pause et relire · flèches gauche/droite : avancer · flèches bas/haut : choisir · Entrée : valider";
+    if (ec.genre==="question") {
+      $("t").textContent = "Question " + ec.q.num + (ec.total>1 ? " — ligne " + ec.rang + " sur " + ec.total : "");
+      $("c").innerHTML = "<p>" + (ec.q.chapeau ? sansGras(ec.q.chapeau) + "<br>" : "") + ec.consigne + (ec.sq.intitule ? "<br><b>" + ec.sq.intitule + "</b>" : "") + "</p>";
+      ec.sq.options.forEach(function(o,k){
+        var li=document.createElement("li"); li.textContent=(k+1)+". "+o;
+        if (k===choix) li.className="ici";
+        var r=REP[cleDe(ec)]; if (r && r.valeur===o) li.className += " choisi";
+        $("l").appendChild(li);
+      });
+    } else {
+      var titres = { intro:"Bienvenue", situation:"La situation", doc:"Document " + (ec.ref||""), fin:"C'est fini" };
+      $("t").textContent = titres[ec.genre] || "";
+      var corps = ec.genre==="situation" ? sansGras(V.situation)
+                : ec.genre==="doc" ? (function(){ var d=docDe(ec.ref)||{}; return sansGras(d.titre||"") + "\n" + sansGras(d.contenu||d.corps||""); })()
+                : ec.genre==="fin" ? (sansReponse().length ? "Réponses manquantes : " + sansReponse().join(", ") : "Toutes les questions ont une réponse.") + "\n\nEntrée deux fois pour envoyer."
+                : "Appuie sur la flèche droite pour commencer.";
+      $("c").innerHTML = String(corps).split("\n").map(function(l){ return l.trim()? "<p>"+l+"</p>":""; }).join("");
+    }
+  }
+  function aller(n){ if(n<0||n>=ECRANS.length) return; i=n; choix=0; enAttente=null; peindre(); dire(texteEcran(ECRANS[i])); }
+
+  /* ── Les six touches ── */
+  document.addEventListener("keydown", function(ev){
+    if (!EVAL || envoye) return;
+    var ec = ECRANS[i]; if (!ec) return;
+    if (ev.key===" ") { ev.preventDefault(); if (synth && synth.speaking && !synth.paused) synth.pause(); else if (synth && synth.paused) synth.resume(); else relire(); return; }
+    if (ev.key==="ArrowRight") { ev.preventDefault(); aller(i+1); return; }
+    if (ev.key==="ArrowLeft")  { ev.preventDefault(); aller(i-1); return; }
+    if (ec.genre==="question" && (ev.key==="ArrowDown"||ev.key==="ArrowUp")) {
+      ev.preventDefault(); enAttente=null;
+      var n=ec.sq.options.length; choix = (choix + (ev.key==="ArrowDown"?1:n-1)) % n; peindre();
+      dire(["Réponse " + (choix+1) + " sur " + n + " : " + ec.sq.options[choix]]); return;
+    }
+    if (ev.key==="Enter") {
+      ev.preventDefault();
+      if (ec.genre==="fin") {
+        if (enAttente==="envoi") { envoyer("élève"); return; }
+        enAttente="envoi"; dire(["Tu vas envoyer ta copie. Appuie encore une fois sur Entrée pour confirmer, ou sur la flèche gauche pour revenir en arrière."]); return;
+      }
+      if (ec.genre!=="question") { aller(i+1); return; }
+      var o = ec.sq.options[choix];
+      if (enAttente==="choix") { enregistrer(ec,o); peindre(); dire(["C'est enregistré.", (i+1<ECRANS.length ? "Flèche droite pour continuer." : "")]); enAttente=null; return; }
+      enAttente="choix"; dire(["Tu as choisi la réponse " + (choix+1) + " : " + o + ".", "Appuie encore sur Entrée pour confirmer, ou sur la flèche bas pour changer."]);
+    }
+  });
+
+  /* ── Envoi de la copie : même moteur que les autres évaluations ── */
+  function runnerPret(){ return window.__RUNNER_PRET ? Promise.resolve() : new Promise(function(r){ document.addEventListener("runner-pret", r, {once:true}); }); }
+  async function envoyer(motif){
+    if (envoye) return; envoye = true; clearInterval(minuterie);
+    dire(["Envoi de ta copie. Ne touche plus au clavier."]);
+    var res = document.createElement("input"); res.type="hidden"; res.className="reponse-eleve"; res.dataset.qid="_resume_surveillance";
+    res.value = JSON.stringify({ version: ACCES.version, code_evaluation: V.code, sorties: 0, secondes_hors_page: 0, copier: 0, coller: 0,
+      mode: "audio clavier", motif_envoi: motif, date_epreuve: EVAL.date_epreuve, duree_min: dureeMin(), tiers_temps: !!ACCES.tiers });
+    $("champs").appendChild(res);
+    document.body.dataset.idExercice = EVAL.id;
+    try {
+      await runnerPret();
+      await window.envoyerCopie(CODE, { total:0, external:0, document:0 },
+        { code: CODE, classe: ACCES.classe, focus:{focusLeaves:0,copyAttempts:0,pasteBlocked:0},
+          chrono:{ actif:true, minutesAllouees:dureeMin(), secondesRestantes: Math.max(0,Math.round((fin-maintenant())/1000)), tempsEcoule: motif==="temps écoulé" } });
+      $("t").textContent="Copie envoyée"; $("c").innerHTML="<p>C'est envoyé. Tu peux appeler le professeur.</p>"; $("l").innerHTML="";
+      dire(["Ta copie est envoyée. C'est fini. Tu peux appeler le professeur."]);
+    } catch(e) {
+      envoye=false;
+      $("c").innerHTML="<p>L'envoi n'a pas marché. Appelle le professeur.</p>";
+      dire(["L'envoi n'a pas marché. Tes réponses sont gardées. Appelle le professeur."]);
+    }
+  }
+  function dureeMin(){ var d=EVAL.duree_min||45; return ACCES.tiers ? Math.round(d*4/3) : d; }
+
+  /* ── Ouverture ── */
+  $("b-ouvrir").addEventListener("click", async function(){
+    var c=($("code").value||"").trim().toUpperCase(), mdp=($("mdp").value||"").trim();
+    $("m").className="message"; $("m").textContent="Recherche…";
+    if (c.length<4) { $("m").className="message erreur"; $("m").textContent="Le code a au moins 4 caractères."; return; }
+    try {
+      await heureServeur();
+      var idx = await (await fetch("evaluations-en-ligne/index.json?ts="+Date.now(),{cache:"no-store"})).json();
+      var trouvees=[];
+      for (var k=0;k<idx.evaluations.length;k++){
+        var ev = await (await fetch("evaluations-en-ligne/"+idx.evaluations[k]+".json?ts="+Date.now(),{cache:"no-store"})).json();
+        if (ev.acces && ev.acces[c]) trouvees.push(ev);
+      }
+      if (!trouvees.length) { $("m").className="message erreur"; $("m").textContent="Aucune évaluation pour ce code."; return; }
+      var t=maintenant();
+      var ouverte = trouvees.filter(function(e){ return Date.parse(e.ouverture)<=t && t<=Date.parse(e.fermeture); })[0];
+      if (!ouverte) { $("m").className="message erreur"; $("m").textContent="Aucune évaluation ouverte en ce moment pour ce code."; return; }
+      EVAL=ouverte; CODE=c; ACCES=ouverte.acces[c];
+      var paquet = EVAL.chiffre ? await dechiffrer(EVAL.chiffre, mdp) : EVAL.versions;
+      V = paquet[ACCES.version] || paquet[Object.keys(paquet)[0]];
+      if (!V) throw new Error("version absente");
+      try { var d=localStorage.getItem(CLE()); if(d) REP=JSON.parse(d)||{}; } catch(e){}
+      ECRANS = construire();
+      Object.keys(REP).forEach(function(k){ var r=REP[k]; var id="r_"+k.replace(/\W/g,"_");
+        var el=document.createElement("input"); el.type="hidden"; el.id=id; el.className="reponse-eleve"; el.dataset.qid=r.qid;
+        el.value = r.intitule ? (r.intitule+" → "+r.valeur) : r.valeur; $("champs").appendChild(el); });
+      document.body.classList.add("audio");
+      fin = maintenant() + dureeMin()*60000;
+      minuterie = setInterval(function(){ if (maintenant()>=fin) envoyer("temps écoulé"); else if (ECRANS[i]) $("ou").textContent = "Écran "+(i+1)+" sur "+ECRANS.length+" · "+Math.max(0,Math.round((fin-maintenant())/60000))+" min restantes"; }, 10000);
+      aller(0);
+    } catch(e) {
+      $("m").className="message erreur";
+      $("m").textContent = (EVAL && EVAL.chiffre) ? "Mot de passe incorrect." : ("Erreur : " + (e && e.message ? e.message : "inconnue"));
+    }
+  });
+  $("mdp").addEventListener("keydown", function(e){ if(e.key==="Enter") $("b-ouvrir").click(); });
+})();
+</script>
+</body>
+</html>
