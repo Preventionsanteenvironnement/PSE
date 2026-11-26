@@ -81,9 +81,32 @@
   var synth = ("speechSynthesis" in window) ? speechSynthesis : null, voix=null, file=[];
   function choisirVoix(){ if(!synth) return; var v=synth.getVoices().filter(function(x){return /^fr/i.test(x.lang);}); voix=v[0]||null; }
   if (synth) { choisirVoix(); synth.onvoiceschanged = choisirVoix; }
+  /* [MISE EN VOIX 26/11/2026, demande de Brahim] Les symboles ne se lisent pas tels quels :
+     « 92 dB(A) » doit s'entendre « 92 décibels A ». Ne change QUE la voix : le texte
+     affiché à l'écran reste exactement celui du sujet. */
+  function vx(t){
+    return String(t==null?"":t)
+      .replace(/\u2610|\u2612/g, " ")
+      .replace(/dB\s*\(\s*A\s*\)/gi, " décibels A ")
+      .replace(/\bdB\b/gi, " décibels ")
+      .replace(/(\d)\s*°\s*C\b/g, "$1 degrés ")
+      .replace(/\bn\s*°\s*/gi, "numéro ")
+      .replace(/€/g, " euros ")
+      .replace(/%/g, " pour cent ")
+      .replace(/×/g, " fois ")
+      .replace(/(\d)\s*h\s*(\d{2})\b/g, "$1 heures $2")
+      .replace(/(\d)\s*h\b/g, "$1 heures")
+      .replace(/\b1\s*er\b/g, "premier")
+      .replace(/(\d)[\s\u00a0\u202f](\d{3})\b/g, "$1$2")
+      .replace(/\u2026/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+  window.__vx = vx;
   function dire(lignes){
-    if(!synth) return; synth.cancel(); file = [].concat(lignes).filter(Boolean);
-    file.forEach(function(t){ var u=new SpeechSynthesisUtterance(String(t)); u.lang="fr-FR"; u.rate=0.95; if(voix)u.voice=voix; synth.speak(u); });
+    if(!synth) return; synth.cancel();
+    file = [].concat(lignes).map(vx).filter(Boolean);
+    file.forEach(function(t){ var u=new SpeechSynthesisUtterance(t); u.lang="fr-FR"; u.rate=0.95; if(voix)u.voice=voix; synth.speak(u); });
   }
   function relire(){ dire(ECRANS[i] ? texteEcran(ECRANS[i]) : ""); }
 
